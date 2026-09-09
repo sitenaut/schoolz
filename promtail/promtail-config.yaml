@@ -1,0 +1,45 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        # Filter at the Docker API level - relabel_configs "keep" below is
+        # defense in depth, but don't rely on it alone (it does not reliably
+        # exclude other compose projects' containers on a shared host).
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=schoolz"]
+    relabel_configs:
+      # Only collect schoolz project containers
+      - source_labels: [__meta_docker_container_label_com_docker_compose_project]
+        regex: schoolz
+        action: keep
+      # Use the compose service name as the "service" label
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: service
+      # Container name (for cross-referencing)
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: container
+      # stdout vs stderr
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: logstream
+    pipeline_stages:
+      # Try to parse backend JSON logs; non-JSON lines pass through as-is
+      - json:
+          expressions:
+            extracted_level: levelname
+            extracted_logger: name
+      - labels:
+          extracted_level:
+          extracted_logger:

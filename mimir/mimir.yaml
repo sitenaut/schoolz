@@ -1,0 +1,34 @@
+# Minimal single-process Mimir config for local/home use
+target: all
+multitenancy_enabled: false
+
+common:
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /data
+
+blocks_storage:
+  filesystem:
+    dir: /data/blocks
+
+compactor:
+  data_dir: /data/compactor
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/rules
+
+server:
+  http_listen_port: 8080
+  grpc_listen_port: 9095
+  log_level: warn
+
+memberlist:
+  join_members: []
+
+# Single-node: drop replication factor from the default 3 to 1
+ingester:
+  ring:
+    replication_factor: 1

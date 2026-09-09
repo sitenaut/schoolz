@@ -1,0 +1,12 @@
+from . import district_calendar_scan  # noqa: F401
+from . import documents_scan  # noqa: F401
+from . import email_scan  # noqa: F401
+from . import hs_rotation_scan  # noqa: F401
+from . import lunch_menu_scan  # noqa: F401
+from . import marking_period_scan  # noqa: F401
+from . import preschool_locations_scan  # noqa: F401
+from . import preschool_team_scan  # noqa: F401
+from . import school_info_scan  # noqa: F401
+from . import smore_scan  # noqa: F401
+from . import staff_roster_scan  # noqa: F401
+from . import transportation_scan  # noqa: F401

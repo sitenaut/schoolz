@@ -1,0 +1,62 @@
+name: DB migrate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/alembic/**"
+      - "backend/models.py"
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Alembic command to run"
+        required: false
+        default: "upgrade head"
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend deps
+        run: pip install -r backend/requirements.txt
+
+      - name: Check single Alembic head
+        run: |
+          cd backend
+          heads=$(alembic heads | wc -l)
+          if [ "$heads" -ne 1 ]; then
+            echo "Expected exactly one Alembic head, found $heads" >&2
+            exit 1
+          fi
+
+      - name: Materialize env/secrets.prod.env from GitHub secrets
+        run: |
+          mkdir -p env
+          cat > env/secrets.prod.env <<EOF
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EOF
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "DATABASE_URL secret is required" >&2
+            exit 1
+          fi
+
+      - name: Materialize env/db.prod.env and env/auth.supabase-prod.env
+        run: |
+          cat > env/db.prod.env <<EOF
+          DATABASE_SSL_MODE=require
+          EOF
+          cat > env/auth.supabase-prod.env <<EOF
+          AUTH_MODE=supabase
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          EOF
+
+      - name: Run Alembic
+        run: bash scripts/alembic_env.sh prod ${{ github.event.inputs.command || 'upgrade head' }}

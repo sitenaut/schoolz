@@ -1,0 +1,246 @@
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.toolbar select,
+.toolbar input {
+  width: auto;
+  margin-top: 0;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.searchBox input {
+  width: 100%;
+  padding-right: 30px;
+}
+
+.searchClear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.searchClear:hover {
+  color: var(--color-text);
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.monthNav h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.monthNav button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  padding-bottom: 4px;
+}
+
+.day {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  gap: 2px;
+  padding: 0;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.day:hover {
+  border-color: var(--color-primary);
+}
+
+.day:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.dayEmpty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.daySelected {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.dayHasEvents::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.daySelected.dayHasEvents::after {
+  background: white;
+}
+
+/* Today gets its own ring so it reads as "today" independent of whether
+   it's also the active filter (daySelected fills the background; this
+   stays visible as an inset ring either way). */
+.dayToday {
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.dayToday:not(.daySelected) {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-primary-dark);
+}
+
+.daySelected.dayToday {
+  box-shadow: inset 0 0 0 2px white;
+}
+
+.dayFilterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 14px;
+}
+
+
+.yearGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.miniMonth {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  padding: 8px;
+}
+
+.miniMonthTitle,
+.miniMonthTitleCurrent {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.miniMonthTitleCurrent {
+  color: var(--color-primary);
+}
+
+.miniGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.miniWeekday {
+  text-align: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding-bottom: 2px;
+}
+
+.miniDay {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+  padding: 0;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.miniDay:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.miniDay:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.miniDayEmpty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.miniDayHasEvents::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.miniDayToday {
+  background: var(--color-primary);
+  color: white;
+  font-weight: 800;
+}
+
+.miniDayToday.miniDayHasEvents::after {
+  background: white;
+}

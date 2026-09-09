@@ -1,0 +1,445 @@
+"""Turns newly-scanned SmoreBlock rows into structured SchoolContentItem
+rows: a topical summary, calendar-able events/deadlines/initiatives,
+reminders, program/busing/funding/volunteer/org/merch info, a PTA section,
+staff people, and (only when the source text itself says something is new
+or changed) policy/procedure updates.
+
+Two Claude calls: a vision pass over any new image blocks (flyers carry no
+text otherwise - confirmed on real newsletters), then one structured
+text-extraction call over everything (block text + vision-extracted image
+text), with the school's current items given as context so a corrected
+date/typo can supersede the old item instead of creating a confusing
+duplicate calendar entry.
+"""
+
+import base64
+import logging
+import os
+import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import httpx
+from anthropic import AsyncAnthropic
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
+
+logger = logging.getLogger(__name__)
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+MODEL = "claude-haiku-4-5-20251001"
+
+# Known parent/student information system login URLs, keyed by lowercased
+# name - resolved deterministically rather than trusting the model to
+# invent or copy a URL, since a newsletter naming "Genesis" rarely also
+# includes the actual login link. Confirmed real: Cherry Hill Public
+# Schools' Genesis Parent Access portal is a single district-wide URL (a
+# global nav link on every school's own site, not something per-school).
+_KNOWN_PORTAL_URLS = {
+    "genesis": "https://parents.chclc.org/genesis/parents?gohome=true",
+}
+
+_CATEGORIES = [
+    "event", "deadline", "initiative", "reminder", "policy_change", "procedure",
+    "program", "busing", "funding", "volunteer", "org_club", "merch_ad", "pta", "person", "lunch_menu",
+]
+
+_EXTRACTION_TOOL = {
+    "name": "record_extraction",
+    "description": "Records structured items extracted from a school newsletter.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            # "items" is declared FIRST deliberately: Claude generates
+            # tool-use JSON fields in schema property order, and a long
+            # newsletter can exceed max_tokens mid-response - if that
+            # happens, we want the items truncated, not dropped entirely
+            # (confirmed in testing: with "items" last, a real 37-block
+            # newsletter hit max_tokens after the summary/school fields and
+            # produced zero items even though input tokens were fine).
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "category": {
+                            "type": "string",
+                            "enum": _CATEGORIES,
+                            "description": "'lunch_menu' for a day-by-day meal calendar flyer (e.g. a monthly lunch/breakfast menu image) - "
+                            "put the full day-by-day breakdown in description, one item per menu period (e.g. one per month) "
+                            "rather than one item per day.",
+                        },
+                        "scope": {
+                            "type": "string",
+                            "enum": ["school", "district"],
+                            "description": "'district' if this applies to the WHOLE district, not just this school - district-wide holidays/closures (Labor Day, Yom Kippur, etc), district-wide policy changes, district-wide deadlines. 'school' (default) for anything specific to this one school (its own PTA, its own procedures, its own programs). When unsure, use 'school'.",
+                        },
+                        "title": {
+                            "type": "string",
+                            "description": "For category='person', this MUST be the person's actual name (e.g. 'Sara Egan'), with their role in person_title (e.g. 'School Counselor') - never put a role/title here instead of a name.",
+                        },
+                        "description": {"type": "string"},
+                        "start_date": {"type": "string", "description": "Date/time in the school's own local time, as 'YYYY-MM-DD' (all-day) or 'YYYY-MM-DDTHH:MM:SS' (timed) - no 'Z' or UTC offset, this is local wall-clock time, not UTC."},
+                        "end_date": {"type": "string", "description": "Same local-time format as start_date, for date ranges."},
+                        "link_url": {
+                            "type": "string",
+                            "description": "The URL from the source block's '(link: ...)' annotation, if that block has one - ALWAYS include it here when present, even if the item also has other fields. Never drop a link.",
+                        },
+                        "person_name": {"type": "string"},
+                        "person_title": {"type": "string"},
+                        "source_block_position": {"type": "integer"},
+                        "source_excerpt": {"type": "string"},
+                        "supersedes_item_id": {
+                            "type": "string",
+                            "description": "Set ONLY if this item corrects/updates one of the CURRENT ITEMS given in context (same event, corrected date, typo fix, etc) - the id of that existing item.",
+                        },
+                    },
+                    "required": ["category", "title"],
+                },
+            },
+            "summary": {"type": "string", "description": "2-4 sentence topical summary of what's new/notable in this newsletter, for display at the top of the school page."},
+            "school_name": {"type": "string"},
+            "school_address": {"type": "string"},
+            "school_main_phone": {"type": "string"},
+            "absence_method": {"type": "string", "enum": ["email", "phone", "portal", "other"]},
+            "absence_emails": {"type": "array", "items": {"type": "string"}},
+            "absence_phone": {"type": "string"},
+            "absence_portal_name": {
+                "type": "string",
+                "description": "Set ONLY when absence_method is 'portal' - the name of the parent/student information "
+                "system the text directs parents to use (e.g. 'Genesis', 'ParentVUE', 'Skyward'). Do NOT set "
+                "absence_instructions when using 'portal' - the portal name/link is enough, no need to also copy the "
+                "full click-by-click steps.",
+            },
+            "absence_instructions": {
+                "type": "string",
+                "description": "Raw instructions for reporting an absence, verbatim-ish. Only for methods OTHER than "
+                "'portal' - a portal login flow's full step-by-step text is not worth surfacing to a parent, the portal "
+                "link itself is.",
+            },
+        },
+        "required": ["summary", "items"],
+    },
+}
+
+_SYSTEM_PROMPT = """You extract structured information from a school newsletter for parents. \
+Only extract policy_change or procedure items when the text EXPLICITLY says something is new, \
+changed, or updated - never extract routine/unchanging policy text under those two categories. \
+Dates should be resolved to actual ISO 8601 dates when the text gives enough context (e.g. a \
+year from the newsletter's own dateline); omit start_date/end_date if you can't determine an \
+actual date. If an item clearly corrects or updates one of the CURRENT ITEMS given to you \
+(same event/deadline, different date, typo fix), set supersedes_item_id to that item's id \
+instead of creating a duplicate. Every link mentioned in the source (marked "(link: ...)") must \
+be preserved - if an item is based on a block with a link annotation, copy that URL into the \
+item's link_url field. Never omit a link that's present in the source. Set scope='district' for \
+anything that applies district-wide (school closures/holidays, district-wide policy or deadlines) \
+rather than being specific to this one school - this school's newsletter reports district holidays \
+too, but every other school in the district reports the exact same ones, so marking them 'district' \
+lets them be shown once instead of once per school. \
+Extract EVERY distinct dated item you find, including EVERY separate bullet/line inside a "Mark Your \
+Calendar", "Upcoming Events", or similar list block - each one (each closure, each early dismissal, \
+each first-day-of-school date, etc) is its own item, never summarized into one combined item or \
+skipped. Every flyer/image block's content must be represented by at least one item - do not silently \
+omit an entire flyer (e.g. a "Back to School Night" flyer, a lunch menu) just because other blocks in \
+the same newsletter already produced items. Completeness matters more than brevity here."""
+
+
+async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as http_client:
+            resp = await http_client.get(image_url)
+            resp.raise_for_status()
+            content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0]
+            image_b64 = base64.b64encode(resp.content).decode("ascii")
+
+        response = await client.messages.create(
+            model=MODEL,
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "source": {"type": "base64", "media_type": content_type, "data": image_b64}},
+                        {
+                            "type": "text",
+                            "text": "Transcribe all text in this image verbatim, and describe any dates, "
+                            "events, deadlines, names, or contact info shown. This is a flyer from a "
+                            "school newsletter for parents.",
+                        },
+                    ],
+                }
+            ],
+        )
+        return "".join(block.text for block in response.content if block.type == "text")
+    except Exception:
+        logger.exception("vision_extraction_failed", extra={"image_url": image_url})
+        return None
+
+
+_DEFAULT_TZ = ZoneInfo("America/New_York")
+
+# Matches the model's own consistent "Weekday DD: description." shape for a
+# lunch_menu item's description (confirmed real on a Chesterbrook Academy
+# flyer) - split deterministically rather than a second LLM round-trip,
+# since the format the model already produces is regular enough to parse
+# with a regex. Anything before the first match (a title line) and after
+# the last (a trailing "Available daily: ..." note) is simply not a day
+# entry and is dropped here, not lost - the raw description stays on the
+# SchoolContentItem row this was parsed from.
+_MENU_DAY_RE = re.compile(r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+(\d{1,2}):\s*")
+
+
+_MENU_TRAILING_NOTE_RE = re.compile(r"\.?\s*Available daily:.*$", re.IGNORECASE)
+
+
+def _parse_lunch_menu_days(description: str, year: int, month: int) -> list[dict]:
+    description = _MENU_TRAILING_NOTE_RE.sub("", description)
+    matches = list(_MENU_DAY_RE.finditer(description))
+    days = []
+    for i, m in enumerate(matches):
+        day = int(m.group(1))
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(description)
+        text = description[m.end() : end].strip().rstrip(".").strip()
+        if not text:
+            continue
+        try:
+            date = datetime(year, month, day, tzinfo=_DEFAULT_TZ)
+        except ValueError:
+            continue
+        days.append({"date": date, "description": text})
+    return days
+
+
+def _parse_date(value: str | None) -> datetime | None:
+    """Claude is asked for ISO dates but has no real notion of timezone -
+    it reasons in the school's own local time. A bare date/time with no
+    offset is therefore local (America/New_York), not UTC; treating it as
+    UTC silently shifted every all-day date back a day and every timed
+    event by 4-5 hours in testing (Labor Day showing as Sept 6 instead of
+    Sept 7, a 6pm PTA meeting showing as 2pm)."""
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=_DEFAULT_TZ)
+    return parsed
+
+
+async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter, new_blocks: list[SmoreBlock]) -> str:
+    if not ANTHROPIC_API_KEY:
+        return "skipped - ANTHROPIC_API_KEY not configured"
+    if not new_blocks:
+        return "no new blocks to extract from"
+
+    client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+
+    for block in new_blocks:
+        if block.block_type == "image" and block.pending_vision_extraction:
+            block.vision_extracted_text = await _vision_extract(client, block.image_url)
+            block.pending_vision_extraction = False
+    await db.flush()
+
+    corpus_lines = []
+    for block in new_blocks:
+        text = block.text_content or block.vision_extracted_text
+        # Always surface the block's link explicitly, even when it also has
+        # text - the visible text (e.g. "Click here") often doesn't mention
+        # the URL itself, so the model would otherwise never see it.
+        link_suffix = f" (link: {block.link_url})" if block.link_url else ""
+        if text:
+            corpus_lines.append(f"[block {block.position}, {block.block_type}] {text}{link_suffix}")
+        elif block.link_url:
+            corpus_lines.append(f"[block {block.position}, link] {block.link_url}")
+    if not corpus_lines:
+        return "no extractable text in new blocks"
+
+    school_id = newsletter.school_id
+    current_items_context = ""
+    if school_id:
+        result = await db.execute(
+            select(SchoolContentItem).where(
+                SchoolContentItem.school_id == school_id, SchoolContentItem.is_current.is_(True)
+            )
+        )
+        current = result.scalars().all()
+        if current:
+            lines = [f"- id={i.id} [{i.category}] {i.title} (start_date={i.start_date})" for i in current]
+            current_items_context = "\n\nCURRENT ITEMS for this school (reference by id in supersedes_item_id if one of these is being corrected/updated):\n" + "\n".join(lines)
+
+    response = await client.messages.create(
+        model=MODEL,
+        max_tokens=8192,
+        temperature=0,
+        system=_SYSTEM_PROMPT,
+        tools=[_EXTRACTION_TOOL],
+        tool_choice={"type": "tool", "name": "record_extraction"},
+        messages=[{"role": "user", "content": "\n".join(corpus_lines) + current_items_context}],
+    )
+    tool_use = next((b for b in response.content if b.type == "tool_use"), None)
+    if not tool_use:
+        return "model returned no structured extraction"
+    data = tool_use.input
+    truncated_note = ""
+    if response.stop_reason == "max_tokens":
+        # "items" is schema-ordered first specifically so a truncated
+        # response still keeps whatever items were generated before the
+        # cutoff - but flag it, since summary/school fields may be missing.
+        truncated_note = " (response hit max_tokens - some items may be missing)"
+        logger.warning("extraction_truncated", extra={"newsletter_id": newsletter.id, "usage": str(response.usage)})
+
+    school = None
+    if school_id:
+        school = (await db.execute(select(School).where(School.id == school_id))).scalar_one_or_none()
+        if school:
+            if not school.address and data.get("school_address"):
+                school.address = data["school_address"]
+            if not school.main_phone and data.get("school_main_phone"):
+                school.main_phone = data["school_main_phone"]
+            if not school.absence_method and data.get("absence_method"):
+                school.absence_method = data["absence_method"]
+                school.absence_emails = data.get("absence_emails", [])
+                school.absence_phone = data.get("absence_phone")
+                if data["absence_method"] == "portal":
+                    portal_name = (data.get("absence_portal_name") or "").strip()
+                    school.absence_portal_name = portal_name or None
+                    school.absence_portal_url = _KNOWN_PORTAL_URLS.get(portal_name.lower())
+                    # The click-by-click login flow isn't worth surfacing
+                    # once we have a direct portal link - the button should
+                    # link out, not reprint a paragraph of steps.
+                    school.absence_instructions = None
+                else:
+                    school.absence_instructions = data.get("absence_instructions")
+
+    # Preload the school's staff roster once, keyed by normalized name, so
+    # every "person" mention (and any other item that happens to name
+    # someone) can resolve back to a real StaffMember instead of floating
+    # free text - the whole point of scanning rosters in the first place.
+    staff_by_name: dict[str, str] = {}
+    if school_id:
+        staff_result = await db.execute(select(StaffMember).where(StaffMember.school_id == school_id))
+        staff_by_name = {normalize_name(s.full_name): s.id for s in staff_result.scalars().all()}
+
+    district_id = school.district_id if school else None
+
+    block_by_position = {b.position: b for b in new_blocks}
+    created = 0
+    skipped_district_dupes = 0
+    for item in data.get("items", []):
+        source_block = block_by_position.get(item.get("source_block_position"))
+        source_block_id = source_block.id if source_block else None
+        # Infer from the date string itself ('T' means a time was given)
+        # rather than trusting a separate is_all_day flag - the model
+        # reliably omits that flag, and item.get(..., True) silently
+        # defaulted every timed event to "all day" in testing.
+        is_all_day = "T" not in (item.get("start_date") or "")
+        # Backfill from the source block if the model dropped the link -
+        # the prompt asks it to always copy it over, but don't rely on that
+        # alone; the block's own link_url is ground truth we already have.
+        link_url = item.get("link_url") or (source_block.link_url if source_block else None)
+        person_name = item.get("person_name")
+        # Confirmed real case: despite the schema wording, the model
+        # sometimes puts the person's name in `title` instead of
+        # `person_name` for category="person" items. Try both rather than
+        # relying on the model to always follow the field split correctly.
+        name_candidates = [n for n in (person_name, item.get("title") if item["category"] == "person" else None) if n]
+        staff_member_id = next(
+            (staff_by_name[normalize_name(n)] for n in name_candidates if normalize_name(n) in staff_by_name), None
+        )
+
+        item_start_date = _parse_date(item.get("start_date"))
+
+        if item["category"] == "lunch_menu" and school_id and item_start_date and item.get("description"):
+            days = _parse_lunch_menu_days(item["description"], item_start_date.year, item_start_date.month)
+            if days:
+                meal_type = "breakfast" if "breakfast" in item["title"].lower() else "lunch"
+                source_url = link_url or (source_block.image_url if source_block else None) or f"newsletter:{newsletter.id}:block:{item.get('source_block_position')}"
+                menu = (
+                    await db.execute(
+                        select(LunchMenu).where(LunchMenu.school_id == school_id, LunchMenu.meal_type == meal_type, LunchMenu.source_pdf_url == source_url)
+                    )
+                ).scalar_one_or_none()
+                if not menu:
+                    menu = LunchMenu(
+                        school_id=school_id,
+                        school_type=school.school_type if school else None,
+                        meal_type=meal_type,
+                        period_label=item_start_date.strftime("%B %Y"),
+                        source_pdf_url=source_url,
+                    )
+                    db.add(menu)
+                    await db.flush()
+                existing_days = (
+                    await db.execute(select(LunchMenuItem.menu_date).where(LunchMenuItem.lunch_menu_id == menu.id))
+                ).scalars().all()
+                existing_dates = {d.date() for d in existing_days}
+                for day in days:
+                    if day["date"].date() in existing_dates:
+                        continue
+                    db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=day["description"]))
+                created += 1
+                continue
+            # Parsing produced nothing usable (format didn't match) - fall
+            # through and keep the raw description as a plain item instead
+            # of silently losing the flyer's content.
+
+        scope = item.get("scope") if item.get("scope") in ("school", "district") else "school"
+        item_school_id = school_id
+        item_district_id = None
+        if scope == "district" and district_id:
+            # Dedup: every school in the district reports the same holiday
+            # independently in its own newsletter - one row per (district,
+            # category, date), not one per school's re-telling of it.
+            existing_district_item = await db.execute(
+                select(SchoolContentItem).where(
+                    SchoolContentItem.scope == "district",
+                    SchoolContentItem.district_id == district_id,
+                    SchoolContentItem.category == item["category"],
+                    SchoolContentItem.start_date == item_start_date,
+                )
+            )
+            if existing_district_item.scalar_one_or_none():
+                skipped_district_dupes += 1
+                continue
+            item_school_id = None
+            item_district_id = district_id
+        else:
+            scope = "school"
+
+        new_item = SchoolContentItem(
+            scope=scope,
+            school_id=item_school_id,
+            district_id=item_district_id,
+            newsletter_id=newsletter.id,
+            source_block_id=source_block_id,
+            category=item["category"],
+            title=item["title"][:300],
+            description=item.get("description"),
+            start_date=item_start_date,
+            end_date=_parse_date(item.get("end_date")),
+            is_all_day=is_all_day,
+            link_url=link_url,
+            person_name=person_name,
+            person_title=item.get("person_title"),
+            staff_member_id=staff_member_id,
+            source_excerpt=item.get("source_excerpt"),
+        )
+        db.add(new_item)
+        await db.flush()
+        created += 1
+
+        supersedes_id = item.get("supersedes_item_id")
+        if supersedes_id:
+            old = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id))).scalar_one_or_none()
+            if old and old.id != new_item.id:
+                old.is_current = False
+                old.superseded_by_id = new_item.id
+
+    if data.get("summary"):
+        newsletter.latest_summary = data["summary"]
+    dupe_note = f", {skipped_district_dupes} district item(s) already covered" if skipped_district_dupes else ""
+    return f"extracted {created} item(s){dupe_note}{truncated_note}"
