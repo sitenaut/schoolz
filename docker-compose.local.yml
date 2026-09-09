@@ -1,0 +1,14 @@
+# Local-dev overlay. Values come from env/{base,auth.local,db.local,frontend.local,secrets.local}.env,
+# sourced into the shell by scripts/compose-local.sh before this file is applied.
+services:
+  postgres:
+    container_name: schoolz-postgres-local
+
+  backend:
+    container_name: schoolz-api-local
+
+  scheduler:
+    container_name: schoolz-scheduler-local
+
+  frontend:
+    container_name: schoolz-web-local
