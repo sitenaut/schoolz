@@ -18,6 +18,7 @@ import { SchoolDetailPage } from "./pages/SchoolDetailPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 
 // Gates the *optional* personal layer (my kids, my calendar, connecting
 // Gmail) - never the public directory/calendar/school pages, which are
@@ -84,6 +85,7 @@ function Routed() {
       />
       <Route path="/schools" element={<SchoolsPage />} />
       <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/calendar" element={<CalendarPage />} />
       <Route
         path="/jobs"

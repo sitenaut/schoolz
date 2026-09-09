@@ -108,6 +108,9 @@ export function AppShell() {
       </nav>
       <main className="shell-main">
         <Outlet />
+        <footer className="shell-footer">
+          <Link to="/privacy">Privacy &amp; cookies</Link>
+        </footer>
       </main>
     </div>
   );
