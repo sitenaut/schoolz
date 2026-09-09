@@ -32,4 +32,4 @@ set +a
 export APP_ENV="$ENVIRONMENT"
 
 cd "$ROOT_DIR/backend"
-exec /tmp/schoolz-venv/bin/alembic "$@"
+exec alembic "$@"
