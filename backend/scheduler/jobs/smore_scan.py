@@ -60,5 +60,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if new_blocks:
         extraction_note = await extract_from_newsletter(db, newsletter, new_blocks)
         summary += f" · extraction: {extraction_note}"
+        # The runner only reads the prefix of the handler's own return value.
+        if extraction_note.startswith("WARNING:"):
+            summary = "WARNING: " + summary
 
     return summary

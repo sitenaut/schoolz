@@ -13,6 +13,7 @@ duplicate calendar entry.
 """
 
 import base64
+import io
 import logging
 import os
 import re
@@ -21,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from anthropic import AsyncAnthropic
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -146,13 +148,59 @@ omit an entire flyer (e.g. a "Back to School Night" flyer, a lunch menu) just be
 the same newsletter already produced items. Completeness matters more than brevity here."""
 
 
+_MAGIC = (
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+)
+_MAX_IMAGE_BYTES = 4_500_000  # the API rejects images over 5MB
+_MAX_IMAGE_EDGE = 1568  # what the API downsamples to anyway; re-encoding to it keeps flyers under the byte cap
+
+
+def _sniff_media_type(data: bytes) -> str | None:
+    for magic, media_type in _MAGIC:
+        if data.startswith(magic):
+            return media_type
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def _prepare_image(data: bytes) -> tuple[bytes, str] | None:
+    """Returns (bytes, media_type) the vision API will accept, or None.
+
+    Never trusts the CDN's Content-Type: Smore serves PNGs labelled
+    image/jpeg and the odd "image/jpg"/octet-stream, each of which the
+    API rejects outright (confirmed on real newsletters). Sniffs the
+    bytes instead, and re-encodes anything oversized or in a format the
+    API doesn't take (AVIF, BMP, ...) via Pillow.
+    """
+    media_type = _sniff_media_type(data)
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            if media_type and len(data) <= _MAX_IMAGE_BYTES and max(img.size) <= _MAX_IMAGE_EDGE * 2:
+                return data, media_type
+            rgb = img.convert("RGB")
+            rgb.thumbnail((_MAX_IMAGE_EDGE, _MAX_IMAGE_EDGE))
+            out = io.BytesIO()
+            rgb.save(out, format="JPEG", quality=85, optimize=True)
+    except (UnidentifiedImageError, OSError):
+        return None
+    return out.getvalue(), "image/jpeg"
+
+
 async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
     try:
-        async with httpx.AsyncClient(timeout=15.0) as http_client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http_client:
             resp = await http_client.get(image_url)
             resp.raise_for_status()
-            content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0]
-            image_b64 = base64.b64encode(resp.content).decode("ascii")
+        prepared = _prepare_image(resp.content)
+        if prepared is None:
+            logger.warning("vision_extraction_unsupported_image", extra={"image_url": image_url})
+            return None
+        image_bytes, media_type = prepared
+        image_b64 = base64.b64encode(image_bytes).decode("ascii")
 
         response = await client.messages.create(
             model=MODEL,
@@ -161,7 +209,7 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "image", "source": {"type": "base64", "media_type": content_type, "data": image_b64}},
+                        {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
                         {
                             "type": "text",
                             "text": "Transcribe all text in this image verbatim, and describe any dates, "
@@ -238,9 +286,18 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
+    vision_failures = 0
     for block in new_blocks:
         if block.block_type == "image" and block.pending_vision_extraction:
-            block.vision_extracted_text = await _vision_extract(client, block.image_url)
+            text = await _vision_extract(client, block.image_url)
+            if text is None:
+                # Leave it pending: flipping the flag on failure used to mark
+                # the flyer as done with no text - permanently, since only
+                # never-seen blocks get another look - so a transient API
+                # error silently dropped whole flyers with a "success" run.
+                vision_failures += 1
+                continue
+            block.vision_extracted_text = text
             block.pending_vision_extraction = False
     await db.flush()
 
@@ -255,8 +312,9 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             corpus_lines.append(f"[block {block.position}, {block.block_type}] {text}{link_suffix}")
         elif block.link_url:
             corpus_lines.append(f"[block {block.position}, link] {block.link_url}")
+    vision_note = f"WARNING: {vision_failures} image block(s) failed vision extraction (left pending) · " if vision_failures else ""
     if not corpus_lines:
-        return "no extractable text in new blocks"
+        return f"{vision_note}no extractable text in new blocks"
 
     school_id = newsletter.school_id
     current_items_context = ""
@@ -402,7 +460,13 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                     SchoolContentItem.start_date == item_start_date,
                 )
             )
-            if existing_district_item.scalar_one_or_none():
+            # .first(), not scalar_one_or_none(): several schools' newsletters
+            # extract concurrently (the Monday cron fires them in the same
+            # minute), and two can each insert the same holiday before either
+            # sees the other's row. Nothing enforces the one-row invariant at
+            # the DB level, so a pair of dupes must not crash every later
+            # extraction that looks the date up.
+            if existing_district_item.scalars().first():
                 skipped_district_dupes += 1
                 continue
             item_school_id = None
@@ -442,4 +506,4 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
     if data.get("summary"):
         newsletter.latest_summary = data["summary"]
     dupe_note = f", {skipped_district_dupes} district item(s) already covered" if skipped_district_dupes else ""
-    return f"extracted {created} item(s){dupe_note}{truncated_note}"
+    return f"{vision_note}extracted {created} item(s){dupe_note}{truncated_note}"
