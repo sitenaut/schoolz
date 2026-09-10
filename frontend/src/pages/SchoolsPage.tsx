@@ -46,7 +46,7 @@ export function SchoolsPage() {
       <div className="tabs">
         {user && (
           <button className={`tab ${tab === "mine" ? "active" : ""}`} onClick={() => setTab("mine")}>
-            My Schools
+            My Children's Schools
           </button>
         )}
         <button className={`tab ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
@@ -57,7 +57,7 @@ export function SchoolsPage() {
       {schools.length === 0 ? (
         <p>
           {tab === "mine"
-            ? "None of your children's schools are tracked yet — add a child on the \"My Children\" page once their school is tracked below."
+            ? "This tab shows schools your added children attend (via the \"My Children\" page) — that's separate from the schools you picked in \"My schools\" at the top of the app. Add a child once their school is listed below, or switch to \"All schools\" to browse."
             : "No schools tracked yet — add one below."}
         </p>
       ) : (

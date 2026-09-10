@@ -1,9 +1,14 @@
-import { NavLink, Link, Outlet } from "react-router-dom";
+import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { useMySchools } from "../lib/mySchools";
 import { IconCalendar, IconHome, IconJobs, IconLunch, IconNewsletter, IconSchool, IconTransfer } from "./icons";
+
+// The ribbon's school filter has no meaning on the centrally-managed admin
+// pages (they aren't scoped to "my schools" at all) - hidden there rather
+// than just visually unused clutter.
+const ADMIN_PATH_PREFIXES = ["/smore", "/jobs", "/admin"];
 
 /** Top bar + school-switcher ribbon + bottom tab bar (mobile) / left rail
  * (desktop). Wraps every public page; the personal/admin pages render
@@ -18,6 +23,8 @@ import { IconCalendar, IconHome, IconJobs, IconLunch, IconNewsletter, IconSchool
 export function AppShell() {
   const { user } = useAuth();
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
+  const { pathname } = useLocation();
+  const isAdminPage = ADMIN_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 
   return (
     <div className="shell">
@@ -39,7 +46,7 @@ export function AppShell() {
         )}
       </header>
 
-      {mySchools.length > 0 && (
+      {mySchools.length > 0 && !isAdminPage && (
         <div className="ribbon" role="group" aria-label="Switch schools">
           {mySchools.length > 1 && (
             <button className="ribbon-chip all" aria-pressed={!isFiltered} onClick={activateAll}>
