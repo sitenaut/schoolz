@@ -396,6 +396,13 @@ h3 {
 @media (min-width: 900px) {
   .ribbon {
     top: 0;
+    /* Without this, the ribbon has no explicit grid placement and CSS
+       grid auto-flow drops it into column 1 (the left nav rail's
+       column) instead of column 2 (the main content column) - it then
+       sits in the same column .shell-nav sticks over as you scroll,
+       so the nav rail's sticky positioning visibly overlaps/reveals a
+       sliver of the ribbon underneath it. */
+    grid-column: 2;
   }
 }
 @media (min-width: 900px) {
