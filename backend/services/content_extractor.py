@@ -452,20 +452,24 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             # Dedup: every school in the district reports the same holiday
             # independently in its own newsletter - one row per (district,
             # category, date), not one per school's re-telling of it.
+            # The rotation feeds put a category="event" "Day N" marker on
+            # nearly every school day (elementary via ICS, high school via
+            # the rotation PDF - often both on one date). Those aren't "the
+            # same item" as a newsletter's district-wide event that day, so
+            # they're excluded here: matching them either crashed this
+            # lookup (two rotation rows -> MultipleResultsFound, seen in prod)
+            # or, worse, silently skipped the newsletter's event as a
+            # duplicate of "Day 3". Same ^Day \d$ convention school_today.py
+            # uses to recognise rotation markers.
             existing_district_item = await db.execute(
                 select(SchoolContentItem).where(
                     SchoolContentItem.scope == "district",
                     SchoolContentItem.district_id == district_id,
                     SchoolContentItem.category == item["category"],
                     SchoolContentItem.start_date == item_start_date,
+                    ~SchoolContentItem.title.regexp_match(r"^Day \d$"),
                 )
             )
-            # .first(), not scalar_one_or_none(): several schools' newsletters
-            # extract concurrently (the Monday cron fires them in the same
-            # minute), and two can each insert the same holiday before either
-            # sees the other's row. Nothing enforces the one-row invariant at
-            # the DB level, so a pair of dupes must not crash every later
-            # extraction that looks the date up.
             if existing_district_item.scalars().first():
                 skipped_district_dupes += 1
                 continue

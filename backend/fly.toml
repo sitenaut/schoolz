@@ -29,5 +29,8 @@ primary_region = "ewr"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  # 256mb got OOM-killed running three scans at once; the Monday cron runs
+  # all eight newsletter extractions (pdfplumber, Pillow re-encoding, the
+  # vision calls) concurrently in this one process.
+  memory = "512mb"
   processes = ["scheduler"]
