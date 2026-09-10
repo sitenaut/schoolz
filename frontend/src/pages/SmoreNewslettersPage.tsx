@@ -33,10 +33,13 @@ export function SmoreNewslettersPage() {
   const [label, setLabel] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [runningIds, setRunningIds] = useState<Set<string>>(new Set());
 
   const load = async () => {
     const res = await apiFetch("/smore-newsletters");
-    setNewsletters(res.ok ? await res.json() : []);
+    const body: Newsletter[] = res.ok ? await res.json() : [];
+    setNewsletters(body);
+    return body;
   };
 
   useEffect(() => {
@@ -60,9 +63,41 @@ export function SmoreNewslettersPage() {
     load();
   };
 
+  // A scan can take well over a minute (vision extraction on image blocks
+  // is the slow part) - the old version fired-and-forgot with a single
+  // reload 3s later, which almost never caught the finish, making the
+  // button look like it did nothing. This disables the button, shows
+  // "Running…", and polls until this newsletter's last_run_at actually
+  // moves past the click time (or we give up after ~3 minutes).
   const runNow = async (id: string) => {
-    await apiFetch(`/smore-newsletters/${id}/run-now`, { method: "POST" });
-    setTimeout(load, 3000);
+    if (runningIds.has(id)) return; // already in flight - avoid pointless "skipped" runs from double-clicks
+    const before = newsletters.find((n) => n.id === id)?.scheduled_job?.last_run_at ?? null;
+    setRunningIds((prev) => new Set(prev).add(id));
+    setError(null);
+    try {
+      const res = await apiFetch(`/smore-newsletters/${id}/run-now`, { method: "POST" });
+      if (!res.ok) {
+        setError("Could not start the scan - try again in a moment.");
+        setRunningIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        return;
+      }
+      for (let attempt = 0; attempt < 36; attempt++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const fresh = await load();
+        const current = fresh.find((n) => n.id === id)?.scheduled_job?.last_run_at ?? null;
+        if (current && current !== before) break;
+      }
+    } finally {
+      setRunningIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   const viewBlocks = async (id: string) => {
@@ -98,7 +133,9 @@ export function SmoreNewslettersPage() {
                 {n.last_scanned_at && ` · last scanned ${n.last_scanned_at}`}
               </small>
               <br />
-              <button onClick={() => runNow(n.id)}>Run now</button>{" "}
+              <button onClick={() => runNow(n.id)} disabled={runningIds.has(n.id)}>
+                {runningIds.has(n.id) ? "Running…" : "Run now"}
+              </button>{" "}
               <button onClick={() => viewBlocks(n.id)}>{expandedId === n.id ? "Hide" : "View"} content</button>
               {expandedId === n.id && (
                 <ul style={{ marginTop: "0.5rem" }}>
