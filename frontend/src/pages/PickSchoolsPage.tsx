@@ -46,7 +46,7 @@ export function PickSchoolsPage() {
   return (
     <>
       <div className="hero">
-        <h1>Which schools are yours?</h1>
+        <h1>Choose your schools</h1>
         <p>
           Pick one or more. We'll remember them on this device, no account needed. Bookmark the page and you're done.
           {fromAccount && " Your linked children's schools are already included."}
