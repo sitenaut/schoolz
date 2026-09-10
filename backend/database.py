@@ -41,6 +41,17 @@ engine = create_async_engine(
     database_url(),
     pool_pre_ping=True,
     pool_recycle=1800,
+    # SQLAlchemy's own default (pool_size=5, max_overflow=10 -> 15) exactly
+    # matches Supabase's session-pooler pool_size of 15 on the free tier -
+    # which is a per-project ceiling shared across every process that
+    # connects, not a per-engine allowance. One engine hitting its default
+    # alone can starve the *other* process (app vs scheduler) of every
+    # remaining connection. Confirmed in prod: a burst of concurrent scan
+    # jobs threw EMAXCONNSESSION / QueuePool-timeout from the scheduler
+    # while the api process was idle. Kept modest so both processes fit
+    # in the shared budget with room to spare.
+    pool_size=int(os.getenv("DB_POOL_SIZE", "4")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "2")),
     connect_args={"statement_cache_size": 0} if "asyncpg" in database_url() else {},
 )
 

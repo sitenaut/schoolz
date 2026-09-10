@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import os
 import traceback
 from datetime import datetime, timezone
 
@@ -13,6 +14,24 @@ from models import JobRun, ScheduledJob
 from scheduler.registry import registry
 
 _ADVISORY_LOCK_NAMESPACE = 42
+
+# Every job that fires opens its own DB session (below, plus another one
+# in _finalize) - with dozens of independent cron jobs able to land in the
+# same wall-clock minute (the 12h scan cadence), nothing previously
+# stopped all of them from opening a session at once, well past what the
+# shared connection budget allows (see database.py's pool_size comment).
+# This caps how many jobs actually run their handler concurrently *within
+# this process* - queued jobs just wait their turn rather than every one
+# of them racing for a connection and getting an EMAXCONNSESSION/
+# QueuePool-timeout error instead of ever running.
+_concurrency_limit: asyncio.Semaphore | None = None
+
+
+def _get_concurrency_limit() -> asyncio.Semaphore:
+    global _concurrency_limit
+    if _concurrency_limit is None:
+        _concurrency_limit = asyncio.Semaphore(int(os.getenv("JOB_CONCURRENCY", "3")))
+    return _concurrency_limit
 
 
 async def _try_advisory_lock(db: AsyncSession, job_id_int: int) -> bool:
@@ -66,6 +85,11 @@ async def _finalize(job_id: str, run_id: str, *, status: str, error: str | None,
 
 
 async def _execute(job_id: str, *, triggered_by: str) -> None:
+    async with _get_concurrency_limit():
+        await _execute_locked(job_id, triggered_by=triggered_by)
+
+
+async def _execute_locked(job_id: str, *, triggered_by: str) -> None:
     started_at = datetime.now(timezone.utc)
     lock_key = _lock_key(job_id)
 
