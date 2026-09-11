@@ -1,7 +1,21 @@
 # schoolz observability plan: Grafana Cloud (RUM, APM, scans, logs)
 
-Status (2026-09-11): **Phase 2 code done, not yet deployed. Phase 1 SQL/queries
-prepared, not yet run against prod.** Written so a Sonnet session can execute
+Status (2026-09-11): **Phases 1-5 code complete and deployed to prod.**
+`schoolz-api`, `schoolz-scraper`, and `schoolz-web` all redeployed with
+this code; OTLP secrets (endpoint + schoolz-only token) live on all three,
+Faro collector secret live on `schoolz-web`. Verified post-deploy:
+`https://schoolz-api.sitenaut.com/health` 200, `/metrics` now 404 (public
+leak closed), `https://schoolz.sitenaut.com/` 200 with the new build, and
+a real POST through `/rum/collect` reaches the actual Grafana collector
+(400, not 502/timeout - the collector rejecting a test payload, not a
+connection failure). **Not yet confirmed**: that data is actually landing
+in Grafana Cloud (Explore/Tempo/Loki/Frontend Observability) - check there
+next, since a live proxy round-trip and passing health checks aren't 100%
+proof the SDK-side export path has no separate bug. Phase 6 (dashboards,
+alerts, the "what to simplify" hypotheses) still needs either Grafana Cloud
+console access (no admin API token available for non-interactive
+dashboard/alert creation) or a week of real traffic to analyze - neither
+achievable in this session. Written so a Sonnet session can execute
 it phase by phase. Each phase lists exact files, the change, and how to
 verify it. Do the phases in order. Commit after each phase (branch
 `ecastillo-dev`). If a step's verification fails, stop and report back.
