@@ -19,7 +19,13 @@ primary_region = "ewr"
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  # Keeps one "app" machine always warm - real cold starts confirmed live
+  # (a stopped machine picking up a request after an idle stretch, several
+  # seconds of blank page before data loads) via docs/OBSERVABILITY_PLAN.md
+  # Phase 6's hypothesis #5, now no longer a hypothesis. schoolz-web stays
+  # scale-to-zero: static file serving cold-starts fast, not worth the
+  # always-on cost there.
+  min_machines_running = 1
   processes = ["app"]
 
 [[vm]]
