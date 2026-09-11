@@ -91,3 +91,30 @@ def test_bare_url_in_text_is_captured_when_no_anchor_tag():
     )
     result = _classify(block)
     assert result["link_url"] == "https://docs.google.com/document/d/abc123/edit"
+
+
+def test_video_embed_block_uses_title_and_link_not_the_placeholder_image():
+    # Confirmed real: a YouTube embed on Cherry Hill East's newsletter puts
+    # a base64 SVG play-icon placeholder in the foreground <img src> (not a
+    # fetchable URL - vision-extraction would crash trying to GET a data:
+    # URI) while the real title/link live on the video button's own
+    # data-* attributes.
+    block = _block(
+        '<div class="block-wrapper"><div data-block-type="embed.video">'
+        '<button data-video-title="SEPAG Back To School 2026" '
+        'data-video-original-url="https://www.youtube.com/embed/IcDfgluY82I">'
+        '<img role="presentation" src="data:image/svg+xml;base64,AAAA">'
+        "</button></div></div>"
+    )
+    result = _classify(block)
+    assert result["block_type"] == "text"
+    assert result["text_content"] == "Video: SEPAG Back To School 2026"
+    assert result["link_url"] == "https://www.youtube.com/embed/IcDfgluY82I"
+    assert result["image_url"] is None
+
+
+def test_image_with_data_uri_src_falls_back_to_text_not_a_bad_image_url():
+    block = _block('<div class="block-wrapper"><img src="data:image/png;base64,AAAA"><p>Caption text</p></div>')
+    result = _classify(block)
+    assert result["block_type"] == "text"
+    assert result["image_url"] is None

@@ -46,11 +46,34 @@ def _classify(block) -> dict | None:
     for zoom_control in block.select("a.material-icons"):
         zoom_control.decompose()
 
+    # A video embed (data-block-type="embed.video", confirmed real: a
+    # YouTube embed on Cherry Hill East's newsletter) renders its actual
+    # thumbnail as a CSS background-image on the play button, and puts a
+    # base64-encoded SVG play-icon placeholder in the *foreground* <img
+    # src>. Reading that <img> naively picks up the placeholder data: URI
+    # as if it were a real fetchable image - _vision_extract then crashes
+    # on it (httpx has no http(s) scheme to fetch) and the block is stuck
+    # `pending_vision_extraction` forever. The video's title is already
+    # real text in the DOM, so there's nothing to vision-extract anyway -
+    # treat this as a text+link block instead of an image block.
+    video_btn = block.select_one("[data-video-title]")
+    if video_btn:
+        title = video_btn.get("data-video-title") or ""
+        video_url = video_btn.get("data-video-original-url") or video_btn.get("data-video-url")
+        text_content = f"Video: {title}" if title else "Video"
+        return {
+            "block_type": "text",
+            "text_content": text_content,
+            "image_url": None,
+            "link_url": video_url,
+            "content_hash": _content_hash("text", text_content + (video_url or "")),
+        }
+
     img = block.select_one("img")
     text = block.get_text(strip=True)
     link_url = _find_link(block, text)
 
-    if img and img.get("src"):
+    if img and img.get("src") and not img["src"].startswith("data:"):
         image_url = img["src"]
         return {
             "block_type": "image",
