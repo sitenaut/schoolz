@@ -29,8 +29,8 @@ import { NotificationsSection } from "./pages/account/NotificationsSection";
 import { FamilySection } from "./pages/account/FamilySection";
 import { AdminSection } from "./pages/account/AdminSection";
 
-// Gates the *optional* personal layer (my kids, my calendar, connecting
-// Gmail) - never the public directory/calendar/school pages, which are
+// Gates the *optional* personal layer (my kids, my calendar, account
+// settings) - never the public directory/calendar/school pages, which are
 // meant to be browsed and bookmarked without an account at all.
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuth();
@@ -40,7 +40,7 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 }
 
 // Gates the centrally-managed admin tooling (districts, Smore links,
-// scheduled scans) - a logged-in guardian without is_admin gets bounced
+// scheduled scans, Gmail scanners) - a logged-in guardian without is_admin gets bounced
 // to the public home, not the login page (they're already logged in).
 function RequireAdmin({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuth();
@@ -94,9 +94,9 @@ function Routed() {
         <Route
           path="/gmail"
           element={
-            <RequireAuth>
+            <RequireAdmin>
               <GmailPage />
-            </RequireAuth>
+            </RequireAdmin>
           }
         />
         <Route

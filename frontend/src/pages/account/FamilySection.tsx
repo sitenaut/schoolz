@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { IconMail, IconSchool, IconShield, IconUsers } from "../../components/icons";
+import { IconSchool, IconShield, IconUsers } from "../../components/icons";
 import { SectionCard } from "../../components/ui/SectionCard";
 
 export function FamilySection() {
@@ -23,15 +23,6 @@ export function FamilySection() {
             <span>
               <b>Schools on my Today page</b>
               <small>Pick which schools you follow</small>
-            </span>
-          </Link>
-          <Link className="link-card" to="/gmail">
-            <span className="ico">
-              <IconMail />
-            </span>
-            <span>
-              <b>Email scanner</b>
-              <small>Connect Gmail to catch newsletter links</small>
             </span>
           </Link>
         </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../../api";
-import { IconJobs, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
+import { IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
 import { SectionCard } from "../../components/ui/SectionCard";
 
 type Summary = { total: number; by_status: Record<string, number> };
@@ -67,6 +67,15 @@ export function AdminSection() {
             <span>
               <b>Schools</b>
               <small>Directory and per-school details</small>
+            </span>
+          </Link>
+          <Link className="link-card" to="/gmail">
+            <span className="ico">
+              <IconMail />
+            </span>
+            <span>
+              <b>Email scanner</b>
+              <small>Connect Gmail to catch newsletter links</small>
             </span>
           </Link>
           <Link className="link-card" to="/admin/config">

@@ -3,12 +3,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user
+from auth import require_admin
 from database import get_db
 from models import EmailScanner, GmailToken, ScheduledJob, User
 from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, ScheduledJobOut
 from scheduler.registry import registry as job_registry
 
+# Admin-only for now (2026-09-11): connecting a Gmail account and scanning it
+# is a data-source management task, not part of the guardian personal layer.
+# Rows stay owner-scoped so two admins never see each other's inbox captures.
 router = APIRouter(prefix="/email-scanners", tags=["email-scanners"])
 
 
@@ -50,14 +53,14 @@ async def _to_out(db: AsyncSession, scanner: EmailScanner) -> EmailScannerOut:
 
 
 @router.get("", response_model=list[EmailScannerOut])
-async def list_scanners(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def list_scanners(user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(EmailScanner).where(EmailScanner.owner_user_id == user.id))
     return [await _to_out(db, s) for s in result.scalars().all()]
 
 
 @router.post("", response_model=EmailScannerOut, status_code=status.HTTP_201_CREATED)
 async def create_scanner(
-    payload: EmailScannerCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    payload: EmailScannerCreate, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
 ):
     if payload.purpose not in ("school_email",):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown purpose: {payload.purpose}")
@@ -107,7 +110,7 @@ async def create_scanner(
 async def update_scanner(
     scanner_id: str,
     payload: EmailScannerUpdate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     scanner = await _require_own_scanner(db, user, scanner_id)
@@ -137,7 +140,7 @@ async def update_scanner(
 
 
 @router.delete("/{scanner_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_scanner(scanner_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_scanner(scanner_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     scanner = await _require_own_scanner(db, user, scanner_id)
     if scanner.scheduled_job_id:
         result = await db.execute(select(ScheduledJob).where(ScheduledJob.id == scanner.scheduled_job_id))
@@ -149,7 +152,7 @@ async def delete_scanner(scanner_id: str, user: User = Depends(get_current_user)
 
 
 @router.post("/{scanner_id}/run-now")
-async def run_scanner_now(scanner_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def run_scanner_now(scanner_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     scanner = await _require_own_scanner(db, user, scanner_id)
     if not scanner.scheduled_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Scanner has no linked scheduled job")
