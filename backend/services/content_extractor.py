@@ -301,58 +301,86 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             block.pending_vision_extraction = False
     await db.flush()
 
-    corpus_lines = []
-    for block in new_blocks:
+    def _corpus_line(block: SmoreBlock) -> str | None:
         text = block.text_content or block.vision_extracted_text
         # Always surface the block's link explicitly, even when it also has
         # text - the visible text (e.g. "Click here") often doesn't mention
         # the URL itself, so the model would otherwise never see it.
         link_suffix = f" (link: {block.link_url})" if block.link_url else ""
         if text:
-            corpus_lines.append(f"[block {block.position}, {block.block_type}] {text}{link_suffix}")
-        elif block.link_url:
-            corpus_lines.append(f"[block {block.position}, link] {block.link_url}")
+            return f"[block {block.position}, {block.block_type}] {text}{link_suffix}"
+        if block.link_url:
+            return f"[block {block.position}, link] {block.link_url}"
+        return None
+
     vision_note = f"WARNING: {vision_failures} image block(s) failed vision extraction (left pending) · " if vision_failures else ""
-    if not corpus_lines:
+    extractable_blocks = [b for b in new_blocks if _corpus_line(b) is not None]
+    if not extractable_blocks:
         return f"{vision_note}no extractable text in new blocks"
 
     school_id = newsletter.school_id
-    current_items_context = ""
-    if school_id:
-        result = await db.execute(
-            select(SchoolContentItem).where(
-                SchoolContentItem.school_id == school_id, SchoolContentItem.is_current.is_(True)
-            )
-        )
-        current = result.scalars().all()
-        if current:
-            lines = [f"- id={i.id} [{i.category}] {i.title} (start_date={i.start_date})" for i in current]
-            current_items_context = "\n\nCURRENT ITEMS for this school (reference by id in supersedes_item_id if one of these is being corrected/updated):\n" + "\n".join(lines)
-
-    response = await client.messages.create(
-        model=MODEL,
-        max_tokens=8192,
-        temperature=0,
-        system=_SYSTEM_PROMPT,
-        tools=[_EXTRACTION_TOOL],
-        tool_choice={"type": "tool", "name": "record_extraction"},
-        messages=[{"role": "user", "content": "\n".join(corpus_lines) + current_items_context}],
-    )
-    tool_use = next((b for b in response.content if b.type == "tool_use"), None)
-    if not tool_use:
-        return "model returned no structured extraction"
-    data = tool_use.input
-    truncated_note = ""
-    if response.stop_reason == "max_tokens":
-        # "items" is schema-ordered first specifically so a truncated
-        # response still keeps whatever items were generated before the
-        # cutoff - but flag it, since summary/school fields may be missing.
-        truncated_note = " (response hit max_tokens - some items may be missing)"
-        logger.warning("extraction_truncated", extra={"newsletter_id": newsletter.id, "usage": str(response.usage)})
-
     school = None
     if school_id:
         school = (await db.execute(select(School).where(School.id == school_id))).scalar_one_or_none()
+
+    # Preload the school's staff roster once, keyed by normalized name, so
+    # every "person" mention (and any other item that happens to name
+    # someone) can resolve back to a real StaffMember instead of floating
+    # free text - the whole point of scanning rosters in the first place.
+    staff_by_name: dict[str, str] = {}
+    if school_id:
+        staff_result = await db.execute(select(StaffMember).where(StaffMember.school_id == school_id))
+        staff_by_name = {normalize_name(s.full_name): s.id for s in staff_result.scalars().all()}
+
+    district_id = school.district_id if school else None
+
+    created = 0
+    skipped_district_dupes = 0
+    truncated_chunks = 0
+    latest_summary = None
+
+    # One Claude call per newsletter used to mean one big-enough newsletter
+    # could blow the whole extraction: a real 37-block Bret Harte issue
+    # (heavy on verbose vision transcriptions) hit max_tokens=8192 and came
+    # back with *zero* items despite "items" being schema-ordered first -
+    # the model hadn't finished writing even the first item before the
+    # cutoff. Chunking keeps each call's output comfortably under the
+    # ceiling, so a big newsletter degrades to "one busy flyer's worth of
+    # items lands in the next chunk" instead of "the whole issue vanishes".
+    _CHUNK_SIZE = 12
+    for chunk_start in range(0, len(extractable_blocks), _CHUNK_SIZE):
+        chunk = extractable_blocks[chunk_start : chunk_start + _CHUNK_SIZE]
+        corpus_lines = [line for b in chunk if (line := _corpus_line(b)) is not None]
+
+        current_items_context = ""
+        if school_id:
+            result = await db.execute(
+                select(SchoolContentItem).where(
+                    SchoolContentItem.school_id == school_id, SchoolContentItem.is_current.is_(True)
+                )
+            )
+            current = result.scalars().all()
+            if current:
+                lines = [f"- id={i.id} [{i.category}] {i.title} (start_date={i.start_date})" for i in current]
+                current_items_context = "\n\nCURRENT ITEMS for this school (reference by id in supersedes_item_id if one of these is being corrected/updated):\n" + "\n".join(lines)
+
+        response = await client.messages.create(
+            model=MODEL,
+            max_tokens=8192,
+            temperature=0,
+            system=_SYSTEM_PROMPT,
+            tools=[_EXTRACTION_TOOL],
+            tool_choice={"type": "tool", "name": "record_extraction"},
+            messages=[{"role": "user", "content": "\n".join(corpus_lines) + current_items_context}],
+        )
+        tool_use = next((b for b in response.content if b.type == "tool_use"), None)
+        if not tool_use:
+            continue
+        data = tool_use.input
+        if response.stop_reason == "max_tokens":
+            truncated_chunks += 1
+            logger.warning("extraction_chunk_truncated", extra={"newsletter_id": newsletter.id, "usage": str(response.usage)})
+
         if school:
             if not school.address and data.get("school_address"):
                 school.address = data["school_address"]
@@ -372,142 +400,142 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                     school.absence_instructions = None
                 else:
                     school.absence_instructions = data.get("absence_instructions")
+        if data.get("summary"):
+            latest_summary = data["summary"]
 
-    # Preload the school's staff roster once, keyed by normalized name, so
-    # every "person" mention (and any other item that happens to name
-    # someone) can resolve back to a real StaffMember instead of floating
-    # free text - the whole point of scanning rosters in the first place.
-    staff_by_name: dict[str, str] = {}
-    if school_id:
-        staff_result = await db.execute(select(StaffMember).where(StaffMember.school_id == school_id))
-        staff_by_name = {normalize_name(s.full_name): s.id for s in staff_result.scalars().all()}
-
-    district_id = school.district_id if school else None
-
-    block_by_position = {b.position: b for b in new_blocks}
-    created = 0
-    skipped_district_dupes = 0
-    for item in data.get("items", []):
-        source_block = block_by_position.get(item.get("source_block_position"))
-        source_block_id = source_block.id if source_block else None
-        # Infer from the date string itself ('T' means a time was given)
-        # rather than trusting a separate is_all_day flag - the model
-        # reliably omits that flag, and item.get(..., True) silently
-        # defaulted every timed event to "all day" in testing.
-        is_all_day = "T" not in (item.get("start_date") or "")
-        # Backfill from the source block if the model dropped the link -
-        # the prompt asks it to always copy it over, but don't rely on that
-        # alone; the block's own link_url is ground truth we already have.
-        link_url = item.get("link_url") or (source_block.link_url if source_block else None)
-        person_name = item.get("person_name")
-        # Confirmed real case: despite the schema wording, the model
-        # sometimes puts the person's name in `title` instead of
-        # `person_name` for category="person" items. Try both rather than
-        # relying on the model to always follow the field split correctly.
-        name_candidates = [n for n in (person_name, item.get("title") if item["category"] == "person" else None) if n]
-        staff_member_id = next(
-            (staff_by_name[normalize_name(n)] for n in name_candidates if normalize_name(n) in staff_by_name), None
-        )
-
-        item_start_date = _parse_date(item.get("start_date"))
-
-        if item["category"] == "lunch_menu" and school_id and item_start_date and item.get("description"):
-            days = _parse_lunch_menu_days(item["description"], item_start_date.year, item_start_date.month)
-            if days:
-                meal_type = "breakfast" if "breakfast" in item["title"].lower() else "lunch"
-                source_url = link_url or (source_block.image_url if source_block else None) or f"newsletter:{newsletter.id}:block:{item.get('source_block_position')}"
-                menu = (
-                    await db.execute(
-                        select(LunchMenu).where(LunchMenu.school_id == school_id, LunchMenu.meal_type == meal_type, LunchMenu.source_pdf_url == source_url)
-                    )
-                ).scalar_one_or_none()
-                if not menu:
-                    menu = LunchMenu(
-                        school_id=school_id,
-                        school_type=school.school_type if school else None,
-                        meal_type=meal_type,
-                        period_label=item_start_date.strftime("%B %Y"),
-                        source_pdf_url=source_url,
-                    )
-                    db.add(menu)
-                    await db.flush()
-                existing_days = (
-                    await db.execute(select(LunchMenuItem.menu_date).where(LunchMenuItem.lunch_menu_id == menu.id))
-                ).scalars().all()
-                existing_dates = {d.date() for d in existing_days}
-                for day in days:
-                    if day["date"].date() in existing_dates:
-                        continue
-                    db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=day["description"]))
-                created += 1
-                continue
-            # Parsing produced nothing usable (format didn't match) - fall
-            # through and keep the raw description as a plain item instead
-            # of silently losing the flyer's content.
-
-        scope = item.get("scope") if item.get("scope") in ("school", "district") else "school"
-        item_school_id = school_id
-        item_district_id = None
-        if scope == "district" and district_id:
-            # Dedup: every school in the district reports the same holiday
-            # independently in its own newsletter - one row per (district,
-            # category, date), not one per school's re-telling of it.
-            # The rotation feeds put a category="event" "Day N" marker on
-            # nearly every school day (elementary via ICS, high school via
-            # the rotation PDF - often both on one date). Those aren't "the
-            # same item" as a newsletter's district-wide event that day, so
-            # they're excluded here: matching them either crashed this
-            # lookup (two rotation rows -> MultipleResultsFound, seen in prod)
-            # or, worse, silently skipped the newsletter's event as a
-            # duplicate of "Day 3". Same ^Day \d$ convention school_today.py
-            # uses to recognise rotation markers.
-            existing_district_item = await db.execute(
-                select(SchoolContentItem).where(
-                    SchoolContentItem.scope == "district",
-                    SchoolContentItem.district_id == district_id,
-                    SchoolContentItem.category == item["category"],
-                    SchoolContentItem.start_date == item_start_date,
-                    ~SchoolContentItem.title.regexp_match(r"^Day \d$"),
-                )
+        block_by_position = {b.position: b for b in chunk}
+        for item in data.get("items", []):
+            source_block = block_by_position.get(item.get("source_block_position"))
+            source_block_id = source_block.id if source_block else None
+            # Infer from the date string itself ('T' means a time was given)
+            # rather than trusting a separate is_all_day flag - the model
+            # reliably omits that flag, and item.get(..., True) silently
+            # defaulted every timed event to "all day" in testing.
+            is_all_day = "T" not in (item.get("start_date") or "")
+            # Backfill from the source block if the model dropped the link -
+            # the prompt asks it to always copy it over, but don't rely on
+            # that alone; the block's own link_url is ground truth we
+            # already have.
+            link_url = item.get("link_url") or (source_block.link_url if source_block else None)
+            person_name = item.get("person_name")
+            # Confirmed real case: despite the schema wording, the model
+            # sometimes puts the person's name in `title` instead of
+            # `person_name` for category="person" items. Try both rather
+            # than relying on the model to always follow the field split.
+            name_candidates = [n for n in (person_name, item.get("title") if item["category"] == "person" else None) if n]
+            staff_member_id = next(
+                (staff_by_name[normalize_name(n)] for n in name_candidates if normalize_name(n) in staff_by_name), None
             )
-            if existing_district_item.scalars().first():
-                skipped_district_dupes += 1
-                continue
-            item_school_id = None
-            item_district_id = district_id
-        else:
-            scope = "school"
 
-        new_item = SchoolContentItem(
-            scope=scope,
-            school_id=item_school_id,
-            district_id=item_district_id,
-            newsletter_id=newsletter.id,
-            source_block_id=source_block_id,
-            category=item["category"],
-            title=item["title"][:300],
-            description=item.get("description"),
-            start_date=item_start_date,
-            end_date=_parse_date(item.get("end_date")),
-            is_all_day=is_all_day,
-            link_url=link_url,
-            person_name=person_name,
-            person_title=item.get("person_title"),
-            staff_member_id=staff_member_id,
-            source_excerpt=item.get("source_excerpt"),
-        )
-        db.add(new_item)
-        await db.flush()
-        created += 1
+            item_start_date = _parse_date(item.get("start_date"))
 
-        supersedes_id = item.get("supersedes_item_id")
-        if supersedes_id:
-            old = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id))).scalar_one_or_none()
-            if old and old.id != new_item.id:
-                old.is_current = False
-                old.superseded_by_id = new_item.id
+            if item["category"] == "lunch_menu" and school_id and item_start_date and item.get("description"):
+                days = _parse_lunch_menu_days(item["description"], item_start_date.year, item_start_date.month)
+                if days:
+                    meal_type = "breakfast" if "breakfast" in item["title"].lower() else "lunch"
+                    source_url = link_url or (source_block.image_url if source_block else None) or f"newsletter:{newsletter.id}:block:{item.get('source_block_position')}"
+                    menu = (
+                        await db.execute(
+                            select(LunchMenu).where(LunchMenu.school_id == school_id, LunchMenu.meal_type == meal_type, LunchMenu.source_pdf_url == source_url)
+                        )
+                    ).scalar_one_or_none()
+                    if not menu:
+                        menu = LunchMenu(
+                            school_id=school_id,
+                            school_type=school.school_type if school else None,
+                            meal_type=meal_type,
+                            period_label=item_start_date.strftime("%B %Y"),
+                            source_pdf_url=source_url,
+                        )
+                        db.add(menu)
+                        await db.flush()
+                    existing_days = (
+                        await db.execute(select(LunchMenuItem.menu_date).where(LunchMenuItem.lunch_menu_id == menu.id))
+                    ).scalars().all()
+                    existing_dates = {d.date() for d in existing_days}
+                    for day in days:
+                        if day["date"].date() in existing_dates:
+                            continue
+                        db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=day["description"]))
+                    created += 1
+                    continue
+                # Parsing produced nothing usable (format didn't match) -
+                # fall through and keep the raw description as a plain item
+                # instead of silently losing the flyer's content.
 
-    if data.get("summary"):
-        newsletter.latest_summary = data["summary"]
+            scope = item.get("scope") if item.get("scope") in ("school", "district") else "school"
+            item_school_id = school_id
+            item_district_id = None
+            if scope == "district" and district_id:
+                # Dedup: every school in the district reports the same
+                # holiday independently in its own newsletter - one row per
+                # (district, category, date), not one per school's
+                # re-telling of it. The rotation feeds put a
+                # category="event" "Day N" marker on nearly every school day
+                # (elementary via ICS, high school via the rotation PDF -
+                # often both on one date). Those aren't "the same item" as a
+                # newsletter's district-wide event that day, so they're
+                # excluded here: matching them either crashed this lookup
+                # (two rotation rows -> MultipleResultsFound, seen in prod)
+                # or, worse, silently skipped the newsletter's event as a
+                # duplicate of "Day 3". Same ^Day \d$ convention
+                # school_today.py uses to recognise rotation markers.
+                existing_district_item = await db.execute(
+                    select(SchoolContentItem).where(
+                        SchoolContentItem.scope == "district",
+                        SchoolContentItem.district_id == district_id,
+                        SchoolContentItem.category == item["category"],
+                        SchoolContentItem.start_date == item_start_date,
+                        ~SchoolContentItem.title.regexp_match(r"^Day \d$"),
+                    )
+                )
+                if existing_district_item.scalars().first():
+                    skipped_district_dupes += 1
+                    continue
+                item_school_id = None
+                item_district_id = district_id
+            else:
+                scope = "school"
+
+            new_item = SchoolContentItem(
+                scope=scope,
+                school_id=item_school_id,
+                district_id=item_district_id,
+                newsletter_id=newsletter.id,
+                source_block_id=source_block_id,
+                category=item["category"],
+                title=item["title"][:300],
+                description=item.get("description"),
+                start_date=item_start_date,
+                end_date=_parse_date(item.get("end_date")),
+                is_all_day=is_all_day,
+                link_url=link_url,
+                person_name=person_name,
+                person_title=item.get("person_title"),
+                staff_member_id=staff_member_id,
+                source_excerpt=item.get("source_excerpt"),
+            )
+            db.add(new_item)
+            await db.flush()
+            created += 1
+
+            supersedes_id = item.get("supersedes_item_id")
+            if supersedes_id:
+                old = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id))).scalar_one_or_none()
+                if old and old.id != new_item.id:
+                    old.is_current = False
+                    old.superseded_by_id = new_item.id
+
+    if latest_summary:
+        newsletter.latest_summary = latest_summary
     dupe_note = f", {skipped_district_dupes} district item(s) already covered" if skipped_district_dupes else ""
-    return f"{vision_note}extracted {created} item(s){dupe_note}{truncated_note}"
+    total_chunks = -(-len(extractable_blocks) // _CHUNK_SIZE)  # ceil division
+    if truncated_chunks:
+        # Surfaced as a WARNING (not just appended text) so it's not lost in
+        # a "success" status the way the original single-call version's
+        # truncation note was - this is exactly the kind of partial-loss the
+        # WARNING status exists to catch.
+        truncated_note = f"WARNING: {truncated_chunks} of {total_chunks} extraction batch(es) hit max_tokens (some items may be missing) · "
+    else:
+        truncated_note = ""
+    return f"{truncated_note}{vision_note}extracted {created} item(s){dupe_note}"
