@@ -1,27 +1,32 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
-import { IconChevronRight } from "../components/icons";
+import { useMySchools } from "../lib/mySchools";
+import { IconChevronRight, IconSearch } from "../components/icons";
 import type { School } from "../types";
 
 export function SchoolsPage() {
   const { user } = useAuth();
-  // "My Schools" only makes sense for a logged-in guardian with linked
-  // kids - an anonymous visitor (this whole page is public) starts on the
-  // full directory instead.
-  const [tab, setTab] = useState<"mine" | "all">(user ? "mine" : "all");
-  const [schools, setSchools] = useState<School[]>([]);
+  const { allSchools, activeSchools } = useMySchools();
+  // "My schools" reflects exactly the top ribbon's current picks/filter -
+  // there's no separate "linked children" concept here anymore. That used
+  // to be a second, differently-scoped "My Schools" tab (-> GET
+  // /schools/mine, keyed off added children, not the ribbon) that read as
+  // "my picks aren't registering" to anyone who'd only used the /start
+  // picker and never added a child.
+  const [tab, setTab] = useState<"mine" | "all">(activeSchools.length > 0 ? "mine" : "all");
+  const [query, setQuery] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [allSchoolsAfterAdd, setAllSchoolsAfterAdd] = useState<School[] | null>(null);
 
-  const load = () => {
-    apiFetch(tab === "mine" ? "/schools/mine" : "/schools")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setSchools);
-  };
-
-  useEffect(load, [tab]);
+  const baseList = tab === "mine" ? activeSchools : (allSchoolsAfterAdd ?? allSchools);
+  const schools = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return baseList;
+    return baseList.filter((s) => s.name.toLowerCase().includes(q) || (s.short_name ?? "").toLowerCase().includes(q));
+  }, [baseList, query]);
 
   const addSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,20 +39,21 @@ export function SchoolsPage() {
     }
     setName("");
     setTab("all");
-    load();
+    const fresh = await apiFetch("/schools");
+    setAllSchoolsAfterAdd(fresh.ok ? await fresh.json() : null);
   };
 
   return (
     <div>
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>All schools</h2>
-        <Link to="/start">Pick mine</Link>
+        <h2>Schools</h2>
+        <Link to="/start">Manage my schools</Link>
       </div>
 
       <div className="tabs">
-        {user && (
+        {activeSchools.length > 0 && (
           <button className={`tab ${tab === "mine" ? "active" : ""}`} onClick={() => setTab("mine")}>
-            My Children's Schools
+            My schools
           </button>
         )}
         <button className={`tab ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
@@ -55,11 +61,27 @@ export function SchoolsPage() {
         </button>
       </div>
 
+      <div className="search" style={{ margin: "0.75rem 0" }}>
+        <IconSearch />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search schools by name…"
+          aria-label="Search schools by name"
+        />
+      </div>
+
       {schools.length === 0 ? (
         <p>
-          {tab === "mine"
-            ? "This tab shows schools your added children attend (via the \"My Children\" page) — that's separate from the schools you picked in \"My schools\" at the top of the app. Add a child once their school is listed below, or switch to \"All schools\" to browse."
-            : "No schools tracked yet — add one below."}
+          {query.trim() ? (
+            `No schools match "${query.trim()}".`
+          ) : tab === "mine" ? (
+            <>
+              You haven't picked any schools yet. <Link to="/start">Pick some</Link> to see them here.
+            </>
+          ) : (
+            "No schools tracked yet — add one below."
+          )}
         </p>
       ) : (
         <ul className="school-list">
