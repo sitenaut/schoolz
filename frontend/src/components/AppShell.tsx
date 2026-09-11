@@ -172,6 +172,7 @@ export function AppShell() {
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
         <footer className="shell-footer">
+          <Link to="/contact">Contact us</Link>
           <Link to="/privacy">Privacy &amp; cookies</Link>
         </footer>
       </main>

@@ -747,3 +747,28 @@ class ConfigImportResult(BaseModel):
     smore_skipped: list[str]  # urls that couldn't be linked to a school slug in this environment
     sacc_created: int
     sacc_updated: int
+
+
+class CommunitySubmissionOut(BaseModel):
+    id: str
+    kind: str
+    url: str | None
+    file_name: str | None
+    file_content_type: str | None
+    file_size: int | None
+    description: str | None
+    submitter_name: str | None
+    submitter_email: str | None
+    school_id: str | None
+    district_id: str | None
+    school_name: str | None = None
+    district_name: str | None = None
+    status: str
+    admin_notes: str | None
+    reviewed_at: datetime | None
+    created_at: datetime
+
+
+class CommunitySubmissionUpdate(BaseModel):
+    status: str | None = Field(default=None, pattern="^(pending|approved|rejected)$")
+    admin_notes: str | None = None

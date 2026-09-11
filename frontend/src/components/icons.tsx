@@ -206,3 +206,15 @@ export const IconRefreshCw = ({ className }: P) => (
     <path d="M4.5 15a8 8 0 0 0 14.4 3M19.5 9A8 8 0 0 0 5.1 6" />
   </svg>
 );
+export const IconInbox = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M3 12h4l2 3h6l2-3h4" />
+    <path d="M5.5 5h13l2.5 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z" />
+  </svg>
+);
+export const IconUpload = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 16V4M7 9l5-5 5 5" />
+    <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+  </svg>
+);

@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../../api";
-import { IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
+import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
 import { SectionCard } from "../../components/ui/SectionCard";
+import { listSubmissions } from "../submissions/submissionsApi";
 
 type Summary = { total: number; by_status: Record<string, number> };
 
 export function AdminSection() {
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [pendingSubmissions, setPendingSubmissions] = useState<number | null>(null);
 
   useEffect(() => {
     apiFetch("/scheduled-jobs/runs/summary")
       .then((r) => (r.ok ? r.json() : null))
       .then(setSummary)
       .catch(() => setSummary(null));
+    listSubmissions("pending")
+      .then((rows) => setPendingSubmissions(rows.length))
+      .catch(() => setPendingSubmissions(null));
   }, []);
 
   const s = summary?.by_status ?? {};
@@ -67,6 +72,18 @@ export function AdminSection() {
             <span>
               <b>Schools</b>
               <small>Directory and per-school details</small>
+            </span>
+          </Link>
+          <Link className="link-card" to="/admin/submissions">
+            <span className="ico">
+              <IconInbox />
+            </span>
+            <span>
+              <b>
+                Submissions inbox{" "}
+                {Boolean(pendingSubmissions) && <span className="badge warn nodot">{pendingSubmissions}</span>}
+              </b>
+              <small>Fliers &amp; links the community sent in</small>
             </span>
           </Link>
           <Link className="link-card" to="/gmail">

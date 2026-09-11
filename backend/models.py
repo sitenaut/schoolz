@@ -2,7 +2,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -775,6 +775,47 @@ class DistrictTransportation(Base):
     lost_items_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     closing_info_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class CommunitySubmission(Base):
+    """A flier/newsletter link submitted by anyone (no account needed) for
+    an admin to review and, if it's real and useful, add to the tracked
+    sources by hand via the existing /smore or school-documents flows.
+
+    This is deliberately just an inbox, not automation - the whole point
+    per the user's own framing is "so I can curate and validate the
+    extractions" before anything from an anonymous submitter feeds the
+    shared/public content pipeline. There's no asset-storage pattern
+    elsewhere in this app (every other image/PDF is hotlinked from the
+    source site's own CDN) - a submitted file has no such CDN, so its
+    bytes are stored directly here (capped at 15MB in the router) rather
+    than standing up a new object-storage integration for what should be
+    low-volume community traffic.
+    """
+
+    __tablename__ = "community_submissions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    # "link" | "file"
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    file_content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    file_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    submitter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    submitter_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    school_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
+    district_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("districts.id", ondelete="SET NULL"), nullable=True
+    )
+    # "pending" | "approved" | "rejected"
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    admin_notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 class Notification(Base):

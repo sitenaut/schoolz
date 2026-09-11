@@ -22,6 +22,8 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { ContactPage } from "./pages/ContactPage";
+import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { AccountLayout } from "./pages/account/AccountLayout";
 import { ProfileSection } from "./pages/account/ProfileSection";
 import { SecuritySection } from "./pages/account/SecuritySection";
@@ -110,6 +112,15 @@ function Routed() {
         <Route path="/schools" element={<SchoolsPage />} />
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route
+          path="/admin/submissions"
+          element={
+            <RequireAdmin>
+              <SubmissionsPage />
+            </RequireAdmin>
+          }
+        />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route
           path="/jobs"
