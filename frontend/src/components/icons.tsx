@@ -188,3 +188,21 @@ export const IconLogout = ({ className }: P) => (
     <path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" />
   </svg>
 );
+export const IconImage = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="9" cy="10" r="1.5" />
+    <path d="m4 18 5-5 3 3 4-4 4 4" />
+  </svg>
+);
+export const IconLink = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M9 15l6-6M8 12l-3 3a3 3 0 0 0 4 4l3-3M16 12l3-3a3 3 0 0 0-4-4l-3 3" />
+  </svg>
+);
+export const IconRefreshCw = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M4 4v6h6M20 20v-6h-6" />
+    <path d="M4.5 15a8 8 0 0 0 14.4 3M19.5 9A8 8 0 0 0 5.1 6" />
+  </svg>
+);

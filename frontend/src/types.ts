@@ -186,3 +186,29 @@ export type JobKind = {
   description: string;
   param_schema: { properties?: Record<string, { type?: string; description?: string }>; required?: string[] } | null;
 };
+
+export type SmoreNewsletter = {
+  id: string;
+  url: string;
+  label: string | null;
+  school_id: string | null;
+  district_id: string | null;
+  school_name: string | null;
+  district_name: string | null;
+  last_scanned_at: string | null;
+  latest_summary: string | null;
+  created_at: string;
+  scheduled_job: ScheduledJob | null;
+};
+
+export type SmoreBlock = {
+  id: string;
+  position: number;
+  block_type: string;
+  text_content: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  pending_vision_extraction: boolean;
+  vision_extracted_text: string | null;
+  first_seen_at: string;
+};

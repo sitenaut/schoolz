@@ -246,6 +246,9 @@ class SmoreNewsletterCreate(BaseModel):
     url: str = Field(min_length=1, max_length=1000)
     label: str | None = Field(default=None, max_length=255)
     school_id: str | None = None
+    # For a district-wide newsletter with no single school (e.g. "CHPS
+    # Weekly") - ordinarily exactly one of school_id/district_id is set.
+    district_id: str | None = None
     cron_expr: str = "0 8 * * 1"
     timezone: str = "America/New_York"
     enabled: bool = True
@@ -256,6 +259,11 @@ class SmoreNewsletterOut(BaseModel):
     url: str
     label: str | None
     school_id: str | None
+    district_id: str | None = None
+    # Resolved display names - only populated by GET (list/create/update),
+    # so the table can say "Bret Harte Elementary" without a client-side join.
+    school_name: str | None = None
+    district_name: str | None = None
     last_scanned_at: datetime | None
     latest_summary: str | None
     created_at: datetime
@@ -264,6 +272,7 @@ class SmoreNewsletterOut(BaseModel):
 
 class SmoreNewsletterUpdate(BaseModel):
     school_id: str | None = None
+    district_id: str | None = None
     label: str | None = None
     # Scanning is opt-in even for an auto-discovered newsletter (one the
     # school_email processor found a link to but never scheduled) - setting

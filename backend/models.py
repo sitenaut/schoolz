@@ -615,6 +615,17 @@ class SmoreNewsletter(Base):
     url: Mapped[str] = mapped_column(String(1000), unique=True, nullable=False)
     label: Mapped[str | None] = mapped_column(String(255), nullable=True)
     school_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
+    # For a newsletter that isn't any one school's - a district-wide
+    # publication (confirmed real: Cherry Hill's own "CHPS Weekly", first
+    # tracked 2026-09-11). Without this, content_extractor.py had nowhere
+    # to attach a district-wide newsletter's items at all: scope="school"
+    # items need a school_id and scope="district" items need a district_id
+    # resolved from *a* school's own district_id - neither existed when
+    # school_id was null, so every item silently became orphaned (created
+    # with school_id=None, district_id=None, invisible everywhere).
+    # Ordinarily exactly one of school_id/district_id is set, matching
+    # SchoolContentItem's scope split - not enforced by a DB constraint.
+    district_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("districts.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     scheduled_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     last_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

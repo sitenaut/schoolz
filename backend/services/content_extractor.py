@@ -383,7 +383,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
         staff_result = await db.execute(select(StaffMember).where(StaffMember.school_id == school_id))
         staff_by_name = {normalize_name(s.full_name): s.id for s in staff_result.scalars().all()}
 
-    district_id = school.district_id if school else None
+    district_id = newsletter.district_id or (school.district_id if school else None)
 
     created = 0
     skipped_district_dupes = 0
@@ -524,6 +524,12 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 # instead of silently losing the flyer's content.
 
             scope = item.get("scope") if item.get("scope") in ("school", "district") else "school"
+            if not school_id and district_id:
+                # A district-wide newsletter (no dedicated school - e.g.
+                # "CHPS Weekly") has nowhere to attach a scope="school" item
+                # at all, so every item here is district-scoped regardless
+                # of what the model guessed.
+                scope = "district"
             item_school_id = school_id
             item_district_id = None
             if scope == "district" and district_id:
