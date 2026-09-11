@@ -186,7 +186,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             <div className="fact">
               <div className="fact-head">
                 <div className="k">{data.lunch.today ? "Lunch today" : "Next lunch"}</div>
-                <Link className="fact-more" to="/lunch">
+                <Link className="fact-more" to={`/lunch?school=${s.slug}`}>
                   Lunch schedule <IconChevronRight className="trailing-chevron" />
                 </Link>
               </div>

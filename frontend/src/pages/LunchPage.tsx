@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { localDateKey, monthDay, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
@@ -9,7 +9,14 @@ import type { LunchMenu } from "../types";
 
 export function LunchPage() {
   const { mySchools, activeSchools, loading, colorFor } = useMySchools();
-  const [active, setActive] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  // "Lunch schedule" links from a specific school's Today card / school
+  // page (?school=slug) must land on THAT school, not always the ribbon's
+  // first active one - previously every such link landed on the same
+  // school regardless of which card's button was clicked, since nothing
+  // told this page which one to pick.
+  const deepSchool = params.get("school");
+  const [active, setActive] = useState<string | null>(deepSchool);
   const [menu, setMenu] = useState<LunchMenu | null | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
@@ -17,14 +24,15 @@ export function LunchPage() {
   const readyReported = useRef(false);
 
   useEffect(() => {
-    // Keep the selected tab inside whatever the ribbon filter currently
-    // shows - picks the first active school on load, and jumps off a
-    // school that just got hidden via the ribbon.
+    // Keep the selected tab valid - picks the first active school once
+    // data is ready if nothing (or an invalid/no-longer-tracked school)
+    // is selected yet. A deep-linked school stays selected even if the
+    // ribbon filter currently hides it - explicit navigation wins.
     if (activeSchools.length === 0) return;
-    if (!active || !activeSchools.some((s) => s.slug === active)) {
+    if (!active || !mySchools.some((s) => s.slug === active)) {
       setActive(activeSchools[0].slug);
     }
-  }, [activeSchools, active]);
+  }, [activeSchools, mySchools, active]);
 
   useEffect(() => {
     if (!active) return;

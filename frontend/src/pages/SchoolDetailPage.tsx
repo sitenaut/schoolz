@@ -186,7 +186,7 @@ export function SchoolDetailPage() {
           <a href={today.lunch.source_pdf_url} target="_blank" rel="noreferrer">
             monthly menu
           </a>
-          . <Link to="/lunch">Whole month</Link>
+          . <Link to={`/lunch?school=${s.slug}`}>Whole month</Link>
         </p>
       )}
 
