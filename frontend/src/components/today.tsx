@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { googleCalendarQuickAddUrl, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
+import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent } from "../lib/track";
 import type { CurrentPeriod, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
@@ -46,16 +46,41 @@ export function ItemTag({ item }: { item: SchoolContentItem }) {
 export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; color?: string; schoolName?: string | null }) {
   const key = item.start_date ? localDateKey(item.start_date) : null;
   const md = key ? monthDay(key) : null;
+  // A multi-day item (a closure spanning several days, most often) only
+  // showed its first day here even after the calendar grid itself was
+  // fixed to mark every day it covers - this list row is a separate
+  // rendering path with the same "only ever looked at start_date" gap.
+  const days = item.start_date ? itemDateKeys(item) : [];
+  const lastKey = days.length > 1 ? days[days.length - 1] : null;
+  const mdEnd = lastKey ? monthDay(lastKey) : null;
   const cal = item.start_date ? googleCalendarQuickAddUrl(item) : null;
   const sub = [schoolName, item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null].filter(Boolean).join(" · ");
   return (
     <div className="row">
       <div className="when">
         {md ? (
-          <>
-            {md.month}
-            <b>{md.day}</b>
-          </>
+          mdEnd ? (
+            mdEnd.month === md.month ? (
+              <>
+                {md.month}
+                <b>
+                  {md.day}–{mdEnd.day}
+                </b>
+              </>
+            ) : (
+              <>
+                {md.month}–{mdEnd.month}
+                <b>
+                  {md.day}–{mdEnd.day}
+                </b>
+              </>
+            )
+          ) : (
+            <>
+              {md.month}
+              <b>{md.day}</b>
+            </>
+          )
         ) : (
           "—"
         )}
