@@ -26,7 +26,9 @@ function routeTemplate(pathname: string): string {
 // The ribbon's school filter has no meaning on the centrally-managed admin
 // pages (they aren't scoped to "my schools" at all) - hidden there rather
 // than just visually unused clutter.
-const ADMIN_PATH_PREFIXES = ["/smore", "/jobs", "/admin"];
+const ADMIN_PATH_PREFIXES = ["/smore", "/jobs", "/admin", "/account"];
+// Table-heavy / settings pages get a wider content column than the feed.
+const WIDE_PATH_PREFIXES = ["/smore", "/jobs", "/admin", "/account"];
 
 /** Top bar + school-switcher ribbon + bottom tab bar (mobile) / left rail
  * (desktop). Wraps every public page; the personal/admin pages render
@@ -43,6 +45,7 @@ export function AppShell() {
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
   const isAdminPage = ADMIN_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+  const isWide = WIDE_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 
   const fromRouteRef = useRef<string | undefined>(undefined);
   useEffect(() => {
@@ -166,7 +169,7 @@ export function AppShell() {
           </>
         )}
       </nav>
-      <main className="shell-main">
+      <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
         <footer className="shell-footer">
           <Link to="/privacy">Privacy &amp; cookies</Link>

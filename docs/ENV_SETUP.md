@@ -90,6 +90,9 @@ don't need to hand-create it except for a one-off local run against prod.
 ```
 DATABASE_URL=postgresql://...
 SUPABASE_SERVICE_ROLE_KEY=<service_role key - server-side only, never in the frontend>
+# ^ also needed as a Fly secret on schoolz-api: DELETE /auth/me uses it to
+#   remove the Supabase Auth identity along with the local user row. Without
+#   it the local row is still deleted (the deletion is logged as partial).
 ```
 
 ## Running locally

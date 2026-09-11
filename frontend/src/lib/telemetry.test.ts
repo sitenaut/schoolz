@@ -43,3 +43,13 @@ describe("scrubUrl", () => {
     );
   });
 });
+
+describe("FaroRoutes", () => {
+  it("is the plain react-router Routes when RUM is off (no VITE_FARO_URL)", async () => {
+    const { Routes } = await import("react-router-dom");
+    const { FaroRoutes } = await import("./telemetry");
+    // Regression: faro's own FaroRoutes renders an internal Routes ref that
+    // is undefined until initializeFaro runs - blanked every page locally.
+    expect(FaroRoutes).toBe(Routes);
+  });
+});

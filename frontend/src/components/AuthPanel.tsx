@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { IS_SUPABASE_AUTH } from "../authConfig";
 import { useAuth } from "../context/AuthContext";
 
@@ -70,6 +71,12 @@ export function AuthPanel({ mode, onModeChange, onSuccess }: { mode: Mode; onMod
           Password
           <input type="password" minLength={mode === "register" ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
+        {mode === "login" && (
+          <div className="auth-links">
+            <span />
+            <Link to="/forgot-password">Forgot password?</Link>
+          </div>
+        )}
         {error && (
           <p className="note" style={{ color: "var(--bad)" }}>
             {error}

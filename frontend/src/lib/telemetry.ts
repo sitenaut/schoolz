@@ -1,5 +1,6 @@
 import {
   createReactRouterV6Options,
+  FaroRoutes as FaroRoutesImpl,
   getWebInstrumentations,
   initializeFaro,
   ReactIntegration,
@@ -136,4 +137,9 @@ export function getFaro(): Faro | null {
   return faroInstance;
 }
 
-export { FaroRoutes } from "@grafana/faro-react";
+// FaroRoutes renders faro's *internal* Routes reference, which is only
+// assigned when initializeFaro runs createReactRouterV6Options. With RUM
+// off (no VITE_FARO_URL - every local build) that reference is undefined
+// and React throws #130 on every route, blanking the whole app. Prod never
+// saw it because RUM is on there. Fall back to the plain router Routes.
+export const FaroRoutes: typeof Routes = FARO_URL ? (FaroRoutesImpl as typeof Routes) : Routes;

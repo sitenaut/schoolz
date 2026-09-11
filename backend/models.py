@@ -67,6 +67,10 @@ class User(Base):
     # Set when this row was provisioned from a Supabase-authenticated login (prod).
     supabase_user_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Local auth mode only (prod's Supabase handles its own reset emails):
+    # a one-shot token from POST /auth/forgot-password, cleared on use.
+    password_reset_token: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    password_reset_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 

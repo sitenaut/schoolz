@@ -362,6 +362,75 @@ spans around `page.goto`, `wait_for_selector`, and each paginated click -
 a scan's trace now spans backend → scraper → the school's site. No-ops
 entirely without `OTEL_EXPORTER_OTLP_ENDPOINT`, same as the backend.
 
+## Admin UI kit, jobs management, and account self-service (added 2026-09-11)
+
+`frontend/src/ui.css` + `frontend/src/components/ui/` (Modal, ConfirmDialog,
+PageHeader, SectionCard, Field, Badge/StatusBadge, Switch, Toast, DataTable)
+are the "management layer" design system - structure and rhythm follow the
+purchased Katalyst template's settings + data-table patterns (page header →
+small-uppercase section cards → stat tiles / toolbar / table; underline
+tabs inside modals, pill tabs elsewhere), rebuilt on the app's own tokens
+rather than pulling Tailwind/Radix in. `AppShell` widens `.shell-main` and
+hides the school ribbon on `/jobs`, `/smore`, `/admin`, `/account`.
+
+- **Jobs (`/jobs`, `pages/JobsPage.tsx` + `pages/jobs/`)** is full CRUD over
+  `ScheduledJob` via `routers/scheduled_jobs.py` (`GET /kinds` lists the
+  registry with each kind's `param_schema`, `POST`/`PATCH`/`DELETE`, generic
+  `POST /{id}/run-now`, `GET /runs/summary`). The list resolves each job's
+  *target* (`school_id`/`district_id`/`newsletter_id`/`scanner_id` in
+  params → `target_type`/`target_label`) so rows read "Staff roster scan ·
+  Bret Harte", never a UUID. The whole point of the detail modal
+  (`JobDetailModal`) is the **Runs tab**: every run's status, error code +
+  stage, and the full `error`/`log_excerpt` (traceback) in a `<pre>`, with
+  the newest problem auto-expanded - far too much for a table cell, which
+  only shows the `StatusBadge` + `error_code` chip. Run-now polls
+  `GET /{id}` every 3s until `last_run_at` moves (≤3 min), then toasts the
+  result. The create form derives its target select from the kind's
+  `param_schema.required` (`loadTargetOptions()` fetches schools/districts/
+  newsletters/scanners) and auto-names the job "<default_name>: <target>"
+  until the name is hand-edited; `lib/cron.ts` glosses the cron
+  (`describeCron`) and offers presets. Deleting a job is safe by schema -
+  every `*_job_id` FK is `ON DELETE SET NULL`, so the owning
+  School/District/newsletter just loses its scan.
+- **Account (`/account/*`, `pages/account/`)**: nested routes under
+  `AccountLayout` (Profile, Security, Notifications, Family, Admin - the
+  last only for `is_admin`). Self-service lives in `lib/account.ts` and is
+  **auth-mode aware**: prod's password lives in Supabase Auth (change =
+  `supabase.auth.updateUser`, forgot = `resetPasswordForEmail` → emailed
+  link → `/reset-password` picks up the recovery session via
+  `onAuthStateChange('PASSWORD_RECOVERY')`), local's is a bcrypt hash the
+  backend owns (`POST /auth/change-password`, `/forgot-password`,
+  `/reset-password` with a one-shot token on `users.password_reset_token`,
+  migration 0027). **Local mode has no mailer, so `/auth/forgot-password`
+  returns the token in the response** and `/forgot-password` shows a
+  dev-only link - that's the only way the flow is completable locally;
+  it's still 200-with-null for unknown emails so it can't enumerate
+  accounts. `UserOut.sign_in_method` (`"google"` when a Supabase user has
+  no password) hides the password form for Google-only accounts.
+- **Account deletion (`DELETE /auth/me`)** requires typing `DELETE` (+ the
+  password in local mode) and removes only what the user *owns*:
+  notifications, guardian links, invites they sent, Gmail token, their
+  scanners + those scanners' jobs/captured messages. Shared rows (the
+  Student itself, schools, newsletters, centrally-managed jobs) stay - only
+  `created_by_user_id`/`owner_user_id` provenance is nulled, per the
+  guardian/student model. The Supabase Auth identity is deleted too via the
+  GoTrue admin API, **which needs `SUPABASE_SERVICE_ROLE_KEY` on
+  `schoolz-api`** (logged and skipped if absent - the next Google login
+  would just auto-provision an empty account, untidy but not a hole).
+- **Real bug found while screenshotting this (would have blanked every
+  local build)**: faro-react's `FaroRoutes` renders faro's *internal*
+  `Routes` reference, which is only assigned during `initializeFaro`. With
+  RUM off (no `VITE_FARO_URL` - every local compose build) it's undefined
+  → React #130 on every route. Prod never saw it because RUM is on there.
+  `lib/telemetry.ts` now exports `FaroRoutes` as the plain router `Routes`
+  when `FARO_URL` is empty (regression-tested in `telemetry.test.ts`).
+- UI verification pattern used here (no browser on the host): build the
+  frontend with local args, `docker cp` the dist into the running
+  `schoolz-web-local` nginx container, and drive it from the `scraper`
+  container's Playwright with `localhost:8000` → `backend:8000` proxied via
+  `page.route` (adding CORS headers) and an admin JWT pre-seeded in
+  localStorage - see this session's `shots.py` shape if repeating it.
+
 ## Prod deployment (added 2026-09-10)
 
 Live at `https://schoolz.sitenaut.com` (frontend) and `https://schoolz-api.sitenaut.com` (backend). Three Fly apps in the `schoolz` Fly org: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`. Deploy manually with `fly deploy --remote-only` from `backend/`, `frontend/`, or `scraper/`; CI (`migrate.yml` → `deploy.yml`) only runs on pushes to `main` and only covers backend + frontend, not the scraper.

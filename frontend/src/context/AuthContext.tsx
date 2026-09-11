@@ -9,6 +9,8 @@ type CurrentUser = {
   username: string;
   is_admin: boolean;
   auth_mode: string;
+  sign_in_method: "password" | "google";
+  created_at: string | null;
 };
 
 type AuthContextValue = {

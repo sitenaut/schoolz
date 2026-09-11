@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { initTelemetry } from "./lib/telemetry";
 import "./styles.css";
+import "./ui.css";
 
 initTelemetry();
 

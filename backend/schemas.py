@@ -25,8 +25,40 @@ class UserOut(BaseModel):
     username: str
     is_admin: bool
     auth_mode: str
+    # "password" (local, or Supabase email+password) | "google" (Supabase
+    # OAuth, no password to change) - the settings page uses this to decide
+    # whether to show a change-password form at all.
+    sign_in_method: str = "password"
+    created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    username: str | None = Field(default=None, min_length=3, max_length=64)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class DeleteAccountRequest(BaseModel):
+    # Typed confirmation, always required - a destructive, irreversible
+    # action shouldn't be one accidental click away.
+    confirm: str
+    # Local auth mode additionally re-verifies the password when the
+    # account has one; Supabase-managed accounts can't be verified here.
+    password: str | None = None
 
 
 class StudentCreate(BaseModel):
@@ -125,16 +157,58 @@ class ScheduledJobOut(BaseModel):
     id: str
     kind: str
     name: str
+    description: str | None = None
     cron_expr: str
     timezone: str
+    params: dict = Field(default_factory=dict)
     enabled: bool
     last_run_at: datetime | None
     last_status: str | None
     last_error: str | None
     last_error_code: str | None
+    last_duration_ms: int | None = None
     next_run_at: datetime | None
+    created_at: datetime | None = None
+    # What the job is *about*, resolved from its params so the jobs table
+    # can say "Staff roster scan · Bret Harte" instead of showing a UUID -
+    # only populated by the /scheduled-jobs list/detail endpoints.
+    target_type: str | None = None
+    target_label: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ScheduledJobCreate(BaseModel):
+    kind: str
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    cron_expr: str = Field(min_length=1, max_length=100)
+    timezone: str = "America/New_York"
+    params: dict = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class ScheduledJobUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    cron_expr: str | None = Field(default=None, min_length=1, max_length=100)
+    timezone: str | None = None
+    params: dict | None = None
+    enabled: bool | None = None
+
+
+class JobKindOut(BaseModel):
+    kind: str
+    default_name: str
+    default_cron: str
+    default_timezone: str
+    description: str
+    param_schema: dict | None = None
+
+
+class JobRunSummaryOut(BaseModel):
+    total: int
+    by_status: dict[str, int]
 
 
 class EmailScannerOut(BaseModel):
