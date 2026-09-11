@@ -131,6 +131,7 @@ class ScheduledJobOut(BaseModel):
     last_run_at: datetime | None
     last_status: str | None
     last_error: str | None
+    last_error_code: str | None
     next_run_at: datetime | None
 
     model_config = {"from_attributes": True}
@@ -159,6 +160,8 @@ class JobRunOut(BaseModel):
     finished_at: datetime | None
     duration_ms: int | None
     error: str | None
+    error_code: str | None
+    error_stage: str | None
     log_excerpt: str | None
     triggered_by: str
 

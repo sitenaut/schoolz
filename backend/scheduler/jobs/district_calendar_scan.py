@@ -42,7 +42,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             events.append(event)
 
     if not events:
-        return "WARNING: no events found in any configured ics feed"
+        return "WARNING[no_ics_events]: no events found in any configured ics feed"
 
     existing_by_uid = {
         d.external_uid: d

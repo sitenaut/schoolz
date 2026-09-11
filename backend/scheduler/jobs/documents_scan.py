@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School, SchoolDocument
+from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
 from services.school_documents import discover_from_smore, discover_from_website
 
@@ -30,7 +31,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         found.append({**entry, "source": "newsletter"})
 
     if not found:
-        return "WARNING: no handbook or bell schedule found on site or in newsletters"
+        return "WARNING[no_documents_found]: no handbook or bell schedule found on site or in newsletters"
+
+    for entry in found:
+        if not entry.get("academic_year"):
+            record_parse_issue("documents.scan", "no_matches", school_id=school_id, sample=entry["title"][:200])
 
     doc_types = {e["doc_type"] for e in found}
     existing = (

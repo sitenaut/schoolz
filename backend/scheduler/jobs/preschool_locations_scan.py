@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import scraper_client
 from models import District, School, derive_school_short_name
+from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
 from services.preschool_locations import parse_preschool_locations
 
@@ -37,7 +38,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     result = await scraper_client.fetch_html(district.preschool_locations_url, wait_for_selector="a")
     entries = parse_preschool_locations(result["html"])
     if not entries:
-        return "WARNING: no preschool locations found - the page's structure may have changed"
+        return "WARNING[no_preschool_locations]: no preschool locations found - the page's structure may have changed"
 
     existing_schools = (await db.execute(select(School).where(School.district_id == district_id))).scalars().all()
     existing_by_street = {_street_key(s.address): s for s in existing_schools if s.address}
@@ -46,6 +47,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     created = updated = skipped_existing = 0
     for entry in entries:
         street_key = _street_key(entry["address"])
+        if street_key is None:
+            # No address to dedup on for this entry - falls back to a weaker
+            # name-only match, which can miss (or double up) an already-
+            # tracked school under a slightly different display name.
+            record_parse_issue("preschool_locations.scan", "no_matches", sample=entry["name"][:200])
         row = existing_by_street.get(street_key) or existing_by_name.get(entry["name"].strip().lower())
         if row:
             # Same physical building as an already-tracked School (e.g.

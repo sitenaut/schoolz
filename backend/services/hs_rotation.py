@@ -25,6 +25,8 @@ from datetime import date
 
 import pdfplumber
 
+from scheduler.errors import record_parse_issue
+
 MONTHS = {
     "september": 9, "october": 10, "november": 11, "december": 12,
     "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6, "july": 7, "august": 8,
@@ -122,6 +124,11 @@ def parse_rotation_pdf(data: bytes) -> dict:
                         if d:
                             days[d] = _classify(" ".join(value_tokens))
                             days[d]["date"] = d.isoformat()
+                    else:
+                        record_parse_issue(
+                            "hs_rotation.scan", "unexpected_format",
+                            sample=" ".join(w["text"] for w in line_words)[:200],
+                        )
                     i = j
 
     return {

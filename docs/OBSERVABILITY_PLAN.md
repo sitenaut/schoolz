@@ -30,7 +30,31 @@ Progress:
   read these vars anyway). Scraper/Claude-call-level metrics (2e's
   `scraper_client.py`/`content_extractor.py`/`lunch_menu.py` wiring) not
   done — only the job-run metrics in `runner.py` are wired so far.
-- Phases 3-6: not started.
+- Phase 3: `backend/scheduler/errors.py` (ScanError, classify_exception,
+  parse_warning, record_parse_issue) added. `job_runs.error_code`/
+  `error_stage` + `scheduled_jobs.last_error_code` added via migration 0026.
+  `scheduler/runner.py` now classifies every error/warning and emits a
+  structured `job_finished` log line with queue-wait/duration. The 9 plain
+  `"WARNING: ..."` sites plus `hs_rotation_scan.py`'s second one,
+  `school_info_scan.py`, and `transportation_scan.py` now carry
+  `"WARNING[<code>]: ..."`; `smore_scan.py` propagates whichever code
+  `content_extractor.py`'s own warning carried (`image_unsupported` /
+  `llm_max_tokens`) instead of a generic re-wrap. `record_parse_issue` calls
+  added at the 8 fragile spots named in the plan (smore_parser
+  `_classify`, content_extractor `_parse_date`/`_parse_lunch_menu_days`/
+  vision failures/max_tokens, marking_period's tier-heading miss,
+  hs_rotation's unplaced day tokens, preschool_locations' address-less
+  entries, documents_scan's yearless documents). Stuck-run reaper runs every
+  30s reconcile tick in `scheduler/entrypoint.py` (plan said "once before
+  the loop" - made periodic instead, strictly stronger, same query).
+  `ScheduledJobOut`/`JobRunOut` schemas and `JobsPage.tsx` surface
+  `last_error_code`/`error_code` as a chip. `backend/tests/test_scan_errors.py`
+  added (14 tests). **Full suite verified: 80/80 pytest pass** (66 + 14 new),
+  migration 0026 applies cleanly, inside a fresh Docker build against a
+  throwaway Postgres. Frontend `tsc --noEmit` and `npm test` both clean.
+  **Migration 0026 not yet run against prod** — needs `alembic upgrade head`
+  against prod Supabase before any of this is live there.
+- Phases 4-6: not started.
 - Faro collector URL for Phase 4 already obtained:
   `https://faro-collector-prod-us-east-2.grafana.net/collect/e134be0a82120a899938a4022a5bf806`
   (app name to use: `schoolz-web`, per section 2 — not the tutorial

@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 import scraper_client
+from scheduler.errors import record_parse_issue
 
 _ET = ZoneInfo("America/New_York")
 
@@ -63,7 +64,10 @@ def parse_marking_period_page(html: str) -> list[dict]:
                 current_school_type = _HEADING_TO_SCHOOL_TYPE[text]
             continue
 
-        if getattr(el, "name", None) != "table" or not current_school_type:
+        if getattr(el, "name", None) != "table":
+            continue
+        if not current_school_type:
+            record_parse_issue("marking_period.scan", "no_matches", selector="table heading")
             continue
 
         rows = el.find_all("tr")

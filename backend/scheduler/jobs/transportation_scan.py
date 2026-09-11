@@ -40,5 +40,5 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     missing = [k for k in ("office_phone", "delay_policy", "late_bus_contractors") if not info.get(k)]
     if missing:
-        return f"WARNING: parsed the department pages but found no {', '.join(missing)}"
+        return f"WARNING[transportation_missing_fields]: parsed the department pages but found no {', '.join(missing)}"
     return f"transportation: {'created' if created else 'updated'} - {len(info['contacts'])} contacts, {len(info['late_bus_contractors'])} late-bus contractors, office {info['office_phone']}"

@@ -11,6 +11,7 @@ import re
 from bs4 import BeautifulSoup
 
 import scraper_client
+from scheduler.errors import record_parse_issue
 
 _WAIT_SELECTOR = ".block-wrapper"
 # Fallback for links that aren't real <a href> tags - Smore renders some
@@ -90,4 +91,6 @@ async def fetch_and_parse(url: str) -> list[dict]:
         if classified:
             classified["position"] = position
             blocks.append(classified)
+        else:
+            record_parse_issue("smore.scan", "unclassified_block", url=url, position=position)
     return blocks

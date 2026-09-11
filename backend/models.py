@@ -174,6 +174,10 @@ class ScheduledJob(Base):
     # "success" | "error" | "running" | "skipped"
     last_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     last_error: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Stable, groupable reason for the last run's failure/warning - see
+    # scheduler/errors.py. Null for a success (or a warning with no
+    # parseable code, e.g. a bare "WARNING:" - see parse_warning()).
+    last_error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     last_duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
@@ -191,6 +195,11 @@ class JobRun(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str | None] = mapped_column(String, nullable=True)
+    # See scheduler/errors.py: classify_exception() for an error, parse_warning()
+    # for a warning. error_stage is only set for a real error (fetch/parse/
+    # extract/persist/unknown), null for a warning or success.
+    error_code: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    error_stage: Mapped[str | None] = mapped_column(String(20), nullable=True)
     log_excerpt: Mapped[str | None] = mapped_column(String, nullable=True)
     # "cron" | "manual"
     triggered_by: Mapped[str] = mapped_column(String(20), default="cron", nullable=False)

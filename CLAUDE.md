@@ -57,6 +57,20 @@ scraper calls, LLM tokens, cold starts) live in `backend/observability.py`.
 `schoolz.job.queue_wait`/`schoolz.job.in_flight` around every job execution
 and wraps the handler call in a `job.run` span.
 
+`backend/scheduler/errors.py` gives every scan failure/warning a stable,
+groupable code (`job_runs.error_code`/`error_stage`,
+`scheduled_jobs.last_error_code` — migration 0026): `classify_exception()`
+maps library exceptions (httpx status/timeout, anthropic, sqlalchemy) to a
+`(code, stage)` pair, walking `__cause__`/`__context__` since scraper_client
+re-raises; a handler can also raise `ScanError(code, message, stage=...)`
+directly. A handler's non-fatal `"WARNING: ..."` return value is now
+`"WARNING[<code>]: ..."` (`parse_warning()` extracts the code). Non-fatal
+in-scan problems (an unclassifiable Smore block, an unparseable date, a
+document with no discoverable year, ...) call `record_parse_issue()`, which
+logs `parse_issue` and increments `schoolz.parse.issues`. The scheduler
+reaps runs stuck in `status="running"` for 45+ minutes every reconcile tick
+(45min threshold, process died mid-run — OOM kill, deploy, crash).
+
 Locally (`OBSERVABILITY=1`, see `docs/ENV_SETUP.md`): backend/scheduler push
 OTLP metrics to Alloy's OTLP receiver (`alloy/config.alloy`, port 4318) →
 Mimir (traces/logs exporters are off locally — `OTEL_TRACES_EXPORTER`/

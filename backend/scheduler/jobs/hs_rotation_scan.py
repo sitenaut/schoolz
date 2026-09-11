@@ -33,14 +33,14 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     page = await scraper_client.fetch_html(district.hs_rotation_url, wait_for_selector="#fsPageContent")
     pdf_url = find_pdf_link(page["html"], district.hs_rotation_url)
     if not pdf_url:
-        return "WARNING: no PDF link found on the day-schedule page"
+        return "WARNING[no_rotation_pdf_link]: no PDF link found on the day-schedule page"
 
     async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
         resp = await client.get(pdf_url)
         resp.raise_for_status()
     parsed = parse_rotation_pdf(resp.content)
     if not parsed["days"]:
-        return f"WARNING: PDF at {pdf_url} parsed to zero days"
+        return f"WARNING[rotation_pdf_empty]: PDF at {pdf_url} parsed to zero days"
 
     wanted: dict[str, dict] = {}
     for day in parsed["days"]:

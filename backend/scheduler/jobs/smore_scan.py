@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import SmoreBlock, SmoreNewsletter
+from scheduler.errors import parse_warning
 from scheduler.registry import register_job
 from services.content_extractor import extract_from_newsletter
 from services.smore_parser import fetch_and_parse
@@ -60,8 +61,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if new_blocks:
         extraction_note = await extract_from_newsletter(db, newsletter, new_blocks)
         summary += f" · extraction: {extraction_note}"
-        # The runner only reads the prefix of the handler's own return value.
-        if extraction_note.startswith("WARNING:"):
-            summary = "WARNING: " + summary
+        # The runner only reads the prefix of the handler's own return value
+        # - propagate whichever code extract_from_newsletter's own warning
+        # carried (image_unsupported / llm_max_tokens) rather than a generic
+        # re-wrap, so it groups correctly in Grafana.
+        warning_code = parse_warning(extraction_note)
+        if warning_code:
+            summary = f"WARNING[{warning_code}]: " + summary
 
     return summary

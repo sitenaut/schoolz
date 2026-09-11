@@ -27,6 +27,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
+from scheduler.errors import record_parse_issue
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +199,7 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
         prepared = _prepare_image(resp.content)
         if prepared is None:
             logger.warning("vision_extraction_unsupported_image", extra={"image_url": image_url})
+            record_parse_issue("smore.scan", "image_unsupported", url=image_url)
             return None
         image_bytes, media_type = prepared
         image_b64 = base64.b64encode(image_bytes).decode("ascii")
@@ -272,6 +274,7 @@ def _parse_date(value: str | None) -> datetime | None:
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
+        record_parse_issue("smore.scan", "unexpected_format", sample=value[:200])
         return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=_DEFAULT_TZ)
@@ -313,7 +316,11 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             return f"[block {block.position}, link] {block.link_url}"
         return None
 
-    vision_note = f"WARNING: {vision_failures} image block(s) failed vision extraction (left pending) · " if vision_failures else ""
+    vision_note = (
+        f"WARNING[image_unsupported]: {vision_failures} image block(s) failed vision extraction (left pending) · "
+        if vision_failures
+        else ""
+    )
     extractable_blocks = [b for b in new_blocks if _corpus_line(b) is not None]
     if not extractable_blocks:
         return f"{vision_note}no extractable text in new blocks"
@@ -380,6 +387,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
         if response.stop_reason == "max_tokens":
             truncated_chunks += 1
             logger.warning("extraction_chunk_truncated", extra={"newsletter_id": newsletter.id, "usage": str(response.usage)})
+            record_parse_issue("smore.scan", "llm_max_tokens", newsletter_id=newsletter.id)
 
         if school:
             if not school.address and data.get("school_address"):
@@ -431,6 +439,11 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
 
             if item["category"] == "lunch_menu" and school_id and item_start_date and item.get("description"):
                 days = _parse_lunch_menu_days(item["description"], item_start_date.year, item_start_date.month)
+                if not days:
+                    record_parse_issue(
+                        "smore.scan", "unexpected_format", newsletter_id=newsletter.id,
+                        sample=item["description"][:200],
+                    )
                 if days:
                     meal_type = "breakfast" if "breakfast" in item["title"].lower() else "lunch"
                     source_url = link_url or (source_block.image_url if source_block else None) or f"newsletter:{newsletter.id}:block:{item.get('source_block_position')}"
@@ -535,7 +548,10 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
         # a "success" status the way the original single-call version's
         # truncation note was - this is exactly the kind of partial-loss the
         # WARNING status exists to catch.
-        truncated_note = f"WARNING: {truncated_chunks} of {total_chunks} extraction batch(es) hit max_tokens (some items may be missing) · "
+        truncated_note = (
+            f"WARNING[llm_max_tokens]: {truncated_chunks} of {total_chunks} extraction batch(es) "
+            "hit max_tokens (some items may be missing) · "
+        )
     else:
         truncated_note = ""
     return f"{truncated_note}{vision_note}extracted {created} item(s){dupe_note}"

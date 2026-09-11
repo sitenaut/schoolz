@@ -3,7 +3,7 @@ import logging
 import signal
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 import scheduler.jobs  # noqa: F401  (registers all job kinds via decorators)
 import telemetry
@@ -18,8 +18,46 @@ telemetry.instrument_sqlalchemy_engine(engine)
 logger = logging.getLogger(__name__)
 
 RECONCILE_INTERVAL_SECONDS = 30
+STUCK_RUN_THRESHOLD_MINUTES = 45
 
 _stop_event = asyncio.Event()
+
+_REAP_STUCK_RUNS_SQL = text(
+    """
+    UPDATE job_runs SET
+        status = 'error',
+        error_code = 'abandoned',
+        error_stage = 'runtime',
+        error = 'process exited mid-run (OOM kill, deploy, or crash)',
+        finished_at = now()
+    WHERE status = 'running' AND started_at < now() - interval '45 minutes'
+    RETURNING job_id
+    """
+)
+
+_REAP_STUCK_JOBS_SQL = text(
+    """
+    UPDATE scheduled_jobs SET
+        last_status = 'error',
+        last_error_code = 'abandoned',
+        last_error = 'process exited mid-run (OOM kill, deploy, or crash)'
+    WHERE id = ANY(:job_ids) AND last_status = 'running'
+    """
+)
+
+
+async def _reap_stuck_runs() -> None:
+    """A run left in status='running' means the process that owned it died
+    mid-handler (OOM kill, deploy, crash) - the advisory lock is released
+    automatically when its connection drops, but the row itself never gets
+    finalized. Without this, an abandoned run stays 'running' forever and
+    never counts as the failure it actually was."""
+    async with SessionLocal() as db:
+        job_ids = [row[0] for row in (await db.execute(_REAP_STUCK_RUNS_SQL)).all()]
+        if job_ids:
+            await db.execute(_REAP_STUCK_JOBS_SQL, {"job_ids": job_ids})
+            logger.warning("reaped_stuck_runs", extra={"job_ids": job_ids, "count": len(job_ids)})
+        await db.commit()
 
 
 async def _reconcile(aps_scheduler: AsyncIOScheduler) -> None:
@@ -37,6 +75,10 @@ async def _reconcile(aps_scheduler: AsyncIOScheduler) -> None:
 
 async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
     while not _stop_event.is_set():
+        try:
+            await _reap_stuck_runs()
+        except Exception:
+            logger.exception("stuck_run_reap_failed")
         try:
             await _reconcile(aps_scheduler)
         except Exception:

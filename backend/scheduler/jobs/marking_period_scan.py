@@ -26,7 +26,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     dates = await fetch_marking_period_page(district.marking_period_url)
     if not dates:
-        return "WARNING: no marking-period dates found - the page's table structure may have changed"
+        return "WARNING[no_marking_period_dates]: no marking-period dates found - the page's table structure may have changed"
 
     existing_by_uid = {
         d.external_uid: d

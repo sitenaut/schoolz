@@ -13,6 +13,7 @@ type ScheduledJob = {
   last_run_at: string | null;
   last_status: string | null;
   last_error: string | null;
+  last_error_code: string | null;
   next_run_at: string | null;
 };
 
@@ -90,6 +91,20 @@ export function JobsPage() {
                   </span>
                 ) : (
                   "—"
+                )}
+                {j.last_error_code && (
+                  <code
+                    style={{
+                      marginLeft: 6,
+                      fontSize: "0.8em",
+                      padding: "1px 6px",
+                      borderRadius: 4,
+                      background: "var(--color-surface-muted, #f0f0f0)",
+                      color: "var(--color-text-muted, #57606a)",
+                    }}
+                  >
+                    {j.last_error_code}
+                  </code>
                 )}
                 {j.last_error && <div className="item-desc">{j.last_error}</div>}
               </td>
