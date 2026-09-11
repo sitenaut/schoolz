@@ -1,7 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import School, SchoolDocument
+from models import School, SchoolDocument, SmoreNewsletter
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
 from services.school_documents import discover_from_smore, discover_from_website
@@ -24,14 +24,35 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         return f"school {school_id} no longer exists"
 
     found: list[dict] = []
+    site_error: Exception | None = None
     if school.website_url:
-        for entry in await discover_from_website(school.website_url):
-            found.append({**entry, "source": "website"})
+        try:
+            for entry in await discover_from_website(school.website_url):
+                found.append({**entry, "source": "website"})
+        except Exception as exc:
+            # Don't let a site fetch failure override a Smore-side find
+            # below - only fatal if nothing else turns up anything either.
+            site_error = exc
     for entry in await discover_from_smore(db, school_id):
         found.append({**entry, "source": "newsletter"})
 
     if not found:
-        return "WARNING[no_documents_found]: no handbook or bell schedule found on site or in newsletters"
+        if site_error is not None:
+            # A real fetch failure (site down, timeout, scraper 502, ...)
+            # is worth a classified error_code + traceback (see
+            # scheduler/errors.py), not a generic content-not-found
+            # warning that gives no clue what actually went wrong.
+            raise site_error
+        # State exactly what was checked - a bare "no_documents_found" told
+        # an admin nothing about which URL was fetched or whether there was
+        # even a newsletter to look at (a real complaint: "which document
+        # were you trying to fetch that you didn't find? it doesn't say").
+        checked = [f"site: {school.website_url}" if school.website_url else "site: none (no website_url set)"]
+        newsletter_count = (
+            await db.execute(select(func.count()).select_from(SmoreNewsletter).where(SmoreNewsletter.school_id == school_id))
+        ).scalar()
+        checked.append(f"{newsletter_count} newsletter(s) scanned" if newsletter_count else "no newsletters tracked")
+        return f"WARNING[no_documents_found]: no handbook or bell schedule found - checked {', '.join(checked)}"
 
     for entry in found:
         if not entry.get("academic_year"):

@@ -61,5 +61,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             created += 1
 
     if not roster:
-        return "WARNING[no_staff_found]: no staff found - site may use a directory structure this parser doesn't recognize (or genuinely has no public directory)"
+        return (
+            f"WARNING[no_staff_found]: no staff found at {school.website_url} - site may use a directory "
+            "structure this parser doesn't recognize (or genuinely has no public directory)"
+        )
     return f"roster: {created} new, {updated} updated, {len(roster)} total"
