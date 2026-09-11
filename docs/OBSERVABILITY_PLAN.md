@@ -76,7 +76,24 @@ Progress:
   a real `npm run build` all clean. **Not yet live**: `FARO_COLLECTOR_URL`
   not pushed to `schoolz-web` via `fly secrets set`, and nothing in this
   phase has been deployed.
-- Phases 5-6: not started.
+- Phase 5: `scraper/telemetry.py` (trimmed standalone copy, no import from
+  backend) + `scraper/observability.py` (`schoolz.scraper.page_load`
+  histogram, `schoolz.scraper.pages_open` up-down counter -
+  `schoolz.scraper.browser_restarts` from the plan skipped: the service has
+  no Chromium-restart logic to wire it to) added. `main.py`:
+  `FastAPIInstrumentor.instrument_app`, manual spans around `page.goto`/
+  `wait_for_selector`/each paginated click (attributes `url.host`, not the
+  full URL; `selector`; `page_index`), all three endpoints
+  (`fetch_html`/`fetch_paginated`/`fetch_raw`) record page-load
+  duration/outcome. `requirements.txt` updated (same pinned OTel versions
+  as backend). Verified in a real Docker build: `pytest -q` passes (2/2),
+  and a live `/fetch-html` call against `https://example.com` returns 200
+  with real page content through the instrumented code path (checked via
+  `docker exec` after host->container curl hit an unrelated WSL2 dual-stack
+  port-forwarding quirk - same `uvicorn --host ::` binding already
+  documented in CLAUDE.md, not something this phase changed).
+  **Not yet deployed** - no `fly secrets set -a schoolz-scraper` run yet.
+- Phase 6: not started.
 - Faro collector URL for Phase 4 already obtained:
   `https://faro-collector-prod-us-east-2.grafana.net/collect/e134be0a82120a899938a4022a5bf806`
   (app name to use: `schoolz-web`, per section 2 — not the tutorial

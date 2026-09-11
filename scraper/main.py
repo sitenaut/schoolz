@@ -1,13 +1,25 @@
 import base64
 import os
+import time
 from contextlib import asynccontextmanager
 from typing import Optional
+from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
+from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from playwright.async_api import async_playwright, Browser
 from pydantic import BaseModel, Field
 
+import observability
+import telemetry
+
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY", "")
+_tracer = trace.get_tracer("schoolz-scraper")
+
+
+def _host(url: str) -> str:
+    return urlparse(url).netloc or "unknown"
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -15,6 +27,9 @@ DEFAULT_USER_AGENT = (
 DEFAULT_TIMEOUT_MS = 15_000
 
 _state: dict[str, Browser] = {}
+
+
+telemetry.setup_telemetry("schoolz-scraper")
 
 
 @asynccontextmanager
@@ -28,9 +43,11 @@ async def lifespan(_: FastAPI):
     yield
     await _state["browser"].close()
     await playwright.stop()
+    telemetry.shutdown_telemetry()
 
 
 app = FastAPI(title="schoolz-scraper", lifespan=lifespan)
+FastAPIInstrumentor.instrument_app(app, excluded_urls="health")
 
 
 def require_api_key(x_api_key: Optional[str] = Header(default=None)) -> None:
@@ -96,15 +113,25 @@ async def fetch_html(req: FetchHtmlRequest):
     Use this for pages that need JavaScript to render their content -
     plain HTTP GETs won't see anything past the initial shell.
     """
+    host = _host(req.url)
     browser = _state["browser"]
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
+    observability.pages_open.add(1, {"host": host})
+    start = time.perf_counter()
+    outcome = "error"
     try:
-        page = await context.new_page()
-        response = await page.goto(req.url, timeout=req.timeout_ms, wait_until="domcontentloaded")
-        if req.wait_for_selector:
-            await page.wait_for_selector(req.wait_for_selector, timeout=req.timeout_ms)
-        html = await page.content()
-        title = await page.title()
+        with _tracer.start_as_current_span("scraper.fetch_html", attributes={"url.host": host}):
+            page = await context.new_page()
+            with _tracer.start_as_current_span("page.goto", attributes={"url.host": host}):
+                response = await page.goto(req.url, timeout=req.timeout_ms, wait_until="domcontentloaded")
+            if req.wait_for_selector:
+                with _tracer.start_as_current_span(
+                    "wait_for_selector", attributes={"url.host": host, "selector": req.wait_for_selector}
+                ):
+                    await page.wait_for_selector(req.wait_for_selector, timeout=req.timeout_ms)
+            html = await page.content()
+            title = await page.title()
+        outcome = "ok"
         return FetchHtmlResponse(
             url=req.url,
             status=response.status if response else 0,
@@ -115,6 +142,8 @@ async def fetch_html(req: FetchHtmlRequest):
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to fetch {req.url}: {exc}") from exc
     finally:
         await context.close()
+        observability.pages_open.add(-1, {"host": host})
+        observability.page_load_seconds.record(time.perf_counter() - start, {"host": host, "outcome": outcome})
 
 
 @app.post("/fetch-paginated", response_model=FetchPaginatedResponse, dependencies=[Depends(require_api_key)])
@@ -124,31 +153,43 @@ async def fetch_paginated(req: FetchPaginatedRequest):
     with a page query param when that param doesn't actually change the
     server-rendered response (confirmed real case: a Finalsite staff
     directory whose pagination is entirely client-side)."""
+    host = _host(req.url)
     browser = _state["browser"]
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
+    observability.pages_open.add(1, {"host": host})
+    start = time.perf_counter()
+    outcome = "error"
     pages: list[str] = []
     try:
-        page = await context.new_page()
-        await page.goto(req.url, timeout=req.timeout_ms, wait_until="domcontentloaded")
-        pages.append(await page.content())
-
-        for _ in range(req.max_pages - 1):
-            next_control = await page.query_selector(req.next_page_selector)
-            if not next_control:
-                break
-            is_disabled = await next_control.get_attribute("disabled")
-            aria_disabled = await next_control.get_attribute("aria-disabled")
-            if is_disabled is not None or aria_disabled == "true":
-                break
-            await next_control.click()
-            await page.wait_for_timeout(req.wait_after_click_ms)
+        with _tracer.start_as_current_span("scraper.fetch_paginated", attributes={"url.host": host}):
+            page = await context.new_page()
+            with _tracer.start_as_current_span("page.goto", attributes={"url.host": host, "page_index": 0}):
+                await page.goto(req.url, timeout=req.timeout_ms, wait_until="domcontentloaded")
             pages.append(await page.content())
 
+            for page_index in range(1, req.max_pages):
+                with _tracer.start_as_current_span(
+                    "paginated_click", attributes={"url.host": host, "page_index": page_index}
+                ):
+                    next_control = await page.query_selector(req.next_page_selector)
+                    if not next_control:
+                        break
+                    is_disabled = await next_control.get_attribute("disabled")
+                    aria_disabled = await next_control.get_attribute("aria-disabled")
+                    if is_disabled is not None or aria_disabled == "true":
+                        break
+                    await next_control.click()
+                    await page.wait_for_timeout(req.wait_after_click_ms)
+                    pages.append(await page.content())
+
+        outcome = "ok"
         return FetchPaginatedResponse(url=req.url, pages=pages)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to paginate {req.url}: {exc}") from exc
     finally:
         await context.close()
+        observability.pages_open.add(-1, {"host": host})
+        observability.page_load_seconds.record(time.perf_counter() - start, {"host": host, "outcome": outcome})
 
 
 @app.post("/fetch-raw", response_model=FetchRawResponse, dependencies=[Depends(require_api_key)])
@@ -158,11 +199,16 @@ async def fetch_raw(req: FetchRawRequest):
     Useful for downloads (ICS, PDF, CSV) served behind bot-detection/WAF
     that block plain HTTP clients but allow a real browser fingerprint.
     """
+    host = _host(req.url)
     browser = _state["browser"]
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
+    start = time.perf_counter()
+    outcome = "error"
     try:
-        response = await context.request.get(req.url, timeout=req.timeout_ms)
-        body = await response.body()
+        with _tracer.start_as_current_span("scraper.fetch_raw", attributes={"url.host": host}):
+            response = await context.request.get(req.url, timeout=req.timeout_ms)
+            body = await response.body()
+        outcome = "ok"
         return FetchRawResponse(
             url=req.url,
             status=response.status,
@@ -173,3 +219,4 @@ async def fetch_raw(req: FetchRawRequest):
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to fetch {req.url}: {exc}") from exc
     finally:
         await context.close()
+        observability.page_load_seconds.record(time.perf_counter() - start, {"host": host, "outcome": outcome})

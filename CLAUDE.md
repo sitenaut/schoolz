@@ -348,6 +348,20 @@ view names are route templates, not raw URLs.
   reasoning as the rest of the page), flagged in the observability plan's
   PR description as the owner's call, not decided unilaterally.
 
+## Scraper OpenTelemetry (added 2026-09-11)
+
+`scraper/telemetry.py` is a standalone, trimmed copy of `backend/telemetry.py`'s
+pattern (traces + metrics only, no logs/SQLAlchemy/system-metrics - deliberately
+not imported from `backend/`, since the scraper is generic/swappable on
+purpose). `scraper/observability.py` defines `schoolz.scraper.page_load`
+(histogram, `host`+`outcome` attributes - host only, never the full URL,
+to keep cardinality bounded to schoolz's ~40 tracked school hosts) and
+`schoolz.scraper.pages_open` (up-down counter). `main.py` wraps
+`/fetch-html`/`/fetch-paginated`/`/fetch-raw` in spans with manual child
+spans around `page.goto`, `wait_for_selector`, and each paginated click -
+a scan's trace now spans backend → scraper → the school's site. No-ops
+entirely without `OTEL_EXPORTER_OTLP_ENDPOINT`, same as the backend.
+
 ## Prod deployment (added 2026-09-10)
 
 Live at `https://schoolz.sitenaut.com` (frontend) and `https://schoolz-api.sitenaut.com` (backend). Three Fly apps in the `schoolz` Fly org: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`. Deploy manually with `fly deploy --remote-only` from `backend/`, `frontend/`, or `scraper/`; CI (`migrate.yml` → `deploy.yml`) only runs on pushes to `main` and only covers backend + frontend, not the scraper.
