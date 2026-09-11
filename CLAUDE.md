@@ -446,3 +446,66 @@ Live at `https://schoolz.sitenaut.com` (frontend) and `https://schoolz-api.siten
 - **Auth**: `BOOTSTRAP_ADMIN_EMAIL` works as documented (confirmed `is_admin=true` on first login) - but Supabase email/password signup requires clicking the confirmation email first, which reads as "login isn't working". Google SSO reuses the same Google OAuth client as the Gmail scanner (billz's); Supabase's Google provider needs that client ID/secret pasted in *and* `https://lxithuvstfslndvsdnsk.supabase.co/auth/v1/callback` added to the client's authorized redirect URIs (the two errors in order were `invalid_client` = typo in the pasted ID, then `redirect_uri_mismatch`).
 - **`.gitignore` had a bare `lib/`** (Python boilerplate) that silently kept `frontend/src/lib/` out of git - local builds passed because the files existed on disk; CI's fresh checkout failed with `Cannot find module '../lib/...'`. Removed.
 - **Privacy**: `/privacy` + footer link, deliberately **no consent banner** - everything stored today (localStorage school picks, Supabase session, opt-in Gmail token) is strictly necessary under GDPR/ePrivacy, so a banner would be asking consent for nothing. Revisit the moment analytics or ads are added.
+
+## Newsletters admin page redesign + district-wide newsletters + community submissions (added 2026-09-11)
+
+`/smore` was rebuilt on the same Katalyst UI-kit pattern as `/jobs` (stat
+tiles, search/filter toolbar, `DataTable`, a `NewsletterFormModal`/
+`NewsletterDetailModal` pair) instead of the old plain black-and-white
+table, and gained a bulk "force re-extract every block" control at the
+list level (previously only per-row). `SmoreNewsletter.district_id`
+(migration 0028) lets a newsletter belong to a whole district instead of
+only ever a single school - added specifically for Cherry Hill's
+district-wide "CHPS Weekly" publication, which has nowhere else to attach
+its extracted items (`content_extractor.py` forces `scope="district"` for
+any item on a newsletter with no `school_id`).
+
+- **Real bug found via this newsletter's own content, not by inspection**:
+  a YouTube video embed block (`data-block-type="embed.video"`) renders its
+  foreground "play" icon as a base64 `data:image/svg+xml` `<img src>` -
+  `smore_parser._classify()` was reading that literally as the block's
+  `image_url`, and `_vision_extract` crashed trying to `httpx.get()` a
+  `data:` URI (caught, but the block stayed `pending_vision_extraction`
+  forever with nothing useful ever extracted - the real title/thumbnail/
+  link live on the video button's own `data-video-title`/
+  `data-video-original-url` attributes, not the image). Fixed by detecting
+  `[data-video-title]` first and classifying it as a text+link block using
+  those attributes; any other `data:` URI `<img src>` now falls back to
+  text/link classification too instead of being treated as a real image.
+  Confirmed fixed live: Cherry Hill East's newsletter (which has this exact
+  video) re-scanned clean after the fix, 48 blocks, no crash.
+- Three real newsletter URL changes (confirmed by the user from a text
+  alert, not discovered by a scan) were applied directly on prod via a
+  one-off script on the `scheduler` machine (see the prod-deployment
+  section below for why that's the only sanctioned place): Bret Harte and
+  Cherry Hill East had their tracked URL updated in place (same newsletter,
+  new issue - not a new row), and "CHPS Weekly" was added as the first
+  `district_id`-only newsletter.
+
+**Community submissions** (`CommunitySubmission`, migration 0029,
+`routers/community_submissions.py`, `POST /submissions` public/no-auth):
+lets anyone contribute a school flier (image/PDF upload, 15MB cap, bytes
+stored directly in the row - there's still no object-storage integration
+anywhere in this app, and this is meant to be low-volume) or a newsletter/
+document link, with an optional note on what they're hoping gets extracted
+and which school/district it's about. Everything lands `status="pending"` -
+nothing here feeds the extraction pipeline automatically, by explicit
+design ("so I can curate and validate the extractions" was the user's own
+framing). Admin review happens at `/admin/submissions`
+(`SubmissionsPage.tsx`, same stat-tile/DataTable/modal pattern as Jobs/
+Newsletters) - approve/reject with notes, download the file back
+(`GET /submissions/{id}/file`, admin-only), delete. `AdminSection.tsx`
+shows a pending-count badge linking to it. Public entry point is
+`/contact` (`ContactPage.tsx`, linked from the footer) - a link/file toggle,
+optional description/name/email/school-or-district, using a raw `fetch()`
+multipart POST rather than `apiFetch()` (which always forces a JSON
+`Content-Type` header, incompatible with `FormData`'s own boundary).
+
+- **Real UI-kit bug caught in Playwright review, not by inspection**: the
+  submissions table's row-delete button used a `className="icon-btn"` that
+  doesn't exist anywhere in `ui.css` - `.btn.icon` (optionally `.danger`)
+  is the actual class every other DataTable row action uses (Jobs,
+  Newsletters), so the button rendered as an unstyled/unsized empty box.
+  Also fixed a footer bug this surfaced: `.shell-footer` had no `gap`, so
+  the new "Contact us" link ran straight into "Privacy & cookies" with no
+  space between them.
