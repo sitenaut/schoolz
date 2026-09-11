@@ -52,8 +52,9 @@ Progress:
   added (14 tests). **Full suite verified: 80/80 pytest pass** (66 + 14 new),
   migration 0026 applies cleanly, inside a fresh Docker build against a
   throwaway Postgres. Frontend `tsc --noEmit` and `npm test` both clean.
-  **Migration 0026 not yet run against prod** — needs `alembic upgrade head`
-  against prod Supabase before any of this is live there.
+  Migration 0026 run against prod (2026-09-11, `0025 -> 0026`) - columns
+  confirmed present. Still not live end-to-end: `schoolz-api` hasn't been
+  deployed with this code yet.
 - Phases 4-6: not started.
 - Faro collector URL for Phase 4 already obtained:
   `https://faro-collector-prod-us-east-2.grafana.net/collect/e134be0a82120a899938a4022a5bf806`
