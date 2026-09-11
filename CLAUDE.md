@@ -6,6 +6,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 schoolz aims to help streamline communication between parents and the school district to better support their children's education at home.
 
+## UI reference template
+
+Before building or restructuring any admin/management-style UI (a new page
+layout, tabs, drawers, wizards, data-grid patterns, etc.), check
+`~/claude/themeforest-OEgiMDPe-katalyst-modern-reacttailwind-admin-template.zip`
+(the purchased Katalyst React/Tailwind admin template) for an existing
+pattern to match, even though it isn't a dependency of this app (see the
+"Parent-facing layout" section below - the template is style/structure
+inspiration, rebuilt on this app's own CSS custom properties, never
+imported directly). Unzip it to a scratch dir and grep its
+`src/shared/ui/` and `src/modules/**/ui/` trees for the closest analog
+(e.g. `shared/ui/shadcn/components/ui/tabs.tsx` for a tabs primitive, or a
+`*IndexPage.tsx`/`*DetailPage.tsx` under `modules/` for a whole-page
+layout) before inventing a new visual pattern from scratch - this keeps
+new admin surfaces consistent with the ones already built this way (Jobs,
+Newsletters, Account settings).
+
 ## Access model: public + centrally admin-managed (changed 2026-09-08)
 
 Deliberate product pivot: **almost everything is public, no account needed.** All school/district data (schools, calendar, content, documents, SACC, staff, lunch menus, Smore newsletter reads) is browsable and bookmarkable by anyone - the target workflow is "bookmark your kid's school page," not "log in to see anything." Registering is purely optional, only for the bespoke personal layer (linking your own kids, a calendar narrowed to just their schools, connecting Gmail).
@@ -509,3 +526,90 @@ multipart POST rather than `apiFetch()` (which always forces a JSON
   Also fixed a footer bug this surfaced: `.shell-footer` had no `gap`, so
   the new "Contact us" link ran straight into "Privacy & cookies" with no
   space between them.
+
+## Admin nav consolidation + Calendar/Today district-item overhaul (added 2026-09-11)
+
+**Nav cleanup**: `/smore`, `/jobs`, and `/admin/config` collapsed into one
+`/admin` route (`frontend/src/pages/AdminLayout.tsx`) with a horizontal tab
+bar (Newsletters / Scans / Import-export, reusing the existing `.tabs .tab`
+pill style - matches the Katalyst template's "default" tabs variant, see
+the new "UI reference template" section above) instead of three separate
+left-rail nav entries. Old paths redirect (`<Navigate>`) so nothing
+bookmarked breaks; `AdminSection.tsx`'s quick links and the nav rail were
+repointed to the canonical `/admin/*` paths directly.
+
+**Calendar page** (`CalendarPage.tsx`) dropped its second school-selector
+(`SchoolPicker.tsx`, now deleted) - it duplicated the top ribbon's "my
+schools" filter and confused users who didn't realize there were two.
+Schools shown = the ribbon's `activeSchools` directly (or a school page's
+`?school=` deep link, unchanged). Two new filters:
+- **"Exclude district"** (checkbox right above the event list, on by
+  default) hides generic district-wide noise (Board of Ed meetings,
+  committee meetings) - but never closures/half-days/delays or grading
+  dates, and never a rotation marker (that's the next filter's job). This
+  setting is **shared, not Calendar-only** (`lib/mySchools.tsx`,
+  `schoolz_exclude_district` in localStorage) - it also governs what
+  `DayCard`'s `upcoming` list, `WeekStrip`'s day pills, and
+  `SchoolDetailPage`'s "Coming up" list show, per explicit ask ("I don't
+  want to see board of education meetings on my school's today page
+  unless I explicitly removed that filter from the calendar page").
+- **"Show day-rotation schedule"** (checkbox at the top of the page, off
+  by default) - the elementary "Day N" / high-school block-rotation
+  markers are clutter most visits don't care about. Doesn't touch the
+  Today card's own `rotation_day` metadata line under the school name
+  (`services/school_today.py` already excludes rotation markers from
+  `upcoming`/`week[].items` unconditionally - that's a separate, always-on
+  exclusion, not this new toggle).
+- **Per-school labeling, not type labeling** (`lib/districtItems.ts:
+  expandItemRows`): a district item with no `applies_to_school_types`
+  gets one row labeled "All schools"; one restricted to specific types
+  (a type-only half day, or - with rotation on - "Day N") expands into
+  **one row per currently-active school of a matching type**, each
+  labeled with that school's own name - "Day 3 [Bret Harte]" and "Day 2
+  [Cherry Hill East]" side by side, not one row saying "Elementary" and
+  another saying "High school". A type-restricted item matching none of
+  the active schools is dropped entirely (it doesn't apply to anyone
+  currently being viewed). The label renders as a distinct bordered badge
+  (`.tag.schoolTag` in styles.css, colored via the school's own ribbon
+  color or the neutral district accent for "All schools") ahead of the
+  category tag, not buried in plain description text.
+- `lib/schoolType.ts:schoolTypeLabel` now says "Elementary school"/"Middle
+  school"/"High school", not the bare tier name, for the few places that
+  still show a type label directly (Today's `kind` line, LunchPage,
+  SchoolDetailPage's eyebrow) - reads more naturally.
+
+**Dedup fix for repeated closure/half-day items**
+(`backend/services/school_status.py`, new): a "no school"/"early
+dismissal"/"delayed opening" fact is never really one school's own news -
+every school in Cherry Hill shares the same closed/half-day/delayed
+calendar - but the extraction model doesn't reliably mark these
+`scope='district'` even though its own system prompt says to. Confirmed
+real: Kilmer's newsletter reported "First Day of School (Early Dismissal)"
+as `scope='school'`, and other schools' newsletters independently reported
+the same district-wide fact too, producing a pile of near-duplicate "First
+Day of School" items instead of the one shared district row - the user's
+own bug report ("i ended up with so many 'first day of school' events").
+`content_extractor.py` now force-overrides `scope='district'` for any
+newly-extracted item whose title matches `is_status_title()` (closed/half
+day/delayed-opening patterns), *before* the existing
+`(district, category, start_date)` dedup check runs - so it always gets a
+chance to collapse into whichever row (ICS-fed or another school's
+newsletter) already exists for that date, instead of trusting the model's
+scope guess alone. Deliberately its own regex set, not reused by
+`school_today.py`'s `classify_day` - that function's precedence (closed
+beats early_dismissal) breaks on a real title like "EARLY DISMISSAL -
+Staff In-Service" if "in-service" is also treated as a closure keyword
+there (pinned by `test_school_today.py`), so the two modules intentionally
+don't share one regex set.
+- **Known remaining gap, not fixed by this pass**: this only forces
+  `scope='district'` for the closure/half-day/delayed-opening *status*
+  pattern. An ordinary event mentioned by both the district ICS feed and
+  a school's own newsletter with slightly different wording (confirmed
+  real: Chesterbrook's newsletter separately reported "Cherry Hill Board
+  of Education Candidates Forum" as `scope='school'`, alongside the
+  district feed's own "Board of Education Candidates Forum") isn't
+  deduped - only the closure/half-day/delay class was in scope for this
+  fix. The existing duplicate rows already in prod from before this fix
+  also aren't retroactively cleaned up by it (new extractions only) - a
+  one-time cleanup pass would be needed to collapse rows already sitting
+  in the database.

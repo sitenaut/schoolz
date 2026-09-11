@@ -8,5 +8,8 @@
 export function schoolTypeLabel(type: string | null): string | null {
   if (!type) return null;
   if (type === "other") return "Preschool";
+  if (type === "elementary" || type === "middle" || type === "high") {
+    return `${type[0].toUpperCase()}${type.slice(1)} school`;
+  }
   return type[0].toUpperCase() + type.slice(1);
 }

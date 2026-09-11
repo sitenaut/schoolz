@@ -4,7 +4,7 @@ import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { useMySchools } from "../lib/mySchools";
-import { IconCalendar, IconHome, IconJobs, IconLunch, IconNewsletter, IconSchool, IconTransfer } from "./icons";
+import { IconCalendar, IconHome, IconJobs, IconLunch, IconSchool } from "./icons";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 
@@ -26,9 +26,9 @@ function routeTemplate(pathname: string): string {
 // The ribbon's school filter has no meaning on the centrally-managed admin
 // pages (they aren't scoped to "my schools" at all) - hidden there rather
 // than just visually unused clutter.
-const ADMIN_PATH_PREFIXES = ["/smore", "/jobs", "/admin", "/account"];
+const ADMIN_PATH_PREFIXES = ["/admin", "/account"];
 // Table-heavy / settings pages get a wider content column than the feed.
-const WIDE_PATH_PREFIXES = ["/smore", "/jobs", "/admin", "/account"];
+const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
 /** Top bar + school-switcher ribbon + bottom tab bar (mobile) / left rail
  * (desktop). Wraps every public page; the personal/admin pages render
@@ -150,23 +150,10 @@ export function AppShell() {
           Schools
         </NavLink>
         {user?.is_admin && (
-          <>
-            <div className="nav-divider" aria-hidden="true">
-              Admin
-            </div>
-            <NavLink to="/smore">
-              <IconNewsletter />
-              Newsletters
-            </NavLink>
-            <NavLink to="/jobs">
-              <IconJobs />
-              Scans
-            </NavLink>
-            <NavLink to="/admin/config">
-              <IconTransfer />
-              Import/export
-            </NavLink>
-          </>
+          <NavLink to="/admin">
+            <IconJobs />
+            Admin
+          </NavLink>
         )}
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>

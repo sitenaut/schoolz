@@ -3,31 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { useMySchools } from "../lib/mySchools";
 import { apiFetch } from "../api";
 import { ItemRow } from "../components/today";
-import { SchoolPicker } from "../components/SchoolPicker";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
-import { schoolTypeLabel } from "../lib/schoolType";
+import { CLOSED_RE, HALF_DAY_RE, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import { itemDateKeys } from "../lib/calendar";
 import type { SchoolContentItem } from "../types";
-
-/** For scope="district" items, school_name is always null (there's no
- * single school to name) - fine for a holiday closure that applies to
- * everyone, but the "Day N" rotation markers apply to only one tier at a
- * time (elementary via the ICS feed, high school via the rotation PDF)
- * and can land on the same date with different values. Without a label,
- * "Day 2" and "Day 3" on the same day just look contradictory. */
-function districtItemLabel(item: SchoolContentItem): string | null {
-  if (!item.applies_to_school_types?.length) return null;
-  return item.applies_to_school_types.map(schoolTypeLabel).filter(Boolean).join(" / ");
-}
 import styles from "./CalendarPage.module.css";
-
-// Same convention as the Today card's closure detection
-// (backend/services/school_today.py:_CLOSED_RE/_EARLY_RE), extended per
-// explicit ask to also catch in-service and conference days - those are
-// "no school for students" but don't say "closed" anywhere in the title.
-const CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bin-?service\b|\bconference\b/i;
-const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b/i;
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -59,18 +40,15 @@ function monthCells(year: number, month: number): (Date | null)[] {
 const TODAY_KEY = dateKey(new Date());
 
 export function CalendarPage() {
-  const { activeSchools, colorFor, loading } = useMySchools();
+  const { activeSchools, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
   const [params] = useSearchParams();
   const deepSchool = params.get("school");
-  // Which schools' dates are shown - owned by the picker. Seeded once
-  // data is ready: from a school page's "see all dates" deep link if there
-  // is one, else from whatever the top ribbon currently shows. After that
-  // the picker is the source of truth (any number of schools, mine or not).
-  const [selected, setSelected] = useState<string[] | null>(null);
-  useEffect(() => {
-    if (loading || selected !== null) return;
-    setSelected(deepSchool ? [deepSchool] : activeSchools.map((s) => s.slug));
-  }, [loading, selected, deepSchool, activeSchools]);
+  // Which schools' dates are shown - the same top-ribbon "my schools"
+  // selection every other page uses, no separate picker here anymore. A
+  // school page's "see all dates" deep link narrows to just that one
+  // school instead, same as before.
+  const schoolSlugs = useMemo(() => (deepSchool ? [deepSchool] : activeSchools.map((s) => s.slug)), [deepSchool, activeSchools]);
+  const schoolIdsKey = schoolSlugs.join(",");
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
   const [items, setItems] = useState<SchoolContentItem[]>([]);
@@ -81,9 +59,11 @@ export function CalendarPage() {
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const isSearching = searchTerm.trim().length > 0;
+  // Off by default to cut clutter - most visits don't care which
+  // elementary "Day N" or high-school block-rotation day it is, only the
+  // schools that DO want it can turn it on here.
+  const [showDayRotation, setShowDayRotation] = useState(false);
 
-  const schoolSlugs = selected ?? [];
-  const schoolIdsKey = schoolSlugs.join(",");
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
 
@@ -94,7 +74,7 @@ export function CalendarPage() {
   }, [search]);
 
   useEffect(() => {
-    if (loading || selected === null) return;
+    if (loading) return;
     const q = new URLSearchParams();
     if (isSearching) {
       // Search looks across every upcoming (and recent) event, not just
@@ -126,23 +106,37 @@ export function CalendarPage() {
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm, selected === null]);
+  }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm]);
 
   const colorForName = (name: string | null) => {
     const s = activeSchools.find((m) => (m.short_name || m.name) === name);
     return s ? colorFor(s.id) : "var(--district)";
   };
-  const showEmptySelectionNote = (selected?.length ?? 0) === 0;
+  const showEmptySelectionNote = activeSchools.length === 0;
+
+  // Exclude-district and day-rotation both narrow what's visible before
+  // anything else touches the data - the month grid's dots/status colors
+  // and the list below need to agree, or a dot with nothing behind it
+  // (once tapped) reads as a bug.
+  const visibleItems = useMemo(
+    () =>
+      items.filter((i) => {
+        if (isRotationItem(i.title) && !showDayRotation) return false;
+        if (excludeDistrict && isNoisyDistrictItem(i)) return false;
+        return true;
+      }),
+    [items, excludeDistrict, showDayRotation],
+  );
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, SchoolContentItem[]>();
-    for (const item of items) {
+    for (const item of visibleItems) {
       for (const key of itemDateKeys(item)) {
         map.set(key, [...(map.get(key) ?? []), item]);
       }
     }
     return map;
-  }, [items]);
+  }, [visibleItems]);
 
   const grid = useMemo(() => monthCells(viewDate.getFullYear(), viewDate.getMonth()), [viewDate]);
 
@@ -173,10 +167,18 @@ export function CalendarPage() {
     setSelectedDay((cur) => (cur === key ? null : key));
   };
 
-  const rows = useMemo(() => {
-    const list = !isSearching && selectedDay && viewMode === "month" ? items.filter((i) => itemDateKeys(i).includes(selectedDay)) : items;
-    return [...list].sort((a, b) => (a.start_date ?? "") < (b.start_date ?? "") ? -1 : 1);
-  }, [items, selectedDay, isSearching, viewMode]);
+  const filteredItems = useMemo(() => {
+    const list = !isSearching && selectedDay && viewMode === "month" ? visibleItems.filter((i) => itemDateKeys(i).includes(selectedDay)) : visibleItems;
+    return [...list].sort((a, b) => ((a.start_date ?? "") < (b.start_date ?? "") ? -1 : 1));
+  }, [visibleItems, selectedDay, isSearching, viewMode]);
+
+  // One item can render as several rows - a district item restricted to
+  // specific school types (a type-only half day, or - with the rotation
+  // filter on - a "Day N" marker) expands into one labeled row per
+  // currently-active school of a matching type, e.g. "Day 3 [Bret Harte]"
+  // and "Day 2 [Cherry Hill East]" side by side rather than one row
+  // labeled just "Elementary" or "High school".
+  const rows = useMemo(() => filteredItems.flatMap((i) => expandItemRows(i, activeSchools)), [filteredItems, activeSchools]);
 
   const selectedLabel = selectedDay
     ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(undefined, {
@@ -231,8 +233,12 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <SchoolPicker selected={selected ?? []} onChange={setSelected} />
-      {showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools above to narrow it down.</p>}
+      <label className="filterCheck" style={{ marginBottom: 14 }}>
+        <input type="checkbox" checked={showDayRotation} onChange={(e) => setShowDayRotation(e.target.checked)} />
+        Show day-rotation schedule (Day 1, Day 2, …)
+      </label>
+
+      {showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools on "My schools" to narrow it down.</p>}
 
       {!isSearching && viewMode === "month" && (
         <>
@@ -364,18 +370,18 @@ export function CalendarPage() {
         </div>
       )}
 
+      <label className="filterCheck" style={{ margin: "4px 0 12px" }}>
+        <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
+        Exclude district (board meetings, etc.)
+      </label>
+
       {viewMode !== "year" &&
         (rows.length === 0 ? (
           <div className="empty">{isSearching ? `No events match "${searchTerm.trim()}".` : `Nothing found${selectedDay ? " for this day" : " this month"}.`}</div>
         ) : (
           <div className="list">
-            {rows.map((i) => (
-              <ItemRow
-                item={i}
-                color={i.scope === "school" ? colorForName(i.school_name) : undefined}
-                schoolName={i.scope === "school" ? i.school_name : districtItemLabel(i)}
-                key={i.id}
-              />
+            {rows.map(({ key, item, label }) => (
+              <ItemRow item={item} color={item.scope === "school" ? colorForName(item.school_name) : undefined} schoolName={label} key={key} />
             ))}
           </div>
         ))}

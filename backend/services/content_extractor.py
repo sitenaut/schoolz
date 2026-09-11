@@ -27,6 +27,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
+from services.school_status import is_status_title
 from scheduler.errors import record_parse_issue
 
 logger = logging.getLogger(__name__)
@@ -529,6 +530,21 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 # "CHPS Weekly") has nowhere to attach a scope="school" item
                 # at all, so every item here is district-scoped regardless
                 # of what the model guessed.
+                scope = "district"
+            elif district_id and is_status_title(item["title"]):
+                # "No school today"/"early dismissal"/"delayed opening" is
+                # never really one school's own news - every school in the
+                # district shares the same closed/half-day/delayed calendar
+                # - but the model doesn't reliably mark these scope='district'
+                # even though its own prompt says to (confirmed real: Kilmer's
+                # newsletter reported "First Day of School (early dismissal)"
+                # as scope='school', while other schools' newsletters
+                # independently reported the same district-wide fact too,
+                # producing a pile of near-duplicate "First Day of School"
+                # items - one per school - instead of one shared row).
+                # Forcing it here, rather than trusting the prompt alone,
+                # means the dedup check just below always gets a chance to
+                # collapse it into the one existing district row.
                 scope = "district"
             item_school_id = school_id
             item_district_id = None

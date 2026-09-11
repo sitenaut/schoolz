@@ -23,6 +23,11 @@ from services.transportation import late_bus_for_school
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
+# Deliberately its own (narrower) patterns, not services/school_status.py's
+# shared ones - that module's CLOSED_RE also matches bare "in-service"/
+# "conference", which would wrongly outrank early_dismissal's precedence
+# here on a real title like "EARLY DISMISSAL - Staff In-Service"
+# (test_school_today.py:test_classify_day_precedence_and_labels pins this).
 _CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b", re.I)
 _EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b", re.I)
 _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)

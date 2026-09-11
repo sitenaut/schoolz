@@ -5,6 +5,8 @@ import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contactHref } from "../components/today";
 import { IconChevronLeft } from "../components/icons";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
+import { isNoisyDistrictItem } from "../lib/districtItems";
+import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
@@ -65,14 +67,22 @@ export function SchoolDetailPage() {
     });
   }, [schoolId]);
 
+  const { excludeDistrict } = useMySchools();
   const tk = todayKey();
   const upcoming = useMemo(
     () =>
       items
-        .filter((i) => ["event", "deadline", "initiative", "marking_period"].includes(i.category) && i.start_date && localDateKey(i.start_date) >= tk && !/^Day \d$/.test(i.title))
+        .filter(
+          (i) =>
+            ["event", "deadline", "initiative", "marking_period"].includes(i.category) &&
+            i.start_date &&
+            localDateKey(i.start_date) >= tk &&
+            !/^Day \d$/.test(i.title) &&
+            (!excludeDistrict || !isNoisyDistrictItem(i)),
+        )
         .sort((a, b) => (a.start_date! < b.start_date! ? -1 : 1))
         .slice(0, 12),
-    [items, tk],
+    [items, tk, excludeDistrict],
   );
   const reminders = items.filter((i) => i.category === "reminder");
   const pta = items.filter((i) => i.category === "pta");

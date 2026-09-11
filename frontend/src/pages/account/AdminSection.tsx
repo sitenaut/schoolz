@@ -24,21 +24,21 @@ export function AdminSection() {
   const s = summary?.by_status ?? {};
   return (
     <>
-      <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/jobs">Open jobs</Link>}>
+      <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/admin/scans">Open jobs</Link>}>
         <div className="stats" style={{ marginBottom: 0 }}>
-          <Link className="stat" to="/jobs">
+          <Link className="stat" to="/admin/scans">
             <span className="stat-k">Enabled</span>
             <span className="stat-v">{summary?.total ?? "—"}</span>
           </Link>
-          <Link className="stat" to="/jobs">
+          <Link className="stat" to="/admin/scans">
             <span className="stat-k">Healthy</span>
             <span className="stat-v ok">{s.success ?? 0}</span>
           </Link>
-          <Link className="stat" to="/jobs">
+          <Link className="stat" to="/admin/scans">
             <span className="stat-k">Warnings</span>
             <span className="stat-v warn">{s.warning ?? 0}</span>
           </Link>
-          <Link className="stat" to="/jobs">
+          <Link className="stat" to="/admin/scans">
             <span className="stat-k">Failing</span>
             <span className="stat-v bad">{s.error ?? 0}</span>
           </Link>
@@ -47,7 +47,7 @@ export function AdminSection() {
 
       <SectionCard title="Manage" description="The centrally-managed data sources every visitor sees." icon={<IconSettings />}>
         <div className="link-grid">
-          <Link className="link-card" to="/jobs">
+          <Link className="link-card" to="/admin/scans">
             <span className="ico">
               <IconJobs />
             </span>
@@ -56,7 +56,7 @@ export function AdminSection() {
               <small>Create, pause, run, and debug scans</small>
             </span>
           </Link>
-          <Link className="link-card" to="/smore">
+          <Link className="link-card" to="/admin/newsletters">
             <span className="ico">
               <IconNewsletter />
             </span>

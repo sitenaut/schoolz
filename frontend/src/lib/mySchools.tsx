@@ -19,6 +19,30 @@ import type { School } from "../types";
  */
 const KEY = "schoolz_my_schools";
 const INACTIVE_KEY = "schoolz_inactive_schools";
+// Default ON: hides generic district noise (Board of Ed meetings, etc.)
+// everywhere dated items show up (Calendar's list, Today's upcoming
+// dates) - not just Calendar, per explicit ask - while status items
+// (closed/half day/delayed) and grading dates always still show
+// regardless (see lib/districtItems.ts:isNoisyDistrictItem). The Calendar
+// page is the only place with a control to turn it off.
+const EXCLUDE_DISTRICT_KEY = "schoolz_exclude_district";
+
+function readBool(key: string, fallback: boolean): boolean {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : raw === "1";
+  } catch {
+    return fallback;
+  }
+}
+
+function writeBool(key: string, value: boolean) {
+  try {
+    localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    /* private mode etc - just won't persist */
+  }
+}
 const PALETTE = ["var(--sch-1)", "var(--sch-2)", "var(--sch-3)", "var(--sch-4)", "var(--sch-5)", "var(--sch-6)"];
 
 function readList(key: string): string[] {
@@ -58,6 +82,11 @@ type Ctx = {
   activateAll: () => void;
   /** True when the ribbon is currently narrowing the view to a subset. */
   isFiltered: boolean;
+  /** Hide generic district items (board meetings, etc.) - see
+   * lib/districtItems.ts. Shared/persisted so Calendar's control also
+   * governs what Today's dated lists show. */
+  excludeDistrict: boolean;
+  setExcludeDistrict: (value: boolean) => void;
 };
 
 const MySchoolsContext = createContext<Ctx | null>(null);
@@ -75,6 +104,12 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
   // from an incomplete `slugs` and permanently miss the account's schools.
   const [accountLoaded, setAccountLoaded] = useState(false);
   const [inactiveSlugs, setInactiveSlugs] = useState<string[]>(readList(INACTIVE_KEY));
+  const [excludeDistrict, setExcludeDistrictState] = useState<boolean>(readBool(EXCLUDE_DISTRICT_KEY, true));
+
+  const setExcludeDistrict = useCallback((value: boolean) => {
+    setExcludeDistrictState(value);
+    writeBool(EXCLUDE_DISTRICT_KEY, value);
+  }, []);
 
   useEffect(() => {
     apiFetch("/schools")
@@ -166,6 +201,8 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
     toggleActive,
     activateAll,
     isFiltered: activeSchools.length < mySchools.length,
+    excludeDistrict,
+    setExcludeDistrict,
   };
   return <MySchoolsContext.Provider value={value}>{children}</MySchoolsContext.Provider>;
 }

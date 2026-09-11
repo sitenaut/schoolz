@@ -21,6 +21,7 @@ import { SchoolDetailPage } from "./pages/SchoolDetailPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
+import { AdminLayout } from "./pages/AdminLayout";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { ContactPage } from "./pages/ContactPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
@@ -101,14 +102,10 @@ function Routed() {
             </RequireAdmin>
           }
         />
-        <Route
-          path="/smore"
-          element={
-            <RequireAdmin>
-              <SmoreNewslettersPage />
-            </RequireAdmin>
-          }
-        />
+        {/* Old bookmarked/linked paths - keep working, just land on the
+            consolidated tab now. */}
+        <Route path="/smore" element={<Navigate to="/admin/newsletters" replace />} />
+        <Route path="/jobs" element={<Navigate to="/admin/scans" replace />} />
         <Route path="/schools" element={<SchoolsPage />} />
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
@@ -123,21 +120,18 @@ function Routed() {
         />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route
-          path="/jobs"
+          path="/admin"
           element={
             <RequireAdmin>
-              <JobsPage />
+              <AdminLayout />
             </RequireAdmin>
           }
-        />
-        <Route
-          path="/admin/config"
-          element={
-            <RequireAdmin>
-              <AdminConfigPage />
-            </RequireAdmin>
-          }
-        />
+        >
+          <Route index element={<Navigate to="/admin/newsletters" replace />} />
+          <Route path="newsletters" element={<SmoreNewslettersPage />} />
+          <Route path="scans" element={<JobsPage />} />
+          <Route path="config" element={<AdminConfigPage />} />
+        </Route>
       </Route>
     </FaroRoutes>
   );

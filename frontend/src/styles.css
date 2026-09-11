@@ -860,6 +860,22 @@ h3 {
   color: var(--ink-3);
   margin: 8px 0 2px;
 }
+.filterCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+}
+.filterCheck input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--primary);
+  flex: none;
+}
 .pickerRow {
   display: flex;
   align-items: center;
@@ -942,6 +958,17 @@ h3 {
   color: var(--primary);
   border-color: transparent;
   background: var(--primary-soft);
+}
+/* "All schools" / a specific school's name - a distinct, always-first tag
+   so it's immediately clear who an item applies to, not just plain text
+   buried in a description line. Uses the school's own ribbon color
+   (--c) when set (a scope="school" item); falls back to the neutral
+   district accent for "All schools". */
+.tag.schoolTag {
+  color: var(--c, var(--district));
+  border-color: var(--c, var(--district));
+  background: transparent;
+  font-weight: 700;
 }
 .actions {
   display: flex;

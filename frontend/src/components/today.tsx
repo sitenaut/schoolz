@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
+import { isNoisyDistrictItem } from "../lib/districtItems";
+import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent } from "../lib/track";
 import type { CurrentPeriod, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
@@ -54,7 +56,7 @@ export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; 
   const lastKey = days.length > 1 ? days[days.length - 1] : null;
   const mdEnd = lastKey ? monthDay(lastKey) : null;
   const cal = item.start_date ? googleCalendarQuickAddUrl(item) : null;
-  const sub = [schoolName, item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null].filter(Boolean).join(" · ");
+  const timePart = item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null;
   return (
     <div className="row">
       <div className="when">
@@ -90,9 +92,14 @@ export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; 
           {color && <span className="sch" style={{ ["--c" as string]: color }} />}
           {item.title}
         </div>
-        {sub && <div className="desc">{sub}</div>}
+        {timePart && <div className="desc">{timePart}</div>}
         {item.description && <div className="desc">{item.description}</div>}
         <div className="tagrow">
+          {schoolName && (
+            <span className="tag schoolTag" style={color ? { ["--c" as string]: color } : undefined}>
+              {schoolName}
+            </span>
+          )}
           <ItemTag item={item} />
         </div>
         {(cal || item.link_url) && (
@@ -156,6 +163,7 @@ export function ContactGrid({ contacts, mainPhone }: { contacts: TodayContact[];
 /* ---------- the Today-feed card ---------- */
 
 export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
+  const { excludeDistrict } = useMySchools();
   const s = data.school;
   const kind = schoolTypeLabel(s.school_type);
   const nurse = data.contacts.find((c) => c.role === "nurse");
@@ -164,6 +172,13 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   const counselorHref = counselor ? contactHref(counselor) : null;
   const sacc = data.sacc;
   const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
+  // Same "exclude district" setting as the Calendar page - a parent who
+  // hid board-of-ed-meeting-style noise there shouldn't see it resurface
+  // here. Status items (closed/half day/delayed) and grading dates are
+  // never filtered (see lib/districtItems.ts); day-rotation markers never
+  // reach `upcoming` at all (backend/services/school_today.py excludes
+  // them - that's the metadata line under the school name instead).
+  const upcoming = (excludeDistrict ? data.upcoming.filter((i) => !isNoisyDistrictItem(i)) : data.upcoming).slice(0, 3);
 
   return (
     <section className="day" style={{ ["--c" as string]: color }}>
@@ -212,9 +227,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         </div>
       )}
 
-      {data.upcoming.length > 0 && (
+      {upcoming.length > 0 && (
         <ul className="next">
-          {data.upcoming.slice(0, 3).map((i) => (
+          {upcoming.map((i) => (
             <li key={i.id}>
               <span className="d">{shortDay(i.start_date!)}</span>
               <span className="t">
@@ -295,12 +310,14 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 /* ---------- week strip on the school page ---------- */
 
 export function WeekStrip({ week }: { week: TodayDay[] }) {
+  const { excludeDistrict } = useMySchools();
   const today = todayKey();
   return (
     <div className="week">
       {week.map((d) => {
         const md = monthDay(d.date);
         const cls = ["wd", d.date === today && "today", d.status === "closed" && "closed"].filter(Boolean).join(" ");
+        const items = excludeDistrict ? d.items.filter((i) => !isNoisyDistrictItem(i)) : d.items;
         return (
           <div className={cls} key={d.date}>
             <div className="dn">{d.weekday}</div>
@@ -309,7 +326,7 @@ export function WeekStrip({ week }: { week: TodayDay[] }) {
             {d.status === "closed" && <span className="pill bad">{d.status_label || "Closed"}</span>}
             {d.status === "early_dismissal" && <span className="pill warn">Early dismissal</span>}
             {d.status === "delayed" && <span className="pill warn">{d.status_label}</span>}
-            {d.items.slice(0, 2).map((i) => (
+            {items.slice(0, 2).map((i) => (
               <span className={`pill ${i.category === "deadline" ? "bad" : "ev"}`} key={i.id} title={i.title}>
                 {i.title}
               </span>
