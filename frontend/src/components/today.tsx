@@ -32,6 +32,10 @@ export function CurrentPeriodChip({ period }: { period: CurrentPeriod | null }) 
 
 export function ItemTag({ item }: { item: SchoolContentItem }) {
   if (item.category === "deadline") return <span className="tag deadline">due</span>;
+  // Report card/interim/marking-period-end dates aren't something a
+  // parent has to act on (no form to submit, nothing due) - "due" would
+  // be misleading, so these get their own label instead.
+  if (item.category === "marking_period") return <span className="tag grading">grading</span>;
   if (item.scope === "district") return <span className="tag district">district</span>;
   if (item.category === "policy_change" || item.category === "procedure") return <span className="tag new">updated</span>;
   return <span className="tag">{item.category.replace("_", " ")}</span>;

@@ -11,7 +11,7 @@ from schemas import SchoolContentItemOut
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
-_CALENDAR_CATEGORIES = ("event", "deadline", "initiative")
+_CALENDAR_CATEGORIES = ("event", "deadline", "initiative", "marking_period")
 
 
 async def _my_school_and_district_ids(db: AsyncSession, user_id: str) -> tuple[list[str], list[str], set[str]]:

@@ -563,7 +563,10 @@ class SchoolContentItem(Base):
     applies_to_school_types: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     # "event" | "deadline" | "initiative" | "reminder" | "policy_change" |
     # "procedure" | "program" | "busing" | "funding" | "volunteer" |
-    # "org_club" | "merch_ad" | "pta" | "person"
+    # "org_club" | "merch_ad" | "pta" | "person" | "lunch_menu" |
+    # "marking_period" (report card/interim/marking-period-end dates - not
+    # a "deadline" a parent has to act on, so kept distinct: see
+    # services/marking_period.py and the frontend's ItemTag "grading" badge)
     category: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)

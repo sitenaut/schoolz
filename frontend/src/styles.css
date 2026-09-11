@@ -931,6 +931,11 @@ h3 {
 .tag.district {
   color: var(--district);
 }
+.tag.grading {
+  color: var(--warn);
+  border-color: transparent;
+  background: var(--warn-soft);
+}
 .tag.new {
   color: var(--primary);
   border-color: transparent;

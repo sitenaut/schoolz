@@ -7,6 +7,7 @@ import { SchoolPicker } from "../components/SchoolPicker";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent, trackMeasurement } from "../lib/track";
+import { itemDateKeys } from "../lib/calendar";
 import type { SchoolContentItem } from "../types";
 
 /** For scope="district" items, school_name is always null (there's no
@@ -136,9 +137,9 @@ export function CalendarPage() {
   const eventsByDay = useMemo(() => {
     const map = new Map<string, SchoolContentItem[]>();
     for (const item of items) {
-      if (!item.start_date) continue;
-      const key = item.start_date.slice(0, 10);
-      map.set(key, [...(map.get(key) ?? []), item]);
+      for (const key of itemDateKeys(item)) {
+        map.set(key, [...(map.get(key) ?? []), item]);
+      }
     }
     return map;
   }, [items]);
@@ -173,7 +174,7 @@ export function CalendarPage() {
   };
 
   const rows = useMemo(() => {
-    const list = !isSearching && selectedDay && viewMode === "month" ? items.filter((i) => i.start_date?.slice(0, 10) === selectedDay) : items;
+    const list = !isSearching && selectedDay && viewMode === "month" ? items.filter((i) => itemDateKeys(i).includes(selectedDay)) : items;
     return [...list].sort((a, b) => (a.start_date ?? "") < (b.start_date ?? "") ? -1 : 1);
   }, [items, selectedDay, isSearching, viewMode]);
 
@@ -344,10 +345,11 @@ export function CalendarPage() {
           )}
         </div>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="">Events, deadlines & initiatives</option>
+          <option value="">Events, deadlines, grading & initiatives</option>
           <option value="event">Events only</option>
           <option value="deadline">Deadlines only</option>
           <option value="initiative">Initiatives only</option>
+          <option value="marking_period">Grading dates only</option>
         </select>
       </div>
 

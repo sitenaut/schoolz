@@ -69,7 +69,7 @@ export function SchoolDetailPage() {
   const upcoming = useMemo(
     () =>
       items
-        .filter((i) => ["event", "deadline", "initiative"].includes(i.category) && i.start_date && localDateKey(i.start_date) >= tk && !/^Day \d$/.test(i.title))
+        .filter((i) => ["event", "deadline", "initiative", "marking_period"].includes(i.category) && i.start_date && localDateKey(i.start_date) >= tk && !/^Day \d$/.test(i.title))
         .sort((a, b) => (a.start_date! < b.start_date! ? -1 : 1))
         .slice(0, 12),
     [items, tk],
