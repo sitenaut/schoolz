@@ -8,11 +8,14 @@ verify it. Do the phases in order. Commit after each phase (branch
 Don't improvise around it.
 
 Progress:
-- Phase 1: `backend/scripts/sql/grafana_ro.sql` and
-  `grafana/cloud-dashboards/scans_queries.sql` written. **Not run yet** —
-  needs the `grafana_ro` role created on prod Supabase and the Postgres
-  datasource + dashboard + alerts created in the Grafana Cloud console
-  (no admin API token available to do that non-interactively).
+- Phase 1: `backend/scripts/sql/grafana_ro.sql` run against prod Supabase
+  (2026-09-11) — `grafana_ro` role exists, SELECT + RLS policy confirmed on
+  all 13 tables. Password lives in `env/secrets.prod.env`
+  (`GRAFANA_RO_PASSWORD`). **Still needed**: create the Postgres datasource
+  + "schoolz / Scans" dashboard + alerts in the Grafana Cloud console (no
+  admin API token available to do that non-interactively — see
+  `grafana/cloud-dashboards/scans_queries.sql` for the panel queries and
+  alert conditions to paste in).
 - Phase 2: `backend/telemetry.py`, `backend/observability.py` added;
   `backend/main.py`, `backend/scheduler/entrypoint.py`,
   `backend/scheduler/runner.py`, `backend/requirements.txt` updated;
@@ -20,13 +23,18 @@ Progress:
   (`alloy/config.alloy`, `docker-compose.yml`, `scripts/compose-local.sh`,
   the provisioned dashboard) updated to match. `pytest -q` passes (66
   tests, including new `tests/test_telemetry.py`), verified inside a fresh
-  Docker build against a throwaway Postgres. **Not deployed** — the OTLP
-  endpoint/token exist in `env/secrets.prod.env` but haven't been pushed
-  via `fly secrets set`, so nothing is shipping to Grafana Cloud yet.
-  Scraper/Claude-call-level metrics (2e's `scraper_client.py`/
-  `content_extractor.py`/`lunch_menu.py` wiring) not done - only the job-run
-  metrics in `runner.py` are wired so far.
+  Docker build against a throwaway Postgres. OTLP endpoint + Basic-auth
+  header **staged** on `schoolz-api` via `fly secrets set --stage`
+  (2026-09-11, not live yet — takes effect on the next deploy, deliberately
+  not forced now to avoid an unplanned restart on old code that doesn't
+  read these vars anyway). Scraper/Claude-call-level metrics (2e's
+  `scraper_client.py`/`content_extractor.py`/`lunch_menu.py` wiring) not
+  done — only the job-run metrics in `runner.py` are wired so far.
 - Phases 3-6: not started.
+- Faro collector URL for Phase 4 already obtained:
+  `https://faro-collector-prod-us-east-2.grafana.net/collect/e134be0a82120a899938a4022a5bf806`
+  (app name to use: `schoolz-web`, per section 2 — not the tutorial
+  snippet's default `schoolz-faro`).
 
 ---
 
