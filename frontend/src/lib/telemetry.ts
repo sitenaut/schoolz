@@ -100,7 +100,12 @@ export function initTelemetry(): void {
   faroInstance = initializeFaro({
     url: FARO_URL,
     app: {
-      name: "schoolz-web",
+      // Must match the Frontend Observability app name registered in
+      // Grafana Cloud for this collector key ("schoolz-faro", created from
+      // the stock tutorial snippet without renaming) - Faro's collector
+      // validates this and silently drops/rejects data on a mismatch,
+      // which is exactly what showed up as "Never received any data".
+      name: "schoolz-faro",
       version: APP_VERSION,
       environment: import.meta.env.MODE === "production" ? "prod" : "local",
     },

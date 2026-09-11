@@ -110,8 +110,16 @@ Progress:
 - Phase 6: not started.
 - Faro collector URL for Phase 4 already obtained:
   `https://faro-collector-prod-us-east-2.grafana.net/collect/e134be0a82120a899938a4022a5bf806`
-  (app name to use: `schoolz-web`, per section 2 — not the tutorial
-  snippet's default `schoolz-faro`).
+  **Correction (2026-09-11): the Grafana Cloud Frontend Observability app
+  was actually created as `schoolz-faro`** (the tutorial snippet's own
+  default - not renamed to `schoolz-web` as this doc originally planned).
+  The SDK's `app.name` must match it exactly or the collector silently
+  drops everything ("Never received any data", caught by the owner after
+  the first deploy sent zero visible data despite passing health checks
+  and a real proxy round-trip). Fixed in `src/lib/telemetry.ts` to send
+  `"schoolz-faro"`. Every reference below to a Frontend Observability app
+  named `schoolz-web` is stale - `schoolz-web` is the *Fly app* (unrelated,
+  stays correct); `schoolz-faro` is the *Grafana RUM app name*.
 
 ---
 
