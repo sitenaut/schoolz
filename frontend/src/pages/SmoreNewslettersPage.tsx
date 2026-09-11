@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import { IconChevronLeft, IconChevronRight } from "../components/icons";
 
 type ScheduledJob = {
   cron_expr: string;
@@ -153,7 +154,9 @@ export function SmoreNewslettersPage() {
   return (
     <div style={{ maxWidth: 640, margin: "3rem auto", fontFamily: "sans-serif" }}>
       <p>
-        <Link to="/">&larr; Home</Link>
+        <Link to="/" className="back-link">
+          <IconChevronLeft /> Home
+        </Link>
       </p>
       <h1>School Newsletters (Smore)</h1>
       {error && <p style={{ color: "crimson" }}>{error}</p>}

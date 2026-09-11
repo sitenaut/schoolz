@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contactHref } from "../components/today";
+import { IconChevronLeft } from "../components/icons";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
 import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
@@ -85,7 +86,7 @@ export function SchoolDetailPage() {
   return (
     <>
       <Link to="/" className="back-link">
-        ← Today
+        <IconChevronLeft /> Today
       </Link>
       <div className="school-hd">
         <div className="eyebrow">{[schoolTypeLabel(s.school_type), "Cherry Hill Public Schools"].filter(Boolean).join(" · ")}</div>

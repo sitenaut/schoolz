@@ -3,7 +3,7 @@ import { googleCalendarQuickAddUrl, localDateKey, monthDay, shortDay, telHref, t
 import { schoolTypeLabel } from "../lib/schoolType";
 import type { CurrentPeriod, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
 import { AbsenceButton } from "./AbsenceButton";
-import { IconPhone } from "./icons";
+import { IconChevronRight, IconPhone } from "./icons";
 
 /* ---------- small shared bits ---------- */
 
@@ -156,7 +156,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
               <div className="fact-head">
                 <div className="k">{data.lunch.today ? "Lunch today" : "Next lunch"}</div>
                 <Link className="fact-more" to="/lunch">
-                  Lunch schedule ›
+                  Lunch schedule <IconChevronRight className="trailing-chevron" />
                 </Link>
               </div>
               <div className="v">{data.lunch.today ?? data.lunch.next}</div>
@@ -197,7 +197,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             {/* Deep-links the calendar to just this school - district-wide
                 dates come along automatically, the backend always includes
                 a selected school's district. */}
-            <Link to={`/calendar?school=${s.slug}`}>All dates for {s.short_name || s.name} ›</Link>
+            <Link to={`/calendar?school=${s.slug}`}>
+              All dates for {s.short_name || s.name} <IconChevronRight className="trailing-chevron" />
+            </Link>
           </li>
         </ul>
       )}
@@ -242,7 +244,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
           </a>
         )}
         <Link className="action" to={`/schools/${s.slug}`}>
-          Everything →
+          Everything <IconChevronRight className="trailing-chevron" />
         </Link>
       </div>
     </section>

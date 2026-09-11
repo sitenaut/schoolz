@@ -76,3 +76,20 @@ export const IconTransfer = ({ className }: P) => (
     <path d="M20 17H7M20 17l-4 4M20 17l-4-4" />
   </svg>
 );
+// Pagination (calendar month/year nav) and "back"/"forward" breadcrumb-style
+// links all use these two instead of raw &larr;/&rarr; text glyphs - a
+// glyph's color comes from the browser's default button/link text color
+// unless something overrides it (the calendar nav buttons never did,
+// which is why they read as black-on-dark-gray in dark mode); an
+// stroke="currentColor" SVG always follows whatever color the
+// surrounding element already resolves to.
+export const IconChevronLeft = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M15 5 8 12l7 7" />
+  </svg>
+);
+export const IconChevronRight = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M9 5l7 7-7 7" />
+  </svg>
+);

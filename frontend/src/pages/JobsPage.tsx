@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import { IconChevronLeft } from "../components/icons";
 
 type ScheduledJob = {
   id: string;
@@ -47,7 +48,7 @@ export function JobsPage() {
   return (
     <div className="page" style={{ maxWidth: 900 }}>
       <Link to="/" className="back-link">
-        &larr; Home
+        <IconChevronLeft /> Home
       </Link>
       <h1>Scheduled Fetches</h1>
       <p className="item-desc">

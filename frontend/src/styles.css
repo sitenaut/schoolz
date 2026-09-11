@@ -545,12 +545,24 @@ h3 {
   color: var(--ink-2);
 }
 .back-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--ink-2);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 8px;
+}
+.back-link svg {
+  width: 15px;
+  height: 15px;
+}
+.trailing-chevron {
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+  margin-left: 2px;
 }
 .empty {
   background: var(--card);

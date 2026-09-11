@@ -4,6 +4,7 @@ import { useMySchools } from "../lib/mySchools";
 import { apiFetch } from "../api";
 import { ItemRow } from "../components/today";
 import { SchoolPicker } from "../components/SchoolPicker";
+import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import type { SchoolContentItem } from "../types";
 import styles from "./CalendarPage.module.css";
 
@@ -185,12 +186,12 @@ export function CalendarPage() {
       {!isSearching && viewMode === "month" && (
         <>
           <div className={styles.monthNav}>
-            <button onClick={() => changeMonth(-1)} aria-label="Previous month">
-              &larr;
+            <button className={styles.navButton} onClick={() => changeMonth(-1)} aria-label="Previous month">
+              <IconChevronLeft className={styles.navIcon} />
             </button>
             <h2>{viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</h2>
-            <button onClick={() => changeMonth(1)} aria-label="Next month">
-              &rarr;
+            <button className={styles.navButton} onClick={() => changeMonth(1)} aria-label="Next month">
+              <IconChevronRight className={styles.navIcon} />
             </button>
           </div>
 
@@ -234,12 +235,12 @@ export function CalendarPage() {
       {!isSearching && viewMode === "year" && (
         <>
           <div className={styles.monthNav}>
-            <button onClick={() => changeYear(-1)} aria-label="Previous year">
-              &larr;
+            <button className={styles.navButton} onClick={() => changeYear(-1)} aria-label="Previous year">
+              <IconChevronLeft className={styles.navIcon} />
             </button>
             <h2>{viewDate.getFullYear()}</h2>
-            <button onClick={() => changeYear(1)} aria-label="Next year">
-              &rarr;
+            <button className={styles.navButton} onClick={() => changeYear(1)} aria-label="Next year">
+              <IconChevronRight className={styles.navIcon} />
             </button>
           </div>
 

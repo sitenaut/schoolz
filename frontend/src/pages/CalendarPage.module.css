@@ -59,6 +59,22 @@
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
+  /* Buttons don't inherit page text color by default - without this the
+     nav arrows fell back to the browser's own default button text color,
+     which read as near-black-on-dark-gray in dark mode regardless of the
+     app's theme. */
+  color: var(--color-text);
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
 }
 
 .grid {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { IconChevronRight } from "../components/icons";
 import type { School } from "../types";
 
 export function SchoolsPage() {
@@ -72,7 +73,7 @@ export function SchoolsPage() {
                   </span>
                   {s.address && <div className="item-desc">{s.address}</div>}
                 </div>
-                <span>&rarr;</span>
+                <IconChevronRight className="trailing-chevron" />
               </Link>
             </li>
           ))}
