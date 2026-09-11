@@ -6,7 +6,7 @@ import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contact
 import { IconChevronLeft } from "../components/icons";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
-import { trackMeasurement } from "../lib/track";
+import { trackEvent, trackMeasurement } from "../lib/track";
 import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
 
 type Newsletter = { id: string; label: string | null; url: string; latest_summary: string | null; last_scanned_at: string | null };
@@ -86,6 +86,7 @@ export function SchoolDetailPage() {
   const nurse = today.contacts.find((c) => c.role === "nurse");
   const counselor = today.contacts.find((c) => c.role === "counselor");
   const thisYear = currentAcademicYear();
+  const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
 
   return (
     <>
@@ -136,32 +137,37 @@ export function SchoolDetailPage() {
         <div className="actions bare">
           <AbsenceButton school={s} />
           {nurse && contactHref(nurse) && (
-            <a className="action" href={contactHref(nurse)!.href}>
+            <a className="action" href={contactHref(nurse)!.href} onClick={() => track("nurse", "tel")}>
               Nurse
             </a>
           )}
           {counselor && contactHref(counselor) && (
-            <a className="action" href={contactHref(counselor)!.href}>
+            <a className="action" href={contactHref(counselor)!.href} onClick={() => track("counselor", "tel")}>
               Counselor
             </a>
           )}
           {today.sacc?.site_phone && (
-            <a className="action" href={telHref(today.sacc.site_phone)}>
+            <a className="action" href={telHref(today.sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
               SACC late line
             </a>
           )}
           {s.main_phone && (
-            <a className="action" href={telHref(s.main_phone)}>
+            <a className="action" href={telHref(s.main_phone)} onClick={() => track("main_office", "tel")}>
               Main office
             </a>
           )}
           {transport?.district.office_phone && (
-            <a className="action" href={telHref(transport.district.office_phone)} title="District transportation office">
+            <a
+              className="action"
+              href={telHref(transport.district.office_phone)}
+              title="District transportation office"
+              onClick={() => track("bus_office", "tel")}
+            >
               Bus office
             </a>
           )}
           {s.athletics_url && (
-            <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer">
+            <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
               Sports &amp; band
             </a>
           )}
@@ -438,7 +444,14 @@ export function SchoolDetailPage() {
             {documents.map((d) => {
               const stale = Boolean(d.academic_year && d.academic_year !== thisYear);
               return (
-                <a href={d.url} target="_blank" rel="noreferrer" className={stale ? "stale" : ""} key={d.id}>
+                <a
+                  href={d.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={stale ? "stale" : ""}
+                  key={d.id}
+                  onClick={() => trackEvent("action", { action: "document_open", method: "link", school_slug: s.slug })}
+                >
                   📄 {d.doc_type === "bell_schedule" ? "Bell schedule" : d.title}
                   <small>{d.academic_year ? (stale ? `${d.academic_year} · may be outdated` : d.academic_year) : d.source}</small>
                 </a>

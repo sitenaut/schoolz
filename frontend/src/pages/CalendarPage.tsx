@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMySchools } from "../lib/mySchools";
 import { apiFetch } from "../api";
@@ -6,6 +6,7 @@ import { ItemRow } from "../components/today";
 import { SchoolPicker } from "../components/SchoolPicker";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { schoolTypeLabel } from "../lib/schoolType";
+import { trackEvent, trackMeasurement } from "../lib/track";
 import type { SchoolContentItem } from "../types";
 
 /** For scope="district" items, school_name is always null (there's no
@@ -82,6 +83,8 @@ export function CalendarPage() {
 
   const schoolSlugs = selected ?? [];
   const schoolIdsKey = schoolSlugs.join(",");
+  const readyStart = useRef(performance.now());
+  const readyReported = useRef(false);
 
   // Debounced so typing doesn't fire a request per keystroke.
   useEffect(() => {
@@ -107,9 +110,20 @@ export function CalendarPage() {
     }
     if (schoolSlugs.length) q.set("school_ids", schoolIdsKey);
     if (category) q.set("category", category);
+    const searchedTerm = isSearching ? searchTerm.trim() : null;
     apiFetch(`/calendar?${q.toString()}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then(setItems);
+      .then((data: SchoolContentItem[]) => {
+        setItems(data);
+        if (!readyReported.current) {
+          readyReported.current = true;
+          trackMeasurement("calendar_ready", performance.now() - readyStart.current, { mode: isSearching ? "search" : viewMode });
+        }
+        // Never the query text itself, per privacy guardrails - just its shape.
+        if (searchedTerm) {
+          trackEvent("calendar_search", { result_count: data.length, query_length: searchedTerm.length });
+        }
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm, selected === null]);
 

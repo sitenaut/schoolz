@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { IconSearch } from "../components/icons";
 import { useMySchools } from "../lib/mySchools";
 import { useAuth } from "../context/AuthContext";
+import { trackEvent } from "../lib/track";
 import type { School } from "../types";
 
 const TIERS: { key: string; label: string }[] = [
@@ -40,6 +41,7 @@ export function PickSchoolsPage() {
 
   const save = () => {
     setSlugs(picked);
+    trackEvent("schools_picked", { count: picked.length });
     navigate("/");
   };
 

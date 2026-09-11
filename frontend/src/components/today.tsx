@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { googleCalendarQuickAddUrl, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
+import { trackEvent } from "../lib/track";
 import type { CurrentPeriod, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
 import { AbsenceButton } from "./AbsenceButton";
 import { IconChevronRight, IconPhone } from "./icons";
@@ -73,7 +74,7 @@ export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; 
               </a>
             )}
             {cal && (
-              <a href={cal} target="_blank" rel="noreferrer">
+              <a href={cal} target="_blank" rel="noreferrer" onClick={() => trackEvent("action", { action: "add_to_calendar", method: "link" })}>
                 Add to calendar
               </a>
             )}
@@ -133,6 +134,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   const nurseHref = nurse ? contactHref(nurse) : null;
   const counselorHref = counselor ? contactHref(counselor) : null;
   const sacc = data.sacc;
+  const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
 
   return (
     <section className="day" style={{ ["--c" as string]: color }}>
@@ -207,39 +209,49 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
       <div className="actions">
         <AbsenceButton school={s} />
         {s.main_phone && (
-          <a className="action" href={telHref(s.main_phone)}>
+          <a className="action" href={telHref(s.main_phone)} onClick={() => track("main_office", "tel")}>
             <IconPhone />
             Main office
           </a>
         )}
         {nurseHref && (
-          <a className="action" href={nurseHref.href}>
+          <a className="action" href={nurseHref.href} onClick={() => track("nurse", "tel")}>
             Nurse
           </a>
         )}
         {counselorHref && (
-          <a className="action" href={counselorHref.href}>
+          <a className="action" href={counselorHref.href} onClick={() => track("counselor", "tel")}>
             Counselor
           </a>
         )}
         {sacc?.site_phone && (
-          <a className="action" href={telHref(sacc.site_phone)}>
+          <a className="action" href={telHref(sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
             Running late (SACC)
           </a>
         )}
         {data.transportation?.office_phone && (
-          <a className="action" href={telHref(data.transportation.office_phone)} title="District transportation office">
+          <a
+            className="action"
+            href={telHref(data.transportation.office_phone)}
+            title="District transportation office"
+            onClick={() => track("bus_office", "tel")}
+          >
             <IconPhone />
             Bus office
           </a>
         )}
         {data.transportation?.late_bus_phone && (
-          <a className="action" href={telHref(data.transportation.late_bus_phone)} title={`Late bus: ${data.transportation.late_bus_contractor}`}>
+          <a
+            className="action"
+            href={telHref(data.transportation.late_bus_phone)}
+            title={`Late bus: ${data.transportation.late_bus_contractor}`}
+            onClick={() => track("late_bus", "tel")}
+          >
             Late bus
           </a>
         )}
         {s.athletics_url && (
-          <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer">
+          <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
             Sports &amp; band
           </a>
         )}

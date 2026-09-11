@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { localDateKey, monthDay, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { useMySchools } from "../lib/mySchools";
+import { trackMeasurement } from "../lib/track";
 import type { LunchMenu } from "../types";
 
 export function LunchPage() {
@@ -12,6 +13,8 @@ export function LunchPage() {
   const [menu, setMenu] = useState<LunchMenu | null | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const readyStart = useRef(performance.now());
+  const readyReported = useRef(false);
 
   useEffect(() => {
     // Keep the selected tab inside whatever the ribbon filter currently
@@ -28,7 +31,13 @@ export function LunchPage() {
     setMenu(undefined);
     apiFetch(`/schools/${active}/lunch-menu`)
       .then((r) => (r.ok ? r.json() : null))
-      .then(setMenu);
+      .then((m: LunchMenu | null) => {
+        setMenu(m);
+        if (!readyReported.current) {
+          readyReported.current = true;
+          trackMeasurement("lunch_ready", performance.now() - readyStart.current);
+        }
+      });
   }, [active]);
 
   const tk = todayKey();
