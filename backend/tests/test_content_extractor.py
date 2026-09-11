@@ -1,4 +1,7 @@
-from services.content_extractor import _parse_lunch_menu_days
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from services.content_extractor import _infer_lunch_menu_start_date, _parse_lunch_menu_days
 
 # Confirmed real shape from a Chesterbrook Academy Smore lunch-menu flyer:
 # the model's own description text for a category="lunch_menu" item.
@@ -32,6 +35,56 @@ def test_leading_title_text_before_first_day_is_ignored():
 
 def test_no_day_markers_returns_empty_list():
     assert _parse_lunch_menu_days("Just a paragraph with no day markers.", year=2026, month=9) == []
+
+
+# Confirmed real shape from the actual Chesterbrook Academy prod extraction
+# that motivated this fix: month/day grouped by weekday, only the first
+# entry of each weekday group repeats the weekday word, and the day is
+# written as "M/D" (redundantly including the already-known month) rather
+# than a bare day number.
+_MD_GROUPED_DESCRIPTION = (
+    "Monday 9/1: Baked Ziti w/ Meat Sauce, Veggie & Fruit (AM: Cereal & Milk, PM: Cinnamon Grams); "
+    "9/8: Pasta w/ Marinara Sauce, Veggie & Fruit (AM: Cereal & Milk, PM: Cinnamon Grams); "
+    "9/15: Baked Ziti, Veggie, Fruit (AM: Cereal & Milk, PM: Cinnamon Grams). "
+    "Tuesday 9/2: Tacos, Veggie, Fruit (AM: Bagels w/ Cream Cheese, PM: Pretzels)."
+)
+
+
+def test_parses_month_slash_day_entries_with_weekday_only_on_first_of_group():
+    days = _parse_lunch_menu_days(_MD_GROUPED_DESCRIPTION, year=2026, month=9)
+    assert {d["date"].day for d in days} == {1, 8, 15, 2}
+    first = next(d for d in days if d["date"].day == 1)
+    assert first["description"] == "Baked Ziti w/ Meat Sauce, Veggie & Fruit (AM: Cereal & Milk, PM: Cinnamon Grams)"
+
+
+def test_bare_weekday_dd_format_still_works():
+    # Regression check: the original "Weekday DD:" (no slash) shape must
+    # keep working after loosening the regex for the M/D case above.
+    days = _parse_lunch_menu_days(_REAL_DESCRIPTION, year=2026, month=9)
+    assert len(days) == 4
+
+
+# --- _infer_lunch_menu_start_date -------------------------------------------
+
+_EXTRACTED_AT = datetime(2026, 9, 10, tzinfo=ZoneInfo("America/New_York"))
+
+
+def test_infers_month_from_item_title():
+    item = {"title": "September Lunch Menu", "description": "..."}
+    d = _infer_lunch_menu_start_date(item, _EXTRACTED_AT)
+    assert (d.year, d.month, d.day) == (2026, 9, 1)
+
+
+def test_infers_month_and_year_when_both_present():
+    item = {"title": "October 2027 Lunch Menu", "description": "..."}
+    d = _infer_lunch_menu_start_date(item, _EXTRACTED_AT)
+    assert (d.year, d.month, d.day) == (2027, 10, 1)
+
+
+def test_falls_back_to_extraction_time_when_no_month_mentioned():
+    item = {"title": "Lunch Menu", "description": "Nothing dated here"}
+    d = _infer_lunch_menu_start_date(item, _EXTRACTED_AT)
+    assert (d.year, d.month, d.day) == (2026, 9, 1)
 
 
 # --- _prepare_image / _sniff_media_type -------------------------------------

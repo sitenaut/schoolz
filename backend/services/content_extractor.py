@@ -84,7 +84,7 @@ _EXTRACTION_TOOL = {
                             "description": "For category='person', this MUST be the person's actual name (e.g. 'Sara Egan'), with their role in person_title (e.g. 'School Counselor') - never put a role/title here instead of a name.",
                         },
                         "description": {"type": "string"},
-                        "start_date": {"type": "string", "description": "Date/time in the school's own local time, as 'YYYY-MM-DD' (all-day) or 'YYYY-MM-DDTHH:MM:SS' (timed) - no 'Z' or UTC offset, this is local wall-clock time, not UTC."},
+                        "start_date": {"type": "string", "description": "Date/time in the school's own local time, as 'YYYY-MM-DD' (all-day) or 'YYYY-MM-DDTHH:MM:SS' (timed) - no 'Z' or UTC offset, this is local wall-clock time, not UTC. REQUIRED for category='lunch_menu' even though the item covers a whole month - use the first of that month (e.g. '2026-09-01'), since this is what tells us which year/month the day-by-day breakdown in description applies to."},
                         "end_date": {"type": "string", "description": "Same local-time format as start_date, for date ranges."},
                         "link_url": {
                             "type": "string",
@@ -230,15 +230,23 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
 
 _DEFAULT_TZ = ZoneInfo("America/New_York")
 
-# Matches the model's own consistent "Weekday DD: description." shape for a
-# lunch_menu item's description (confirmed real on a Chesterbrook Academy
-# flyer) - split deterministically rather than a second LLM round-trip,
+# Matches the model's own "[Weekday] [M/]DD: description." shape for a
+# lunch_menu item's description (confirmed real on Chesterbrook Academy
+# flyers) - split deterministically rather than a second LLM round-trip,
 # since the format the model already produces is regular enough to parse
-# with a regex. Anything before the first match (a title line) and after
-# the last (a trailing "Available daily: ..." note) is simply not a day
-# entry and is dropped here, not lost - the raw description stays on the
+# with a regex. The weekday name and month prefix are both optional per
+# match: a real Chesterbrook menu grouped entries by day-of-week and only
+# repeated the weekday label on the first entry of each group ("Monday
+# 9/1: ... ; 9/8: ... ; 9/15: ..."), and redundantly included the month
+# alongside the day (matching this item's own year/month, already known
+# from item_start_date - the month digit is discarded, only the day is
+# captured). Anything before the first match (a title line) and after the
+# last (a trailing "Available daily: ..." note) is simply not a day entry
+# and is dropped here, not lost - the raw description stays on the
 # SchoolContentItem row this was parsed from.
-_MENU_DAY_RE = re.compile(r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+(\d{1,2}):\s*")
+_MENU_DAY_RE = re.compile(
+    r"(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+)?(?:\d{1,2}/)?(\d{1,2}):\s*"
+)
 
 
 _MENU_TRAILING_NOTE_RE = re.compile(r"\.?\s*Available daily:.*$", re.IGNORECASE)
@@ -251,7 +259,9 @@ def _parse_lunch_menu_days(description: str, year: int, month: int) -> list[dict
     for i, m in enumerate(matches):
         day = int(m.group(1))
         end = matches[i + 1].start() if i + 1 < len(matches) else len(description)
-        text = description[m.end() : end].strip().rstrip(".").strip()
+        # ". " and "; " both seen as the model's chosen entry separator
+        # across real newsletters - strip whichever trails this entry.
+        text = description[m.end() : end].strip().rstrip(".;").strip()
         if not text:
             continue
         try:
@@ -260,6 +270,40 @@ def _parse_lunch_menu_days(description: str, year: int, month: int) -> list[dict
             continue
         days.append({"date": date, "description": text})
     return days
+
+
+_MONTH_YEAR_RE = re.compile(
+    r"(January|February|March|April|May|June|July|August|September|October|November|December)"
+    r"\s*,?\s*(\d{4})?",
+    re.IGNORECASE,
+)
+_MONTH_NUM = {m.lower(): i for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], start=1
+)}
+
+
+def _infer_lunch_menu_start_date(item: dict, extracted_at: datetime) -> datetime | None:
+    """The model is asked to always set start_date to the first of the
+    applicable month for a lunch_menu item, but omits it often enough
+    (confirmed real: a Chesterbrook Academy menu with no start_date at all,
+    which silently skipped the whole day-by-day parse below - the item sat
+    inert in school_content_items with no UI surface, since the frontend
+    only ever reads the structured LunchMenu/LunchMenuItem tables, never
+    this category directly) that a fallback is worth having. Tries a
+    "Month[, YYYY]" mention in the item's own title/description first (a
+    menu almost always names its own month), then falls back to the
+    extraction run's own date - a lunch menu newsletter is close to always
+    about the current or very-near-future month."""
+    text = f"{item.get('title') or ''} {item.get('description') or ''}"
+    m = _MONTH_YEAR_RE.search(text)
+    if m:
+        month = _MONTH_NUM[m.group(1).lower()]
+        year = int(m.group(2)) if m.group(2) else extracted_at.year
+        try:
+            return datetime(year, month, 1, tzinfo=_DEFAULT_TZ)
+        except ValueError:
+            pass
+    return datetime(extracted_at.year, extracted_at.month, 1, tzinfo=_DEFAULT_TZ)
 
 
 def _parse_date(value: str | None) -> datetime | None:
@@ -436,6 +480,9 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             )
 
             item_start_date = _parse_date(item.get("start_date"))
+            if item_start_date is None and item["category"] == "lunch_menu":
+                item_start_date = _infer_lunch_menu_start_date(item, datetime.now(_DEFAULT_TZ))
+                record_parse_issue("smore.scan", "unexpected_format", newsletter_id=newsletter.id, sample="lunch_menu item missing start_date")
 
             if item["category"] == "lunch_menu" and school_id and item_start_date and item.get("description"):
                 days = _parse_lunch_menu_days(item["description"], item_start_date.year, item_start_date.month)
