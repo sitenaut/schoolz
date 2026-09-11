@@ -1,9 +1,27 @@
+import { useEffect, useRef } from "react";
 import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { useMySchools } from "../lib/mySchools";
 import { IconCalendar, IconHome, IconJobs, IconLunch, IconNewsletter, IconSchool, IconTransfer } from "./icons";
+import { getFaro } from "../lib/telemetry";
+import { trackEvent } from "../lib/track";
+
+// Route templates for the routes registered in App.tsx - used to keep
+// page_view's `route` attribute low-cardinality (a school slug or invite
+// token never appears in it) instead of the raw pathname.
+const ROUTE_TEMPLATES: [RegExp, string][] = [
+  [/^\/schools\/[^/]+$/, "/schools/:schoolId"],
+  [/^\/invites\/[^/]+$/, "/invites/:token"],
+];
+
+function routeTemplate(pathname: string): string {
+  for (const [pattern, template] of ROUTE_TEMPLATES) {
+    if (pattern.test(pathname)) return template;
+  }
+  return pathname;
+}
 
 // The ribbon's school filter has no meaning on the centrally-managed admin
 // pages (they aren't scoped to "my schools" at all) - hidden there rather
@@ -25,6 +43,31 @@ export function AppShell() {
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
   const isAdminPage = ADMIN_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+
+  const fromRouteRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const route = routeTemplate(pathname);
+    const schoolMatch = pathname.match(/^\/schools\/([^/]+)$/);
+    trackEvent("page_view", {
+      route,
+      ...(fromRouteRef.current ? { from_route: fromRouteRef.current } : {}),
+      ...(schoolMatch ? { school_slug: schoolMatch[1] } : {}),
+    });
+    fromRouteRef.current = route;
+  }, [pathname]);
+
+  useEffect(() => {
+    const faro = getFaro();
+    if (!faro) return;
+    faro.api.setSession({
+      ...faro.api.getSession(),
+      attributes: {
+        logged_in: String(!!user),
+        is_admin: String(!!user?.is_admin),
+        schools_count: String(mySchools.length),
+      },
+    });
+  }, [user, mySchools.length]);
 
   return (
     <div className="shell">
@@ -49,7 +92,14 @@ export function AppShell() {
       {mySchools.length > 0 && !isAdminPage && (
         <div className="ribbon" role="group" aria-label="Switch schools">
           {mySchools.length > 1 && (
-            <button className="ribbon-chip all" aria-pressed={!isFiltered} onClick={activateAll}>
+            <button
+              className="ribbon-chip all"
+              aria-pressed={!isFiltered}
+              onClick={() => {
+                activateAll();
+                trackEvent("school_filter_toggle", { active_count: mySchools.length });
+              }}
+            >
               All
             </button>
           )}
@@ -58,7 +108,10 @@ export function AppShell() {
               className="ribbon-chip"
               style={{ ["--c" as string]: colorFor(s.id) }}
               aria-pressed={isActive(s.id)}
-              onClick={() => toggleActive(s)}
+              onClick={() => {
+                toggleActive(s);
+                trackEvent("school_filter_toggle", { active_count: mySchools.length });
+              }}
               title={s.name}
               key={s.id}
             >

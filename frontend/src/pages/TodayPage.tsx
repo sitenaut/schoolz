@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { apiFetch } from "../api";
 import { DayCard } from "../components/today";
 import { localDateKey, monthDay } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
+import { trackMeasurement } from "../lib/track";
 import type { SchoolContentItem, SchoolToday } from "../types";
 
 /** The home page: one day-card per active school, with any district-wide
@@ -14,6 +15,8 @@ import type { SchoolContentItem, SchoolToday } from "../types";
 export function TodayPage() {
   const { mySchools, activeSchools, loading, colorFor, isFiltered } = useMySchools();
   const [cards, setCards] = useState<Record<string, SchoolToday>>({});
+  const readyStart = useRef(performance.now());
+  const readyReported = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +34,13 @@ export function TodayPage() {
       cancelled = true;
     };
   }, [mySchools]);
+
+  useEffect(() => {
+    if (readyReported.current || mySchools.length === 0) return;
+    if (Object.keys(cards).length < mySchools.length) return;
+    readyReported.current = true;
+    trackMeasurement("today_ready", performance.now() - readyStart.current, { schools: mySchools.length });
+  }, [cards, mySchools]);
 
   if (loading) return <p className="note">Loading…</p>;
   if (mySchools.length === 0) return <Navigate to="/start" replace />;

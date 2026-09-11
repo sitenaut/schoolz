@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
@@ -6,6 +6,7 @@ import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contact
 import { IconChevronLeft } from "../components/icons";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
+import { trackMeasurement } from "../lib/track";
 import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
 
 type Newsletter = { id: string; label: string | null; url: string; latest_summary: string | null; last_scanned_at: string | null };
@@ -38,9 +39,11 @@ export function SchoolDetailPage() {
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [transport, setTransport] = useState<SchoolTransportation | null>(null);
   const [missing, setMissing] = useState(false);
+  const readyStart = useRef(performance.now());
 
   useEffect(() => {
     if (!schoolId) return;
+    readyStart.current = performance.now();
     Promise.all([
       apiFetch(`/schools/${schoolId}/today`).then((r) => (r.ok ? r.json() : null)),
       apiFetch(`/schools/${schoolId}/content`).then((r) => (r.ok ? r.json() : [])),
@@ -58,6 +61,7 @@ export function SchoolDetailPage() {
       setSacc(sc);
       setNewsletters(nl);
       setTransport(tr);
+      if (t) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
     });
   }, [schoolId]);
 

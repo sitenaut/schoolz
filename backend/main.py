@@ -70,6 +70,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Every GET currently sends Content-Type: application/json (see
+    # apiFetch), which makes it a non-simple request and forces a preflight
+    # - and Faro's traceparent header will too, once RUM ships. Browsers
+    # cap how long they'll actually honor this (Chrome: 2h), but it still
+    # cuts down repeat preflights within a session.
+    max_age=86400,
 )
 
 

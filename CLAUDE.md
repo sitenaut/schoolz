@@ -293,6 +293,61 @@ The frontend was restructured around one question: what does a parent need at 7:
 - **School logos**: `School.logo_url` (migration `0023`) is discovered by `school_info.scan` alongside address/phone - `services/school_info.py:_find_logo_url` takes the first `<img>` inside the page's `<header>`, skipping the Google Translate widget badge some sites embed ahead of the real logo (`gstatic.com`) - confirmed correct on all 4 schools checked (Bret Harte, Beck, both high schools). Hotlinked from Finalsite's own CDN, same as every other asset URL in this app (lunch PDFs, documents) - not downloaded and re-hosted, since the CDN URLs are already versioned/cached and this app has no asset-storage pattern yet. Used in the ribbon chips and the `/start` picker's school buttons.
 - Fixed the oversized magnifying-glass icon on `/start`'s search box - `.search svg` had no explicit size, so it fell back to the browser's default replaced-element size (300×150) instead of the icon's intended 18px.
 
+## Frontend RUM - Grafana Faro (added 2026-09-11)
+
+`frontend/src/lib/telemetry.ts` (`initTelemetry()`, called once from `main.tsx`)
+wires Grafana Faro (`@grafana/faro-react`/`-web-sdk`/`-web-tracing`, pinned
+`1.19.0` — the last 1.x release, deliberately not the 2.x line, which bumps
+its `react-router` peer dep to v7/v8 and this app is still on
+`react-router-dom` v6). No-ops entirely when `VITE_FARO_URL` is empty (local
+dev, vitest) - nothing is sent. `App.tsx`'s `<Routes>` is `<FaroRoutes>` so
+view names are route templates, not raw URLs.
+
+- **Privacy scrubbing is mandatory, not optional**: `scrubUrl()` drops the
+  entire `#hash` (Supabase OAuth returns tokens there), strips
+  `code`/`token`/`access_token`/`refresh_token`/`state` query params, and
+  collapses `/invites/<token>` to `/invites/:token`. `beforeSend` (`scrubItem`)
+  applies it to `meta.page.url`, `meta.view.name`, and every string
+  payload/attribute value that looks like a URL, one level deep. Covered by
+  `src/lib/telemetry.test.ts`.
+- **`src/lib/track.ts`** (`trackEvent`/`trackMeasurement`) wraps
+  `faro.api.pushEvent`/`pushMeasurement`, no-op when Faro isn't initialized.
+  Wired so far: `page_view` (route template + `from_route` + `school_slug`,
+  `AppShell.tsx`), session attributes (`logged_in`/`is_admin`/`schools_count`
+  via `faro.api.setSession`), `today_ready`/`school_page_ready` measurements,
+  `school_filter_toggle` (ribbon chips), `action` (absence button only so
+  far). **Not yet wired**: `calendar_ready`, `lunch_ready`, `calendar_search`,
+  `schools_picked`, and `action` for nurse/counselor/bus/late-bus/add-to-
+  calendar/document-open/sports-link - same `trackEvent`/`trackMeasurement`
+  pattern, just not done yet.
+- **Same-origin proxy** (`frontend/nginx.conf.template`, processed by
+  nginx:alpine's built-in envsubst-on-templates startup step - hence
+  `.template`, not a plain `.conf`, and `COPY`'d to
+  `/etc/nginx/templates/default.conf.template` in the Dockerfile, not
+  `/etc/nginx/conf.d/`): `*.grafana.net` collector hosts are on common
+  ad-block lists, so `/rum/collect` proxies to the real collector URL
+  (`FARO_COLLECTOR_URL`, a **runtime** env var / Fly secret, not a build
+  arg - the collector URL only needs to exist server-side to build the
+  proxy config). `VITE_FARO_URL` is set to the relative path `/rum/collect`
+  at build time (`frontend/fly.toml`'s `[build.args]`), so the browser
+  never talks to `*.grafana.net` directly. The Dockerfile defaults
+  `FARO_COLLECTOR_URL` to `http://127.0.0.1:1` (a placeholder that fails
+  cleanly with a 502 on `/rum/collect`, never a broken nginx config) so
+  local compose - which never sets this var, since `VITE_FARO_URL` is empty
+  there too - starts up fine. Verified: nginx starts and serves the
+  homepage in both the placeholder and real-URL cases; a real POST to
+  `/rum/collect` through the proxy reaches the actual Grafana collector
+  (400 back - the collector rejecting a test payload, not a connection
+  failure).
+- **Not yet done**: `FARO_COLLECTOR_URL` hasn't been pushed to
+  `schoolz-web` via `fly secrets set`, and this code hasn't been deployed -
+  RUM is fully wired but not live in prod yet. `frontend/src/pages/PrivacyPage.tsx`
+  updated (owner-approved wording) to disclose the anonymous RUM data
+  collection; a consent banner was deliberately *not* added (RUM is
+  anonymous/functional, not identifying - same "strictly necessary"
+  reasoning as the rest of the page), flagged in the observability plan's
+  PR description as the owner's call, not decided unilaterally.
+
 ## Prod deployment (added 2026-09-10)
 
 Live at `https://schoolz.sitenaut.com` (frontend) and `https://schoolz-api.sitenaut.com` (backend). Three Fly apps in the `schoolz` Fly org: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`. Deploy manually with `fly deploy --remote-only` from `backend/`, `frontend/`, or `scraper/`; CI (`migrate.yml` → `deploy.yml`) only runs on pushes to `main` and only covers backend + frontend, not the scraper.

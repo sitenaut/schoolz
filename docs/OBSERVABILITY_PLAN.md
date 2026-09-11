@@ -55,7 +55,28 @@ Progress:
   Migration 0026 run against prod (2026-09-11, `0025 -> 0026`) - columns
   confirmed present. Still not live end-to-end: `schoolz-api` hasn't been
   deployed with this code yet.
-- Phases 4-6: not started.
+- Phase 4: Faro packages installed (`@grafana/faro-react`/`-web-sdk`/
+  `-web-tracing` pinned `1.19.0` - the 1.x line, not 2.x, to match this
+  app's `react-router-dom` v6 peer dep). `src/lib/telemetry.ts`
+  (`initTelemetry`, `scrubUrl`, `FaroRoutes` re-export), `src/lib/track.ts`
+  (`trackEvent`/`trackMeasurement`) added. Wired: `page_view`,
+  session attributes, `today_ready`, `school_page_ready`,
+  `school_filter_toggle`, `action` (absence button only). **Not wired**:
+  `calendar_ready`/`lunch_ready`/`calendar_search`/`schools_picked` and
+  `action` for the other buttons (nurse/counselor/bus/add-to-calendar/
+  document-open/sports-link) - same pattern, just not done in this pass.
+  Same-origin `/rum/collect` proxy (`frontend/nginx.conf.template` +
+  envsubst + Dockerfile placeholder default) verified with a real Docker
+  build: nginx starts cleanly with and without `FARO_COLLECTOR_URL` set,
+  and a real POST through the proxy reaches the actual Grafana Faro
+  collector. `VITE_APP_VERSION` now the git short SHA in `deploy.yml`.
+  `PrivacyPage.tsx` updated with the owner-approved RUM disclosure; no
+  consent banner added (flagged as the owner's call). CORS `max_age=86400`
+  added. `tsc --noEmit`, `npm test` (12 tests incl. 7 new scrub tests), and
+  a real `npm run build` all clean. **Not yet live**: `FARO_COLLECTOR_URL`
+  not pushed to `schoolz-web` via `fly secrets set`, and nothing in this
+  phase has been deployed.
+- Phases 5-6: not started.
 - Faro collector URL for Phase 4 already obtained:
   `https://faro-collector-prod-us-east-2.grafana.net/collect/e134be0a82120a899938a4022a5bf806`
   (app name to use: `schoolz-web`, per section 2 — not the tutorial

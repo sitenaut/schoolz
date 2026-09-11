@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Navigate } from "react-router-dom";
+import { FaroRoutes } from "./lib/telemetry";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AccountPage } from "./pages/AccountPage";
 import { AppShell } from "./components/AppShell";
@@ -43,7 +44,7 @@ function RequireAdmin({ children }: { children: React.ReactElement }) {
 
 function Routed() {
   return (
-    <Routes>
+    <FaroRoutes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<AppShell />}>
@@ -104,7 +105,7 @@ function Routed() {
         }
       />
       </Route>
-    </Routes>
+    </FaroRoutes>
   );
 }
 

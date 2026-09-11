@@ -11,6 +11,7 @@ primary_region = "ewr"
     VITE_SUPABASE_URL = "https://lxithuvstfslndvsdnsk.supabase.co"
     VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ymxiIhkeaV6R5egNQI9gwA_iY95YXIR"
     VITE_APP_VERSION = "prod"
+    VITE_FARO_URL = "/rum/collect"
 
 [http_service]
   internal_port = 3000

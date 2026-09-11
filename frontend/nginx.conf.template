@@ -1,0 +1,31 @@
+server {
+    listen 3000;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # nginx:alpine's stock mime.types has no entry for .webmanifest, so it
+    # was served as application/octet-stream.
+    types {
+        application/manifest+json webmanifest;
+    }
+    include /etc/nginx/mime.types;
+
+    # Same-origin proxy for Grafana Faro (RUM). *.grafana.net collector
+    # hosts are on common ad-block lists - proxying through our own domain
+    # keeps RUM data from silently disappearing for those visitors. The
+    # collector URL is public by design (it ships in the JS bundle either
+    # way), so baking it into the built image via envsubst is fine - this
+    # is templated (not a plain .conf) specifically so FARO_COLLECTOR_URL
+    # can be a runtime Fly secret instead of a build arg.
+    location = /rum/collect {
+        proxy_pass ${FARO_COLLECTOR_URL};
+        proxy_ssl_server_name on;
+        proxy_set_header Host $proxy_host;
+        client_max_body_size 1m;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
