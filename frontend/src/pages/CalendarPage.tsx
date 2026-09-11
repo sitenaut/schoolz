@@ -5,7 +5,19 @@ import { apiFetch } from "../api";
 import { ItemRow } from "../components/today";
 import { SchoolPicker } from "../components/SchoolPicker";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
+import { schoolTypeLabel } from "../lib/schoolType";
 import type { SchoolContentItem } from "../types";
+
+/** For scope="district" items, school_name is always null (there's no
+ * single school to name) - fine for a holiday closure that applies to
+ * everyone, but the "Day N" rotation markers apply to only one tier at a
+ * time (elementary via the ICS feed, high school via the rotation PDF)
+ * and can land on the same date with different values. Without a label,
+ * "Day 2" and "Day 3" on the same day just look contradictory. */
+function districtItemLabel(item: SchoolContentItem): string | null {
+  if (!item.applies_to_school_types?.length) return null;
+  return item.applies_to_school_types.map(schoolTypeLabel).filter(Boolean).join(" / ");
+}
 import styles from "./CalendarPage.module.css";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -318,7 +330,12 @@ export function CalendarPage() {
         ) : (
           <div className="list">
             {rows.map((i) => (
-              <ItemRow item={i} color={i.scope === "school" ? colorForName(i.school_name) : undefined} schoolName={i.scope === "school" ? i.school_name : null} key={i.id} />
+              <ItemRow
+                item={i}
+                color={i.scope === "school" ? colorForName(i.school_name) : undefined}
+                schoolName={i.scope === "school" ? i.school_name : districtItemLabel(i)}
+                key={i.id}
+              />
             ))}
           </div>
         ))}

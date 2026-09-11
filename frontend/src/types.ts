@@ -2,6 +2,7 @@ export type SchoolContentItem = {
   id: string;
   scope: "school" | "district";
   school_name: string | null;
+  applies_to_school_types: string[] | null;
   category: string;
   title: string;
   description: string | null;

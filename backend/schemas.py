@@ -392,6 +392,13 @@ class SchoolContentItemOut(BaseModel):
     # scope="school") - not populated by every endpoint (redundant on a
     # single school's own page, only set by /calendar which spans schools).
     school_name: str | None = None
+    # Set only on scope="district" items that don't apply district-wide -
+    # currently just the "Day N" rotation markers (elementary via the ICS
+    # feed, high school via the rotation PDF, often both landing on the
+    # same date with different values). Without this the calendar has no
+    # way to say which one is which - "Day 2" and "Day 3" on the same day
+    # read as a contradiction instead of two different school tiers.
+    applies_to_school_types: list[str] | None = None
     category: str
     title: str
     description: str | None
