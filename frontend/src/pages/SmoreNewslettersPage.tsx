@@ -34,6 +34,8 @@ export function SmoreNewslettersPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [runningIds, setRunningIds] = useState<Set<string>>(new Set());
+  const [reextractingIds, setReextractingIds] = useState<Set<string>>(new Set());
+  const [lastReextractResult, setLastReextractResult] = useState<{ id: string; summary: string } | null>(null);
 
   const load = async () => {
     const res = await apiFetch("/smore-newsletters");
@@ -100,6 +102,44 @@ export function SmoreNewslettersPage() {
     }
   };
 
+  // Escape hatch for "a scan reported success but produced far fewer items
+  // than the newsletter actually has" (real case: a large newsletter hit
+  // the extraction call's max_tokens and landed 0 items with no error at
+  // all). run-now can't fix this - it only ever extracts *newly-seen*
+  // blocks, and these are already stored. This reprocesses every block the
+  // newsletter has ever fetched, synchronously, so the real result comes
+  // straight back instead of needing to poll. Deliberately not offered as
+  // a routine refresh: reprocessing a newsletter that already extracted
+  // cleanly will duplicate its items (dedup is only at the block level).
+  const reextractAll = async (id: string) => {
+    if (reextractingIds.has(id)) return;
+    if (
+      !window.confirm(
+        "Re-extract every block this newsletter has ever fetched?\n\nOnly do this if it's currently missing items it should have (e.g. a scan reported success with far fewer items than expected). Re-running extraction on a newsletter that already extracted correctly will create duplicate items."
+      )
+    ) {
+      return;
+    }
+    setReextractingIds((prev) => new Set(prev).add(id));
+    setError(null);
+    setLastReextractResult(null);
+    try {
+      const res = await apiFetch(`/smore-newsletters/${id}/reextract-all`, { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.detail ?? "Could not re-extract this newsletter.");
+        return;
+      }
+      setLastReextractResult({ id, summary: body.summary });
+    } finally {
+      setReextractingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
   const viewBlocks = async (id: string) => {
     if (expandedId === id) {
       setExpandedId(null);
@@ -136,7 +176,17 @@ export function SmoreNewslettersPage() {
               <button onClick={() => runNow(n.id)} disabled={runningIds.has(n.id)}>
                 {runningIds.has(n.id) ? "Running…" : "Run now"}
               </button>{" "}
-              <button onClick={() => viewBlocks(n.id)}>{expandedId === n.id ? "Hide" : "View"} content</button>
+              <button onClick={() => viewBlocks(n.id)}>{expandedId === n.id ? "Hide" : "View"} content</button>{" "}
+              <button
+                onClick={() => reextractAll(n.id)}
+                disabled={reextractingIds.has(n.id)}
+                title="Re-extract every fetched block - only for a newsletter that's missing items it should have"
+              >
+                {reextractingIds.has(n.id) ? "Re-extracting…" : "Force re-extract"}
+              </button>
+              {lastReextractResult?.id === n.id && (
+                <p style={{ fontSize: "0.85em", color: "#555" }}>{lastReextractResult.summary}</p>
+              )}
               {expandedId === n.id && (
                 <ul style={{ marginTop: "0.5rem" }}>
                   {blocks.map((b) => (

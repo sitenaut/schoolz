@@ -157,6 +157,39 @@ async def run_now(newsletter_id: str, user: User = Depends(require_admin), db: A
     return {"status": "started"}
 
 
+@router.post("/{newsletter_id}/reextract-all")
+async def reextract_all(newsletter_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Re-runs extraction over every block this newsletter has ever
+    fetched, not just newly-seen ones. `run-now`'s normal scan+extract path
+    only ever passes *new* blocks to extraction - once a block is stored,
+    a plain re-scan can't get its content re-extracted even if the
+    extraction step itself failed or silently truncated last time (real
+    case: a 37-block newsletter hit max_tokens and landed 0 items with a
+    "success" status - re-scanning found no new blocks and did nothing).
+    This is the deliberate escape hatch for exactly that: an admin-visible,
+    on-demand full re-extraction, synchronous so a real result comes back
+    immediately rather than needing to poll job_runs afterward.
+
+    Caution: dedup is only at the block level (content_hash) - re-extracting
+    a block that already produced an item creates a second, duplicate item,
+    it doesn't update the first. Safe on a newsletter that currently has
+    zero (or far fewer than expected) items; not a routine "refresh" button
+    for one that's already fully extracted."""
+    newsletter = await _require_manageable(db, newsletter_id)
+    result = await db.execute(
+        select(SmoreBlock).where(SmoreBlock.newsletter_id == newsletter.id).order_by(SmoreBlock.position)
+    )
+    blocks = result.scalars().all()
+    if not blocks:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Newsletter has no fetched blocks yet - run a scan first")
+
+    from services.content_extractor import extract_from_newsletter
+
+    summary = await extract_from_newsletter(db, newsletter, list(blocks))
+    await db.commit()
+    return {"status": "done", "summary": summary}
+
+
 @router.delete("/{newsletter_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_newsletter(
     newsletter_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
