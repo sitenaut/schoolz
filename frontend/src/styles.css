@@ -18,6 +18,14 @@
   --warn-soft: #fbf0d9;
   --bad: #c2413a;
   --bad-soft: #fae4e2;
+  /* Weekends on the calendar grid: the same "no school" hue as a real
+     closure (--bad), but blended into the neutral border gray rather
+     than the page background - mixing red straight into --bg just gives
+     a paler red, routing it through a neutral first is what actually
+     reads as "grayed out". Built from --bad/--line rather than a fixed
+     hex, so it needs no separate dark-mode value - it re-resolves
+     automatically against whichever theme's tokens are active. */
+  --weekend-tint: color-mix(in srgb, var(--bad) 7%, var(--line));
   --district: #5b6672;
   --sch-1: #1f7f9f;
   --sch-2: #7a4fb5;

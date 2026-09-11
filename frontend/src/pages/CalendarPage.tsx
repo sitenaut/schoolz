@@ -20,6 +20,13 @@ function districtItemLabel(item: SchoolContentItem): string | null {
 }
 import styles from "./CalendarPage.module.css";
 
+// Same convention as the Today card's closure detection
+// (backend/services/school_today.py:_CLOSED_RE/_EARLY_RE), extended per
+// explicit ask to also catch in-service and conference days - those are
+// "no school for students" but don't say "closed" anywhere in the title.
+const CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bin-?service\b|\bconference\b/i;
+const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b/i;
+
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTH_NAMES = Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleDateString(undefined, { month: "short" }));
@@ -165,12 +172,29 @@ export function CalendarPage() {
       })
     : null;
 
+  // "No school" status for one day, from whatever landed on it - closed
+  // (holiday/in-service/conference) beats half day beats an ordinary
+  // weekend, same precedence the Today card uses. A closure landing on a
+  // weekend still shows as "closed", not "weekend" - the more specific
+  // fact wins.
+  const dayStatus = (key: string, dow: number): "closed" | "half" | "weekend" | null => {
+    const dayEvents = eventsByDay.get(key);
+    if (dayEvents?.some((e) => CLOSED_RE.test(e.title))) return "closed";
+    if (dayEvents?.some((e) => HALF_DAY_RE.test(e.title))) return "half";
+    if (dow === 0 || dow === 6) return "weekend";
+    return null;
+  };
+
   const dayButtonClasses = (d: Date, mini = false) => {
     const key = dateKey(d);
     const hasEvents = eventsByDay.has(key);
+    const status = dayStatus(key, d.getDay());
     return [
       mini ? styles.miniDay : styles.day,
       hasEvents && (mini ? styles.miniDayHasEvents : styles.dayHasEvents),
+      status === "closed" && (mini ? styles.miniDayClosed : styles.dayClosed),
+      status === "half" && (mini ? styles.miniDayHalf : styles.dayHalf),
+      status === "weekend" && (mini ? styles.miniDayWeekend : styles.dayWeekend),
       viewMode === "month" && selectedDay === key && styles.daySelected,
       key === TODAY_KEY && (mini ? styles.miniDayToday : styles.dayToday),
     ]
