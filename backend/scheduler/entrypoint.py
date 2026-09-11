@@ -6,12 +6,15 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 
 import scheduler.jobs  # noqa: F401  (registers all job kinds via decorators)
-from database import SessionLocal
+import telemetry
+from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
 from scheduler.runner import build_apscheduler_job
 
 setup_logging()
+telemetry.setup_telemetry("schoolz-scheduler")
+telemetry.instrument_sqlalchemy_engine(engine)
 logger = logging.getLogger(__name__)
 
 RECONCILE_INTERVAL_SECONDS = 30
@@ -61,6 +64,7 @@ async def main() -> None:
 
     logger.info("scheduler_stopping")
     aps_scheduler.shutdown(wait=False)
+    telemetry.shutdown_telemetry()
 
 
 if __name__ == "__main__":

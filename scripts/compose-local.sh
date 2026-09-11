@@ -23,6 +23,13 @@ export APP_ENV=local
 export COMPOSE_DISABLE_ENV_FILE=1
 if [ "${OBSERVABILITY:-0}" = "1" ]; then
   export COMPOSE_PROFILES=obs-local
+  # Send backend/scheduler traces+metrics+logs to the local Alloy OTLP
+  # receiver instead of Grafana Cloud - traces/logs exporters off since
+  # this local stack has no Tempo/Loki-via-OTLP wired up (Promtail still
+  # ships stdout logs the old way).
+  export OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+  export OTEL_TRACES_EXPORTER=none
+  export OTEL_LOGS_EXPORTER=none
 fi
 
 cd "$ROOT_DIR"

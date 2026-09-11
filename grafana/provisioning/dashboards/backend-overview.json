@@ -14,8 +14,8 @@
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "sum by (path, status) (rate(http_requests_total[1m]))",
-          "legendFormat": "{{method}} {{path}} ({{status}})"
+          "expr": "sum by (http_route, http_response_status_code) (rate(http_server_request_duration_seconds_count[1m]))",
+          "legendFormat": "{{http_route}} ({{http_response_status_code}})"
         }
       ]
     },
@@ -27,8 +27,8 @@
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{path}}"
+          "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{http_route}}"
         }
       ]
     },

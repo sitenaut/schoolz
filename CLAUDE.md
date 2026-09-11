@@ -42,16 +42,40 @@ cd backend && pytest -q
 cd frontend && npm run build && npm run test
 ```
 
-## Observability (local only so far)
+## Observability (backend OTel done 2026-09-11; see docs/OBSERVABILITY_PLAN.md)
 
-Backend exposes Prometheus metrics at `/metrics` and emits structured JSON logs
-(`backend/logging_config.py`). Locally (`OBSERVABILITY=1`, see `docs/ENV_SETUP.md`):
-Alloy scrapes `/metrics` → Mimir; Promtail tails schoolz's own containers
-(filtered via Docker API `filters`, not just relabel `keep` — a plain
-relabel-based project filter did not reliably exclude other compose projects
-on a shared host) → Loki. Grafana (`localhost:3001`) has both wired as
-datasources plus a starter "schoolz backend overview" dashboard. Not yet
-wired up for prod (no Grafana Cloud shipping, no Fly-side setup).
+`backend/telemetry.py` sets up OpenTelemetry (traces/metrics/logs, OTLP/HTTP
+push) for both the `app` and `scheduler` processes — no-ops entirely unless
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set, so plain `pytest -q` and a local run
+with no `env/secrets.prod.env`-derived vars send nothing. The old
+`prometheus-client` `/metrics` mount is gone (it was publicly readable and
+`_normalize_path` leaked one series per slug); OTel's FastAPI instrumentation
+labels by route template instead. Custom instruments (job runs/duration,
+scraper calls, LLM tokens, cold starts) live in `backend/observability.py`.
+
+`backend/scheduler/runner.py` records `schoolz.job.runs`/`schoolz.job.duration`/
+`schoolz.job.queue_wait`/`schoolz.job.in_flight` around every job execution
+and wraps the handler call in a `job.run` span.
+
+Locally (`OBSERVABILITY=1`, see `docs/ENV_SETUP.md`): backend/scheduler push
+OTLP metrics to Alloy's OTLP receiver (`alloy/config.alloy`, port 4318) →
+Mimir (traces/logs exporters are off locally — `OTEL_TRACES_EXPORTER`/
+`OTEL_LOGS_EXPORTER=none`, set by `scripts/compose-local.sh`). Promtail still
+tails schoolz's own containers (filtered via Docker API `filters`, not just
+relabel `keep` — a plain relabel-based project filter did not reliably
+exclude other compose projects on a shared host) → Loki. Grafana
+(`localhost:3001`) has both wired as datasources plus a starter "schoolz
+backend overview" dashboard (now on `http_server_request_duration_seconds_*`
+with an `http_route` label, not the old `http_requests_total`/`path`).
+
+Prod (Grafana Cloud, stack `1595929`, shared with billz — tagged
+`service.namespace=schoolz` so nothing collides with billz's `app="billz-api"`
+logs): OTLP endpoint + schoolz-only write token already provisioned, live in
+`env/secrets.prod.env` (`OTEL_EXPORTER_OTLP_ENDPOINT`, `SCHOOLZ_OTLP_TOKEN`) —
+**not yet pushed to Fly as `fly secrets set`**, that's a pending prod action.
+Frontend RUM (Faro), the `grafana_ro` read-only Postgres datasource, and
+Grafana dashboards/alerts are also not done yet — see
+`docs/OBSERVABILITY_PLAN.md` for the phase-by-phase remainder.
 
 ## Default admin user (local only)
 

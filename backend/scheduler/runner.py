@@ -1,17 +1,22 @@
 import asyncio
 import hashlib
 import os
+import time
 import traceback
 from datetime import datetime, timezone
 
 from croniter import croniter
+from opentelemetry import trace
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from zoneinfo import ZoneInfo
 
+import observability
 from database import SessionLocal
 from models import JobRun, ScheduledJob
 from scheduler.registry import registry
+
+_tracer = trace.get_tracer("schoolz.scheduler")
 
 _ADVISORY_LOCK_NAMESPACE = 42
 
@@ -85,11 +90,16 @@ async def _finalize(job_id: str, run_id: str, *, status: str, error: str | None,
 
 
 async def _execute(job_id: str, *, triggered_by: str) -> None:
+    # job_kind isn't known yet (needs a DB lookup), so the queue-wait metric
+    # is recorded with no job.kind attribute for the wait itself - fine,
+    # since the point is the aggregate burst-queueing picture.
+    wait_start = time.perf_counter()
     async with _get_concurrency_limit():
-        await _execute_locked(job_id, triggered_by=triggered_by)
+        queue_wait_s = time.perf_counter() - wait_start
+        await _execute_locked(job_id, triggered_by=triggered_by, queue_wait_s=queue_wait_s)
 
 
-async def _execute_locked(job_id: str, *, triggered_by: str) -> None:
+async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float = 0.0) -> None:
     started_at = datetime.now(timezone.utc)
     lock_key = _lock_key(job_id)
 
@@ -110,6 +120,7 @@ async def _execute_locked(job_id: str, *, triggered_by: str) -> None:
                 run = JobRun(job_id=job_id, status="error", triggered_by=triggered_by, error=f"Unknown job kind: {job.kind}")
                 db.add(run)
                 await db.commit()
+                observability.job_runs_total.add(1, {"job.kind": job.kind, "status": "error", "triggered_by": triggered_by})
                 return
 
             run = JobRun(job_id=job_id, status="running", triggered_by=triggered_by)
@@ -119,8 +130,16 @@ async def _execute_locked(job_id: str, *, triggered_by: str) -> None:
             await db.refresh(run)
             run_id = run.id
 
+            observability.job_queue_wait_seconds.record(queue_wait_s, {"job.kind": job.kind})
+            observability.job_in_flight.add(1, {"job.kind": job.kind})
+            handler_start = time.perf_counter()
+
             try:
-                log_excerpt = await spec.handler(db, dict(job.params or {}))
+                with _tracer.start_as_current_span(
+                    "job.run",
+                    attributes={"job.kind": job.kind, "job.id": job.id, "job.triggered_by": triggered_by},
+                ):
+                    log_excerpt = await spec.handler(db, dict(job.params or {}))
                 await db.commit()
                 # A handler signals a non-fatal partial result (e.g. "found
                 # the site but no address on it") by prefixing its returned
@@ -131,13 +150,22 @@ async def _execute_locked(job_id: str, *, triggered_by: str) -> None:
                 await _finalize(job_id, run_id, status=run_status, error=None, log_excerpt=log_excerpt, started_at=started_at)
             except Exception as exc:
                 await db.rollback()
+                run_status = "error"
                 await _finalize(
                     job_id,
                     run_id,
-                    status="error",
+                    status=run_status,
                     error=f"{type(exc).__name__}: {exc}",
                     log_excerpt=traceback.format_exc()[-4000:],
                     started_at=started_at,
+                )
+            finally:
+                observability.job_in_flight.add(-1, {"job.kind": job.kind})
+                observability.job_duration_seconds.record(
+                    time.perf_counter() - handler_start, {"job.kind": job.kind, "status": run_status}
+                )
+                observability.job_runs_total.add(
+                    1, {"job.kind": job.kind, "status": run_status, "triggered_by": triggered_by}
                 )
         finally:
             await _release_advisory_lock(db, lock_key)
