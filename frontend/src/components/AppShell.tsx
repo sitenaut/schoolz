@@ -4,7 +4,7 @@ import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { useMySchools } from "../lib/mySchools";
-import { IconCalendar, IconHome, IconJobs, IconLunch, IconSchool } from "./icons";
+import { IconCalendar, IconHome, IconLunch, IconSchool } from "./icons";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 
@@ -149,12 +149,6 @@ export function AppShell() {
           <IconSchool />
           Schools
         </NavLink>
-        {user?.is_admin && (
-          <NavLink to="/admin">
-            <IconJobs />
-            Admin
-          </NavLink>
-        )}
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
