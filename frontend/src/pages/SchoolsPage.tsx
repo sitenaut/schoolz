@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconSearch } from "../components/icons";
@@ -113,7 +114,7 @@ export function SchoolsPage() {
             <div className="sgrid">
               {g.schools.map((s) => (
                 <Link className="sopt" to={`/schools/${s.slug}`} key={s.id}>
-                  {s.logo_url ? <img className="sopt-logo" src={s.logo_url} alt="" /> : null}
+                  {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
                   {s.short_name || s.name}
                 </Link>
               ))}
