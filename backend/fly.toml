@@ -23,7 +23,14 @@ primary_region = "ewr"
   # another container.
 
 [processes]
-  app = "uvicorn main:app --host 0.0.0.0 --port 8000"
+  # Fly's 6PN private network is IPv6-only (same reasoning already applied
+  # to the scraper - see CLAUDE.md's prod-deployment notes): binding
+  # 0.0.0.0 went unnoticed until the SEO prerender feature became the
+  # first caller to reach schoolz-api over schoolz-api.internal instead of
+  # the public hostname, and got "Connection refused" for every request.
+  # "::" accepts both the 6PN private-network traffic and fly-proxy's
+  # public-hostname traffic.
+  app = "uvicorn main:app --host :: --port 8000"
   scheduler = "python -m scheduler.entrypoint"
 
 [http_service]
