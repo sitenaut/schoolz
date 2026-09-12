@@ -363,6 +363,7 @@ class SchoolUpdate(BaseModel):
     delayed_opening_time: str | None = Field(default=None, max_length=20)
     athletics_url: str | None = Field(default=None, max_length=500)
     logo_url: str | None = Field(default=None, max_length=1000)
+    special_events_calendar_url: str | None = Field(default=None, max_length=500)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -405,6 +406,7 @@ class SchoolOut(BaseModel):
     delayed_opening_time: str | None
     athletics_url: str | None
     logo_url: str | None
+    special_events_calendar_url: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 

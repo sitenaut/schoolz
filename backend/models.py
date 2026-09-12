@@ -430,6 +430,14 @@ class School(Base):
     # Auto-created alongside the other website_url-triggered scans - fetches
     # address/main_phone from the school's own site footer.
     school_info_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Base page URL (no ?mm=/&yy= query params - the job appends those
+    # itself for whichever month(s) it's checking) for a per-school page
+    # that lists monthly PDFs: a themed "special events" calendar, a lunch
+    # menu, sometimes a newsletter. Only ever set by hand for a school
+    # confirmed to actually publish this way (Chesterbrook Academy is the
+    # first, confirmed 2026-09-12) - most schools have no such page at all.
+    special_events_calendar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    special_events_scan_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

@@ -8,5 +8,6 @@ from . import preschool_locations_scan  # noqa: F401
 from . import preschool_team_scan  # noqa: F401
 from . import school_info_scan  # noqa: F401
 from . import smore_scan  # noqa: F401
+from . import special_events_scan  # noqa: F401
 from . import staff_roster_scan  # noqa: F401
 from . import transportation_scan  # noqa: F401
