@@ -24,9 +24,10 @@ function routeTemplate(pathname: string): string {
 }
 
 // The ribbon's school filter has no meaning on the centrally-managed admin
-// pages (they aren't scoped to "my schools" at all) - hidden there rather
-// than just visually unused clutter.
-const ADMIN_PATH_PREFIXES = ["/admin", "/account"];
+// pages (they aren't scoped to "my schools" at all), nor on the contact
+// form (not school-specific) - hidden there rather than just visually
+// unused clutter.
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
@@ -44,7 +45,7 @@ export function AppShell() {
   const { user } = useAuth();
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
-  const isAdminPage = ADMIN_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+  const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
   const isWide = WIDE_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 
   const fromRouteRef = useRef<string | undefined>(undefined);
@@ -92,7 +93,7 @@ export function AppShell() {
         )}
       </header>
 
-      {mySchools.length > 0 && !isAdminPage && (
+      {mySchools.length > 0 && !hideSchoolFilter && (
         <div className="ribbon" role="group" aria-label="Switch schools">
           {mySchools.length > 1 && (
             <button
