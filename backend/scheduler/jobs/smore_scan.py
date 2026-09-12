@@ -39,8 +39,16 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     new_blocks: list[SmoreBlock] = []
     for block in blocks:
+        # Checked against hashes seen *in this batch* as well as ones
+        # already stored: a single newsletter can legitimately repeat a
+        # block (Beck's 9-11 issue repeats one), and since content_hash is
+        # unique per (newsletter, hash), queueing both fails the whole
+        # scan on flush with a UniqueViolationError - which is exactly
+        # what took Beck's newsletter down. Two identical blocks are the
+        # same content by definition, so keeping the first is correct.
         if block["content_hash"] in existing_hashes:
             continue
+        existing_hashes.add(block["content_hash"])
         row = SmoreBlock(
             newsletter_id=newsletter.id,
             position=block["position"],
