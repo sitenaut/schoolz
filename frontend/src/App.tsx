@@ -24,6 +24,8 @@ import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { AdminLayout } from "./pages/AdminLayout";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { ContactPage } from "./pages/ContactPage";
+import { ChCommsPage } from "./pages/ChCommsPage";
+import { SurveyPage } from "./pages/SurveyPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { AccountLayout } from "./pages/account/AccountLayout";
 import { ProfileSection } from "./pages/account/ProfileSection";
@@ -110,6 +112,8 @@ function Routed() {
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/chcomms" element={<ChCommsPage />} />
+        <Route path="/survey" element={<SurveyPage />} />
         <Route
           path="/admin/submissions"
           element={

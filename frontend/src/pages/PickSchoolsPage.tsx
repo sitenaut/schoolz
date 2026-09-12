@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { IconSearch } from "../components/icons";
+import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
 import { useAuth } from "../context/AuthContext";
 import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
@@ -62,7 +63,7 @@ export function PickSchoolsPage() {
               {group.map((s) => (
                 <button className="sopt" aria-pressed={picked.includes(s.slug)} onClick={() => toggle(s)} key={s.id}>
                   <span className="box" />
-                  {s.logo_url ? <img className="sopt-logo" src={s.logo_url} alt="" /> : null}
+                  {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
                   {s.short_name || s.name}
                 </button>
               ))}

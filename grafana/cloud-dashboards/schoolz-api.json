@@ -1,0 +1,275 @@
+{
+  "uid": "schoolz-api",
+  "title": "schoolz / API",
+  "description": "Rate, errors and duration for schoolz-api, plus the resource signals behind them.",
+  "tags": [
+    "schoolz"
+  ],
+  "timezone": "America/New_York",
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Metrics",
+        "multi": false,
+        "name": "DS_METRICS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate by route",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\"}[5m]))",
+          "legendFormat": "{{http_route}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "5xx error ratio",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\"}[5m])), 0.001)",
+          "legendFormat": "5xx ratio",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Latency p50 / p95 by route",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\"}[5m])))",
+          "legendFormat": "p50 {{http_route}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\"}[5m])))",
+          "legendFormat": "p95 {{http_route}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "title": "Where server time actually goes (total time by route)",
+      "description": "Rate times duration, not just p95 - a slowish route called constantly costs more total time than a slow route nobody hits. This is the list worth optimizing.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "topk(10, sum by (http_route) (rate(http_server_request_duration_seconds_sum{service_namespace=\"schoolz\"}[1h])))",
+          "legendFormat": "{{http_route}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "Cold starts",
+      "description": "schoolz-api keeps one machine warm (min_machines_running=1), so a rising count here means machines are being cycled, not that traffic is waking them.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (service_name) (increase(schoolz_cold_start_requests_total{service_namespace=\"schoolz\"}[1h]))",
+          "legendFormat": "{{service_name}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "DB connection pool in use",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (service_name) (db_client_connections_usage{service_namespace=\"schoolz\", state=\"used\"})",
+          "legendFormat": "{{service_name}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Process memory (RSS)",
+      "description": "The scheduler is the one to watch: 256MB got OOM-killed running the Monday extraction burst.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (service_name) (process_runtime_cpython_memory_bytes{service_namespace=\"schoolz\", type=\"rss\"})",
+          "legendFormat": "{{service_name}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "editable": true
+}

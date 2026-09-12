@@ -18,7 +18,21 @@ let faroInstance: Faro | null = null;
 // provider's own param name) should be dropped by default, not leaked by
 // default. Supabase's OAuth callback also puts tokens in the #hash, which
 // is dropped in full below (a hash has no other legitimate use in this app).
-const SENSITIVE_PARAMS = ["code", "token", "access_token", "refresh_token", "state"];
+// Ad-platform click ids (fbclid, gclid, msclkid) are stripped for the same
+// reason: each is a unique per-click identifier that can be correlated back
+// to an individual ad impression by the platform that issued it. The app
+// reads fbclid once, in-browser, purely to label a visit "facebook" (see
+// lib/visits.ts) and never sends it anywhere.
+const SENSITIVE_PARAMS = [
+  "code",
+  "token",
+  "access_token",
+  "refresh_token",
+  "state",
+  "fbclid",
+  "gclid",
+  "msclkid",
+];
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

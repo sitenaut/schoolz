@@ -1,0 +1,430 @@
+{
+  "uid": "schoolz-scans",
+  "title": "schoolz / Scans",
+  "description": "Scheduled scan health, scraper outcomes, and what the LLM extraction costs.",
+  "tags": [
+    "schoolz"
+  ],
+  "timezone": "America/New_York",
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Metrics",
+        "multi": false,
+        "name": "DS_METRICS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Logs",
+        "multi": false,
+        "name": "DS_LOGS",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "schoolz database",
+        "multi": false,
+        "name": "DS_SQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Job runs (12h, by kind and outcome)",
+      "description": "The 12h window matches the scan cadence - every public-source job runs on '0 */12 * * *'.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (job_kind, status) (increase(schoolz_job_runs_total{service_namespace=\"schoolz\"}[12h]))",
+          "legendFormat": "{{job_kind}} \u00b7 {{status}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Jobs in flight",
+      "description": "Capped by JOB_CONCURRENCY. Sitting at the cap during the 12h burst means jobs are queueing.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(schoolz_job_in_flight{service_namespace=\"schoolz\"})",
+          "legendFormat": "in flight",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Job duration p95 by kind",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, job_kind) (rate(schoolz_job_duration_seconds_bucket{service_namespace=\"schoolz\"}[1h])))",
+          "legendFormat": "{{job_kind}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "title": "Queue wait p95 (the burst test)",
+      "description": "~85 school-level scans fire in the same minute. This is the panel that proves whether the cron needs jittering per job (OBSERVABILITY_PLAN hypothesis #6).",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, job_kind) (rate(schoolz_job_queue_wait_seconds_bucket{service_namespace=\"schoolz\"}[1h])))",
+          "legendFormat": "{{job_kind}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "Scraper page loads by outcome",
+      "description": "Recorded by the scraper service itself (scraper/observability.py), which is the only place that can see the target host and outcome.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (outcome) (rate(schoolz_scraper_page_load_seconds_count{service_name=\"schoolz-scraper\"}[30m]))",
+          "legendFormat": "{{outcome}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "Parse issues (non-fatal, by code)",
+      "description": "A scan that 'succeeded' while quietly dropping a block. Rising here means coverage is degrading without anything turning red.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (code, job_kind) (increase(schoolz_parse_issues_total{service_namespace=\"schoolz\"}[6h]))",
+          "legendFormat": "{{job_kind}} \u00b7 {{code}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Scan failures by error code",
+      "description": "error_code/error_stage come from scheduler/errors.py classify_exception() - the groupable version of a traceback. Metrics rather than SQL: this is the same data schoolz_job_runs_total already carries, and keeping it here means the failure-ratio alert and this panel can never disagree.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (error_code, error_stage, job_kind) (increase(schoolz_job_runs_total{service_namespace=\"schoolz\", status=\"error\"}[7d]))",
+          "legendFormat": "{{job_kind}} \u00b7 {{error_code}} \u00b7 {{error_stage}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 8,
+      "title": "Newsletters not scanned in 8+ days",
+      "description": "Smore newsletters run weekly, so 8 days is one missed cycle. Catches the known per-issue-URL schools (Cooper, Clara Barton) going stale.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT COALESCE(label, url) AS \"Newsletter\",\n       date_trunc('minute', last_scanned_at) AS \"Last scanned\"\nFROM smore_newsletters\nWHERE last_scanned_at IS NULL OR last_scanned_at < now() - interval '8 days'\nORDER BY last_scanned_at NULLS FIRST;",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 9,
+      "title": "LLM tokens (24h, by direction)",
+      "description": "Cache reads/writes are separate directions because they bill at different rates.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 32
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (direction) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\"}[24h]))",
+          "legendFormat": "{{direction}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 10,
+      "title": "Estimated LLM spend (24h)",
+      "description": "Haiku 4.5 list price (looked up 2026-09-12): input $1.0/MTok, output $5.0, cache write $1.25, cache read $0.1. An estimate from token counts, not a billing feed - re-check the rates if they change.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 32
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", direction=\"input\"}[24h])) * 1.0 / 1e6) + (sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", direction=\"output\"}[24h])) * 5.0 / 1e6) + (sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", direction=\"cache_write\"}[24h])) * 1.25 / 1e6) + (sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", direction=\"cache_read\"}[24h])) * 0.1 / 1e6)",
+          "legendFormat": "USD",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Truncated LLM replies (stop_reason=max_tokens)",
+      "description": "Non-zero means an extraction was cut off mid-structure - the failure mode that once produced zero items from a 37-block newsletter with no error anywhere.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 32
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(increase(schoolz_llm_calls_total{service_namespace=\"schoolz\", stop_reason=\"max_tokens\"}[24h]))",
+          "legendFormat": "truncated",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    }
+  ],
+  "editable": true
+}

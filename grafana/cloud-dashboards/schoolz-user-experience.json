@@ -1,0 +1,384 @@
+{
+  "uid": "schoolz-ux",
+  "title": "schoolz / User experience",
+  "description": "Did anyone come, where from, did they convert, and did the site work for them.",
+  "tags": [
+    "schoolz"
+  ],
+  "timezone": "America/New_York",
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Metrics",
+        "multi": false,
+        "name": "DS_METRICS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Logs (Faro RUM)",
+        "multi": false,
+        "name": "DS_LOGS",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "schoolz database",
+        "multi": false,
+        "name": "DS_SQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Visits by page (server-side, last 30d)",
+      "description": "The reliable number: counted server-side, so ad blockers don't hide it. Aggregate only - one row per day/page/source, nothing per visitor.",
+      "type": "table",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT day AS \"Day\", path AS \"Page\", sum(count) AS \"Visits\"\nFROM page_visits\nWHERE day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')\nGROUP BY 1, 2 ORDER BY 1 DESC, 3 DESC;",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Where visitors came from (last 30d)",
+      "description": "'facebook' is the campaign cohort. First-touch per browser session, so a reader who lands from Facebook and clicks through stays attributed to Facebook.",
+      "type": "table",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT source AS \"Source\", sum(count) AS \"Visits\"\nFROM page_visits\nWHERE day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')\nGROUP BY 1 ORDER BY 2 DESC;",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Survey funnel (last 30d)",
+      "description": "The question the Facebook post is actually asking: how many read it, how many opened the survey, how many finished.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT\n  (SELECT COALESCE(sum(count), 0) FROM page_visits\n     WHERE path = '/chcomms' AND day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')) AS \"Read /chcomms\",\n  (SELECT COALESCE(sum(count), 0) FROM page_visits\n     WHERE path = '/survey' AND day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')) AS \"Opened /survey\",\n  (SELECT count(*) FROM survey_responses\n     WHERE created_at > now() - interval '30 days') AS \"Completed survey\";",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Newsletters submitted by the community (last 30d)",
+      "description": "The single most valuable conversion - a submitted Smore link is what makes a school's page fill in.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT date_trunc('day', created_at) AS time, count(*) AS \"Submissions\"\nFROM community_submissions\nWHERE created_at > now() - interval '30 days'\nGROUP BY 1 ORDER BY 1;",
+          "rawQuery": true,
+          "format": "time_series",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "Survey satisfaction distribution",
+      "description": "",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT satisfaction AS \"Score (1-5)\", count(*) AS \"Responses\"\nFROM survey_responses WHERE satisfaction IS NOT NULL\nGROUP BY 1 ORDER BY 1;",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "What parents say is hard to find",
+      "description": "Directly answers whether the report's priorities match what parents actually feel. A topic nobody picks is one we guessed wrong about.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT jsonb_array_elements_text(pain_points::jsonb) AS \"Topic\", count(*) AS \"Picked by\"\nFROM survey_responses\nWHERE jsonb_typeof(pain_points::jsonb) = 'array'\nGROUP BY 1 ORDER BY 2 DESC;",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Page views by route (RUM)",
+      "description": "RUM's view of the same traffic as panel 1. Lower than the server-side count by roughly the ad-blocker rate - the gap between the two is itself informative.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum by (route) (count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"page_view\" [1h]))",
+          "queryType": "range",
+          "refId": "A",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 8,
+      "title": "CTA clicks on /chcomms (RUM)",
+      "description": "Which of the three asks actually converts: send_newsletter, take_survey, or try_app.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum by (cta) (count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"cta_click\" [6h]))",
+          "queryType": "range",
+          "refId": "A",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 9,
+      "title": "Core Web Vitals p75 by route",
+      "description": "Largest Contentful Paint, the vital Google actually ranks on.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "quantile_over_time(0.75, {app_name=\"schoolz-faro\"} | logfmt | kind=\"measurement\" | unwrap lcp [1h]) by (route)",
+          "queryType": "range",
+          "refId": "A",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 10,
+      "title": "JavaScript errors by route (RUM)",
+      "description": "Catches the class of bug that blanked every local build (faro-react's FaroRoutes) before a user has to report it.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum by (route) (count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"exception\" [1h]))",
+          "queryType": "range",
+          "refId": "A",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "editable": true
+}
