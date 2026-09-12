@@ -387,7 +387,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
     district_id = newsletter.district_id or (school.district_id if school else None)
 
     created = 0
-    skipped_district_dupes = 0
+    skipped_dupes = 0
     truncated_chunks = 0
     latest_summary = None
 
@@ -572,12 +572,37 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                     )
                 )
                 if existing_district_item.scalars().first():
-                    skipped_district_dupes += 1
+                    skipped_dupes += 1
                     continue
                 item_school_id = None
                 item_district_id = district_id
             else:
                 scope = "school"
+                # Dedup: the same event can be mentioned in more than one
+                # block of the same newsletter (a prose "coming up"
+                # paragraph and a separate "Mark your calendar" list are
+                # both real, confirmed cases) - block-level dedup is
+                # exact-content-hash, so two different blocks describing
+                # the same event never collide there. Since block-hash
+                # dedup can't catch this, catch it here instead: an
+                # unchanged (school, category, title, date) already on
+                # file is the same fact restated, not a second occurrence
+                # of it. Keyed with title (unlike the district dedup
+                # above) since a school's own day can legitimately have
+                # two different events of the same category.
+                existing_school_item = await db.execute(
+                    select(SchoolContentItem).where(
+                        SchoolContentItem.scope == "school",
+                        SchoolContentItem.school_id == school_id,
+                        SchoolContentItem.category == item["category"],
+                        SchoolContentItem.title == item["title"][:300],
+                        SchoolContentItem.start_date == item_start_date,
+                        SchoolContentItem.is_current.is_(True),
+                    )
+                )
+                if existing_school_item.scalars().first():
+                    skipped_dupes += 1
+                    continue
 
             new_item = SchoolContentItem(
                 scope=scope,
@@ -610,7 +635,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
 
     if latest_summary:
         newsletter.latest_summary = latest_summary
-    dupe_note = f", {skipped_district_dupes} district item(s) already covered" if skipped_district_dupes else ""
+    dupe_note = f", {skipped_dupes} duplicate item(s) already covered" if skipped_dupes else ""
     total_chunks = -(-len(extractable_blocks) // _CHUNK_SIZE)  # ceil division
     if truncated_chunks:
         # Surfaced as a WARNING (not just appended text) so it's not lost in
