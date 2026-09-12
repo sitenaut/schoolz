@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_admin
 from database import get_db
-from models import ScheduledJob, SmoreBlock, SmoreNewsletter, User
+from models import District, ScheduledJob, School, SmoreBlock, SmoreNewsletter, User
 from schemas import ScheduledJobOut, SmoreBlockOut, SmoreNewsletterCreate, SmoreNewsletterOut, SmoreNewsletterUpdate
 
 router = APIRouter(prefix="/smore-newsletters", tags=["smore-newsletters"])
@@ -16,23 +16,48 @@ def _validate_cron(cron_expr: str) -> None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid cron expression: {cron_expr}")
 
 
+async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter]) -> list[SmoreNewsletterOut]:
+    job_ids = [n.scheduled_job_id for n in newsletters if n.scheduled_job_id]
+    jobs_by_id: dict[str, ScheduledJob] = {}
+    if job_ids:
+        rows = await db.execute(select(ScheduledJob).where(ScheduledJob.id.in_(job_ids)))
+        jobs_by_id = {j.id: j for j in rows.scalars().all()}
+
+    school_ids = [n.school_id for n in newsletters if n.school_id]
+    schools_by_id: dict[str, str] = {}
+    if school_ids:
+        rows = await db.execute(select(School.id, School.short_name, School.name).where(School.id.in_(school_ids)))
+        schools_by_id = {sid: short_name or name for sid, short_name, name in rows.all()}
+
+    district_ids = [n.district_id for n in newsletters if n.district_id]
+    districts_by_id: dict[str, str] = {}
+    if district_ids:
+        rows = await db.execute(select(District.id, District.name).where(District.id.in_(district_ids)))
+        districts_by_id = dict(rows.all())
+
+    out = []
+    for n in newsletters:
+        job = jobs_by_id.get(n.scheduled_job_id) if n.scheduled_job_id else None
+        out.append(
+            SmoreNewsletterOut(
+                id=n.id,
+                url=n.url,
+                label=n.label,
+                school_id=n.school_id,
+                district_id=n.district_id,
+                school_name=schools_by_id.get(n.school_id) if n.school_id else None,
+                district_name=districts_by_id.get(n.district_id) if n.district_id else None,
+                last_scanned_at=n.last_scanned_at,
+                latest_summary=n.latest_summary,
+                created_at=n.created_at,
+                scheduled_job=ScheduledJobOut.model_validate(job) if job else None,
+            )
+        )
+    return out
+
+
 async def _to_out(db: AsyncSession, newsletter: SmoreNewsletter) -> SmoreNewsletterOut:
-    job = None
-    if newsletter.scheduled_job_id:
-        result = await db.execute(select(ScheduledJob).where(ScheduledJob.id == newsletter.scheduled_job_id))
-        job_row = result.scalar_one_or_none()
-        if job_row:
-            job = ScheduledJobOut.model_validate(job_row)
-    return SmoreNewsletterOut(
-        id=newsletter.id,
-        url=newsletter.url,
-        label=newsletter.label,
-        school_id=newsletter.school_id,
-        last_scanned_at=newsletter.last_scanned_at,
-        latest_summary=newsletter.latest_summary,
-        created_at=newsletter.created_at,
-        scheduled_job=job,
-    )
+    return (await _to_outs(db, [newsletter]))[0]
 
 
 async def _require_manageable(db: AsyncSession, newsletter_id: str) -> SmoreNewsletter:
@@ -50,7 +75,7 @@ async def list_newsletters(db: AsyncSession = Depends(get_db)):
     # Shared/public data (like Student) - every guardian sees every tracked
     # newsletter, not just their own, since the content itself is public.
     result = await db.execute(select(SmoreNewsletter).order_by(SmoreNewsletter.created_at))
-    return [await _to_out(db, n) for n in result.scalars().all()]
+    return await _to_outs(db, list(result.scalars().all()))
 
 
 @router.post("", response_model=SmoreNewsletterOut, status_code=status.HTTP_201_CREATED)
@@ -64,7 +89,11 @@ async def create_newsletter(
         raise HTTPException(status.HTTP_409_CONFLICT, "This newsletter URL is already tracked")
 
     newsletter = SmoreNewsletter(
-        url=payload.url, label=payload.label, school_id=payload.school_id, created_by_user_id=user.id
+        url=payload.url,
+        label=payload.label,
+        school_id=payload.school_id,
+        district_id=payload.district_id,
+        created_by_user_id=user.id,
     )
     db.add(newsletter)
     await db.flush()
@@ -97,6 +126,8 @@ async def update_newsletter(
     newsletter = await _require_manageable(db, newsletter_id)
     if payload.school_id is not None:
         newsletter.school_id = payload.school_id
+    if payload.district_id is not None:
+        newsletter.district_id = payload.district_id
     if payload.label is not None:
         newsletter.label = payload.label
 
@@ -155,6 +186,39 @@ async def run_now(newsletter_id: str, user: User = Depends(require_admin), db: A
 
     run_job_now(newsletter.scheduled_job_id)
     return {"status": "started"}
+
+
+@router.post("/{newsletter_id}/reextract-all")
+async def reextract_all(newsletter_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Re-runs extraction over every block this newsletter has ever
+    fetched, not just newly-seen ones. `run-now`'s normal scan+extract path
+    only ever passes *new* blocks to extraction - once a block is stored,
+    a plain re-scan can't get its content re-extracted even if the
+    extraction step itself failed or silently truncated last time (real
+    case: a 37-block newsletter hit max_tokens and landed 0 items with a
+    "success" status - re-scanning found no new blocks and did nothing).
+    This is the deliberate escape hatch for exactly that: an admin-visible,
+    on-demand full re-extraction, synchronous so a real result comes back
+    immediately rather than needing to poll job_runs afterward.
+
+    Caution: dedup is only at the block level (content_hash) - re-extracting
+    a block that already produced an item creates a second, duplicate item,
+    it doesn't update the first. Safe on a newsletter that currently has
+    zero (or far fewer than expected) items; not a routine "refresh" button
+    for one that's already fully extracted."""
+    newsletter = await _require_manageable(db, newsletter_id)
+    result = await db.execute(
+        select(SmoreBlock).where(SmoreBlock.newsletter_id == newsletter.id).order_by(SmoreBlock.position)
+    )
+    blocks = result.scalars().all()
+    if not blocks:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Newsletter has no fetched blocks yet - run a scan first")
+
+    from services.content_extractor import extract_from_newsletter
+
+    summary = await extract_from_newsletter(db, newsletter, list(blocks))
+    await db.commit()
+    return {"status": "done", "summary": summary}
 
 
 @router.delete("/{newsletter_id}", status_code=status.HTTP_204_NO_CONTENT)

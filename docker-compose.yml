@@ -54,12 +54,19 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_JWT_AUDIENCE: ${SUPABASE_JWT_AUDIENCE:-authenticated}
       PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:5173}
+      # The scraper container's own render target for /prerender - see
+      # backend/services/prerender.py for why this can't just be
+      # PUBLIC_WEB_URL (localhost:5173 only means something on the host).
+      FRONTEND_INTERNAL_URL: http://frontend:3000
       SCRAPER_URL: ${SCRAPER_URL:-http://scraper:8765}
       SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8000}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-}
+      OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-}
     ports:
       - "8000:8000"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -83,6 +90,9 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-}
+      OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-}
     command: ["python", "-m", "scheduler.entrypoint"]
     restart: unless-stopped
 
@@ -103,6 +113,13 @@ services:
         VITE_SUPABASE_URL: ${SUPABASE_URL:-}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
         VITE_APP_VERSION: local
+        VITE_PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:5173}
+    environment:
+      # Lets nginx proxy crawler user-agents straight to the backend's
+      # /prerender endpoint instead of the SPA shell - see
+      # nginx.conf.template. "backend" is this compose file's own service
+      # name; prod sets this to http://schoolz-api.internal:8000 instead.
+      BACKEND_INTERNAL_URL: http://backend:8000
     depends_on:
       - backend
     ports:

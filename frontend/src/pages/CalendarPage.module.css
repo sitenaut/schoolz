@@ -59,6 +59,22 @@
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
+  /* Buttons don't inherit page text color by default - without this the
+     nav arrows fell back to the browser's own default button text color,
+     which read as near-black-on-dark-gray in dark mode regardless of the
+     app's theme. */
+  color: var(--color-text);
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
 }
 
 .grid {
@@ -110,6 +126,26 @@
   pointer-events: none;
 }
 
+/* No-school status, lowest to highest precedence: weekend, half day,
+   closed - a closure landing on a weekend shows as closed, not weekend,
+   since dayButtonClasses only ever applies one of the three. Declared
+   before .daySelected/.dayToday's own background rules below so those
+   still win when a status day is also selected or today. */
+.dayWeekend {
+  background: var(--weekend-tint);
+  color: var(--color-text-muted);
+}
+
+.dayHalf {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.dayClosed {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
 .daySelected {
   background: var(--color-primary);
   color: white;
@@ -126,6 +162,17 @@
 
 .daySelected.dayHasEvents::after {
   background: white;
+}
+
+/* The default dot color (--color-accent, amber) would nearly disappear
+   against .dayHalf's own amber-tinted background - matched to each
+   status's own text color instead, same solid-on-soft pattern the
+   category tag badges already use elsewhere. */
+.dayClosed.dayHasEvents::after {
+  background: var(--bad);
+}
+.dayHalf.dayHasEvents::after {
+  background: var(--warn);
 }
 
 /* Today gets its own ring so it reads as "today" independent of whether
@@ -233,6 +280,28 @@
   height: 3px;
   border-radius: 50%;
   background: var(--color-accent);
+}
+
+.miniDayWeekend {
+  background: var(--weekend-tint);
+  color: var(--color-text-muted);
+}
+
+.miniDayHalf {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.miniDayClosed {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.miniDayClosed.miniDayHasEvents::after {
+  background: var(--bad);
+}
+.miniDayHalf.miniDayHasEvents::after {
+  background: var(--warn);
 }
 
 .miniDayToday {

@@ -6,6 +6,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 schoolz aims to help streamline communication between parents and the school district to better support their children's education at home.
 
+## UI reference template
+
+Before building or restructuring any admin/management-style UI (a new page
+layout, tabs, drawers, wizards, data-grid patterns, etc.), check
+`~/claude/themeforest-OEgiMDPe-katalyst-modern-reacttailwind-admin-template.zip`
+(the purchased Katalyst React/Tailwind admin template) for an existing
+pattern to match, even though it isn't a dependency of this app (see the
+"Parent-facing layout" section below - the template is style/structure
+inspiration, rebuilt on this app's own CSS custom properties, never
+imported directly). Unzip it to a scratch dir and grep its
+`src/shared/ui/` and `src/modules/**/ui/` trees for the closest analog
+(e.g. `shared/ui/shadcn/components/ui/tabs.tsx` for a tabs primitive, or a
+`*IndexPage.tsx`/`*DetailPage.tsx` under `modules/` for a whole-page
+layout) before inventing a new visual pattern from scratch - this keeps
+new admin surfaces consistent with the ones already built this way (Jobs,
+Newsletters, Account settings).
+
 ## Access model: public + centrally admin-managed (changed 2026-09-08)
 
 Deliberate product pivot: **almost everything is public, no account needed.** All school/district data (schools, calendar, content, documents, SACC, staff, lunch menus, Smore newsletter reads) is browsable and bookmarkable by anyone - the target workflow is "bookmark your kid's school page," not "log in to see anything." Registering is purely optional, only for the bespoke personal layer (linking your own kids, a calendar narrowed to just their schools, connecting Gmail).
@@ -13,7 +30,7 @@ Deliberate product pivot: **almost everything is public, no account needed.** Al
 Three access tiers, enforced in `backend/auth.py` + per-router:
 - **Public (no auth at all)**: every `GET` on schools/districts/calendar/smore-newsletters. `GET /calendar` in particular (`routers/calendar.py`) uses `get_optional_user` (returns `None` instead of 401 for no/invalid token) so its behavior *degrades* gracefully instead of requiring login: a logged-in guardian with linked kids still gets it narrowed to their own schools + district items by default, but an anonymous visitor (or a logged-in user with zero linked schools yet) sees everything, completely unfiltered - there's no "my schools" to narrow to, and an explicit `school_id` param still narrows further either way.
 - **Admin-only (centrally managed data sources)**: creating/editing a District, School, or SmoreNewsletter, triggering any `run-now` scan, and the `/scheduled-jobs` visibility API (the `/jobs` page) - gated by `require_admin` (`backend/auth.py`), a `User.is_admin` check with no per-user ownership fallback anymore (the old "owner OR admin" pattern in `smore_newsletters.py`/`scheduled_jobs.py` collapsed to admin-only, since there's no more concept of a guardian "owning" a tracked newsletter or scan). Two real gaps caught and fixed while making this change: `School`'s three `run-now` endpoints (`staff/run-now`, `info/run-now`, `documents/run-now`) had **no auth dependency at all** before this pass - anyone could trigger a scan.
-- **Authenticated-user-only (the optional bespoke layer, unchanged)**: register/login, students, guardian links, invites, notifications, Gmail connection + personal email scanners. Registering still self-serve (`/auth/register` in local mode) - it just never grants `is_admin`.
+- **Authenticated-user-only (the optional bespoke layer)**: register/login, students, guardian links, invites, notifications, account settings. Registering still self-serve (`/auth/register` in local mode) - it just never grants `is_admin`. **Gmail connection + email scanners moved to admin-only on 2026-09-11** (`routers/gmail.py`, `routers/email_scanners.py`, `routers/school_emails.py` all use `require_admin`; `/gmail` is behind `RequireAdmin`): connecting an inbox to discover newsletter links is data-source management, not something a guardian needs. Rows stayed owner-scoped, so two admins never see each other's captures.
 
 Frontend (`frontend/src/App.tsx`): `SchoolsPage`, `SchoolDetailPage`, `CalendarPage` are plain routes now, no wrapper at all. `RequireAuth` gates only the personal pages (`/children`, `/gmail`). A new `RequireAdmin` gates `/smore` and `/jobs` - a logged-in non-admin bounces to `/` (they're already logged in, so `/login` would be wrong), not logged in bounces to `/login` same as `RequireAuth`. Both `CalendarPage` and `SchoolsPage` branch on whether `useAuth()` has a `user` to decide `/schools/mine` vs `/schools` for their dropdown/tab, matching the backend's public-vs-personalized split - an anonymous visitor never calls an endpoint that would 401 on them.
 
@@ -42,16 +59,54 @@ cd backend && pytest -q
 cd frontend && npm run build && npm run test
 ```
 
-## Observability (local only so far)
+## Observability (backend OTel done 2026-09-11; see docs/OBSERVABILITY_PLAN.md)
 
-Backend exposes Prometheus metrics at `/metrics` and emits structured JSON logs
-(`backend/logging_config.py`). Locally (`OBSERVABILITY=1`, see `docs/ENV_SETUP.md`):
-Alloy scrapes `/metrics` → Mimir; Promtail tails schoolz's own containers
-(filtered via Docker API `filters`, not just relabel `keep` — a plain
-relabel-based project filter did not reliably exclude other compose projects
-on a shared host) → Loki. Grafana (`localhost:3001`) has both wired as
-datasources plus a starter "schoolz backend overview" dashboard. Not yet
-wired up for prod (no Grafana Cloud shipping, no Fly-side setup).
+`backend/telemetry.py` sets up OpenTelemetry (traces/metrics/logs, OTLP/HTTP
+push) for both the `app` and `scheduler` processes — no-ops entirely unless
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set, so plain `pytest -q` and a local run
+with no `env/secrets.prod.env`-derived vars send nothing. The old
+`prometheus-client` `/metrics` mount is gone (it was publicly readable and
+`_normalize_path` leaked one series per slug); OTel's FastAPI instrumentation
+labels by route template instead. Custom instruments (job runs/duration,
+scraper calls, LLM tokens, cold starts) live in `backend/observability.py`.
+
+`backend/scheduler/runner.py` records `schoolz.job.runs`/`schoolz.job.duration`/
+`schoolz.job.queue_wait`/`schoolz.job.in_flight` around every job execution
+and wraps the handler call in a `job.run` span.
+
+`backend/scheduler/errors.py` gives every scan failure/warning a stable,
+groupable code (`job_runs.error_code`/`error_stage`,
+`scheduled_jobs.last_error_code` — migration 0026): `classify_exception()`
+maps library exceptions (httpx status/timeout, anthropic, sqlalchemy) to a
+`(code, stage)` pair, walking `__cause__`/`__context__` since scraper_client
+re-raises; a handler can also raise `ScanError(code, message, stage=...)`
+directly. A handler's non-fatal `"WARNING: ..."` return value is now
+`"WARNING[<code>]: ..."` (`parse_warning()` extracts the code). Non-fatal
+in-scan problems (an unclassifiable Smore block, an unparseable date, a
+document with no discoverable year, ...) call `record_parse_issue()`, which
+logs `parse_issue` and increments `schoolz.parse.issues`. The scheduler
+reaps runs stuck in `status="running"` for 45+ minutes every reconcile tick
+(45min threshold, process died mid-run — OOM kill, deploy, crash).
+
+Locally (`OBSERVABILITY=1`, see `docs/ENV_SETUP.md`): backend/scheduler push
+OTLP metrics to Alloy's OTLP receiver (`alloy/config.alloy`, port 4318) →
+Mimir (traces/logs exporters are off locally — `OTEL_TRACES_EXPORTER`/
+`OTEL_LOGS_EXPORTER=none`, set by `scripts/compose-local.sh`). Promtail still
+tails schoolz's own containers (filtered via Docker API `filters`, not just
+relabel `keep` — a plain relabel-based project filter did not reliably
+exclude other compose projects on a shared host) → Loki. Grafana
+(`localhost:3001`) has both wired as datasources plus a starter "schoolz
+backend overview" dashboard (now on `http_server_request_duration_seconds_*`
+with an `http_route` label, not the old `http_requests_total`/`path`).
+
+Prod (Grafana Cloud, stack `1595929`, shared with billz — tagged
+`service.namespace=schoolz` so nothing collides with billz's `app="billz-api"`
+logs): OTLP endpoint + schoolz-only write token already provisioned, live in
+`env/secrets.prod.env` (`OTEL_EXPORTER_OTLP_ENDPOINT`, `SCHOOLZ_OTLP_TOKEN`) —
+**not yet pushed to Fly as `fly secrets set`**, that's a pending prod action.
+Frontend RUM (Faro), the `grafana_ro` read-only Postgres datasource, and
+Grafana dashboards/alerts are also not done yet — see
+`docs/OBSERVABILITY_PLAN.md` for the phase-by-phase remainder.
 
 ## Default admin user (local only)
 
@@ -235,7 +290,7 @@ Not every school runs its newsletter the same way, even among ones that use Smor
 
 The frontend was restructured around one question: what does a parent need at 7:40 AM with one hand. Home (`/`) is now the **Today feed** (`frontend/src/pages/TodayPage.tsx`), one day-card per school the visitor cares about, not the old dev-style status page (that moved to `/account`, `AccountPage.tsx`, sign-in only). Every public page renders inside `components/AppShell.tsx` (top bar + bottom tab bar on mobile / left rail ≥900px: Today · Calendar · Lunch · Schools). Design tokens in `styles.css` follow the purchased Katalyst template's palette (teal primary, cool neutrals, Bricolage Grotesque + Nunito Sans via Google Fonts in `index.html`) so its components can be adopted later without a re-skin; Tailwind itself was deliberately *not* added - the template is style/structure inspiration, not a dependency.
 
-- **"My schools" without an account** (`lib/mySchools.tsx`, `MySchoolsProvider`): the first-visit picker (`/start`, `PickSchoolsPage.tsx`) saves school slugs in `localStorage` (`schoolz_my_schools`). A logged-in guardian with linked kids gets `/schools/mine` instead (also syncs across devices). The Today, Calendar, and Lunch pages all redirect to `/start` when the list is empty. Each school gets a stable color by list position (`--sch-1..6`) used on chips, card rails, and calendar dots.
+- **"My schools" without an account** (`lib/mySchools.tsx`, `MySchoolsProvider`): the first-visit picker (`/start`, `PickSchoolsPage.tsx`) saves school slugs in `localStorage` (`schoolz_my_schools`). A logged-in guardian with linked kids gets `/schools/mine` instead (also syncs across devices). Calendar and Lunch redirect to `/start` when the list is empty; Today (`/`) instead renders in place with a "Pick your schools" placeholder linking to `/start` - added 2026-09-12 so the homepage always has real indexable content for crawlers/link previews, instead of an immediate client-side redirect with nothing for a non-JS fetch to see. Each school gets a stable color by list position (`--sch-1..6`) used on chips, card rails, and calendar dots.
 - **`GET /schools/{id}/today`** (`services/school_today.py`, `SchoolTodayOut`) assembles one card server-side so the home page is one request per school: day status derived from district ICS/newsletter items (`classify_day`: `closed` > `early_dismissal` > `delayed` > `open`, weekend separately), hours from the new `School.start_time`/`end_time`/`early_dismissal_time` (admin-editable via `PATCH /schools/{id}`, not scraped yet - all null so far), elementary `Day N` rotation, today's + next school day's lunch via the shared `resolve_lunch_menu()` helper, SACC essentials, role-based contacts, next 5 dated items, closure/early-dismissal alerts within 7 days, and a Mon–Fri `week` strip (rolls to next week on weekends).
 - **`StaffMember.role`** (`services/staff_roles.py:classify_role`, deterministic keyword map: principal / assistant_principal / nurse / counselor / secretary / sacc / social_worker / psychologist) is what turns a 79-person directory into a "Who to contact" grid and the Nurse/Counselor action buttons. Recomputed on every roster/preschool-team scan; migration `0019` backfilled existing rows with the same regexes in SQL. Confirmed on real Bret Harte data (nurse, counselor, principal, SACC coordinator all resolved). Note many schools have no "Secretary" title in the directory - the grid falls back to a "Main office" card with `School.main_phone`.
 - **School page order is deliberate** (`SchoolDetailPage.tsx`): sticky action row (absence / nurse / counselor / SACC late line / main office) → this-week strip → reminders → coming up → who to contact (+ full directory accordion) → SACC as parent questions → documents (flagged "may be outdated" when `academic_year` ≠ current year, since stale handbooks are the original complaint) → newsletter leftovers behind accordions. Actions first, reference last.
@@ -254,3 +309,307 @@ The frontend was restructured around one question: what does a parent need at 7:
 - **Fixed a real UX bug**: `TodayPage.tsx` previously rendered its own chip row as plain `#anchor` scroll-links - tapping one jumped the page to that school's card, scrolling the others off screen, which reads exactly like "only one school is showing." Replaced with the ribbon's real show/hide filter; `TodayPage`/`LunchPage` now render `activeSchools` (the filtered list) while still fetching all of `mySchools` in the background so toggling is instant, no refetch.
 - **School logos**: `School.logo_url` (migration `0023`) is discovered by `school_info.scan` alongside address/phone - `services/school_info.py:_find_logo_url` takes the first `<img>` inside the page's `<header>`, skipping the Google Translate widget badge some sites embed ahead of the real logo (`gstatic.com`) - confirmed correct on all 4 schools checked (Bret Harte, Beck, both high schools). Hotlinked from Finalsite's own CDN, same as every other asset URL in this app (lunch PDFs, documents) - not downloaded and re-hosted, since the CDN URLs are already versioned/cached and this app has no asset-storage pattern yet. Used in the ribbon chips and the `/start` picker's school buttons.
 - Fixed the oversized magnifying-glass icon on `/start`'s search box - `.search svg` had no explicit size, so it fell back to the browser's default replaced-element size (300×150) instead of the icon's intended 18px.
+
+## Frontend RUM - Grafana Faro (added 2026-09-11)
+
+`frontend/src/lib/telemetry.ts` (`initTelemetry()`, called once from `main.tsx`)
+wires Grafana Faro (`@grafana/faro-react`/`-web-sdk`/`-web-tracing`, pinned
+`1.19.0` — the last 1.x release, deliberately not the 2.x line, which bumps
+its `react-router` peer dep to v7/v8 and this app is still on
+`react-router-dom` v6). No-ops entirely when `VITE_FARO_URL` is empty (local
+dev, vitest) - nothing is sent. `App.tsx`'s `<Routes>` is `<FaroRoutes>` so
+view names are route templates, not raw URLs.
+
+- **Privacy scrubbing is mandatory, not optional**: `scrubUrl()` drops the
+  entire `#hash` (Supabase OAuth returns tokens there), strips
+  `code`/`token`/`access_token`/`refresh_token`/`state` query params, and
+  collapses `/invites/<token>` to `/invites/:token`. `beforeSend` (`scrubItem`)
+  applies it to `meta.page.url`, `meta.view.name`, and every string
+  payload/attribute value that looks like a URL, one level deep. Covered by
+  `src/lib/telemetry.test.ts`.
+- **`src/lib/track.ts`** (`trackEvent`/`trackMeasurement`) wraps
+  `faro.api.pushEvent`/`pushMeasurement`, no-op when Faro isn't initialized.
+  Wired so far: `page_view` (route template + `from_route` + `school_slug`,
+  `AppShell.tsx`), session attributes (`logged_in`/`is_admin`/`schools_count`
+  via `faro.api.setSession`), `today_ready`/`school_page_ready` measurements,
+  `school_filter_toggle` (ribbon chips), `action` (absence button only so
+  far). **Not yet wired**: `calendar_ready`, `lunch_ready`, `calendar_search`,
+  `schools_picked`, and `action` for nurse/counselor/bus/late-bus/add-to-
+  calendar/document-open/sports-link - same `trackEvent`/`trackMeasurement`
+  pattern, just not done yet.
+- **Same-origin proxy** (`frontend/nginx.conf.template`, processed by
+  nginx:alpine's built-in envsubst-on-templates startup step - hence
+  `.template`, not a plain `.conf`, and `COPY`'d to
+  `/etc/nginx/templates/default.conf.template` in the Dockerfile, not
+  `/etc/nginx/conf.d/`): `*.grafana.net` collector hosts are on common
+  ad-block lists, so `/rum/collect` proxies to the real collector URL
+  (`FARO_COLLECTOR_URL`, a **runtime** env var / Fly secret, not a build
+  arg - the collector URL only needs to exist server-side to build the
+  proxy config). `VITE_FARO_URL` is set to the relative path `/rum/collect`
+  at build time (`frontend/fly.toml`'s `[build.args]`), so the browser
+  never talks to `*.grafana.net` directly. The Dockerfile defaults
+  `FARO_COLLECTOR_URL` to `http://127.0.0.1:1` (a placeholder that fails
+  cleanly with a 502 on `/rum/collect`, never a broken nginx config) so
+  local compose - which never sets this var, since `VITE_FARO_URL` is empty
+  there too - starts up fine. Verified: nginx starts and serves the
+  homepage in both the placeholder and real-URL cases; a real POST to
+  `/rum/collect` through the proxy reaches the actual Grafana collector
+  (400 back - the collector rejecting a test payload, not a connection
+  failure).
+- **Not yet done**: `FARO_COLLECTOR_URL` hasn't been pushed to
+  `schoolz-web` via `fly secrets set`, and this code hasn't been deployed -
+  RUM is fully wired but not live in prod yet. `frontend/src/pages/PrivacyPage.tsx`
+  updated (owner-approved wording) to disclose the anonymous RUM data
+  collection; a consent banner was deliberately *not* added (RUM is
+  anonymous/functional, not identifying - same "strictly necessary"
+  reasoning as the rest of the page), flagged in the observability plan's
+  PR description as the owner's call, not decided unilaterally.
+
+## Scraper OpenTelemetry (added 2026-09-11)
+
+`scraper/telemetry.py` is a standalone, trimmed copy of `backend/telemetry.py`'s
+pattern (traces + metrics only, no logs/SQLAlchemy/system-metrics - deliberately
+not imported from `backend/`, since the scraper is generic/swappable on
+purpose). `scraper/observability.py` defines `schoolz.scraper.page_load`
+(histogram, `host`+`outcome` attributes - host only, never the full URL,
+to keep cardinality bounded to schoolz's ~40 tracked school hosts) and
+`schoolz.scraper.pages_open` (up-down counter). `main.py` wraps
+`/fetch-html`/`/fetch-paginated`/`/fetch-raw` in spans with manual child
+spans around `page.goto`, `wait_for_selector`, and each paginated click -
+a scan's trace now spans backend → scraper → the school's site. No-ops
+entirely without `OTEL_EXPORTER_OTLP_ENDPOINT`, same as the backend.
+
+## Admin UI kit, jobs management, and account self-service (added 2026-09-11)
+
+`frontend/src/ui.css` + `frontend/src/components/ui/` (Modal, ConfirmDialog,
+PageHeader, SectionCard, Field, Badge/StatusBadge, Switch, Toast, DataTable)
+are the "management layer" design system - structure and rhythm follow the
+purchased Katalyst template's settings + data-table patterns (page header →
+small-uppercase section cards → stat tiles / toolbar / table; underline
+tabs inside modals, pill tabs elsewhere), rebuilt on the app's own tokens
+rather than pulling Tailwind/Radix in. `AppShell` widens `.shell-main` and
+hides the school ribbon on `/jobs`, `/smore`, `/admin`, `/account`.
+
+- **Jobs (`/jobs`, `pages/JobsPage.tsx` + `pages/jobs/`)** is full CRUD over
+  `ScheduledJob` via `routers/scheduled_jobs.py` (`GET /kinds` lists the
+  registry with each kind's `param_schema`, `POST`/`PATCH`/`DELETE`, generic
+  `POST /{id}/run-now`, `GET /runs/summary`). The list resolves each job's
+  *target* (`school_id`/`district_id`/`newsletter_id`/`scanner_id` in
+  params → `target_type`/`target_label`) so rows read "Staff roster scan ·
+  Bret Harte", never a UUID. The whole point of the detail modal
+  (`JobDetailModal`) is the **Runs tab**: every run's status, error code +
+  stage, and the full `error`/`log_excerpt` (traceback) in a `<pre>`, with
+  the newest problem auto-expanded - far too much for a table cell, which
+  only shows the `StatusBadge` + `error_code` chip. Run-now polls
+  `GET /{id}` every 3s until `last_run_at` moves (≤3 min), then toasts the
+  result. The create form derives its target select from the kind's
+  `param_schema.required` (`loadTargetOptions()` fetches schools/districts/
+  newsletters/scanners) and auto-names the job "<default_name>: <target>"
+  until the name is hand-edited; `lib/cron.ts` glosses the cron
+  (`describeCron`) and offers presets. Deleting a job is safe by schema -
+  every `*_job_id` FK is `ON DELETE SET NULL`, so the owning
+  School/District/newsletter just loses its scan.
+- **Account (`/account/*`, `pages/account/`)**: nested routes under
+  `AccountLayout` (Profile, Security, Notifications, Family, Admin - the
+  last only for `is_admin`). Self-service lives in `lib/account.ts` and is
+  **auth-mode aware**: prod's password lives in Supabase Auth (change =
+  `supabase.auth.updateUser`, forgot = `resetPasswordForEmail` → emailed
+  link → `/reset-password` picks up the recovery session via
+  `onAuthStateChange('PASSWORD_RECOVERY')`), local's is a bcrypt hash the
+  backend owns (`POST /auth/change-password`, `/forgot-password`,
+  `/reset-password` with a one-shot token on `users.password_reset_token`,
+  migration 0027). **Local mode has no mailer, so `/auth/forgot-password`
+  returns the token in the response** and `/forgot-password` shows a
+  dev-only link - that's the only way the flow is completable locally;
+  it's still 200-with-null for unknown emails so it can't enumerate
+  accounts. `UserOut.sign_in_method` (`"google"` when a Supabase user has
+  no password) hides the password form for Google-only accounts.
+- **Account deletion (`DELETE /auth/me`)** requires typing `DELETE` (+ the
+  password in local mode) and removes only what the user *owns*:
+  notifications, guardian links, invites they sent, Gmail token, their
+  scanners + those scanners' jobs/captured messages. Shared rows (the
+  Student itself, schools, newsletters, centrally-managed jobs) stay - only
+  `created_by_user_id`/`owner_user_id` provenance is nulled, per the
+  guardian/student model. The Supabase Auth identity is deleted too via the
+  GoTrue admin API, **which needs `SUPABASE_SERVICE_ROLE_KEY` on
+  `schoolz-api`** (logged and skipped if absent - the next Google login
+  would just auto-provision an empty account, untidy but not a hole).
+- **Real bug found while screenshotting this (would have blanked every
+  local build)**: faro-react's `FaroRoutes` renders faro's *internal*
+  `Routes` reference, which is only assigned during `initializeFaro`. With
+  RUM off (no `VITE_FARO_URL` - every local compose build) it's undefined
+  → React #130 on every route. Prod never saw it because RUM is on there.
+  `lib/telemetry.ts` now exports `FaroRoutes` as the plain router `Routes`
+  when `FARO_URL` is empty (regression-tested in `telemetry.test.ts`).
+- UI verification pattern used here (no browser on the host): build the
+  frontend with local args, `docker cp` the dist into the running
+  `schoolz-web-local` nginx container, and drive it from the `scraper`
+  container's Playwright with `localhost:8000` → `backend:8000` proxied via
+  `page.route` (adding CORS headers) and an admin JWT pre-seeded in
+  localStorage - see this session's `shots.py` shape if repeating it.
+
+## Prod deployment (added 2026-09-10)
+
+Live at `https://schoolz.sitenaut.com` (frontend) and `https://schoolz-api.sitenaut.com` (backend). Three Fly apps in the `schoolz` Fly org: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`. Deploy manually with `fly deploy --remote-only` from `backend/`, `frontend/`, or `scraper/`; CI (`migrate.yml` → `deploy.yml`) only runs on pushes to `main` and only covers backend + frontend, not the scraper.
+
+- **Prod DB is the Supabase project misleadingly named `billz-prod`** (`lxithuvstfslndvsdnsk`, org `castillo-fam`) - it was empty and unused; billz's real data lives in the equally-misnamed `clockin` project. `DATABASE_URL` must be the **Session Pooler** (`postgres.<ref>@aws-1-us-east-1.pooler.supabase.com:5432`), not the direct `db.<ref>.supabase.co` host: the direct endpoint is IPv6-only on the free tier and unreachable from GitHub-hosted runners (the first CI migrate failed on exactly this) and from this dev environment. `aws-0-...` answers "tenant not found" for this project; `aws-1` is the right pooler host. Alembic is still the schema source of truth - Supabase's own migration tooling isn't used at all, and RLS is on with no policies on every table by project default, which is correct here because nothing goes through Supabase's Data API (the backend connects as `postgres`).
+- **Custom domains**: Cloudflare A/AAAA records pointing at the Fly IPs, **DNS-only (grey cloud)**. Proxied (orange-cloud) records break Fly's certificate validation - confirmed, the certs sat "Not verified" until the records were switched.
+- **Scraper runs on Fly's private network**, reached at `http://schoolz-scraper.internal:8765` - not on the billz droplet (its scraper lacks `/fetch-paginated`, and its API key lives only on the box). Two gotchas that cost real time: (1) 6PN is **IPv6-only**, so uvicorn must bind `::`, not `0.0.0.0` - with an IPv4 bind every request from `schoolz-api` was "connection refused" even though `curl localhost` inside the machine worked; (2) it must **never auto-stop** (`auto_stop_machines = "off"`, `min_machines_running = 1`): private-network traffic doesn't pass through fly-proxy, so nothing wakes a stopped machine, and `.internal` DNS only resolves *started* machines, so callers see "no address associated with hostname".
+- **`ScheduledJob.next_run_at` is display-only.** `build_apscheduler_job` triggers purely from `cron_expr` (`CronTrigger.from_crontab`); bumping `next_run_at` in the DB does nothing. To force runs use the per-entity `run-now` endpoints or call `scheduler.runner._execute(job_id, triggered_by="manual")` from a one-off script.
+- **One-off scripts against prod**: run them on the `scheduler` machine (always on; it's the one machine with no `http_service`), put the file under `/app` (Python adds the script's own dir to `sys.path`, so `/tmp/x.py` can't import `database`), and expect the container filesystem to reset on every deploy/restart. Do **not** run long scripts on an `app` machine over `fly ssh console`: SSH sessions don't count as traffic for fly-proxy's idle timer, so the machine auto-stops mid-run (killed a 99-job batch after 19). Also: `fly ssh console` uses WireGuard (UDP) and is intermittently unavailable from this dev environment even when the HTTPS API works - retry, don't diagnose.
+- **The 12h cron is a burst**: ~85 school-level scans fire in the same minute at one 1GB headless Chromium. First prod run: 25 of 99 errored (17 ReadTimeout, 7 scraper 502 - the scraper's wrapper for "the school's site didn't load in time"). `scraper_client` now caps in-flight requests at 3 per process, budgets 2× `timeout_ms` (the scraper applies it to `goto` *and* `wait_for_selector`), and retries 502/503/504 + transport errors. `documents.scan`/`school_info.scan`/`staff_roster.scan` returning `warning` for the private preschools is expected - they aren't Finalsite sites.
+- **Vision pass** (`content_extractor._prepare_image`): media type is sniffed from bytes, never from the CDN's Content-Type (Smore serves PNGs labelled `image/jpeg`); oversized/unsupported images are re-encoded via Pillow; a failed block **stays `pending_vision_extraction=True`** and the run gets `WARNING` status. Previously a failed block was flagged done with no text - permanently, since only never-seen blocks get another look - while the run reported success.
+- **District dedup ignores `^Day \d$` titles**: the rotation feeds put a `category="event"` marker on nearly every school day, so keying on `(district, category, start_date)` alone either crashed (`MultipleResultsFound`, seen in prod) or silently dropped a newsletter's district-wide event as a "duplicate" of "Day 3".
+- **Auth**: `BOOTSTRAP_ADMIN_EMAIL` works as documented (confirmed `is_admin=true` on first login) - but Supabase email/password signup requires clicking the confirmation email first, which reads as "login isn't working". Google SSO reuses the same Google OAuth client as the Gmail scanner (billz's); Supabase's Google provider needs that client ID/secret pasted in *and* `https://lxithuvstfslndvsdnsk.supabase.co/auth/v1/callback` added to the client's authorized redirect URIs (the two errors in order were `invalid_client` = typo in the pasted ID, then `redirect_uri_mismatch`).
+- **`.gitignore` had a bare `lib/`** (Python boilerplate) that silently kept `frontend/src/lib/` out of git - local builds passed because the files existed on disk; CI's fresh checkout failed with `Cannot find module '../lib/...'`. Removed.
+- **Privacy**: `/privacy` + footer link, deliberately **no consent banner** - everything stored today (localStorage school picks, Supabase session, opt-in Gmail token) is strictly necessary under GDPR/ePrivacy, so a banner would be asking consent for nothing. Revisit the moment analytics or ads are added.
+
+## Newsletters admin page redesign + district-wide newsletters + community submissions (added 2026-09-11)
+
+`/smore` was rebuilt on the same Katalyst UI-kit pattern as `/jobs` (stat
+tiles, search/filter toolbar, `DataTable`, a `NewsletterFormModal`/
+`NewsletterDetailModal` pair) instead of the old plain black-and-white
+table, and gained a bulk "force re-extract every block" control at the
+list level (previously only per-row). `SmoreNewsletter.district_id`
+(migration 0028) lets a newsletter belong to a whole district instead of
+only ever a single school - added specifically for Cherry Hill's
+district-wide "CHPS Weekly" publication, which has nowhere else to attach
+its extracted items (`content_extractor.py` forces `scope="district"` for
+any item on a newsletter with no `school_id`).
+
+- **Real bug found via this newsletter's own content, not by inspection**:
+  a YouTube video embed block (`data-block-type="embed.video"`) renders its
+  foreground "play" icon as a base64 `data:image/svg+xml` `<img src>` -
+  `smore_parser._classify()` was reading that literally as the block's
+  `image_url`, and `_vision_extract` crashed trying to `httpx.get()` a
+  `data:` URI (caught, but the block stayed `pending_vision_extraction`
+  forever with nothing useful ever extracted - the real title/thumbnail/
+  link live on the video button's own `data-video-title`/
+  `data-video-original-url` attributes, not the image). Fixed by detecting
+  `[data-video-title]` first and classifying it as a text+link block using
+  those attributes; any other `data:` URI `<img src>` now falls back to
+  text/link classification too instead of being treated as a real image.
+  Confirmed fixed live: Cherry Hill East's newsletter (which has this exact
+  video) re-scanned clean after the fix, 48 blocks, no crash.
+- Three real newsletter URL changes (confirmed by the user from a text
+  alert, not discovered by a scan) were applied directly on prod via a
+  one-off script on the `scheduler` machine (see the prod-deployment
+  section below for why that's the only sanctioned place): Bret Harte and
+  Cherry Hill East had their tracked URL updated in place (same newsletter,
+  new issue - not a new row), and "CHPS Weekly" was added as the first
+  `district_id`-only newsletter.
+
+**Community submissions** (`CommunitySubmission`, migration 0029,
+`routers/community_submissions.py`, `POST /submissions` public/no-auth):
+lets anyone contribute a school flier (image/PDF upload, 15MB cap, bytes
+stored directly in the row - there's still no object-storage integration
+anywhere in this app, and this is meant to be low-volume) or a newsletter/
+document link, with an optional note on what they're hoping gets extracted
+and which school/district it's about. Everything lands `status="pending"` -
+nothing here feeds the extraction pipeline automatically, by explicit
+design ("so I can curate and validate the extractions" was the user's own
+framing). Admin review happens at `/admin/submissions`
+(`SubmissionsPage.tsx`, same stat-tile/DataTable/modal pattern as Jobs/
+Newsletters) - approve/reject with notes, download the file back
+(`GET /submissions/{id}/file`, admin-only), delete. `AdminSection.tsx`
+shows a pending-count badge linking to it. Public entry point is
+`/contact` (`ContactPage.tsx`, linked from the footer) - a link/file toggle,
+optional description/name/email/school-or-district, using a raw `fetch()`
+multipart POST rather than `apiFetch()` (which always forces a JSON
+`Content-Type` header, incompatible with `FormData`'s own boundary).
+
+- **Real UI-kit bug caught in Playwright review, not by inspection**: the
+  submissions table's row-delete button used a `className="icon-btn"` that
+  doesn't exist anywhere in `ui.css` - `.btn.icon` (optionally `.danger`)
+  is the actual class every other DataTable row action uses (Jobs,
+  Newsletters), so the button rendered as an unstyled/unsized empty box.
+  Also fixed a footer bug this surfaced: `.shell-footer` had no `gap`, so
+  the new "Contact us" link ran straight into "Privacy & cookies" with no
+  space between them.
+
+## Admin nav consolidation + Calendar/Today district-item overhaul (added 2026-09-11)
+
+**Nav cleanup**: `/smore`, `/jobs`, and `/admin/config` collapsed into one
+`/admin` route (`frontend/src/pages/AdminLayout.tsx`) with a horizontal tab
+bar (Newsletters / Scans / Import-export, reusing the existing `.tabs .tab`
+pill style - matches the Katalyst template's "default" tabs variant, see
+the new "UI reference template" section above) instead of three separate
+left-rail nav entries. Old paths redirect (`<Navigate>`) so nothing
+bookmarked breaks; `AdminSection.tsx`'s quick links and the nav rail were
+repointed to the canonical `/admin/*` paths directly.
+
+**Calendar page** (`CalendarPage.tsx`) dropped its second school-selector
+(`SchoolPicker.tsx`, now deleted) - it duplicated the top ribbon's "my
+schools" filter and confused users who didn't realize there were two.
+Schools shown = the ribbon's `activeSchools` directly (or a school page's
+`?school=` deep link, unchanged). Two new filters:
+- **"Exclude district"** (checkbox right above the event list, on by
+  default) hides generic district-wide noise (Board of Ed meetings,
+  committee meetings) - but never closures/half-days/delays or grading
+  dates, and never a rotation marker (that's the next filter's job). This
+  setting is **shared, not Calendar-only** (`lib/mySchools.tsx`,
+  `schoolz_exclude_district` in localStorage) - it also governs what
+  `DayCard`'s `upcoming` list, `WeekStrip`'s day pills, and
+  `SchoolDetailPage`'s "Coming up" list show, per explicit ask ("I don't
+  want to see board of education meetings on my school's today page
+  unless I explicitly removed that filter from the calendar page").
+- **"Show day-rotation schedule"** (checkbox at the top of the page, off
+  by default) - the elementary "Day N" / high-school block-rotation
+  markers are clutter most visits don't care about. Doesn't touch the
+  Today card's own `rotation_day` metadata line under the school name
+  (`services/school_today.py` already excludes rotation markers from
+  `upcoming`/`week[].items` unconditionally - that's a separate, always-on
+  exclusion, not this new toggle).
+- **Per-school labeling, not type labeling** (`lib/districtItems.ts:
+  expandItemRows`): a district item with no `applies_to_school_types`
+  gets one row labeled "All schools"; one restricted to specific types
+  (a type-only half day, or - with rotation on - "Day N") expands into
+  **one row per currently-active school of a matching type**, each
+  labeled with that school's own name - "Day 3 [Bret Harte]" and "Day 2
+  [Cherry Hill East]" side by side, not one row saying "Elementary" and
+  another saying "High school". A type-restricted item matching none of
+  the active schools is dropped entirely (it doesn't apply to anyone
+  currently being viewed). The label renders as a distinct bordered badge
+  (`.tag.schoolTag` in styles.css, colored via the school's own ribbon
+  color or the neutral district accent for "All schools") ahead of the
+  category tag, not buried in plain description text.
+- `lib/schoolType.ts:schoolTypeLabel` now says "Elementary school"/"Middle
+  school"/"High school", not the bare tier name, for the few places that
+  still show a type label directly (Today's `kind` line, LunchPage,
+  SchoolDetailPage's eyebrow) - reads more naturally.
+
+**Dedup fix for repeated closure/half-day items**
+(`backend/services/school_status.py`, new): a "no school"/"early
+dismissal"/"delayed opening" fact is never really one school's own news -
+every school in Cherry Hill shares the same closed/half-day/delayed
+calendar - but the extraction model doesn't reliably mark these
+`scope='district'` even though its own system prompt says to. Confirmed
+real: Kilmer's newsletter reported "First Day of School (Early Dismissal)"
+as `scope='school'`, and other schools' newsletters independently reported
+the same district-wide fact too, producing a pile of near-duplicate "First
+Day of School" items instead of the one shared district row - the user's
+own bug report ("i ended up with so many 'first day of school' events").
+`content_extractor.py` now force-overrides `scope='district'` for any
+newly-extracted item whose title matches `is_status_title()` (closed/half
+day/delayed-opening patterns), *before* the existing
+`(district, category, start_date)` dedup check runs - so it always gets a
+chance to collapse into whichever row (ICS-fed or another school's
+newsletter) already exists for that date, instead of trusting the model's
+scope guess alone. Deliberately its own regex set, not reused by
+`school_today.py`'s `classify_day` - that function's precedence (closed
+beats early_dismissal) breaks on a real title like "EARLY DISMISSAL -
+Staff In-Service" if "in-service" is also treated as a closure keyword
+there (pinned by `test_school_today.py`), so the two modules intentionally
+don't share one regex set.
+- **Known remaining gap, not fixed by this pass**: this only forces
+  `scope='district'` for the closure/half-day/delayed-opening *status*
+  pattern. An ordinary event mentioned by both the district ICS feed and
+  a school's own newsletter with slightly different wording (confirmed
+  real: Chesterbrook's newsletter separately reported "Cherry Hill Board
+  of Education Candidates Forum" as `scope='school'`, alongside the
+  district feed's own "Board of Education Candidates Forum") isn't
+  deduped - only the closure/half-day/delay class was in scope for this
+  fix. The existing duplicate rows already in prod from before this fix
+  also aren't retroactively cleaned up by it (new extractions only) - a
+  one-time cleanup pass would be needed to collapse rows already sitting
+  in the database.

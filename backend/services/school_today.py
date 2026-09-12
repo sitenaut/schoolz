@@ -23,11 +23,16 @@ from services.transportation import late_bus_for_school
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
+# Deliberately its own (narrower) patterns, not services/school_status.py's
+# shared ones - that module's CLOSED_RE also matches bare "in-service"/
+# "conference", which would wrongly outrank early_dismissal's precedence
+# here on a real title like "EARLY DISMISSAL - Staff In-Service"
+# (test_school_today.py:test_classify_day_precedence_and_labels pins this).
 _CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b", re.I)
 _EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b", re.I)
 _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 _ROTATION_RE = re.compile(r"^\s*Day\s+(\d)\s*$", re.I)
-_UPCOMING_CATEGORIES = ("event", "deadline", "initiative", "reminder")
+_UPCOMING_CATEGORIES = ("event", "deadline", "initiative", "reminder", "marking_period")
 _UPCOMING_WINDOW_DAYS = 60
 _ALERT_WINDOW_DAYS = 7
 
@@ -56,6 +61,27 @@ def classify_day(titles: list[str]) -> tuple[str, str | None]:
         if _DELAY_RE.search(t):
             return "delayed", t
     return "open", None
+
+
+def _item_date_range(item: SchoolContentItem) -> list[date]:
+    """Every calendar day an item covers, not just its start_date - a
+    multi-day item (real case: "SCHOOLS CLOSED - NJEA Convention" spanning
+    Nov 5-6) was otherwise only ever classified as closed on its first day,
+    with the second day silently showing "Open" (both here and on the
+    frontend calendar grid, which had the identical bug independently).
+    All-day multi-day events store end_date as the ICS convention's
+    exclusive day-after-the-last-day (confirmed real: Nov 5 start, Nov 7
+    end, covering Nov 5-6) - a timed item's end_date, if it spans a later
+    calendar day at all, is treated as inclusive of that day instead."""
+    start_d = local_date(item.start_date)
+    if not item.end_date:
+        return [start_d]
+    end_d = local_date(item.end_date)
+    if item.is_all_day:
+        end_d -= timedelta(days=1)
+    if end_d <= start_d:
+        return [start_d]
+    return [start_d + timedelta(days=n) for n in range((end_d - start_d).days + 1)]
 
 
 def _is_status_item(item: SchoolContentItem) -> bool:
@@ -135,7 +161,8 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
 
     by_day: dict[date, list[SchoolContentItem]] = {}
     for i in items:
-        by_day.setdefault(local_date(i.start_date), []).append(i)
+        for d in _item_date_range(i):
+            by_day.setdefault(d, []).append(i)
 
     def day_status(d: date) -> tuple[str, str | None]:
         if d.weekday() >= 5:
@@ -204,9 +231,16 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     seen: set[tuple[date, str]] = set()
     alerts: list[SchoolContentItemOut] = []
     for i in items:
-        d = local_date(i.start_date)
-        if today <= d <= today + timedelta(days=_ALERT_WINDOW_DAYS) and _is_status_item(i):
-            key = (d, classify_day([i.title])[0])
+        if not _is_status_item(i):
+            continue
+        # Any day the item covers falling in the alert window is enough -
+        # a multi-day closure that started before today but is still
+        # ongoing (or one starting later in the window) should still surface.
+        window_day = next(
+            (d for d in _item_date_range(i) if today <= d <= today + timedelta(days=_ALERT_WINDOW_DAYS)), None
+        )
+        if window_day is not None:
+            key = (window_day, classify_day([i.title])[0])
             if key not in seen:
                 seen.add(key)
                 alerts.append(out(i))

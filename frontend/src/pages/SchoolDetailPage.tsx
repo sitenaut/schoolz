@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contactHref } from "../components/today";
+import { IconChevronLeft } from "../components/icons";
+import { SeoHead } from "../components/SeoHead";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
+import { isNoisyDistrictItem } from "../lib/districtItems";
+import { useMySchools } from "../lib/mySchools";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { schoolTypeLabel } from "../lib/schoolType";
+import { SITE_URL } from "../lib/site";
+import { trackEvent, trackMeasurement } from "../lib/track";
 import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
 
 type Newsletter = { id: string; label: string | null; url: string; latest_summary: string | null; last_scanned_at: string | null };
@@ -37,9 +44,11 @@ export function SchoolDetailPage() {
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [transport, setTransport] = useState<SchoolTransportation | null>(null);
   const [missing, setMissing] = useState(false);
+  const readyStart = useRef(performance.now());
 
   useEffect(() => {
     if (!schoolId) return;
+    readyStart.current = performance.now();
     Promise.all([
       apiFetch(`/schools/${schoolId}/today`).then((r) => (r.ok ? r.json() : null)),
       apiFetch(`/schools/${schoolId}/content`).then((r) => (r.ok ? r.json() : [])),
@@ -57,17 +66,26 @@ export function SchoolDetailPage() {
       setSacc(sc);
       setNewsletters(nl);
       setTransport(tr);
+      if (t) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
     });
   }, [schoolId]);
 
+  const { excludeDistrict } = useMySchools();
   const tk = todayKey();
   const upcoming = useMemo(
     () =>
       items
-        .filter((i) => ["event", "deadline", "initiative"].includes(i.category) && i.start_date && localDateKey(i.start_date) >= tk && !/^Day \d$/.test(i.title))
+        .filter(
+          (i) =>
+            ["event", "deadline", "initiative", "marking_period"].includes(i.category) &&
+            i.start_date &&
+            localDateKey(i.start_date) >= tk &&
+            !/^Day \d$/.test(i.title) &&
+            (!excludeDistrict || !isNoisyDistrictItem(i)),
+        )
         .sort((a, b) => (a.start_date! < b.start_date! ? -1 : 1))
         .slice(0, 12),
-    [items, tk],
+    [items, tk, excludeDistrict],
   );
   const reminders = items.filter((i) => i.category === "reminder");
   const pta = items.filter((i) => i.category === "pta");
@@ -75,17 +93,44 @@ export function SchoolDetailPage() {
   const summary = newsletters.find((n) => n.latest_summary)?.latest_summary;
   const newsletterUrl = newsletters[0]?.url;
 
+  usePrerenderReady(!!today || missing);
+
   if (missing) return <div className="empty">School not found.</div>;
   if (!today) return <p className="note">Loading…</p>;
   const s = today.school;
   const nurse = today.contacts.find((c) => c.role === "nurse");
   const counselor = today.contacts.find((c) => c.role === "counselor");
   const thisYear = currentAcademicYear();
+  const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
+  const typeLabel = schoolTypeLabel(s.school_type);
+  const seoDescription = [
+    `${s.name}${typeLabel ? ` (${typeLabel})` : ""} in Cherry Hill, NJ.`,
+    s.address,
+    "Bell schedule, absence reporting, lunch menu, bus info, and calendar dates.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <>
+      <SeoHead
+        title={`${s.name} · schoolz`}
+        description={seoDescription}
+        path={`/schools/${s.slug}`}
+        image={s.logo_url ?? undefined}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "School",
+          name: s.name,
+          url: `${SITE_URL}/schools/${s.slug}`,
+          ...(s.address ? { address: s.address } : {}),
+          ...(s.main_phone ? { telephone: s.main_phone } : {}),
+          ...(s.website_url ? { sameAs: s.website_url } : {}),
+          ...(s.logo_url ? { logo: s.logo_url } : {}),
+        }}
+      />
       <Link to="/" className="back-link">
-        ← Today
+        <IconChevronLeft /> Today
       </Link>
       <div className="school-hd">
         <div className="eyebrow">{[schoolTypeLabel(s.school_type), "Cherry Hill Public Schools"].filter(Boolean).join(" · ")}</div>
@@ -131,32 +176,37 @@ export function SchoolDetailPage() {
         <div className="actions bare">
           <AbsenceButton school={s} />
           {nurse && contactHref(nurse) && (
-            <a className="action" href={contactHref(nurse)!.href}>
+            <a className="action" href={contactHref(nurse)!.href} onClick={() => track("nurse", "tel")}>
               Nurse
             </a>
           )}
           {counselor && contactHref(counselor) && (
-            <a className="action" href={contactHref(counselor)!.href}>
+            <a className="action" href={contactHref(counselor)!.href} onClick={() => track("counselor", "tel")}>
               Counselor
             </a>
           )}
           {today.sacc?.site_phone && (
-            <a className="action" href={telHref(today.sacc.site_phone)}>
+            <a className="action" href={telHref(today.sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
               SACC late line
             </a>
           )}
           {s.main_phone && (
-            <a className="action" href={telHref(s.main_phone)}>
+            <a className="action" href={telHref(s.main_phone)} onClick={() => track("main_office", "tel")}>
               Main office
             </a>
           )}
           {transport?.district.office_phone && (
-            <a className="action" href={telHref(transport.district.office_phone)} title="District transportation office">
+            <a
+              className="action"
+              href={telHref(transport.district.office_phone)}
+              title="District transportation office"
+              onClick={() => track("bus_office", "tel")}
+            >
               Bus office
             </a>
           )}
           {s.athletics_url && (
-            <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer">
+            <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
               Sports &amp; band
             </a>
           )}
@@ -175,7 +225,7 @@ export function SchoolDetailPage() {
           <a href={today.lunch.source_pdf_url} target="_blank" rel="noreferrer">
             monthly menu
           </a>
-          . <Link to="/lunch">Whole month</Link>
+          . <Link to={`/lunch?school=${s.slug}`}>Whole month</Link>
         </p>
       )}
 
@@ -433,7 +483,14 @@ export function SchoolDetailPage() {
             {documents.map((d) => {
               const stale = Boolean(d.academic_year && d.academic_year !== thisYear);
               return (
-                <a href={d.url} target="_blank" rel="noreferrer" className={stale ? "stale" : ""} key={d.id}>
+                <a
+                  href={d.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={stale ? "stale" : ""}
+                  key={d.id}
+                  onClick={() => trackEvent("action", { action: "document_open", method: "link", school_slug: s.slug })}
+                >
                   📄 {d.doc_type === "bell_schedule" ? "Bell schedule" : d.title}
                   <small>{d.academic_year ? (stale ? `${d.academic_year} · may be outdated` : d.academic_year) : d.source}</small>
                 </a>

@@ -1,10 +1,21 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { DayCard } from "../components/today";
+import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
+import { usePrerenderReady } from "../lib/prerenderReady";
+import { trackMeasurement } from "../lib/track";
 import type { SchoolContentItem, SchoolToday } from "../types";
+
+const HOME_SEO = (
+  <SeoHead
+    title="schoolz · Cherry Hill — Today at your kids' schools"
+    description="Live school-day status, bell schedules, lunch menus, bus info, and calendar dates for Cherry Hill Public Schools - free, public, no account needed."
+    path="/"
+  />
+);
 
 /** The home page: one day-card per active school, with any district-wide
  * closure/early-dismissal in the next week pulled up into a banner so
@@ -14,6 +25,8 @@ import type { SchoolContentItem, SchoolToday } from "../types";
 export function TodayPage() {
   const { mySchools, activeSchools, loading, colorFor, isFiltered } = useMySchools();
   const [cards, setCards] = useState<Record<string, SchoolToday>>({});
+  const readyStart = useRef(performance.now());
+  const readyReported = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,8 +45,38 @@ export function TodayPage() {
     };
   }, [mySchools]);
 
-  if (loading) return <p className="note">Loading…</p>;
-  if (mySchools.length === 0) return <Navigate to="/start" replace />;
+  useEffect(() => {
+    if (readyReported.current || mySchools.length === 0) return;
+    if (Object.keys(cards).length < mySchools.length) return;
+    readyReported.current = true;
+    trackMeasurement("today_ready", performance.now() - readyStart.current, { schools: mySchools.length });
+  }, [cards, mySchools]);
+
+  usePrerenderReady(!loading);
+
+  if (loading)
+    return (
+      <>
+        {HOME_SEO}
+        <p className="note">Loading…</p>
+      </>
+    );
+  if (mySchools.length === 0)
+    return (
+      <>
+        {HOME_SEO}
+        <div className="empty">
+          <p>
+            <strong>Pick your kids' schools</strong> to see today's status, bell schedules, lunch, and bus info here.
+          </p>
+          <p>
+            <Link to="/start" className="btn btn-primary">
+              Pick your schools
+            </Link>
+          </p>
+        </div>
+      </>
+    );
 
   const first = cards[activeSchools[0]?.id] ?? cards[mySchools[0].id];
   const heading = first
@@ -52,6 +95,7 @@ export function TodayPage() {
 
   return (
     <>
+      {HOME_SEO}
       <div className="eyebrow">
         {heading}
         {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· showing {activeSchools.length} of {mySchools.length}</span>}

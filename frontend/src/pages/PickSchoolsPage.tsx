@@ -3,15 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { IconSearch } from "../components/icons";
 import { useMySchools } from "../lib/mySchools";
 import { useAuth } from "../context/AuthContext";
+import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
+import { trackEvent } from "../lib/track";
 import type { School } from "../types";
-
-const TIERS: { key: string; label: string }[] = [
-  { key: "elementary", label: "Elementary" },
-  { key: "middle", label: "Middle" },
-  { key: "high", label: "High school" },
-  { key: "alternative", label: "Alternative" },
-  { key: "other", label: "Preschool & early childhood" },
-];
 
 /** First-visit school picker. Saves to this device - no account needed. */
 export function PickSchoolsPage() {
@@ -40,13 +34,14 @@ export function PickSchoolsPage() {
 
   const save = () => {
     setSlugs(picked);
+    trackEvent("schools_picked", { count: picked.length });
     navigate("/");
   };
 
   return (
     <>
       <div className="hero">
-        <h1>Which schools are yours?</h1>
+        <h1>Choose your schools</h1>
         <p>
           Pick one or more. We'll remember them on this device, no account needed. Bookmark the page and you're done.
           {fromAccount && " Your linked children's schools are already included."}
@@ -57,7 +52,7 @@ export function PickSchoolsPage() {
         <input placeholder={`Search ${allSchools.length} Cherry Hill schools…`} value={q} onChange={(e) => setQ(e.target.value)} />
       </label>
 
-      {TIERS.map((t) => {
+      {SCHOOL_TYPE_TIERS.map((t) => {
         const group = visible.filter((s) => (s.school_type ?? "other") === t.key);
         if (group.length === 0) return null;
         return (

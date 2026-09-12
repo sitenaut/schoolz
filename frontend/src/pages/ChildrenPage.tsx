@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import { IconChevronLeft } from "../components/icons";
 import type { School } from "../types";
 
 type Student = {
@@ -106,7 +107,9 @@ export function ChildrenPage() {
   return (
     <div style={{ maxWidth: 560, margin: "3rem auto", fontFamily: "sans-serif" }}>
       <p>
-        <Link to="/">&larr; Home</Link>
+        <Link to="/" className="back-link">
+          <IconChevronLeft /> Home
+        </Link>
       </p>
       <h1>My Children</h1>
 

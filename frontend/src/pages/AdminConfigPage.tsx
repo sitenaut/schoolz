@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 
 type ImportResult = {
@@ -94,7 +93,6 @@ export function AdminConfigPage() {
     <>
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>Import / export configuration</h2>
-        <Link to="/jobs">Scheduled fetches</Link>
       </div>
       <p className="note">
         Ports centrally-managed setup - tracked districts and schools, Smore newsletter links, bell schedules, SACC info - to or from another schoolz

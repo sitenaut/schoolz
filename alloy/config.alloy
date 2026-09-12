@@ -1,13 +1,19 @@
-// Grafana Alloy — scrape backend Prometheus metrics, remote-write to Mimir
+// Grafana Alloy — receive OTLP from backend/scheduler, forward metrics to
+// Mimir. Local-only counterpart of the OTLP push wired in backend/telemetry.py
+// (see docs/OBSERVABILITY_PLAN.md Phase 2g). backend/scheduler set
+// OTEL_TRACES_EXPORTER=none and OTEL_LOGS_EXPORTER=none locally - Promtail
+// still ships local logs from stdout, so only metrics flow through here.
 
-prometheus.scrape "backend" {
-  targets = [
-    {"__address__" = "backend:8000"},
-  ]
-  metrics_path    = "/metrics"
-  scrape_interval = "15s"
-  scrape_timeout  = "10s"
+otelcol.receiver.otlp "default" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    metrics = [otelcol.exporter.prometheus.mimir.input]
+  }
+}
 
+otelcol.exporter.prometheus "mimir" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 }
 

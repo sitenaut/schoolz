@@ -1,7 +1,11 @@
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
-from services.school_today import classify_day, week_window
+from models import SchoolContentItem
+from services.school_today import _item_date_range, classify_day, week_window
 from services.staff_roles import classify_role
+
+_ET = ZoneInfo("America/New_York")
 
 
 def test_classify_role_keyword_map():
@@ -26,6 +30,39 @@ def test_classify_day_precedence_and_labels():
     assert classify_day(["EARLY DISMISSAL", "SCHOOLS CLOSED - Snow"])[0] == "closed"
     assert classify_day(["2 Hour Delay"])[0] == "delayed"
     assert classify_day(["Back to School Night"]) == ("open", None)
+
+
+def test_item_date_range_expands_multi_day_all_day_closure():
+    # Real case: "SCHOOLS CLOSED - NJEA Convention", start=Nov 5, end=Nov 7
+    # (ICS all-day convention: end is exclusive, the day after the last
+    # actual day) - covers Nov 5 and Nov 6, not just Nov 5.
+    item = SchoolContentItem(
+        title="SCHOOLS CLOSED - NJEA Convention",
+        start_date=datetime(2026, 11, 5, tzinfo=_ET),
+        end_date=datetime(2026, 11, 7, tzinfo=_ET),
+        is_all_day=True,
+    )
+    assert _item_date_range(item) == [date(2026, 11, 5), date(2026, 11, 6)]
+
+
+def test_item_date_range_single_day_all_day_item():
+    item = SchoolContentItem(title="x", start_date=datetime(2026, 9, 7, tzinfo=_ET), end_date=None, is_all_day=True)
+    assert _item_date_range(item) == [date(2026, 9, 7)]
+
+
+def test_item_date_range_no_end_date_returns_start_only():
+    item = SchoolContentItem(title="x", start_date=datetime(2026, 9, 22, 18, 30, tzinfo=_ET), end_date=None, is_all_day=False)
+    assert _item_date_range(item) == [date(2026, 9, 22)]
+
+
+def test_item_date_range_timed_multi_day_treats_end_as_inclusive():
+    item = SchoolContentItem(
+        title="x",
+        start_date=datetime(2026, 10, 5, 9, 0, tzinfo=_ET),
+        end_date=datetime(2026, 10, 7, 16, 0, tzinfo=_ET),
+        is_all_day=False,
+    )
+    assert _item_date_range(item) == [date(2026, 10, 5), date(2026, 10, 6), date(2026, 10, 7)]
 
 
 def test_week_window_mon_to_fri_and_weekend_rolls_forward():

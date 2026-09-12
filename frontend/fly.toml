@@ -11,6 +11,19 @@ primary_region = "ewr"
     VITE_SUPABASE_URL = "https://lxithuvstfslndvsdnsk.supabase.co"
     VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ymxiIhkeaV6R5egNQI9gwA_iY95YXIR"
     VITE_APP_VERSION = "prod"
+    VITE_FARO_URL = "/rum/collect"
+    VITE_PUBLIC_WEB_URL = "https://schoolz.sitenaut.com"
+
+[env]
+  # Not sensitive (just an internal hostname on Fly's private 6PN network),
+  # so it's a plain fly.toml env var rather than a `fly secrets set` -
+  # nginx.conf.template proxies crawler user agents here instead of
+  # serving the SPA shell, for SEO. schoolz-api must stay always-on
+  # (min_machines_running = 1, see backend/fly.toml) for this to resolve.
+  BACKEND_INTERNAL_URL = "http://schoolz-api.internal:8000"
+  # Fly's own internal DNS resolver (6PN) - Docker's embedded 127.0.0.11
+  # (the image's default) doesn't exist on a Fly machine.
+  RESOLVER = "[fdaa::3]:53"
 
 [http_service]
   internal_port = 3000

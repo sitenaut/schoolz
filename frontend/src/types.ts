@@ -2,6 +2,7 @@ export type SchoolContentItem = {
   id: string;
   scope: "school" | "district";
   school_name: string | null;
+  applies_to_school_types: string[] | null;
   category: string;
   title: string;
   description: string | null;
@@ -142,4 +143,72 @@ export type SchoolToday = {
   upcoming: SchoolContentItem[];
   alerts: SchoolContentItem[];
   week: TodayDay[];
+};
+
+export type ScheduledJob = {
+  id: string;
+  kind: string;
+  name: string;
+  description: string | null;
+  cron_expr: string;
+  timezone: string;
+  params: Record<string, unknown>;
+  enabled: boolean;
+  last_run_at: string | null;
+  last_status: string | null;
+  last_error: string | null;
+  last_error_code: string | null;
+  last_duration_ms: number | null;
+  next_run_at: string | null;
+  created_at: string | null;
+  target_type: string | null;
+  target_label: string | null;
+};
+
+export type JobRun = {
+  id: string;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
+  error: string | null;
+  error_code: string | null;
+  error_stage: string | null;
+  log_excerpt: string | null;
+  triggered_by: string;
+};
+
+export type JobKind = {
+  kind: string;
+  default_name: string;
+  default_cron: string;
+  default_timezone: string;
+  description: string;
+  param_schema: { properties?: Record<string, { type?: string; description?: string }>; required?: string[] } | null;
+};
+
+export type SmoreNewsletter = {
+  id: string;
+  url: string;
+  label: string | null;
+  school_id: string | null;
+  district_id: string | null;
+  school_name: string | null;
+  district_name: string | null;
+  last_scanned_at: string | null;
+  latest_summary: string | null;
+  created_at: string;
+  scheduled_job: ScheduledJob | null;
+};
+
+export type SmoreBlock = {
+  id: string;
+  position: number;
+  block_type: string;
+  text_content: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  pending_vision_extraction: boolean;
+  vision_extracted_text: string | null;
+  first_seen_at: string;
 };

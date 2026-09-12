@@ -2,7 +2,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -67,6 +67,10 @@ class User(Base):
     # Set when this row was provisioned from a Supabase-authenticated login (prod).
     supabase_user_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Local auth mode only (prod's Supabase handles its own reset emails):
+    # a one-shot token from POST /auth/forgot-password, cleared on use.
+    password_reset_token: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    password_reset_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
@@ -174,6 +178,10 @@ class ScheduledJob(Base):
     # "success" | "error" | "running" | "skipped"
     last_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     last_error: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Stable, groupable reason for the last run's failure/warning - see
+    # scheduler/errors.py. Null for a success (or a warning with no
+    # parseable code, e.g. a bare "WARNING:" - see parse_warning()).
+    last_error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     last_duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
@@ -191,6 +199,11 @@ class JobRun(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str | None] = mapped_column(String, nullable=True)
+    # See scheduler/errors.py: classify_exception() for an error, parse_warning()
+    # for a warning. error_stage is only set for a real error (fetch/parse/
+    # extract/persist/unknown), null for a warning or success.
+    error_code: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    error_stage: Mapped[str | None] = mapped_column(String(20), nullable=True)
     log_excerpt: Mapped[str | None] = mapped_column(String, nullable=True)
     # "cron" | "manual"
     triggered_by: Mapped[str] = mapped_column(String(20), default="cron", nullable=False)
@@ -417,6 +430,14 @@ class School(Base):
     # Auto-created alongside the other website_url-triggered scans - fetches
     # address/main_phone from the school's own site footer.
     school_info_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Base page URL (no ?mm=/&yy= query params - the job appends those
+    # itself for whichever month(s) it's checking) for a per-school page
+    # that lists monthly PDFs: a themed "special events" calendar, a lunch
+    # menu, sometimes a newsletter. Only ever set by hand for a school
+    # confirmed to actually publish this way (Chesterbrook Academy is the
+    # first, confirmed 2026-09-12) - most schools have no such page at all.
+    special_events_calendar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    special_events_scan_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
@@ -554,7 +575,10 @@ class SchoolContentItem(Base):
     applies_to_school_types: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     # "event" | "deadline" | "initiative" | "reminder" | "policy_change" |
     # "procedure" | "program" | "busing" | "funding" | "volunteer" |
-    # "org_club" | "merch_ad" | "pta" | "person"
+    # "org_club" | "merch_ad" | "pta" | "person" | "lunch_menu" |
+    # "marking_period" (report card/interim/marking-period-end dates - not
+    # a "deadline" a parent has to act on, so kept distinct: see
+    # services/marking_period.py and the frontend's ItemTag "grading" badge)
     category: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -599,6 +623,17 @@ class SmoreNewsletter(Base):
     url: Mapped[str] = mapped_column(String(1000), unique=True, nullable=False)
     label: Mapped[str | None] = mapped_column(String(255), nullable=True)
     school_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
+    # For a newsletter that isn't any one school's - a district-wide
+    # publication (confirmed real: Cherry Hill's own "CHPS Weekly", first
+    # tracked 2026-09-11). Without this, content_extractor.py had nowhere
+    # to attach a district-wide newsletter's items at all: scope="school"
+    # items need a school_id and scope="district" items need a district_id
+    # resolved from *a* school's own district_id - neither existed when
+    # school_id was null, so every item silently became orphaned (created
+    # with school_id=None, district_id=None, invisible everywhere).
+    # Ordinarily exactly one of school_id/district_id is set, matching
+    # SchoolContentItem's scope split - not enforced by a DB constraint.
+    district_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("districts.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     scheduled_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     last_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -748,6 +783,47 @@ class DistrictTransportation(Base):
     lost_items_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     closing_info_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class CommunitySubmission(Base):
+    """A flier/newsletter link submitted by anyone (no account needed) for
+    an admin to review and, if it's real and useful, add to the tracked
+    sources by hand via the existing /smore or school-documents flows.
+
+    This is deliberately just an inbox, not automation - the whole point
+    per the user's own framing is "so I can curate and validate the
+    extractions" before anything from an anonymous submitter feeds the
+    shared/public content pipeline. There's no asset-storage pattern
+    elsewhere in this app (every other image/PDF is hotlinked from the
+    source site's own CDN) - a submitted file has no such CDN, so its
+    bytes are stored directly here (capped at 15MB in the router) rather
+    than standing up a new object-storage integration for what should be
+    low-volume community traffic.
+    """
+
+    __tablename__ = "community_submissions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    # "link" | "file"
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    file_content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    file_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    submitter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    submitter_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    school_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
+    district_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("districts.id", ondelete="SET NULL"), nullable=True
+    )
+    # "pending" | "approved" | "rejected"
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    admin_notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 class Notification(Base):

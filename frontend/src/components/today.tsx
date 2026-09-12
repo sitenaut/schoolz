@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
-import { googleCalendarQuickAddUrl, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
+import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
+import { isNoisyDistrictItem } from "../lib/districtItems";
+import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
+import { trackEvent } from "../lib/track";
 import type { CurrentPeriod, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
 import { AbsenceButton } from "./AbsenceButton";
-import { IconPhone } from "./icons";
+import { IconChevronRight, IconPhone } from "./icons";
 
 /* ---------- small shared bits ---------- */
 
@@ -31,6 +34,10 @@ export function CurrentPeriodChip({ period }: { period: CurrentPeriod | null }) 
 
 export function ItemTag({ item }: { item: SchoolContentItem }) {
   if (item.category === "deadline") return <span className="tag deadline">due</span>;
+  // Report card/interim/marking-period-end dates aren't something a
+  // parent has to act on (no form to submit, nothing due) - "due" would
+  // be misleading, so these get their own label instead.
+  if (item.category === "marking_period") return <span className="tag grading">grading</span>;
   if (item.scope === "district") return <span className="tag district">district</span>;
   if (item.category === "policy_change" || item.category === "procedure") return <span className="tag new">updated</span>;
   return <span className="tag">{item.category.replace("_", " ")}</span>;
@@ -41,16 +48,41 @@ export function ItemTag({ item }: { item: SchoolContentItem }) {
 export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; color?: string; schoolName?: string | null }) {
   const key = item.start_date ? localDateKey(item.start_date) : null;
   const md = key ? monthDay(key) : null;
+  // A multi-day item (a closure spanning several days, most often) only
+  // showed its first day here even after the calendar grid itself was
+  // fixed to mark every day it covers - this list row is a separate
+  // rendering path with the same "only ever looked at start_date" gap.
+  const days = item.start_date ? itemDateKeys(item) : [];
+  const lastKey = days.length > 1 ? days[days.length - 1] : null;
+  const mdEnd = lastKey ? monthDay(lastKey) : null;
   const cal = item.start_date ? googleCalendarQuickAddUrl(item) : null;
-  const sub = [schoolName, item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null].filter(Boolean).join(" · ");
+  const timePart = item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null;
   return (
     <div className="row">
       <div className="when">
         {md ? (
-          <>
-            {md.month}
-            <b>{md.day}</b>
-          </>
+          mdEnd ? (
+            mdEnd.month === md.month ? (
+              <>
+                {md.month}
+                <b>
+                  {md.day}–{mdEnd.day}
+                </b>
+              </>
+            ) : (
+              <>
+                {md.month}–{mdEnd.month}
+                <b>
+                  {md.day}–{mdEnd.day}
+                </b>
+              </>
+            )
+          ) : (
+            <>
+              {md.month}
+              <b>{md.day}</b>
+            </>
+          )
         ) : (
           "—"
         )}
@@ -60,9 +92,14 @@ export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; 
           {color && <span className="sch" style={{ ["--c" as string]: color }} />}
           {item.title}
         </div>
-        {sub && <div className="desc">{sub}</div>}
+        {timePart && <div className="desc">{timePart}</div>}
         {item.description && <div className="desc">{item.description}</div>}
         <div className="tagrow">
+          {schoolName && (
+            <span className="tag schoolTag" style={color ? { ["--c" as string]: color } : undefined}>
+              {schoolName}
+            </span>
+          )}
           <ItemTag item={item} />
         </div>
         {(cal || item.link_url) && (
@@ -73,7 +110,7 @@ export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; 
               </a>
             )}
             {cal && (
-              <a href={cal} target="_blank" rel="noreferrer">
+              <a href={cal} target="_blank" rel="noreferrer" onClick={() => trackEvent("action", { action: "add_to_calendar", method: "link" })}>
                 Add to calendar
               </a>
             )}
@@ -126,6 +163,7 @@ export function ContactGrid({ contacts, mainPhone }: { contacts: TodayContact[];
 /* ---------- the Today-feed card ---------- */
 
 export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
+  const { excludeDistrict } = useMySchools();
   const s = data.school;
   const kind = schoolTypeLabel(s.school_type);
   const nurse = data.contacts.find((c) => c.role === "nurse");
@@ -133,6 +171,14 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   const nurseHref = nurse ? contactHref(nurse) : null;
   const counselorHref = counselor ? contactHref(counselor) : null;
   const sacc = data.sacc;
+  const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
+  // Same "exclude district" setting as the Calendar page - a parent who
+  // hid board-of-ed-meeting-style noise there shouldn't see it resurface
+  // here. Status items (closed/half day/delayed) and grading dates are
+  // never filtered (see lib/districtItems.ts); day-rotation markers never
+  // reach `upcoming` at all (backend/services/school_today.py excludes
+  // them - that's the metadata line under the school name instead).
+  const upcoming = (excludeDistrict ? data.upcoming.filter((i) => !isNoisyDistrictItem(i)) : data.upcoming).slice(0, 3);
 
   return (
     <section className="day" style={{ ["--c" as string]: color }}>
@@ -155,8 +201,8 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             <div className="fact">
               <div className="fact-head">
                 <div className="k">{data.lunch.today ? "Lunch today" : "Next lunch"}</div>
-                <Link className="fact-more" to="/lunch">
-                  Lunch schedule ›
+                <Link className="fact-more" to={`/lunch?school=${s.slug}`}>
+                  Lunch schedule <IconChevronRight className="trailing-chevron" />
                 </Link>
               </div>
               <div className="v">{data.lunch.today ?? data.lunch.next}</div>
@@ -181,9 +227,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         </div>
       )}
 
-      {data.upcoming.length > 0 && (
+      {upcoming.length > 0 && (
         <ul className="next">
-          {data.upcoming.slice(0, 3).map((i) => (
+          {upcoming.map((i) => (
             <li key={i.id}>
               <span className="d">{shortDay(i.start_date!)}</span>
               <span className="t">
@@ -197,7 +243,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             {/* Deep-links the calendar to just this school - district-wide
                 dates come along automatically, the backend always includes
                 a selected school's district. */}
-            <Link to={`/calendar?school=${s.slug}`}>All dates for {s.short_name || s.name} ›</Link>
+            <Link to={`/calendar?school=${s.slug}`}>
+              All dates for {s.short_name || s.name} <IconChevronRight className="trailing-chevron" />
+            </Link>
           </li>
         </ul>
       )}
@@ -205,44 +253,54 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
       <div className="actions">
         <AbsenceButton school={s} />
         {s.main_phone && (
-          <a className="action" href={telHref(s.main_phone)}>
+          <a className="action" href={telHref(s.main_phone)} onClick={() => track("main_office", "tel")}>
             <IconPhone />
             Main office
           </a>
         )}
         {nurseHref && (
-          <a className="action" href={nurseHref.href}>
+          <a className="action" href={nurseHref.href} onClick={() => track("nurse", "tel")}>
             Nurse
           </a>
         )}
         {counselorHref && (
-          <a className="action" href={counselorHref.href}>
+          <a className="action" href={counselorHref.href} onClick={() => track("counselor", "tel")}>
             Counselor
           </a>
         )}
         {sacc?.site_phone && (
-          <a className="action" href={telHref(sacc.site_phone)}>
+          <a className="action" href={telHref(sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
             Running late (SACC)
           </a>
         )}
         {data.transportation?.office_phone && (
-          <a className="action" href={telHref(data.transportation.office_phone)} title="District transportation office">
+          <a
+            className="action"
+            href={telHref(data.transportation.office_phone)}
+            title="District transportation office"
+            onClick={() => track("bus_office", "tel")}
+          >
             <IconPhone />
             Bus office
           </a>
         )}
         {data.transportation?.late_bus_phone && (
-          <a className="action" href={telHref(data.transportation.late_bus_phone)} title={`Late bus: ${data.transportation.late_bus_contractor}`}>
+          <a
+            className="action"
+            href={telHref(data.transportation.late_bus_phone)}
+            title={`Late bus: ${data.transportation.late_bus_contractor}`}
+            onClick={() => track("late_bus", "tel")}
+          >
             Late bus
           </a>
         )}
         {s.athletics_url && (
-          <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer">
+          <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
             Sports &amp; band
           </a>
         )}
         <Link className="action" to={`/schools/${s.slug}`}>
-          Everything →
+          Everything <IconChevronRight className="trailing-chevron" />
         </Link>
       </div>
     </section>
@@ -252,12 +310,14 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 /* ---------- week strip on the school page ---------- */
 
 export function WeekStrip({ week }: { week: TodayDay[] }) {
+  const { excludeDistrict } = useMySchools();
   const today = todayKey();
   return (
     <div className="week">
       {week.map((d) => {
         const md = monthDay(d.date);
         const cls = ["wd", d.date === today && "today", d.status === "closed" && "closed"].filter(Boolean).join(" ");
+        const items = excludeDistrict ? d.items.filter((i) => !isNoisyDistrictItem(i)) : d.items;
         return (
           <div className={cls} key={d.date}>
             <div className="dn">{d.weekday}</div>
@@ -266,7 +326,7 @@ export function WeekStrip({ week }: { week: TodayDay[] }) {
             {d.status === "closed" && <span className="pill bad">{d.status_label || "Closed"}</span>}
             {d.status === "early_dismissal" && <span className="pill warn">Early dismissal</span>}
             {d.status === "delayed" && <span className="pill warn">{d.status_label}</span>}
-            {d.items.slice(0, 2).map((i) => (
+            {items.slice(0, 2).map((i) => (
               <span className={`pill ${i.category === "deadline" ? "bad" : "ev"}`} key={i.id} title={i.title}>
                 {i.title}
               </span>

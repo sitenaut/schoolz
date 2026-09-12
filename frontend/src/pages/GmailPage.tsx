@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import { IconChevronLeft } from "../components/icons";
 
 type Connection = { google_email: string; last_synced_at: string | null; created_at: string };
 type ScheduledJob = {
@@ -122,7 +123,9 @@ export function GmailPage() {
   return (
     <div style={{ maxWidth: 640, margin: "3rem auto", fontFamily: "sans-serif" }}>
       <p>
-        <Link to="/">&larr; Home</Link>
+        <Link to="/" className="back-link">
+          <IconChevronLeft /> Home
+        </Link>
       </p>
       <h1>Email Parser</h1>
       {error && <p style={{ color: "crimson" }}>{error}</p>}

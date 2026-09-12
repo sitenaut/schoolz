@@ -1,0 +1,14 @@
+{
+  "name": "schoolz · Cherry Hill",
+  "short_name": "schoolz",
+  "description": "Your kids' schools, in one place: today's status, lunch, calendar, and who to call.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7f9",
+  "theme_color": "#1f7f9f",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

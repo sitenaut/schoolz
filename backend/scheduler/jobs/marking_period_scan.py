@@ -26,7 +26,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     dates = await fetch_marking_period_page(district.marking_period_url)
     if not dates:
-        return "WARNING: no marking-period dates found - the page's table structure may have changed"
+        return "WARNING[no_marking_period_dates]: no marking-period dates found - the page's table structure may have changed"
 
     existing_by_uid = {
         d.external_uid: d
@@ -49,13 +49,18 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         if row:
             row.title = entry["title"]
             row.start_date = entry["start_date"]
+            row.category = "marking_period"
             updated += 1
             continue
         db.add(
             SchoolContentItem(
                 scope="district",
                 district_id=district_id,
-                category="deadline",
+                # Not "deadline" - a report card/interim/marking-period-end
+                # date isn't something a parent has to act on, unlike a
+                # real deadline (form due, registration closes). Labeled
+                # "grading" on the frontend (components/today.tsx's ItemTag).
+                category="marking_period",
                 title=entry["title"],
                 start_date=entry["start_date"],
                 is_all_day=True,

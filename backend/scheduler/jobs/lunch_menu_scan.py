@@ -26,7 +26,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     discovered = await discover_current_menus(district.food_services_menu_url)
     if not discovered:
-        return "WARNING: no menu PDFs found on the food-services page"
+        return "WARNING[no_menu_pdfs]: no menu PDFs found on the food-services page"
     new_menus = 0
     for entry in discovered:
         existing = await db.execute(

@@ -77,6 +77,27 @@ async def _ensure_school_info_job(db: AsyncSession, school: School, user: User) 
     school.school_info_job_id = job.id
 
 
+async def _ensure_special_events_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring special-events-calendar scan the first
+    time a school gets a special_events_calendar_url - unlike
+    website_url-triggered scans, this is opt-in per school (most schools
+    have no such page at all; set by hand once confirmed real, as with
+    Chesterbrook Academy)."""
+    if school.special_events_scan_job_id or not school.special_events_calendar_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="special_events.scan",
+        name=f"Special events scan: {school.name}",
+        cron_expr="0 8 * * 1",
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.special_events_scan_job_id = job.id
+
+
 async def _unique_slug(db: AsyncSession, base_text: str) -> str:
     base = slugify(base_text)
     slug = base
@@ -166,7 +187,7 @@ async def update_school(
         school.school_type = payload.school_type
     if payload.website_url is not None:
         school.website_url = payload.website_url
-    for field in ("start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url"):
+    for field in ("start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url", "special_events_calendar_url"):
         value = getattr(payload, field)
         if value is not None:
             setattr(school, field, value or None)
@@ -178,6 +199,7 @@ async def update_school(
     await _ensure_staff_roster_job(db, school, user)
     await _ensure_documents_scan_job(db, school, user)
     await _ensure_school_info_job(db, school, user)
+    await _ensure_special_events_job(db, school, user)
     await db.commit()
     await db.refresh(school)
     return school
@@ -231,6 +253,17 @@ async def run_documents_scan_now(school: School = Depends(resolve_school), _: Us
     from scheduler.runner import run_job_now
 
     run_job_now(school.documents_scan_job_id)
+    return {"status": "started"}
+
+
+@router.post("/{school_id}/special-events/run-now")
+async def run_special_events_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+    if not school.special_events_scan_job_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked special-events-scan job")
+
+    from scheduler.runner import run_job_now
+
+    run_job_now(school.special_events_scan_job_id)
     return {"status": "started"}
 
 

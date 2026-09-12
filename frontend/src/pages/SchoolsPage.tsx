@@ -1,26 +1,47 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { useMySchools } from "../lib/mySchools";
+import { usePrerenderReady } from "../lib/prerenderReady";
+import { IconSearch } from "../components/icons";
+import { SeoHead } from "../components/SeoHead";
+import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
 import type { School } from "../types";
 
 export function SchoolsPage() {
   const { user } = useAuth();
-  // "My Schools" only makes sense for a logged-in guardian with linked
-  // kids - an anonymous visitor (this whole page is public) starts on the
-  // full directory instead.
-  const [tab, setTab] = useState<"mine" | "all">(user ? "mine" : "all");
-  const [schools, setSchools] = useState<School[]>([]);
+  const { allSchools, activeSchools, loading } = useMySchools();
+  usePrerenderReady(!loading);
+  // "My schools" reflects exactly the top ribbon's current picks/filter -
+  // there's no separate "linked children" concept here anymore. That used
+  // to be a second, differently-scoped "My Schools" tab (-> GET
+  // /schools/mine, keyed off added children, not the ribbon) that read as
+  // "my picks aren't registering" to anyone who'd only used the /start
+  // picker and never added a child.
+  const [tab, setTab] = useState<"mine" | "all">(activeSchools.length > 0 ? "mine" : "all");
+  const [query, setQuery] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [allSchoolsAfterAdd, setAllSchoolsAfterAdd] = useState<School[] | null>(null);
 
-  const load = () => {
-    apiFetch(tab === "mine" ? "/schools/mine" : "/schools")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setSchools);
-  };
+  const baseList = tab === "mine" ? activeSchools : (allSchoolsAfterAdd ?? allSchools);
+  const schools = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return baseList;
+    return baseList.filter((s) => s.name.toLowerCase().includes(q) || (s.short_name ?? "").toLowerCase().includes(q));
+  }, [baseList, query]);
 
-  useEffect(load, [tab]);
+  // Grouped by tier (elementary/middle/high/...) like the /start picker,
+  // instead of one long alphabetical-ish list - easier to scan when a
+  // visitor knows roughly what kind of school they're after.
+  const groups = useMemo(
+    () =>
+      SCHOOL_TYPE_TIERS.map((t) => ({ ...t, schools: schools.filter((s) => (s.school_type ?? "other") === t.key) })).filter(
+        (g) => g.schools.length > 0,
+      ),
+    [schools],
+  );
 
   const addSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,20 +54,26 @@ export function SchoolsPage() {
     }
     setName("");
     setTab("all");
-    load();
+    const fresh = await apiFetch("/schools");
+    setAllSchoolsAfterAdd(fresh.ok ? await fresh.json() : null);
   };
 
   return (
     <div>
+      <SeoHead
+        title="Cherry Hill schools directory · schoolz"
+        description="Browse every Cherry Hill Public Schools elementary, middle, and high school, plus tracked local preschools - addresses, phone numbers, and websites."
+        path="/schools"
+      />
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>All schools</h2>
-        <Link to="/start">Pick mine</Link>
+        <h2>Schools</h2>
+        <Link to="/start">Manage my schools</Link>
       </div>
 
       <div className="tabs">
-        {user && (
+        {activeSchools.length > 0 && (
           <button className={`tab ${tab === "mine" ? "active" : ""}`} onClick={() => setTab("mine")}>
-            My Schools
+            My schools
           </button>
         )}
         <button className={`tab ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
@@ -54,29 +81,45 @@ export function SchoolsPage() {
         </button>
       </div>
 
+      <div className="search" style={{ margin: "0.75rem 0" }}>
+        <IconSearch />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search schools by name…"
+          aria-label="Search schools by name"
+        />
+      </div>
+
       {schools.length === 0 ? (
         <p>
-          {tab === "mine"
-            ? "None of your children's schools are tracked yet — add a child on the \"My Children\" page once their school is tracked below."
-            : "No schools tracked yet — add one below."}
+          {query.trim() ? (
+            `No schools match "${query.trim()}".`
+          ) : tab === "mine" ? (
+            <>
+              You haven't picked any schools yet. <Link to="/start">Pick some</Link> to see them here.
+            </>
+          ) : (
+            "No schools tracked yet — add one below."
+          )}
         </p>
       ) : (
-        <ul className="school-list">
-          {schools.map((s) => (
-            <li key={s.id}>
-              <Link to={`/schools/${s.slug}`} className="school-list-item">
-                <div>
-                  <span className="school-name-row">
-                    {s.logo_url && <img className="school-list-logo" src={s.logo_url} alt="" />}
-                    <strong>{s.name}</strong>
-                  </span>
-                  {s.address && <div className="item-desc">{s.address}</div>}
-                </div>
-                <span>&rarr;</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        // Same tile-grid look as the /start picker (.sgrid/.sopt) - this
+        // page still navigates to a school's own page on click rather
+        // than toggling a pick, so no checkbox box, just the card.
+        groups.map((g) => (
+          <div key={g.key}>
+            <div className="tier">{g.label}</div>
+            <div className="sgrid">
+              {g.schools.map((s) => (
+                <Link className="sopt" to={`/schools/${s.slug}`} key={s.id}>
+                  {s.logo_url ? <img className="sopt-logo" src={s.logo_url} alt="" /> : null}
+                  {s.short_name || s.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))
       )}
 
       {user?.is_admin && (

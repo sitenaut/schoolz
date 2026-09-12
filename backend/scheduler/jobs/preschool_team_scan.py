@@ -32,12 +32,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         await db.execute(select(School).where(School.district_id == district_id, School.school_type == "other"))
     ).scalars().all()
     if not preschools:
-        return "WARNING: no preschool-type (school_type='other') schools tracked yet to attach staff to"
+        return "WARNING[no_preschools_tracked]: no preschool-type (school_type='other') schools tracked yet to attach staff to"
 
     result = await scraper_client.fetch_html(district.preschool_team_url, wait_for_selector="a")
     team = parse_preschool_team(result["html"])
     if not team:
-        return "WARNING: no preschool team members found - the page's structure may have changed"
+        return "WARNING[no_preschool_team]: no preschool team members found - the page's structure may have changed"
 
     now = datetime.now(timezone.utc)
     created = updated = 0

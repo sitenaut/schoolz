@@ -1,0 +1,68 @@
+# Dynamic rendering for SEO: the frontend is a client-rendered SPA, so a
+# crawler that doesn't execute JS (and even one that does, on a
+# budget/delayed pass) sees an empty `<div id="root">` instead of real
+# content. Known crawler user agents get proxied to the backend's
+# /prerender endpoint (backend/services/prerender.py), which renders the
+# SAME route through the scraper's headless Chromium and returns the
+# resulting HTML - everyone else still gets the normal SPA. This is the
+# standard "dynamic rendering" pattern search engines have long documented
+# support for, not cloaking (bots and humans see the same content, just
+# rendered at a different time).
+map $http_user_agent $is_crawler {
+    default 0;
+    "~*googlebot|bingbot|yandex|duckduckbot|baiduspider|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|pinterest|redditbot|gptbot|chatgpt-user|oai-searchbot|ccbot|perplexitybot|claudebot|anthropic-ai|bytespider|semrushbot|ahrefsbot|mj12bot" 1;
+}
+
+server {
+    listen 3000;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # proxy_pass below has a variable in it ($uri, for the prerender path)
+    # - nginx only pre-resolves a *static* proxy_pass target at config load;
+    # one containing a variable is resolved per-request instead, which
+    # needs an explicit resolver. Docker Engine's embedded DNS
+    # (127.0.0.11) answers this locally; Fly's 6PN .internal names need
+    # Fly's own resolver instead (RESOLVER is set accordingly per
+    # environment - see Dockerfile/fly.toml).
+    resolver ${RESOLVER} valid=30s;
+
+    # nginx:alpine's stock mime.types has no entry for .webmanifest, so it
+    # was served as application/octet-stream.
+    types {
+        application/manifest+json webmanifest;
+    }
+    include /etc/nginx/mime.types;
+
+    # Same-origin proxy for Grafana Faro (RUM). *.grafana.net collector
+    # hosts are on common ad-block lists - proxying through our own domain
+    # keeps RUM data from silently disappearing for those visitors. The
+    # collector URL is public by design (it ships in the JS bundle either
+    # way), so baking it into the built image via envsubst is fine - this
+    # is templated (not a plain .conf) specifically so FARO_COLLECTOR_URL
+    # can be a runtime Fly secret instead of a build arg.
+    location = /rum/collect {
+        proxy_pass ${FARO_COLLECTOR_URL};
+        proxy_ssl_server_name on;
+        proxy_set_header Host $proxy_host;
+        client_max_body_size 1m;
+    }
+
+    # Static assets are served directly regardless of user agent - a
+    # crawler bounced to /prerender never needs its own JS/CSS anyway
+    # (it gets fully-rendered HTML instead), and this keeps the
+    # bot-detection block below from ever intercepting a hashed asset
+    # request.
+    location ~* \.(?:js|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|map|json|xml|txt|webmanifest)$ {
+        try_files $uri =404;
+    }
+
+    location / {
+        if ($is_crawler) {
+            proxy_pass ${BACKEND_INTERNAL_URL}/prerender?path=$uri;
+            break;
+        }
+        try_files $uri $uri/ /index.html;
+    }
+}

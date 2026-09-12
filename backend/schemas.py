@@ -25,8 +25,40 @@ class UserOut(BaseModel):
     username: str
     is_admin: bool
     auth_mode: str
+    # "password" (local, or Supabase email+password) | "google" (Supabase
+    # OAuth, no password to change) - the settings page uses this to decide
+    # whether to show a change-password form at all.
+    sign_in_method: str = "password"
+    created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    username: str | None = Field(default=None, min_length=3, max_length=64)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class DeleteAccountRequest(BaseModel):
+    # Typed confirmation, always required - a destructive, irreversible
+    # action shouldn't be one accidental click away.
+    confirm: str
+    # Local auth mode additionally re-verifies the password when the
+    # account has one; Supabase-managed accounts can't be verified here.
+    password: str | None = None
 
 
 class StudentCreate(BaseModel):
@@ -125,15 +157,58 @@ class ScheduledJobOut(BaseModel):
     id: str
     kind: str
     name: str
+    description: str | None = None
     cron_expr: str
     timezone: str
+    params: dict = Field(default_factory=dict)
     enabled: bool
     last_run_at: datetime | None
     last_status: str | None
     last_error: str | None
+    last_error_code: str | None
+    last_duration_ms: int | None = None
     next_run_at: datetime | None
+    created_at: datetime | None = None
+    # What the job is *about*, resolved from its params so the jobs table
+    # can say "Staff roster scan · Bret Harte" instead of showing a UUID -
+    # only populated by the /scheduled-jobs list/detail endpoints.
+    target_type: str | None = None
+    target_label: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ScheduledJobCreate(BaseModel):
+    kind: str
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    cron_expr: str = Field(min_length=1, max_length=100)
+    timezone: str = "America/New_York"
+    params: dict = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class ScheduledJobUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=500)
+    cron_expr: str | None = Field(default=None, min_length=1, max_length=100)
+    timezone: str | None = None
+    params: dict | None = None
+    enabled: bool | None = None
+
+
+class JobKindOut(BaseModel):
+    kind: str
+    default_name: str
+    default_cron: str
+    default_timezone: str
+    description: str
+    param_schema: dict | None = None
+
+
+class JobRunSummaryOut(BaseModel):
+    total: int
+    by_status: dict[str, int]
 
 
 class EmailScannerOut(BaseModel):
@@ -159,6 +234,8 @@ class JobRunOut(BaseModel):
     finished_at: datetime | None
     duration_ms: int | None
     error: str | None
+    error_code: str | None
+    error_stage: str | None
     log_excerpt: str | None
     triggered_by: str
 
@@ -169,6 +246,9 @@ class SmoreNewsletterCreate(BaseModel):
     url: str = Field(min_length=1, max_length=1000)
     label: str | None = Field(default=None, max_length=255)
     school_id: str | None = None
+    # For a district-wide newsletter with no single school (e.g. "CHPS
+    # Weekly") - ordinarily exactly one of school_id/district_id is set.
+    district_id: str | None = None
     cron_expr: str = "0 8 * * 1"
     timezone: str = "America/New_York"
     enabled: bool = True
@@ -179,6 +259,11 @@ class SmoreNewsletterOut(BaseModel):
     url: str
     label: str | None
     school_id: str | None
+    district_id: str | None = None
+    # Resolved display names - only populated by GET (list/create/update),
+    # so the table can say "Bret Harte Elementary" without a client-side join.
+    school_name: str | None = None
+    district_name: str | None = None
     last_scanned_at: datetime | None
     latest_summary: str | None
     created_at: datetime
@@ -187,6 +272,7 @@ class SmoreNewsletterOut(BaseModel):
 
 class SmoreNewsletterUpdate(BaseModel):
     school_id: str | None = None
+    district_id: str | None = None
     label: str | None = None
     # Scanning is opt-in even for an auto-discovered newsletter (one the
     # school_email processor found a link to but never scheduled) - setting
@@ -277,6 +363,7 @@ class SchoolUpdate(BaseModel):
     delayed_opening_time: str | None = Field(default=None, max_length=20)
     athletics_url: str | None = Field(default=None, max_length=500)
     logo_url: str | None = Field(default=None, max_length=1000)
+    special_events_calendar_url: str | None = Field(default=None, max_length=500)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -319,6 +406,7 @@ class SchoolOut(BaseModel):
     delayed_opening_time: str | None
     athletics_url: str | None
     logo_url: str | None
+    special_events_calendar_url: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
@@ -392,6 +480,13 @@ class SchoolContentItemOut(BaseModel):
     # scope="school") - not populated by every endpoint (redundant on a
     # single school's own page, only set by /calendar which spans schools).
     school_name: str | None = None
+    # Set only on scope="district" items that don't apply district-wide -
+    # currently just the "Day N" rotation markers (elementary via the ICS
+    # feed, high school via the rotation PDF, often both landing on the
+    # same date with different values). Without this the calendar has no
+    # way to say which one is which - "Day 2" and "Day 3" on the same day
+    # read as a contradiction instead of two different school tiers.
+    applies_to_school_types: list[str] | None = None
     category: str
     title: str
     description: str | None
@@ -654,3 +749,28 @@ class ConfigImportResult(BaseModel):
     smore_skipped: list[str]  # urls that couldn't be linked to a school slug in this environment
     sacc_created: int
     sacc_updated: int
+
+
+class CommunitySubmissionOut(BaseModel):
+    id: str
+    kind: str
+    url: str | None
+    file_name: str | None
+    file_content_type: str | None
+    file_size: int | None
+    description: str | None
+    submitter_name: str | None
+    submitter_email: str | None
+    school_id: str | None
+    district_id: str | None
+    school_name: str | None = None
+    district_name: str | None = None
+    status: str
+    admin_notes: str | None
+    reviewed_at: datetime | None
+    created_at: datetime
+
+
+class CommunitySubmissionUpdate(BaseModel):
+    status: str | None = Field(default=None, pattern="^(pending|approved|rejected)$")
+    admin_notes: str | None = None

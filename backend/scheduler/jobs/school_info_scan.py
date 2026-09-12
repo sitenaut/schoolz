@@ -39,7 +39,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     if not info["address"] or not info["main_phone"]:
         missing = [f for f in ("address", "main_phone") if not info[f]]
-        return f"WARNING: could not find {', '.join(missing)} on the school's site"
+        return f"WARNING[school_info_missing_fields]: could not find {', '.join(missing)} at {school.website_url}"
 
     if not changed:
         return "address and main_phone unchanged"

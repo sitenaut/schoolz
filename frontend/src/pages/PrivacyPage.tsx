@@ -1,12 +1,25 @@
 /** Plain privacy/cookies notice, linked from the persistent footer on every
  * page (AppShell). No consent popup by design: everything schoolz stores
  * today (localStorage school picks, Supabase Auth's own session storage,
- * an optional Gmail token) is "strictly necessary" under GDPR/ePrivacy, so
- * there's nothing to ask permission for yet. If that changes (analytics,
- * ads), this page and a real consent banner both need revisiting. */
+ * an optional Gmail token, anonymous RUM performance/error data - added
+ * 2026-09-11, see docs/OBSERVABILITY_PLAN.md Phase 4) is "strictly
+ * necessary" or purely functional/anonymous under GDPR/ePrivacy, so
+ * there's nothing here that needs opt-in consent. If that changes (ads,
+ * cross-session/identified analytics), this page and a real consent
+ * banner both need revisiting - that call belongs to the site owner, not
+ * something to decide unilaterally while adding RUM. */
+import { SeoHead } from "../components/SeoHead";
+import { usePrerenderReady } from "../lib/prerenderReady";
+
 export function PrivacyPage() {
+  usePrerenderReady(true);
   return (
     <>
+      <SeoHead
+        title="Privacy & cookies · schoolz"
+        description="What schoolz stores about visitors and account holders, and why - no ad tracking, no consent banner needed."
+        path="/privacy"
+      />
       <h2>Privacy &amp; cookies</h2>
       <p className="note">Last updated September 2026.</p>
 
@@ -58,6 +71,16 @@ export function PrivacyPage() {
             </td>
           </tr>
           <tr>
+            <td>Anonymous performance &amp; error data (page load times, which pages are used, JS errors)</td>
+            <td>Grafana Cloud, our monitoring provider</td>
+            <td>
+              We collect anonymous performance and error data to make the site faster. It's
+              tied to a random per-visit session, never to your name, email, or children,
+              and isn't shared with advertisers. Login tokens and other sensitive URL
+              content are stripped before anything is sent.
+            </td>
+          </tr>
+          <tr>
             <td>Account info (email, username), your linked children, guardian invites</td>
             <td>Our database</td>
             <td>
@@ -81,19 +104,24 @@ export function PrivacyPage() {
 
       <h3>What we don't do</h3>
       <ul>
-        <li>No analytics, advertising, or tracking cookies of any kind.</li>
+        <li>No advertising or ad-tracking cookies of any kind.</li>
         <li>No selling or sharing your data with advertisers or data brokers.</li>
         <li>No cross-site tracking — nothing here follows you to other websites.</li>
+        <li>
+          No identifying you personally in our performance/error monitoring — it's tied to
+          a random per-visit session, not your account, name, or email.
+        </li>
       </ul>
 
       <h3>Why there's no "accept cookies" popup</h3>
       <p>
         Under GDPR and the ePrivacy Directive, a consent banner is required for
-        non-essential tracking (like analytics or ad cookies) — not for things a site
-        needs to function, like remembering your school picks or keeping you logged in.
-        Everything schoolz currently stores falls into that "strictly necessary" /
-        functional category, so there's nothing here that requires your opt-in consent.
-        If that ever changes, this notice (and a real consent choice) will change with it.
+        non-essential tracking (like ad cookies or analytics that identifies you
+        personally) — not for things a site needs to function, or anonymous, aggregate
+        performance monitoring. Everything schoolz currently stores falls into that
+        "strictly necessary" / functional / anonymous category, so there's nothing here
+        that requires your opt-in consent. If that ever changes, this notice (and a real
+        consent choice) will change with it.
       </p>
 
       <h3>Third parties involved</h3>
@@ -103,6 +131,11 @@ export function PrivacyPage() {
         </li>
         <li>
           <strong>Fly.io</strong> — hosts the website and backend.
+        </li>
+        <li>
+          <strong>Grafana Cloud</strong> — receives the anonymous performance/error data
+          described above, plus backend operational metrics/logs. No account data or
+          content from your inbox ever passes through it.
         </li>
         <li>
           <strong>Google</strong> — only if you connect Gmail, to read newsletter-related

@@ -18,6 +18,14 @@
   --warn-soft: #fbf0d9;
   --bad: #c2413a;
   --bad-soft: #fae4e2;
+  /* Weekends on the calendar grid: the same "no school" hue as a real
+     closure (--bad), but blended into the neutral border gray rather
+     than the page background - mixing red straight into --bg just gives
+     a paler red, routing it through a neutral first is what actually
+     reads as "grayed out". Built from --bad/--line rather than a fixed
+     hex, so it needs no separate dark-mode value - it re-resolves
+     automatically against whichever theme's tokens are active. */
+  --weekend-tint: color-mix(in srgb, var(--bad) 7%, var(--line));
   --district: #5b6672;
   --sch-1: #1f7f9f;
   --sch-2: #7a4fb5;
@@ -315,6 +323,8 @@ h3 {
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 0.85rem;
+  display: flex;
+  gap: 16px;
 }
 .shell-footer a {
   color: var(--ink-3);
@@ -396,6 +406,13 @@ h3 {
 @media (min-width: 900px) {
   .ribbon {
     top: 0;
+    /* Without this, the ribbon has no explicit grid placement and CSS
+       grid auto-flow drops it into column 1 (the left nav rail's
+       column) instead of column 2 (the main content column) - it then
+       sits in the same column .shell-nav sticks over as you scroll,
+       so the nav rail's sticky positioning visibly overlaps/reveals a
+       sliver of the ribbon underneath it. */
+    grid-column: 2;
   }
 }
 @media (min-width: 900px) {
@@ -538,12 +555,24 @@ h3 {
   color: var(--ink-2);
 }
 .back-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--ink-2);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 8px;
+}
+.back-link svg {
+  width: 15px;
+  height: 15px;
+}
+.trailing-chevron {
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+  margin-left: 2px;
 }
 .empty {
   background: var(--card);
@@ -831,6 +860,22 @@ h3 {
   color: var(--ink-3);
   margin: 8px 0 2px;
 }
+.filterCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+}
+.filterCheck input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--primary);
+  flex: none;
+}
 .pickerRow {
   display: flex;
   align-items: center;
@@ -904,10 +949,26 @@ h3 {
 .tag.district {
   color: var(--district);
 }
+.tag.grading {
+  color: var(--warn);
+  border-color: transparent;
+  background: var(--warn-soft);
+}
 .tag.new {
   color: var(--primary);
   border-color: transparent;
   background: var(--primary-soft);
+}
+/* "All schools" / a specific school's name - a distinct, always-first tag
+   so it's immediately clear who an item applies to, not just plain text
+   buried in a description line. Uses the school's own ribbon color
+   (--c) when set (a scope="school" item); falls back to the neutral
+   district accent for "All schools". */
+.tag.schoolTag {
+  color: var(--c, var(--district));
+  border-color: var(--c, var(--district));
+  background: transparent;
+  font-weight: 700;
 }
 .actions {
   display: flex;
@@ -1387,6 +1448,11 @@ details.acc .body {
   cursor: pointer;
   text-align: left;
   color: var(--ink);
+  /* .sopt started life as a <button> (the /start picker's toggle tiles) -
+     also used as a plain navigation <a> (the /schools directory, which
+     mirrors that look but links through instead of toggling a pick), so
+     it needs its own underline reset. */
+  text-decoration: none;
 }
 .sopt .box {
   width: 18px;
@@ -1530,37 +1596,6 @@ details.accordion > summary::-webkit-details-marker {
 }
 details.accordion .accordion-body {
   padding: 0 var(--space-3) var(--space-3);
-}
-.school-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.school-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.school-list-logo {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex: none;
-  background: var(--card);
-}
-.school-list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
-  background: var(--card);
-  text-decoration: none;
-  color: var(--ink);
 }
 .tabs {
   display: flex;

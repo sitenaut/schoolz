@@ -104,10 +104,13 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
     - some schools' handbook nav item goes straight to a file, others go to
     a landing page that itself links out to the real document."""
     base = school_website_url.rstrip("/")
-    try:
-        home = await scraper_client.fetch_html(base + "/", wait_for_selector="a")
-    except Exception:
-        return []
+    # Deliberately NOT caught here (unlike the per-candidate follow-up fetch
+    # below): if the homepage itself won't load, that's a real fetch
+    # failure worth a classified error_code and traceback (see
+    # scheduler/errors.py), not a silent empty list that reads identically
+    # to "loaded fine, no handbook link" - that ambiguity was the actual
+    # bug a real user hit (a warning with no way to tell what was checked).
+    home = await scraper_client.fetch_html(base + "/", wait_for_selector="a")
 
     results = []
     seen_urls: set[str] = set()
