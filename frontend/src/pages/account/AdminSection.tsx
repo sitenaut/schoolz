@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../../api";
+import { API_URL } from "../../authConfig";
 import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { listSubmissions } from "../submissions/submissionsApi";
+import { loadPageVisits, loadSurveySummary, type PageVisitReport } from "../survey/surveyApi";
 
 type Summary = { total: number; by_status: Record<string, number> };
 
 export function AdminSection() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [pendingSubmissions, setPendingSubmissions] = useState<number | null>(null);
+  const [surveyCount, setSurveyCount] = useState<number | null>(null);
+  const [visits, setVisits] = useState<PageVisitReport | null>(null);
 
   useEffect(() => {
     apiFetch("/scheduled-jobs/runs/summary")
@@ -19,6 +23,12 @@ export function AdminSection() {
     listSubmissions("pending")
       .then((rows) => setPendingSubmissions(rows.length))
       .catch(() => setPendingSubmissions(null));
+    loadSurveySummary()
+      .then((s) => setSurveyCount(s?.total ?? null))
+      .catch(() => setSurveyCount(null));
+    loadPageVisits(30)
+      .then(setVisits)
+      .catch(() => setVisits(null));
   }, []);
 
   const s = summary?.by_status ?? {};
@@ -43,6 +53,53 @@ export function AdminSection() {
             <span className="stat-v bad">{s.error ?? 0}</span>
           </Link>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Traffic"
+        description="Visits to the public pages over the last 30 days, by where people came from. Counted server-side, so ad blockers don't hide them."
+        icon={<IconTransfer />}
+      >
+        {!visits || visits.rows.length === 0 ? (
+          <p className="note" style={{ margin: 0 }}>
+            No visits recorded yet.
+          </p>
+        ) : (
+          <>
+            <div className="stats" style={{ marginBottom: 12 }}>
+              {["/chcomms", "/survey", "/"].map((path) => (
+                <div className="stat" key={path}>
+                  <span className="stat-k">{path}</span>
+                  <span className="stat-v">{visits.totals_by_path[path] ?? 0}</span>
+                </div>
+              ))}
+              <div className="stat">
+                <span className="stat-k">From Facebook</span>
+                <span className="stat-v">{visits.totals_by_source.facebook ?? 0}</span>
+              </div>
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Page</th>
+                  <th>Source</th>
+                  <th style={{ textAlign: "right" }}>Visits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visits.rows.slice(0, 40).map((r) => (
+                  <tr key={`${r.day}|${r.path}|${r.source}`}>
+                    <td>{r.day}</td>
+                    <td>{r.path}</td>
+                    <td>{r.source}</td>
+                    <td style={{ textAlign: "right" }}>{r.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </SectionCard>
 
       <SectionCard title="Manage" description="The centrally-managed data sources every visitor sees." icon={<IconSettings />}>
@@ -86,6 +143,18 @@ export function AdminSection() {
               <small>Fliers &amp; links the community sent in</small>
             </span>
           </Link>
+          <a className="link-card" href={`${API_URL}/survey/responses.csv`}>
+            <span className="ico">
+              <IconTransfer />
+            </span>
+            <span>
+              <b>
+                Survey responses{" "}
+                {Boolean(surveyCount) && <span className="badge nodot">{surveyCount}</span>}
+              </b>
+              <small>Download every /survey answer as a spreadsheet</small>
+            </span>
+          </a>
           <Link className="link-card" to="/gmail">
             <span className="ico">
               <IconMail />

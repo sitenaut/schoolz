@@ -3,10 +3,12 @@ import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
+import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
 import { IconCalendar, IconHome, IconLunch, IconSchool } from "./icons";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
+import { countVisit, visitSource } from "../lib/visits";
 
 // Route templates for the routes registered in App.tsx - used to keep
 // page_view's `route` attribute low-cardinality (a school slug or invite
@@ -25,9 +27,9 @@ function routeTemplate(pathname: string): string {
 
 // The ribbon's school filter has no meaning on the centrally-managed admin
 // pages (they aren't scoped to "my schools" at all), nor on the contact
-// form (not school-specific) - hidden there rather than just visually
-// unused clutter.
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact"];
+// form, the survey, or the /chcomms write-up (none are school-specific) -
+// hidden there rather than just visually unused clutter.
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
@@ -54,9 +56,13 @@ export function AppShell() {
     const schoolMatch = pathname.match(/^\/schools\/([^/]+)$/);
     trackEvent("page_view", {
       route,
+      source: visitSource(),
       ...(fromRouteRef.current ? { from_route: fromRouteRef.current } : {}),
       ...(schoolMatch ? { school_slug: schoolMatch[1] } : {}),
     });
+    // Server-side counterpart to the RUM event above: RUM is the richer
+    // signal, this is the one that still works behind an ad blocker.
+    countVisit(route);
     fromRouteRef.current = route;
   }, [pathname]);
 
@@ -69,6 +75,10 @@ export function AppShell() {
         logged_in: String(!!user),
         is_admin: String(!!user?.is_admin),
         schools_count: String(mySchools.length),
+        // Lets every RUM signal (web vitals, errors, the funnel events) be
+        // sliced by campaign - "how did the Facebook cohort behave" rather
+        // than just "how many arrived".
+        source: visitSource(),
       },
     });
   }, [user, mySchools.length]);
@@ -120,7 +130,7 @@ export function AppShell() {
               key={s.id}
             >
               {s.logo_url ? (
-                <img className="avatar" src={s.logo_url} alt="" />
+                <img className={logoClass("avatar", s.slug)} src={s.logo_url} alt="" />
               ) : (
                 <span className="dot" style={{ marginLeft: 0, width: 22, height: 22 }} />
               )}
@@ -154,6 +164,8 @@ export function AppShell() {
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
         <footer className="shell-footer">
+          <Link to="/chcomms">Why this exists</Link>
+          <Link to="/survey">Take the survey</Link>
           <Link to="/contact">Contact us</Link>
           <Link to="/privacy">Privacy &amp; cookies</Link>
         </footer>
