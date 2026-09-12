@@ -40,11 +40,10 @@ ENV FARO_COLLECTOR_URL=http://127.0.0.1:1
 # Same reasoning as FARO_COLLECTOR_URL above: a syntactically-valid
 # placeholder so envsubst never emits a broken "proxy_pass ;" if this
 # isn't set. Local compose overrides it to http://backend:8000; prod's
-# schoolz-web sets it to http://schoolz-api.internal:8000 (Fly's private
-# network - see frontend/fly.toml).
+# schoolz-web sets it to schoolz-api's public hostname (see
+# frontend/fly.toml for why it's the public URL, not an internal one).
 ENV BACKEND_INTERNAL_URL=http://127.0.0.1:1
 # Docker Engine's embedded DNS server - correct default for local compose.
-# Fly overrides this to its own internal resolver (see frontend/fly.toml) -
-# Docker's 127.0.0.11 doesn't exist on a Fly machine.
+# Fly overrides this to its own system resolver (see frontend/fly.toml).
 ENV RESOLVER=127.0.0.11
 EXPOSE 3000

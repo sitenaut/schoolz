@@ -1,10 +1,9 @@
 import os
 from xml.sax.saxutils import escape
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
 
 from database import get_db
 from models import School
