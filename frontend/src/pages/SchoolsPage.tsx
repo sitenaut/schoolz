@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useMySchools } from "../lib/mySchools";
 import { IconChevronRight, IconSearch } from "../components/icons";
+import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
 import type { School } from "../types";
 
 export function SchoolsPage() {
@@ -27,6 +28,17 @@ export function SchoolsPage() {
     if (!q) return baseList;
     return baseList.filter((s) => s.name.toLowerCase().includes(q) || (s.short_name ?? "").toLowerCase().includes(q));
   }, [baseList, query]);
+
+  // Grouped by tier (elementary/middle/high/...) like the /start picker,
+  // instead of one long alphabetical-ish list - easier to scan when a
+  // visitor knows roughly what kind of school they're after.
+  const groups = useMemo(
+    () =>
+      SCHOOL_TYPE_TIERS.map((t) => ({ ...t, schools: schools.filter((s) => (s.school_type ?? "other") === t.key) })).filter(
+        (g) => g.schools.length > 0,
+      ),
+    [schools],
+  );
 
   const addSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,22 +96,27 @@ export function SchoolsPage() {
           )}
         </p>
       ) : (
-        <ul className="school-list">
-          {schools.map((s) => (
-            <li key={s.id}>
-              <Link to={`/schools/${s.slug}`} className="school-list-item">
-                <div>
-                  <span className="school-name-row">
-                    {s.logo_url && <img className="school-list-logo" src={s.logo_url} alt="" />}
-                    <strong>{s.name}</strong>
-                  </span>
-                  {s.address && <div className="item-desc">{s.address}</div>}
-                </div>
-                <IconChevronRight className="trailing-chevron" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        groups.map((g) => (
+          <div key={g.key}>
+            <div className="tier">{g.label}</div>
+            <ul className="school-list">
+              {g.schools.map((s) => (
+                <li key={s.id}>
+                  <Link to={`/schools/${s.slug}`} className="school-list-item">
+                    <div>
+                      <span className="school-name-row">
+                        {s.logo_url && <img className="school-list-logo" src={s.logo_url} alt="" />}
+                        <strong>{s.name}</strong>
+                      </span>
+                      {s.address && <div className="item-desc">{s.address}</div>}
+                    </div>
+                    <IconChevronRight className="trailing-chevron" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
       )}
 
       {user?.is_admin && (
