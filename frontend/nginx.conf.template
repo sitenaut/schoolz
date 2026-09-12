@@ -19,13 +19,17 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # proxy_pass below has a variable in it ($uri, for the prerender path)
-    # - nginx only pre-resolves a *static* proxy_pass target at config load;
-    # one containing a variable is resolved per-request instead, which
-    # needs an explicit resolver. Docker Engine's embedded DNS
-    # (127.0.0.11) answers this locally; Fly's 6PN .internal names need
-    # Fly's own resolver instead (RESOLVER is set accordingly per
-    # environment - see Dockerfile/fly.toml).
+    # A proxy_pass target that's fully static text (after envsubst) isn't
+    # allowed to carry a URI part ("/prerender") inside an `if` block -
+    # nginx: "proxy_pass cannot have URI part ... inside 'if' statement".
+    # Keeping a variable in the target ($uri, for the prerender path)
+    # sidesteps that restriction by making it a dynamic proxy_pass - which
+    # in turn needs an explicit resolver, since nginx can't pre-resolve a
+    # variable target at config load. Docker Engine's embedded DNS
+    # (127.0.0.11) answers this locally; Fly's system resolver (which also
+    # resolves ordinary public hostnames, not just .internal ones -
+    # confirmed by every other outbound call this app already makes)
+    # answers it in prod (see Dockerfile/fly.toml for RESOLVER).
     resolver ${RESOLVER} valid=30s;
 
     # nginx:alpine's stock mime.types has no entry for .webmanifest, so it
@@ -59,6 +63,22 @@ server {
     }
 
     location / {
+        # proxy_ssl_server_name isn't valid inside an `if` block (nginx:
+        # "directive is not allowed here"), so it sits here instead -
+        # harmless for the non-crawler case below, which never reaches
+        # proxy_pass at all.
+        #
+        # BACKEND_INTERNAL_URL is schoolz-api's PUBLIC hostname in prod
+        # (not its .internal 6PN address): schoolz-api only has a public
+        # http_service, and fly-proxy's own health check needs it bound to
+        # 0.0.0.0, which doesn't accept 6PN's IPv6-only private-network
+        # traffic (learned the hard way - switching schoolz-api to an
+        # IPv6 bind to serve 6PN broke fly-proxy outright, a real prod
+        # outage on 2026-09-12). Routing through the public hostname
+        # instead means schoolz-api never needs to accept private-network
+        # traffic for this feature at all.
+        proxy_ssl_server_name on;
+
         if ($is_crawler) {
             proxy_pass ${BACKEND_INTERNAL_URL}/prerender?path=$uri;
             break;
