@@ -90,6 +90,44 @@ export function PrivacyPage() {
             </td>
           </tr>
           <tr>
+            <td>A count of visits to each public page, and roughly where visitors came from (e.g. "facebook")</td>
+            <td>Our database</td>
+            <td>
+              So we can tell whether a post about this project actually reached anyone.{" "}
+              <strong>This is a running tally, not a record of you</strong> — we store one number per page, per day,
+              per source, and nothing else. No id, no IP, no profile, no cookie, nothing that could be traced back to
+              a person or linked between visits. If a link brings you here with a tracking code attached (Facebook
+              adds one), we read it once to label the visit "facebook" and then discard it — it's never stored or
+              sent on.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Your survey answers (the schools you picked, what you said is hard to find, your comments, and your name
+              and email if you chose to give them)
+            </td>
+            <td>Our database</td>
+            <td>
+              Only if you fill in the <a href="/survey">survey</a>. Name and email are optional and blank by default;
+              your email is never shared with the district or anyone else — it's only so we can follow up. Your
+              comments may be quoted to the district <strong>without your name</strong> unless you explicitly tick
+              "you can use my name."
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Proof a survey response is genuine: the date and time it arrived, which browser sent it, and a scrambled
+              one-way code that stands in for your internet connection
+            </td>
+            <td>Our database</td>
+            <td>
+              So a stack of responses can be shown to the district as real, separate people rather than one person
+              submitting over and over. <strong>We never store your IP address.</strong> It's immediately scrambled
+              with a secret key into a code that can't be turned back into an address, and that code is useless
+              anywhere else. It isn't used to track you, isn't tied to your browsing, and isn't shared with anyone.
+            </td>
+          </tr>
+          <tr>
             <td>Gmail read-only access token (only if you choose to connect Gmail)</td>
             <td>Our database, encrypted at rest</td>
             <td>

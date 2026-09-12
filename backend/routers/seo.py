@@ -15,7 +15,7 @@ router = APIRouter(tags=["seo"])
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)
 # isn't indexable content and is kept out of the sitemap and out of
 # robots.txt (frontend/public/robots.txt).
-_STATIC_PATHS = ["/", "/schools", "/calendar", "/lunch", "/privacy", "/contact"]
+_STATIC_PATHS = ["/", "/schools", "/calendar", "/lunch", "/privacy", "/contact", "/chcomms", "/survey"]
 
 
 @router.get("/sitemap.xml", include_in_schema=False)

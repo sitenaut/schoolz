@@ -826,6 +826,86 @@ class CommunitySubmission(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class PageVisit(Base):
+    """A daily tally of visits to a public page, broken down by where the
+    visitor came from ("facebook", "direct", a referring host).
+
+    Deliberately **aggregate only** - one counter row per (day, path,
+    source), never a row per visitor. Nothing here can be traced back to a
+    person, because nothing about a person is recorded: no id, no IP, no
+    hash, no user agent, no session. That's a real constraint, not an
+    oversight - /chcomms promises readers there's no ad tracking here, and
+    a per-visitor analytics table would quietly make that untrue.
+
+    It exists alongside Faro RUM because RUM is client-side JavaScript:
+    ad blockers and privacy browsers drop a meaningful share of it, which
+    is fine for spotting performance trends and useless for "how many
+    people actually read the post" - the number that gets quoted to the
+    district. This counter is same-origin and cheap, so it survives where
+    RUM doesn't.
+    """
+
+    __tablename__ = "page_visits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    # YYYY-MM-DD in the district's own timezone, not UTC - a 9pm visit is
+    # "that evening" to a Cherry Hill parent, not the next morning.
+    day: Mapped[str] = mapped_column(String(10), nullable=False)
+    path: Mapped[str] = mapped_column(String(100), nullable=False)
+    # "facebook" | "direct" | "google" | a referring hostname | "other"
+    source: Mapped[str] = mapped_column(String(40), nullable=False)
+    count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+    __table_args__ = (UniqueConstraint("day", "path", "source", name="uq_page_visits_day_path_source"),)
+
+
+class SurveyResponse(Base):
+    """One family's answers to the district-communication survey (/survey).
+
+    Public and unauthenticated by design - the whole point is hearing from
+    parents who have no reason to make an account here. That leaves no
+    logged-in identity to lean on for "is this a real person", so each row
+    also carries lightweight provenance: when it arrived, the browser's
+    user agent, and a *salted hash* of the sender's IP - never the address
+    itself, which would be personal data under GDPR for no added benefit.
+    The hash is one-way but stable, so a pile of responses can be shown to
+    the district as genuinely distinct submissions rather than one person
+    clicking submit two hundred times. PrivacyPage.tsx discloses exactly
+    this, in these words - keep the two in sync.
+
+    `share_consent` is the respondent's own call about how their words may
+    be used: "anonymous" (default) strips their name from anything shown
+    to the district, "named" lets it be attached. Their email is never
+    shared either way - it's only there so they can be followed up with.
+    """
+
+    __tablename__ = "survey_responses"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    # School ids the respondent's children attend - a list, since plenty of
+    # families span two or three schools, which is itself the problem this
+    # whole project exists for.
+    school_ids: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    # 1 (very frustrated) - 5 (works well). Nullable: skipping it is a
+    # legitimate answer and better than forcing a number nobody meant.
+    satisfaction: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Stable keys from the frontend's canonical list (SurveyPage.tsx), e.g.
+    # "absence" / "bell_schedule" / "pta" - kept as given rather than a
+    # lookup table, since the list is presentational and versioning it in
+    # the database would buy nothing here.
+    pain_points: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    missing_info: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    comments: Mapped[str | None] = mapped_column(String(5000), nullable=True)
+    submitter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    submitter_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # "anonymous" | "named"
+    share_consent: Mapped[str] = mapped_column(String(20), default="anonymous", nullable=False)
+    user_agent: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class Notification(Base):
     __tablename__ = "notifications"
 

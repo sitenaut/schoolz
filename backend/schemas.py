@@ -774,3 +774,47 @@ class CommunitySubmissionOut(BaseModel):
 class CommunitySubmissionUpdate(BaseModel):
     status: str | None = Field(default=None, pattern="^(pending|approved|rejected)$")
     admin_notes: str | None = None
+
+
+class SurveyResponseCreate(BaseModel):
+    """A public survey submission (/survey). Everything is optional
+    individually - the router enforces that *something* substantive was
+    actually answered, so an empty form can't be stored."""
+
+    school_ids: list[str] = Field(default_factory=list, max_length=20)
+    satisfaction: int | None = Field(default=None, ge=1, le=5)
+    pain_points: list[str] = Field(default_factory=list, max_length=40)
+    missing_info: str | None = Field(default=None, max_length=2000)
+    comments: str | None = Field(default=None, max_length=5000)
+    submitter_name: str | None = Field(default=None, max_length=200)
+    submitter_email: str | None = Field(default=None, max_length=255)
+    share_consent: str = Field(default="anonymous", pattern="^(anonymous|named)$")
+
+    @field_validator("pain_points")
+    @classmethod
+    def _short_keys(cls, value: list[str]) -> list[str]:
+        return [v.strip()[:80] for v in value if v and v.strip()]
+
+
+class SurveyResponseOut(BaseModel):
+    id: str
+    school_ids: list[str]
+    school_names: list[str] = []
+    satisfaction: int | None
+    pain_points: list[str]
+    missing_info: str | None
+    comments: str | None
+    submitter_name: str | None
+    submitter_email: str | None
+    share_consent: str
+    created_at: datetime
+
+
+class SurveySummaryOut(BaseModel):
+    """What the /survey page itself shows back ("N neighbors have answered")
+    and what the admin view leads with. Deliberately carries no free text
+    and no contact details - it's public."""
+
+    total: int
+    average_satisfaction: float | None
+    top_pain_points: list[dict]

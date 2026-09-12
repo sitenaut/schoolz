@@ -19,6 +19,7 @@ import scheduler.jobs  # noqa: F401,E402  (populate the job registry in this pro
 import telemetry  # noqa: E402
 from auth import prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
+from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
@@ -33,6 +34,7 @@ from routers import school_emails as school_emails_router  # noqa: E402
 from routers import schools as schools_router  # noqa: E402
 from routers import scraper as scraper_router  # noqa: E402
 from routers import seo as seo_router  # noqa: E402
+from routers import survey as survey_router  # noqa: E402
 from routers import smore_newsletters as smore_newsletters_router  # noqa: E402
 from routers import students as students_router  # noqa: E402
 
@@ -143,3 +145,5 @@ app.include_router(districts_router.router)
 app.include_router(calendar_router.router)
 app.include_router(community_submissions_router.router)
 app.include_router(seo_router.router)
+app.include_router(survey_router.router)
+app.include_router(analytics_router.router)

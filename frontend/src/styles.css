@@ -1650,3 +1650,272 @@ select {
     transition: background 0.15s, border-color 0.15s;
   }
 }
+
+/* ---------- /chcomms write-up + /survey form ---------- */
+
+/* Small print that sits inside prose, so it stays left-aligned rather
+   than centered the way .fine (a page-footer note) does. */
+.smallnote {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin: 8px 0 0;
+}
+
+/* The headline findings on /chcomms. Big number first: the whole point is
+   that someone skimming on a phone takes the point without reading prose. */
+.chc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 10px 0 18px;
+}
+.chc-stat {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chc-num {
+  font-family: var(--font-display, inherit);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--primary);
+}
+.chc-cap {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.35;
+}
+@media (max-width: 520px) {
+  .chc-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chc-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  line-height: 1.55;
+}
+.chc-list li {
+  margin-bottom: 10px;
+}
+
+.callout {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--primary);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 18px 0;
+}
+.callout p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* 1-5 satisfaction scale. Buttons rather than native radios so the hit
+   area is thumb-sized on a phone. */
+.scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.scale-opt {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  min-height: 68px;
+}
+.scale-opt.on {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.scale-num {
+  font-weight: 800;
+  font-size: 18px;
+}
+.scale-lbl {
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--ink-3);
+}
+.scale-opt.on .scale-lbl {
+  color: var(--ink-2);
+}
+
+/* Checkbox/radio rows for the survey's pick-lists. */
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 13px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.check.on {
+  border-color: var(--primary);
+}
+.check input {
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: var(--primary);
+  width: 17px;
+  height: 17px;
+}
+
+/* .hero was sized for /start's short two-word title ("Choose your
+   schools"): 18ch on the h1, 48ch on the paragraph. A page whose hero
+   carries a real headline and a paragraph of prose (/chcomms, /survey)
+   instead reads as a narrow half-width column next to its own full-width
+   content below, so those opt out of the caps. */
+.hero.full h1,
+.hero.full p {
+  max-width: none;
+}
+
+/* Real section headings for the long-form pages (/chcomms, /survey).
+   .section-title and .tier are small, uppercase, --ink-3 eyebrows: right
+   above a dense data table, invisible as wayfinding on a page someone
+   reads top to bottom. These are proper <h2>/<h3> elements too, which the
+   eyebrow divs never were - these two pages are the ones search engines
+   are pointed at, so the heading outline should be real. */
+.page-section {
+  font-family: var(--font-d);
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  margin: 32px 0 10px;
+}
+.page-subsection {
+  font-family: var(--font-d);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 22px 0 2px;
+}
+
+/* "The receipts" on /chcomms - the specific, slightly damning findings.
+   Deliberately a different visual treatment from .chc-stats above them:
+   those are the headline counts, these are the individual smoking guns,
+   and running them together as one prose paragraph buried the punchlines. */
+.receipts {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+.receipt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  background: color-mix(in srgb, var(--warn) 7%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--warn) 22%, var(--line));
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.receipt-lead {
+  font-family: var(--font-d);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--warn);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* The three categories of information - the load-bearing idea of the whole
+   page, so it gets real cards with their own color rather than a numbered
+   list that skims like filler. The last card is visually the odd one out
+   on purpose: it's the category schoolz deliberately doesn't touch. */
+.buckets {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 18px;
+}
+@media (min-width: 760px) {
+  .buckets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.bucket {
+  background: color-mix(in srgb, var(--c) 7%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--c) 28%, var(--line));
+  border-top: 4px solid var(--c);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bucket-n {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--c);
+  /* --card, not a fixed white: reads as white-on-color in light mode and
+     dark-on-color in dark mode, where the --sch-* hues get lighter. */
+  color: var(--card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  flex: none;
+}
+.bucket h3 {
+  font-family: var(--font-d);
+  font-size: 16px;
+  margin: 0;
+}
+.bucket p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.bucket-tag {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c);
+}
+
+/* A few schools publish their logo as a transparent PNG drawn in white ink,
+   made for the dark header on their own site - on this app's light theme
+   they render as an invisible square. A black disc behind just those (see
+   lib/logos.ts) makes the artwork readable in both themes. */
+.logo-dark {
+  background: #000;
+  padding: 2px;
+}
