@@ -14,11 +14,13 @@ applies to this one school, never every Cherry Hill school.
 import base64
 import logging
 import re
+import time
 from datetime import date
 
 import httpx
 from anthropic import AsyncAnthropic
 
+import observability
 import scraper_client
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 
@@ -92,6 +94,7 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
         pdf_b64 = base64.b64encode(resp.content).decode("ascii")
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+    _llm_started = time.perf_counter()
     response = await client.messages.create(
         model=MODEL,
         max_tokens=4096,
@@ -113,6 +116,7 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
             }
         ],
     )
+    observability.record_llm_call("special_events", MODEL, response, time.perf_counter() - _llm_started)
     tool_use = next((b for b in response.content if b.type == "tool_use"), None)
     if not tool_use:
         return []

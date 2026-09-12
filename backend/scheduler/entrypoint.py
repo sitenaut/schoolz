@@ -7,6 +7,7 @@ from sqlalchemy import select, text
 
 import scheduler.jobs  # noqa: F401  (registers all job kinds via decorators)
 import telemetry
+import observability
 from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
@@ -81,6 +82,11 @@ async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
             logger.exception("stuck_run_reap_failed")
         try:
             await _reconcile(aps_scheduler)
+            # Heartbeat. Nothing else proves this process is alive: with no
+            # jobs due, a healthy scheduler and a dead one emit identical
+            # (absent) job metrics, so the "scans stopped running" alert
+            # keys off this tick rather than off job activity.
+            observability.scheduler_reconciles_total.add(1)
         except Exception:
             logger.exception("scheduler_reconcile_failed")
         try:

@@ -509,6 +509,35 @@ Whether a consent banner is needed is the owner's call, not Sonnet's. Flag it in
 
 ## Phase 6: Dashboards, alerts, and the "what should we simplify" review
 
+> **Status (2026-09-12): built.** Dashboards and alerts are generated from
+> `scripts/build_grafana_dashboards.py` and `scripts/build_grafana_alerts.py`
+> into `grafana/cloud-dashboards/`, and pushed with
+> `scripts/grafana_sync.py` (needs `GRAFANA_URL`/`GRAFANA_TOKEN` in
+> `env/secrets.prod.env` - a service-account token from
+> enr.grafana.net -> Administration -> Users and access -> Service accounts).
+> Three dashboards (Scans 11 panels, API 7, User experience 10) and 7 alert
+> rules. All 8 SQL panels were validated against the real schema; all three
+> dashboards were import-tested in the local Grafana.
+>
+> Two corrections to what this section originally assumed:
+> - **6 of the 11 instruments in `backend/observability.py` had never been
+>   recorded by anything.** The LLM ones (`schoolz.llm.*`) are now wired at
+>   all four `messages.create` call sites via `observability.record_llm_call`,
+>   which is what makes the token/cost panel and the `max_tokens` alert real.
+>   The backend's duplicate scraper instruments were deleted instead - the
+>   scraper service already measures that at the source.
+> - **The scheduler had no heartbeat metric**, so the "scheduler is down"
+>   alert this section specifies had nothing to alert on. Added as
+>   `schoolz.scheduler.reconciles`, incremented each reconcile tick, with the
+>   rule's NoData state set to Alerting (a dead process emits no series, so
+>   absent data *is* the outage).
+>
+> Faro/RUM panels in the User experience dashboard are written against
+> Faro's Loki shape but could not be verified locally (RUM is off in local
+> dev), so their field names may need adjusting in Explore on first use.
+> The server-side `page_visits` panels next to them are exact.
+
+
 Dashboards (export JSON to `grafana/cloud-dashboards/`, one file each):
 
 1. **schoolz / Scans**: Phase 1 SQL panels, plus:

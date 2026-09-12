@@ -17,6 +17,7 @@ import io
 import logging
 import os
 import re
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -26,6 +27,7 @@ from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import observability
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
 from services.school_status import is_status_title
 from scheduler.errors import record_parse_issue
@@ -205,6 +207,7 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
         image_bytes, media_type = prepared
         image_b64 = base64.b64encode(image_bytes).decode("ascii")
 
+        _llm_started = time.perf_counter()
         response = await client.messages.create(
             model=MODEL,
             max_tokens=1024,
@@ -223,6 +226,7 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
                 }
             ],
         )
+        observability.record_llm_call("vision_extract", MODEL, response, time.perf_counter() - _llm_started)
         return "".join(block.text for block in response.content if block.type == "text")
     except Exception:
         logger.exception("vision_extraction_failed", extra={"image_url": image_url})
@@ -416,6 +420,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 lines = [f"- id={i.id} [{i.category}] {i.title} (start_date={i.start_date})" for i in current]
                 current_items_context = "\n\nCURRENT ITEMS for this school (reference by id in supersedes_item_id if one of these is being corrected/updated):\n" + "\n".join(lines)
 
+        _llm_started = time.perf_counter()
         response = await client.messages.create(
             model=MODEL,
             max_tokens=8192,
@@ -425,6 +430,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             tool_choice={"type": "tool", "name": "record_extraction"},
             messages=[{"role": "user", "content": "\n".join(corpus_lines) + current_items_context}],
         )
+        observability.record_llm_call("content_extract", MODEL, response, time.perf_counter() - _llm_started)
         tool_use = next((b for b in response.content if b.type == "tool_use"), None)
         if not tool_use:
             continue

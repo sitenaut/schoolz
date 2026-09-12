@@ -209,6 +209,12 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                         "job.kind": job.kind,
                         "status": run_status,
                         "error_code": error_code or "",
+                        # Carried so the dashboard can group failures by where
+                        # they happened (fetch/parse/llm/db) from metrics alone,
+                        # rather than needing a SQL query against job_runs.
+                        # Small fixed set - classify_exception() is the only
+                        # thing that sets it.
+                        "error_stage": error_stage or "",
                         "triggered_by": triggered_by,
                     },
                 )

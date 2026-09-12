@@ -31,15 +31,12 @@ job_in_flight = _meter.create_up_down_counter(
     description="Jobs currently executing.",
 )
 
-scraper_requests_total = _meter.create_counter(
-    "schoolz.scraper.requests",
-    description="Requests to the scraper service, by endpoint and outcome.",
-)
-scraper_duration_seconds = _meter.create_histogram(
-    "schoolz.scraper.duration",
-    unit="s",
-    description="Scraper request duration.",
-)
+# NOTE: there are deliberately no scraper instruments here. The scraper
+# service measures its own work at the source (schoolz.scraper.page_load /
+# schoolz.scraper.pages_open in scraper/observability.py), with the host and
+# outcome attributes that only it can see. A backend-side duplicate was
+# declared here originally and never recorded by anything - dashboards
+# should query the scraper service's own metrics instead.
 
 llm_calls_total = _meter.create_counter(
     "schoolz.llm.calls",
@@ -63,4 +60,46 @@ parse_issues_total = _meter.create_counter(
 cold_start_requests_total = _meter.create_counter(
     "schoolz.cold_start.requests",
     description="First request handled after a Fly machine start.",
+)
+
+
+def record_llm_call(purpose: str, model: str, response, duration_s: float) -> None:
+    """Records one Anthropic call's outcome, latency and token usage.
+
+    Every `messages.create` in this codebase goes through here, which is
+    what makes "what did the LLM cost us last month, and which job spent
+    it" answerable at all - token counts are the only usage signal the API
+    gives back, and they're on the response object, so nothing else can
+    reconstruct them after the fact.
+
+    `stop_reason` is carried deliberately: "max_tokens" means a reply was
+    truncated mid-structure, which has silently produced empty extractions
+    before (see CLAUDE.md's max_tokens incident) and is alerted on.
+
+    Attributes stay low-cardinality on purpose - purpose and model are both
+    small fixed sets. Never add a school, url or newsletter id here.
+    """
+    attrs = {"purpose": purpose, "model": model}
+    llm_calls_total.add(1, {**attrs, "stop_reason": getattr(response, "stop_reason", None) or "unknown"})
+    llm_duration_seconds.record(duration_s, attrs)
+
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return
+    for direction, value in (
+        ("input", getattr(usage, "input_tokens", 0)),
+        ("output", getattr(usage, "output_tokens", 0)),
+        # Cache reads/writes are billed at different rates than plain input
+        # tokens, so they're separate directions rather than folded in -
+        # a cost panel that lumped them together would overstate spend.
+        ("cache_read", getattr(usage, "cache_read_input_tokens", 0)),
+        ("cache_write", getattr(usage, "cache_creation_input_tokens", 0)),
+    ):
+        if value:
+            llm_tokens_total.add(int(value), {**attrs, "direction": direction})
+
+
+scheduler_reconciles_total = _meter.create_counter(
+    "schoolz.scheduler.reconciles",
+    description="Scheduler reconcile ticks - the process's heartbeat.",
 )
