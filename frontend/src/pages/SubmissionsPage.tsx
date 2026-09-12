@@ -11,7 +11,7 @@ import { apiFetch } from "../api";
 import {
   deleteSubmission,
   listSubmissions,
-  submissionFileUrl,
+  downloadSubmissionFile,
   updateSubmission,
   type CommunitySubmission,
 } from "./submissions/submissionsApi";
@@ -262,9 +262,21 @@ export function SubmissionsPage() {
                 </a>
               ) : (
                 <>
-                  <a href={submissionFileUrl(detail.id)} target="_blank" rel="noreferrer">
+                  <button
+                    type="button"
+                    className="linklike"
+                    onClick={() =>
+                      downloadSubmissionFile(detail.id, detail.file_name).catch((e) =>
+                        toast({
+                          title: "Could not download this file",
+                          description: e instanceof Error ? e.message : undefined,
+                          tone: "bad",
+                        })
+                      )
+                    }
+                  >
                     {detail.file_name} ({Math.round((detail.file_size ?? 0) / 1024)} KB)
-                  </a>
+                  </button>
                   {previewUrl && (
                     <img src={previewUrl} alt="" style={{ maxWidth: "100%", marginTop: 8, borderRadius: 8, display: "block" }} />
                   )}

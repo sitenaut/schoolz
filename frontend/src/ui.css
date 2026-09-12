@@ -1074,6 +1074,31 @@ pre.json {
 .link-card:hover {
   border-color: var(--primary);
 }
+/* A card that triggers an authenticated download has to be a <button> (a
+   raw <a href> sends no Authorization header) - reset the UA button styles
+   so it sits in the grid identically to its <a>/<Link> neighbours. */
+button.link-card {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.link-card:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+/* A button that has to read as a link - used where the target is an
+   admin-only endpoint that can't be reached by a plain <a href>. */
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+}
 .link-card .ico {
   width: 34px;
   height: 34px;
