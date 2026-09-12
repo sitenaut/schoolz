@@ -1448,6 +1448,11 @@ details.acc .body {
   cursor: pointer;
   text-align: left;
   color: var(--ink);
+  /* .sopt started life as a <button> (the /start picker's toggle tiles) -
+     also used as a plain navigation <a> (the /schools directory, which
+     mirrors that look but links through instead of toggling a pick), so
+     it needs its own underline reset. */
+  text-decoration: none;
 }
 .sopt .box {
   width: 18px;
@@ -1591,37 +1596,6 @@ details.accordion > summary::-webkit-details-marker {
 }
 details.accordion .accordion-body {
   padding: 0 var(--space-3) var(--space-3);
-}
-.school-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.school-name-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.school-list-logo {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex: none;
-  background: var(--card);
-}
-.school-list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
-  background: var(--card);
-  text-decoration: none;
-  color: var(--ink);
 }
 .tabs {
   display: flex;

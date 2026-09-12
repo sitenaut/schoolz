@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { useMySchools } from "../lib/mySchools";
 import { apiFetch } from "../api";
 import { ItemRow } from "../components/today";
+import { SeoHead } from "../components/SeoHead";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { CLOSED_RE, HALF_DAY_RE, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
@@ -63,6 +65,8 @@ export function CalendarPage() {
   // elementary "Day N" or high-school block-rotation day it is, only the
   // schools that DO want it can turn it on here.
   const [showDayRotation, setShowDayRotation] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
+  usePrerenderReady(dataReady);
 
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
@@ -96,6 +100,7 @@ export function CalendarPage() {
       .then((r) => (r.ok ? r.json() : []))
       .then((data: SchoolContentItem[]) => {
         setItems(data);
+        setDataReady(true);
         if (!readyReported.current) {
           readyReported.current = true;
           trackMeasurement("calendar_ready", performance.now() - readyStart.current, { mode: isSearching ? "search" : viewMode });
@@ -221,6 +226,11 @@ export function CalendarPage() {
 
   return (
     <div>
+      <SeoHead
+        title="School calendar · Cherry Hill · schoolz"
+        description="District-wide and per-school calendar for Cherry Hill Public Schools - closures, early dismissals, deadlines, and events, searchable and filterable by school."
+        path="/calendar"
+      />
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>Calendar</h2>
         <div className="tabs" style={{ margin: 0 }}>

@@ -8,9 +8,18 @@
  * cross-session/identified analytics), this page and a real consent
  * banner both need revisiting - that call belongs to the site owner, not
  * something to decide unilaterally while adding RUM. */
+import { SeoHead } from "../components/SeoHead";
+import { usePrerenderReady } from "../lib/prerenderReady";
+
 export function PrivacyPage() {
+  usePrerenderReady(true);
   return (
     <>
+      <SeoHead
+        title="Privacy & cookies · schoolz"
+        description="What schoolz stores about visitors and account holders, and why - no ad tracking, no consent banner needed."
+        path="/privacy"
+      />
       <h2>Privacy &amp; cookies</h2>
       <p className="note">Last updated September 2026.</p>
 

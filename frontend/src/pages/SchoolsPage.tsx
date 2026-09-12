@@ -3,13 +3,16 @@ import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useMySchools } from "../lib/mySchools";
-import { IconChevronRight, IconSearch } from "../components/icons";
+import { usePrerenderReady } from "../lib/prerenderReady";
+import { IconSearch } from "../components/icons";
+import { SeoHead } from "../components/SeoHead";
 import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
 import type { School } from "../types";
 
 export function SchoolsPage() {
   const { user } = useAuth();
-  const { allSchools, activeSchools } = useMySchools();
+  const { allSchools, activeSchools, loading } = useMySchools();
+  usePrerenderReady(!loading);
   // "My schools" reflects exactly the top ribbon's current picks/filter -
   // there's no separate "linked children" concept here anymore. That used
   // to be a second, differently-scoped "My Schools" tab (-> GET
@@ -57,6 +60,11 @@ export function SchoolsPage() {
 
   return (
     <div>
+      <SeoHead
+        title="Cherry Hill schools directory · schoolz"
+        description="Browse every Cherry Hill Public Schools elementary, middle, and high school, plus tracked local preschools - addresses, phone numbers, and websites."
+        path="/schools"
+      />
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>Schools</h2>
         <Link to="/start">Manage my schools</Link>
@@ -96,25 +104,20 @@ export function SchoolsPage() {
           )}
         </p>
       ) : (
+        // Same tile-grid look as the /start picker (.sgrid/.sopt) - this
+        // page still navigates to a school's own page on click rather
+        // than toggling a pick, so no checkbox box, just the card.
         groups.map((g) => (
           <div key={g.key}>
             <div className="tier">{g.label}</div>
-            <ul className="school-list">
+            <div className="sgrid">
               {g.schools.map((s) => (
-                <li key={s.id}>
-                  <Link to={`/schools/${s.slug}`} className="school-list-item">
-                    <div>
-                      <span className="school-name-row">
-                        {s.logo_url && <img className="school-list-logo" src={s.logo_url} alt="" />}
-                        <strong>{s.name}</strong>
-                      </span>
-                      {s.address && <div className="item-desc">{s.address}</div>}
-                    </div>
-                    <IconChevronRight className="trailing-chevron" />
-                  </Link>
-                </li>
+                <Link className="sopt" to={`/schools/${s.slug}`} key={s.id}>
+                  {s.logo_url ? <img className="sopt-logo" src={s.logo_url} alt="" /> : null}
+                  {s.short_name || s.name}
+                </Link>
               ))}
-            </ul>
+            </div>
           </div>
         ))
       )}

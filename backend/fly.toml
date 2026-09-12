@@ -9,6 +9,18 @@ primary_region = "ewr"
   PORT = "8000"
   PUBLIC_WEB_URL = "https://schoolz.sitenaut.com"
   PUBLIC_API_URL = "https://schoolz-api.sitenaut.com"
+  # No FRONTEND_INTERNAL_URL here on purpose: services/prerender.py falls
+  # back to PUBLIC_WEB_URL when it's unset, so the scraper renders
+  # https://schoolz.sitenaut.com/... the same way it renders any other
+  # public site - over the public internet, through fly-proxy, which wakes
+  # schoolz-web on demand exactly like a real visitor would. Pointing this
+  # at schoolz-web.internal instead would need schoolz-web to run with
+  # min_machines_running = 1 (Fly's private network doesn't wake stopped
+  # machines the way the public proxy does - see the scraper's own
+  # always-on requirement above) - not worth that standing cost for a
+  # low-volume crawler endpoint. Local compose sets FRONTEND_INTERNAL_URL
+  # because localhost:5173 there only resolves on the host, not from
+  # another container.
 
 [processes]
   app = "uvicorn main:app --host 0.0.0.0 --port 8000"

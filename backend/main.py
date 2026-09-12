@@ -32,6 +32,7 @@ from routers import scheduled_jobs as scheduled_jobs_router  # noqa: E402
 from routers import school_emails as school_emails_router  # noqa: E402
 from routers import schools as schools_router  # noqa: E402
 from routers import scraper as scraper_router  # noqa: E402
+from routers import seo as seo_router  # noqa: E402
 from routers import smore_newsletters as smore_newsletters_router  # noqa: E402
 from routers import students as students_router  # noqa: E402
 
@@ -40,6 +41,13 @@ logger = logging.getLogger(__name__)
 _DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
+    # Local compose's own container-network origin for the frontend - the
+    # scraper renders http://frontend:3000/... (not localhost:5173, which
+    # only resolves on the host) when prerendering a page for a crawler
+    # (services/prerender.py), so its browser's fetches carry this as
+    # their Origin. Never sent by a real browser, in prod or locally, so
+    # harmless to always allow.
+    "http://frontend:3000",
 ]
 _ALLOWED_ORIGIN_REGEX = r"^https://([a-zA-Z0-9-]+\.)*sitenaut\.com$|^http://localhost(:\d+)?$"
 _SKIP_LOG_PATHS = {"/health"}
@@ -134,3 +142,4 @@ app.include_router(schools_router.router)
 app.include_router(districts_router.router)
 app.include_router(calendar_router.router)
 app.include_router(community_submissions_router.router)
+app.include_router(seo_router.router)

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Field } from "../components/ui/Field";
+import { SeoHead } from "../components/SeoHead";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { loadTargets, submitContent, type TargetOption } from "./submissions/submissionsApi";
 
 type Kind = "link" | "file";
@@ -32,6 +34,7 @@ export function ContactPage() {
     loadTargets().then(setTargets).catch(() => undefined);
   }, []);
 
+  usePrerenderReady(true);
   const canSubmit = kind === "link" ? url.trim().length > 0 : Boolean(file);
 
   const submit = async (e: React.FormEvent) => {
@@ -81,6 +84,11 @@ export function ContactPage() {
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto" }}>
+      <SeoHead
+        title="Contact us · schoolz"
+        description="Send us a school flier or newsletter link we're not tracking yet - a real person reviews every submission."
+        path="/contact"
+      />
       <h2>Contact us</h2>
       <p className="note">
         Spot a school flier or a newsletter link we're not tracking yet? Send it over - a real person reviews

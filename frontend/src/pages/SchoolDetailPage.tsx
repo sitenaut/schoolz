@@ -4,10 +4,13 @@ import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contactHref } from "../components/today";
 import { IconChevronLeft } from "../components/icons";
+import { SeoHead } from "../components/SeoHead";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { schoolTypeLabel } from "../lib/schoolType";
+import { SITE_URL } from "../lib/site";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
 
@@ -90,6 +93,8 @@ export function SchoolDetailPage() {
   const summary = newsletters.find((n) => n.latest_summary)?.latest_summary;
   const newsletterUrl = newsletters[0]?.url;
 
+  usePrerenderReady(!!today || missing);
+
   if (missing) return <div className="empty">School not found.</div>;
   if (!today) return <p className="note">Loading…</p>;
   const s = today.school;
@@ -97,9 +102,33 @@ export function SchoolDetailPage() {
   const counselor = today.contacts.find((c) => c.role === "counselor");
   const thisYear = currentAcademicYear();
   const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
+  const typeLabel = schoolTypeLabel(s.school_type);
+  const seoDescription = [
+    `${s.name}${typeLabel ? ` (${typeLabel})` : ""} in Cherry Hill, NJ.`,
+    s.address,
+    "Bell schedule, absence reporting, lunch menu, bus info, and calendar dates.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <>
+      <SeoHead
+        title={`${s.name} · schoolz`}
+        description={seoDescription}
+        path={`/schools/${s.slug}`}
+        image={s.logo_url ?? undefined}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "School",
+          name: s.name,
+          url: `${SITE_URL}/schools/${s.slug}`,
+          ...(s.address ? { address: s.address } : {}),
+          ...(s.main_phone ? { telephone: s.main_phone } : {}),
+          ...(s.website_url ? { sameAs: s.website_url } : {}),
+          ...(s.logo_url ? { logo: s.logo_url } : {}),
+        }}
+      />
       <Link to="/" className="back-link">
         <IconChevronLeft /> Today
       </Link>

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { apiFetch } from "../api";
+import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { useMySchools } from "../lib/mySchools";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
 import type { LunchMenu } from "../types";
 
@@ -81,11 +83,18 @@ export function LunchPage() {
     [items, tk],
   );
 
+  usePrerenderReady(!loading && (menu !== undefined || mySchools.length === 0));
+
   if (loading) return <p className="note">Loading…</p>;
   if (mySchools.length === 0) return <Navigate to="/start" replace />;
 
   return (
     <>
+      <SeoHead
+        title="Lunch menus · Cherry Hill · schoolz"
+        description="Daily lunch menus for Cherry Hill Public Schools, by school - synced from district and school-published menus."
+        path="/lunch"
+      />
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>Lunch</h2>
         {menu && !menu.source_pdf_url.startsWith("newsletter:") && (
