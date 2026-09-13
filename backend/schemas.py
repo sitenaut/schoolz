@@ -344,7 +344,12 @@ class SchoolCreate(BaseModel):
 
 
 class BellPeriodEntry(BaseModel):
-    name: str = Field(min_length=1, max_length=10)  # "1", "L1", "6", ...
+    # Short block labels for a high school ("1", "L1") and a middle
+    # school's numbered periods ("1", "WIN") both fit comfortably; a
+    # preschool's own daily routine tends to be a descriptive activity
+    # name instead ("Outdoor Play", "Snack Time"), so this stays generous
+    # rather than block-letter-sized.
+    name: str = Field(min_length=1, max_length=40)
     start: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")  # 24h "HH:MM", school-local, no date
     end: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 

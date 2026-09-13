@@ -38,7 +38,14 @@ primary_region = "ewr"
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  # Was 0 on the reasoning that static file serving cold-starts fast
+  # enough not to be worth an always-on machine. Measured during the first
+  # real traffic (2026-09-12): the first request after an idle gap took
+  # 1.8s, subsequent ones 0.09s. Every visitor arriving after a quiet
+  # stretch pays that, which on a page being shared around is the first
+  # impression - schoolz-api has been kept warm for the same reason since
+  # cold starts were confirmed there.
+  min_machines_running = 1
 
 [[vm]]
   size = "shared-cpu-1x"

@@ -10,6 +10,35 @@ from services.content_extractor import extract_from_newsletter
 from services.smore_parser import fetch_and_parse
 
 
+def select_unseen_blocks(blocks: list[dict], existing_hashes: set[str]) -> list[dict]:
+    """Blocks worth storing: those whose content we haven't seen before.
+
+    Skips two kinds of duplicate, and the second one is the reason this is
+    a function rather than an inline check:
+
+    1. Content already stored from an earlier scan. Smore pages get edited
+       in place week to week, so most blocks on any given run are ones we
+       already have.
+    2. Content repeated *within this same parse*. A newsletter can include
+       the same block twice (Beck's 9-11 issue does), and since
+       content_hash is unique per (newsletter, hash), queueing both makes
+       the flush fail with a UniqueViolationError that takes down the
+       entire scan - every other block included. Two identical blocks are
+       the same content by definition, so keeping the first is correct.
+
+    Pure on purpose: the bug in (2) reached production because the only way
+    to exercise this logic was through the database and a live parse.
+    """
+    seen = set(existing_hashes)
+    unseen = []
+    for block in blocks:
+        if block["content_hash"] in seen:
+            continue
+        seen.add(block["content_hash"])
+        unseen.append(block)
+    return unseen
+
+
 @register_job(
     kind="smore.scan",
     default_name="Smore newsletter scan",
@@ -38,9 +67,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     }
 
     new_blocks: list[SmoreBlock] = []
-    for block in blocks:
-        if block["content_hash"] in existing_hashes:
-            continue
+    for block in select_unseen_blocks(blocks, existing_hashes):
         row = SmoreBlock(
             newsletter_id=newsletter.id,
             position=block["position"],

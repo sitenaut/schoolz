@@ -1,5 +1,5 @@
 import { API_URL } from "../../authConfig";
-import { apiFetch } from "../../api";
+import { apiFetch, downloadFile } from "../../api";
 
 export type CommunitySubmission = {
   id: string;
@@ -83,8 +83,11 @@ export async function deleteSubmission(id: string): Promise<void> {
   if (!res.ok) return fail(res, "Could not delete this submission");
 }
 
-export function submissionFileUrl(id: string): string {
-  return `${API_URL}/submissions/${id}/file`;
+// GET /submissions/{id}/file is admin-only, so it can't be linked to
+// directly - a raw navigation carries no Authorization header. Fetch it
+// through apiFetch and hand the bytes to the browser instead.
+export async function downloadSubmissionFile(id: string, fileName?: string | null): Promise<void> {
+  await downloadFile(`/submissions/${id}/file`, fileName || "submission");
 }
 
 export type TargetOption = { id: string; label: string };

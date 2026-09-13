@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch } from "../../api";
-import { API_URL } from "../../authConfig";
+import { apiFetch, downloadFile } from "../../api";
 import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
 import { SectionCard } from "../../components/ui/SectionCard";
+import { useToast } from "../../components/ui/Toast";
 import { listSubmissions } from "../submissions/submissionsApi";
 import { loadPageVisits, loadSurveySummary, type PageVisitReport } from "../survey/surveyApi";
 
 type Summary = { total: number; by_status: Record<string, number> };
 
 export function AdminSection() {
+  const toast = useToast();
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [pendingSubmissions, setPendingSubmissions] = useState<number | null>(null);
   const [surveyCount, setSurveyCount] = useState<number | null>(null);
   const [visits, setVisits] = useState<PageVisitReport | null>(null);
@@ -30,6 +32,21 @@ export function AdminSection() {
       .then(setVisits)
       .catch(() => setVisits(null));
   }, []);
+
+  async function downloadSurveyCsv() {
+    setDownloading(true);
+    try {
+      await downloadFile("/survey/responses.csv", "schoolz-survey-responses.csv");
+    } catch (e) {
+      toast({
+        title: "Could not download the survey responses",
+        description: e instanceof Error ? e.message : undefined,
+        tone: "bad",
+      });
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const s = summary?.by_status ?? {};
   return (
@@ -143,7 +160,7 @@ export function AdminSection() {
               <small>Fliers &amp; links the community sent in</small>
             </span>
           </Link>
-          <a className="link-card" href={`${API_URL}/survey/responses.csv`}>
+          <button className="link-card" type="button" onClick={downloadSurveyCsv} disabled={downloading}>
             <span className="ico">
               <IconTransfer />
             </span>
@@ -152,9 +169,9 @@ export function AdminSection() {
                 Survey responses{" "}
                 {Boolean(surveyCount) && <span className="badge nodot">{surveyCount}</span>}
               </b>
-              <small>Download every /survey answer as a spreadsheet</small>
+              <small>{downloading ? "Preparing download…" : "Download every /survey answer as a spreadsheet"}</small>
             </span>
-          </a>
+          </button>
           <Link className="link-card" to="/gmail">
             <span className="ico">
               <IconMail />
