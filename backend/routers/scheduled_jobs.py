@@ -145,6 +145,7 @@ async def create_job(payload: ScheduledJobCreate, user: User = Depends(require_a
         timezone=payload.timezone,
         params=payload.params,
         enabled=payload.enabled,
+        run_once=payload.run_once,
     )
     db.add(job)
     await db.commit()
@@ -187,6 +188,8 @@ async def update_job(job_id: str, payload: ScheduledJobUpdate, db: AsyncSession 
         job.enabled = payload.enabled
         if not payload.enabled:
             job.next_run_at = None
+    if payload.run_once is not None:
+        job.run_once = payload.run_once
 
     await db.commit()
     await db.refresh(job)

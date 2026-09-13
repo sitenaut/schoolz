@@ -35,6 +35,7 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
   // scheduled) should reflect that it's actually off right now - only a
   // brand-new newsletter defaults to on.
   const [enabled, setEnabled] = useState(newsletter ? Boolean(newsletter.scheduled_job?.enabled) : true);
+  const [runOnce, setRunOnce] = useState(newsletter ? Boolean(newsletter.scheduled_job?.run_once) : false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +49,7 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
     setCron(newsletter?.scheduled_job?.cron_expr ?? "0 8 * * 1");
     setTimezone(newsletter?.scheduled_job?.timezone ?? "America/New_York");
     setEnabled(newsletter ? Boolean(newsletter.scheduled_job?.enabled) : true);
+    setRunOnce(newsletter ? Boolean(newsletter.scheduled_job?.run_once) : false);
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, newsletter?.id]);
@@ -67,6 +69,7 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
       cron_expr: cron.trim(),
       timezone,
       enabled,
+      run_once: runOnce,
     };
     try {
       const saved = editing ? await updateNewsletter(newsletter!.id, payload) : await createNewsletter(payload);
@@ -140,44 +143,62 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
             </Field>
           )}
 
-          <Field label="Schedule">
-            <select
-              value={presetMatch}
-              onChange={(e) => {
-                if (e.target.value !== "custom") setCron(e.target.value);
-              }}
-            >
-              {CRON_PRESETS.map((p) => (
-                <option key={p.expr} value={p.expr}>
-                  {p.label}
-                </option>
-              ))}
-              <option value="custom">Custom…</option>
-            </select>
-          </Field>
-          <Field label="Timezone">
-            <select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-              {["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "UTC"]
-                .filter((tz, i, arr) => arr.indexOf(tz) === i)
-                .map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz}
-                  </option>
-                ))}
-            </select>
-          </Field>
-          <Field label="Cron expression" hint={describeCron(cron)} className="span2">
-            <input value={cron} onChange={(e) => setCron(e.target.value)} required style={{ fontFamily: "ui-monospace, Menlo, monospace" }} />
-          </Field>
+          {!runOnce && (
+            <>
+              <Field label="Schedule">
+                <select
+                  value={presetMatch}
+                  onChange={(e) => {
+                    if (e.target.value !== "custom") setCron(e.target.value);
+                  }}
+                >
+                  {CRON_PRESETS.map((p) => (
+                    <option key={p.expr} value={p.expr}>
+                      {p.label}
+                    </option>
+                  ))}
+                  <option value="custom">Custom…</option>
+                </select>
+              </Field>
+              <Field label="Timezone">
+                <select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+                  {["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "UTC"]
+                    .filter((tz, i, arr) => arr.indexOf(tz) === i)
+                    .map((tz) => (
+                      <option key={tz} value={tz}>
+                        {tz}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+              <Field label="Cron expression" hint={describeCron(cron)} className="span2">
+                <input value={cron} onChange={(e) => setCron(e.target.value)} required style={{ fontFamily: "ui-monospace, Menlo, monospace" }} />
+              </Field>
+            </>
+          )}
         </div>
 
         <div className="sw-row">
           <div>
-            <b>Enabled</b>
-            <small>Scans on schedule. Leave off to track the URL without scheduling a scan yet.</small>
+            <b>Run once</b>
+            <small>
+              Scan this URL a single time, then turn scanning off - for a newsletter that publishes a brand new URL
+              every issue (Beck, Cooper, Clara Barton, and most others turn out to work this way) rather than
+              updating one stable page. {editing ? "Saving" : "Adding"} with this on runs the scan immediately.
+            </small>
           </div>
-          <Switch checked={enabled} onChange={setEnabled} label="Enabled" />
+          <Switch checked={runOnce} onChange={setRunOnce} label="Run once" />
         </div>
+
+        {!runOnce && (
+          <div className="sw-row">
+            <div>
+              <b>Enabled</b>
+              <small>Scans on schedule. Leave off to track the URL without scheduling a scan yet.</small>
+            </div>
+            <Switch checked={enabled} onChange={setEnabled} label="Enabled" />
+          </div>
+        )}
       </form>
     </Modal>
   );

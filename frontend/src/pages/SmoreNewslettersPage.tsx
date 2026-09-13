@@ -200,12 +200,18 @@ export function SmoreNewslettersPage() {
       header: "Schedule",
       cell: (n) =>
         n.scheduled_job ? (
-          <>
-            <div>{describeCron(n.scheduled_job.cron_expr)}</div>
-            <div className="cell-sub">
-              <span className="mono">{n.scheduled_job.cron_expr}</span>
-            </div>
-          </>
+          n.scheduled_job.run_once ? (
+            <Badge tone={n.scheduled_job.last_run_at ? "muted" : "info"} dot={false}>
+              {n.scheduled_job.last_run_at ? "one-time · already ran" : "one-time · pending"}
+            </Badge>
+          ) : (
+            <>
+              <div>{describeCron(n.scheduled_job.cron_expr)}</div>
+              <div className="cell-sub">
+                <span className="mono">{n.scheduled_job.cron_expr}</span>
+              </div>
+            </>
+          )
         ) : (
           <Badge tone="muted" dot={false}>
             not scheduled

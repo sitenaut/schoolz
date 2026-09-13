@@ -162,6 +162,7 @@ class ScheduledJobOut(BaseModel):
     timezone: str
     params: dict = Field(default_factory=dict)
     enabled: bool
+    run_once: bool = False
     last_run_at: datetime | None
     last_status: str | None
     last_error: str | None
@@ -186,6 +187,7 @@ class ScheduledJobCreate(BaseModel):
     timezone: str = "America/New_York"
     params: dict = Field(default_factory=dict)
     enabled: bool = True
+    run_once: bool = False
 
 
 class ScheduledJobUpdate(BaseModel):
@@ -195,6 +197,7 @@ class ScheduledJobUpdate(BaseModel):
     timezone: str | None = None
     params: dict | None = None
     enabled: bool | None = None
+    run_once: bool | None = None
 
 
 class JobKindOut(BaseModel):
@@ -252,6 +255,12 @@ class SmoreNewsletterCreate(BaseModel):
     cron_expr: str = "0 8 * * 1"
     timezone: str = "America/New_York"
     enabled: bool = True
+    # A newsletter whose URL is replaced wholesale every issue (confirmed
+    # common, not just the Cooper/Clara Barton exceptions) doesn't benefit
+    # from a recurring cron - the URL is dead by the next fire. Checking
+    # this scans the given URL exactly once and leaves the job disabled
+    # afterward, rather than scheduling weekly re-checks of a stale link.
+    run_once: bool = False
 
 
 class SmoreNewsletterOut(BaseModel):
@@ -280,6 +289,7 @@ class SmoreNewsletterUpdate(BaseModel):
     enabled: bool | None = None
     cron_expr: str | None = None
     timezone: str | None = None
+    run_once: bool | None = None
 
 
 _SCHOOL_TYPES = ("elementary", "middle", "high", "alternative", "other")

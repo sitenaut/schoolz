@@ -184,6 +184,16 @@ class ScheduledJob(Base):
     last_error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     last_duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # A job that should fire exactly once, then turn itself off - added for
+    # Smore newsletters whose URL is discarded and replaced with a brand
+    # new one every issue (confirmed real for most schools, not just the
+    # documented Cooper/Clara Barton exceptions - e.g. Beck already has two
+    # separate tracked URLs). Re-scanning a dead URL forever on a cron is
+    # pointless for those; the runner (`_finalize`) disables the job the
+    # moment its first run finishes, regardless of outcome. Generic on
+    # `ScheduledJob` rather than Smore-specific since any job kind could
+    # plausibly want a single-shot run.
+    run_once: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

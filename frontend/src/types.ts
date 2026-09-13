@@ -157,6 +157,7 @@ export type ScheduledJob = {
   timezone: string;
   params: Record<string, unknown>;
   enabled: boolean;
+  run_once: boolean;
   last_run_at: string | null;
   last_status: string | null;
   last_error: string | null;

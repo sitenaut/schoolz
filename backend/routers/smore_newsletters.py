@@ -106,6 +106,7 @@ async def create_newsletter(
         timezone=payload.timezone,
         params={"newsletter_id": newsletter.id},
         enabled=payload.enabled,
+        run_once=payload.run_once,
     )
     db.add(job)
     await db.flush()
@@ -113,6 +114,15 @@ async def create_newsletter(
 
     await db.commit()
     await db.refresh(newsletter)
+
+    if payload.run_once and payload.enabled:
+        # Kick it off immediately rather than waiting for the next cron
+        # tick that will never come, since the job disables itself the
+        # moment this run finishes (scheduler/runner.py:_finalize).
+        from scheduler.runner import run_job_now
+
+        run_job_now(job.id)
+
     return await _to_out(db, newsletter)
 
 
@@ -146,6 +156,7 @@ async def update_newsletter(
             timezone=timezone,
             params={"newsletter_id": newsletter.id},
             enabled=True,
+            run_once=payload.run_once or False,
         )
         db.add(job)
         await db.flush()
@@ -159,6 +170,12 @@ async def update_newsletter(
                 job.cron_expr = payload.cron_expr
             if payload.timezone:
                 job.timezone = payload.timezone
+            if payload.run_once is not None:
+                job.run_once = payload.run_once
+    elif payload.run_once is not None and newsletter.scheduled_job_id:
+        job = (await db.execute(select(ScheduledJob).where(ScheduledJob.id == newsletter.scheduled_job_id))).scalar_one_or_none()
+        if job:
+            job.run_once = payload.run_once
 
     await db.commit()
     await db.refresh(newsletter)

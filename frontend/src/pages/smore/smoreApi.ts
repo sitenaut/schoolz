@@ -33,6 +33,7 @@ export type NewsletterPayload = {
   cron_expr: string;
   timezone: string;
   enabled: boolean;
+  run_once?: boolean;
 };
 
 export async function createNewsletter(payload: NewsletterPayload): Promise<SmoreNewsletter> {

@@ -96,7 +96,15 @@ async def _finalize(
             job.last_error = error
             job.last_error_code = error_code
             job.last_duration_ms = duration_ms
-            if job.enabled:
+            if job.run_once:
+                # One-shot job: this was its only run, win or lose - turn
+                # it off rather than leaving it enabled to retry a URL
+                # that's likely already dead (a new Smore issue replaces
+                # its predecessor's URL entirely, it doesn't keep serving
+                # the old one).
+                job.enabled = False
+                job.next_run_at = None
+            elif job.enabled:
                 try:
                     tz = ZoneInfo(job.timezone)
                     job.next_run_at = croniter(job.cron_expr, datetime.now(tz)).get_next(datetime)
