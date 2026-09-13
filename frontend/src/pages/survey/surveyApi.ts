@@ -104,3 +104,22 @@ export async function loadPageVisits(days = 30): Promise<PageVisitReport | null>
   const res = await apiFetch(`/page-views?days=${days}`);
   return res.ok ? res.json() : null;
 }
+
+export type CampaignReport = {
+  total_visits: number;
+  visits_today: number;
+  visits_yesterday: number;
+  by_source: Record<string, number>;
+  chcomms_reads: number;
+  survey_opened: number;
+  survey_completed: number;
+  start_page_visits: number;
+  newsletters_submitted: number;
+  newsletters_pending: number;
+  by_day: { day: string; visits: number }[];
+};
+
+export async function loadCampaignReport(): Promise<CampaignReport | null> {
+  const res = await apiFetch("/page-views/campaign-report");
+  return res.ok ? res.json() : null;
+}

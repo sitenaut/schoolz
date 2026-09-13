@@ -5,9 +5,18 @@ import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings
 import { SectionCard } from "../../components/ui/SectionCard";
 import { useToast } from "../../components/ui/Toast";
 import { listSubmissions } from "../submissions/submissionsApi";
-import { loadPageVisits, loadSurveySummary, type PageVisitReport } from "../survey/surveyApi";
+import { loadCampaignReport, loadPageVisits, loadSurveySummary, type CampaignReport, type PageVisitReport } from "../survey/surveyApi";
 
 type Summary = { total: number; by_status: Record<string, number> };
+
+function FunnelRow({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="funnel-row">
+      <span>{label}</span>
+      <b>{count}</b>
+    </div>
+  );
+}
 
 export function AdminSection() {
   const toast = useToast();
@@ -16,6 +25,7 @@ export function AdminSection() {
   const [pendingSubmissions, setPendingSubmissions] = useState<number | null>(null);
   const [surveyCount, setSurveyCount] = useState<number | null>(null);
   const [visits, setVisits] = useState<PageVisitReport | null>(null);
+  const [campaign, setCampaign] = useState<CampaignReport | null>(null);
 
   useEffect(() => {
     apiFetch("/scheduled-jobs/runs/summary")
@@ -31,6 +41,9 @@ export function AdminSection() {
     loadPageVisits(30)
       .then(setVisits)
       .catch(() => setVisits(null));
+    loadCampaignReport()
+      .then(setCampaign)
+      .catch(() => setCampaign(null));
   }, []);
 
   async function downloadSurveyCsv() {
@@ -73,48 +86,86 @@ export function AdminSection() {
       </SectionCard>
 
       <SectionCard
-        title="Traffic"
-        description="Visits to the public pages over the last 30 days, by where people came from. Counted server-side, so ad blockers don't hide them."
+        title="Campaign"
+        description="How the Facebook post - and everything downstream of it - is doing. Counted server-side, so ad blockers don't hide it."
         icon={<IconTransfer />}
       >
-        {!visits || visits.rows.length === 0 ? (
+        {!campaign || campaign.total_visits === 0 ? (
           <p className="note" style={{ margin: 0 }}>
             No visits recorded yet.
           </p>
         ) : (
           <>
-            <div className="stats" style={{ marginBottom: 12 }}>
-              {["/chcomms", "/survey", "/"].map((path) => (
-                <div className="stat" key={path}>
-                  <span className="stat-k">{path}</span>
-                  <span className="stat-v">{visits.totals_by_path[path] ?? 0}</span>
-                </div>
-              ))}
+            <div className="stats" style={{ marginBottom: 4 }}>
+              <div className="stat">
+                <span className="stat-k">Total visits</span>
+                <span className="stat-v">{campaign.total_visits}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-k">Today</span>
+                <span className="stat-v">{campaign.visits_today}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-k">Yesterday</span>
+                <span className="stat-v">{campaign.visits_yesterday}</span>
+              </div>
               <div className="stat">
                 <span className="stat-k">From Facebook</span>
-                <span className="stat-v">{visits.totals_by_source.facebook ?? 0}</span>
+                <span className="stat-v">{campaign.by_source.facebook ?? 0}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-k">Direct</span>
+                <span className="stat-v">{campaign.by_source.direct ?? 0}</span>
               </div>
             </div>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Page</th>
-                  <th>Source</th>
-                  <th style={{ textAlign: "right" }}>Visits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visits.rows.slice(0, 40).map((r) => (
-                  <tr key={`${r.day}|${r.path}|${r.source}`}>
-                    <td>{r.day}</td>
-                    <td>{r.path}</td>
-                    <td>{r.source}</td>
-                    <td style={{ textAlign: "right" }}>{r.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <div className="section-title">Funnel</div>
+            <div className="funnel">
+              <FunnelRow label="Read the write-up (/chcomms)" count={campaign.chcomms_reads} />
+              <FunnelRow label="Opened the survey" count={campaign.survey_opened} />
+              <FunnelRow label="Completed the survey" count={campaign.survey_completed} />
+              <FunnelRow label="Picked their schools (/start)" count={campaign.start_page_visits} />
+            </div>
+
+            <div className="section-title">Newsletters submitted via Contact</div>
+            <div className="stats" style={{ marginBottom: 4 }}>
+              <div className="stat">
+                <span className="stat-k">Total</span>
+                <span className="stat-v">{campaign.newsletters_submitted}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-k">Pending review</span>
+                <span className={`stat-v ${campaign.newsletters_pending ? "warn" : "ok"}`}>
+                  {campaign.newsletters_pending}
+                </span>
+              </div>
+            </div>
+
+            {visits && visits.rows.length > 0 && (
+              <details style={{ marginTop: 12 }}>
+                <summary>Day-by-day / page / source detail</summary>
+                <table className="table" style={{ marginTop: 8 }}>
+                  <thead>
+                    <tr>
+                      <th>Day</th>
+                      <th>Page</th>
+                      <th>Source</th>
+                      <th style={{ textAlign: "right" }}>Visits</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visits.rows.slice(0, 40).map((r) => (
+                      <tr key={`${r.day}|${r.path}|${r.source}`}>
+                        <td>{r.day}</td>
+                        <td>{r.path}</td>
+                        <td>{r.source}</td>
+                        <td style={{ textAlign: "right" }}>{r.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            )}
           </>
         )}
       </SectionCard>

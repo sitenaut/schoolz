@@ -5,13 +5,13 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_admin
 from database import get_db
-from models import PageVisit, User
+from models import CommunitySubmission, PageVisit, SurveyResponse, User
 
 router = APIRouter(prefix="/page-views", tags=["analytics"])
 
@@ -101,4 +101,76 @@ async def read_page_views(
         rows=[PageVisitRow(day=r.day, path=r.path, source=r.source, count=r.count) for r in rows],
         totals_by_path=dict(sorted(totals_by_path.items(), key=lambda kv: -kv[1])),
         totals_by_source=dict(sorted(totals_by_source.items(), key=lambda kv: -kv[1])),
+    )
+
+
+class DayVisits(BaseModel):
+    day: str
+    visits: int
+
+
+class CampaignReport(BaseModel):
+    """The shape of the report that's actually useful to look at, as
+    opposed to PageVisitReport above (the raw day/path/source rows) - built
+    because this exact set of numbers kept getting hand-queried by SQL
+    every time someone asked "how's the campaign doing" and deserved a
+    real page instead."""
+
+    total_visits: int
+    visits_today: int
+    visits_yesterday: int
+    by_source: dict[str, int]
+    chcomms_reads: int
+    survey_opened: int
+    survey_completed: int
+    start_page_visits: int
+    newsletters_submitted: int
+    newsletters_pending: int
+    by_day: list[DayVisits]
+
+
+async def _path_total(db: AsyncSession, path: str) -> int:
+    result = await db.execute(select(func.coalesce(func.sum(PageVisit.count), 0)).where(PageVisit.path == path))
+    return result.scalar_one()
+
+
+@router.get("/campaign-report", response_model=CampaignReport)
+async def campaign_report(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)) -> CampaignReport:
+    today = _today()
+    yesterday = (datetime.now(_SCHOOL_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    total_visits = (await db.execute(select(func.coalesce(func.sum(PageVisit.count), 0)))).scalar_one()
+
+    by_day_rows = (
+        await db.execute(
+            select(PageVisit.day, func.sum(PageVisit.count)).group_by(PageVisit.day).order_by(PageVisit.day)
+        )
+    ).all()
+    by_day = {day: int(visits) for day, visits in by_day_rows}
+
+    by_source_rows = (
+        await db.execute(select(PageVisit.source, func.sum(PageVisit.count)).group_by(PageVisit.source))
+    ).all()
+    by_source = dict(sorted(((source, int(visits)) for source, visits in by_source_rows), key=lambda kv: -kv[1]))
+
+    survey_completed = (await db.execute(select(func.count()).select_from(SurveyResponse))).scalar_one()
+    newsletters_submitted = (await db.execute(select(func.count()).select_from(CommunitySubmission))).scalar_one()
+    newsletters_pending = (
+        await db.execute(
+            select(func.count()).select_from(CommunitySubmission).where(CommunitySubmission.status == "pending")
+        )
+    ).scalar_one()
+
+    return CampaignReport(
+        total_visits=int(total_visits),
+        visits_today=by_day.get(today, 0),
+        visits_yesterday=by_day.get(yesterday, 0),
+        by_source=by_source,
+        chcomms_reads=await _path_total(db, "/chcomms"),
+        survey_opened=await _path_total(db, "/survey"),
+        survey_completed=survey_completed,
+        start_page_visits=await _path_total(db, "/start"),
+        newsletters_submitted=newsletters_submitted,
+        newsletters_pending=newsletters_pending,
+        by_day=[DayVisits(day=day, visits=visits) for day, visits in sorted(by_day.items())],
     )

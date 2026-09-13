@@ -1200,3 +1200,24 @@ button.link-card:disabled {
     gap: 6px;
   }
 }
+
+/* ---------- campaign funnel (AdminSection) ---------- */
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.funnel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.funnel-row b {
+  font-variant-numeric: tabular-nums;
+}
