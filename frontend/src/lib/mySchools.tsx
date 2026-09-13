@@ -19,12 +19,13 @@ import type { School } from "../types";
  */
 const KEY = "schoolz_my_schools";
 const INACTIVE_KEY = "schoolz_inactive_schools";
-// Default ON: hides generic district noise (Board of Ed meetings, etc.)
+// Default OFF: district items (Board of Ed meetings, etc.) show
 // everywhere dated items show up (Calendar's list, Today's upcoming
-// dates) - not just Calendar, per explicit ask - while status items
-// (closed/half day/delayed) and grading dates always still show
-// regardless (see lib/districtItems.ts:isNoisyDistrictItem). The Calendar
-// page is the only place with a control to turn it off.
+// dates) - not just Calendar - unless a visitor discovers and enables
+// the "exclude district" checkbox themselves; status items (closed/half
+// day/delayed) and grading dates always show regardless either way (see
+// lib/districtItems.ts:isNoisyDistrictItem). The Calendar page is the
+// only place with a control to turn it on.
 const EXCLUDE_DISTRICT_KEY = "schoolz_exclude_district";
 
 function readBool(key: string, fallback: boolean): boolean {
@@ -104,7 +105,7 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
   // from an incomplete `slugs` and permanently miss the account's schools.
   const [accountLoaded, setAccountLoaded] = useState(false);
   const [inactiveSlugs, setInactiveSlugs] = useState<string[]>(readList(INACTIVE_KEY));
-  const [excludeDistrict, setExcludeDistrictState] = useState<boolean>(readBool(EXCLUDE_DISTRICT_KEY, true));
+  const [excludeDistrict, setExcludeDistrictState] = useState<boolean>(readBool(EXCLUDE_DISTRICT_KEY, false));
 
   const setExcludeDistrict = useCallback((value: boolean) => {
     setExcludeDistrictState(value);
