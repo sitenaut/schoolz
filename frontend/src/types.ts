@@ -40,8 +40,11 @@ export type School = {
   delayed_opening_time: string | null;
   athletics_url: string | null;
   logo_url: string | null;
+  bell_periods: Partial<Record<"regular" | "delayed_opening" | "early_dismissal", BellPeriod[]>> | null;
   created_at: string;
 };
+
+export type BellPeriod = { name: string; start: string; end: string };
 
 export type StaffMember = {
   id: string;

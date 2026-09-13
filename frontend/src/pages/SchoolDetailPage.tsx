@@ -5,9 +5,11 @@ import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contactHref } from "../components/today";
 import { IconChevronLeft } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
+import { useAuth } from "../context/AuthContext";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
+import { SchoolHoursModal } from "./schools/SchoolHoursModal";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { SITE_URL } from "../lib/site";
@@ -44,6 +46,8 @@ export function SchoolDetailPage() {
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [transport, setTransport] = useState<SchoolTransportation | null>(null);
   const [missing, setMissing] = useState(false);
+  const [editingHours, setEditingHours] = useState(false);
+  const { user } = useAuth();
   const readyStart = useRef(performance.now());
 
   useEffect(() => {
@@ -163,14 +167,37 @@ export function SchoolDetailPage() {
           <CurrentPeriodChip period={today.current_period} />
           {today.rotation_day && <span className="note">{today.rotation_day} today</span>}
         </div>
-        {s.start_time && s.end_time && (
+        {(s.start_time && s.end_time) || user?.is_admin ? (
           <p className="note" style={{ marginTop: 6 }}>
-            Regular day {s.start_time}–{s.end_time}
-            {s.early_dismissal_time && ` · early dismissal ends ${s.early_dismissal_time}`}
-            {s.delayed_opening_time && ` · delayed opening starts ${s.delayed_opening_time}`}
+            {s.start_time && s.end_time ? (
+              <>
+                Regular day {s.start_time}–{s.end_time}
+                {s.early_dismissal_time && ` · early dismissal ends ${s.early_dismissal_time}`}
+                {s.delayed_opening_time && ` · delayed opening starts ${s.delayed_opening_time}`}
+              </>
+            ) : (
+              "No hours on file yet"
+            )}
+            {user?.is_admin && (
+              <>
+                {" · "}
+                <button type="button" className="linklike" onClick={() => setEditingHours(true)}>
+                  {s.start_time && s.end_time ? "Edit" : "Add hours & bell schedule"}
+                </button>
+              </>
+            )}
           </p>
-        )}
+        ) : null}
       </div>
+
+      {user?.is_admin && (
+        <SchoolHoursModal
+          open={editingHours}
+          onClose={() => setEditingHours(false)}
+          school={s}
+          onSaved={(saved) => setToday((t) => (t ? { ...t, school: saved } : t))}
+        />
+      )}
 
       <div className="sticky-actions">
         <div className="actions bare">
