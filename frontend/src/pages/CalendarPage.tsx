@@ -61,10 +61,10 @@ export function CalendarPage() {
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const isSearching = searchTerm.trim().length > 0;
-  // Off by default to cut clutter - most visits don't care which
-  // elementary "Day N" or high-school block-rotation day it is, only the
-  // schools that DO want it can turn it on here.
-  const [showDayRotation, setShowDayRotation] = useState(false);
+  // On by default - a visitor who doesn't know this toggle exists should
+  // still see rotation days; the checkbox lets someone who doesn't care
+  // hide them instead.
+  const [showDayRotation, setShowDayRotation] = useState(true);
   const [dataReady, setDataReady] = useState(false);
   usePrerenderReady(dataReady);
 
@@ -391,7 +391,7 @@ export function CalendarPage() {
         ) : (
           <div className="list">
             {rows.map(({ key, item, label }) => (
-              <ItemRow item={item} color={item.scope === "school" ? colorForName(item.school_name) : undefined} schoolName={label} key={key} />
+              <ItemRow item={item} color={label ? colorForName(label) : undefined} schoolName={label} key={key} />
             ))}
           </div>
         ))}
