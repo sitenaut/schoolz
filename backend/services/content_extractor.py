@@ -194,6 +194,19 @@ def _prepare_image(data: bytes) -> tuple[bytes, str] | None:
     return out.getvalue(), "image/jpeg"
 
 
+# TODO(image-fetch-forbidden, confirmed 2026-09-13 on Beck's newsletter):
+# every failure in _vision_extract - an image Pillow can't parse, a
+# network timeout, or the source actively blocking the request - collapses
+# to the same "image_unsupported" warning/parse-issue code below. A real
+# case: a Google Sites embed's preview image at lh3.googleusercontent.com
+# returns 403 Forbidden to a plain server-side fetch (confirmed by
+# fetching it directly - Google's CDN is blocking the request itself, not
+# serving a corrupted/unsupported image). Two improvements, low priority
+# since the block's own text_content already carried the real content in
+# this case: (1) a distinct error code (e.g. image_fetch_forbidden) so this
+# doesn't read as a format problem; (2) route the fetch through the
+# scraper's fetch_raw (real browser fingerprint) the way other
+# bot-blocked downloads already do, rather than a bare httpx.get() here.
 async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
     try:
         async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http_client:
