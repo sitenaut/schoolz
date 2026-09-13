@@ -25,13 +25,54 @@ async function authHeader(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Observed live during a real deploy (2026-09-13): the backend is briefly
+// unreachable for ~15-20s while Fly swaps machines - not an error
+// response, a connection failure/timeout, since nothing is listening yet.
+// A visitor mid-browse during that window got a broken page instead of a
+// slower one. One retry after a short pause absorbs exactly that.
+//
+// Retried only for GET (the default method, and every read in this app):
+// a network failure or a 502/503/504 gives no reliable signal about
+// whether the request was actually processed, so retrying anything
+// non-idempotent (a survey POST, a PATCH saving a school's hours) could
+// silently double it. Reads have no such risk.
+const RETRY_DELAY_MS = 2000;
+
+function isRetryableStatus(status: number): boolean {
+  return status === 502 || status === 503 || status === 504;
+}
+
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = {
     "Content-Type": "application/json",
     ...(await authHeader()),
     ...(init.headers ?? {}),
   };
-  return fetch(`${API_URL}${path}`, { ...init, headers });
+  const method = (init.method ?? "GET").toUpperCase();
+  const url = `${API_URL}${path}`;
+
+  if (method !== "GET") {
+    return fetch(url, { ...init, headers });
+  }
+
+  try {
+    const res = await fetch(url, { ...init, headers });
+    if (isRetryableStatus(res.status)) {
+      await sleep(RETRY_DELAY_MS);
+      return fetch(url, { ...init, headers });
+    }
+    return res;
+  } catch {
+    // A thrown error (not an HTTP error response) means the connection
+    // itself failed - exactly what a mid-deploy visitor sees. Retry once;
+    // if it fails again, let the caller's existing error handling take over.
+    await sleep(RETRY_DELAY_MS);
+    return fetch(url, { ...init, headers });
+  }
 }
 
 /** Download a file from an authenticated endpoint.
