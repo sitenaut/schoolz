@@ -33,3 +33,4 @@ anthropic==0.34.2
 icalendar==6.1.0
 pdfplumber==0.11.4
 Pillow==12.3.0
+mcp==1.9.4
