@@ -19,9 +19,27 @@ React (Vite/TS) frontend  →  FastAPI backend  →  Postgres
 - **`frontend/`** — Vite + React + TypeScript. No component framework beyond React itself; a small hand-rolled design system in `frontend/src/styles.css`.
 - **`scheduler/`** (inside `backend/`) — a separate long-running process, not the API. Every recurring data source (school websites, Smore newsletters, the district calendar feed, lunch menus, transportation pages, etc.) is a `ScheduledJob` row with a cron expression; the scheduler reconciles against that table every 30 seconds, so adding or editing a job needs no restart. `GET /scheduled-jobs` (admin) and the `/jobs` page show every job's schedule, last result, and next run.
 - **`scraper/`** — a standalone, deliberately generic Playwright service (`/fetch-html`, `/fetch-raw`). All site-specific parsing lives in `backend/services/*.py`, not here, so the scraper itself is reusable for any district's site.
+- **`backend/mcp_server.py`** — an [MCP](https://modelcontextprotocol.io) server exposing schoolz's public data as tools for Claude/Gemini/ChatGPT, mounted directly into this same app at `/mcp`. See "Using schoolz from an AI assistant" below.
 - Two environments only: **local** (Docker Compose, local Postgres, local auth) and **prod** (Fly.io, managed Postgres, Supabase auth). No dev/stage tier.
 
 For the full data model and the story of how each data source was found and parsed (Finalsite site quirks, Smore's block structure, the district's ICS calendar feed, bell schedules, transportation, etc.), read `CLAUDE.md` at the repo root — it's the running log of everything this project has learned about its actual data sources, kept up to date as the project grows.
+
+## Using schoolz from an AI assistant
+
+schoolz's public data (schools, districts, the calendar, tracked Smore newsletters) is exposed as [MCP](https://modelcontextprotocol.io) tools at a single URL - no install, no API key:
+
+```
+https://schoolz-api.sitenaut.com/mcp
+```
+
+Add it as a remote MCP server / connector in Claude, Gemini, or ChatGPT and ask something like *"what's on the calendar for Bret Harte Elementary this week"* or *"does Chesterbrook have a lunch menu posted."* Exactly what a browser sees at [schoolz.sitenaut.com](https://schoolz.sitenaut.com) - nothing more, no login-gated data.
+
+Two things worth knowing about how it behaves:
+
+- **When something isn't tracked yet, the assistant is told to say so and suggest a fix** - ask the school to publish it, or hand schoolz a link to something that already covers it (a newsletter, a handbook, a flier). That's not a canned response; it's literally in the tool's result, aimed at the assistant relaying it to you.
+- **There's a tool for submitting that link on the spot** (`submit_community_content`) - no login needed, but nothing goes live automatically; a schoolz admin reviews every submission first, same as filling out [schoolz.sitenaut.com/contact](https://schoolz.sitenaut.com/contact) by hand.
+
+It's a thin, read-mostly layer over the same public API the website calls - see `backend/mcp_server.py` for the full tool list and how the advocacy-nudge wrapping works. Running it locally is just running the backend (`docker compose up backend`) and pointing your MCP client at `http://localhost:8000/mcp` instead.
 
 ## Running locally
 

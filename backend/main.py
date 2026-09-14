@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from mcp.server.fastmcp import FastMCP
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
@@ -63,11 +64,23 @@ _first_request_seen = False
 _process_started_at = time.monotonic()
 
 
+# Set once app/mcp_server are built below - referenced (not called) here,
+# so definition order is fine as long as it's set before the app actually
+# starts serving (lifespan runs long after module-level code finishes).
+_mcp: FastMCP | None = None
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     prewarm_supabase_jwks()
     await seed_admin()
-    yield
+    assert _mcp is not None, "mcp_server must be mounted before the app starts"
+    # The MCP session manager needs its own lifespan running for the
+    # Streamable HTTP transport to work - mounting the sub-app alone
+    # doesn't trigger it, since Starlette doesn't propagate lifespan into
+    # mounted sub-apps automatically.
+    async with _mcp.session_manager.run():
+        yield
     telemetry.shutdown_telemetry()
 
 
@@ -147,3 +160,8 @@ app.include_router(community_submissions_router.router)
 app.include_router(seo_router.router)
 app.include_router(survey_router.router)
 app.include_router(analytics_router.router)
+
+from mcp_server import build_mcp_server  # noqa: E402
+
+_mcp = build_mcp_server(app)
+app.mount("/mcp", _mcp.streamable_http_app())
