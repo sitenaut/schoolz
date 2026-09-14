@@ -129,6 +129,17 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     back onto that same `app` - avoiding a circular import between the two
     modules.
     """
+    # streamable_http_path="/" so the canonical mounted URL is exactly
+    # "/mcp" (see main.py's app.mount("/mcp", ...)) rather than "/mcp/mcp".
+    # A bare POST to "/mcp" (no trailing slash) still gets a 307 to
+    # "/mcp/" - that's Starlette's Mount always requiring a trailing slash
+    # to match at all, at every nesting level, not something fixable by
+    # how this is mounted. What *was* a real bug: in prod, behind Fly's
+    # TLS-terminating edge, that redirect's Location header came back as
+    # http:// instead of https://, which made curl (correctly) refuse to
+    # resend the POST body across the downgrade. Fixed at the actual
+    # source - uvicorn needs --proxy-headers to trust Fly's
+    # X-Forwarded-Proto - see backend/fly.toml.
     mcp = FastMCP("schoolz-public", stateless_http=True, streamable_http_path="/")
 
     # In-process only - no real socket, no DNS, no dependency on this

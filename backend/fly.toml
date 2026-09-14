@@ -32,7 +32,18 @@ primary_region = "ewr"
   # routing the prerender proxy through schoolz-api's public hostname
   # (frontend/fly.toml's BACKEND_INTERNAL_URL) rather than 6PN, so this
   # process never needs to accept private-network traffic at all.
-  app = "uvicorn main:app --host 0.0.0.0 --port 8000"
+  # --proxy-headers + --forwarded-allow-ips='*' (added 2026-09-14): Fly
+  # terminates TLS at its edge and forwards plain HTTP to this process, so
+  # without this uvicorn believes every request arrived over http and
+  # self-generates redirect Location headers as http:// even for a
+  # request that came in over https. Confirmed real: a 307 for a bare
+  # POST /mcp (no trailing slash - see mcp_server.py) came back as
+  # `Location: http://schoolz-api.sitenaut.com/mcp/`, and curl - by
+  # design - refuses to resend a POST body across an https-to-http
+  # downgrade, so the redirect silently arrived at the server with an
+  # empty body. Trusting '*' is fine here since fly-proxy is the only
+  # thing that can reach this process's public port at all.
+  app = "uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
   scheduler = "python -m scheduler.entrypoint"
 
 [http_service]
