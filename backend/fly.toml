@@ -7,6 +7,16 @@ primary_region = "ewr"
   APP_ENV = "prod"
   AUTH_MODE = "supabase"
   PORT = "8000"
+  # Emit the stable HTTP semantic conventions
+  # (http_server_request_duration_seconds, labelled http_route) instead of
+  # the old ones (http_server_duration_milliseconds, labelled http_target).
+  # Every dashboard in grafana/ and the schoolz-api-5xx / schoolz-api-latency
+  # alert rules were already written against the stable names, so without
+  # this they match nothing at all - confirmed live on 2026-09-15, where
+  # prod was emitting only the old names and both alerts had therefore never
+  # been able to fire. http_route is also the templated path, so this keeps
+  # series cardinality bounded by route rather than by school slug.
+  OTEL_SEMCONV_STABILITY_OPT_IN = "http"
   PUBLIC_WEB_URL = "https://schoolz.sitenaut.com"
   PUBLIC_API_URL = "https://schoolz-api.sitenaut.com"
   # No FRONTEND_INTERNAL_URL here on purpose: services/prerender.py falls

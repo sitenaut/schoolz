@@ -447,6 +447,132 @@
               }
             }
           ]
+        },
+        {
+          "uid": "schoolz-auth-stalled",
+          "title": "schoolz: a visitor's auth check never resolved",
+          "condition": "C",
+          "for": "0m",
+          "labels": {
+            "app": "schoolz",
+            "severity": "critical"
+          },
+          "annotations": {
+            "summary": "AuthContext gave up waiting on the auth check and showed the reload fallback. This is the failure that left logged-in mobile visitors stuck on 'Loading...' until they reloaded by hand - see the onAuthStateChange comment in frontend/src/context/AuthContext.tsx. Any occurrence is worth looking at; it should be zero."
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-alerts",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_LOGS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum(count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"auth_timeout\" [30m]))",
+                "queryType": "instant",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-auth-slow",
+          "title": "schoolz: auth check p95 above 5s",
+          "condition": "C",
+          "for": "15m",
+          "labels": {
+            "app": "schoolz",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "The client-side auth check is taking over 5s at p95. Short of the outright stall schoolz-auth-stalled catches, but the same failure mode degrading: every API call waits behind the Supabase auth lock, so this shows up to visitors as a slow or blank logged-in page."
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-alerts",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_LOGS}",
+              "model": {
+                "refId": "A",
+                "expr": "quantile_over_time(0.95, {app_name=\"schoolz-faro\"} | logfmt | kind=\"measurement\" | type=\"auth_ready\" | unwrap value_ms [30m])",
+                "queryType": "instant",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        5000
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         }
       ]
     }

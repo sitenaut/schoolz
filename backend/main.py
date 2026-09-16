@@ -128,6 +128,12 @@ async def log_requests(request: Request, call_next):
             extra={"uptime_ms": round((time.monotonic() - _process_started_at) * 1000, 1)},
         )
 
+    # user_id/authed are set by the auth dependencies in auth.py when a
+    # request actually resolved a user. Without them there was no way to
+    # tell an authenticated request from an anonymous one in the logs -
+    # which is the first question worth asking about a bug a visitor only
+    # hits while logged in (see the 2026-09-15 auth stall).
+    user_id = getattr(request.state, "user_id", None)
     logger.info(
         "http_request",
         extra={
@@ -136,6 +142,8 @@ async def log_requests(request: Request, call_next):
             "route": route_path,
             "status": response.status_code,
             "duration_ms": round(duration * 1000, 1),
+            "user_id": user_id,
+            "authed": user_id is not None,
         },
     )
     return response

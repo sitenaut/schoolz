@@ -15,10 +15,43 @@ export function getLocalToken(): string | null {
   return localStorage.getItem(LOCAL_TOKEN_KEY);
 }
 
+// The Supabase access token, kept here so authHeader() doesn't have to ask
+// supabase-js for it on every single request.
+//
+// `undefined` means "not known yet" (nothing has told us about a session),
+// `null` means "known: no session". The difference matters - only the
+// first case is worth a getSession() call.
+//
+// Why cache at all: supabase-js serialises auth operations behind one
+// internal lock, so a getSession() per request makes every in-flight
+// request queue behind whatever else is holding it. Confirmed in prod RUM
+// (2026-09-15): batches of /schools/*/today fetches stalling 25-42s and
+// unblocking on the same millisecond, while the backend served each in
+// under a second. AuthContext keeps this fresh from onAuthStateChange,
+// which fires on sign-in, sign-out and every token refresh.
+let cachedAccessToken: string | null | undefined = undefined;
+
+export function setCachedAccessToken(token: string | null): void {
+  cachedAccessToken = token;
+}
+
+/** Re-reads the session from supabase-js and updates the cache. Safe to
+ * call from ordinary code, but never from inside an onAuthStateChange
+ * callback - see the comment on that subscription in AuthContext. */
+async function refreshCachedToken(): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    cachedAccessToken = data.session?.access_token ?? null;
+    return cachedAccessToken;
+  } catch {
+    return null;
+  }
+}
+
 async function authHeader(): Promise<Record<string, string>> {
   if (IS_SUPABASE_AUTH && supabase) {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = cachedAccessToken === undefined ? await refreshCachedToken() : cachedAccessToken;
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
   const token = localStorage.getItem(LOCAL_TOKEN_KEY);
@@ -47,20 +80,35 @@ function isRetryableStatus(status: number): boolean {
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  // Kept separate from `headers` because init.headers widens the spread to
+  // a HeadersInit union, which isn't indexable by name.
+  const auth = await authHeader();
   const headers = {
     "Content-Type": "application/json",
-    ...(await authHeader()),
+    ...auth,
     ...(init.headers ?? {}),
   };
   const method = (init.method ?? "GET").toUpperCase();
   const url = `${API_URL}${path}`;
 
+  // A cached token can go stale where a per-request getSession() couldn't
+  // (a tab asleep past the token's expiry, waking before supabase-js has
+  // refreshed it). A 401 says the request was rejected before it was
+  // processed, so re-reading the session and replaying it once is safe for
+  // any method - unlike the 502/network retry below, which is GET-only.
+  const retryOn401 = async (res: Response): Promise<Response> => {
+    if (res.status !== 401 || !IS_SUPABASE_AUTH || !supabase) return res;
+    const fresh = await refreshCachedToken();
+    if (!fresh || auth.Authorization === `Bearer ${fresh}`) return res;
+    return fetch(url, { ...init, headers: { ...headers, Authorization: `Bearer ${fresh}` } });
+  };
+
   if (method !== "GET") {
-    return fetch(url, { ...init, headers });
+    return retryOn401(await fetch(url, { ...init, headers }));
   }
 
   try {
-    const res = await fetch(url, { ...init, headers });
+    const res = await retryOn401(await fetch(url, { ...init, headers }));
     if (isRetryableStatus(res.status)) {
       await sleep(RETRY_DELAY_MS);
       return fetch(url, { ...init, headers });

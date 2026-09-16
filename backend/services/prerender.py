@@ -9,13 +9,30 @@ handful of crawler hits, not user traffic, and a cold cache after a deploy
 just means the next crawl of each path pays one render.
 """
 
+import asyncio
+import logging
 import os
 import time
 
 import scraper_client
 
+logger = logging.getLogger(__name__)
+
 _TTL_SECONDS = 6 * 3600
 _CACHE: dict[str, tuple[float, str]] = {}
+
+# One render per path at a time. Crawlers hit the same URL from several
+# connections at once, and scraper_client only allows 3 in-flight requests
+# process-wide - without this, N concurrent crawls of one page each queued
+# a full Playwright render and starved the real scan jobs sharing that
+# budget. Measured in prod (2026-09-12..15): /prerender p95 4.6s, max 48.6s,
+# against <1s for every user-facing route.
+_INFLIGHT: dict[str, "asyncio.Task[str]"] = {}
+
+# The scraper applies this to page.goto AND to wait_for_selector, and
+# scraper_client budgets 2x + 10s on top - so 20s here meant a single
+# request could hold a slot for ~50s, which is what the 48.6s max was.
+_RENDER_TIMEOUT_MS = 10_000
 
 # Only these routes carry indexable content - restricts what an arbitrary
 # caller can force this process to spend a Playwright render on (this
@@ -37,11 +54,30 @@ async def get_prerendered_html(path: str) -> str:
     if not _is_allowed(path):
         raise PathNotAllowed(path)
 
-    now = time.monotonic()
     cached = _CACHE.get(path)
-    if cached and cached[0] > now:
+    if cached and cached[0] > time.monotonic():
         return cached[1]
 
+    task = _INFLIGHT.get(path)
+    if task is None:
+        task = asyncio.create_task(_render(path))
+        _INFLIGHT[path] = task
+        task.add_done_callback(lambda _t, p=path: _INFLIGHT.pop(p, None))
+
+    try:
+        # Shielded so one caller giving up doesn't cancel the render every
+        # other caller is waiting on.
+        return await asyncio.shield(task)
+    except Exception:
+        # An expired entry is kept rather than evicted precisely for this:
+        # six-hour-old real content beats an error page for a crawler.
+        if cached:
+            logger.warning("prerender_failed_serving_stale", extra={"path": path})
+            return cached[1]
+        raise
+
+
+async def _render(path: str) -> str:
     # Deliberately NOT PUBLIC_WEB_URL: that's the address a human's own
     # browser can reach (http://localhost:5173 locally, since it's also
     # used in things like invite emails), but the scraper container
@@ -58,8 +94,8 @@ async def get_prerendered_html(path: str) -> str:
         # data fetch has resolved - waiting on React having merely mounted
         # (e.g. any child of #root) would still capture "Loading…".
         wait_for_selector='body[data-prerender-ready="true"]',
-        timeout_ms=20_000,
+        timeout_ms=_RENDER_TIMEOUT_MS,
     )
     html = result["html"]
-    _CACHE[path] = (now + _TTL_SECONDS, html)
+    _CACHE[path] = (time.monotonic() + _TTL_SECONDS, html)
     return html

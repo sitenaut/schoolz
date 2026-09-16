@@ -101,12 +101,24 @@ with an `http_route` label, not the old `http_requests_total`/`path`).
 
 Prod (Grafana Cloud, stack `1595929`, shared with billz — tagged
 `service.namespace=schoolz` so nothing collides with billz's `app="billz-api"`
-logs): OTLP endpoint + schoolz-only write token already provisioned, live in
-`env/secrets.prod.env` (`OTEL_EXPORTER_OTLP_ENDPOINT`, `SCHOOLZ_OTLP_TOKEN`) —
-**not yet pushed to Fly as `fly secrets set`**, that's a pending prod action.
-Frontend RUM (Faro), the `grafana_ro` read-only Postgres datasource, and
-Grafana dashboards/alerts are also not done yet — see
-`docs/OBSERVABILITY_PLAN.md` for the phase-by-phase remainder.
+logs): **all live as of the 2026-09-12 launch** —
+`OTEL_EXPORTER_OTLP_ENDPOINT`/`OTEL_EXPORTER_OTLP_HEADERS` are Fly secrets on
+`schoolz-api`, `FARO_COLLECTOR_URL` is one on `schoolz-web`, the three
+dashboards (`schoolz-api`, `schoolz-scans`, `schoolz-ux`) and the alert rules
+in `grafana/cloud-dashboards/` are provisioned, and a `schoolz-prod-db`
+Postgres datasource is wired for the SQL-backed panels.
+
+**Metric-name trap, cost real time on 2026-09-15**: prod was emitting the
+*old* OTel HTTP semantic conventions (`http_server_duration_milliseconds_*`
+labelled `http_target`) while every dashboard panel and the
+`schoolz-api-5xx`/`schoolz-api-latency` alert rules were written against the
+stable ones (`http_server_request_duration_seconds_*` labelled `http_route`).
+Nothing errored — the panels were simply empty and those two alerts could
+never fire, unnoticed for four days. Fixed by setting
+`OTEL_SEMCONV_STABILITY_OPT_IN = "http"` in `backend/fly.toml`. If a panel or
+alert ever goes blank, check which spelling prod is actually emitting
+(`/api/v1/label/__name__/values?match[]={service_namespace="schoolz"}`) before
+assuming the query is wrong.
 
 ## Default admin user (local only)
 
@@ -333,11 +345,20 @@ view names are route templates, not raw URLs.
   Wired so far: `page_view` (route template + `from_route` + `school_slug`,
   `AppShell.tsx`), session attributes (`logged_in`/`is_admin`/`schools_count`
   via `faro.api.setSession`), `today_ready`/`school_page_ready` measurements,
-  `school_filter_toggle` (ribbon chips), `action` (absence button only so
-  far). **Not yet wired**: `calendar_ready`, `lunch_ready`, `calendar_search`,
-  `schools_picked`, and `action` for nurse/counselor/bus/late-bus/add-to-
-  calendar/document-open/sports-link - same `trackEvent`/`trackMeasurement`
-  pattern, just not done yet.
+  `school_filter_toggle` (ribbon chips), `calendar_ready`, `lunch_ready`,
+  `calendar_search`, `schools_picked`, `cta_click`, and `auth_ready`/
+  `auth_timeout` (added 2026-09-15, see the auth-stall section below).
+  **Still not wired**: `action` beyond the absence button - nurse/counselor/
+  bus/late-bus/add-to-calendar/document-open/sports-link, same
+  `trackEvent` pattern, just not done yet.
+- **Session attributes must survive an unresolved auth check.** `logged_in`
+  alone was actively misleading: `AppShell` only sets it once auth resolves,
+  so during the one failure worth catching - a check that never resolves -
+  every signal was tagged `logged_in=false`. Confirmed on the 2026-09-15
+  stalls: all 8 RUM exceptions reported `false` while those same session IDs
+  later reported `true`. `auth_state` (`pending`/`authenticated`/`anonymous`/
+  `timed_out`) is the honest one, and `initTelemetry` stamps `pending` at
+  init so nothing reports untagged.
 - **Same-origin proxy** (`frontend/nginx.conf.template`, processed by
   nginx:alpine's built-in envsubst-on-templates startup step - hence
   `.template`, not a plain `.conf`, and `COPY`'d to
@@ -357,9 +378,9 @@ view names are route templates, not raw URLs.
   `/rum/collect` through the proxy reaches the actual Grafana collector
   (400 back - the collector rejecting a test payload, not a connection
   failure).
-- **Not yet done**: `FARO_COLLECTOR_URL` hasn't been pushed to
-  `schoolz-web` via `fly secrets set`, and this code hasn't been deployed -
-  RUM is fully wired but not live in prod yet. `frontend/src/pages/PrivacyPage.tsx`
+- **Live since the 2026-09-12 launch**: `FARO_COLLECTOR_URL` is set on
+  `schoolz-web` and RUM data is flowing (219 distinct sessions in the first
+  four days). `frontend/src/pages/PrivacyPage.tsx`
   updated (owner-approved wording) to disclose the anonymous RUM data
   collection; a consent banner was deliberately *not* added (RUM is
   anonymous/functional, not identifying - same "strictly necessary"
