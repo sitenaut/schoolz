@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 from models import SchoolContentItem
 from services.content_extractor import (
     _add_years,
+    _backfill_from_duplicate,
     _correct_stale_year,
     _infer_lunch_menu_start_date,
     _may_supersede,
@@ -214,3 +215,43 @@ def test_items_without_dates_may_still_supersede():
     old = _item("Nut-Free Policy", None)
     new = _item("Nut-Free Policy", None)
     assert _may_supersede(old, new, _REF) is True
+
+
+# Dedup is first-wins, and which block gets extracted first is arbitrary.
+# Real case: East announced "Back to School Night" in four per-cohort
+# "important dates" lists carrying no description at all, plus a dedicated
+# flyer block with the full paragraph - and the flyer was extracted last, so
+# a bare skip kept an empty row and threw the only useful copy away.
+
+
+def test_an_empty_description_is_filled_from_the_duplicate():
+    existing = SchoolContentItem(title="Back to School Night", description=None)
+    filled = _backfill_from_duplicate(existing, {"description": "Begins promptly at 7:00 PM."}, None)
+    assert filled is True
+    assert existing.description == "Begins promptly at 7:00 PM."
+
+
+def test_an_existing_description_is_never_overwritten():
+    # "Longer" is not reliably "better", so a populated field is left alone.
+    existing = SchoolContentItem(title="Picture Day", description="Grades 10, 11, 9 and Faculty/Staff.")
+    changed = _backfill_from_duplicate(existing, {"description": "Sophomores, Juniors, and Freshmen."}, None)
+    assert changed is False
+    assert existing.description == "Grades 10, 11, 9 and Faculty/Staff."
+
+
+def test_a_missing_link_is_filled_from_the_duplicate():
+    existing = SchoolContentItem(title="Back to School Night", description="x", link_url=None)
+    assert _backfill_from_duplicate(existing, {"description": "x"}, "https://example.org/bts") is True
+    assert existing.link_url == "https://example.org/bts"
+
+
+def test_a_whitespace_only_description_counts_as_empty():
+    existing = SchoolContentItem(title="Picture Day", description="   ")
+    assert _backfill_from_duplicate(existing, {"description": "CADY is the new photographer."}, None) is True
+    assert existing.description == "CADY is the new photographer."
+
+
+def test_nothing_to_backfill_reports_no_change():
+    existing = SchoolContentItem(title="Picture Day", description="Already here.", link_url="https://e.org")
+    assert _backfill_from_duplicate(existing, {"description": "Other wording."}, "https://other.org") is False
+    assert existing.link_url == "https://e.org"
