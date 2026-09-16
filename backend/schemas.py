@@ -441,10 +441,20 @@ class StaffMemberOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DirectorySchoolOut(BaseModel):
+    id: str
+    slug: str
+    name: str
+    short_name: str | None
+    school_type: str | None
+
+
 class DirectoryStaffOut(BaseModel):
-    """A staff row plus the school context the district-wide directory
-    needs - the same person listed under /schools/{id}/staff, but a result
-    there is already scoped to one school while a result here isn't."""
+    """One *person* in the district-wide directory, with every school they
+    appear at. Deliberately not one row per staff_members row: the same
+    human is stored once per school (see routers/directory.py), so a
+    per-row result listed the district's preschool nurse ten times.
+    `/schools/{id}/staff` is still per-school and unchanged."""
 
     id: str
     full_name: str
@@ -454,11 +464,12 @@ class DirectoryStaffOut(BaseModel):
     email: str | None
     phone: str | None
     category: str
-    school_id: str
-    school_slug: str
-    school_name: str
-    school_short_name: str | None
-    school_type: str | None
+    schools: list[DirectorySchoolOut]
+    # Precomputed server-side so the rule lives in one testable place:
+    # "District-wide · 10 preschools" when they cover a whole school type,
+    # otherwise "Bret Harte" or "Bret Harte +2".
+    affiliation: str
+    is_district_wide: bool
 
 
 class DirectoryFacetOut(BaseModel):

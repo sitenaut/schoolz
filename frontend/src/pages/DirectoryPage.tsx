@@ -230,11 +230,16 @@ export function DirectoryPage() {
           </div>
           <div className={`dir-list ${loading ? "busy" : ""}`}>
             {data!.items.map((m) => {
-              const s = schoolsBySlug.get(m.school_slug);
+              const only = m.schools.length === 1 ? m.schools[0] : null;
+              // A school logo only stands for someone who works at exactly
+              // one school; for anyone else (the district preschool nurse,
+              // an itinerant ESL teacher) it would pick one school's crest
+              // arbitrarily and imply the wrong thing, so they get initials.
+              const logo = only ? schoolsBySlug.get(only.slug)?.logo_url : undefined;
               return (
                 <div className="dir-row" key={m.id}>
-                  {s?.logo_url ? (
-                    <img className={logoClass("dir-avatar", m.school_slug)} src={s.logo_url} alt="" />
+                  {logo && only ? (
+                    <img className={logoClass("dir-avatar", only.slug)} src={logo} alt="" />
                   ) : (
                     <span className="dir-avatar initials" aria-hidden="true">
                       {initials(m.full_name)}
@@ -245,9 +250,21 @@ export function DirectoryPage() {
                     {(m.title || m.department) && (
                       <div className="dir-title">{[m.title, m.department].filter(Boolean).join(" · ")}</div>
                     )}
-                    <Link className="dir-school" to={`/schools/${m.school_slug}`}>
-                      {m.school_short_name || m.school_name}
-                    </Link>
+                    {only ? (
+                      <Link className="dir-school" to={`/schools/${only.slug}`}>
+                        {only.short_name || only.name}
+                      </Link>
+                    ) : (
+                      // Every school named in the tooltip - the label only
+                      // has room for a count, but "which three?" is exactly
+                      // what someone looking at an itinerant teacher asks.
+                      <span
+                        className={`dir-school multi ${m.is_district_wide ? "district" : ""}`}
+                        title={m.schools.map((s) => s.short_name || s.name).join(", ")}
+                      >
+                        {m.affiliation}
+                      </span>
+                    )}
                   </div>
                   <div className="dir-actions">
                     {m.email && (

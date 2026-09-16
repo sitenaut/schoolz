@@ -56,16 +56,23 @@ export type StaffMember = {
   phone: string | null;
 };
 
-/** A staff row from the district-wide directory (GET /directory/staff) -
- * StaffMember plus the school context an unscoped result needs, and the
- * coarse `category` the backend derives from the free-text title. */
+export type DirectorySchool = {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string | null;
+  school_type: string | null;
+};
+
+/** One *person* from the district-wide directory (GET /directory/staff).
+ * The backend collapses the per-school staff rows by email, so this is a
+ * human with every school they appear at - not one row per school. */
 export type DirectoryStaff = StaffMember & {
   category: string;
-  school_id: string;
-  school_slug: string;
-  school_name: string;
-  school_short_name: string | null;
-  school_type: string | null;
+  schools: DirectorySchool[];
+  /** "District-wide · 10 preschools", "Bret Harte", "Bret Harte +2". */
+  affiliation: string;
+  is_district_wide: boolean;
 };
 
 export type DirectoryFacet = { key: string; label: string; count: number };
