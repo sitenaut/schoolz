@@ -56,6 +56,28 @@ export type StaffMember = {
   phone: string | null;
 };
 
+/** A staff row from the district-wide directory (GET /directory/staff) -
+ * StaffMember plus the school context an unscoped result needs, and the
+ * coarse `category` the backend derives from the free-text title. */
+export type DirectoryStaff = StaffMember & {
+  category: string;
+  school_id: string;
+  school_slug: string;
+  school_name: string;
+  school_short_name: string | null;
+  school_type: string | null;
+};
+
+export type DirectoryFacet = { key: string; label: string; count: number };
+
+export type DirectoryPage = {
+  total: number;
+  limit: number;
+  offset: number;
+  items: DirectoryStaff[];
+  categories: DirectoryFacet[];
+};
+
 export type SchoolDocument = {
   id: string;
   doc_type: string;

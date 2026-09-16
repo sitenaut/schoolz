@@ -17,6 +17,7 @@ import { InviteAcceptPage } from "./pages/InviteAcceptPage";
 import { GmailPage } from "./pages/GmailPage";
 import { SmoreNewslettersPage } from "./pages/SmoreNewslettersPage";
 import { SchoolsPage } from "./pages/SchoolsPage";
+import { DirectoryPage } from "./pages/DirectoryPage";
 import { SchoolDetailPage } from "./pages/SchoolDetailPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
@@ -128,6 +129,7 @@ function Routed() {
         <Route path="/jobs" element={<Navigate to="/admin/scans" replace />} />
         <Route path="/schools" element={<SchoolsPage />} />
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
+        <Route path="/directory" element={<DirectoryPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/chcomms" element={<ChCommsPage />} />

@@ -24,6 +24,7 @@ from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
+from routers import directory as directory_router  # noqa: E402
 from routers import districts as districts_router  # noqa: E402
 from routers import email_scanners as email_scanners_router  # noqa: E402
 from routers import gmail as gmail_router  # noqa: E402
@@ -163,6 +164,7 @@ app.include_router(school_emails_router.router)
 app.include_router(smore_newsletters_router.router)
 app.include_router(schools_router.router)
 app.include_router(districts_router.router)
+app.include_router(directory_router.router)
 app.include_router(calendar_router.router)
 app.include_router(community_submissions_router.router)
 app.include_router(seo_router.router)

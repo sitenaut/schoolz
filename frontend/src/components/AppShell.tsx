@@ -5,7 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
-import { IconCalendar, IconHome, IconLunch, IconSchool } from "./icons";
+import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool } from "./icons";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -29,7 +29,10 @@ function routeTemplate(pathname: string): string {
 // pages (they aren't scoped to "my schools" at all), nor on the contact
 // form, the survey, or the /chcomms write-up (none are school-specific) -
 // hidden there rather than just visually unused clutter.
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms"];
+// /directory is school-scoped, but through its own in-page school picker
+// (it searches the whole district by default, which the ribbon filter
+// would silently contradict).
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms", "/directory"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
@@ -167,6 +170,10 @@ export function AppShell() {
         <NavLink to="/schools">
           <IconSchool />
           Schools
+        </NavLink>
+        <NavLink to="/directory">
+          <IconDirectory />
+          Directory
         </NavLink>
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>

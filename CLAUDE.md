@@ -636,3 +636,43 @@ don't share one regex set.
   also aren't retroactively cleaned up by it (new extractions only) - a
   one-time cleanup pass would be needed to collapse rows already sitting
   in the database.
+
+
+## District staff directory (added 2026-09-16)
+
+`/directory` (`frontend/src/pages/DirectoryPage.tsx`, `backend/routers/directory.py`)
+lists every staff member in the district in one searchable, filterable
+list. The per-school roster (the "Full staff directory" accordion on a
+school page) only helps someone who already knows *which* school the
+person is at, but the real question - "who is the middle-school nurse",
+"what's Mr Whoever's email" - usually has the school as the unknown. So
+this searches all ~1900 people at once and treats the school as a filter
+rather than the entry point. Public, like every other read in this app.
+
+- **Search/filter/paging are server-side.** The full list is a few hundred
+  KB of JSON; handing that to a phone so the browser can filter it isn't
+  worth it. `q` ANDs whitespace-separated tokens across
+  name/title/department/email/school, so "beck math" narrows instead of
+  widening the way a naive OR would. `school_id` accepts an id **or** a
+  slug, the same courtesy `routers/schools.py:resolve_school` gives.
+- **The filter chips come from a second, coarser keyword map**
+  (`services/staff_roles.py:classify_directory_category`). `classify_role`
+  is deliberately narrow - it answers "who do I contact about my kid" and
+  tags under 10% of rows (187 of 1880), which is correct for the contact
+  grid and useless as a directory filter. Order matters and isn't
+  alphabetical: "Athletic Director" is athletics before it is office,
+  "Math Coach" is support while "Speech and Debate Coach" is a teacher's
+  title, and "Administrative Assistant" is office before the aide
+  patterns claim it.
+- **The category is derived at query time, not stored** like `role` is.
+  The keyword list gets tuned against real titles, and a column would
+  need a migration plus a prod backfill (or a re-scan of every roster) on
+  every tweak. ~1900 rows is small enough that one scoped query plus
+  classification in Python is cheaper. Revisit past ~10k rows.
+- **Facet counts are computed before the category filter is applied**, so
+  a chip always says what picking it would actually give you, and picking
+  one never collapses the others to zero with no way back.
+- `/directory` must stay in **both** `routers/seo.py:_STATIC_PATHS` and
+  `services/prerender.py:_ALLOWED_PATHS` - it's in the sitemap, so
+  crawlers request it, and a path missing from the prerender allowlist
+  raises `PathNotAllowed`.
