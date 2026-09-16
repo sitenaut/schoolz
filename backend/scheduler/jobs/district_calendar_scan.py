@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import District, SchoolContentItem
 from scheduler.registry import register_job
 from services.district_calendar import fetch_district_calendar
+from services.school_status import is_status_title, same_status_fact
 
 
 @register_job(
@@ -82,17 +83,44 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # like a rotation day, so there's nothing to claim there.
         newsletter_row = None
         if not event["applies_to_school_types"]:
-            newsletter_row = (
+            # Deliberately NOT filtered to category="event" any more, and
+            # deliberately NOT ".first()" on a date match alone.
+            #
+            # The category filter was the bug: a newsletter reporting a
+            # closure as category="reminder" ("No School - Yom Kippur")
+            # never matched the feed's category="event" row ("SCHOOLS
+            # CLOSED - Yom Kippur"), so both survived and the calendar
+            # showed the holiday twice. Confirmed on Yom Kippur and Labor
+            # Day.
+            #
+            # But dropping the filter and taking the first row on that date
+            # would be far worse: most same-date pairs are unrelated facts
+            # that merely collide on the calendar (a cell-phone policy and
+            # an in-service day; a flu-shot deadline and an early
+            # dismissal), and claiming overwrites the row's title in place.
+            # So match on the status fact itself instead.
+            candidates = (
                 await db.execute(
                     select(SchoolContentItem).where(
                         SchoolContentItem.district_id == district_id,
                         SchoolContentItem.scope == "district",
-                        SchoolContentItem.category == "event",
                         SchoolContentItem.source == "newsletter",
                         SchoolContentItem.start_date == event["start_date"],
                     )
                 )
-            ).scalars().first()
+            ).scalars().all()
+            newsletter_row = next(
+                (c for c in candidates if same_status_fact(c.title, event["title"])),
+                None,
+            )
+            if newsletter_row is None:
+                # Pre-existing behaviour for the plain case: a newsletter
+                # that reported the same district-wide date as an ordinary
+                # event with no closure wording ("Labor Day" on its own).
+                newsletter_row = next(
+                    (c for c in candidates if c.category == "event" and not is_status_title(c.title)),
+                    None,
+                )
         if newsletter_row:
             newsletter_row.source = "ics_feed"
             newsletter_row.external_uid = event["external_uid"]

@@ -29,7 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
-from services.school_status import is_status_title
+from services.school_status import is_status_title, same_status_fact
 from scheduler.errors import record_parse_issue
 
 logger = logging.getLogger(__name__)
@@ -413,6 +413,32 @@ def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: da
     return True
 
 
+def _backfill_from_duplicate(existing: SchoolContentItem, item: dict, link_url: str | None) -> bool:
+    """Fills gaps on the row we're keeping from the duplicate we're dropping.
+
+    The dedup below is first-wins, which is arbitrary with respect to
+    quality: a newsletter announces the same event in several blocks, and
+    the terse one can easily be extracted first. Confirmed real - East's
+    "Back to School Night" appeared in four per-cohort "important dates"
+    lists with **no description at all**, plus a dedicated flyer block
+    carrying the full paragraph (7:00 PM, parking, Block A, Parent Portal).
+    The flyer was extracted in a later run, so a bare skip would have
+    discarded the only useful copy and kept an empty row permanently.
+
+    Only ever fills a field that is currently empty - never overwrites text
+    already on the row, since "longer" is not reliably "better".
+    """
+    changed = False
+    description = (item.get("description") or "").strip()
+    if description and not (existing.description or "").strip():
+        existing.description = description
+        changed = True
+    if link_url and not existing.link_url:
+        existing.link_url = link_url
+        changed = True
+    return changed
+
+
 async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter, new_blocks: list[SmoreBlock]) -> str:
     if not ANTHROPIC_API_KEY:
         return "skipped - ANTHROPIC_API_KEY not configured"
@@ -664,16 +690,31 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 # or, worse, silently skipped the newsletter's event as a
                 # duplicate of "Day 3". Same ^Day \d$ convention
                 # school_today.py uses to recognise rotation markers.
-                existing_district_item = await db.execute(
-                    select(SchoolContentItem).where(
-                        SchoolContentItem.scope == "district",
-                        SchoolContentItem.district_id == district_id,
-                        SchoolContentItem.category == item["category"],
-                        SchoolContentItem.start_date == item_start_date,
-                        ~SchoolContentItem.title.regexp_match(r"^Day \d$"),
+                district_candidates = (
+                    await db.execute(
+                        select(SchoolContentItem).where(
+                            SchoolContentItem.scope == "district",
+                            SchoolContentItem.district_id == district_id,
+                            SchoolContentItem.start_date == item_start_date,
+                            ~SchoolContentItem.title.regexp_match(r"^Day \d$"),
+                        )
                     )
-                )
-                if existing_district_item.scalars().first():
+                ).scalars().all()
+                # Matching on category alone missed a real duplicate: "Board
+                # of Education Election Day" was extracted twice for the same
+                # date, once as category="reminder" and once as "event", so
+                # the categories never lined up. The title and status checks
+                # are purely additive - category matching still carries the
+                # original case this dedup exists for, where one school's
+                # newsletter says plain "Labor Day" and another's says
+                # something else entirely on the same district-wide date.
+                new_title = item["title"][:300]
+                if any(
+                    c.category == item["category"]
+                    or normalize_name(c.title) == normalize_name(new_title)
+                    or same_status_fact(c.title, new_title)
+                    for c in district_candidates
+                ):
                     skipped_dupes += 1
                     continue
                 item_school_id = None
@@ -702,7 +743,12 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                         SchoolContentItem.is_current.is_(True),
                     )
                 )
-                if existing_school_item.scalars().first():
+                existing_row = existing_school_item.scalars().first()
+                if existing_row is not None:
+                    # Keep the row already on file, but take anything it's
+                    # missing from this restatement first - see
+                    # _backfill_from_duplicate for why a bare skip lost data.
+                    _backfill_from_duplicate(existing_row, item, link_url)
                     skipped_dupes += 1
                     continue
 
