@@ -37,9 +37,27 @@ import { AdminSection } from "./pages/account/AdminSection";
 // Gates the *optional* personal layer (my kids, my calendar, account
 // settings) - never the public directory/calendar/school pages, which are
 // meant to be browsed and bookmarked without an account at all.
+// A stalled auth check used to render "Loading…" indefinitely, leaving a
+// hand-reload as the visitor's only way out (see the onAuthStateChange
+// comment in AuthContext for what stalled it). Offer that reload
+// explicitly rather than hanging silently - and never redirect on a
+// timeout, since a stuck check says nothing about whether they're signed
+// in, and bouncing a signed-in visitor to /login would be worse.
+function AuthGateFallback({ timedOut }: { timedOut: boolean }) {
+  if (!timedOut) return <p>Loading…</p>;
+  return (
+    <div style={{ padding: "2rem", textAlign: "center" }}>
+      <p>This is taking longer than usual.</p>
+      <button className="btn" onClick={() => window.location.reload()}>
+        Reload
+      </button>
+    </div>
+  );
+}
+
 function RequireAuth({ children }: { children: React.ReactElement }) {
-  const { user, loading } = useAuth();
-  if (loading) return <p>Loading…</p>;
+  const { user, loading, authTimedOut } = useAuth();
+  if (loading) return <AuthGateFallback timedOut={authTimedOut} />;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
@@ -48,8 +66,8 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 // scheduled scans, Gmail scanners) - a logged-in guardian without is_admin gets bounced
 // to the public home, not the login page (they're already logged in).
 function RequireAdmin({ children }: { children: React.ReactElement }) {
-  const { user, loading } = useAuth();
-  if (loading) return <p>Loading…</p>;
+  const { user, loading, authTimedOut } = useAuth();
+  if (loading) return <AuthGateFallback timedOut={authTimedOut} />;
   if (!user) return <Navigate to="/login" replace />;
   if (!user.is_admin) return <Navigate to="/" replace />;
   return children;

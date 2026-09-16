@@ -44,7 +44,7 @@ const WIDE_PATH_PREFIXES = ["/admin", "/account"];
  * filter. This is the quick cross-page switcher; the "My schools" link
  * still goes to /start to add or remove schools from the list itself. */
 export function AppShell() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, authTimedOut } = useAuth();
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
@@ -72,6 +72,14 @@ export function AppShell() {
     faro.api.setSession({
       ...faro.api.getSession(),
       attributes: {
+        // logged_in on its own was actively misleading: it is only
+        // meaningful once the auth check has finished, so during the exact
+        // failure worth catching - a check that never finishes - every
+        // signal got tagged logged_in=false. Confirmed on the 2026-09-15
+        // stalls, where all 8 RUM exceptions reported false while those
+        // same session IDs later reported true. auth_state keeps "haven't
+        // found out yet" distinct from "found out: nobody".
+        auth_state: authTimedOut ? "timed_out" : authLoading ? "pending" : user ? "authenticated" : "anonymous",
         logged_in: String(!!user),
         is_admin: String(!!user?.is_admin),
         schools_count: String(mySchools.length),
@@ -81,7 +89,7 @@ export function AppShell() {
         source: visitSource(),
       },
     });
-  }, [user, mySchools.length]);
+  }, [user, authLoading, authTimedOut, mySchools.length]);
 
   return (
     <div className="shell">

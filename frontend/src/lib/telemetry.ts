@@ -145,6 +145,16 @@ export function initTelemetry(): void {
     ],
     beforeSend: scrubItem,
   });
+
+  // Tag the session before anything else can report. AppShell sets the
+  // real auth attributes once the auth check resolves - but if that check
+  // never resolves, which is the failure this is here to catch, it never
+  // runs at all and every signal from that session would otherwise carry
+  // no auth information whatsoever.
+  faroInstance.api.setSession({
+    ...faroInstance.api.getSession(),
+    attributes: { auth_state: "pending" },
+  });
 }
 
 export function getFaro(): Faro | null {

@@ -6,7 +6,7 @@ import logging
 import bcrypt
 import httpx
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWKClient
 from sqlalchemy import or_, select
@@ -156,6 +156,7 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
 
 
 async def get_current_user(
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
@@ -164,17 +165,24 @@ async def get_current_user(
 
     if AUTH_MODE == "supabase":
         claims = await _verify_supabase_token(token)
-        return await _get_or_create_supabase_user(db, claims)
+        user = await _get_or_create_supabase_user(db, claims)
+    else:
+        user_id = _decode_local_token(token)
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
 
-    user_id = _decode_local_token(token)
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
+    # Read back by the http_request log line (main.py). Without it there
+    # was nothing in the logs distinguishing an authenticated request from
+    # an anonymous one - the first thing worth knowing about a bug that
+    # only reproduces while logged in.
+    request.state.user_id = user.id
     return user
 
 
 async def get_optional_user(
+    request: Request,
     token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
@@ -186,7 +194,7 @@ async def get_optional_user(
     if not token:
         return None
     try:
-        return await get_current_user(token, db)
+        return await get_current_user(request, token, db)
     except HTTPException:
         return None
 

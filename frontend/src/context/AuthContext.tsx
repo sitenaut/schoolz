@@ -1,7 +1,12 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { trackEvent, trackMeasurement } from "../lib/track";
 import { API_URL, IS_SUPABASE_AUTH } from "../authConfig";
 import { supabase } from "../supabase";
-import { apiFetch, setLocalToken, clearLocalToken, getLocalToken } from "../api";
+import { apiFetch, setLocalToken, clearLocalToken, getLocalToken, setCachedAccessToken } from "../api";
+
+// How long the app will sit on "Loading…" before offering the visitor a
+// way out. Only reachable if the auth check never resolves at all.
+const AUTH_TIMEOUT_MS = 8000;
 
 type CurrentUser = {
   id: string;
@@ -16,6 +21,9 @@ type CurrentUser = {
 type AuthContextValue = {
   user: CurrentUser | null;
   loading: boolean;
+  /** True once the auth check has been stuck long enough that the UI
+   * should stop pretending it's still about to finish. */
+  authTimedOut: boolean;
   error: string | null;
   registerLocal: (email: string, username: string, password: string) => Promise<void>;
   loginLocal: (usernameOrEmail: string, password: string) => Promise<void>;
@@ -31,21 +39,17 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = async () => {
+  // Takes whether a session exists rather than going and asking for it -
+  // the callers that know already shouldn't have to ask again, and the
+  // onAuthStateChange caller below mustn't.
+  const loadUser = async (hasSession: boolean) => {
     try {
       // Skip the request entirely when we know there's nothing to check -
       // avoids a benign but noisy 401 in devtools on first page load.
-      if (IS_SUPABASE_AUTH) {
-        if (supabase) {
-          const { data } = await supabase.auth.getSession();
-          if (!data.session) {
-            setUser(null);
-            return;
-          }
-        }
-      } else if (!getLocalToken()) {
+      if (!hasSession) {
         setUser(null);
         return;
       }
@@ -58,13 +62,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    refresh();
+  const refresh = async () => {
     if (IS_SUPABASE_AUTH && supabase) {
-      const { data: sub } = supabase.auth.onAuthStateChange(() => refresh());
+      const { data } = await supabase.auth.getSession();
+      setCachedAccessToken(data.session?.access_token ?? null);
+      await loadUser(Boolean(data.session));
+      return;
+    }
+    await loadUser(IS_SUPABASE_AUTH ? false : Boolean(getLocalToken()));
+  };
+
+  useEffect(() => {
+    if (IS_SUPABASE_AUTH && supabase) {
+      // supabase-js serialises auth work behind an internal lock and runs
+      // this callback while still holding it, so calling any supabase auth
+      // method from in here deadlocks - getSession() would wait on a lock
+      // its own caller owns. That is what hung the logged-in pages in prod:
+      // refresh() called getSession() from this callback, and because
+      // apiFetch also called getSession() per request, every in-flight
+      // request piled up behind the same lock. When it never released,
+      // `loading` never cleared and the page sat on "Loading…" until the
+      // visitor reloaded by hand.
+      //
+      // So: take the token straight off the session argument this callback
+      // is handed, and push the /auth/me call out of the callback entirely.
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        setCachedAccessToken(session?.access_token ?? null);
+        setTimeout(() => void loadUser(Boolean(session)), 0);
+      });
+      // supabase-js fires INITIAL_SESSION on subscribe, so the first load
+      // is already covered here - calling refresh() as well would only
+      // duplicate it (and race it).
       return () => sub.subscription.unsubscribe();
     }
+    void refresh();
   }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      setAuthTimedOut(true);
+      // The one unambiguous signal that this specific failure happened -
+      // everything else about it is inferred from side effects (a long
+      // today_ready, a fetch that never returns).
+      trackEvent("auth_timeout", { after_ms: AUTH_TIMEOUT_MS });
+    }, AUTH_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  // How long the auth check actually took. Previously nothing measured
+  // this at all, so a stalled check was only visible second-hand, as the
+  // max of today_ready.
+  const authStartedAt = useRef<number>(performance.now());
+  const authReported = useRef(false);
+  useEffect(() => {
+    if (loading || authReported.current) return;
+    authReported.current = true;
+    trackMeasurement("auth_ready", performance.now() - authStartedAt.current, {
+      outcome: user ? "authenticated" : "anonymous",
+    });
+  }, [loading, user]);
 
   const registerLocal = async (email: string, username: string, password: string) => {
     setError(null);
@@ -144,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        authTimedOut,
         error,
         registerLocal,
         loginLocal,

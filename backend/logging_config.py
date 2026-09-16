@@ -17,10 +17,23 @@ def setup_logging() -> None:
     level = getattr(logging, level_name, logging.INFO)
 
     handler = logging.StreamHandler(sys.stdout)
+    # otelTraceID/otelSpanID are put on every LogRecord by
+    # LoggingInstrumentor (telemetry.py), but a field that isn't named in
+    # `fmt` never reaches the emitted line - so until this was added, a log
+    # in Loki could not be pivoted to its trace in Tempo. That cost real
+    # time on 2026-09-15: a browser session stalling 25-42s and a set of
+    # backend request logs existed in the same window with nothing to join
+    # them on. Missing on a record (nothing instrumented locally) just
+    # serialises as null, which is why this is safe to always request.
     formatter = jsonlogger.JsonFormatter(
-        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s %(otelTraceID)s %(otelSpanID)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
-        rename_fields={"levelname": "levelname", "asctime": "ts"},
+        rename_fields={
+            "levelname": "levelname",
+            "asctime": "ts",
+            "otelTraceID": "trace_id",
+            "otelSpanID": "span_id",
+        },
     )
     handler.setFormatter(formatter)
 

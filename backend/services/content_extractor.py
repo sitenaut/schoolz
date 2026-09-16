@@ -18,7 +18,7 @@ import logging
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -343,6 +343,76 @@ def _parse_date(value: str | None) -> datetime | None:
     return parsed
 
 
+# A newsletter scanned today essentially never advertises an event that
+# already happened a year ago - but a flyer can still *say* it does.
+# Confirmed real (Chesterbrook Academy, Sept 2026): the preschool PTA
+# reused last year's Ice Cream Social artwork, which prints "SEPTEMBER 24,
+# 2025" in 40pt type. The vision pass transcribed that faithfully and the
+# extraction trusted an explicit year over a sibling block's bare "9/24",
+# so the event landed twelve months in the past - dropping out of every
+# forward-looking surface (Coming up, Today, the September calendar)
+# rather than merely showing a wrong date. Rolling the year forward to the
+# next plausible occurrence beats storing a date we already know is stale;
+# the grace window keeps a genuinely just-passed event (still being
+# reported a week or two after the fact) from being shoved a year ahead.
+_STALE_DATE_GRACE = timedelta(days=30)
+_MAX_YEAR_ROLL = 5
+
+
+def _add_years(value: datetime, years: int) -> datetime:
+    try:
+        return value.replace(year=value.year + years)
+    except ValueError:
+        return value.replace(year=value.year + years, day=28)  # Feb 29 in a non-leap year
+
+
+def _correct_stale_year(parsed: datetime | None, reference: datetime | None = None, **context) -> datetime | None:
+    """Rolls a stale-looking date forward to its next plausible occurrence."""
+    if parsed is None:
+        return None
+    reference = reference or datetime.now(_DEFAULT_TZ)
+    cutoff = reference - _STALE_DATE_GRACE
+    if parsed >= cutoff:
+        return parsed
+    for years in range(1, _MAX_YEAR_ROLL + 1):
+        candidate = _add_years(parsed, years)
+        if candidate >= cutoff:
+            record_parse_issue(
+                "smore.scan", "stale_year", sample=f"{parsed.date()} -> {candidate.date()}", **context
+            )
+            return candidate
+    # Older than _MAX_YEAR_ROLL and so not a plausibly mis-yeared current
+    # event - more likely a genuine historical reference. Leave it alone.
+    return parsed
+
+
+def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: datetime | None = None) -> bool:
+    """Guards the model's own supersedes_item_id against retiring a live
+    item in favour of one that has already happened.
+
+    The stale-year correction above handles the dates we can recognise as
+    wrong; this is the second line of defence for the ones we can't. A
+    newer extraction is normally the better one (a corrected date, a typo
+    fix, a fuller description), which is why supersede exists at all - but
+    "newer" stops meaning "better" the moment the replacement is dated in
+    the past and the item it would retire is still upcoming. That exact
+    swap is what hid Chesterbrook's Ice Cream Social: a richer flyer block
+    (time, location, ticket price) carrying last year's date superseded the
+    correctly-dated row extracted from the plain "Upcoming Events" list.
+    """
+    if old.start_date is None or new.start_date is None:
+        return True
+    reference = reference or datetime.now(_DEFAULT_TZ)
+    if new.start_date < reference <= old.start_date:
+        record_parse_issue(
+            "smore.scan",
+            "stale_supersede",
+            sample=f"{new.title[:60]}: {new.start_date.date()} would retire {old.start_date.date()}",
+        )
+        return False
+    return True
+
+
 async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter, new_blocks: list[SmoreBlock]) -> str:
     if not ANTHROPIC_API_KEY:
         return "skipped - ANTHROPIC_API_KEY not configured"
@@ -499,7 +569,20 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 (staff_by_name[normalize_name(n)] for n in name_candidates if normalize_name(n) in staff_by_name), None
             )
 
-            item_start_date = _parse_date(item.get("start_date"))
+            raw_start_date = _parse_date(item.get("start_date"))
+            item_start_date = _correct_stale_year(raw_start_date, newsletter_id=newsletter.id)
+            # Keep a date range intact: if the start rolled forward a year,
+            # the end moves with it rather than being corrected on its own
+            # (an end date judged against the same cutoff could otherwise
+            # land a different number of years away from its own start).
+            year_shift = (item_start_date.year - raw_start_date.year) if (raw_start_date and item_start_date) else 0
+            item_end_date = _parse_date(item.get("end_date"))
+            if item_end_date is not None:
+                item_end_date = (
+                    _add_years(item_end_date, year_shift)
+                    if year_shift
+                    else _correct_stale_year(item_end_date, newsletter_id=newsletter.id)
+                )
             if item_start_date is None and item["category"] == "lunch_menu":
                 item_start_date = _infer_lunch_menu_start_date(item, datetime.now(_DEFAULT_TZ))
                 record_parse_issue("smore.scan", "unexpected_format", newsletter_id=newsletter.id, sample="lunch_menu item missing start_date")
@@ -633,7 +716,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 title=item["title"][:300],
                 description=item.get("description"),
                 start_date=item_start_date,
-                end_date=_parse_date(item.get("end_date")),
+                end_date=item_end_date,
                 is_all_day=is_all_day,
                 link_url=link_url,
                 person_name=person_name,
@@ -648,7 +731,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             supersedes_id = item.get("supersedes_item_id")
             if supersedes_id:
                 old = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id))).scalar_one_or_none()
-                if old and old.id != new_item.id:
+                if old and old.id != new_item.id and _may_supersede(old, new_item):
                     old.is_current = False
                     old.superseded_by_id = new_item.id
 

@@ -1,7 +1,14 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from services.content_extractor import _infer_lunch_menu_start_date, _parse_lunch_menu_days
+from models import SchoolContentItem
+from services.content_extractor import (
+    _add_years,
+    _correct_stale_year,
+    _infer_lunch_menu_start_date,
+    _may_supersede,
+    _parse_lunch_menu_days,
+)
 
 # Confirmed real shape from a Chesterbrook Academy Smore lunch-menu flyer:
 # the model's own description text for a category="lunch_menu" item.
@@ -140,3 +147,70 @@ def test_unsupported_format_is_reencoded_rather_than_rejected():
 def test_non_image_bytes_return_none_instead_of_raising():
     assert _prepare_image(b"<html>not an image</html>") is None
     assert _prepare_image(b"\x89PNG\r\n\x1a\ntruncated garbage") is None
+
+
+# Regression cover for the Chesterbrook Academy Ice Cream Social (Sept
+# 2026): the preschool PTA reused last year's flyer artwork, which prints
+# "SEPTEMBER 24, 2025". Vision transcribed that faithfully, the extraction
+# trusted the explicit year over a sibling block's bare "9/24", and the
+# resulting 2025-dated item then superseded the correctly-dated 2026 rows -
+# so the event disappeared from Coming up, Today and the calendar entirely.
+_NY = ZoneInfo("America/New_York")
+_REF = datetime(2026, 9, 15, 9, 0, tzinfo=_NY)
+
+
+def test_last_years_flyer_date_is_rolled_forward_to_this_year():
+    # The real case: "SEPTEMBER 24, 2025", 5:30pm, scanned Sept 2026.
+    corrected = _correct_stale_year(datetime(2025, 9, 24, 17, 30, tzinfo=_NY), _REF)
+    assert corrected == datetime(2026, 9, 24, 17, 30, tzinfo=_NY)
+
+
+def test_an_upcoming_date_is_left_untouched():
+    upcoming = datetime(2026, 9, 24, tzinfo=_NY)
+    assert _correct_stale_year(upcoming, _REF) == upcoming
+
+
+def test_a_just_passed_date_is_not_shoved_a_year_ahead():
+    # Inside the 30-day grace: newsletters routinely still mention an event
+    # a week or two after it happened, and that is not a stale year.
+    just_passed = datetime(2026, 9, 1, tzinfo=_NY)
+    assert _correct_stale_year(just_passed, _REF) == just_passed
+
+
+def test_a_genuinely_historical_date_is_left_alone():
+    # Further back than _MAX_YEAR_ROLL - a school-history mention, not a
+    # mis-yeared current event, so guessing a year for it would be worse.
+    historical = datetime(2019, 6, 1, tzinfo=_NY)
+    assert _correct_stale_year(historical, _REF) == historical
+
+
+def test_missing_date_passes_through():
+    assert _correct_stale_year(None, _REF) is None
+
+
+def test_leap_day_rolls_to_the_28th_rather_than_raising():
+    assert _add_years(datetime(2024, 2, 29, tzinfo=_NY), 1) == datetime(2025, 2, 28, tzinfo=_NY)
+
+
+def _item(title: str, start: datetime | None) -> SchoolContentItem:
+    return SchoolContentItem(title=title, start_date=start)
+
+
+def test_a_past_item_may_not_supersede_an_upcoming_one():
+    # The exact swap that hid the Ice Cream Social.
+    upcoming = _item("PTA Ice Cream Social", datetime(2026, 9, 24, tzinfo=_NY))
+    stale = _item("PTA Ice Cream Social", datetime(2025, 9, 24, 17, 30, tzinfo=_NY))
+    assert _may_supersede(upcoming, stale, _REF) is False
+
+
+def test_a_corrected_upcoming_item_may_still_supersede():
+    # The case supersede exists for: same event, corrected date/details.
+    old = _item("Back to School Night", datetime(2026, 9, 22, tzinfo=_NY))
+    new = _item("Back to School Night", datetime(2026, 9, 23, 18, 30, tzinfo=_NY))
+    assert _may_supersede(old, new, _REF) is True
+
+
+def test_items_without_dates_may_still_supersede():
+    old = _item("Nut-Free Policy", None)
+    new = _item("Nut-Free Policy", None)
+    assert _may_supersede(old, new, _REF) is True
