@@ -2101,3 +2101,16 @@ select {
     white-space: nowrap;
   }
 }
+
+/* A person at more than one school gets a plain label, not a link: there
+   is no single school page to send them to, and link-blue on something
+   unclickable is a promise the row can't keep. The full list of schools
+   is in the title attribute. */
+.dir-school.multi {
+  color: var(--ink-2);
+  font-weight: 600;
+  cursor: default;
+}
+.dir-school.multi.district {
+  color: var(--district, var(--ink-2));
+}

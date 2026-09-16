@@ -27,17 +27,42 @@ async def _seed() -> tuple[str, str]:
         await db.flush()
         db.add_all(
             [
-                StaffMember(school_id=elem.id, source_constituent_id="1", full_name="Ada Quibble", title="Math Teacher", email="ada@example.com"),
-                StaffMember(school_id=elem.id, source_constituent_id="2", full_name="Ben Quibble", title="Principal", email="ben@example.com"),
+                StaffMember(school_id=elem.id, source_constituent_id="1", full_name="Ada Quibble", title="Math Teacher", email=f"ada-{tag}@example.com"),
+                StaffMember(school_id=elem.id, source_constituent_id="2", full_name="Ben Quibble", title="Principal", email=f"ben-{tag}@example.com"),
                 StaffMember(school_id=elem.id, source_constituent_id="3", full_name="Cara Quibble", title="Nurse", phone="(856) 555-0100"),
-                # No title at all - a real and common shape (596 such rows in
-                # prod). Has to stay findable by name.
+                # No title and no email at all - a real and common shape.
+                # Has to stay findable by name, and must never be merged
+                # with another email-less row.
                 StaffMember(school_id=elem.id, source_constituent_id="4", full_name="Dana Quibble"),
                 StaffMember(school_id=middle.id, source_constituent_id="5", full_name="Evan Quibble", title="Math Teacher"),
             ]
         )
         await db.commit()
     return elem_slug, middle_slug
+
+
+async def _seed_itinerant(tag: str, emails_per_school: list[tuple[str, str | None]]) -> list[str]:
+    """One person written once per school, the way the real scans do it."""
+    slugs = []
+    async with database.SessionLocal() as db:
+        for i, (school_name, title) in enumerate(emails_per_school):
+            school = School(name=f"{school_name} {tag}", slug=f"{school_name.lower()}-{tag}", school_type="elementary", short_name=school_name)
+            db.add(school)
+            await db.flush()
+            slugs.append(school.slug)
+            db.add(
+                StaffMember(
+                    school_id=school.id,
+                    # A different constituent id per school on purpose - the
+                    # identity key is the email, not this.
+                    source_constituent_id=f"c{i}",
+                    full_name="Wanda Rover",
+                    title=title,
+                    email=f"wanda-{tag}@example.com",
+                )
+            )
+        await db.commit()
+    return slugs
 
 
 def _names(body: dict) -> list[str]:
@@ -55,11 +80,97 @@ async def test_directory_is_public_and_spans_schools():
         body = res.json()
         assert body["total"] == 5
         assert set(_names(body)) == {"Ada Quibble", "Ben Quibble", "Cara Quibble", "Dana Quibble", "Evan Quibble"}
-        # Each row carries its own school, which is the whole point of the
-        # aggregate view over 27 per-school pages.
-        assert {i["school_short_name"] for i in body["items"]} == {"Dirtest Elem", "Dirtest Mid"}
         ada = next(i for i in body["items"] if i["full_name"] == "Ada Quibble")
-        assert ada["school_slug"] == elem_slug and ada["category"] == "teacher"
+        assert [s["slug"] for s in ada["schools"]] == [elem_slug]
+        assert ada["affiliation"] == "Dirtest Elem" and ada["is_district_wide"] is False
+        assert ada["category"] == "teacher"
+
+
+@pytest.mark.anyio
+async def test_one_person_at_many_schools_collapses_to_one_row():
+    tag = uuid.uuid4().hex[:8]
+    slugs = await _seed_itinerant(tag, [("Alpha", "ESL Teacher"), ("Bravo", None), ("Charlie", None)])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get("/directory/staff", params={"q": "wanda rover", "limit": 200})
+        body = res.json()
+        # Three staff_members rows, one human.
+        assert body["total"] == 1
+        person = body["items"][0]
+        assert {s["slug"] for s in person["schools"]} == set(slugs)
+        # Two of the three rows have no title; the one that does wins,
+        # rather than whichever happened to sort first.
+        assert person["title"] == "ESL Teacher"
+        assert person["category"] == "teacher"
+        # Not district-wide: three elementary schools out of more than three.
+        assert person["is_district_wide"] is False
+        assert person["affiliation"] == "Alpha +2"
+
+
+@pytest.mark.anyio
+async def test_covering_a_whole_school_type_reads_as_district_wide():
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        # A school type of its own, entirely covered by one person.
+        schools = []
+        for name in ("Tiny One", "Tiny Two"):
+            school = School(name=f"{name} {tag}", slug=f"{name.lower().replace(' ', '-')}-{tag}", school_type=f"tinytype-{tag}", short_name=name)
+            db.add(school)
+            await db.flush()
+            schools.append(school)
+            db.add(
+                StaffMember(
+                    school_id=school.id,
+                    source_constituent_id=f"pt:{name}",
+                    full_name="Nadia Districtwide",
+                    title="Preschool Nurse",
+                    email=f"nadia-{tag}@example.com",
+                )
+            )
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get("/directory/staff", params={"q": "nadia districtwide"})
+        body = res.json()
+        assert body["total"] == 1
+        person = body["items"][0]
+        assert person["is_district_wide"] is True
+        # Covers both schools of the only type she appears in.
+        assert person["affiliation"].startswith("District-wide · 2 ")
+        assert len(person["schools"]) == 2
+
+
+@pytest.mark.anyio
+async def test_rows_without_an_email_are_never_merged():
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        school = School(name=f"Nomail {tag}", slug=f"nomail-{tag}", school_type="elementary")
+        db.add(school)
+        await db.flush()
+        # Same school, same missing email, different people.
+        db.add_all(
+            [
+                StaffMember(school_id=school.id, source_constituent_id="x1", full_name=f"Ida Nomail {tag}"),
+                StaffMember(school_id=school.id, source_constituent_id="x2", full_name=f"Ivan Nomail {tag}"),
+            ]
+        )
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get("/directory/staff", params={"q": f"nomail {tag}", "limit": 200})
+        assert res.json()["total"] == 2
+
+
+@pytest.mark.anyio
+async def test_school_filter_keeps_the_persons_full_affiliation():
+    tag = uuid.uuid4().hex[:8]
+    slugs = await _seed_itinerant(tag, [("Delta", "Music Teacher"), ("Echo", None)])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get("/directory/staff", params={"school_id": slugs[0], "limit": 200})
+        person = next(i for i in res.json()["items"] if i["full_name"] == "Wanda Rover")
+        # Filtering to one school must not truncate the list to that school -
+        # doing it in SQL would have, and "Delta +1" would have become "Delta".
+        assert {s["slug"] for s in person["schools"]} == set(slugs)
+        assert person["affiliation"] == "Delta +1"
 
 
 @pytest.mark.anyio
@@ -72,10 +183,10 @@ async def test_search_tokens_are_anded_across_fields():
         assert sorted(_names(res.json())) == ["Ada Quibble", "Evan Quibble"]
 
         # A token can match the school as well as the person.
-        res = await client.get("/directory/staff", params={"q": "quibble dirtest middle", "limit": 200})
+        res = await client.get("/directory/staff", params={"q": "quibble dirtest mid", "limit": 200})
         assert _names(res.json()) == ["Evan Quibble"]
 
-        # An untitled person is still findable by name.
+        # An untitled, email-less person is still findable by name.
         res = await client.get("/directory/staff", params={"q": "dana quibble"})
         assert _names(res.json()) == ["Dana Quibble"]
 
@@ -136,6 +247,8 @@ def test_category_classification_of_real_title_shapes():
     assert classify_directory_category("Administrative Assistant") == "office"
     assert classify_directory_category("Guidance Counselor") == "support"
     assert classify_directory_category("Preschool Instructional Coach") == "support"
+    assert classify_directory_category("Math Coach") == "support"
+    assert classify_directory_category("English Teacher, Public Speaking Teacher, Speech and Debate Coach") == "teacher"
     assert classify_directory_category("Educational Assistant") == "aide"
     assert classify_directory_category("Special Education Teacher") == "teacher"
     assert classify_directory_category("Night Lead Custodian") == "facilities"

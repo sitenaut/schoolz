@@ -676,3 +676,42 @@ rather than the entry point. Public, like every other read in this app.
   `services/prerender.py:_ALLOWED_PATHS` - it's in the sitemap, so
   crawlers request it, and a path missing from the prerender allowlist
   raises `PathNotAllowed`.
+
+### One row per person, not per school
+
+The same human is stored once per school they appear at, and that is
+correct per-school data - `preschool_team.scan` writes the district's
+central preschool staff to every preschool location, and the district
+republishes its own administrators on each school's Finalsite contact
+page. `/schools/{id}/staff` still lists them per school, unchanged. But
+in an aggregate list it read as the same person ten times (the district
+preschool nurse appeared at all ten preschools), so `/directory`
+collapses rows by identity and shows the person's real affiliation.
+
+- **Identity is the email address, not `source_constituent_id`.** The
+  constituent id is only unique *per school*
+  (`uq_staff_member_school_constituent`), so two unrelated people at
+  different schools could share one; an email is globally unique.
+  Verified against live data: no address maps to more than one name, and
+  all 88 multi-school people share one address across every row. Rows
+  with no email (2 of 1880) can't be matched to anything, so each stays
+  its own person - never merge them with each other.
+- **Grouping happens before filtering, which is why it's in Python.**
+  Filtering by school in SQL would truncate a person's school list to the
+  one school that matched, turning "District-wide" into "Bret Harte".
+- **Fields take the first row that has them.** A person's rows disagree -
+  the district's copy of someone often has no title while their own
+  school's listing does.
+- **"District-wide" means covering every school of one type**, not a
+  school-count threshold. The real counts run 2, 3, 4, 5, 9, 10, 11, 13,
+  16, 17 with no gap anywhere, so any cutoff would relabel a genuinely
+  itinerant teacher ("ESL Teacher (East/West)", 3 schools) as district
+  staff and throw away the school list, which is the useful part. A type
+  needs ≥2 schools to qualify. Consequence worth knowing: someone at 17
+  schools spanning four types covers no single type completely, so they
+  read as "Beck +16" rather than "District-wide".
+- This is a **presentation fix, not a schema change** - the fan-out rows
+  are still written as before. Collapsing at the source would need a
+  canonical-person table plus a link table, a migration and a prod
+  backfill, and would touch `schools.py`, `school_today.py` and
+  `bucket3.py`'s teacher lookup.
