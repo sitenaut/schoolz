@@ -38,7 +38,7 @@ _RENDER_TIMEOUT_MS = 10_000
 # caller can force this process to spend a Playwright render on (this
 # endpoint has no auth, since nginx is the only intended caller but the
 # API itself is public).
-_ALLOWED_PATHS = {"/", "/schools", "/calendar", "/lunch", "/privacy", "/contact", "/chcomms", "/survey"}
+_ALLOWED_PATHS = {"/", "/schools", "/directory", "/calendar", "/lunch", "/privacy", "/contact", "/chcomms", "/survey"}
 _ALLOWED_PREFIXES = ("/schools/",)
 
 

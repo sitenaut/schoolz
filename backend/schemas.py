@@ -441,6 +441,40 @@ class StaffMemberOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DirectoryStaffOut(BaseModel):
+    """A staff row plus the school context the district-wide directory
+    needs - the same person listed under /schools/{id}/staff, but a result
+    there is already scoped to one school while a result here isn't."""
+
+    id: str
+    full_name: str
+    title: str | None
+    role: str | None
+    department: str | None
+    email: str | None
+    phone: str | None
+    category: str
+    school_id: str
+    school_slug: str
+    school_name: str
+    school_short_name: str | None
+    school_type: str | None
+
+
+class DirectoryFacetOut(BaseModel):
+    key: str
+    label: str
+    count: int
+
+
+class DirectoryPageOut(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[DirectoryStaffOut]
+    categories: list[DirectoryFacetOut]
+
+
 class SaccProgramOut(BaseModel):
     am_hours: str | None
     pm_hours: str | None

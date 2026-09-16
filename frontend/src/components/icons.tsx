@@ -154,6 +154,18 @@ export const IconUsers = ({ className }: P) => (
     <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-5-6.3" />
   </svg>
 );
+// The district-wide staff directory. An address-book card (person on a
+// page) rather than another people glyph - IconUsers already means "my
+// kids" in the same tab bar, and two variations on the same silhouette
+// are indistinguishable at 22px.
+export const IconDirectory = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <rect x="5" y="3" width="15" height="18" rx="2" />
+    <path d="M4 7h3M4 12h3M4 17h3" />
+    <circle cx="12.5" cy="10" r="2.2" />
+    <path d="M9 17a3.5 3.5 0 0 1 7 0" />
+  </svg>
+);
 export const IconSettings = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <circle cx="12" cy="12" r="3" />
