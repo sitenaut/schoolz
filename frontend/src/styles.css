@@ -959,6 +959,11 @@ h3 {
   border-color: transparent;
   background: var(--primary-soft);
 }
+.tag.done {
+  color: var(--ok);
+  border-color: transparent;
+  background: var(--ok-soft);
+}
 /* "All schools" / a specific school's name - a distinct, always-first tag
    so it's immediately clear who an item applies to, not just plain text
    buried in a description line. Uses the school's own ribbon color
@@ -1918,6 +1923,173 @@ select {
 .logo-dark {
   background: #000;
   padding: 2px;
+}
+
+/* ---------- Kids page tables (schedule/grades) ---------- */
+.kids-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.kids-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.kids-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.kids-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ---------- Kids view v2 (docs/KIDS_VIEW_V2_DESIGN.md §8) ----------
+   One accent for "needs attention" (--bad, Missing only), calm neutrals
+   everywhere else, big tap targets. */
+.kids-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.kids-hd .tabs {
+  margin-bottom: 0;
+}
+.kids-tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.kids-now {
+  border-left: 4px solid var(--primary);
+}
+.kids-now .course,
+.kids-next .title {
+  font-family: var(--font-d);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 4px 0 2px;
+}
+.kids-now .sub {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.kids-next {
+  border: 2px solid var(--primary);
+}
+.kids-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.kids-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+}
+.kids-bar.ok > span {
+  background: var(--ok);
+}
+.kids-counts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.kids-group {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin: 16px 0 6px;
+}
+.kids-group.missing {
+  color: var(--bad);
+}
+.kids-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.kids-row.missing {
+  border-left: 4px solid var(--bad);
+}
+.kids-row.done .item-title {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.kids-row .body {
+  flex: 1;
+  min-width: 0;
+}
+.kids-check {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid var(--line-2);
+  background: var(--card);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.kids-check.on {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.kids-check svg {
+  width: 16px;
+  height: 16px;
+}
+.kids-links {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.kids-links a,
+.kids-links button {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.kids-links svg {
+  width: 14px;
+  height: 14px;
+}
+.kids-suggest {
+  background: var(--primary-soft);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.kids-body {
+  white-space: pre-wrap;
+  font-size: 14px;
+  margin-top: 6px;
 }
 
 /* ---------- staff directory (/directory) ---------- */

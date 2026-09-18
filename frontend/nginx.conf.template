@@ -19,6 +19,21 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Send RELATIVE redirects ("Location: /focus/"), so the browser resolves
+    # them against the origin it actually used. With nginx's default
+    # absolute_redirect, a directory redirect is built from this server's own
+    # listen port - 3000 - which is never the port the client reached us on:
+    # local compose publishes 5173->3000, and in prod fly-proxy terminates
+    # TLS on 443 and forwards plain HTTP here. So "GET /focus" (no trailing
+    # slash) answered "Location: http://localhost:3000/focus/" locally, and
+    # would have sent prod visitors to http://schoolz.sitenaut.com:3000/ -
+    # wrong scheme and wrong port. Same class of bug as schoolz-api needing
+    # --proxy-headers to stop emitting http:// Location headers.
+    #
+    # Only reachable now that a real subdirectory exists: every path in the
+    # SPA above falls through try_files to /index.html and never redirects.
+    absolute_redirect off;
+
     # A proxy_pass target that's fully static text (after envsubst) isn't
     # allowed to carry a URI part ("/prerender") inside an `if` block -
     # nginx: "proxy_pass cannot have URI part ... inside 'if' statement".
@@ -60,6 +75,20 @@ server {
     # request.
     location ~* \.(?:js|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|map|json|xml|txt|webmanifest)$ {
         try_files $uri =404;
+    }
+
+    # The Focus app (frontend-focus/) is a separate Vite build served from
+    # the SAME ORIGIN as this one, which is the entire mechanism behind its
+    # shared session: localStorage is scoped to the origin, not the path,
+    # so a token written by a login here is already readable there with
+    # nothing passed between them. A subdomain would not share it.
+    #
+    # Placed before `location /` so the crawler branch below never grabs
+    # it: everything under /focus/ is behind auth, so there's nothing for
+    # a bot to index, and a prerender pass would spend one of the
+    # scraper's three concurrency slots rendering a login wall.
+    location /focus/ {
+        try_files $uri $uri/ /focus/index.html;
     }
 
     location / {

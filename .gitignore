@@ -229,3 +229,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Real backpack-capture exports used for local one-off imports/reprocessing -
+# these are a real family's captured Classroom/Genesis data, never committed.
+backend/captures.json
+backend/*.captures.json

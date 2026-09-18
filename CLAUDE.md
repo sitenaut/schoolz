@@ -1,717 +1,191 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code working in this repository.
+
+**What belongs here:** decisions and their rationale, non-obvious constraints, and bugs whose mechanism would cost real time to rediscover. **What doesn't:** anything derivable from the code, per-school data (that lives in the database), coverage counts, or traffic numbers (those live in Grafana and are stale the moment they're written). Dates are in git; don't date the headings.
 
 ## Project
 
-schoolz aims to help streamline communication between parents and the school district to better support their children's education at home.
-
-## UI reference template
-
-Before building or restructuring any admin/management-style UI (a new page
-layout, tabs, drawers, wizards, data-grid patterns, etc.), check
-`~/claude/themeforest-OEgiMDPe-katalyst-modern-reacttailwind-admin-template.zip`
-(the purchased Katalyst React/Tailwind admin template) for an existing
-pattern to match, even though it isn't a dependency of this app (see the
-"Parent-facing layout" section below - the template is style/structure
-inspiration, rebuilt on this app's own CSS custom properties, never
-imported directly). Unzip it to a scratch dir and grep its
-`src/shared/ui/` and `src/modules/**/ui/` trees for the closest analog
-(e.g. `shared/ui/shadcn/components/ui/tabs.tsx` for a tabs primitive, or a
-`*IndexPage.tsx`/`*DetailPage.tsx` under `modules/` for a whole-page
-layout) before inventing a new visual pattern from scratch - this keeps
-new admin surfaces consistent with the ones already built this way (Jobs,
-Newsletters, Account settings).
-
-## Access model: public + centrally admin-managed (changed 2026-09-08)
-
-Deliberate product pivot: **almost everything is public, no account needed.** All school/district data (schools, calendar, content, documents, SACC, staff, lunch menus, Smore newsletter reads) is browsable and bookmarkable by anyone - the target workflow is "bookmark your kid's school page," not "log in to see anything." Registering is purely optional, only for the bespoke personal layer (linking your own kids, a calendar narrowed to just their schools, connecting Gmail).
-
-Three access tiers, enforced in `backend/auth.py` + per-router:
-- **Public (no auth at all)**: every `GET` on schools/districts/calendar/smore-newsletters. `GET /calendar` in particular (`routers/calendar.py`) uses `get_optional_user` (returns `None` instead of 401 for no/invalid token) so its behavior *degrades* gracefully instead of requiring login: a logged-in guardian with linked kids still gets it narrowed to their own schools + district items by default, but an anonymous visitor (or a logged-in user with zero linked schools yet) sees everything, completely unfiltered - there's no "my schools" to narrow to, and an explicit `school_id` param still narrows further either way.
-- **Admin-only (centrally managed data sources)**: creating/editing a District, School, or SmoreNewsletter, triggering any `run-now` scan, and the `/scheduled-jobs` visibility API (the `/jobs` page) - gated by `require_admin` (`backend/auth.py`), a `User.is_admin` check with no per-user ownership fallback anymore (the old "owner OR admin" pattern in `smore_newsletters.py`/`scheduled_jobs.py` collapsed to admin-only, since there's no more concept of a guardian "owning" a tracked newsletter or scan). Two real gaps caught and fixed while making this change: `School`'s three `run-now` endpoints (`staff/run-now`, `info/run-now`, `documents/run-now`) had **no auth dependency at all** before this pass - anyone could trigger a scan.
-- **Authenticated-user-only (the optional bespoke layer)**: register/login, students, guardian links, invites, notifications, account settings. Registering still self-serve (`/auth/register` in local mode) - it just never grants `is_admin`. **Gmail connection + email scanners moved to admin-only on 2026-09-11** (`routers/gmail.py`, `routers/email_scanners.py`, `routers/school_emails.py` all use `require_admin`; `/gmail` is behind `RequireAdmin`): connecting an inbox to discover newsletter links is data-source management, not something a guardian needs. Rows stayed owner-scoped, so two admins never see each other's captures.
-
-Frontend (`frontend/src/App.tsx`): `SchoolsPage`, `SchoolDetailPage`, `CalendarPage` are plain routes now, no wrapper at all. `RequireAuth` gates only the personal pages (`/children`, `/gmail`). A new `RequireAdmin` gates `/smore` and `/jobs` - a logged-in non-admin bounces to `/` (they're already logged in, so `/login` would be wrong), not logged in bounces to `/login` same as `RequireAuth`. Both `CalendarPage` and `SchoolsPage` branch on whether `useAuth()` has a `user` to decide `/schools/mine` vs `/schools` for their dropdown/tab, matching the backend's public-vs-personalized split - an anonymous visitor never calls an endpoint that would 401 on them.
+schoolz streamlines communication between parents and the school district, to better support kids' education at home. One district so far: Cherry Hill, NJ.
 
 ## Architecture
 
-React (Vite/TS) frontend → FastAPI backend → Postgres. Two environments only: **local** and **prod** (no dev/stage tier).
+React (Vite/TS) → FastAPI → Postgres. Two environments only: **local** and **prod**. No dev/stage tier; `main` is prod.
 
-- `backend/` — FastAPI + SQLAlchemy async + Alembic (source of truth for schema). Dual auth mode via `AUTH_MODE` env var, switched in `backend/auth.py`:
-  - `local` (used only in local dev): custom email/username/password with a self-serve `/auth/register` endpoint, bcrypt hashing, HS256 JWTs. No Google SSO in this mode.
-  - `supabase` (used in prod): Supabase Auth verifies Google SSO and email/password sign-in; backend verifies the resulting Supabase JWT against Supabase's JWKS (with a slow-path fallback to `/auth/v1/user`) and auto-provisions a local `users` row on first sight. No MFA at this stage.
-- `frontend/` — Vite/React/TS. `src/authConfig.ts` reads `VITE_AUTH_MODE`/`VITE_SUPABASE_*`/`VITE_API_URL` at build time; `src/context/AuthContext.tsx` is the switchboard between local JWT auth and Supabase auth (password + Google OAuth).
-- Deploys to Fly.io as two apps: `schoolz-api` (backend/fly.toml) and `schoolz-web` (frontend/fly.toml), same pattern as the sibling `billz` project.
+- `backend/` — FastAPI + SQLAlchemy async + Alembic (**Alembic is the schema source of truth**). Dual auth via `AUTH_MODE` (`backend/auth.py`):
+  - `local` — email/username/password, self-serve `/auth/register`, bcrypt, HS256 JWTs. No Google SSO.
+  - `supabase` (prod) — Supabase Auth handles Google SSO + password; backend verifies the Supabase JWT against JWKS (slow-path fallback to `/auth/v1/user`) and auto-provisions a `users` row on first sight. No MFA.
+- `frontend/` — Vite/React/TS. `src/authConfig.ts` reads `VITE_*` at build time; `src/context/AuthContext.tsx` switches between local-JWT and Supabase auth.
+- `scraper/` — standalone FastAPI + Playwright (headless Chromium), deliberately generic (`/fetch-html`, `/fetch-paginated`, `/fetch-raw`, `/health`). **No site-specific parsing lives there** — call `backend/scraper_client.py` and parse in the backend, so the scraper stays swappable.
+- Three Fly apps: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`.
 
-## Environment files
-
-`env/` is entirely gitignored (never committed, not even `.example` variants) because some files under it hold real secrets. **`docs/ENV_SETUP.md` is the source of truth** for what files to create there and what each one holds — read it before touching env config. Root `.env.example` / `.env.prod.example` are tracked templates; `.env`/`.env.local`/`.env.prod` and everything under `env/` are gitignored.
-
-## Common commands
+## Commands
 
 ```
-./scripts/compose-local.sh up --build      # local stack: postgres, migrate, backend, frontend
-OBSERVABILITY=1 ./scripts/compose-local.sh up --build   # + Grafana/Mimir/Loki/Promtail/Alloy
+./scripts/compose-local.sh up --build                    # postgres, migrate, backend, frontend, scraper
+OBSERVABILITY=1 ./scripts/compose-local.sh up --build    # + Grafana/Mimir/Loki/Promtail/Alloy
 ./scripts/alembic_env.sh local revision --autogenerate -m "..."
 ./scripts/alembic_env.sh prod upgrade head
 cd backend && pytest -q
 cd frontend && npm run build && npm run test
 ```
 
-## Observability (backend OTel done 2026-09-11; see docs/OBSERVABILITY_PLAN.md)
-
-`backend/telemetry.py` sets up OpenTelemetry (traces/metrics/logs, OTLP/HTTP
-push) for both the `app` and `scheduler` processes — no-ops entirely unless
-`OTEL_EXPORTER_OTLP_ENDPOINT` is set, so plain `pytest -q` and a local run
-with no `env/secrets.prod.env`-derived vars send nothing. The old
-`prometheus-client` `/metrics` mount is gone (it was publicly readable and
-`_normalize_path` leaked one series per slug); OTel's FastAPI instrumentation
-labels by route template instead. Custom instruments (job runs/duration,
-scraper calls, LLM tokens, cold starts) live in `backend/observability.py`.
-
-`backend/scheduler/runner.py` records `schoolz.job.runs`/`schoolz.job.duration`/
-`schoolz.job.queue_wait`/`schoolz.job.in_flight` around every job execution
-and wraps the handler call in a `job.run` span.
-
-`backend/scheduler/errors.py` gives every scan failure/warning a stable,
-groupable code (`job_runs.error_code`/`error_stage`,
-`scheduled_jobs.last_error_code` — migration 0026): `classify_exception()`
-maps library exceptions (httpx status/timeout, anthropic, sqlalchemy) to a
-`(code, stage)` pair, walking `__cause__`/`__context__` since scraper_client
-re-raises; a handler can also raise `ScanError(code, message, stage=...)`
-directly. A handler's non-fatal `"WARNING: ..."` return value is now
-`"WARNING[<code>]: ..."` (`parse_warning()` extracts the code). Non-fatal
-in-scan problems (an unclassifiable Smore block, an unparseable date, a
-document with no discoverable year, ...) call `record_parse_issue()`, which
-logs `parse_issue` and increments `schoolz.parse.issues`. The scheduler
-reaps runs stuck in `status="running"` for 45+ minutes every reconcile tick
-(45min threshold, process died mid-run — OOM kill, deploy, crash).
-
-Locally (`OBSERVABILITY=1`, see `docs/ENV_SETUP.md`): backend/scheduler push
-OTLP metrics to Alloy's OTLP receiver (`alloy/config.alloy`, port 4318) →
-Mimir (traces/logs exporters are off locally — `OTEL_TRACES_EXPORTER`/
-`OTEL_LOGS_EXPORTER=none`, set by `scripts/compose-local.sh`). Promtail still
-tails schoolz's own containers (filtered via Docker API `filters`, not just
-relabel `keep` — a plain relabel-based project filter did not reliably
-exclude other compose projects on a shared host) → Loki. Grafana
-(`localhost:3001`) has both wired as datasources plus a starter "schoolz
-backend overview" dashboard (now on `http_server_request_duration_seconds_*`
-with an `http_route` label, not the old `http_requests_total`/`path`).
-
-Prod (Grafana Cloud, stack `1595929`, shared with billz — tagged
-`service.namespace=schoolz` so nothing collides with billz's `app="billz-api"`
-logs): **all live as of the 2026-09-12 launch** —
-`OTEL_EXPORTER_OTLP_ENDPOINT`/`OTEL_EXPORTER_OTLP_HEADERS` are Fly secrets on
-`schoolz-api`, `FARO_COLLECTOR_URL` is one on `schoolz-web`, the three
-dashboards (`schoolz-api`, `schoolz-scans`, `schoolz-ux`) and the alert rules
-in `grafana/cloud-dashboards/` are provisioned, and a `schoolz-prod-db`
-Postgres datasource is wired for the SQL-backed panels.
-
-**Metric-name trap, cost real time on 2026-09-15**: prod was emitting the
-*old* OTel HTTP semantic conventions (`http_server_duration_milliseconds_*`
-labelled `http_target`) while every dashboard panel and the
-`schoolz-api-5xx`/`schoolz-api-latency` alert rules were written against the
-stable ones (`http_server_request_duration_seconds_*` labelled `http_route`).
-Nothing errored — the panels were simply empty and those two alerts could
-never fire, unnoticed for four days. Fixed by setting
-`OTEL_SEMCONV_STABILITY_OPT_IN = "http"` in `backend/fly.toml`. If a panel or
-alert ever goes blank, check which spelling prod is actually emitting
-(`/api/v1/label/__name__/values?match[]={service_namespace="schoolz"}`) before
-assuming the query is wrong.
-
-## Default admin user (local only)
-
-Setting `ADMIN_EMAIL`/`ADMIN_USERNAME`/`ADMIN_PASSWORD` in `env/secrets.local.env`
-seeds an admin user on backend startup (idempotent, local auth mode only —
-`backend/auth.py:seed_admin`). Prod's equivalent is `BOOTSTRAP_ADMIN_EMAIL`,
-which flags a Supabase-authenticated email as admin on first login.
+## Environment files
 
-## Guardian / student data model
+`env/` is entirely gitignored (not even `.example` variants) because some files hold real secrets. **`docs/ENV_SETUP.md` is the source of truth** — read it before touching env config. Root `.env.example`/`.env.prod.example` are tracked templates.
 
-Core domain concept: a `Student` row is a canonical record for a real child, shared across every guardian linked to it — never owned by one guardian. Guardians each have their own independent `GuardianStudentLink` row to a student; deleting your link only removes *your* view, never the student or anyone else's link (`backend/models.py`, `backend/routers/students.py`).
+**Local admin:** set `ADMIN_EMAIL`/`ADMIN_USERNAME`/`ADMIN_PASSWORD` in `env/secrets.local.env` to seed an admin on startup (idempotent, local auth mode only — `auth.py:seed_admin`). Prod's equivalent is `BOOTSTRAP_ADMIN_EMAIL`, which flags a Supabase email as admin on first login.
 
-- **Auto-matching**: `Student.match_key` = normalized `first_name|last_name|student_id`. When a guardian adds a child that matches an existing key, they're linked to the *same* Student row automatically — no approval gate — and every other guardian already linked gets a `Notification` (`type="guardian_matched"`) so the match is never silent. This is deliberate: verified against the Gary/Susan divorced-parents scenario (shared kids auto-linked and visible to both; each parent's non-shared kids stay private; deleting a shared child from one parent's profile doesn't affect the other's) with both a pytest suite (`backend/tests/test_students.py`) and a full Playwright browser walkthrough.
-- **Invites** (`backend/routers/invites.py`, `GuardianInvite`): per-child only (one invite = access to exactly one student), token-based, 7-day expiry. The unauthenticated preview endpoint (`GET /invites/{token}`) deliberately shows only first name + last initial — not the full name or student ID — so an invite link alone can't be used to fish for a child's identifying info. Accepting requires being logged in; the frontend preserves the invite target across register/login via a `?next=` query param (see `LoginPage`/`RegisterPage`) so accepting an invite as a brand-new user doesn't get lost at the home page redirect.
-- **Not built yet** (deliberately deferred, discussed 2026-09-08): students having their own login (`Student.user_id` doesn't exist yet), the "view as my child" toggle for guardians, and per-field visibility/hidden-from-child markers. Add these as their own pass — the schema should stay easy to extend for a `user_id` column and a visibility flag once there's real per-student data (schedules, grades, etc.) to attach it to.
+## Access model: public by default, admin-managed sources
 
-## Scheduler + email parsing (ported from billz, 2026-09-08)
+Deliberate product pivot: **almost everything is public, no account needed.** All school/district data is browsable and bookmarkable by anyone — the target workflow is "bookmark your kid's school page," not "log in to see anything." Registering is optional, only for the personal layer (your own kids, a narrowed calendar).
 
-Domain-agnostic scheduler package (`backend/scheduler/`) ported verbatim from billz: `registry.py` (kind → async handler dict via `@register_job`), `runner.py` (Postgres advisory-lock execution, `run_job_now()` for fire-and-forget manual runs, `_finalize()` computing `next_run_at` via croniter), `entrypoint.py` (separate process, `AsyncIOScheduler`, 30s reconcile loop against the `scheduled_jobs` table — **no restart needed** to pick up new/edited/deleted jobs). Runs as its own `scheduler` service in `docker-compose.yml` and its own Fly process group in `backend/fly.toml`.
+Three tiers, enforced in `backend/auth.py` + per-router:
 
-Unlike billz (admin-curated, single flat job list), schoolz's jobs are **self-service**: `ScheduledJob`/`EmailScanner`/`GmailToken`/`SmoreNewsletter` all carry an owner/creator, and API routes scope by `owner_user_id` (or `is_admin`). One real bug fixed while porting: the advisory-lock key must be a *deterministic* int derived from the job's uuid (`hashlib.sha256`, not Python's `hash()`) — `hash()` on strings is randomized per-process, so the API process (manual run-now) and the separate scheduler process (cron) would compute different lock keys for the same job and never actually exclude each other.
+- **Public** — every `GET` on schools/districts/calendar/newsletters. `GET /calendar` uses `get_optional_user` (returns `None` rather than 401) so it *degrades* instead of demanding login: a logged-in guardian gets it narrowed to their schools, an anonymous visitor sees everything. An explicit `school_id` narrows either way.
+- **Admin-only** — creating/editing District/School/SmoreNewsletter, any `run-now`, the `/scheduled-jobs` API, and Gmail connection + email scanners (connecting an inbox is data-source management, not a guardian task). Gated by `require_admin`; a plain `is_admin` check with no ownership fallback. Scanner rows stay owner-scoped so two admins don't see each other's captures.
+- **Authenticated** — register/login, students, guardian links, invites, notifications, account settings. Registering never grants `is_admin`.
 
-Two job kinds exist:
-- **`email.scan`** (`backend/scheduler/jobs/email_scan.py`) — needs a connected Gmail account. OAuth flow in `backend/routers/gmail.py` (read-only `gmail.readonly` scope only; popup + `postMessage('gmail:connected'|'gmail:error')`, listened for in `frontend/src/pages/GmailPage.tsx`). `backend/gmail_client.py` holds the shared Gmail API helpers (token refresh, threaded message fetch — `googleapiclient`/`httplib2` isn't thread-safe, so fetching runs via `anyio.to_thread.run_sync`). `EmailScanner` rows (filters + purpose + paired `ScheduledJob`) dispatch each newly-seen message (deduped via `EmailScannerMatch`) to a `PurposeSpec` processor (`backend/services/email_processors/`) — only `school_email` exists so far, which captures message content into `SchoolEmailMessage` and detects Smore/newsletter links in the body.
-- **`smore.scan`** (`backend/scheduler/jobs/smore_scan.py`) — **no Gmail/OAuth needed at all**, just the existing `scraper` service. Fetches a tracked `SmoreNewsletter` URL directly and parses it (`backend/services/smore_parser.py`) into `SmoreBlock` rows, deduped by content hash so re-scanning a still-live URL (Smore pages get edited in place week to week) only inserts genuinely new content. This is the preferred path for weekly school newsletters — added after realizing most district elementary/middle schools publish via Smore and the newsletter URL itself is public, so there's no reason to route through anyone's inbox. `school_email`'s processor auto-registers any Smore link it finds in an email into the shared `SmoreNewsletter` list (visible to everyone, like `Student`). Confirmed working end-to-end on a real case: Cherry Hill High School East's "The East Insider Weekly" newsletter, found via an `email.scan` on a `from_contains: ["chclc.org"]` / `subject_contains` scanner — the link landed in `SchoolEmailMessage.newsletter_links` and a `SmoreNewsletter` row appeared automatically.
+Frontend: public pages are plain routes. `RequireAuth` gates the personal pages; `RequireAdmin` gates `/admin/*` (a logged-in non-admin bounces to `/`, not `/login` — they're already logged in). Pages branch on `useAuth().user` to choose `/schools/mine` vs `/schools`, so an anonymous visitor never calls an endpoint that would 401.
 
-- **Deterministic school attribution via `EmailScanner.school_id`** (added after the East case above): a scanner dedicated to one school's newsletter (the normal case — a scanner named e.g. "CHERRY HILL HIGH SCHOOL EAST SMORE" filtering on that school's own subject line) now carries an optional `school_id`. When set, `school_email.py`'s processor attributes any newly-discovered Smore link to that school **and auto-creates its `smore.scan` job immediately** — no manual step at all, because the scanner's own `school_id` is already the deliberate, explicit choice (made once, at scanner-creation time) that justifies skipping a second opt-in. A scanner with no `school_id` still leaves a newly-found link unlinked/unscheduled for a guardian to wire up by hand via `PATCH /smore-newsletters/{id}` (which accepts `enabled`/`cron_expr`/`timezone` alongside `school_id`/`label` for exactly this handoff — setting `enabled: true` creates the job on the spot rather than requiring delete-and-recreate through the normal creation flow). This matters because not every school reuses one stable Smore URL — Cooper is the known exception, publishing a new URL per issue (see the Smore-parsing section above) — so a school without a dedicated, `school_id`-tagged scanner would otherwise need this manual step repeated every single issue.
+## Domain model
 
-**Smore parsing specifics** (confirmed against real district newsletters — Bret Harte, Beck, Kilmer, Mann, Rosa, Cooper): it's a client-rendered Svelte app with no public API/JSON/RSS feed, so parsing always goes through the scraper (`wait_for_selector=".block-wrapper"` — that class is present on every block type, including image-only ones, so waiting on it doesn't time out on an all-text or all-image newsletter). Every newsletter is a sequence of `.block-wrapper` divs, each classified as `text`/`image`/`link`. **Image blocks carry no real content in the DOM itself** (confirmed: real flyers with dates/phone numbers/event names, empty `alt` attributes) — `pending_vision_extraction=true` flags these for a follow-up Claude-vision pass (`content_extractor.py`, now built and running). Cooper is a known exception to the "one stable URL" pattern — it publishes a new Smore URL per issue, linked from an archive page, which this pass's data model doesn't yet special-case (each issue would need adding individually via `/smore`).
+**Students are shared, never owned.** A `Student` row is the canonical record for a real child; each guardian has their own `GuardianStudentLink`. Deleting your link removes only *your* view.
 
-- **Real bug hit and fixed, significant blast radius (2026-09-08)**: every image block actually DOES carry DOM text - a hover-only "zoom" control (`<a class="fancy-pic material-icons" aria-label="Show image in original size">zoom_out_map<span class="sr-only">Show in original size</span></a>`) sitting alongside every image, which `_classify()` was capturing verbatim as `text_content` (confirmed: the literal string `"zoom_out_mapShow in original size"` was stored for every image block checked). Because `content_extractor.py`'s corpus builder does `text = block.text_content or block.vision_extracted_text`, that non-empty junk string silently won out over the real vision-extracted content **for every image block, in every newsletter, project-wide** - meaning full flyers (a "Back to School Night" flyer, a "Mark Your Calendar" bulleted list, a monthly lunch menu) were reliably dropped from extraction with no error, log line, or warning anywhere. Caught only because the user manually checked Chesterbrook's Smore against what actually got extracted. Fixed in `smore_parser.py:_classify()` by decomposing `a.material-icons` before reading block text (regression-tested in `test_smore_parser.py`), plus a one-time DB backfill nulling the polluted `text_content` on the 25 already-stored image blocks it affected (Bret Harte, Cherry Hill East, Chesterbrook) and a manual re-run of `extract_from_newsletter` for those three - Chesterbrook went from 10 items to 24 (gained Back to School Night, every Mark-Your-Calendar date, and its full lunch menu); Bret Harte and East also gained their own previously-missing Back to School Night entries and more. Any other already-scanned newsletter with image blocks would need the same backfill+re-extract treatment if this is ever revisited.
-- Added `category="lunch_menu"` (`content_extractor.py`) for a day-by-day meal-calendar flyer embedded in a newsletter (as opposed to `LunchMenu`/`LunchMenuItem`, which is the *district*-wide PDF pipeline scoped by `(district_id, school_type)` - not a fit for e.g. a single private preschool's own newsletter-only menu, which is genuinely one-school-specific). **Initially rendered buried in `SchoolDetailPage.tsx`'s collapsed "More" accordion alongside `program`/`busing`/etc - a real bug in its own right, caught when the user couldn't find it after asking "why am I not seeing the lunch menu items."** Moved into the always-visible "Lunch Menu" section instead, shown alongside (or instead of, when there's no PDF-based one) the district-PDF `LunchMenu` display - the whole point of extracting it was so a school like Chesterbrook, which has no district PDF menu at all, actually gets one shown prominently rather than technically-present-but-undiscoverable.
-- Extraction now runs at `temperature=0` (previously the API default) and the system prompt explicitly demands enumerating every bullet in a dated list and representing every flyer with at least one item - both added defensively alongside the fix above, since the missing-content symptom could plausibly recur from ordinary LLM omission even with clean input, not just from this specific data-pipeline bug.
+- **Auto-matching** — `Student.match_key` = normalized `first_name|last_name|student_id`. A matching add links to the *same* Student with no approval gate, and every already-linked guardian gets a `Notification` (`type="guardian_matched"`) so it's never silent. Verified against the divorced-parents scenario (shared kids visible to both, non-shared kids private, one parent's delete doesn't affect the other) in `tests/test_students.py` plus a Playwright walkthrough.
+- **Guardian invites** (`routers/invites.py`) — per-child, token-based, 7-day expiry. The unauthenticated preview shows only first name + last initial, so an invite link can't be used to fish for a child's identity. The frontend preserves the target across register/login via `?next=`.
+- **Student accounts** (`routers/student_accounts.py`) — `Student.user_id` points at the student's own `User`; the account *is* that pointer, not a guardian link. Invite-only and stricter than guardian invites: the logged-in email must match the invited one, one account per student, and a guardian of that student can't claim it. bucket3's `_get_own_student` allows guardian **or** student, so both see identical data; `viewer_role` tells the UI which guardian-only controls to hide. Deleting a student's login nulls `Student.user_id`, never the student.
+- **Kids view v2** (`services/kids_view.py`, `routers/bucket3.py`, design in `docs/KIDS_VIEW_V2_DESIGN.md`) — pure rules, unit-tested in `tests/test_kids_view.py`. Rules worth knowing: Classroom never says "Missing" (it's derived: past due, not done); a person's mark (`ChildWorkItemProgress`) beats Classroom/Genesis in **both** directions; Missing/Done are filtered to the current marking period; a Genesis "0.00%" with no graded entries is shown as no grade. Teacher emails come only from the school's `StaffMember` directory — ambiguous matches resolve to none, never a guess. Suggestions (`services/kids_suggestions.py`, Haiku): tier A is cached per district course code + normalized title so one generation serves the whole class, and only the title + course name are ever sent; tier B is never stored.
+- **`Student.school_id` is required** and chosen from tracked schools, never free text. If a school isn't tracked, add it via `POST /schools` first.
 
-## School content extraction (added 2026-09-08)
+**Schools and districts.** `District` exists because some resources are published district-wide and apply to every school of a type — lunch menus are the confirmed case. `School.district_id` + `School.school_type` (`elementary|middle|high|alternative|other`) is what makes `GET /schools/{id}/lunch-menu` resolve automatically.
 
-`School` and `SchoolContentItem` (`backend/models.py`) are the structured data extracted from Smore newsletter content — both are shared/public like `Student`, never owner-scoped: extraction runs once per newsletter (whoever's `smore.scan` job triggers it), and every guardian sees the same result. This is deliberate — it's the whole point of not re-running Claude per interested parent.
+- **`School.slug`** — derived once at creation from short_name/name, never regenerated on a later edit (a stable permalink, not a display label). `routers/schools.py:resolve_school` resolves the path param against id **or** slug in one query, so every id-based link keeps working.
+- **`School.short_name`** — a bare "School"/"District" badge is useless once a guardian has kids at two schools. `derive_school_short_name()` strips the institution-type suffix and district prefix, but it's a starting point, not gospel (it can't tell a droppable middle initial from a real given name), so it's user-editable via `PATCH /schools/{id}`.
 
-- **`Student.school_id` is required** (a child attends exactly one school at a time) and is chosen from the tracked-schools dropdown (`GET /schools`) rather than typed as free text - `StudentCreate.school_id` is a required FK, validated to exist in `routers/students.py:add_student`. `services/schools.py` (the old free-text auto-match-or-create helper) was deleted when this changed; if a needed school isn't tracked yet, add it via `POST /schools` (UI: the "Add a school" form on `/schools`) first. `GET /schools/mine` filters to schools any of the current guardian's students attend; `GET /schools` is the full shared list.
-- **Extraction pipeline** (`backend/services/content_extractor.py`), triggered automatically at the end of `smore.scan` whenever new blocks were found: a vision pass over new image blocks (Claude Haiku, transcribes flyer text), then one structured tool-use call over all new block text + vision output, producing a topical summary, School fields (address/phone/absence method — only fills nulls, never overwrites), and a list of categorized items (`event`/`deadline`/`initiative`/`reminder`/`policy_change`/`procedure`/`program`/`busing`/`funding`/`volunteer`/`org_club`/`merch_ad`/`pta`/`person`). `policy_change`/`procedure` are only ever created when the source text itself flags something as new/changed — never routine unchanging policy.
-- **Corrections**: block-level dedup is exact-content-hash (a typo fix creates a new block, not an in-place edit). To avoid duplicate/conflicting calendar entries from that, the extraction call is given the school's current `SchoolContentItem`s as context and can set `supersedes_item_id` on a new item — the old one gets `is_current=False` (kept for history, excluded from default views) rather than deleted.
-- **Real bugs fixed during this build, worth remembering if extraction ever silently misbehaves again**:
-  1. Claude reasons in the school's own local time but returns bare ISO strings with no offset — treating those as UTC silently shifted every all-day date back a day and every timed event by 4-5 hours (`_parse_date` now attaches `America/New_York` to naive datetimes).
-  2. `is_all_day` came back from the model unreliably (often omitted) — now inferred from whether the date string has a time component (`"T" in start_date`) rather than trusting a separate boolean field, which had been silently defaulting every event to all-day.
-  3. **Links weren't being extracted at all** (`smore_parser._classify` only checked for an `<a href>` on `text`/`link` block types, never on `image` blocks - but a real handbook link was embedded as plain auto-detected text inside an image block, no anchor tag at all). Fixed with `_find_link()`: checks for a real anchor first, falls back to a bare-URL regex on the block's text, and runs regardless of block type. The extraction corpus now explicitly annotates every block's link as `(link: ...)` so the model sees it even when the visible text doesn't mention the URL (e.g. "Click here"), and `link_url` is backfilled from the source block if the model drops it anyway - don't rely on the model alone for something this easy to verify programmatically.
-  4. **A real 37-block newsletter silently produced zero extracted items** (`stop_reason: "max_tokens"` on the tool-use response, `max_tokens=4096` wasn't enough for a large corpus, and `items` was declared last in the JSON schema so Claude generated `summary`/school fields first and got cut off before writing any items). Fixed by bumping to `max_tokens=8192` **and** reordering the schema so `items` is generated first - if truncation ever happens again, the important part survives instead of nothing at all. `response.stop_reason == "max_tokens"` is now logged and surfaced in the job's `log_excerpt`.
+**Content scoping.** `SchoolContentItem.scope` is `school` (school_id set) or `district` (district_id set). District items are deduped one row per `(district, category, start_date)`, because every school's newsletter independently reports the same holidays. `GET /schools/{id}/content` unions a school's own items with its district's, so a school page shows district holidays without a separate visit.
 
-## Districts and lunch menus (added 2026-09-08)
+## Scheduler and scans
 
-`District` (`backend/models.py`) exists specifically because some resources are published at the district level and apply to every school of a given type, not per-school - lunch menus are the confirmed case: Cherry Hill publishes one PDF per (grade band, meal type) per month, not one per school. `School.district_id` + `School.school_type` (`"elementary"|"middle"|"high"|"alternative"|"other"`) is what makes `GET /schools/{id}/lunch-menu` resolve to the right menu automatically - a parent looking at their kid's school page never needs to know or visit the district's own menu page, even though the underlying PDF and its one Claude-parse are shared across every same-type school in the district.
+Domain-agnostic scheduler (`backend/scheduler/`) ported from billz: `registry.py` (kind → handler via `@register_job`), `runner.py` (Postgres advisory-lock execution, `run_job_now()`), `entrypoint.py` (separate process, 30s reconcile loop against `scheduled_jobs` — **no restart needed** to pick up job changes). Runs as its own compose service and Fly process group.
 
-- **Discovery** (`services/lunch_menu.py:discover_current_menus`): fetches the district's food-services page, regex-matches PDF filenames like `September2026-ES-Lunch.pdf` (grade band + meal type encoded in the filename - confirmed real, including a real district typo, `Setember2026-MS-Breakfast.pdf`, which the regex tolerates since it only anchors on the `-MS-Breakfast` part). No per-school scraping needed - one page covers every school type.
-- **Parsing** (`services/lunch_menu.py:parse_menu_pdf`): passes the PDF directly to Claude as a `document` content block (native PDF support, not a page-image conversion) with a structured tool-use call, resolving day-of-month calendar entries into full ISO dates using the PDF's own month/year context. Confirmed accurate against the real September 2026 elementary menu (Labor Day/Sept 7 correctly marked "School Closed", meal descriptions matched exactly).
-- **Job** (`scheduler/jobs/lunch_menu_scan.py`, kind `lunch_menu.scan`): one job per `District` (auto-created by `POST /districts` when `food_services_menu_url` is given, mirroring the `SmoreNewsletter` pattern), runs discovery + parses any `(district, school_type, meal_type, source_pdf_url)` combination not already in `LunchMenu` - dedup is on the PDF URL itself, since districts publish a new PDF each month rather than editing one in place.
-- **Display** (`SchoolDetailPage.tsx`): upcoming days (from today) shown prominently in their own "Lunch Menu" section, full month behind an accordion - dates are string-sliced and rendered at a fixed noon-UTC anchor (`menu_date.slice(0,10) + "T12:00:00Z"`) rather than passed through browser-timezone `Date` conversion directly, to avoid the same off-by-one-day class of bug fixed in the Smore date pipeline.
-- **Not yet built**: only Cherry Hill Public Schools is seeded; adding a second district means repeating the same `discover_current_menus` pattern only if its food-services page has a similarly regular PDF-naming structure - not guaranteed to generalize to a district that publishes menus differently.
-- **Known LLM variance** (not a bug, just how it is): the same newsletter re-extracted can classify a holiday closure as `event` one run and `reminder` the next, and doesn't always include a time-of-day even when the source text has one. Both are inherent to LLM classification, not something to chase perfect determinism on.
-- **Calendar** (`GET /calendar`, `frontend/src/pages/CalendarPage.tsx`): hand-rolled month grid (billz-style, no calendar library) + a sortable/filterable table below it - clicking a grid day filters the table to that day (click again to clear), independent of the school/category dropdowns and text search which filter what's fetched/shown more broadly. Per-page CSS Module (`CalendarPage.module.css`) rather than the shared `styles.css` global classes, matching billz's per-component CSS Modules convention - the rest of the app hasn't been migrated to this pattern yet, just this page so far. "Add to Google Calendar" is a one-click quick-add link (`frontend/src/lib/calendar.ts`, `calendar.google.com/calendar/render?action=TEMPLATE&...`) — deliberately not a full OAuth-based two-way sync (billz has one for its own family calendar; explicitly decided against porting that complexity here since school dates don't need per-user editable occurrences or multi-account publishing).
-- **Absence button** (`frontend/src/components/AbsenceButton.tsx`) adapts to `School.absence_method`: `mailto:` with prefilled subject/body for email-based schools (confirmed real case: Bret Harte wants email to two named staff, not a phone call), `tel:` for phone-based ones, a direct link out for `"portal"` schools (added after Cherry Hill High School East's newsletter turned out to describe a full Genesis Parent Portal login flow rather than an email/phone), falls back to showing raw instructions verbatim only for the `"other"` case.
-  - `absence_method="portal"` intentionally does **not** store the newsletter's click-by-click steps in `absence_instructions` (left null) - a portal login flow's procedural text isn't useful to a parent once there's a direct link, only the destination is. `School.absence_portal_url` is resolved **deterministically** from a small known-portal lookup table (`content_extractor.py:_KNOWN_PORTAL_URLS`, currently just `{"genesis": "https://parents.chclc.org/genesis/parents?gohome=true"}`) keyed on the portal name the model extracts (`absence_portal_name`, e.g. "Genesis") - never trusted directly from the model, since a newsletter naming a portal by name essentially never also includes its actual login URL as a link. This was itself confirmed on East's real newsletter text ("East is using the Genesis Parent Portal..." with zero embedded links) - the real URL was found separately, on the district's own site nav (`https://parents.chclc.org/genesis/parents?gohome=true`, labeled "Genesis Parent Access") and is the same fixed URL for every Cherry Hill school, not something that needs per-school discovery.
-- **UI structure** (`frontend/src/pages/SchoolDetailPage.tsx`): header/absence-button/summary/reminders/upcoming-dates are always visible; programs/busing/funding/volunteer/orgs/merch/policy/procedure sit behind `<details>` accordions; PTA and the staff directory get their own always-visible sections per explicit ask. New shared design system in `frontend/src/styles.css` (CSS custom properties, light/dark via `prefers-color-scheme`) — applied to the new School/Calendar pages; older pages (Login/Children/Gmail/etc.) still use their original inline styles and haven't been re-skinned.
+- **Advisory-lock keys must be deterministic** — derived from the job uuid via `hashlib.sha256`, never Python's `hash()`, which is randomized per process. Otherwise the API process (run-now) and the scheduler process compute different keys for the same job and never actually exclude each other.
+- **Three-state results**: `success` / `warning` / `error`. A handler returning a string starting with `"WARNING:"` gets `warning` — it didn't raise, but "the fetch worked and found nothing" was previously indistinguishable from real success, silently hiding coverage gaps.
+- **Stable error codes** (`scheduler/errors.py`): `classify_exception()` maps library exceptions to a `(code, stage)` pair, walking `__cause__`/`__context__` since `scraper_client` re-raises. Handlers can raise `ScanError(code, msg, stage=...)`. Non-fatal in-scan problems call `record_parse_issue()`. Runs stuck `running` for 45+ min are reaped each reconcile tick (the process died mid-run).
+- **Auto-scheduling**: setting the relevant URL on a School/District creates its scan job (`_ensure_*_job` in `routers/schools.py`/`districts.py`). All non-Smore public-source scans run every 12h (`0 */12 * * *`). Smore stays weekly by explicit instruction. **Changing an `_ensure_*_job` constant does not retroactively update rows already in the DB.**
+- **Deleting a job is safe by schema** — every `*_job_id` FK is `ON DELETE SET NULL`.
+- **`ScheduledJob.next_run_at` is display-only.** APScheduler triggers purely from `cron_expr`; bumping it in the DB does nothing. Force runs via the `run-now` endpoints.
 
-## District vs school content scoping (added 2026-09-08)
+Job kinds: `smore.scan`, `email.scan`, `lunch_menu.scan`, `staff_roster.scan`, `documents.scan`, `school_info.scan`, `district_calendar.scan`, `marking_period.scan`, `preschool_locations.scan`, `preschool_team.scan`, `transportation.scan`, `hs_rotation.scan`.
 
-`SchoolContentItem.scope` is `"school"` (default, `school_id` set, `district_id` null) or `"district"` (`district_id` set, `school_id` null) - added because a calendar showing every school in the system is mostly noise for a parent who only cares about their own kids' schools. District-wide items (holiday closures, district-wide policy/deadlines) get classified by the extraction prompt and **deduped one row per (district, category, start_date)** - every school's newsletter independently reports the same holiday closures, confirmed real (Bret Harte's and Beck's newsletters both report "Labor Day," "Rosh Hashanah," "Yom Kippur" the same week) - without this dedup step, the district-wide items would multiply once per school instead of showing once.
+**`smore.scan`** is the preferred newsletter path — no Gmail/OAuth, just the scraper, since newsletter URLs are public. **`email.scan`** needs a connected Gmail account (read-only scope) and exists to *discover* newsletter links; `EmailScanner.school_id`, when set, attributes a discovered link to that school and auto-creates its `smore.scan` job immediately (the scanner's own `school_id` is already the deliberate choice that justifies skipping a second opt-in).
 
-- `GET /calendar` defaults (no `school_id` param) to the current guardian's own schools + those schools' districts (`routers/calendar.py:_my_school_and_district_ids`) - **not** every tracked school, which was the actual bug this fixed (the endpoint previously had no owner-scoping at all).
-- `GET /schools/{id}/content` unions that school's own items with its district's items, so a school's own page still shows district holidays without a separate district page visit.
-- Known model unreliability: `person_name` for `category="person"` items sometimes lands in `title` instead (despite the schema wording saying not to) - `content_extractor.py` tries both when resolving `staff_member_id` against the roster rather than fighting the model further on this one.
-- **`School.short_name`**: a bare "School" vs "District" badge is useless once a guardian has kids at more than one school - the calendar needs to say *which* school. `derive_school_short_name()` (`models.py`) strips the generic institution-type suffix ("Elementary School" etc) and district-name prefix, auto-set at school creation. It's a starting point, not gospel - it can't cleanly derive "Beck" from "Henry C. Beck Middle School" (no generic rule distinguishes a droppable first-name-plus-middle-initial from a real given name), so `short_name` is user-editable via `PATCH /schools/{id}` for exactly this kind of correction; all 5 seeded schools have theirs manually confirmed. `GET /calendar` is the one endpoint that actually populates `SchoolContentItemOut.school_name` (a school's own detail page doesn't need it - which school is already obvious from context there).
+**Not every school publishes the same way.** Most reuse one stable Smore URL; some (Cooper, Clara Barton) publish a **new URL per issue** from an author/archive page, and the recurring job only re-checks the URL it's given. Those need re-adding by hand each issue. A site-nav link to `smore.com/u/<username>` is an *author profile*, not a newsletter — the real issue lives at its own `/n/<code>` URL.
 
-## Staff rosters (added 2026-09-08)
+## Content extraction
 
-`StaffMember` (`backend/models.py`) is fetched from each school's own Finalsite staff directory (`/contact-us`), auto-scheduled (`staff_roster.scan` job, kind registered in `scheduler/jobs/staff_roster_scan.py`) the first time a `School` gets a `website_url` set (`routers/schools.py:_ensure_staff_roster_job`, mirrors the `SmoreNewsletter`/`District` auto-schedule pattern). This is what lets a newsletter's "person" mention (`SchoolContentItem.person_name`/`person_title`) resolve to a real `staff_member_id` instead of floating free text - matched by normalized name within the same school (`content_extractor.py`, preloaded once per extraction run).
+`content_extractor.py` turns new `SmoreBlock` rows into `SchoolContentItem`s: a Claude vision pass over new image blocks, then one structured tool-use call over all block text + vision output. Extraction runs **once per newsletter** and the result is shared/public — that's the whole point of not re-running Claude per interested parent.
 
-- **Real bug hit and fixed**: the directory's `?const_page=N` pagination looked like real server-side paging (distinct URLs, `data-page` attributes) but **is entirely client-side** - re-fetching `?const_page=2` as a fresh page load just returns page 1 again. Confirmed by comparing two "different" pages' first constituent id (identical). Fixed by adding `POST /fetch-paginated` to the scraper service (`scraper/main.py`) - keeps one live browser session open and actually clicks the `.fsNextPageLink` control between captures, since pagination state only exists in that page's JS, not in the URL. Fetched all 79 real Bret Harte staff this way (vs 24 before the fix - exactly one page's worth).
-- Titles are frequently absent for real directory entries (many staff have no "Titles:" block at all) - `StaffMember.title` is nullable and left `None`, never an empty string, when the source has no titles block.
+Rules that exist for a reason:
 
-## School documents (added 2026-09-08)
+- **`temperature=0`**, and the system prompt explicitly demands enumerating every bullet in a dated list and representing every flyer with at least one item.
+- **`items` is declared FIRST in the tool schema.** Claude generates fields in schema order, and a long newsletter can hit `max_tokens` mid-response. With `items` last, a real 37-block newsletter produced *zero* items. `max_tokens=8192`, and the corpus is chunked 12 blocks at a time so a big newsletter degrades gracefully instead of vanishing. `stop_reason == "max_tokens"` is surfaced as a `WARNING`.
+- **Dates are local, not UTC.** Claude reasons in the school's local time and returns bare ISO strings. Treating those as UTC shifted every all-day date back a day and every timed event by 4–5 hours. `_parse_date` attaches `America/New_York` to naive datetimes. The same off-by-one is why the frontend formats via `lib/calendar.ts:localDateKey` and anchors menu dates at noon UTC, never raw browser `Date` math.
+- **`is_all_day` is inferred** from whether the string has a time component, not from the model's boolean (which it omits often enough to have silently defaulted everything to all-day).
+- **Stale years roll forward.** A flyer can print last year's date — confirmed: a PTA reused artwork reading "SEPTEMBER 24, 2025" during Sept 2026. Vision transcribed it faithfully, and the item then superseded the correctly-dated rows, so the event vanished from every forward-looking view rather than merely showing a wrong date. `_correct_stale_year()` rolls dates >30 days stale to the next plausible occurrence (30-day grace so a just-passed event isn't shoved a year ahead; 5-year cap so genuine history is left alone), and `_may_supersede()` refuses to let a past-dated item retire an upcoming one.
+- **Corrections via supersede**: block dedup is exact-content-hash, so a typo fix creates a *new* block. The call gets current items as context and can set `supersedes_item_id`; the old row goes `is_current=False` rather than being deleted.
+- **Status titles are forced to `scope='district'`** (`services/school_status.py:is_status_title`) before the dedup check. A closure/half-day/delay is never one school's own news, but the model doesn't reliably mark it district-scoped, which produced a pile of near-duplicate "First Day of School" rows. Deliberately its own regex set, *not* shared with `school_today.py:classify_day` — that function's precedence (closed beats early_dismissal) breaks on a real title like "EARLY DISMISSAL - Staff In-Service".
+- **Links are verified programmatically, never trusted to the model.** `_find_link()` checks for a real anchor, then falls back to a bare-URL regex on block text, regardless of block type (a real handbook link was plain auto-detected text inside an image block). The corpus annotates every block's link as `(link: ...)`, and `link_url` is backfilled from the source block if the model drops it.
+- **Portal URLs are resolved from a lookup table** (`_KNOWN_PORTAL_URLS`), never from the model — a newsletter naming "Genesis" essentially never includes the actual login URL.
+- **Known LLM variance, not a bug**: the same newsletter re-extracted can classify a holiday as `event` one run and `reminder` the next. Not worth chasing determinism on. Where determinism *is* achievable, prefer it — e.g. `_parse_lunch_menu_days` regex-splits the model's own output into `LunchMenuItem` rows rather than making a second LLM call.
 
-`SchoolDocument` (`backend/models.py`) discovers reference documents for a school - parent/student handbooks to start, `doc_type` left extensible. Unlike `LunchMenu`, there's no one reliable filename/URL pattern across schools, so discovery (`services/school_documents.py`, `documents.scan` job in `scheduler/jobs/documents_scan.py`, auto-scheduled monthly per school the same way `staff_roster.scan` is - `routers/schools.py:_ensure_documents_scan_job`) tries two paths and merges whatever it finds:
+**Known gap:** only the closure/half-day class is deduped across sources. An ordinary event reported by both the district feed and a school's newsletter with different wording still double-counts, and pre-existing duplicates in prod aren't retroactively cleaned.
 
-- **Website**: follows any homepage nav link mentioning "handbook", then (since that's often a landing page, not the file itself) looks one level deeper inside `<main id="fsPageContent">` for the actual PDF/Google Doc link - scoping to that container was a real fix, not a nicety: the unscoped version was picking up a shared district-wide Google Drive link that happens to sit in every page's footer nav, misattributing it to schools it had nothing to do with.
-- **Smore fallback**: some schools (confirmed real: Beck, Rosa, Knight as of the initial pass) have no handbook page on their site at all - their current handbook only ever surfaces as a Google Doc link inside a Smore newsletter block's text (including OCR'd vision-extracted text from an image block). `discover_from_smore` scans this school's already-parsed `SmoreBlock` rows for a "handbook" mention and pulls the URL out with a regex, since it's plain text, not a real anchor tag.
-- **Year preference, not just first-found**: `academic_year` is parsed out of the title/link/surrounding text (`"20\d{2}-20\d{2}"`) specifically because website and Smore sources can disagree - confirmed real for Bret Harte, whose own site nav links a page still labeled "2023-2024" while its current newsletter links a "2026-2027" version instead. After each scan, every `SchoolDocument` of the same `(school_id, doc_type)` is re-evaluated and only the max-year one(s) are kept `is_current=True` (docs with no parseable year are left current only when nothing in the group has a year at all, since there's no basis to prefer one over another).
-- Surfaced as an always-visible "Documents" section on `SchoolDetailPage.tsx` (not behind an accordion) - the whole point was making it easy to find, not one more thing to dig for.
-- Coverage as of the initial pass: 13 of 19 Cherry Hill schools have a handbook on file; the other 6 (Beck, Cooper, Carusi, Rosa, Coles, West) turned up nothing via either path - not necessarily a bug, just nothing discoverable yet (may need a different nav slug, or genuinely isn't published in either place this pass checked).
+## Data sources and their quirks
 
-## SACC - School-Age Child Care (added 2026-09-08)
+- **Smore** — client-rendered Svelte, no API/RSS, so always via the scraper (`wait_for_selector=".block-wrapper"`, present on every block type). Image blocks carry no real DOM content, so `pending_vision_extraction` flags them for the vision pass.
+- **Lunch menus** — the district publishes one PDF per (grade band, meal type) per month. Discovery regex-matches filenames and tolerates a real district typo (`Setember2026-MS-Breakfast.pdf`) by anchoring only on the `-MS-Breakfast` part. Parsing passes the PDF to Claude as a native `document` block. Dedup is on the PDF URL, since a new file appears monthly. `LunchMenu` also supports **school-scoped** rows (`school_id` set, district/type null) for a school with no district pipeline at all.
+- **Staff rosters** — Finalsite `/contact-us`. The `?const_page=N` pagination *looks* server-side but is entirely client-side; re-fetching page 2 returns page 1. Hence the scraper's `/fetch-paginated`, which holds one browser session open and clicks `.fsNextPageLink`. This took a roster from 24 to 79 real staff. `StaffMember.title` is nullable and left `None` (never `""`) since many entries have no titles block. `services/staff_roles.py:classify_role` maps titles → role, which is what turns a 79-person directory into a "Who to contact" grid.
+- **School documents** — no reliable URL pattern, so discovery tries the website nav *and* falls back to scanning already-parsed Smore blocks (some schools publish the handbook only as a Google Doc link inside a newsletter). Website lookups are scoped to `<main id="fsPageContent">`: unscoped, they picked up a district-wide Drive link sitting in every page's footer and misattributed it everywhere. `academic_year` is parsed and the max-year doc wins, because site nav and newsletter genuinely disagree (one site still linked 2023-2024 while the newsletter linked 2026-2027).
+- **School info** — address/phone/logo come from the Finalsite footer widget. `wait_for_selector="footer"` times out on every school: the pages have **two** `<footer>` elements, one hidden, and Playwright waits on the first match. Wait on `.fsLocationAddress` instead. The logo is the first `<img>` in `<header>`, skipping the Google Translate badge some sites embed first.
+- **District calendars** — the Finalsite widget never puts its `.ics` URL in the page; the subscribe button hands it to `navigator.clipboard.writeText()`. Found by scripting a real Playwright click and intercepting that write. Pattern: `https://{domain}/fs/calendar-manager/events.ics?feed_id={uuid}`. `District.ics_feeds` holds several, each with `school_types` so elementary rotation days don't clutter a high schooler's calendar. Cross-source dedup runs **both** directions: the feed *claims* an existing newsletter-sourced row at the same date rather than doubling it, and `external_uid` makes re-scans idempotent.
+- **Marking periods / transportation / preschools** — parsed deterministically (BeautifulSoup, no LLM) specifically to avoid a model mis-zipping which date belongs to which column. Real gremlins: a non-breaking space in a heading that broke exact dict-key matching, weekday-prefixed dates in one table only, a footnote glued onto a date (`"June 17, 2027*available at 4:00 p.m."`), and `\xa0`/` ` in names. Fixtures for all of these live in `tests/fixtures/`.
+- **HS day rotation** — parsed from a district PDF with **pdfplumber word coordinates**. Entries snap to the *nearest* month header horizontally (an at-or-left rule mis-assigned November's rows to September), and headers can share a line with another column's entry, so they're peeled off first. The sheet is marked "tentative", so the job deletes rows that vanish from the PDF.
+- **SACC** is deliberately **not** on a recurring job — the source is one slow-changing handbook plus a phone directory. Populated by a one-off script; re-run it by hand if the handbook changes. Only `site_phone` is genuinely per-school, and it's the number a parent actually needs.
 
-`SaccProgram` (`backend/models.py`, `GET /schools/{id}/sacc`) holds before/after-school child care info - only rows for schools that actually host it exist, since not every school does and not every family is enrolled even where it does (confirmed real: Cherry Hill's SACC is a single district-run program identical in hours/policy across all 12 elementary schools that host it - every elementary school except Malberg, the district's Early Childhood Center, since SACC is K-5 only; no middle/high school hosts it). Each school's own row is nearly all shared district-wide text, except `site_phone` - the one thing that's genuinely per-school and the number a parent actually needs when running late.
+## Frontend
 
-- **Source**: the district's `/departments/school-age-child-care-and-step` page tree (family handbook Google Doc, a "SACC Site Phone Numbers" subpage, and a "PM SACC Absence" subpage with a Google Form link) - not a school-hosted page, so this doesn't fit the existing per-school scraper/scan pattern.
-- **Deliberately not on a recurring scheduled job** - unlike SmoreNewsletter/LunchMenu, the source here is one slow-changing shared handbook plus a phone directory, not something that republishes on a predictable schedule. Populated by a one-off script instead (see git history for `seed_sacc.py`, run once and deleted); if the handbook's hours/policy text or a site's phone number changes, that script's constants need a manual re-check and re-run rather than waiting on a cron job.
-- **Real confirmed policy details worth knowing if this ever needs re-verifying**: SACC has separate AM (7:00-8:45 AM) and PM (3:30-6:00 PM) sessions with different rules - only PM absences must be reported (by 3:00 PM same day, via QR/online form or phone; AM absences need no notice), and SACC explicitly does **not** cross-reference with the school office, so notifying the school/teacher alone does not stop a child from being dismissed to SACC. Changing who's authorized to pick up a child requires notifying the SACC Office in writing, not a verbal request at pickup. Late pickup (after 6:00 PM) is a $15/15-min fee, escalating to a call to authorized contacts, then DCP&P/police after 30 minutes if no one can be reached. A 2-hour school delay also delays AM SACC by 2 hours (PM unaffected); some early-dismissal days start SACC at 1:00 PM instead, while a separate list of early-dismissal days close PM SACC entirely (the specific dates are annual and live in the handbook, not duplicated into `SaccProgram` itself).
-- Surfaced as an always-visible section on `SchoolDetailPage.tsx` (only rendered when the school has a `SaccProgram` row) right alongside Documents - this was the whole point of the request: a parent shouldn't have to dig through a PDF to find the site phone number or the pickup-change procedure.
+Built around one question: what does a parent need at 7:40 AM with one hand. Home is the **Today feed** — one day-card per school, assembled server-side by `GET /schools/{id}/today` so the page is one request per school. Everything renders inside `components/AppShell.tsx` (bottom tabs on mobile, left rail ≥900px).
 
-## School info scan + scan visibility + 12h public-source cadence (added 2026-09-08)
+- **"My schools" without an account** (`lib/mySchools.tsx`) — school slugs in `localStorage`, deliberately not a cookie or sessionStorage (must survive closing the browser, needs no server round-trip). A logged-in guardian with linked kids gets `/schools/mine` instead. Two lists are tracked: which schools are *picked*, and which are currently *hidden* — tracking the hidden set means a school added later is visible automatically. If everything is toggled off, the filter falls back to showing all rather than going blank.
+- **Today renders in place when no schools are picked**, showing a picker prompt rather than redirecting — so the homepage always has indexable content for crawlers and link previews.
+- **School page order is deliberate**: sticky actions (absence / nurse / counselor / SACC / office) → this-week strip → reminders → coming up → who to contact → SACC → documents → newsletter leftovers behind accordions. **Actions first, reference last.** Documents are flagged "may be outdated" when the academic year doesn't match, since stale handbooks were the original complaint.
+- **`AbsenceButton`** adapts to `School.absence_method`: `mailto:` with a prefilled body, `tel:`, a direct portal link, or raw instructions only for `other`.
+- **Shared filters, not per-page ones.** "Exclude district" (on by default) hides Board of Ed/committee noise but never closures, half-days, or grading dates; "Show day-rotation" (off by default) hides `Day N` markers. Both live in `lib/mySchools.tsx` and govern Today, the week strip, and the school page too — not just the calendar.
+- **District items are labeled per school, not per type** (`lib/districtItems.ts:expandItemRows`): a type-restricted item expands into one row per matching active school, each with that school's own name and color — "Day 3 [Bret Harte]" beside "Day 2 [East]", never one row saying "Elementary". An item matching no active school is dropped.
+- **Staff directory** (`/directory`, `pages/DirectoryPage.tsx`, `routers/directory.py`) — every staff member in the district in one searchable list, because the per-school roster only helps someone who already knows which school the person is at, and the usual question ("who is the middle-school nurse", "what's Mr Whoever's email") has the school as the *unknown*. Public like every other read. Search/filter/paging are server-side: the full list is ~1900 rows and a few hundred KB of JSON, not something to hand a phone so the browser can filter it. Search ANDs whitespace tokens across name/title/department/email/school, so "beck math" narrows instead of widening. The filter chips come from `services/staff_roles.py:classify_directory_category` — a second, *coarser* keyword map than `classify_role` (which is deliberately narrow for the contact grid and classifies under 10% of rows, useless as a filter). It's derived at query time rather than stored like `role`: the keyword list gets tuned against real titles, and a column would need a migration plus a prod backfill every time. Facet counts are computed before the category filter is applied, so a chip always says what picking it would give and picking one never zeroes the others.
+- **Admin UI kit** (`frontend/src/ui.css`, `components/ui/`) — Modal, ConfirmDialog, PageHeader, SectionCard, Field, Badge, Switch, Toast, DataTable. Row actions use `.btn.icon` (optionally `.danger`); there is no `.icon-btn`. `/admin` is one route with tabs (Newsletters / Scans / Import-export); old paths redirect.
+- **Jobs UI** is full CRUD over `ScheduledJob`. The point of the detail modal is the **Runs tab**: status, error code + stage, and the full traceback, newest problem auto-expanded — far too much for a table cell. Rows resolve each job's target to a label ("Staff roster scan · Bret Harte"), never a UUID.
+- **Account** (`/account/*`) is **auth-mode aware**: prod's password lives in Supabase Auth, local's is a bcrypt hash the backend owns. Local mode has no mailer, so `/auth/forgot-password` returns the token in the response — the only way the flow is completable locally — while still returning 200-with-null for unknown emails so it can't enumerate accounts.
+- **Account deletion** removes only what the user *owns*; shared rows (the Student, schools, newsletters) survive with provenance nulled. Deleting the Supabase identity needs `SUPABASE_SERVICE_ROLE_KEY`.
+- **Community submissions** are public (`POST /submissions`, 15MB cap, bytes stored in the row — no object storage anywhere in this app yet) and land `status="pending"`. **Nothing here feeds extraction automatically, by design** — curation is the point. `/contact` uses a raw `fetch()` multipart POST, because `apiFetch()` forces a JSON `Content-Type` incompatible with `FormData`.
 
-`school_info.scan` (`backend/services/school_info.py`, `scheduler/jobs/school_info_scan.py`) fetches a school's public `address` and `main_phone` straight from its own homepage - confirmed real, every Cherry Hill school's Finalsite site carries a standard footer widget (`.fsLocationAddress`, `.fsLocationCity/State/Zip`, `.fsLocationPhone a[href^="tel:"]`), so one homepage fetch is enough, no dedicated contact page needed. `website_url` itself isn't discovered this way (there's no way to find a school's site without already knowing it) - the job just reads off of it. Auto-scheduled the same way as `staff_roster.scan`/`documents.scan` (`routers/schools.py:_ensure_school_info_job`, `School.school_info_job_id`).
+### UI reference template
 
-- **Real bug hit and fixed**: the obvious `wait_for_selector="footer"` timed out on every school - Playwright's visibility wait is strict-mode-sensitive, and these pages have **two** `<footer>` elements (one hidden), so it waits on the first match and never becomes visible. Fixed by waiting on the actual widget class (`.fsLocationAddress`) instead of the generic tag.
+Before building or restructuring any admin/management-style UI, check `~/claude/themeforest-OEgiMDPe-katalyst-modern-reacttailwind-admin-template.zip` (the purchased Katalyst template) for an existing pattern. Unzip to a scratch dir and grep `src/shared/ui/` and `src/modules/**/ui/` for the closest analog before inventing a new visual pattern. It is **style/structure inspiration rebuilt on this app's own CSS custom properties, never imported** — Tailwind is deliberately not a dependency. Design tokens in `styles.css` follow its palette so components can be adopted later without a re-skin.
 
-**All non-Smore public-source scans now run every 12 hours**, not their original weekly/monthly cadence - `staff_roster.scan`, `documents.scan`, `lunch_menu.scan`, and the new `school_info.scan` all use `cron_expr = "0 */12 * * *"` (both the `_ensure_*_job` constants in `routers/schools.py`/`routers/districts.py` for newly-created jobs, and a one-time `UPDATE scheduled_jobs SET cron_expr = ...` for the jobs that already existed - changing a job-creation constant doesn't retroactively touch rows already in the DB). `smore.scan` and `email.scan` are deliberately untouched - Smore has its own weekly cadence per explicit instruction, and email scanning isn't a "public source" scan at all.
+**Verifying UI with no browser on the host:** build the frontend, `docker cp` the dist into the running `schoolz-web-local` nginx container, and drive it from the `scraper` container's Playwright, proxying `localhost:8000` → `backend:8000` via `page.route` (adding CORS headers) with an admin JWT pre-seeded in localStorage.
 
-**Scan visibility**: `GET /scheduled-jobs` (new list endpoint, `routers/scheduled_jobs.py` - previously only had per-id `GET`/`GET .../runs`) lets admins see every job, everyone else only their own. Surfaced at `/jobs` (`frontend/src/pages/JobsPage.tsx`, linked from the home page as "Scheduled Fetches") - a flat table of every scan's kind, cron schedule, last run time, result, and next run time, filterable by kind.
+## Observability
 
-- **Three-state result, not just pass/fail**: a job's result can now be `success` / `warning` / `error` (`JobRun.status`, `ScheduledJob.last_status`) - added specifically because "the fetch succeeded but found nothing useful" (e.g. a school's site has no address, or the staff directory returned zero results, or no handbook could be found anywhere) was previously indistinguishable from a genuine success, silently hiding coverage gaps like the Kilmer staff-directory case. The convention (`scheduler/runner.py:_execute`) is: a handler that returns a string starting with `"WARNING:"` gets `status="warning"` instead of `"success"` - it didn't raise, so it isn't an `"error"`, but it's not a clean result either. `staff_roster_scan`, `documents_scan`, `lunch_menu_scan`, and `school_info_scan` all use this for their "found nothing" cases.
+`backend/telemetry.py` sets up OTel (traces/metrics/logs, OTLP/HTTP) for both `app` and `scheduler`, and **no-ops entirely unless `OTEL_EXPORTER_OTLP_ENDPOINT` is set** — so `pytest -q` and a plain local run send nothing. Custom instruments live in `backend/observability.py`; `scraper/telemetry.py` is a deliberate trimmed copy (the scraper stays independent of `backend/`).
 
-## District calendar feeds, marking periods, and preschools (added 2026-09-08)
+Prod is Grafana Cloud (stack shared with billz, tagged `service.namespace=schoolz`). All live: OTLP secrets on `schoolz-api`, `FARO_COLLECTOR_URL` on `schoolz-web`, three dashboards, alert rules from `grafana/cloud-dashboards/`, and a Postgres datasource for SQL panels.
 
-Ported billz's generic ICS-calendar-ingestion approach (`billz/backend/events/sources/ical.py` - timezone-safe VEVENT parsing, stable per-event ids) into a schoolz-specific `district_calendar.scan` job that subscribes to a district's own published calendar feeds instead of general local-event sources.
+- **Metric-name trap.** Prod was emitting the *old* OTel HTTP semconv (`http_server_duration_milliseconds_*` / `http_target`) while every dashboard and the `schoolz-api-5xx`/`schoolz-api-latency` rules were written against the stable names (`http_server_request_duration_seconds_*` / `http_route`). Nothing errored — panels were simply empty and those two alerts could never fire, unnoticed for four days. Fixed with `OTEL_SEMCONV_STABILITY_OPT_IN = "http"` in `backend/fly.toml`. **If a panel or alert goes blank, check which spelling prod is actually emitting before assuming the query is wrong.**
+- **Backend log lines carry their fields as OTel structured metadata**, so the line body is literally just `http_request` — `| json` and `| logfmt` both find nothing in Loki. Query structured metadata directly, or `unwrap duration_ms`.
+- **`trace_id`/`span_id` must be named in the log formatter's `fmt`.** `LoggingInstrumentor` puts them on every record, but a field not in `fmt` never reaches the emitted line — without which a slow log can't be pivoted to its trace. Requests also log `user_id`/`authed`, set by the auth dependencies onto `request.state`.
+- **Frontend RUM is Grafana Faro**, pinned `1.19.0` (the 2.x line requires react-router v7/v8; this app is on v6). No-ops when `VITE_FARO_URL` is empty. **Privacy scrubbing is mandatory**: `scrubUrl()` drops the entire `#hash` (Supabase returns OAuth tokens there), strips token-ish query params, and collapses `/invites/<token>`.
+- **Session attributes must survive an unresolved auth check.** `logged_in` alone was actively misleading — it's only set once auth resolves, so during the one failure worth catching (a check that never resolves) every signal was tagged `logged_in=false`, while those same sessions later reported `true`. `auth_state` (`pending`/`authenticated`/`anonymous`/`timed_out`) is the honest one, stamped `pending` at init.
+- **The collector is proxied same-origin.** `*.grafana.net` is on common ad-block lists, so `/rum/collect` proxies through nginx (`FARO_COLLECTOR_URL`, a **runtime** var, not a build arg). `nginx.conf.template` is a template because nginx:alpine runs envsubst on `/etc/nginx/templates/` at startup. The Dockerfile defaults the collector to `http://127.0.0.1:1` so local compose still starts.
+- **`page_visits` is aggregate-only by design** — no id, IP, hash, or session, because `/chcomms` promises readers there's no tracking. It can give visits, never unique visitors. That's a real constraint, not an oversight. It exists alongside RUM because RUM is client-side JS and ad blockers drop a meaningful share.
+- **No consent banner**, deliberately: everything stored is strictly necessary under GDPR/ePrivacy. Revisit the moment analytics or ads are added.
 
-- **Finding the feed URL was the hard part**: Cherry Hill's Finalsite calendar widget never puts its `.ics` URL in the page - the "Subscribe to calendar" button hands the URL to `navigator.clipboard.writeText()` in JS and nothing else. Found by scripting a real Playwright click and intercepting that clipboard write (see `services/district_calendar.py`'s docstring) rather than guessing REST paths. The actual pattern once found: `https://{domain}/fs/calendar-manager/events.ics?feed_id={uuid}` (also reachable via `?calendar_ids={id}` for at least one feed) - not documented anywhere, and the `feed_id` token appears to be freely re-mintable (two different tokens returned byte-identical calendars in testing), so it isn't treated as a secret.
-- **`District.ics_feeds`** (JSON list of `{name, url, school_types}`) - a district can publish more than one calendar. Confirmed real for Cherry Hill: a main "District Calendar Main" feed (holidays, early dismissals, in-service days, closures - `SCHOOLS CLOSED - ...`, `DISTRICT CLOSED`, `EARLY DISMISSAL`, `IN-SERVICE`, board/committee meetings) plus a separate "Elementary Rotation Calendar" (`Day 1`/`Day 2`/.../`Day 5` specials-rotation labels, one per school day, elementary-only). `school_types` on a feed entry restricts its events (`SchoolContentItem.applies_to_school_types`) to matching `School.school_type` values rather than showing district-wide - added specifically so 180 elementary-only rotation-day entries don't clutter a high schooler's calendar. Filtering happens in both `GET /calendar` (against the guardian's own schools' types) and `GET /schools/{id}/content` (against that one school's type).
-- **Cross-source dedup, both directions**: a school's newsletter often reports the same district holiday independently (see the pre-existing district-item dedup in `content_extractor.py`, keyed on `(district_id, category, start_date)` - unaware of `source`, so it already skips creating a duplicate if the ics feed got there first). Going the other way, `district_calendar_scan.py` checks for an existing `source="newsletter"` row at the same date before inserting and **claims** it (flips it to `source="ics_feed"`, overwrites with the feed's more authoritative title) instead of doubling it - confirmed real on "Labor Day" and "Yom Kippur", both originally extracted from Bret Harte/Beck newsletters before the district feed was ever scanned. `SchoolContentItem.external_uid` (the iCal UID, namespaced per feed name) makes re-scans of the same feed idempotent updates rather than dupes.
-- **`marking_period.scan`** (`services/marking_period.py`) parses the district's "Conferences, Interim and Report Card Dates" page - a plain HTML `<table>` per school tier (High/Middle/Grades K-5/Preschool), each with a clean header row (`Interims Issued`/`Marking Period Ends`/`Report Card Dates`, or `End Date (Report Card Issued)` for preschool) - deliberately parsed deterministically (BeautifulSoup table walk keyed on the preceding all-caps `<p>` heading), not an LLM pass, specifically to avoid a model mis-zipping which date belongs to which column. Real gremlins hit and fixed: the preschool heading uses a non-breaking space (`"PRESCHOOL\xa0REPORT CARD SCHEDULE"`) that silently failed an exact dict-key match; the preschool table's dates are weekday-prefixed (`"Monday, November 30, 2026"`) while every other table's aren't; one date cell reads `"June 17, 2027*available at 4:00 p.m."` - a footnote marker glued directly onto the date, not a clean trailing asterisk. Items land as `category="deadline"`, `scope="district"`, tagged with the matching `applies_to_school_types` tier.
-- **Preschools**: `services/preschool_locations.py` parses the district's own "Preschool Locations" directory page into `School` rows (`school_type="other"`, matching Malberg's precedent) - confirmed real, most listed providers (Adventure Kids, Cadence Academy, Chesterbrook Academy, Discovery Corner, Goddard School, Kindercare, Lightbridge Academy, Mosaic Early Learning Center, Primrose School) are private third-party sites, not Finalsite/chclc.org, so the existing school_info/staff_roster/documents scans don't apply and aren't created for them (this job writes `School` rows directly, bypassing the router helpers that would otherwise auto-schedule those Finalsite-specific scans). Two listed locations (Joyce Kilmer Preschool, Malberg) are the *same building* as an already-tracked School, not new entities - deduped by matching the parsed street address against existing `School.address` values. `services/preschool_team.py` parses a separate "Our Preschool Team" page (central admin staff - CPIS, social workers, instructional coaches, IR specialists, nurses) that serves *every* preschool location, not one site - `preschool_team.scan` applies the same roster to every `school_type="other"` School (`StaffMember.source_constituent_id` synthesized from email, since there's no Finalsite constituent id here).
-- All four new scan kinds (`district_calendar.scan`, `marking_period.scan`, `preschool_locations.scan`, `preschool_team.scan`) follow the same `_ensure_*_job` auto-schedule-on-URL-set pattern as `staff_roster.scan`/`documents.scan`/`school_info.scan`, on the same 12h cadence.
+## Prod and deployment
 
-## School slugs and school-scoped lunch menus (added 2026-09-08)
+Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`.
 
-`School.slug` (unique, derived from short_name/name via `slugify()`, generated once at creation and never regenerated on a later short_name edit - a stable permalink, not a display label) lets a school's page be shared as `/schools/bret-harte-elementary` instead of a bare UUID. `routers/schools.py:resolve_school` (a shared FastAPI dependency) resolves the `{school_id}` path param against `School.id` OR `School.slug` in one query, so every existing id-based link/API call keeps working unchanged - the frontend only needed one change (`SchoolsPage.tsx` linking via `s.slug` instead of `s.id`). Backfilled for the 33 already-existing schools via a data migration (`0018_...py`) that slugifies `short_name`/`name`, de-duplicates collisions with a `-2`/`-3` suffix (`row_number() OVER (PARTITION BY slug ...)`), and falls back to `school-{id prefix}` for the pathological empty-slug case, all before the column goes `NOT NULL UNIQUE`.
+- **The prod DB is the Supabase project misleadingly named `billz-prod`** (billz's real data lives in the equally-misnamed `clockin`). `DATABASE_URL` must be the **Session Pooler** on `aws-1-us-east-1`, not the direct `db.<ref>.supabase.co` host — the direct endpoint is IPv6-only on the free tier and unreachable from GitHub runners. `aws-0` answers "tenant not found". RLS is on with no policies everywhere, which is correct because nothing goes through Supabase's Data API.
+- **Custom domains must be Cloudflare DNS-only (grey cloud).** Proxied records break Fly's certificate validation — confirmed, certs sat "Not verified" until switched.
+- **The scraper is on Fly's private network** (`http://schoolz-scraper.internal:8765`). Two gotchas: 6PN is **IPv6-only**, so uvicorn must bind `::` not `0.0.0.0`; and it must **never auto-stop**, because private-network traffic doesn't pass through fly-proxy, so nothing wakes a stopped machine and `.internal` only resolves *started* ones.
+- **`schoolz-api` needs `--proxy-headers --forwarded-allow-ips='*'`.** Fly terminates TLS at the edge and forwards plain HTTP, so uvicorn built every `Location` header as `http://`, silently breaking clients that won't resend a POST body across a protocol downgrade. Trusting `*` is fine — fly-proxy is the only thing that can reach the port.
+- **One-off scripts against prod** run on the `scheduler` machine (always on, no `http_service`), with the file under `/app` (Python adds the script's own dir to `sys.path`). Expect the filesystem to reset on deploy. Do **not** run long scripts on an `app` machine over `fly ssh console` — SSH doesn't count as traffic for the idle timer, so the machine auto-stops mid-run. `fly ssh console` is also intermittently unavailable here (WireGuard/UDP); retry, don't diagnose.
+- **The 12h cron is a burst** — ~85 scans fire in the same minute against one 1GB Chromium. `scraper_client` caps in-flight requests at 3 per process, budgets 2× `timeout_ms` (the scraper applies it to `goto` *and* `wait_for_selector`), and retries 502/503/504. `warning` results for the private preschools are expected — they aren't Finalsite sites.
+- **Prerender** (`/prerender`, for crawlers) is single-flighted per path: concurrent crawls each used to spawn a full Playwright render against that 3-slot budget. Stale cache is served if a re-render fails, since six-hour-old real content beats an error page.
+- **Supabase auth setup**: email/password signup requires clicking the confirmation email first, which reads as "login isn't working". Google SSO needs the OAuth client ID/secret pasted into Supabase's provider *and* the Supabase callback added to the client's authorized redirect URIs.
 
-**`LunchMenu`/`LunchMenuItem` now support school-scoped rows**, not just the original district-wide PDF pipeline (`district_id`+`school_type`, shared across every school of that type). `LunchMenu.district_id`/`school_type` went nullable and `school_id` was added - a school-specific row has `school_id` set and the other two null, mirroring `SchoolContentItem`'s `scope="school"`/`"district"` split. `GET /schools/{id}/lunch-menu` checks the school-specific menu first, falling back to the shared district+type one - this exists because a private preschool like Chesterbrook has no district PDF pipeline at all, only its own newsletter-embedded menu flyer.
+### CI/CD — read this before assuming a merge shipped anything
 
-- **Two real bugs caught by the user actually looking at the result, both fixed the same day**: (1) the newsletter-extracted `category="lunch_menu"` item was initially rendered in `SchoolDetailPage.tsx`'s collapsed "More" accordion instead of the always-visible "Lunch Menu" section the PDF-based menu already used - technically present, practically invisible, caught when the user asked "why am I not seeing the lunch menu items." (2) Even after moving it to the visible section, it was still just the model's raw description text as one unformatted paragraph - not the day-by-day grid a real menu needs. Fixed by parsing that description deterministically (`content_extractor.py:_parse_lunch_menu_days`, regex-split on the model's own consistent `"Weekday DD: text."` shape, year/month taken from the item's already-resolved `start_date`) into real `LunchMenuItem` rows instead of a second LLM round-trip - matches the user's stated preference for determinism over another model call. A trailing `"Available daily: ..."` note (not tied to any single day) is stripped before splitting rather than getting glued onto the last day's entry. If the regex finds no day markers at all (format doesn't match), the raw description is kept as a plain `SchoolContentItem` instead of silently discarding the flyer's content - the parse is a data-quality upgrade attempt, not a require-or-lose gate.
+- `migrate.yml` runs Alembic against prod on push to `main`, **only if the push touches `backend/alembic/**` or `backend/models.py`**.
+- `deploy.yml` does **not** trigger on push — only via `workflow_run` when migrate *completes*, or manual dispatch.
+- **So a merge touching neither path runs neither workflow.** Deploy manually: `gh workflow run deploy.yml -f target=both`. Always check `gh run list --branch main`. Full procedure in `.claude/skills/deploy-schoolz/SKILL.md`.
+- `.woodpecker.yml` is supplementary self-hosted CI (test/build only, no deploy).
 
-## Calendar: today-default filter, tap-to-toggle grid, search, and year view (added 2026-09-09)
+## Testing
 
-`frontend/src/pages/CalendarPage.tsx` was reworked around three specific asks: land already filtered to today, let the whole grid (not just a "clear" link) toggle the day filter on and off, and let text search reach every event instead of whatever happens to be loaded for the visible month.
+- **pytest never writes to the shared local DB.** `conftest.py`'s `_isolated_db_transaction` autouse fixture wraps each test in one transaction and rolls it back, via the SQLAlchemy "join a session into an external transaction" pattern (`join_transaction_mode="create_savepoint"`, with `database.SessionLocal` monkeypatched). An app-level `commit()` only releases a SAVEPOINT. This was a real footgun that accumulated 169 leftover users before being caught — a test helper importing `from database import SessionLocal` bypasses the monkeypatch, so use `import database; database.SessionLocal()`.
+- **Known flake**: `test_account.py::test_delete_account_requires_confirmation_and_password` occasionally 401s — local JWTs carry `iat` and PyJWT rejects a token issued "in the future" if the container clock steps back. Passes on re-run.
+- After any parser change, run **Re-read imported pages** (`POST .../bucket3/reprocess`) — import dedups by content hash, so stored captures need re-extraction.
 
-- **Lands on today**: `selectedDay` initializes to today's date key instead of `null`, so the list below is pre-filtered on arrival. Today's cell gets its own visual ring (`.dayToday`, an inset `box-shadow`) independent of whether it's also the active filter, so "today" and "selected" read as two different things even when they're the same day. A "Show month" button appears next to the day label whenever a day is selected; tapping the grid cell itself (any cell, including today's) also toggles the filter - two ways to the same result, as asked. Changing month clears the day filter, since a day filter tied to a month you've navigated away from is confusing.
-- **Search is server-side and unbounded**, not a client-side filter over the currently-loaded month. Typing (debounced 300ms) sends the text to `GET /calendar?q=...` with no end-date bound (start is set to a week ago, so nothing recent gets excluded) - this is what makes a search for something in a different month or year actually find it without navigating there first. Confirmed against real data: searching "graduation" while viewing September 2026 finds both the middle- and high-school graduation items, over in June 2027. Search mode replaces the month grid entirely with a "Search results for…" header and a "Back to calendar" button; picking a day from the grid (a different intent) drops back out of search.
-- **Year view**: a Month/Year tab switcher (reusing the existing `.tabs`/`.tab` pattern) next to the page heading. Year mode renders 12 small month grids (`monthCells()`, the same cell-building logic the main grid uses, parametrized by year+month so it works for any month regardless of what's currently "viewed") with a shared today-highlight and event-dot styling, navigated by year instead of month. Tapping a day in year view jumps into month view on that month with that day pre-filtered - one mechanism, not two separate day-detail views to maintain. Year view intentionally shows no flat event list underneath (a whole year of items unfiltered would be hundreds of rows) - the mini-calendars are themselves the year overview; drilling into a specific day is how you see items in year mode.
-- The calendar's own school-toggle chips were removed in favor of the same top-ribbon filter (`activeSchools` from `lib/mySchools.tsx`) used on Today/Lunch, for one consistent cross-page filter instead of a page-local duplicate. A school's own "Full calendar" link (`?school=slug`) still narrows to exactly that one school regardless of the ribbon.
-- The old raw `<table>` event list (no `overflow-x` wrapper, not touch-friendly) was replaced with the same `ItemRow` card list used on Today/school pages - the sortable column headers went with it; a calendar list reads chronologically by default, which is what a "search results"/"day's events" list needs, not a spreadsheet.
+## Bugs whose mechanism is worth remembering
 
-## Smore coverage is inconsistent across the district - confirmed 2026-09-09
+Each of these was silent — no error, no log line — and cost real time.
 
-Not every school runs its newsletter the same way, even among ones that use Smore at all. Three more were added to the tracked list after the user checked each school's own site nav:
-
-- **Kilmer** (`app.smore.com/n/zdjpr`, "Kilmer Connection") and **Mann** (`app.smore.com/n/ymcbje`, "Horace Mann Digital Backpack") were already rows in `smore_newsletters` from an earlier pass, but had never actually been scanned (`last_scanned_at` was null) - just untriggered. Both now scanned successfully (12 and 32 blocks respectively).
-- **Clara Barton**'s site nav link (`secure.smore.com/u/idalis.kizee`) turned out to be an **author profile page**, not a newsletter - Smore's `/u/<username>` route lists every newsletter that author has ever published (40, in this case), the same per-issue-URL pattern already documented for Cooper, not the stable single-URL pattern most other schools use. Confirmed by loading it in a real browser (redirects to `app.smore.com/u/idalis.kizee`) and reading the listing - the current issue's real content lives at its own `/n/<code>` URL (`app.smore.com/n/hny2pw-the-barton-scoop`, "The Barton Scoop"), which is what got added instead. **Like Cooper, this one needs re-adding by hand each time a new issue is published** - the recurring `smore.scan` job only re-checks the URL it's given, it doesn't know to go back to the author page and find a newer issue. Scanned successfully on add (36 blocks, 44 items).
-- All three now have a `smore.scan` job on the standard weekly cadence (`0 8 * * 1` America/New_York), same as every other tracked newsletter.
-
-## Buses & transportation (added 2026-09-09)
-
-`DistrictTransportation` (`backend/models.py`, one row per district, `GET /districts/{id}/transportation` + `GET /schools/{id}/transportation`) is the "my kid's bus" layer that the redesigned UI had been missing entirely: who to call when the bus is late, how delay notices go out, the late bus after activities, same-day and permanent bus-stop changes, lost items, weather closings. Confirmed real source: the district's own `/departments/transportation` page tree on chclc.org (Finalsite) - one central office at Malberg (45 Ranoldo Terrace, (856) 489-5851, 7:00 am–4:30 pm) runs ~665 routes for all 19 schools, so none of it is per-school **except the late bus**: only the three middle and two high schools have one, split across two contractors by school (First Student–Berlin (856) 753-0222: Carusi CLR-1..3, East ELR-1..6; Hillman's (856) 753-1123: Beck BLR-1..3, Rosa RLR-1..3, West WLR-1..3). Resolved at read time by `services/transportation.py:late_bus_for_school` matching the page's all-caps school word against `School.name`/`short_name`; elementary schools get `late_bus: null` and the UI says so explicitly rather than showing nothing.
-
-- **Parsed deterministically** (`services/transportation.py`, no LLM) from six pages, each with a stable shape: the main page (office-hours `<h2>`, one `<p>` per staff member "Name - Title email", closing `<p>` with address/Phone:/Fax:), `late-bus-information` (`<p><strong>Contractor (phone)</strong>` then `<li>SCHOOL ... Routes: X, Y</li>`), `automated-messages` (the delay-notification policy: automated message for route delays of 20+ min, keep Genesis contact info current), `bus-guidelines` (the `<li>` with the same-day change rule: written note to the principal before 11:30 am), `change-request-guidelines-and-form` (the "accepted until October 31st" deadline + the request-form link), `lost-items` (driver holds items 3 days). The real pages are saved as `tests/fixtures/transportation/*.html` and every parser is tested against them. Real gremlins: names/titles carry `\xa0` and `\u202f` (narrow no-break) spaces - normalized in `_text()`.
-- **12h cadence, deliberately not faster** (`transportation.scan`, `District.transportation_url` + `_ensure_transportation_job`, `POST /districts/{id}/transportation/run-now`): the user's rule is "10 minutes if it carries realtime alerts, else the regular schedule" - checked, and neither the district homepage nor the transportation pages have any alert module or live delay feed (Finalsite `fsAlert` etc: zero elements); delays go out as automated messages to Genesis contact info, not on the site. If the district ever adds a live delay page, that page (not these) is what would deserve a fast poll.
-- **Scraper flakiness handled at the source**: the single `scraper` instance intermittently answers 502 (also hit during the preschool logo scans), and this job needs six sequential fetches, so `_fetch_page` retries each page 3× with backoff instead of failing the whole run on one blip - first live run failed exactly this way before the retry existed.
-- **UI**: `SchoolDetailPage` gets an always-visible "Buses & transportation" section in the same parent-question format as SACC (bus running late / late bus after activities / different stop today / changing your regular stop / left something on the bus / weather closings, staff behind an accordion) and a "Bus office" button in the sticky action row; the Today card gets "Bus office" and, for middle/high schools, "Late bus" `tel:` actions via `SchoolTodayOut.transportation`. The old per-school `busing` newsletter accordion still exists for school-specific busing notes.
-- **Ported-content audit done in the same pass**: the redesign had silently demoted PTA (originally its own always-visible section "per explicit ask") into the "More from the newsletter" accordion - restored as its own section after Coming up. Still intentionally dropped from the old school page: its per-school text search box (the calendar's search now covers dated items) and the always-visible newsletter summary (now an accordion).
-
-## Fixed: pytest no longer writes into the shared local database (2026-09-09)
-
-**This used to be a real footgun** - `pytest -q` run against the local stack created real, permanently-committed rows in the same tables the dev UI browses (`test_students.py`'s Gary/Susan/inviter/invitee scenario registers real users, creates schools, links students...). These accumulated every run - confirmed to reach 169 leftover users and 250 guardian-student links across sessions before being caught, and this directly caused a confusing bug hunt on 2026-09-09 (a real user's own account had a genuinely-linked child, and diagnosing an unrelated "Show me today" issue required first ruling out whether test-account debris was involved).
-
-**Root-caused and fixed the same day**, not just patched: `backend/tests/conftest.py`'s `_isolated_db_transaction` autouse fixture now wraps every test in one real database transaction and rolls it back at the end - the standard SQLAlchemy "join a session into an external transaction" pattern (`async_sessionmaker(bind=conn, join_transaction_mode="create_savepoint")`, with `database.SessionLocal` monkeypatched to that factory for the test's duration). A `session.commit()` anywhere in application code - inside a request handled through `get_db()`, or inside a test helper that calls `database.SessionLocal()` directly (see `test_students.py`'s `_make_admin`, which was changed from `from database import SessionLocal` to `import database; database.SessionLocal()` specifically so the monkeypatch reaches it) - only releases a SAVEPOINT, not the outer transaction, so every write from every session in a test rolls back together. Verified by running the full suite three times in a row and confirming the real user count never changed.
-
-`backend/scripts/cleanup_test_data.py` remains checked in as a one-time sweep for anything committed before this fix existed (also caught and fixed in the same pass: it was missing `scheduled_jobs.owner_user_id`/`smore_newsletters.created_by_user_id` clearing and test-named-district/job deletion, which meant a later feature - `admin_config`'s export/import, see below - immediately hit a foreign-key violation the first time its own tests ran). New test runs shouldn't need it at all going forward.
-
-## CI/CD
-
-- `.github/workflows/migrate.yml` — runs Alembic against prod on push to `main` (path-filtered) or manual dispatch; materializes `env/secrets.prod.env` from GitHub Actions environment secrets.
-- `.github/workflows/deploy.yml` — deploys backend then frontend to Fly.io via `flyctl deploy`, triggered after a successful migrate run.
-- **A merge to `main` that doesn't touch `backend/alembic/**` or `backend/models.py` triggers neither workflow** — migrate's path filter doesn't match, and deploy only chains off a migrate *run* completing, so it never fires either. Confirmed repeatedly: merges that only touched `frontend/`, `docs/`, or non-model `backend/` files (the calendar color fix, the MCP server addition) landed on `main` with zero automatic CI activity. After a merge like that, deploy manually: `gh workflow run deploy.yml -f target=backend|frontend|both`. Always check `gh run list --branch main` after merging rather than assuming a merge alone shipped anything — see `.claude/skills/deploy-schoolz/SKILL.md` for the full deploy procedure.
-- `.woodpecker.yml` — supplementary self-hosted CI (test/build only, no deploy), running on the same shared Woodpecker server as `billz` (droplet `billz-worker`).
-
-## Scraper
-
-`scraper/` is a standalone FastAPI + Playwright (headless Chromium) service, generic on purpose (`/fetch-html`, `/fetch-raw`, `/health`) — no site-specific parsing lives there. It's important to this project: the first real target is Cherry Hill's school site (`https://www.chclc.org/`, a Finalsite CMS site), confirmed working end-to-end locally (browser → backend → scraper → real site → HTML back).
-
-- **Image**: built `FROM mcr.microsoft.com/playwright/python:v1.47.0-jammy`, not a plain `python:slim` base — `playwright install --with-deps` cannot reliably resolve OS package names on `python:3.12-slim`'s Debian trixie base (hit this directly: `ttf-unifont`/`ttf-ubuntu-font-family` don't exist there). The Playwright-maintained image already bundles matching deps for its pinned Playwright version.
-- **Local**: runs as the `scraper` service in `docker-compose.yml`, always up (not profile-gated) since it's core to this project. Backend reaches it at `http://scraper:8765` via `SCRAPER_URL`, authenticated with `SCRAPER_API_KEY` (`X-API-Key` header) — see `docs/ENV_SETUP.md`.
-- **Backend wiring**: `backend/scraper_client.py` (`fetch_html()`) + `backend/routers/scraper.py` (`POST /scraper/fetch-html`, requires a logged-in user) — the router endpoint exists to verify wiring; real per-district extraction logic should call `scraper_client.fetch_html()` directly and parse the returned HTML in the backend, keeping the scraper service itself generic and swappable.
-- **Prod**: not deployed yet. Not going on Fly (long-running browser process doesn't fit Fly's model) — plan is to share billz's `billz-worker` droplet, same as billz's own scraper. See `notes/prod-checklist.md`.
-
-## Parent-facing layout: Today feed (added 2026-09-08)
-
-The frontend was restructured around one question: what does a parent need at 7:40 AM with one hand. Home (`/`) is now the **Today feed** (`frontend/src/pages/TodayPage.tsx`), one day-card per school the visitor cares about, not the old dev-style status page (that moved to `/account`, `AccountPage.tsx`, sign-in only). Every public page renders inside `components/AppShell.tsx` (top bar + bottom tab bar on mobile / left rail ≥900px: Today · Calendar · Lunch · Schools). Design tokens in `styles.css` follow the purchased Katalyst template's palette (teal primary, cool neutrals, Bricolage Grotesque + Nunito Sans via Google Fonts in `index.html`) so its components can be adopted later without a re-skin; Tailwind itself was deliberately *not* added - the template is style/structure inspiration, not a dependency.
-
-- **"My schools" without an account** (`lib/mySchools.tsx`, `MySchoolsProvider`): the first-visit picker (`/start`, `PickSchoolsPage.tsx`) saves school slugs in `localStorage` (`schoolz_my_schools`). A logged-in guardian with linked kids gets `/schools/mine` instead (also syncs across devices). Calendar and Lunch redirect to `/start` when the list is empty; Today (`/`) instead renders in place with a "Pick your schools" placeholder linking to `/start` - added 2026-09-12 so the homepage always has real indexable content for crawlers/link previews, instead of an immediate client-side redirect with nothing for a non-JS fetch to see. Each school gets a stable color by list position (`--sch-1..6`) used on chips, card rails, and calendar dots.
-- **`GET /schools/{id}/today`** (`services/school_today.py`, `SchoolTodayOut`) assembles one card server-side so the home page is one request per school: day status derived from district ICS/newsletter items (`classify_day`: `closed` > `early_dismissal` > `delayed` > `open`, weekend separately), hours from the new `School.start_time`/`end_time`/`early_dismissal_time` (admin-editable via `PATCH /schools/{id}`, not scraped yet - all null so far), elementary `Day N` rotation, today's + next school day's lunch via the shared `resolve_lunch_menu()` helper, SACC essentials, role-based contacts, next 5 dated items, closure/early-dismissal alerts within 7 days, and a Mon–Fri `week` strip (rolls to next week on weekends).
-- **`StaffMember.role`** (`services/staff_roles.py:classify_role`, deterministic keyword map: principal / assistant_principal / nurse / counselor / secretary / sacc / social_worker / psychologist) is what turns a 79-person directory into a "Who to contact" grid and the Nurse/Counselor action buttons. Recomputed on every roster/preschool-team scan; migration `0019` backfilled existing rows with the same regexes in SQL. Confirmed on real Bret Harte data (nurse, counselor, principal, SACC coordinator all resolved). Note many schools have no "Secretary" title in the directory - the grid falls back to a "Main office" card with `School.main_phone`.
-- **School page order is deliberate** (`SchoolDetailPage.tsx`): sticky action row (absence / nurse / counselor / SACC late line / main office) → this-week strip → reminders → coming up → who to contact (+ full directory accordion) → SACC as parent questions → documents (flagged "may be outdated" when `academic_year` ≠ current year, since stale handbooks are the original complaint) → newsletter leftovers behind accordions. Actions first, reference last.
-- `GET /calendar` accepts `school_ids` (comma-separated ids or slugs) for the device-saved list; `CalendarPage` shows per-school toggle chips instead of the old dropdown and honors `?school=slug` deep links from a school page.
-- Dates are formatted school-local (`America/New_York`) via `lib/calendar.ts:localDateKey`, never raw browser-timezone `Date` math, for the same off-by-one reason documented above.
-- **Bell schedules** (added 2026-09-08): both high schools publish theirs the same way - a nav page (`west.chclc.org/our-school/chw-bell-schedule`, `east.chclc.org/our-school/bell-schedule`) whose only content is a PDF link, no HTML table. Confirmed from the PDFs: East and West both run 7:30–2:30 regular, 9:30–2:30 delayed opening, 7:30–11:45 early dismissal/half day, on a 6-day A–H block rotation (the per-period table isn't stored - only the three day-level times a parent needs). Seeded into `School.start_time/end_time/early_dismissal_time/delayed_opening_time` by migration `0020` (keyed on `website_url` domain). The PDF itself is discovered by the generalized documents scan: `services/school_documents.py:classify_doc_type` maps nav-link keywords → `doc_type` (`bell_schedule` before `handbook`), `_extract_year` also reads two-digit file-name years (`WestBellSchedule26-27.pdf` → `2026-2027`), and `documents_scan.py` dedups + applies its year preference per `(school, doc_type)` so a new bell schedule never retires an older handbook. **Middle schools publish no bell schedule at all** (confirmed by the user 2026-09-08) - their times stay null and the status pill just says "Open"; elementary hasn't been checked yet.
-- **High school day rotation** (`services/hs_rotation.py`, `hs_rotation.scan` in `scheduler/jobs/hs_rotation_scan.py`, 12h cadence, auto-created via `District.hs_rotation_url` + `_ensure_hs_rotation_job`, `POST /districts/{id}/hs-rotation/run-now`): both high schools share one district-produced "2026-27 East and West Day Schedule" PDF (a Google Sheets export, linked from `west.chclc.org/our-school/chw-day-schedule`; the job finds the first PDF link inside `#fsPageContent` each run, so a re-uploaded file with a new Finalsite URL is picked up automatically). East's own `daytest-calendar` page is a per-month events-calendar image whose DAY labels match the PDF exactly (checked Sep 2026), so it isn't parsed - only the shared PDF is. Parsed deterministically with **pdfplumber word coordinates** (`parse_rotation_pdf`): rows are `<day>-Day <value>` (also `3- Day 5` and `11Day`), month headers set each column's current month and entries snap to the *nearest* header horizontally (an at-or-left rule mis-assigned November's rows to September); a header can share a line with another column's entry (`31-Day 5   June`), so headers are peeled off before parsing the rest. A bare digit after the row's own `Day` is the rotation number, never a new row. Output lands as `SchoolContentItem` rows: `scope="district"`, `source="rotation_pdf"`, `applies_to_school_types=["high"]`, title `Day N`, description "Blocks A, B, C, E, F, G · Cycle 3" (the A–H block legend comes from the sheet's own header), `external_uid="hs_rotation:<date>"`; high-school-only early dismissals (PSAT day, finals week) become `Early Dismissal` items unless the district ICS feed already has one that day. The sheet says "Tentative - update as needed", so the job deletes rotation rows that vanish from the PDF. `services/school_today.py` picks these up through the same `^Day \d$` path as the elementary ICS rotation. Regression fixture: `tests/fixtures/hs_day_rotation_2026_27.pdf` (the real file) with spot checks incl. Sep 8 = Day 3, Nov 25 = Day 1/Cycle 10/early dismissal, Jun 17 = Day 4 last day.
-- **Sports schedules**: `School.athletics_url` (migration `0022`) is a plain quick link, nothing scraped - Cherry Hill's high schools publish on ArbiterLive (`https://www.arbiterlive.com/Teams?entityId=4058` West, `4057` East). Shown as a "Sports" action on the Today card and school page header.
-- Screenshots for review were taken from inside the `scraper` container's Playwright (page routes proxied `localhost:8000` → `backend:8000` with CORS headers added), since the host has no browser tooling.
-
-## Top-ribbon school switcher + persisted view filter (added 2026-09-09)
-
-`lib/mySchools.tsx` now tracks two separate localStorage-backed lists: `schoolz_my_schools` (which schools are picked at all - unchanged, this is the "session cookie" ask; localStorage rather than a real cookie or sessionStorage deliberately, since it needs to survive closing the browser and needs no server round-trip) and `schoolz_inactive_schools` (which of those are currently *hidden* from view - the new ribbon filter). Tracking the hidden set rather than the shown set means a school added later via `/start` is visible automatically with no extra sync step. If every school gets toggled off, `activeSchools` falls back to showing all of them rather than going blank - the filter can only narrow, never empty out, the feed.
-
-- **`components/AppShell.tsx`** renders a sticky ribbon (below the top bar, above the tab bar/rail) with one chip per school on the visitor's list - the school's logo if known, else its color dot - plus an "All" chip. Tapping a school chip toggles just that school's visibility (multi-select, not exclusive); tapping "All" clears the filter. This is global (every page inside the shell), separate from the "My schools" link which still goes to `/start` to add/remove schools from the list itself.
-- **Fixed a real UX bug**: `TodayPage.tsx` previously rendered its own chip row as plain `#anchor` scroll-links - tapping one jumped the page to that school's card, scrolling the others off screen, which reads exactly like "only one school is showing." Replaced with the ribbon's real show/hide filter; `TodayPage`/`LunchPage` now render `activeSchools` (the filtered list) while still fetching all of `mySchools` in the background so toggling is instant, no refetch.
-- **School logos**: `School.logo_url` (migration `0023`) is discovered by `school_info.scan` alongside address/phone - `services/school_info.py:_find_logo_url` takes the first `<img>` inside the page's `<header>`, skipping the Google Translate widget badge some sites embed ahead of the real logo (`gstatic.com`) - confirmed correct on all 4 schools checked (Bret Harte, Beck, both high schools). Hotlinked from Finalsite's own CDN, same as every other asset URL in this app (lunch PDFs, documents) - not downloaded and re-hosted, since the CDN URLs are already versioned/cached and this app has no asset-storage pattern yet. Used in the ribbon chips and the `/start` picker's school buttons.
-- Fixed the oversized magnifying-glass icon on `/start`'s search box - `.search svg` had no explicit size, so it fell back to the browser's default replaced-element size (300×150) instead of the icon's intended 18px.
-
-## Frontend RUM - Grafana Faro (added 2026-09-11)
-
-`frontend/src/lib/telemetry.ts` (`initTelemetry()`, called once from `main.tsx`)
-wires Grafana Faro (`@grafana/faro-react`/`-web-sdk`/`-web-tracing`, pinned
-`1.19.0` — the last 1.x release, deliberately not the 2.x line, which bumps
-its `react-router` peer dep to v7/v8 and this app is still on
-`react-router-dom` v6). No-ops entirely when `VITE_FARO_URL` is empty (local
-dev, vitest) - nothing is sent. `App.tsx`'s `<Routes>` is `<FaroRoutes>` so
-view names are route templates, not raw URLs.
-
-- **Privacy scrubbing is mandatory, not optional**: `scrubUrl()` drops the
-  entire `#hash` (Supabase OAuth returns tokens there), strips
-  `code`/`token`/`access_token`/`refresh_token`/`state` query params, and
-  collapses `/invites/<token>` to `/invites/:token`. `beforeSend` (`scrubItem`)
-  applies it to `meta.page.url`, `meta.view.name`, and every string
-  payload/attribute value that looks like a URL, one level deep. Covered by
-  `src/lib/telemetry.test.ts`.
-- **`src/lib/track.ts`** (`trackEvent`/`trackMeasurement`) wraps
-  `faro.api.pushEvent`/`pushMeasurement`, no-op when Faro isn't initialized.
-  Wired so far: `page_view` (route template + `from_route` + `school_slug`,
-  `AppShell.tsx`), session attributes (`logged_in`/`is_admin`/`schools_count`
-  via `faro.api.setSession`), `today_ready`/`school_page_ready` measurements,
-  `school_filter_toggle` (ribbon chips), `calendar_ready`, `lunch_ready`,
-  `calendar_search`, `schools_picked`, `cta_click`, and `auth_ready`/
-  `auth_timeout` (added 2026-09-15, see the auth-stall section below).
-  **Still not wired**: `action` beyond the absence button - nurse/counselor/
-  bus/late-bus/add-to-calendar/document-open/sports-link, same
-  `trackEvent` pattern, just not done yet.
-- **Session attributes must survive an unresolved auth check.** `logged_in`
-  alone was actively misleading: `AppShell` only sets it once auth resolves,
-  so during the one failure worth catching - a check that never resolves -
-  every signal was tagged `logged_in=false`. Confirmed on the 2026-09-15
-  stalls: all 8 RUM exceptions reported `false` while those same session IDs
-  later reported `true`. `auth_state` (`pending`/`authenticated`/`anonymous`/
-  `timed_out`) is the honest one, and `initTelemetry` stamps `pending` at
-  init so nothing reports untagged.
-- **Same-origin proxy** (`frontend/nginx.conf.template`, processed by
-  nginx:alpine's built-in envsubst-on-templates startup step - hence
-  `.template`, not a plain `.conf`, and `COPY`'d to
-  `/etc/nginx/templates/default.conf.template` in the Dockerfile, not
-  `/etc/nginx/conf.d/`): `*.grafana.net` collector hosts are on common
-  ad-block lists, so `/rum/collect` proxies to the real collector URL
-  (`FARO_COLLECTOR_URL`, a **runtime** env var / Fly secret, not a build
-  arg - the collector URL only needs to exist server-side to build the
-  proxy config). `VITE_FARO_URL` is set to the relative path `/rum/collect`
-  at build time (`frontend/fly.toml`'s `[build.args]`), so the browser
-  never talks to `*.grafana.net` directly. The Dockerfile defaults
-  `FARO_COLLECTOR_URL` to `http://127.0.0.1:1` (a placeholder that fails
-  cleanly with a 502 on `/rum/collect`, never a broken nginx config) so
-  local compose - which never sets this var, since `VITE_FARO_URL` is empty
-  there too - starts up fine. Verified: nginx starts and serves the
-  homepage in both the placeholder and real-URL cases; a real POST to
-  `/rum/collect` through the proxy reaches the actual Grafana collector
-  (400 back - the collector rejecting a test payload, not a connection
-  failure).
-- **Live since the 2026-09-12 launch**: `FARO_COLLECTOR_URL` is set on
-  `schoolz-web` and RUM data is flowing (219 distinct sessions in the first
-  four days). `frontend/src/pages/PrivacyPage.tsx`
-  updated (owner-approved wording) to disclose the anonymous RUM data
-  collection; a consent banner was deliberately *not* added (RUM is
-  anonymous/functional, not identifying - same "strictly necessary"
-  reasoning as the rest of the page), flagged in the observability plan's
-  PR description as the owner's call, not decided unilaterally.
-
-## Scraper OpenTelemetry (added 2026-09-11)
-
-`scraper/telemetry.py` is a standalone, trimmed copy of `backend/telemetry.py`'s
-pattern (traces + metrics only, no logs/SQLAlchemy/system-metrics - deliberately
-not imported from `backend/`, since the scraper is generic/swappable on
-purpose). `scraper/observability.py` defines `schoolz.scraper.page_load`
-(histogram, `host`+`outcome` attributes - host only, never the full URL,
-to keep cardinality bounded to schoolz's ~40 tracked school hosts) and
-`schoolz.scraper.pages_open` (up-down counter). `main.py` wraps
-`/fetch-html`/`/fetch-paginated`/`/fetch-raw` in spans with manual child
-spans around `page.goto`, `wait_for_selector`, and each paginated click -
-a scan's trace now spans backend → scraper → the school's site. No-ops
-entirely without `OTEL_EXPORTER_OTLP_ENDPOINT`, same as the backend.
-
-## Admin UI kit, jobs management, and account self-service (added 2026-09-11)
-
-`frontend/src/ui.css` + `frontend/src/components/ui/` (Modal, ConfirmDialog,
-PageHeader, SectionCard, Field, Badge/StatusBadge, Switch, Toast, DataTable)
-are the "management layer" design system - structure and rhythm follow the
-purchased Katalyst template's settings + data-table patterns (page header →
-small-uppercase section cards → stat tiles / toolbar / table; underline
-tabs inside modals, pill tabs elsewhere), rebuilt on the app's own tokens
-rather than pulling Tailwind/Radix in. `AppShell` widens `.shell-main` and
-hides the school ribbon on `/jobs`, `/smore`, `/admin`, `/account`.
-
-- **Jobs (`/jobs`, `pages/JobsPage.tsx` + `pages/jobs/`)** is full CRUD over
-  `ScheduledJob` via `routers/scheduled_jobs.py` (`GET /kinds` lists the
-  registry with each kind's `param_schema`, `POST`/`PATCH`/`DELETE`, generic
-  `POST /{id}/run-now`, `GET /runs/summary`). The list resolves each job's
-  *target* (`school_id`/`district_id`/`newsletter_id`/`scanner_id` in
-  params → `target_type`/`target_label`) so rows read "Staff roster scan ·
-  Bret Harte", never a UUID. The whole point of the detail modal
-  (`JobDetailModal`) is the **Runs tab**: every run's status, error code +
-  stage, and the full `error`/`log_excerpt` (traceback) in a `<pre>`, with
-  the newest problem auto-expanded - far too much for a table cell, which
-  only shows the `StatusBadge` + `error_code` chip. Run-now polls
-  `GET /{id}` every 3s until `last_run_at` moves (≤3 min), then toasts the
-  result. The create form derives its target select from the kind's
-  `param_schema.required` (`loadTargetOptions()` fetches schools/districts/
-  newsletters/scanners) and auto-names the job "<default_name>: <target>"
-  until the name is hand-edited; `lib/cron.ts` glosses the cron
-  (`describeCron`) and offers presets. Deleting a job is safe by schema -
-  every `*_job_id` FK is `ON DELETE SET NULL`, so the owning
-  School/District/newsletter just loses its scan.
-- **Account (`/account/*`, `pages/account/`)**: nested routes under
-  `AccountLayout` (Profile, Security, Notifications, Family, Admin - the
-  last only for `is_admin`). Self-service lives in `lib/account.ts` and is
-  **auth-mode aware**: prod's password lives in Supabase Auth (change =
-  `supabase.auth.updateUser`, forgot = `resetPasswordForEmail` → emailed
-  link → `/reset-password` picks up the recovery session via
-  `onAuthStateChange('PASSWORD_RECOVERY')`), local's is a bcrypt hash the
-  backend owns (`POST /auth/change-password`, `/forgot-password`,
-  `/reset-password` with a one-shot token on `users.password_reset_token`,
-  migration 0027). **Local mode has no mailer, so `/auth/forgot-password`
-  returns the token in the response** and `/forgot-password` shows a
-  dev-only link - that's the only way the flow is completable locally;
-  it's still 200-with-null for unknown emails so it can't enumerate
-  accounts. `UserOut.sign_in_method` (`"google"` when a Supabase user has
-  no password) hides the password form for Google-only accounts.
-- **Account deletion (`DELETE /auth/me`)** requires typing `DELETE` (+ the
-  password in local mode) and removes only what the user *owns*:
-  notifications, guardian links, invites they sent, Gmail token, their
-  scanners + those scanners' jobs/captured messages. Shared rows (the
-  Student itself, schools, newsletters, centrally-managed jobs) stay - only
-  `created_by_user_id`/`owner_user_id` provenance is nulled, per the
-  guardian/student model. The Supabase Auth identity is deleted too via the
-  GoTrue admin API, **which needs `SUPABASE_SERVICE_ROLE_KEY` on
-  `schoolz-api`** (logged and skipped if absent - the next Google login
-  would just auto-provision an empty account, untidy but not a hole).
-- **Real bug found while screenshotting this (would have blanked every
-  local build)**: faro-react's `FaroRoutes` renders faro's *internal*
-  `Routes` reference, which is only assigned during `initializeFaro`. With
-  RUM off (no `VITE_FARO_URL` - every local compose build) it's undefined
-  → React #130 on every route. Prod never saw it because RUM is on there.
-  `lib/telemetry.ts` now exports `FaroRoutes` as the plain router `Routes`
-  when `FARO_URL` is empty (regression-tested in `telemetry.test.ts`).
-- UI verification pattern used here (no browser on the host): build the
-  frontend with local args, `docker cp` the dist into the running
-  `schoolz-web-local` nginx container, and drive it from the `scraper`
-  container's Playwright with `localhost:8000` → `backend:8000` proxied via
-  `page.route` (adding CORS headers) and an admin JWT pre-seeded in
-  localStorage - see this session's `shots.py` shape if repeating it.
-
-## Prod deployment (added 2026-09-10)
-
-Live at `https://schoolz.sitenaut.com` (frontend) and `https://schoolz-api.sitenaut.com` (backend). Three Fly apps in the `schoolz` Fly org: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`. Deploy manually with `fly deploy --remote-only` from `backend/`, `frontend/`, or `scraper/`; CI (`migrate.yml` → `deploy.yml`) only runs on pushes to `main` and only covers backend + frontend, not the scraper.
-
-- **Prod DB is the Supabase project misleadingly named `billz-prod`** (`lxithuvstfslndvsdnsk`, org `castillo-fam`) - it was empty and unused; billz's real data lives in the equally-misnamed `clockin` project. `DATABASE_URL` must be the **Session Pooler** (`postgres.<ref>@aws-1-us-east-1.pooler.supabase.com:5432`), not the direct `db.<ref>.supabase.co` host: the direct endpoint is IPv6-only on the free tier and unreachable from GitHub-hosted runners (the first CI migrate failed on exactly this) and from this dev environment. `aws-0-...` answers "tenant not found" for this project; `aws-1` is the right pooler host. Alembic is still the schema source of truth - Supabase's own migration tooling isn't used at all, and RLS is on with no policies on every table by project default, which is correct here because nothing goes through Supabase's Data API (the backend connects as `postgres`).
-- **Custom domains**: Cloudflare A/AAAA records pointing at the Fly IPs, **DNS-only (grey cloud)**. Proxied (orange-cloud) records break Fly's certificate validation - confirmed, the certs sat "Not verified" until the records were switched.
-- **Scraper runs on Fly's private network**, reached at `http://schoolz-scraper.internal:8765` - not on the billz droplet (its scraper lacks `/fetch-paginated`, and its API key lives only on the box). Two gotchas that cost real time: (1) 6PN is **IPv6-only**, so uvicorn must bind `::`, not `0.0.0.0` - with an IPv4 bind every request from `schoolz-api` was "connection refused" even though `curl localhost` inside the machine worked; (2) it must **never auto-stop** (`auto_stop_machines = "off"`, `min_machines_running = 1`): private-network traffic doesn't pass through fly-proxy, so nothing wakes a stopped machine, and `.internal` DNS only resolves *started* machines, so callers see "no address associated with hostname".
-- **`ScheduledJob.next_run_at` is display-only.** `build_apscheduler_job` triggers purely from `cron_expr` (`CronTrigger.from_crontab`); bumping `next_run_at` in the DB does nothing. To force runs use the per-entity `run-now` endpoints or call `scheduler.runner._execute(job_id, triggered_by="manual")` from a one-off script.
-- **One-off scripts against prod**: run them on the `scheduler` machine (always on; it's the one machine with no `http_service`), put the file under `/app` (Python adds the script's own dir to `sys.path`, so `/tmp/x.py` can't import `database`), and expect the container filesystem to reset on every deploy/restart. Do **not** run long scripts on an `app` machine over `fly ssh console`: SSH sessions don't count as traffic for fly-proxy's idle timer, so the machine auto-stops mid-run (killed a 99-job batch after 19). Also: `fly ssh console` uses WireGuard (UDP) and is intermittently unavailable from this dev environment even when the HTTPS API works - retry, don't diagnose.
-- **The 12h cron is a burst**: ~85 school-level scans fire in the same minute at one 1GB headless Chromium. First prod run: 25 of 99 errored (17 ReadTimeout, 7 scraper 502 - the scraper's wrapper for "the school's site didn't load in time"). `scraper_client` now caps in-flight requests at 3 per process, budgets 2× `timeout_ms` (the scraper applies it to `goto` *and* `wait_for_selector`), and retries 502/503/504 + transport errors. `documents.scan`/`school_info.scan`/`staff_roster.scan` returning `warning` for the private preschools is expected - they aren't Finalsite sites.
-- **Vision pass** (`content_extractor._prepare_image`): media type is sniffed from bytes, never from the CDN's Content-Type (Smore serves PNGs labelled `image/jpeg`); oversized/unsupported images are re-encoded via Pillow; a failed block **stays `pending_vision_extraction=True`** and the run gets `WARNING` status. Previously a failed block was flagged done with no text - permanently, since only never-seen blocks get another look - while the run reported success.
-- **District dedup ignores `^Day \d$` titles**: the rotation feeds put a `category="event"` marker on nearly every school day, so keying on `(district, category, start_date)` alone either crashed (`MultipleResultsFound`, seen in prod) or silently dropped a newsletter's district-wide event as a "duplicate" of "Day 3".
-- **Auth**: `BOOTSTRAP_ADMIN_EMAIL` works as documented (confirmed `is_admin=true` on first login) - but Supabase email/password signup requires clicking the confirmation email first, which reads as "login isn't working". Google SSO reuses the same Google OAuth client as the Gmail scanner (billz's); Supabase's Google provider needs that client ID/secret pasted in *and* `https://lxithuvstfslndvsdnsk.supabase.co/auth/v1/callback` added to the client's authorized redirect URIs (the two errors in order were `invalid_client` = typo in the pasted ID, then `redirect_uri_mismatch`).
-- **`.gitignore` had a bare `lib/`** (Python boilerplate) that silently kept `frontend/src/lib/` out of git - local builds passed because the files existed on disk; CI's fresh checkout failed with `Cannot find module '../lib/...'`. Removed.
-- **Any redirect from `schoolz-api` self-generated as `http://`, never `https://`, silently breaking clients that refuse to resend a POST body across a protocol downgrade** (added 2026-09-14, found via the MCP server's own bare `/mcp` → `/mcp/` redirect, but this affected every redirect in the app, not just that one). Root cause: Fly terminates TLS at its edge and forwards plain HTTP to the container, and uvicorn had no reason to believe otherwise, so it built `Location` headers from the scheme it actually saw. Fixed in `backend/fly.toml`'s `app` process command with `--proxy-headers --forwarded-allow-ips='*'` (trusting `*` is fine - fly-proxy is the only thing that can reach this process's public port at all). Confirmed real with `curl -v`: before the fix, `Location: http://schoolz-api.sitenaut.com/mcp/` for a request that arrived over `https://`.
-- **Privacy**: `/privacy` + footer link, deliberately **no consent banner** - everything stored today (localStorage school picks, Supabase session, opt-in Gmail token) is strictly necessary under GDPR/ePrivacy, so a banner would be asking consent for nothing. Revisit the moment analytics or ads are added.
-
-## Newsletters admin page redesign + district-wide newsletters + community submissions (added 2026-09-11)
-
-`/smore` was rebuilt on the same Katalyst UI-kit pattern as `/jobs` (stat
-tiles, search/filter toolbar, `DataTable`, a `NewsletterFormModal`/
-`NewsletterDetailModal` pair) instead of the old plain black-and-white
-table, and gained a bulk "force re-extract every block" control at the
-list level (previously only per-row). `SmoreNewsletter.district_id`
-(migration 0028) lets a newsletter belong to a whole district instead of
-only ever a single school - added specifically for Cherry Hill's
-district-wide "CHPS Weekly" publication, which has nowhere else to attach
-its extracted items (`content_extractor.py` forces `scope="district"` for
-any item on a newsletter with no `school_id`).
-
-- **Real bug found via this newsletter's own content, not by inspection**:
-  a YouTube video embed block (`data-block-type="embed.video"`) renders its
-  foreground "play" icon as a base64 `data:image/svg+xml` `<img src>` -
-  `smore_parser._classify()` was reading that literally as the block's
-  `image_url`, and `_vision_extract` crashed trying to `httpx.get()` a
-  `data:` URI (caught, but the block stayed `pending_vision_extraction`
-  forever with nothing useful ever extracted - the real title/thumbnail/
-  link live on the video button's own `data-video-title`/
-  `data-video-original-url` attributes, not the image). Fixed by detecting
-  `[data-video-title]` first and classifying it as a text+link block using
-  those attributes; any other `data:` URI `<img src>` now falls back to
-  text/link classification too instead of being treated as a real image.
-  Confirmed fixed live: Cherry Hill East's newsletter (which has this exact
-  video) re-scanned clean after the fix, 48 blocks, no crash.
-- Three real newsletter URL changes (confirmed by the user from a text
-  alert, not discovered by a scan) were applied directly on prod via a
-  one-off script on the `scheduler` machine (see the prod-deployment
-  section below for why that's the only sanctioned place): Bret Harte and
-  Cherry Hill East had their tracked URL updated in place (same newsletter,
-  new issue - not a new row), and "CHPS Weekly" was added as the first
-  `district_id`-only newsletter.
-
-**Community submissions** (`CommunitySubmission`, migration 0029,
-`routers/community_submissions.py`, `POST /submissions` public/no-auth):
-lets anyone contribute a school flier (image/PDF upload, 15MB cap, bytes
-stored directly in the row - there's still no object-storage integration
-anywhere in this app, and this is meant to be low-volume) or a newsletter/
-document link, with an optional note on what they're hoping gets extracted
-and which school/district it's about. Everything lands `status="pending"` -
-nothing here feeds the extraction pipeline automatically, by explicit
-design ("so I can curate and validate the extractions" was the user's own
-framing). Admin review happens at `/admin/submissions`
-(`SubmissionsPage.tsx`, same stat-tile/DataTable/modal pattern as Jobs/
-Newsletters) - approve/reject with notes, download the file back
-(`GET /submissions/{id}/file`, admin-only), delete. `AdminSection.tsx`
-shows a pending-count badge linking to it. Public entry point is
-`/contact` (`ContactPage.tsx`, linked from the footer) - a link/file toggle,
-optional description/name/email/school-or-district, using a raw `fetch()`
-multipart POST rather than `apiFetch()` (which always forces a JSON
-`Content-Type` header, incompatible with `FormData`'s own boundary).
-
-- **Real UI-kit bug caught in Playwright review, not by inspection**: the
-  submissions table's row-delete button used a `className="icon-btn"` that
-  doesn't exist anywhere in `ui.css` - `.btn.icon` (optionally `.danger`)
-  is the actual class every other DataTable row action uses (Jobs,
-  Newsletters), so the button rendered as an unstyled/unsized empty box.
-  Also fixed a footer bug this surfaced: `.shell-footer` had no `gap`, so
-  the new "Contact us" link ran straight into "Privacy & cookies" with no
-  space between them.
-
-## Admin nav consolidation + Calendar/Today district-item overhaul (added 2026-09-11)
-
-**Nav cleanup**: `/smore`, `/jobs`, and `/admin/config` collapsed into one
-`/admin` route (`frontend/src/pages/AdminLayout.tsx`) with a horizontal tab
-bar (Newsletters / Scans / Import-export, reusing the existing `.tabs .tab`
-pill style - matches the Katalyst template's "default" tabs variant, see
-the new "UI reference template" section above) instead of three separate
-left-rail nav entries. Old paths redirect (`<Navigate>`) so nothing
-bookmarked breaks; `AdminSection.tsx`'s quick links and the nav rail were
-repointed to the canonical `/admin/*` paths directly.
-
-**Calendar page** (`CalendarPage.tsx`) dropped its second school-selector
-(`SchoolPicker.tsx`, now deleted) - it duplicated the top ribbon's "my
-schools" filter and confused users who didn't realize there were two.
-Schools shown = the ribbon's `activeSchools` directly (or a school page's
-`?school=` deep link, unchanged). Two new filters:
-- **"Exclude district"** (checkbox right above the event list, on by
-  default) hides generic district-wide noise (Board of Ed meetings,
-  committee meetings) - but never closures/half-days/delays or grading
-  dates, and never a rotation marker (that's the next filter's job). This
-  setting is **shared, not Calendar-only** (`lib/mySchools.tsx`,
-  `schoolz_exclude_district` in localStorage) - it also governs what
-  `DayCard`'s `upcoming` list, `WeekStrip`'s day pills, and
-  `SchoolDetailPage`'s "Coming up" list show, per explicit ask ("I don't
-  want to see board of education meetings on my school's today page
-  unless I explicitly removed that filter from the calendar page").
-- **"Show day-rotation schedule"** (checkbox at the top of the page, off
-  by default) - the elementary "Day N" / high-school block-rotation
-  markers are clutter most visits don't care about. Doesn't touch the
-  Today card's own `rotation_day` metadata line under the school name
-  (`services/school_today.py` already excludes rotation markers from
-  `upcoming`/`week[].items` unconditionally - that's a separate, always-on
-  exclusion, not this new toggle).
-- **Per-school labeling, not type labeling** (`lib/districtItems.ts:
-  expandItemRows`): a district item with no `applies_to_school_types`
-  gets one row labeled "All schools"; one restricted to specific types
-  (a type-only half day, or - with rotation on - "Day N") expands into
-  **one row per currently-active school of a matching type**, each
-  labeled with that school's own name - "Day 3 [Bret Harte]" and "Day 2
-  [Cherry Hill East]" side by side, not one row saying "Elementary" and
-  another saying "High school". A type-restricted item matching none of
-  the active schools is dropped entirely (it doesn't apply to anyone
-  currently being viewed). The label renders as a distinct bordered badge
-  (`.tag.schoolTag` in styles.css, colored via the school's own ribbon
-  color or the neutral district accent for "All schools") ahead of the
-  category tag, not buried in plain description text.
-- `lib/schoolType.ts:schoolTypeLabel` now says "Elementary school"/"Middle
-  school"/"High school", not the bare tier name, for the few places that
-  still show a type label directly (Today's `kind` line, LunchPage,
-  SchoolDetailPage's eyebrow) - reads more naturally.
-
-**Dedup fix for repeated closure/half-day items**
-(`backend/services/school_status.py`, new): a "no school"/"early
-dismissal"/"delayed opening" fact is never really one school's own news -
-every school in Cherry Hill shares the same closed/half-day/delayed
-calendar - but the extraction model doesn't reliably mark these
-`scope='district'` even though its own system prompt says to. Confirmed
-real: Kilmer's newsletter reported "First Day of School (Early Dismissal)"
-as `scope='school'`, and other schools' newsletters independently reported
-the same district-wide fact too, producing a pile of near-duplicate "First
-Day of School" items instead of the one shared district row - the user's
-own bug report ("i ended up with so many 'first day of school' events").
-`content_extractor.py` now force-overrides `scope='district'` for any
-newly-extracted item whose title matches `is_status_title()` (closed/half
-day/delayed-opening patterns), *before* the existing
-`(district, category, start_date)` dedup check runs - so it always gets a
-chance to collapse into whichever row (ICS-fed or another school's
-newsletter) already exists for that date, instead of trusting the model's
-scope guess alone. Deliberately its own regex set, not reused by
-`school_today.py`'s `classify_day` - that function's precedence (closed
-beats early_dismissal) breaks on a real title like "EARLY DISMISSAL -
-Staff In-Service" if "in-service" is also treated as a closure keyword
-there (pinned by `test_school_today.py`), so the two modules intentionally
-don't share one regex set.
-- **Known remaining gap, not fixed by this pass**: this only forces
-  `scope='district'` for the closure/half-day/delayed-opening *status*
-  pattern. An ordinary event mentioned by both the district ICS feed and
-  a school's own newsletter with slightly different wording (confirmed
-  real: Chesterbrook's newsletter separately reported "Cherry Hill Board
-  of Education Candidates Forum" as `scope='school'`, alongside the
-  district feed's own "Board of Education Candidates Forum") isn't
-  deduped - only the closure/half-day/delay class was in scope for this
-  fix. The existing duplicate rows already in prod from before this fix
-  also aren't retroactively cleaned up by it (new extractions only) - a
-  one-time cleanup pass would be needed to collapse rows already sitting
-  in the database.
-
-
-## District staff directory (added 2026-09-16)
-
-`/directory` (`frontend/src/pages/DirectoryPage.tsx`, `backend/routers/directory.py`)
-lists every staff member in the district in one searchable, filterable
-list. The per-school roster (the "Full staff directory" accordion on a
-school page) only helps someone who already knows *which* school the
-person is at, but the real question - "who is the middle-school nurse",
-"what's Mr Whoever's email" - usually has the school as the unknown. So
-this searches all ~1900 people at once and treats the school as a filter
-rather than the entry point. Public, like every other read in this app.
-
-- **Search/filter/paging are server-side.** The full list is a few hundred
-  KB of JSON; handing that to a phone so the browser can filter it isn't
-  worth it. `q` ANDs whitespace-separated tokens across
-  name/title/department/email/school, so "beck math" narrows instead of
-  widening the way a naive OR would. `school_id` accepts an id **or** a
-  slug, the same courtesy `routers/schools.py:resolve_school` gives.
-- **The filter chips come from a second, coarser keyword map**
-  (`services/staff_roles.py:classify_directory_category`). `classify_role`
-  is deliberately narrow - it answers "who do I contact about my kid" and
-  tags under 10% of rows (187 of 1880), which is correct for the contact
-  grid and useless as a directory filter. Order matters and isn't
-  alphabetical: "Athletic Director" is athletics before it is office,
-  "Math Coach" is support while "Speech and Debate Coach" is a teacher's
-  title, and "Administrative Assistant" is office before the aide
-  patterns claim it.
-- **The category is derived at query time, not stored** like `role` is.
-  The keyword list gets tuned against real titles, and a column would
-  need a migration plus a prod backfill (or a re-scan of every roster) on
-  every tweak. ~1900 rows is small enough that one scoped query plus
-  classification in Python is cheaper. Revisit past ~10k rows.
-- **Facet counts are computed before the category filter is applied**, so
-  a chip always says what picking it would actually give you, and picking
-  one never collapses the others to zero with no way back.
-- `/directory` must stay in **both** `routers/seo.py:_STATIC_PATHS` and
-  `services/prerender.py:_ALLOWED_PATHS` - it's in the sitemap, so
-  crawlers request it, and a path missing from the prerender allowlist
-  raises `PathNotAllowed`.
-
-### One row per person, not per school
-
-The same human is stored once per school they appear at, and that is
-correct per-school data - `preschool_team.scan` writes the district's
-central preschool staff to every preschool location, and the district
-republishes its own administrators on each school's Finalsite contact
-page. `/schools/{id}/staff` still lists them per school, unchanged. But
-in an aggregate list it read as the same person ten times (the district
-preschool nurse appeared at all ten preschools), so `/directory`
-collapses rows by identity and shows the person's real affiliation.
-
-- **Identity is the email address, not `source_constituent_id`.** The
-  constituent id is only unique *per school*
-  (`uq_staff_member_school_constituent`), so two unrelated people at
-  different schools could share one; an email is globally unique.
-  Verified against live data: no address maps to more than one name, and
-  all 88 multi-school people share one address across every row. Rows
-  with no email (2 of 1880) can't be matched to anything, so each stays
-  its own person - never merge them with each other.
-- **Grouping happens before filtering, which is why it's in Python.**
-  Filtering by school in SQL would truncate a person's school list to the
-  one school that matched, turning "District-wide" into "Bret Harte".
-- **Fields take the first row that has them.** A person's rows disagree -
-  the district's copy of someone often has no title while their own
-  school's listing does.
-- **"District-wide" means covering every school of one type**, not a
-  school-count threshold. The real counts run 2, 3, 4, 5, 9, 10, 11, 13,
-  16, 17 with no gap anywhere, so any cutoff would relabel a genuinely
-  itinerant teacher ("ESL Teacher (East/West)", 3 schools) as district
-  staff and throw away the school list, which is the useful part. A type
-  needs ≥2 schools to qualify. Consequence worth knowing: someone at 17
-  schools spanning four types covers no single type completely, so they
-  read as "Beck +16" rather than "District-wide".
-- This is a **presentation fix, not a schema change** - the fan-out rows
-  are still written as before. Collapsing at the source would need a
-  canonical-person table plus a link table, a migration and a prod
-  backfill, and would touch `schools.py`, `school_today.py` and
-  `bucket3.py`'s teacher lookup.
+- **Supabase auth deadlock.** `AuthContext` called `supabase.auth.getSession()` from inside its own `onAuthStateChange` callback, which supabase-js invokes *while holding its auth lock*. `apiFetch` took the same lock per request, so every in-flight request queued behind it; when it never released, the page sat on "Loading…" until a manual reload. Symptom in RUM: batches of fetches stalling 25–42s and all unblocking on the same millisecond while the backend served each in under a second. **Never call a supabase auth method from that callback** — use the session it hands you. The token is cached module-side in `api.ts`, with one 401 replay for a token that outlived a sleeping tab, and the route gate offers a Reload after 8s rather than hanging.
+- **Every image block silently lost its flyer.** A hover-only "zoom" control sits beside every Smore image, so `_classify()` stored `"zoom_out_mapShow in original size"` as `text_content` — and the corpus builder's `text_content or vision_extracted_text` meant that junk string beat the real vision output, **for every image block in every newsletter**. Whole flyers were dropped with no error. Caught only by manually comparing a newsletter against what got extracted. Any newly re-scanned old newsletter may need the same backfill + re-extract.
+- **A video embed poisoned the vision pass.** A YouTube block renders its play icon as a base64 `data:` URI `<img src>`, which was read as the block's `image_url`; `_vision_extract` then crashed on `httpx.get()` of a `data:` URI and the block stayed pending forever. The real content is on the button's `data-video-title`/`data-video-original-url`.
+- **A failed vision extract used to be marked done.** The block was flagged complete with no text — permanently, since only never-seen blocks get another look — while the run reported success. Now it stays pending and the run goes `WARNING`. Media type is sniffed from bytes, never the CDN's `Content-Type` (Smore serves PNGs labelled `image/jpeg`).
+- **District dedup must ignore `^Day \d$` titles.** Rotation feeds put a `category="event"` marker on nearly every school day, so keying on `(district, category, start_date)` alone either crashed with `MultipleResultsFound` or silently dropped a real event as a "duplicate" of "Day 3".
+- **`.gitignore` had a bare `lib/`** (Python boilerplate) that silently excluded `frontend/src/lib/`. Local builds passed because the files existed on disk; CI's fresh checkout failed.
+- **faro-react's `FaroRoutes` is undefined when RUM is off**, because it renders faro's *internal* `Routes`, assigned only during `initializeFaro` — React #130 on every route in every local build. Prod never saw it. `telemetry.ts` now exports the plain router `Routes` when `FARO_URL` is empty.
+- **Content buried in an accordion is content that doesn't exist.** A newsletter-extracted lunch menu was rendered inside a collapsed "More" section instead of the visible Lunch Menu section — technically present, practically invisible, caught only when a real user asked why they couldn't see it.

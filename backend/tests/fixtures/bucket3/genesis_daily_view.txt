@@ -1,0 +1,41 @@
+[aria-label] Side Bar
+[aria-label] Currently logged in as user
+guardian@example.com
+(role=main)
+Sample
+Student
+Grade:
+10
+Cherry Hill High School East
+Student ID:
+9999999
+State ID:
+1111111111
+Print Schedule:
+(title: Print schedule in list format) (href: parents?tab1=studentdata&tab2=studentsummary&studentid=9999999&action=printSchedule&showBusInfo=yes)
+List
+(title: Print schedule in bell format)
+Bell
+Today's Cycle:
+1
+Mon, 09/14 (1)
+In School
+List View
+Daily View
+1 Day Schedule (09/14)
+A
+7:30 AM - 8:27 AM
+GEOMETRY A
+Borrelli/Squazzo
+Room: C203 FY
+B
+8:31 AM - 9:28 AM
+ENG/LANG ARTS 2A
+Maniscalco/Mihalecsko
+Room: C219 FY
+L2
+11:02 AM - 11:27 AM
+LUNCH/BREAK 2
+Room: CAF FY
+Bus Info
+View Bus Note

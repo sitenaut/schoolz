@@ -1,0 +1,17 @@
+[aria-label] Google Account: Sample Student
+(9999999@chclc.org) (role=button) (href: https://accounts.google.com/SignOutOptions)
+[aria-label] ALGEBRA I (role=menuitem) (href: /u/2/c/AAAASLUG) (data-id: 111111111)
+[aria-label] ENGLISH 9 (role=menuitem) (href: /u/2/c/BBBBSLUG) (data-id: 222222222)
+[aria-label] Assignment: "Reading Response 1" (href: /u/2/c/AAAASLUG/a/ITEM1/details) (data-stream-item-id: 900001)
+[aria-label] Chapter Quiz (role=button)
+(data-controller-loaded: true)
+Assignment
+assignment
+Chapter Quiz
+(data-type: 2) (data-visibility: 2) (data-stream-item-id: 900002)
+Due Sep 16, 9:30 AM
+(data-stream-item-id: 900002)
+Due Sep 16, 9:30 AM
+[aria-label] Lunch Period (role=button)
+(data-idom-class: some-menu-button)
+[aria-label] Assignment: Vocab Sheet, due Tomorrow (href: /u/2/c/BBBBSLUG/a/ITEM2/details) (data-stream-item-id: 900003)

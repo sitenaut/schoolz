@@ -21,6 +21,8 @@ from models import (
     School,
     SchoolEmailMessage,
     SmoreNewsletter,
+    Student,
+    StudentAccountInvite,
     User,
 )
 from schemas import (
@@ -43,7 +45,7 @@ _RESET_TOKEN_TTL = timedelta(hours=1)
 _DELETE_CONFIRMATION = "DELETE"
 
 
-def _user_out(user: User) -> UserOut:
+def _user_out(user: User, student_profile_id: str | None = None) -> UserOut:
     # A Supabase user with no local password and a Google identity has
     # nothing to "change" password-wise - the settings page hides the form.
     method = "password"
@@ -57,7 +59,12 @@ def _user_out(user: User) -> UserOut:
         auth_mode=auth_module.AUTH_MODE,
         sign_in_method=method,
         created_at=user.created_at,
+        student_profile_id=student_profile_id,
     )
+
+
+async def _student_profile_id(db: AsyncSession, user: User) -> str | None:
+    return (await db.execute(select(Student.id).where(Student.user_id == user.id))).scalar_one_or_none()
 
 
 def _local_only() -> None:
@@ -100,8 +107,8 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-async def me(user: User = Depends(get_current_user)):
-    return _user_out(user)
+async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return _user_out(user, await _student_profile_id(db, user))
 
 
 @router.patch("/me", response_model=UserOut)
@@ -113,7 +120,7 @@ async def update_me(payload: UserUpdate, user: User = Depends(get_current_user),
         user.username = payload.username
     await db.commit()
     await db.refresh(user)
-    return _user_out(user)
+    return _user_out(user, await _student_profile_id(db, user))
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -204,6 +211,13 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
     await db.execute(delete(GuardianStudentLink).where(GuardianStudentLink.guardian_user_id == uid))
     await db.execute(delete(GuardianInvite).where(GuardianInvite.inviter_user_id == uid))
     await db.execute(update(GuardianInvite).where(GuardianInvite.accepted_by_user_id == uid).values(accepted_by_user_id=None))
+    # A student deleting their own login unlinks it from the Student row;
+    # the student record and every guardian's access to it stay.
+    await db.execute(update(Student).where(Student.user_id == uid).values(user_id=None))
+    await db.execute(delete(StudentAccountInvite).where(StudentAccountInvite.invited_by_user_id == uid))
+    await db.execute(
+        update(StudentAccountInvite).where(StudentAccountInvite.accepted_by_user_id == uid).values(accepted_by_user_id=None)
+    )
 
     # Gmail: the token, every scanner, and the scanners' own jobs/captures.
     scanners = (await db.execute(select(EmailScanner).where(EmailScanner.owner_user_id == uid))).scalars().all()

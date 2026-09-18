@@ -1,0 +1,58 @@
+[aria-label] Google Account: Sample Student
+(1234567@example.org) (role=button) (href: https://accounts.google.com/SignOutOptions)
+[aria-label] ALGEBRA I 101-1 (role=menuitem) (href: /u/2/c/AAAASLUG) (data-id: 111111111)
+(data-include-stream-item-materials: false) (data-include-submission-materials: false) (data-stream-item-id: 900010) (data-submission-id: 2) (data-stream-item-type: 1)
+(data-stream-item-id: 900010)
+[aria-label] Assignment: "Pre-Test Form" (href: /u/2/c/AAAASLUG/a/OTAwMDEw/details)
+(data-controller-loaded: true)
+Completed
+Assignment
+assignment
+Pat Jones posted a new assignment: Pre-Test Form
+(data-hide-copy-link: false) (data-hide-delete: true) (data-stream-item-id: 900010)
+(data-is-menu-dynamic: true)
+[aria-label] Assignment options for Pre-Test Form (data-use-native-focus-logic: true)
+more_vert
+(role=tooltip)
+More options
+This assignment is visible to all teachers in this class. It will be permanently deleted in 27 days.
+Posted Sep 11
+(data-submission-id: 2) (data-render-simple-labels: true) (data-no-colors: false)
+Graded
+(data-type: 2) (data-visibility: 2) (data-stream-item-id: 900010)
+No class comments
+(data-include-stream-item-materials: false) (data-stream-item-id: 900020)
+Post by Pat Jones
+Pat Jones
+Created
+Sep 3
+–
+Deleted
+(data-hide-copy-link: false) (data-hide-delete: false) (data-stream-item-id: 900020)
+(data-is-menu-dynamic: true)
+[aria-label] Announcement options for Bring your Chromebook… (data-use-native-focus-logic: true)
+more_vert
+(role=tooltip)
+More options
+Dear Students,
+Bring your Chromebook to class every day next week.
+(data-is-edit-mode: false) (data-stream-item-id: 900020)
+No class comments
+(data-include-stream-item-materials: true) (data-draggable-item-id: 900010) (data-stream-item-id: 900010)
+[aria-label] Pre-Test Form (role=button)
+(data-controller-loaded: true)
+Completed
+Assignment
+assignment
+Pre-Test Form
+(data-type: 2) (data-visibility: 2) (data-stream-item-id: 900010)
+Due Sep 12
+(data-include-stream-item-materials: true) (data-draggable-item-id: 900030) (data-stream-item-id: 900030)
+[aria-label] Lab Safety Contract
+Due = Fri-the-4th, 10:00 PM (role=button)
+(data-controller-loaded: true)
+Assignment
+assignment
+Lab Safety Contract Due = Fri-the-4th, 10:00 PM
+(data-type: 2) (data-visibility: 2) (data-stream-item-id: 900030)
+Due Fri, Sep 18, 11:59 PM
