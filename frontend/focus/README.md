@@ -89,13 +89,19 @@ Three screens from the mockup, bound to endpoints that already exist:
 
 ## Prototype caveats — read before extending
 
-1. **`src/api.ts` duplicates the auth layer.** It reads supabase-js's own
-   storage key rather than depending on supabase-js, to avoid copying
-   `AuthContext`'s deadlock fix into a second place where it can regress
-   independently. That trade is fine for a prototype and wrong for
-   production: the real version should import a shared workspace package so
-   `apiFetch`/`AuthContext` exist once. This is the single most important
-   thing to change before this ships.
+1. **`src/api.ts` duplicates the auth layer.** It has its own `supabase.ts`
+   client and its own token-caching/401-retry logic, mirroring
+   schoolz-web's `AuthContext`/`api.ts` rather than importing them - a real
+   supabase-js client, not a hand-rolled storage read (fixed 2026-09-18: an
+   earlier version parsed supabase-js's storage key directly instead of
+   calling `getSession()`, so it never refreshed an expired access token -
+   landing on `/focus/` after the ~1hr TTL elapsed showed a false
+   logged-out state until some other tab happened to refresh it first).
+   Two independent auth stacks can still regress independently of each
+   other - a fix to one (like this one) doesn't reach the other. The real
+   version should import a shared workspace package so both apps' auth
+   code exists once. This is the single most important thing to change
+   before this ships.
 2. **No RUM/Faro**, no `react-router` (tabs are local state), no prerender.
 3. **Tiles come from `/bucket3/progress`, not the schedule**, because the
    badge count is the point. The period letter is attached only on an exact
