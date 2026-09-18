@@ -1,4 +1,4 @@
-# frontend-focus — student "Focus" view (prototype)
+# frontend/focus — student "Focus" view (prototype)
 
 A second front-end for the kids/student view, served from the **same origin**
 as `schoolz-web` at `/focus/`. Same backend, same session, separate app.
@@ -21,7 +21,7 @@ strip out of RUM.
 ## Build and serve
 
 ```
-cd frontend-focus && npm install && npm run build      # -> dist/, base=/focus/
+cd frontend/focus && npm install && npm run build      # -> dist/, base=/focus/
 ```
 
 `vite.config.ts` sets `base: "/focus/"`. Without it every asset URL points at

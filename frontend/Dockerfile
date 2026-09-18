@@ -29,8 +29,30 @@ RUN npm install
 COPY . .
 RUN npm run build
 
+# The Focus app (focus/) - a separate Vite build served from the SAME
+# ORIGIN at /focus/, which is what lets it share the auth session (see
+# focus/README.md). It lives inside this directory rather than beside it
+# because fly deploys with this directory as the Docker build context; a
+# sibling would be invisible here. Shares the API/auth build args above so
+# both apps point at the same backend in the same auth mode.
+FROM node:20-alpine AS build-focus
+WORKDIR /app
+ARG VITE_AUTH_MODE=local
+ARG VITE_API_URL=http://localhost:8000
+ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
+    VITE_API_URL=$VITE_API_URL
+COPY focus/package.json ./
+RUN npm install
+COPY focus/ .
+RUN npm run build
+
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
+# Must land exactly where nginx.conf.template's `location /focus/` looks,
+# or that block's try_files fallback loops on a missing index.html and
+# nginx answers 500 - which is what prod did between the block shipping
+# and this stage existing.
+COPY --from=build-focus /app/dist /usr/share/nginx/html/focus
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 # Syntactically-valid placeholder so nginx's envsubst-on-templates startup
 # step never produces a broken "proxy_pass ;" when FARO_COLLECTOR_URL isn't

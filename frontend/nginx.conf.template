@@ -77,7 +77,7 @@ server {
         try_files $uri =404;
     }
 
-    # The Focus app (frontend-focus/) is a separate Vite build served from
+    # The Focus app (focus/) is a separate Vite build served from
     # the SAME ORIGIN as this one, which is the entire mechanism behind its
     # shared session: localStorage is scoped to the origin, not the path,
     # so a token written by a login here is already readable there with

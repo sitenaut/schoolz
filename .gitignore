@@ -234,3 +234,4 @@ __marimo__/
 # these are a real family's captured Classroom/Genesis data, never committed.
 backend/captures.json
 backend/*.captures.json
+*.tsbuildinfo
