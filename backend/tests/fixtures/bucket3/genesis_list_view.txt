@@ -1,0 +1,18 @@
+GEOMETRY A
+FY
+Borrelli/Squazzo
+Room
+C203
+Period
+A
+Days
+123456
+ENG/LANG ARTS 2A
+FY
+Maniscalco/Mihalecsko
+Room
+C219
+Period
+B
+Days
+123456

@@ -30,6 +30,10 @@ class UserOut(BaseModel):
     # whether to show a change-password form at all.
     sign_in_method: str = "password"
     created_at: datetime | None = None
+    # Set when this user is a student (Student.user_id points here) - the
+    # frontend uses it to send a student straight to their own Kids view
+    # instead of a guardian's list of children.
+    student_profile_id: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -878,3 +882,164 @@ class SurveySummaryOut(BaseModel):
     total: int
     average_satisfaction: float | None
     top_pain_points: list[dict]
+
+
+# ---- Bucket 3: Backpack Capture imports -----------------------------------
+
+
+class Bucket3StudentOut(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    student_id: str
+    school_name: str | None
+    # "guardian" | "student" - lets the UI hide guardian-only controls
+    # (granting/revoking the student's own login) from the student.
+    viewer_role: str
+
+
+class Bucket3ImportRequest(BaseModel):
+    """Mirrors the Backpack Capture extension's own export shape verbatim
+    (see the sibling backpack-capture repo's background.js EXPORT_CAPTURES
+    handler) so a guardian can upload the file exactly as downloaded, no
+    reshaping needed."""
+
+    exported_at: str | None = None
+    captures: list[dict]
+
+
+class Bucket3ImportResult(BaseModel):
+    captures_processed: int
+    captures_skipped_duplicate: int
+    schedule_blocks_upserted: int
+    work_items_upserted: int
+    grade_entries_upserted: int = 0
+    page_kinds_seen: int
+    identity_mismatches: list[str] = []
+
+
+class ChildScheduleBlockOut(BaseModel):
+    source: str
+    period: str
+    schedule_date: str | None
+    course_name: str
+    teacher: str | None
+    room: str | None
+    term: str | None
+    days: str | None
+    time_start: str | None
+    time_end: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class ChildScheduleOut(BaseModel):
+    cycle_date: str | None
+    cycle_label: str | None
+    daily: list[ChildScheduleBlockOut]
+    list_view: list[ChildScheduleBlockOut]
+
+
+class ChildWorkItemOut(BaseModel):
+    id: str
+    external_uid: str
+    course_name: str | None
+    title: str
+    item_type: str
+    due_raw: str | None
+    due_date: str | None
+    status: str | None
+    link: str | None
+    teacher_name: str | None = None
+    posted_raw: str | None = None
+    posted_date: str | None = None
+    first_seen_at: datetime
+    last_seen_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ChildCourseGradeOut(BaseModel):
+    course_code: str
+    course_section: str
+    course_name: str | None
+    marking_period: str
+    grade_percent: float | None
+    last_grade_posted: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class ChildGradeEntryOut(BaseModel):
+    external_uid: str
+    course_code: str
+    course_section: str
+    course_name: str | None
+    marking_period: str | None
+    weekday_date: str
+    title: str
+    description: str | None
+    category: str | None
+    score_earned: float | None
+    score_possible: float | None
+    percent: float | None
+    status: str | None
+    is_updated: bool
+
+    model_config = {"from_attributes": True}
+
+
+class ChildMarkingPeriodOut(BaseModel):
+    label: str
+    start_date: str
+    end_date: str
+
+    model_config = {"from_attributes": True}
+
+
+class Bucket3GradesOut(BaseModel):
+    course_grades: list[ChildCourseGradeOut]
+    entries: list[ChildGradeEntryOut]
+    marking_periods: list[ChildMarkingPeriodOut] = []
+    # Best-effort comparison against schoolz's own district-sourced
+    # marking-period scan (services/marking_period.py) - human-readable
+    # strings, empty when no comparable district data exists yet or
+    # everything matches.
+    marking_period_discrepancies: list[str] = []
+
+
+class AuditMatchedOut(BaseModel):
+    """One assignment title-matched between Classroom and Genesis - the
+    "in both" slice of the Venn diagram. Carries both sides' view so a
+    guardian can see, e.g., Classroom says "due Tomorrow" while Genesis
+    already has it graded."""
+
+    title: str
+    classroom: ChildWorkItemOut | None
+    genesis: ChildGradeEntryOut | None
+
+
+class Bucket3AuditOut(BaseModel):
+    matched: list[AuditMatchedOut]
+    # Filtered to the current marking period when one is known (a due date
+    # from a marking period that already ended doesn't matter any more -
+    # see ChildMarkingPeriod's docstring). classroom_only_all_time keeps
+    # the unfiltered list so nothing is silently hidden if a guardian
+    # wants to check something historical.
+    classroom_only: list[ChildWorkItemOut]
+    classroom_only_all_time: list[ChildWorkItemOut]
+    genesis_only: list[ChildGradeEntryOut]
+    current_marking_period: str | None = None
+    counts: dict[str, int]
+
+
+class CapturePageKindOut(BaseModel):
+    pattern: str
+    adapter: str
+    description: str
+    example_url: str
+    count: int
+    first_seen_at: datetime
+    last_seen_at: datetime
+
+    model_config = {"from_attributes": True}

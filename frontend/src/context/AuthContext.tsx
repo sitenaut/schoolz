@@ -16,6 +16,9 @@ type CurrentUser = {
   auth_mode: string;
   sign_in_method: "password" | "google";
   created_at: string | null;
+  // Set when this login belongs to a student (not a guardian) - see
+  // backend routers/student_accounts.py.
+  student_profile_id: string | null;
 };
 
 type AuthContextValue = {

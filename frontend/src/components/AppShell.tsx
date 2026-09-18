@@ -5,7 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
-import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool } from "./icons";
+import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers } from "./icons";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -32,7 +32,7 @@ function routeTemplate(pathname: string): string {
 // /directory is school-scoped, but through its own in-page school picker
 // (it searches the whole district by default, which the ribbon filter
 // would silently contradict).
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms", "/directory"];
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms", "/kids", "/directory"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
@@ -175,6 +175,12 @@ export function AppShell() {
           <IconDirectory />
           Directory
         </NavLink>
+        {user && (
+          <NavLink to="/kids">
+            <IconUsers />
+            Kids
+          </NavLink>
+        )}
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />

@@ -98,7 +98,40 @@ class Student(Base):
     # second guardian entering the same child gets auto-matched to this row
     # instead of creating a duplicate.
     match_key: Mapped[str] = mapped_column(String(400), unique=True, index=True, nullable=False)
+    # The student's own schoolz login, if a guardian has granted one (see
+    # StudentAccountInvite). A student account *is* this pointer - not a
+    # guardian link, not a separate account type - so a student sees the
+    # exact same bucket3 data their guardians do, never a copy.
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), unique=True, nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class StudentAccountInvite(Base):
+    """A guardian's invite for the student themselves to log in. Same token
+    + 7-day expiry shape as GuardianInvite, but a different relationship:
+    accepting sets Student.user_id (the accepter *is* the student) rather
+    than adding a GuardianStudentLink. Accepting requires the logged-in
+    account's email to match invitee_email - unlike a guardian invite, a
+    forwarded link here would hand someone a child's identity, not just a
+    shared view."""
+
+    __tablename__ = "student_account_invites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    invited_by_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    invitee_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    # "pending" | "accepted" | "revoked" | "expired"
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class GuardianStudentLink(Base):
@@ -927,3 +960,281 @@ class Notification(Base):
     student_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("students.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# ---------------------------------------------------------------------------
+# Bucket 3: a guardian's own Backpack Capture imports (Classroom/Genesis).
+#
+# Deliberately separate in kind from every table above this line: those are
+# all public, admin-managed, shared data (schools, calendar, newsletters).
+# These five are personal and credentialed - owned by the importing
+# guardian, scoped to one of their linked Students, never admin-managed or
+# scheduled. See CLAUDE.md's "Access model" section and the sibling
+# backpack-capture repo's docs/DESIGN.md, which explicitly ruled out
+# merging this into schoolz's public model - reversed by explicit product
+# decision (2026-09-14): "people won't use it otherwise". The access-model
+# boundary this preserves is per-request auth + guardian ownership, not
+# "never in this codebase".
+# ---------------------------------------------------------------------------
+
+
+class Bucket3Capture(Base):
+    """One imported capture envelope from Backpack Capture, archived
+    verbatim for re-extraction - same reasoning as SmoreBlock's content
+    retention. `content_hash` dedups re-imports of an unchanged page
+    (a person can export/upload the same file twice); a changed capture of
+    the same URL is a new row, an append-only log rather than an overwrite,
+    since the raw text is what a future reducer/parser fix would need to
+    re-run against."""
+
+    __tablename__ = "bucket3_captures"
+    __table_args__ = (
+        UniqueConstraint("student_id", "source_url", "content_hash", name="uq_bucket3_capture_dedup"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    owner_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    adapter: Mapped[str] = mapped_column(String(20), nullable=False)
+    source_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False)
+    char_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    reduced_text: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class ChildScheduleBlock(Base):
+    """One period's schedule info for a student, from a Genesis capture.
+    `source` is "list" (full-year, no clock times) or "daily" (today's
+    times only) - both exist because Genesis itself renders two different
+    views with complementary data (see backpack-capture's docs/DESIGN.md).
+    Idempotent: re-importing the same period just updates this row."""
+
+    __tablename__ = "child_schedule_blocks"
+    __table_args__ = (
+        UniqueConstraint("student_id", "source", "period", "schedule_date", "term", name="uq_child_schedule_block"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    source: Mapped[str] = mapped_column(String(10), nullable=False)  # "list" | "daily"
+    period: Mapped[str] = mapped_column(String(10), nullable=False)
+    schedule_date: Mapped[str | None] = mapped_column(String(10), nullable=True)  # "daily" rows only, MM/DD
+    course_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    teacher: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    room: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    term: Mapped[str | None] = mapped_column(String(20), nullable=True)  # FY/S1/S2 - "list" rows
+    days: Mapped[str | None] = mapped_column(String(20), nullable=True)  # "123456" - "list" rows
+    time_start: Mapped[str | None] = mapped_column(String(20), nullable=True)  # "daily" rows
+    time_end: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ChildDayCycle(Base):
+    """Which rotation-day cycle a given calendar date was, per Genesis's
+    own "Today's Cycle" field. One row per (student, date) - idempotent,
+    the latest import for a date wins."""
+
+    __tablename__ = "child_day_cycles"
+    __table_args__ = (UniqueConstraint("student_id", "schedule_date", name="uq_child_day_cycle"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    schedule_date: Mapped[str] = mapped_column(String(10), nullable=False)
+    cycle_label: Mapped[str] = mapped_column(String(20), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ChildWorkItem(Base):
+    """One assignment/material/announcement parsed from a Classroom
+    capture. Idempotent via (student_id, external_uid) - external_uid
+    prefers Classroom's own stream-item id, falling back to a
+    course+title hash when no id was recoverable (same fallback strategy
+    SchoolContentItem.external_uid uses)."""
+
+    __tablename__ = "child_work_items"
+    __table_args__ = (UniqueConstraint("student_id", "external_uid", name="uq_child_work_item"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    external_uid: Mapped[str] = mapped_column(String(255), nullable=False)
+    course_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    course_external_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    item_type: Mapped[str] = mapped_column(String(20), nullable=False)  # assignment|material|announcement|quiz|question
+    due_raw: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    due_date: Mapped[str | None] = mapped_column(String(10), nullable=True)  # resolved ISO date, best-effort
+    status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    link: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Kids view v2 enrichment (docs/KIDS_VIEW_V2_DESIGN.md §2-3), confirmed
+    # real in captures: "<Teacher> posted a new assignment: <Title>",
+    # "Posted Sep 11" / "Created\nSep 3", and an announcement's body text.
+    teacher_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    posted_raw: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    posted_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    body: Mapped[str | None] = mapped_column(String, nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ChildWorkItemProgress(Base):
+    """A person marking a Classroom item done (or explicitly not done) in
+    schoolz, independent of what Classroom itself says - its status can lag.
+    One shared row per (student, item): the student and every guardian see
+    and change the same state; last write wins, and marked_by_user_id is kept
+    so the UI can say who changed it rather than silently flipping shared
+    state."""
+
+    __tablename__ = "child_work_item_progress"
+    __table_args__ = (UniqueConstraint("student_id", "work_item_id", name="uq_child_work_item_progress"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    work_item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("child_work_items.id", ondelete="CASCADE"), nullable=False
+    )
+    done: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    marked_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class AssignmentSuggestion(Base):
+    """An AI "how to approach this" note for one assignment title in one class,
+    shared by every student in that course section (docs/KIDS_VIEW_V2_DESIGN.md
+    §7, tier A) - consistent advice across the class, and one API call no
+    matter how many families ask. Keyed by the district course/section code
+    when known (services/kids_view.py:course_key) and bucket3_extract's
+    normalize_title. Generated from the title and course name ONLY - never
+    anything student-specific. `declined` records that the title was too vague
+    to say anything concrete, so it isn't re-sent on every click."""
+
+    __tablename__ = "assignment_suggestions"
+    __table_args__ = (
+        UniqueConstraint("course_code", "course_section", "normalized_title", name="uq_assignment_suggestion"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    course_code: Mapped[str] = mapped_column(String(120), nullable=False)
+    course_section: Mapped[str] = mapped_column(String(20), nullable=False)
+    normalized_title: Mapped[str] = mapped_column(String(500), nullable=False)
+    suggestion_text: Mapped[str | None] = mapped_column(String, nullable=True)
+    declined: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class ChildCourseGrade(Base):
+    """Current overall grade for one (student, course, marking period),
+    from a Genesis "Course Summary" capture. `course_code`/`course_section`
+    are Genesis's own identifiers (from the gradebook URL) - the
+    deterministic link to a Classroom course, since a Classroom course
+    name embeds this exact "<code>-<section>" pair (confirmed real, see
+    services/bucket3_extract.py:course_codes_from_name). `course_name` is
+    filled in when that link resolves; left null otherwise rather than
+    blocking the import - a course code with no matching Classroom capture
+    yet is still real, useful data."""
+
+    __tablename__ = "child_course_grades"
+    __table_args__ = (
+        UniqueConstraint("student_id", "course_code", "course_section", "marking_period", name="uq_child_course_grade"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    course_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    course_section: Mapped[str] = mapped_column(String(10), nullable=False)
+    course_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    marking_period: Mapped[str] = mapped_column(String(10), nullable=False)
+    grade_percent: Mapped[float | None] = mapped_column(nullable=True)
+    last_grade_posted: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ChildGradeEntry(Base):
+    """One graded (or exempt/missing) assignment from a Genesis "Course
+    Summary" capture - this is Genesis's own record of what was assigned
+    and graded, kept separate from ChildWorkItem (Classroom's record of
+    the same kind of thing) specifically so the two can be reconciled
+    rather than merged - see the audit endpoint, built because teachers
+    don't reliably keep both systems in sync (real motivating case: a
+    grade appearing in Genesis for an assignment never posted to
+    Classroom, or vice versa). No stable id exists in Genesis's own markup
+    (unlike Classroom's stream-item-id), so external_uid is a content hash
+    of (course_code, normalized title, weekday_date) - the same
+    content-hash fallback ChildWorkItem uses when Classroom itself has no
+    id to give."""
+
+    __tablename__ = "child_grade_entries"
+    __table_args__ = (UniqueConstraint("student_id", "external_uid", name="uq_child_grade_entry"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    external_uid: Mapped[str] = mapped_column(String(255), nullable=False)
+    course_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    course_section: Mapped[str] = mapped_column(String(10), nullable=False)
+    course_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    marking_period: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    weekday_date: Mapped[str] = mapped_column(String(20), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    score_earned: Mapped[float | None] = mapped_column(nullable=True)
+    score_possible: Mapped[float | None] = mapped_column(nullable=True)
+    percent: Mapped[float | None] = mapped_column(nullable=True)
+    status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    is_updated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ChildMarkingPeriod(Base):
+    """One marking period's date range, from a Genesis "Grade Summary"
+    (weeklysummary) capture - the same district-wide MP calendar every
+    course on that page repeats identically. Stored per-student (a
+    guardian's own copy) rather than merged into the shared District/
+    SchoolContentItem tables that public schoolz data lives in - kept
+    simple on purpose; cross-checking against that public data (when a
+    matching district marking-period scan exists) happens at read time in
+    routers/bucket3.py, not by writing into those tables from here.
+
+    Why this matters (explicit product reasoning, 2026-09-14): a
+    "missing" assignment from a marking period that already ended doesn't
+    matter any more - it can't be made up, it's not a current problem, and
+    listing it anyway is exactly the clutter that makes it hard for a
+    parent (or the student) to see what actually still needs attention.
+    The audit endpoint uses the current marking period (whichever range
+    contains today) to filter what counts as "missing right now"."""
+
+    __tablename__ = "child_marking_periods"
+    __table_args__ = (UniqueConstraint("student_id", "label", name="uq_child_marking_period"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    label: Mapped[str] = mapped_column(String(10), nullable=False)  # "MP1".."MP4"
+    start_date: Mapped[str] = mapped_column(String(10), nullable=False)
+    end_date: Mapped[str] = mapped_column(String(10), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class CapturePageKind(Base):
+    """Running catalog of distinct page shapes seen across every
+    guardian's Backpack Capture imports - shared metadata about what the
+    extension has captured so far (which URL patterns exist, how often),
+    not per-student and never exposing any guardian's or student's actual
+    content. Admin-visible only. This is the "map of the pages being
+    navigated" - it grows automatically as new page shapes are imported,
+    the same way it would if the extension gained new adapters."""
+
+    __tablename__ = "capture_page_kinds"
+
+    pattern: Mapped[str] = mapped_column(String(100), primary_key=True)
+    adapter: Mapped[str] = mapped_column(String(20), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    example_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

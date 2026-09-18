@@ -1,0 +1,835 @@
+/* Focus prototype styles.
+ *
+ * Standalone on purpose: this app shares an ORIGIN with schoolz-web, not a
+ * stylesheet. Token names mirror the main app's so the two can be
+ * reconciled later without a re-skin, but nothing is imported across. */
+
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --ink: #16202c;
+  --ink-soft: #5b6878;
+  --line: #dde3ec;
+  --accent: #2f6df6;
+  --danger-bg: #fbdcc9;
+  --danger-ink: #8a3d10;
+  --danger-soft: #fdeee4;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgb(16 32 44 / 8%), 0 6px 16px rgb(16 32 44 / 6%);
+
+  --tile-blue: #5b9bd5;
+  --tile-green: #57c78a;
+  --tile-red: #ef5f5f;
+  --tile-orange: #f2a145;
+  --tile-yellow: #f5d34e;
+  --tile-sky: #63bde8;
+  --tile-violet: #b08ce0;
+  --tile-slate: #93a2b3;
+  --tile-purple: #7d5bc6;
+  --tile-emerald: #3faa6d;
+}
+
+:root:not([data-theme="light"]) {
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161d;
+    --surface: #19212b;
+    --ink: #eaf0f7;
+    --ink-soft: #9aa8b8;
+    --line: #26313f;
+    --danger-bg: #5a2f18;
+    --danger-ink: #ffd3ba;
+    --danger-soft: #2a1d15;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 18px rgb(0 0 0 / 30%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.app {
+  max-width: 460px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.app-header {
+  padding: 18px 16px 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app-header h1 {
+  font-size: 20px;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.who {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.who-select {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.app-main {
+  flex: 1;
+  padding: 0 16px calc(76px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---- cards ---------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+.card-label,
+.section-heading {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.section-heading {
+  margin: 4px 2px -4px;
+}
+
+.progress-track {
+  height: 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 80%, transparent);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--tile-green));
+  transition: width 220ms ease;
+}
+
+.progress-caption {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.attention {
+  background: var(--danger-bg);
+}
+
+.attention .card-label {
+  color: var(--danger-ink);
+}
+
+.attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attention-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attention-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.pill.missed {
+  background: color-mix(in srgb, var(--tile-red) 22%, transparent);
+  color: var(--danger-ink);
+}
+
+.more-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--danger-ink);
+}
+
+.card.complete .progress-fill {
+  background: var(--tile-emerald);
+}
+
+/* The barrier. Full-width and visibly a button, never a "load more" that
+ * blends into the list - it has to read as an edge. */
+.show-more {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.barrier {
+  display: flex;
+  gap: 8px;
+}
+
+/* Inside the row, width:100% from .show-more must not become the flex
+ * basis - it made "Show fewer" claim the whole row and overflow the card. */
+.barrier .show-more {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.barrier .show-more.fewer {
+  flex: 0 0 auto;
+  padding-inline: 16px;
+  border-style: solid;
+}
+
+.attention .show-more {
+  border-color: color-mix(in srgb, var(--danger-ink) 35%, transparent);
+  color: var(--danger-ink);
+}
+
+.task-group + .task-group {
+  margin-top: 14px;
+}
+
+.group-heading {
+  margin: 0 2px 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.group-heading.missed {
+  color: var(--danger-ink);
+}
+
+/* ---- inbox zero ----------------------------------------------------- */
+
+.inbox-zero {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px 18px 26px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.inbox-zero-art {
+  width: min(240px, 80%);
+  height: auto;
+  display: block;
+  margin: 0 auto 6px;
+}
+
+.inbox-zero-art .shadow {
+  fill: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.inbox-zero-art .body,
+.inbox-zero-art .ear {
+  fill: var(--tile-slate);
+}
+
+.inbox-zero-art .face,
+.inbox-zero-art .tail {
+  stroke: var(--surface);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.inbox-zero-art .tail {
+  stroke: var(--tile-slate);
+  stroke-width: 6;
+}
+
+.inbox-zero-art .zzz {
+  fill: var(--tile-blue);
+  font: 700 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.inbox-zero-art .zzz.mid {
+  font-size: 18px;
+}
+
+.inbox-zero-art .zzz.big {
+  font-size: 24px;
+}
+
+.inbox-zero h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.inbox-zero p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* ---- finished (collapsed by default) -------------------------------- */
+
+.finished {
+  margin-top: 4px;
+}
+
+.finished-toggle {
+  border: 0;
+  background: none;
+  padding: 8px 2px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.finished .task-group {
+  margin-top: 6px;
+}
+
+/* ---- task cards ----------------------------------------------------- */
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.task-card {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 12px 40px;
+  min-height: 118px;
+}
+
+/* Checkbox pinned bottom-right so the thumb always finds it in the same
+ * place, whatever the title's length did to the card. */
+.task-card > .check {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+}
+
+.task-card.is-done .task-title {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+
+.task-open {
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.task-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chip) 22%, transparent);
+  color: color-mix(in srgb, var(--chip) 72%, var(--ink));
+}
+
+.due {
+  flex: none;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.check .box {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.check input:checked + .box {
+  background: var(--tile-green);
+  border-color: var(--tile-green);
+}
+
+.check input:checked + .box::after {
+  content: "";
+  display: block;
+  width: 5px;
+  height: 10px;
+  margin: 2px auto 0;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.check input:focus-visible + .box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- subject tiles -------------------------------------------------- */
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  position: relative;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 14px;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 4px;
+  color: #10202e;
+  background: var(--tile);
+  box-shadow: var(--shadow);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tile:active {
+  transform: scale(0.98);
+}
+
+.tile-period {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+}
+
+.tile-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* ---- course sheet lists --------------------------------------------- */
+
+.sheet-section {
+  border-top: 1px solid var(--line);
+  padding: 12px 0 4px;
+}
+
+.sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.sheet-item.is-done .sheet-item-title {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+
+.sheet-item-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sheet-empty {
+  border-top: 1px solid var(--line);
+  padding: 16px 0 6px;
+  margin: 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.tile-grade {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.tile-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 35%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.tile-blue { --tile: var(--tile-blue); --chip: var(--tile-blue); }
+.tile-green { --tile: var(--tile-green); --chip: var(--tile-green); }
+.tile-red { --tile: var(--tile-red); --chip: var(--tile-red); }
+.tile-orange { --tile: var(--tile-orange); --chip: var(--tile-orange); }
+.tile-yellow { --tile: var(--tile-yellow); --chip: var(--tile-yellow); }
+.tile-sky { --tile: var(--tile-sky); --chip: var(--tile-sky); }
+.tile-violet { --tile: var(--tile-violet); --chip: var(--tile-violet); }
+.tile-slate { --tile: var(--tile-slate); --chip: var(--tile-slate); }
+.tile-purple { --tile: var(--tile-purple); --chip: var(--tile-purple); }
+.tile-emerald { --tile: var(--tile-emerald); --chip: var(--tile-emerald); }
+
+/* ---- bottom tabs ---------------------------------------------------- */
+
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 460px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  border: 0;
+  background: none;
+  padding: 9px 0 11px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  border-top: 2px solid transparent;
+  margin-top: -1px;
+}
+
+.tab svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tab.active {
+  color: var(--ink);
+  border-top-color: var(--ink);
+}
+
+/* ---- task sheet ----------------------------------------------------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(8 14 22 / 45%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 10;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 460px;
+  background: var(--surface);
+  border-radius: 18px 18px 0 0;
+  padding: 10px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height: 86dvh;
+  overflow-y: auto;
+}
+
+.sheet-grab {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  margin: 2px auto 12px;
+}
+
+.sheet-title {
+  margin: 0 0 2px;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.sheet-course {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sheet-row {
+  border-top: 1px solid var(--line);
+  padding: 11px 0;
+}
+
+.sheet-row h3 {
+  margin: 0 0 3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.sheet-row p {
+  margin: 0;
+}
+
+.sheet-row a {
+  color: var(--accent);
+}
+
+/* ---- "How do I start?" ---------------------------------------------- */
+
+.starter {
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tile-blue) 14%, var(--surface));
+}
+
+.starter h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tile-blue) 70%, var(--ink));
+}
+
+.starter-ask {
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tile-blue);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.starter-status {
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.starter-status:last-child {
+  margin-bottom: 0;
+}
+
+.starter-steps {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.starter-steps li::marker {
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tile-blue) 70%, var(--ink));
+}
+
+.primary {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tile-emerald);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary.undo {
+  background: var(--ink-soft);
+}
+
+.sheet-note {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---- states --------------------------------------------------------- */
+
+.empty-state {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 26px 18px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.empty-state.small {
+  padding: 18px;
+}
+
+.empty-state h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.empty-state a {
+  color: var(--accent);
+}
+
+.banner-error {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
