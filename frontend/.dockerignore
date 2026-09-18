@@ -1,0 +1,7 @@
+# Both apps run their own `npm install` inside the image; shipping the
+# host's node_modules (and any local build output) only slows the context
+# upload and risks a stale host artifact shadowing a fresh build.
+node_modules
+dist
+focus/node_modules
+focus/dist

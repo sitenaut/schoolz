@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/api.ts","./src/courses.ts","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/Capped.tsx","./src/components/CourseSheet.tsx","./src/components/FocusTab.tsx","./src/components/InboxZero.tsx","./src/components/SubjectsTab.tsx","./src/components/TaskModal.tsx"],"version":"5.9.3"}
