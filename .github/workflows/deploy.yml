@@ -32,7 +32,17 @@ jobs:
 
   deploy-frontend:
     needs: deploy-backend
-    if: always() && needs.deploy-backend.result == 'success'
+    # A skipped backend job must NOT skip this one: with `target=frontend`
+    # the backend job is skipped by design, and requiring its result to be
+    # 'success' made "frontend" an option that could never deploy anything
+    # (confirmed 2026-09-18: two frontend-only dispatches both ended
+    # "skipped" in 3s). A FAILED backend still blocks, as before. The
+    # target check keeps `target=backend` from shipping the frontend too.
+    if: >
+      always() &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
+      (github.event_name != 'workflow_dispatch' ||
+       github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both')
     runs-on: ubuntu-latest
     environment: prod
     steps:
