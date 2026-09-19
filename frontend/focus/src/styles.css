@@ -667,9 +667,42 @@ body {
   max-width: 460px;
   background: var(--surface);
   border-radius: 18px 18px 0 0;
-  padding: 10px 18px calc(20px + env(safe-area-inset-bottom));
+  padding: 0 18px calc(20px + env(safe-area-inset-bottom));
   max-height: 86dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* The drag reassigns this transition to "none" via an inline style while
+   * a finger is actually moving it, so the sheet tracks the pointer with
+   * zero lag; this is what applies once the pointer lifts - the spring-back
+   * on a released-early drag, or the release velocity of the dismiss slide
+   * (its OWN duration is set inline to match CLOSE_ANIMATION_MS). */
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sheet-closing {
+  transition-duration: 200ms;
+  transition-timing-function: ease-in;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* A generous tap/drag target - not just the thin 4px line itself, which
+ * would be nearly unhittable with a thumb. Sits above the sheet's own
+ * padding so a drag started here never fights the content's scroll. */
+.sheet-grab-zone {
+  padding: 12px 0 10px;
+  margin: 0 -18px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheet-grab-zone:active {
+  cursor: grabbing;
 }
 
 .sheet-grab {
@@ -677,7 +710,8 @@ body {
   height: 4px;
   border-radius: 999px;
   background: var(--line);
-  margin: 2px auto 12px;
+  margin: 0 auto;
+  pointer-events: none;
 }
 
 .sheet-title {
