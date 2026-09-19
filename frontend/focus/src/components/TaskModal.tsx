@@ -213,6 +213,9 @@ function AskTeacher({
         ))}
       </ul>
       {error && <p className="ask-note">{error}</p>}
+      <button type="button" className="ask-restart" disabled={busy !== null} onClick={() => setOpen(false)}>
+        Cancel
+      </button>
     </section>
   );
 }
@@ -360,6 +363,12 @@ function Starter({
   state: SuggestionState | null;
   onSuggest: (item: TodoItem) => void;
 }) {
+  // Collapsing is purely a local display toggle - the suggestion itself is
+  // already cached (server-side, shared by the whole class section, plus
+  // this component's own `state` prop) so hiding it never re-triggers a
+  // model call, and reopening is instant.
+  const [collapsed, setCollapsed] = useState(false);
+
   if (!state) {
     return (
       <section className="starter">
@@ -376,9 +385,30 @@ function Starter({
       </section>
     );
   }
+
+  if (collapsed) {
+    return (
+      <section className="starter starter-collapsed">
+        <button type="button" className="starter-toggle" onClick={() => setCollapsed(false)}>
+          How to start <span aria-hidden="true">▾</span>
+        </button>
+      </section>
+    );
+  }
+
+  const collapseButton = (
+    <button type="button" className="starter-toggle" onClick={() => setCollapsed(true)} aria-label="Collapse">
+      <span aria-hidden="true">▴</span>
+    </button>
+  );
+
   if (state.error) {
     return (
       <section className="starter">
+        <div className="starter-head">
+          <h3>How to start</h3>
+          {collapseButton}
+        </div>
         <p className="starter-status">{state.error}</p>
         <button type="button" className="starter-ask" onClick={() => onSuggest(item)}>
           Try again
@@ -389,7 +419,10 @@ function Starter({
   if (state.declined || !state.text) {
     return (
       <section className="starter">
-        <h3>How to start</h3>
+        <div className="starter-head">
+          <h3>How to start</h3>
+          {collapseButton}
+        </div>
         <p className="starter-status">
           The title doesn't say enough to suggest a way in — open it in Classroom, or ask the teacher what they're
           looking for.
@@ -406,7 +439,10 @@ function Starter({
     .map((l) => l.replace(/^[-*•]\s*/, ""));
   return (
     <section className="starter">
-      <h3>How to start</h3>
+      <div className="starter-head">
+        <h3>How to start</h3>
+        {collapseButton}
+      </div>
       <ol className="starter-steps">
         {steps.map((step, i) => (
           <li key={i}>{step}</li>
