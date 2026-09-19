@@ -31,14 +31,14 @@ const CLOSE_ANIMATION_MS = 200;
  * that panel does."
  *
  * A drag started anywhere on the card (not just the handle) also
- * participates: while there's more of the card's own content to scroll,
- * the drag scrolls it exactly like a native touch scroll; once it's
- * already at the top and the pointer keeps pulling down, that same
- * gesture continues on into the dismiss - the pull-to-refresh handoff
- * pattern, not two unrelated gestures fighting over the same finger. The
- * card's own scroll is what should move here, never the page behind it
- * (a body-scroll lock backs that up in case a touch ever slips past both
- * the card and the backdrop).
+ * participates, decided once at the moment the finger touches down: if
+ * the card is already scrolled to the top, that drag can dismiss, same
+ * as the handle; otherwise it's left entirely to native scrolling for the
+ * whole gesture. (An earlier version tried to hand off mid-gesture by
+ * re-checking scroll position on every move and cancelling a scroll
+ * already in progress - that broke page scrolling, and even Chrome's own
+ * pull-to-refresh, outliving the sheet itself. Deciding once at the start
+ * avoids ever cancelling a scroll the browser has already committed to.)
  *
  * Pointer Events (not touch-only), so mouse-drag dismiss works too and
  * this is drivable by Playwright for verification without a real touch
@@ -71,18 +71,6 @@ export function Sheet({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  // The sheet's own scroll is what a touch here should move - never the
-  // page underneath. Belt-and-braces alongside overscroll-behavior:
-  // contain on .sheet, for whatever a touch can still reach outside it
-  // (the backdrop's own margin, an odd browser quirk).
-  useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
-  }, []);
 
   const beginDrag = (clientY: number, timeStamp: number) => {
     startY.current = clientY;
@@ -119,18 +107,29 @@ export function Sheet({
     trackDrag(e.clientY, e.timeStamp);
   };
 
-  /** A drag starting anywhere else on the card. Captured on the card so it
-   * keeps receiving move events even once the finger drifts past the
-   * card's edge, but nothing is hijacked yet - the browser's native
-   * scroll runs normally until the card can't scroll any further and the
-   * pointer is still pulling down, at which point this hands off into
-   * the same dismiss-drag the handle uses. */
+  /** A drag starting anywhere else on the card, decided once, at the
+   * moment the finger touches down - never mid-gesture. Cancelling a
+   * touchmove AFTER the browser has already committed to scrolling
+   * (rather than on its very first move) is exactly the pattern that
+   * leaves mobile Chrome's touch/gesture state inconsistent - confirmed
+   * real: an earlier version of this that re-decided on every move broke
+   * page scrolling and even Chrome's own pull-to-refresh, sitewide,
+   * outliving the sheet itself. So: if there's anything above to scroll
+   * back to when this gesture starts, it's native scrolling only, full
+   * stop, for this entire gesture - we never touch it again. Only a drag
+   * that starts already at the top participates in the dismiss, the same
+   * as the handle. That's a real trade-off (scrolling up through content
+   * and continuing straight into a dismiss in one unbroken drag no longer
+   * hands off - lift and pull again once at the top), accepted because
+   * the alternative broke the page. */
   const onCardPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     // A native form control (the exception date picker, a checkbox) needs
     // its own default pointer handling left completely alone - capturing
     // the pointer on one of these risks fighting whatever native UI it
     // shows on tap (a date wheel, a select dropdown).
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+    const sheet = sheetRef.current;
+    if (!sheet || sheet.scrollTop > 0) return;
     activePointerId.current = e.pointerId;
     startY.current = e.clientY;
     samples.current = [{ y: e.clientY, t: e.timeStamp }];
@@ -140,13 +139,10 @@ export function Sheet({
   const onCardPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (activePointerId.current !== e.pointerId) return;
     if (!dragging) {
-      const sheet = sheetRef.current;
-      const delta = e.clientY - startY.current;
-      // Anything but "already at the top and still pulling down" is left
-      // to native scrolling - re-checked on every move, not just the
-      // first, so a scroll that reaches the top mid-gesture still hands
-      // off instead of requiring a separate second drag.
-      if (!sheet || sheet.scrollTop > 0 || delta <= 0) return;
+      // Upward movement here has nothing to do - the card was already at
+      // the top when this gesture began, so there's nothing above to
+      // reveal by scrolling further up.
+      if (e.clientY - startY.current <= 0) return;
       e.preventDefault();
       beginDrag(e.clientY, e.timeStamp);
       return;
