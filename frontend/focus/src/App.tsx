@@ -2,12 +2,16 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, apiGet, hasSession } from "./api";
 import { localTodayIso } from "./courses";
 import { CourseSheet } from "./components/CourseSheet";
+import { DetailsTab } from "./components/DetailsTab";
 import { FocusTab } from "./components/FocusTab";
 import { SubjectsTab } from "./components/SubjectsTab";
 import { TaskModal } from "./components/TaskModal";
 import type {
   CourseProgress,
   CurrentUser,
+  HelpDraft,
+  HelpKind,
+  LatePolicy,
   ScheduleResponse,
   Student,
   SuggestionState,
@@ -15,7 +19,7 @@ import type {
   TodoResponse,
 } from "./types";
 
-type Tab = "focus" | "subjects" | "calendar";
+type Tab = "focus" | "subjects" | "calendar" | "details";
 
 export function App() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -27,6 +31,8 @@ export function App() {
   const [open, setOpen] = useState<TodoItem | null>(null);
   const [openCourse, setOpenCourse] = useState<CourseProgress | null>(null);
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
+  const [helpKinds, setHelpKinds] = useState<HelpKind[]>([]);
+  const [latePolicies, setLatePolicies] = useState<LatePolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,15 +69,19 @@ export function App() {
   }, []);
 
   const load = useCallback(async (id: string) => {
-    const [todoRes, coursesRes, scheduleRes] = await Promise.all([
+    const [todoRes, coursesRes, scheduleRes, kindsRes, policiesRes] = await Promise.all([
       apiGet<TodoResponse>(`/students/${id}/bucket3/todo`),
       apiGet<CourseProgress[]>(`/students/${id}/bucket3/progress`),
       apiGet<ScheduleResponse>(`/students/${id}/bucket3/schedule`),
+      apiGet<HelpKind[]>(`/students/${id}/bucket3/help-kinds`),
+      apiGet<LatePolicy[]>(`/students/${id}/bucket3/late-policies`),
     ]);
     if (!todoRes) setError("Couldn't load assignments.");
     setTodo(todoRes);
     setCourses(coursesRes ?? []);
     setSchedule(scheduleRes);
+    setHelpKinds(kindsRes ?? []);
+    setLatePolicies(policiesRes ?? []);
     setLoading(false);
   }, []);
 
@@ -117,6 +127,52 @@ export function App() {
     }));
   };
 
+  /** Drafts the "I'm stuck" email and records that the ask happened. The
+   * send itself is a mailto: the student presses - schoolz never sends mail
+   * for them. Reloads afterwards so the item stops looking untouched. */
+  const askTeacher = async (item: TodoItem, kind: string): Promise<HelpDraft | null> => {
+    if (!studentId) return null;
+    const res = await apiFetch(`/students/${studentId}/bucket3/workitems/${item.id}/ask-teacher`, {
+      method: "POST",
+      body: JSON.stringify({ kind }),
+    });
+    if (!res.ok) return null;
+    const draft = (await res.json()) as HelpDraft;
+    void load(studentId);
+    return draft;
+  };
+
+  /** Record (or clear) a teacher's "I'll still take it" for one assignment.
+   * Passing null clears it. Reloads because this can bring an item back
+   * from behind the marking-period filter entirely. */
+  const setException = async (item: TodoItem, accepted_until: string | null, note?: string): Promise<boolean> => {
+    if (!studentId) return false;
+    const path = `/students/${studentId}/bucket3/workitems/${item.id}/late-exception`;
+    const res = accepted_until
+      ? await apiFetch(path, { method: "PUT", body: JSON.stringify({ accepted_until, granted_note: note || null }) })
+      : await apiFetch(path, { method: "DELETE" });
+    if (res.ok) await load(studentId);
+    return res.ok;
+  };
+
+  const savePolicy = async (policy: Partial<LatePolicy> & { course_key: string }): Promise<boolean> => {
+    if (!studentId) return false;
+    const res = await apiFetch(`/students/${studentId}/bucket3/late-policies`, {
+      method: "PUT",
+      body: JSON.stringify(policy),
+    });
+    if (res.ok) await load(studentId);
+    return res.ok;
+  };
+
+  const deletePolicy = async (courseKey: string): Promise<void> => {
+    if (!studentId) return;
+    await apiFetch(`/students/${studentId}/bucket3/late-policies/${encodeURIComponent(courseKey)}`, {
+      method: "DELETE",
+    });
+    await load(studentId);
+  };
+
   const suggestionFor = (item: TodoItem): SuggestionState | null =>
     suggestions[item.id] ?? (item.suggestion ? { ...item.suggestion, loading: false, error: null } : null);
 
@@ -144,6 +200,18 @@ export function App() {
         <FocusTab todo={todo} todayIso={todayIso} onOpen={setOpen} onToggle={toggleDone} />
       ) : tab === "subjects" ? (
         <SubjectsTab courses={courses} schedule={schedule} onOpenCourse={setOpenCourse} />
+      ) : tab === "details" ? (
+        <DetailsTab
+          todo={todo}
+          courses={courses}
+          todayIso={todayIso}
+          policies={latePolicies}
+          studentId={studentId}
+          onSavePolicy={savePolicy}
+          onDeletePolicy={deletePolicy}
+          onOpen={setOpen}
+          onToggle={toggleDone}
+        />
       ) : (
         <div className="empty-state">
           <h2>Calendar</h2>
@@ -166,7 +234,10 @@ export function App() {
         <TaskModal
           item={open}
           suggestion={suggestionFor(open)}
+          helpKinds={helpKinds}
           onSuggest={suggest}
+          onAskTeacher={askTeacher}
+          onSetException={setException}
           onClose={() => setOpen(null)}
           onToggle={toggleDone}
         />
@@ -226,7 +297,8 @@ function Shell({
   studentId?: string | null;
   onPick?: (id: string) => void;
 }) {
-  const title = tab === "focus" ? "Focus Dashboard" : tab === "subjects" ? "Subjects & Clubs" : "Calendar";
+  const title =
+    tab === "focus" ? "Focus Dashboard" : tab === "subjects" ? "Subjects & Clubs" : tab === "details" ? "Details" : "Calendar";
   const current = students.find((s) => s.id === studentId);
   return (
     <div className="app">
@@ -246,9 +318,19 @@ function Shell({
       </header>
       <main className="app-main">{children}</main>
       <nav className="tabbar" aria-label="Sections">
+        {/* This app is a separate build served from /focus/ (see
+            schoolz's nginx.conf.template) sharing only the session, not a
+            route - a plain <a> forces the real browser navigation back
+            into schoolz's own SPA rather than trying to client-route
+            somewhere this app has no match for. */}
+        <a className="tab" href="/">
+          <IconHome />
+          <span>Today</span>
+        </a>
         <TabButton current={tab} value="focus" label="Focus" onSelect={setTab} icon={<IconCompass />} />
         <TabButton current={tab} value="subjects" label="Subjects" onSelect={setTab} icon={<IconGrid />} />
         <TabButton current={tab} value="calendar" label="Calendar" onSelect={setTab} icon={<IconCalendar />} />
+        <TabButton current={tab} value="details" label="Details" onSelect={setTab} icon={<IconList />} />
       </nav>
     </div>
   );
@@ -278,6 +360,24 @@ function TabButton({
       {icon}
       <span>{label}</span>
     </button>
+  );
+}
+
+function IconHome() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 11 12 3l9 8" />
+      <path d="M5 10v10h14V10" />
+    </svg>
+  );
+}
+
+function IconList() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 6h12M8 12h12M8 18h12" />
+      <path d="M4 6h.01M4 12h.01M4 18h.01" />
+    </svg>
   );
 }
 

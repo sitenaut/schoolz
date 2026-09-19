@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, time, timedelta
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 from services.bell_schedule import current_period
@@ -141,11 +142,21 @@ def todo_category(item_type: str, due_date: str | None, done: bool, today_iso: s
     return "missing" if due_date < today_iso else "due"
 
 
-def in_current_marking_period(category: str, due_date: str | None, mp_start: str | None) -> bool:
+def in_current_marking_period(
+    category: str, due_date: str | None, mp_start: str | None, has_exception: bool = False
+) -> bool:
     """Work from a marking period that already ended no longer counts against
     the current one - so Missing/Done from before the current MP's start are
     dropped from the to-do list and progress (explicit product rule). Upcoming
-    work is always kept, and nothing is filtered when no MP is known."""
+    work is always kept, and nothing is filtered when no MP is known.
+
+    A teacher's explicit exception beats this filter. "Turn in last month's
+    work by the end of the marking period and I'll take it" is real, and it
+    names work whose *due date* sits in the previous period - exactly what
+    this rule would otherwise drop. A human grant always outranks an
+    automatic staleness rule."""
+    if has_exception:
+        return True
     if not mp_start or category in ("due", "no_due_date"):
         return True
     return bool(due_date) and due_date >= mp_start
@@ -176,6 +187,199 @@ def pick_next_action(items: list[dict]) -> dict | None:
         return missing[0]
     due = sorted((i for i in items if i["category"] == "due"), key=lambda i: (i["due_date"], i["title"]))
     return due[0] if due else None
+
+
+LATE_SHAPES = ("full_credit", "flat", "daily_decay", "window", "tiered", "not_accepted")
+
+# Past this many days late, a wrong year is a likelier explanation than a
+# genuinely year-old assignment, so no policy is allowed to declare the item
+# closed. Classroom's captured due text carries no year at all ("Due Sep 12")
+# - bucket3_extract.resolve_due_date infers one from the capture's own
+# timestamp - and an off-by-one-year inference lands at ~365 days late. Since
+# a closed item is *removed* from the dashboard, guessing wrong there makes
+# live work vanish silently; returning "unknown" keeps it visible instead.
+MAX_PLAUSIBLE_DAYS_LATE = 300
+
+
+def _add_days(iso: str, days: int) -> str:
+    return (datetime.fromisoformat(iso) + timedelta(days=days)).date().isoformat()
+
+
+def _days_between(start_iso: str, end_iso: str) -> int:
+    return (datetime.fromisoformat(end_iso).date() - datetime.fromisoformat(start_iso).date()).days
+
+
+def _exception_credit(exception, policy, due_date: str | None, today_iso: str, mp_end: str | None) -> dict:
+    """A teacher's yes on one assignment, which replaces the class rule for
+    that item.
+
+    Deliberately not subject to MAX_PLAUSIBLE_DAYS_LATE or to the policy's
+    own cutoff: someone typed this in because a teacher said it, and a
+    human grant outranks every inference the app makes. It still expires -
+    an exception with a date that has passed is closed, the same as
+    anything else - because the promise itself had a deadline.
+
+    `credit_pct` on the exception is what the teacher stated. When they
+    only moved the deadline and said nothing about points, it's null and
+    the class policy's own gradient applies (10%-a-day still takes its
+    10% a day) - just without the policy's cutoff. With no policy at all,
+    or one with no gradient to apply ("not accepted" has none), the honest
+    reading of "I'll take it" is full credit."""
+    closes_on = mp_end if exception.accepted_until == "marking_period_end" else exception.accepted_until
+    days_left = _days_between(today_iso, closes_on) if closes_on else None
+    expired = days_left is not None and days_left < 0
+
+    if exception.credit_pct is not None:
+        credit = max(0.0, min(100.0, float(exception.credit_pct)))
+    else:
+        gradient = None
+        if policy is not None and policy.shape in ("flat", "daily_decay", "tiered"):
+            # Re-run the class rule for its points gradient only, with the
+            # cutoff stripped off so it can't close what the teacher reopened.
+            bare = SimpleNamespace(
+                shape=policy.shape,
+                penalty_pct=policy.penalty_pct,
+                penalty_per_day=policy.penalty_per_day,
+                floor_pct=policy.floor_pct,
+                window_days=None,
+                steps=policy.steps,
+                accepted_until=None,
+                applies_to_types=None,
+                extension_by_request=False,
+            )
+            scored = late_credit(bare, due_date, today_iso)
+            gradient = scored["credit_pct"] if scored else None
+        credit = float(gradient) if gradient is not None else 100.0
+
+    return {
+        "accepted": not expired and credit > 0,
+        "credit_pct": 0 if expired else round(credit),
+        "closes_on": closes_on,
+        "days_left": days_left,
+        "is_late": True,
+        "extension_by_request": bool(policy.extension_by_request) if policy is not None else False,
+        "by_exception": True,
+    }
+
+
+def late_credit(
+    policy,
+    due_date: str | None,
+    today_iso: str,
+    mp_end: str | None = None,
+    item_type: str | None = None,
+    exception=None,
+) -> dict | None:
+    """How much credit one item can still earn under its class's late policy.
+
+    Returns None when nothing can be said - no policy on file, or a policy
+    scoped to other item types - because "we don't know" must stay
+    distinguishable from "we know it's zero". Never guesses.
+
+    The whole point of this number is the prioritisation rule it feeds: work
+    that is still worth full credit is the only work where acting *now*
+    changes the outcome, so it wins the dashboard's limited slots; work
+    already past its cutoff has nothing left to protect and is kept off the
+    dashboard entirely (it lives in the Details tab instead) rather than
+    sitting there generating guilt it can't do anything with.
+
+    `credit_pct` is the maximum percentage of full credit still earnable if
+    it's handed in today. `closes_on` is the last day anything is accepted
+    (None = open-ended), `days_left` counts from today to that day - 0 means
+    today is the last day, and a negative value never escapes (it becomes
+    accepted=False)."""
+    if exception is not None:
+        return _exception_credit(exception, policy, due_date, today_iso, mp_end)
+    if policy is None:
+        return None
+    applies = getattr(policy, "applies_to_types", None)
+    if applies and item_type and item_type not in applies:
+        return None
+
+    shape = policy.shape
+    # Not late yet: every policy gives full credit, and this is exactly the
+    # window the prioritiser exists to protect.
+    days_late = _days_between(due_date, today_iso) if due_date else 0
+    if days_late <= 0:
+        return {
+            # Still on time under every shape, including not_accepted - that
+            # rule is about late work, and this isn't late.
+            "accepted": True,
+            "credit_pct": 100,
+            "closes_on": None,
+            "days_left": None,
+            "is_late": False,
+            "extension_by_request": bool(policy.extension_by_request),
+            "by_exception": False,
+        }
+
+    if days_late > MAX_PLAUSIBLE_DAYS_LATE:
+        return None
+
+    closes_on: str | None = None
+    if policy.accepted_until == "marking_period_end":
+        closes_on = mp_end
+    elif policy.accepted_until:
+        closes_on = policy.accepted_until
+    if due_date:
+        if shape == "window" and policy.window_days is not None:
+            window_close = _add_days(due_date, policy.window_days)
+            closes_on = min(closes_on, window_close) if closes_on else window_close
+        elif shape == "tiered" and policy.steps:
+            last = max((int(s.get("days", 0)) for s in policy.steps), default=0)
+            tier_close = _add_days(due_date, last)
+            closes_on = min(closes_on, tier_close) if closes_on else tier_close
+
+    if shape == "not_accepted":
+        return {
+            "accepted": False,
+            "credit_pct": 0,
+            "closes_on": due_date,
+            "days_left": None,
+            "is_late": True,
+            "extension_by_request": bool(policy.extension_by_request),
+            "by_exception": False,
+        }
+
+    days_left = _days_between(today_iso, closes_on) if closes_on else None
+    if days_left is not None and days_left < 0:
+        return {
+            "accepted": False,
+            "credit_pct": 0,
+            "closes_on": closes_on,
+            "days_left": days_left,
+            "is_late": True,
+            "extension_by_request": bool(policy.extension_by_request),
+            "by_exception": False,
+        }
+
+    if shape == "full_credit":
+        credit = 100.0
+    elif shape == "flat":
+        credit = 100.0 - (policy.penalty_pct or 0)
+    elif shape == "daily_decay":
+        decayed = 100.0 - (policy.penalty_per_day or 0) * days_late
+        credit = max(decayed, policy.floor_pct if policy.floor_pct is not None else 0.0)
+    elif shape == "window":
+        credit = 100.0
+    elif shape == "tiered":
+        # First tier whose day-count still covers how late this is; steps are
+        # written as "within N days you get X%".
+        ordered = sorted(policy.steps or [], key=lambda s: int(s.get("days", 0)))
+        credit = next((float(s.get("credit_pct", 0)) for s in ordered if int(s.get("days", 0)) >= days_late), 0.0)
+    else:
+        return None
+
+    credit = max(0.0, min(100.0, credit))
+    return {
+        "accepted": credit > 0,
+        "credit_pct": round(credit),
+        "closes_on": closes_on,
+        "days_left": days_left,
+        "is_late": True,
+        "extension_by_request": bool(policy.extension_by_request),
+        "by_exception": False,
+    }
 
 
 _HONORIFIC_RE = re.compile(r"^(mr|mrs|ms|miss|mx|dr|herr|frau|sra|sr|mme|mlle)\.?\s+", re.I)

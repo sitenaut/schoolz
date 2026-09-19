@@ -15,6 +15,7 @@ import database
 from main import app
 from models import ChildWorkItem, ChildWorkItemProgress, StaffMember, User
 from routers import bucket3 as bucket3_router
+from services import help_requests as help_svc
 from services import kids_suggestions
 
 ET = ZoneInfo("America/New_York")
@@ -292,3 +293,225 @@ async def test_kids_endpoints_require_access():
         for path in ("right-now", "todo", "progress", "announcements", "teacher-emails"):
             assert (await client.get(f"/students/{sid}/bucket3/{path}", headers=_auth(stranger))).status_code == 404
         assert (await client.post(f"/students/{sid}/bucket3/reprocess", headers=_auth(stranger))).status_code == 404
+
+
+@pytest.mark.anyio
+async def test_late_policy_drives_credit_still_earnable(monkeypatch):
+    # A week after the lab contract was due (2026-09-18).
+    _freeze(monkeypatch, 2026, 9, 25, 9, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+
+        # No policy on file yet - "unknown", never assumed to be zero.
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [lab] = todo["missing"]
+        assert lab["late_credit"] is None
+
+        saved = await client.put(
+            f"/students/{sid}/bucket3/late-policies",
+            json={
+                "course_key": "101-1",
+                "course_name": "ALGEBRA I 101-1",
+                "shape": "daily_decay",
+                "penalty_per_day": 5,
+                "floor_pct": 60,
+                "accepted_until": "marking_period_end",
+                "source_text": "Late work loses 5% per day, never below 60%, until the end of the marking period.",
+            },
+            headers=_auth(guardian),
+        )
+        assert saved.status_code == 200, saved.text
+
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [lab] = todo["missing"]
+        # 7 days late at 5%/day = 65%, still above the 60% floor.
+        assert lab["late_credit"]["credit_pct"] == 65
+        assert lab["late_credit"]["accepted"] is True
+        assert lab["late_credit"]["is_late"] is True
+
+        listed = (await client.get(f"/students/{sid}/bucket3/late-policies", headers=_auth(guardian))).json()
+        assert [p["course_key"] for p in listed] == ["101-1"]
+        assert listed[0]["source_text"].startswith("Late work loses 5%")
+
+        # Saving the same course again replaces rather than duplicating.
+        await client.put(
+            f"/students/{sid}/bucket3/late-policies",
+            json={"course_key": "101-1", "shape": "not_accepted"},
+            headers=_auth(guardian),
+        )
+        listed = (await client.get(f"/students/{sid}/bucket3/late-policies", headers=_auth(guardian))).json()
+        assert len(listed) == 1 and listed[0]["shape"] == "not_accepted"
+
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        assert todo["missing"][0]["late_credit"] == {
+            "accepted": False, "credit_pct": 0, "closes_on": "2026-09-18",
+            "days_left": None, "is_late": True, "extension_by_request": False,
+            "by_exception": False,
+        }
+
+        assert (
+            await client.delete(f"/students/{sid}/bucket3/late-policies/101-1", headers=_auth(guardian))
+        ).status_code == 204
+        assert (await client.get(f"/students/{sid}/bucket3/late-policies", headers=_auth(guardian))).json() == []
+
+        bad = await client.put(
+            f"/students/{sid}/bucket3/late-policies",
+            json={"course_key": "101-1", "shape": "whatever"},
+            headers=_auth(guardian),
+        )
+        assert bad.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_asking_a_teacher_drafts_an_email_and_tells_the_other_guardian(monkeypatch):
+    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+        [lab] = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()["due"]
+
+        kinds = (await client.get(f"/students/{sid}/bucket3/help-kinds", headers=_auth(guardian))).json()
+        assert [k["kind"] for k in kinds] == list(help_svc.KINDS)
+
+        # The student's own login does the asking.
+        kid_email = f"kid_{run}@example.com"
+        invite = await client.post(
+            f"/students/{sid}/account-invites", json={"invitee_email": kid_email}, headers=_auth(guardian)
+        )
+        kid = await _register(client, kid_email)
+        await client.post(f"/student-account-invites/{invite.json()['token']}/accept", headers=_auth(kid))
+
+        drafted = await client.post(
+            f"/students/{sid}/bucket3/workitems/{lab['id']}/ask-teacher",
+            json={"kind": "what_to_hand_in"},
+            headers=_auth(kid),
+        )
+        assert drafted.status_code == 200, drafted.text
+        body = drafted.json()
+        assert body["teacher_email"] == "pjones@example.org"
+        assert body["subject"] == f'Question about "{lab["title"]}"'
+        # It writes the specific ask for them, signed with the student's name.
+        assert "what the finished assignment should look like" in body["body"]
+        assert body["body"].endswith("Sample")
+        assert "Pat Jones" in body["body"]
+
+        # The guardian is told it happened - the kind, never the email body.
+        notes = (await client.get("/notifications", headers=_auth(guardian))).json()
+        [asked] = [n for n in notes if n["type"] == "help_asked"]
+        assert "asked their teacher about what to hand in" in asked["message"]
+        assert "Hi Pat Jones" not in asked["message"]
+
+        # The item now shows it was asked about, so it doesn't look untouched.
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        assert todo["due"][0]["asked_kinds"] == ["what_to_hand_in"]
+
+        bad = await client.post(
+            f"/students/{sid}/bucket3/workitems/{lab['id']}/ask-teacher",
+            json={"kind": "nonsense"},
+            headers=_auth(kid),
+        )
+        assert bad.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_late_policy_parse_proposes_but_never_saves(monkeypatch):
+    calls = []
+
+    async def fake_parse(text):
+        calls.append(text)
+        return {
+            "understood": True,
+            "shape": "tiered",
+            "steps": [{"days": 1, "credit_pct": 90}, {"days": 3, "credit_pct": 70}],
+            "source_sentence": "One day late is 90%, up to three days is 70%, nothing after that.",
+            "summary": "90% one day late, 70% up to three days, nothing after.",
+        }
+
+    monkeypatch.setattr(kids_suggestions, "parse_late_policy", fake_parse)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        res = await client.post(
+            f"/students/{sid}/bucket3/late-policies/parse",
+            json={"text": "One day late is 90%, up to three days is 70%, nothing after that."},
+            headers=_auth(guardian),
+        )
+        assert res.status_code == 200, res.text
+        parsed = res.json()
+        assert parsed["understood"] is True
+        assert parsed["policy"]["shape"] == "tiered"
+        assert parsed["summary"].startswith("90% one day late")
+        # A proposal only - nothing is written until the parent confirms.
+        assert (await client.get(f"/students/{sid}/bucket3/late-policies", headers=_auth(guardian))).json() == []
+        assert len(calls) == 1
+
+        blank = await client.post(
+            f"/students/{sid}/bucket3/late-policies/parse", json={"text": "   "}, headers=_auth(guardian)
+        )
+        assert blank.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_new_kids_endpoints_require_access():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, _guardian, sid = await _family(client)
+        stranger = await _register(client, f"stranger_{uuid.uuid4().hex[:8]}@example.com")
+        assert (
+            await client.get(f"/students/{sid}/bucket3/late-policies", headers=_auth(stranger))
+        ).status_code == 404
+        assert (
+            await client.put(
+                f"/students/{sid}/bucket3/late-policies",
+                json={"course_key": "101-1", "shape": "flat", "penalty_pct": 10},
+                headers=_auth(stranger),
+            )
+        ).status_code == 404
+        assert (
+            await client.get(f"/students/{sid}/bucket3/help-kinds", headers=_auth(stranger))
+        ).status_code == 404
+
+
+@pytest.mark.anyio
+async def test_a_teacher_exception_brings_back_work_the_policy_closed(monkeypatch):
+    _freeze(monkeypatch, 2026, 9, 25, 9, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+        await client.put(
+            f"/students/{sid}/bucket3/late-policies",
+            json={"course_key": "101-1", "shape": "not_accepted"},
+            headers=_auth(guardian),
+        )
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [lab] = todo["missing"]
+        assert lab["late_credit"]["accepted"] is False
+        assert lab["late_exception"] is None
+
+        granted = await client.put(
+            f"/students/{sid}/bucket3/workitems/{lab['id']}/late-exception",
+            json={"accepted_until": "2026-11-06", "granted_note": "Mr Jones said bring it Monday"},
+            headers=_auth(guardian),
+        )
+        assert granted.status_code == 200, granted.text
+
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [lab] = todo["missing"]
+        assert lab["late_credit"]["accepted"] is True
+        assert lab["late_credit"]["by_exception"] is True
+        assert lab["late_credit"]["closes_on"] == "2026-11-06"
+        assert lab["late_exception"]["granted_note"] == "Mr Jones said bring it Monday"
+
+        assert (
+            await client.delete(
+                f"/students/{sid}/bucket3/workitems/{lab['id']}/late-exception", headers=_auth(guardian)
+            )
+        ).status_code == 204
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        assert todo["missing"][0]["late_credit"]["accepted"] is False
+
+        bad = await client.put(
+            f"/students/{sid}/bucket3/workitems/{lab['id']}/late-exception",
+            json={"accepted_until": "next friday"},
+            headers=_auth(guardian),
+        )
+        assert bad.status_code == 422

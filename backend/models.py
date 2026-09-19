@@ -1220,6 +1220,127 @@ class ChildMarkingPeriod(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class CourseLatePolicy(Base):
+    """What one teacher's syllabus says happens to late work in one class.
+
+    Per (student, course) rather than shared per course section the way
+    AssignmentSuggestion is, deliberately: this is transcribed by one family
+    from a paper handout, so a mistyped rule must not reach another family's
+    dashboard, and an IEP/504 accommodation genuinely differs per student.
+
+    `shape` is a closed set covering what real syllabi actually say:
+      full_credit   - late work accepted at full credit
+      flat          - a single deduction (`penalty_pct`)
+      daily_decay   - `penalty_per_day`, never below `floor_pct`
+      window        - full credit within `window_days`, nothing after
+      tiered        - explicit `steps` [{"days": n, "credit_pct": n}, ...]
+      not_accepted  - no late work at all
+    `accepted_until` is "marking_period_end", an ISO date, or null for open-
+    ended. `applies_to_types` narrows the rule to certain ChildWorkItem
+    item_types (the common "homework only, not tests/projects" case); null
+    means every type.
+
+    `source_text` is the sentence it was transcribed from, kept so the
+    dashboard can always answer "why does it think that" with the teacher's
+    own words rather than asking anyone to trust a parsed rule."""
+
+    __tablename__ = "course_late_policies"
+    __table_args__ = (
+        UniqueConstraint("student_id", "course_code", "course_section", name="uq_course_late_policy"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    # Same (code, section) pair kids_view.course_key returns - a Genesis
+    # course code when known, else a "slug:"/"name:" fallback.
+    course_code: Mapped[str] = mapped_column(String(120), nullable=False)
+    course_section: Mapped[str] = mapped_column(String(20), nullable=False)
+    course_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    shape: Mapped[str] = mapped_column(String(20), nullable=False)
+    penalty_pct: Mapped[float | None] = mapped_column(nullable=True)
+    penalty_per_day: Mapped[float | None] = mapped_column(nullable=True)
+    floor_pct: Mapped[float | None] = mapped_column(nullable=True)
+    window_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    steps: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    accepted_until: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    applies_to_types: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    extension_by_request: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source_text: Mapped[str | None] = mapped_column(String, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class WorkItemLateException(Base):
+    """A teacher said yes to this one assignment: "turn it in by X and I'll
+    take it."
+
+    Confirmed to happen with more than one teacher, which is why it's a
+    first-class record rather than a note in a text field. It overrides the
+    class's CourseLatePolicy for this item only, in both directions - it can
+    reopen work the policy calls closed (the common case), and it can carry
+    its own credit when the teacher stated one.
+
+    `accepted_until` is "marking_period_end" or an ISO date, same vocabulary
+    CourseLatePolicy uses. `credit_pct` is null when the teacher only moved
+    the deadline and said nothing about points - see kids_view.late_credit
+    for what that falls back to.
+
+    Shared per (student, item) like ChildWorkItemProgress, not per guardian:
+    the student and every guardian see and change the same record, because
+    the exception is a fact about the assignment, not one person's view of
+    it. `granted_note` keeps the teacher's own words where they were given,
+    for the same reason CourseLatePolicy keeps source_text - so the app can
+    always say why it thinks the work is still live."""
+
+    __tablename__ = "work_item_late_exceptions"
+    __table_args__ = (UniqueConstraint("student_id", "work_item_id", name="uq_work_item_late_exception"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    work_item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("child_work_items.id", ondelete="CASCADE"), nullable=False
+    )
+    accepted_until: Mapped[str] = mapped_column(String(30), nullable=False)
+    credit_pct: Mapped[float | None] = mapped_column(nullable=True)
+    granted_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    recorded_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class HelpRequest(Base):
+    """A record that the student asked their teacher for help on one item,
+    and which *kind* of stuck they picked.
+
+    Stored for two reasons, neither of them surveillance: it lets the item
+    show "you asked about this" instead of looking untouched, and it makes a
+    pattern visible ("every Geometry assignment, she can't tell what's being
+    asked") that a single email never would. The email body itself is
+    deliberately NOT stored - it goes straight to the student's own mail app
+    via mailto: and schoolz never sees whether or what they actually sent."""
+
+    __tablename__ = "help_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("students.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    work_item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("child_work_items.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    # See services/help_requests.py:KINDS - "what_to_hand_in" | "dont_remember"
+    # | "how_to_start" | "dont_understand" | "cant_find".
+    kind: Mapped[str] = mapped_column(String(30), nullable=False)
+    teacher_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class CapturePageKind(Base):
     """Running catalog of distinct page shapes seen across every
     guardian's Backpack Capture imports - shared metadata about what the
