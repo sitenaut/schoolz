@@ -821,6 +821,47 @@ body {
   color: color-mix(in srgb, var(--tile-blue) 70%, var(--ink));
 }
 
+.starter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.starter-head h3 {
+  margin: 0;
+}
+
+.starter-toggle {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 2px 6px;
+  margin: -6px -4px 0 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tile-blue) 70%, var(--ink));
+  cursor: pointer;
+}
+
+.starter-collapsed {
+  padding: 0;
+  background: none;
+}
+
+.starter-collapsed .starter-toggle {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tile-blue) 14%, var(--surface));
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
 .starter-ask {
   width: 100%;
   padding: 11px;
