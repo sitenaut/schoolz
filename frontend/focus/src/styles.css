@@ -701,7 +701,9 @@ body {
  * would be nearly unhittable with a thumb. Sits above the sheet's own
  * padding so a drag started here never fights the content's scroll. */
 .sheet-grab-zone {
-  padding: 12px 0 10px;
+  /* A generous tap/drag target, bigger than the 4px line itself would
+     give a thumb - a real report called out wanting more room to grab. */
+  padding: 18px 0;
   margin: 0 -18px;
   touch-action: none;
   cursor: grab;
@@ -712,8 +714,8 @@ body {
 }
 
 .sheet-grab {
-  width: 38px;
-  height: 4px;
+  width: 46px;
+  height: 5px;
   border-radius: 999px;
   background: var(--line);
   margin: 0 auto;
