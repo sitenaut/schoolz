@@ -610,7 +610,12 @@ body {
   width: 100%;
   max-width: 460px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Sized by however many tabs actually render, not a hardcoded count -
+     the same bug class as schoolz-web's .shell-nav comment warns about:
+     a 5th tab (Details) got added after this was hand-set to 4, so it
+     wrapped onto its own row instead of every icon shrinking to fit. */
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   background: var(--surface);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
