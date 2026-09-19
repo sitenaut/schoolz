@@ -154,6 +154,11 @@ class TodoItemOut(BaseModel):
     title: str
     item_type: str
     course_name: str | None
+    # Same identity CourseProgressOut.course_key uses - lets the client key
+    # a color (default or customized) by the class itself rather than by
+    # display name, so Focus and Subjects can never disagree about which
+    # color a class is.
+    course_key: str
     due_raw: str | None
     due_date: str | None
     # "missing" | "due" | "done" | "no_due_date"
@@ -1137,6 +1142,7 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
                 "title": w.title,
                 "item_type": w.item_type,
                 "course_name": w.course_name,
+                "course_key": kids_view.course_key_str(key),
                 "due_raw": w.due_raw,
                 "due_date": w.due_date,
                 "category": category,
@@ -1158,7 +1164,11 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
                 "teacher_emails": kids_view.match_teacher_emails(teacher, staff),
                 "link": w.link,
                 "suggestion": {"text": cached.suggestion_text, "declined": cached.declined} if cached else None,
-                "course_key": key,
+                # The (code, section) tuple, for internal grouping only (course_progress,
+                # policy/suggestion lookups) - "course_key" above is the joined string
+                # TodoItemOut actually serializes; same dict literal can't hold both
+                # under one name.
+                "course_key_tuple": key,
                 "late_credit": kids_view.late_credit(
                     policies.get(key),
                     w.due_date,

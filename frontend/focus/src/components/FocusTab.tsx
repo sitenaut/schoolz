@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { horizon, shortCourseName, tileColor } from "../courses";
+import { courseColorProps, horizon, shortCourseName } from "../courses";
+import type { CourseColorOverrides } from "../lib/courseColors";
 import type { TodoItem, TodoResponse } from "../types";
 import { Capped } from "./Capped";
 import { InboxZero } from "./InboxZero";
@@ -51,11 +52,13 @@ export function FocusTab({
   todayIso,
   onOpen,
   onToggle,
+  courseColors,
 }: {
   todo: TodoResponse | null;
   todayIso: string;
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
+  courseColors: CourseColorOverrides;
 }) {
   const [cleared, setCleared] = useState(() => readCleared(todayIso));
   const [showFinished, setShowFinished] = useState(false);
@@ -177,9 +180,9 @@ export function FocusTab({
               const backlog = visible.filter((i) => i.due_date !== h.today && i.due_date !== h.next);
               return (
                 <>
-                  {today.length > 0 && <TaskGroup label="Today" items={today} onOpen={onOpen} onToggle={toggle} />}
-                  {next.length > 0 && <TaskGroup label={h.nextLabel} items={next} onOpen={onOpen} onToggle={toggle} />}
-                  {backlog.length > 0 && <TaskGroup label="Also up next" items={backlog} onOpen={onOpen} onToggle={toggle} />}
+                  {today.length > 0 && <TaskGroup label="Today" items={today} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
+                  {next.length > 0 && <TaskGroup label={h.nextLabel} items={next} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
+                  {backlog.length > 0 && <TaskGroup label="Also up next" items={backlog} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
                 </>
               );
             }}
@@ -212,7 +215,7 @@ export function FocusTab({
           <button type="button" className="finished-toggle" onClick={() => setShowFinished((s) => !s)}>
             {showFinished ? "Hide" : "Show"} finished ({finished.length})
           </button>
-          {showFinished && <TaskGroup label={null} items={finished} onOpen={onOpen} onToggle={toggle} />}
+          {showFinished && <TaskGroup label={null} items={finished} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
         </section>
       )}
     </>
@@ -224,18 +227,20 @@ function TaskGroup({
   items,
   onOpen,
   onToggle,
+  courseColors,
 }: {
   label: string | null;
   items: TodoItem[];
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
+  courseColors: CourseColorOverrides;
 }) {
   return (
     <div className="task-group">
       {label && <h3 className="group-heading">{label}</h3>}
       <div className="task-grid">
         {items.map((item) => (
-          <TaskCard key={item.id} item={item} onOpen={onOpen} onToggle={onToggle} />
+          <TaskCard key={item.id} item={item} onOpen={onOpen} onToggle={onToggle} courseColors={courseColors} />
         ))}
       </div>
     </div>
@@ -243,21 +248,34 @@ function TaskGroup({
 }
 
 /** Subject, title, checkbox. Nothing else - the due date lives in the
- * group heading above, and every other detail waits in the sheet. */
+ * group heading above, and every other detail waits in the sheet.
+ *
+ * Colored by course_key, not course_name - Subjects tiles already keyed
+ * on course_key, and this card used to key on the raw name instead, so
+ * the same class could show two different colors between the two tabs
+ * (confirmed real, reported directly). courseColorProps also applies a
+ * student's own custom pick here when one exists, keyed the same way. */
 function TaskCard({
   item,
   onOpen,
   onToggle,
+  courseColors,
 }: {
   item: TodoItem;
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
+  courseColors: CourseColorOverrides;
 }) {
   const course = item.course_name ? shortCourseName(item.course_name) : null;
+  const { className, style } = courseColorProps(item.course_key, courseColors[item.course_key]);
   return (
     <article className={`task-card${item.done ? " is-done" : ""}`}>
       <button type="button" className="task-open" onClick={() => onOpen(item)}>
-        {course && <span className={`chip ${tileColor(item.course_name ?? course)}`}>{course}</span>}
+        {course && (
+          <span className={`chip ${className}`} style={style}>
+            {course}
+          </span>
+        )}
         <h4 className="task-title">{item.title}</h4>
       </button>
       <label className="check">

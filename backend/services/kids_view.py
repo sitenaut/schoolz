@@ -443,6 +443,15 @@ def match_teacher_emails(raw: str | None, staff: list[tuple[str, str | None]]) -
     return emails
 
 
+def course_key_str(key: tuple[str, str]) -> str:
+    """The (code, section) pair course_key() returns, joined into the one
+    string every consumer actually keys on - course_progress's rollups,
+    per-item to-do rows, and (Focus) client-side color choices. Kept in one
+    place so those three never join it differently and quietly stop
+    matching each other for the same class."""
+    return f"{key[0]}-{key[1]}" if key[1] else key[0]
+
+
 def course_key(course_name: str | None, course_external_id: str | None) -> tuple[str, str]:
     """The class identity AssignmentSuggestion is shared under. Prefers the
     district's own course/section code (the same pair Genesis uses, embedded
@@ -470,7 +479,7 @@ def course_progress(items: list[dict], grade_entries: list, course_grades: list,
     def bucket(key: tuple[str, str], name: str | None) -> dict:
         if key not in courses:
             courses[key] = {
-                "course_key": f"{key[0]}-{key[1]}" if key[1] else key[0],
+                "course_key": course_key_str(key),
                 "course_name": name,
                 "grade_percent": None,
                 "marking_period": None,
@@ -490,7 +499,7 @@ def course_progress(items: list[dict], grade_entries: list, course_grades: list,
     for i in items:
         if i["category"] == "no_due_date":
             continue
-        c = bucket(i["course_key"], i.get("course_name"))
+        c = bucket(i["course_key_tuple"], i.get("course_name"))
         if i["category"] == "done" and not i.get("due_date"):
             continue
         c["total"] += 1

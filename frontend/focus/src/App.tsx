@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, apiGet, hasSession } from "./api";
 import { localTodayIso } from "./courses";
+import { useCourseColorOverrides } from "./lib/courseColors";
 import { CourseSheet } from "./components/CourseSheet";
 import { DetailsTab } from "./components/DetailsTab";
 import { FocusTab } from "./components/FocusTab";
@@ -33,6 +34,7 @@ export function App() {
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
   const [helpKinds, setHelpKinds] = useState<HelpKind[]>([]);
   const [latePolicies, setLatePolicies] = useState<LatePolicy[]>([]);
+  const { overrides: courseColors, setColor: setCourseColor } = useCourseColorOverrides();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -197,9 +199,14 @@ export function App() {
           <p>Loading…</p>
         </div>
       ) : tab === "focus" ? (
-        <FocusTab todo={todo} todayIso={todayIso} onOpen={setOpen} onToggle={toggleDone} />
+        <FocusTab todo={todo} todayIso={todayIso} onOpen={setOpen} onToggle={toggleDone} courseColors={courseColors} />
       ) : tab === "subjects" ? (
-        <SubjectsTab courses={courses} schedule={schedule} onOpenCourse={setOpenCourse} />
+        <SubjectsTab
+          courses={courses}
+          schedule={schedule}
+          onOpenCourse={setOpenCourse}
+          courseColors={courseColors}
+        />
       ) : tab === "details" ? (
         <DetailsTab
           todo={todo}
@@ -228,6 +235,8 @@ export function App() {
           onClose={() => setOpenCourse(null)}
           onOpenItem={setOpen}
           onToggle={toggleDone}
+          customColor={courseColors[openCourse.course_key]}
+          onSetColor={(hex) => setCourseColor(openCourse.course_key, hex)}
         />
       )}
       {open && (

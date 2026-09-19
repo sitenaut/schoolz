@@ -47,12 +47,50 @@ const TILE_COLORS = [
   "tile-emerald",
 ];
 
-export function tileColor(key: string): string {
+// The same ten swatches as TILE_COLORS, as real hex values rather than CSS
+// custom-property names - needed to paint the color-picker's own preset
+// swatches (a swatch button has to show its actual color before anyone
+// taps it, not just carry a class name). Must stay in sync with the
+// --tile-* declarations in styles.css :root; there's no single source of
+// truth to derive one from the other without a build step, so a mismatch
+// here would only ever show up as a picker swatch not matching what
+// tapping it produces.
+export const PALETTE_HEXES = [
+  "#5b9bd5",
+  "#57c78a",
+  "#ef5f5f",
+  "#f2a145",
+  "#f5d34e",
+  "#63bde8",
+  "#b08ce0",
+  "#93a2b3",
+  "#7d5bc6",
+  "#3faa6d",
+];
+
+function tileColorClass(key: string): string {
   let hash = 0;
   for (let i = 0; i < key.length; i++) {
     hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   }
   return TILE_COLORS[hash % TILE_COLORS.length];
+}
+
+export function tileColor(key: string): string {
+  return tileColorClass(key);
+}
+
+/** The class-key-first color resolution used everywhere a class needs a
+ * color: Focus's task chips, Subjects tiles, the course sheet. A custom
+ * pick (from lib/courseColors.ts, keyed by the same course_key) wins as an
+ * inline CSS-custom-property override; otherwise the deterministic
+ * palette class applies. Centralising this is what keeps Focus and
+ * Subjects from picking two different colors for the same class - they
+ * disagreed once already, from hashing two different strings
+ * (course_name vs course_key) for what was supposed to be one color. */
+export function courseColorProps(courseKey: string, customHex?: string): { className: string; style?: { [key: string]: string } } {
+  if (customHex) return { className: "", style: { "--tile": customHex, "--chip": customHex } };
+  return { className: tileColorClass(courseKey) };
 }
 
 /** "Today" / "Tomorrow" / "Mon 14" for an ISO date, in local terms.
