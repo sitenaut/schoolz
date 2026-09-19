@@ -18,6 +18,9 @@ export function LunchPage() {
   // school regardless of which card's button was clicked, since nothing
   // told this page which one to pick.
   const deepSchool = params.get("school");
+  // A "this week" meal tap (school page) carries which day to land on -
+  // otherwise this page defaults to today, same as before.
+  const deepDate = params.get("date");
   const [active, setActive] = useState<string | null>(deepSchool);
   const [menu, setMenu] = useState<LunchMenu | null | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -56,11 +59,14 @@ export function LunchPage() {
   // Every day in the month is listed (not just upcoming ones), scrolled
   // to whichever row is today - or the nearest day after it, if today
   // itself has no entry (a weekend, a break) - so today lands as the
-  // first visible row without hiding the rest of the month above it.
+  // first visible row without hiding the rest of the month above it. A
+  // deep-linked date (from a school page's "this week" strip) takes
+  // today's place as the scroll target.
+  const targetDate = deepDate ?? tk;
   useEffect(() => {
     if (!scrollRef.current || items.length === 0) return;
-    const onOrAfterToday = items.find((i) => localDateKey(i.menu_date) >= tk);
-    const targetKey = onOrAfterToday ? localDateKey(onOrAfterToday.menu_date) : null;
+    const onOrAfterTarget = items.find((i) => localDateKey(i.menu_date) >= targetDate);
+    const targetKey = onOrAfterTarget ? localDateKey(onOrAfterTarget.menu_date) : null;
     const el = targetKey ? rowRefs.current.get(targetKey) : null;
     const container = scrollRef.current;
     if (el) {
@@ -68,7 +74,7 @@ export function LunchPage() {
     } else {
       container.scrollTop = 0;
     }
-  }, [items, tk]);
+  }, [items, targetDate]);
 
   const school = mySchools.find((s) => s.slug === active);
 
@@ -78,9 +84,9 @@ export function LunchPage() {
         const key = localDateKey(i.menu_date);
         const md = monthDay(key);
         const wd = new Date(key + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" });
-        return { item: i, key, md, wd, isToday: key === tk, isPast: key < tk };
+        return { item: i, key, md, wd, isToday: key === tk, isTarget: key === targetDate, isPast: key < tk };
       }),
-    [items, tk],
+    [items, tk, targetDate],
   );
 
   usePrerenderReady(!loading && (menu !== undefined || mySchools.length === 0));
@@ -122,9 +128,9 @@ export function LunchPage() {
       ) : (
         <>
           <div className="list scrollList" ref={scrollRef}>
-            {rows.map(({ item, key, md, wd, isToday, isPast }) => (
+            {rows.map(({ item, key, md, wd, isToday, isTarget, isPast }) => (
               <div
-                className={`row ${isToday ? "rowToday" : ""}`}
+                className={`row ${isToday || isTarget ? "rowToday" : ""}`}
                 ref={(el) => {
                   if (el) rowRefs.current.set(key, el);
                   else rowRefs.current.delete(key);

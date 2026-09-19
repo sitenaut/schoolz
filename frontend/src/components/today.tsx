@@ -45,7 +45,7 @@ export function ItemTag({ item }: { item: SchoolContentItem }) {
 
 /** One dated item as a list row: big day number on the left, title +
  * description + links on the right. Used by school page + calendar. */
-export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; color?: string; schoolName?: string | null }) {
+export function ItemRow({ item, color, schoolName, highlighted }: { item: SchoolContentItem; color?: string; schoolName?: string | null; highlighted?: boolean }) {
   const key = item.start_date ? localDateKey(item.start_date) : null;
   const md = key ? monthDay(key) : null;
   // A multi-day item (a closure spanning several days, most often) only
@@ -58,7 +58,7 @@ export function ItemRow({ item, color, schoolName }: { item: SchoolContentItem; 
   const cal = item.start_date ? googleCalendarQuickAddUrl(item) : null;
   const timePart = item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null;
   return (
-    <div className="row">
+    <div className={`row${highlighted ? " rowHighlight" : ""}`} id={`event-${item.id}`}>
       <div className="when">
         {md ? (
           mdEnd ? (
@@ -309,7 +309,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 
 /* ---------- week strip on the school page ---------- */
 
-export function WeekStrip({ week }: { week: TodayDay[] }) {
+export function WeekStrip({ week, schoolSlug }: { week: TodayDay[]; schoolSlug: string }) {
   const { excludeDistrict } = useMySchools();
   const today = todayKey();
   return (
@@ -318,20 +318,27 @@ export function WeekStrip({ week }: { week: TodayDay[] }) {
         const md = monthDay(d.date);
         const cls = ["wd", d.date === today && "today", d.status === "closed" && "closed"].filter(Boolean).join(" ");
         const items = excludeDistrict ? d.items.filter((i) => !isNoisyDistrictItem(i)) : d.items;
+        const dayHref = `/calendar?school=${schoolSlug}&date=${d.date}`;
         return (
           <div className={cls} key={d.date}>
             <div className="dn">{d.weekday}</div>
-            <div className="dd tab-num">{md.day}</div>
+            <Link className="dd tab-num" to={dayHref}>
+              {md.day}
+            </Link>
             {d.rotation_day && <div className="rot">{d.rotation_day}</div>}
             {d.status === "closed" && <span className="pill bad">{d.status_label || "Closed"}</span>}
             {d.status === "early_dismissal" && <span className="pill warn">Early dismissal</span>}
             {d.status === "delayed" && <span className="pill warn">{d.status_label}</span>}
             {items.slice(0, 2).map((i) => (
-              <span className={`pill ${i.category === "deadline" ? "bad" : "ev"}`} key={i.id} title={i.title}>
+              <Link className={`pill ${i.category === "deadline" ? "bad" : "ev"}`} to={`${dayHref}&event=${i.id}`} key={i.id} title={i.title}>
                 {i.title}
-              </span>
+              </Link>
             ))}
-            {d.lunch && <div className="lunch">{d.lunch}</div>}
+            {d.lunch && (
+              <Link className="lunch" to={`/lunch?school=${schoolSlug}&date=${d.date}`}>
+                {d.lunch}
+              </Link>
+            )}
           </div>
         );
       })}

@@ -45,6 +45,10 @@ export function CalendarPage() {
   const { activeSchools, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
   const [params] = useSearchParams();
   const deepSchool = params.get("school");
+  // A "this week" tap (school page) deep-links a specific day, and an
+  // event pill within it also carries which item to land on/highlight.
+  const deepDate = params.get("date");
+  const deepEvent = params.get("event");
   // Which schools' dates are shown - the same top-ribbon "my schools"
   // selection every other page uses, no separate picker here anymore. A
   // school page's "see all dates" deep link narrows to just that one
@@ -52,11 +56,13 @@ export function CalendarPage() {
   const schoolSlugs = useMemo(() => (deepSchool ? [deepSchool] : activeSchools.map((s) => s.slug)), [deepSchool, activeSchools]);
   const schoolIdsKey = schoolSlugs.join(",");
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
+  const [viewDate, setViewDate] = useState(() => startOfMonth(deepDate ? new Date(deepDate + "T12:00:00Z") : new Date()));
   const [items, setItems] = useState<SchoolContentItem[]>([]);
   // Lands filtered to today - both a default and a live filter, cleared
-  // by tapping today's cell again, any other cell, or "Show month".
-  const [selectedDay, setSelectedDay] = useState<string | null>(TODAY_KEY);
+  // by tapping today's cell again, any other cell, or "Show month". A
+  // deep-linked date (from a school page's "this week" strip) wins over
+  // today the same way an explicit school id already wins over the ribbon.
+  const [selectedDay, setSelectedDay] = useState<string | null>(deepDate ?? TODAY_KEY);
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,6 +82,18 @@ export function CalendarPage() {
     const t = setTimeout(() => setSearchTerm(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Re-syncs the view when a second deep link (a different day or event
+  // pill) is followed while this page is already mounted - the state
+  // above only seeds the initial render, and React Router reuses this
+  // component across such navigations instead of remounting it.
+  useEffect(() => {
+    if (!deepDate) return;
+    setViewDate(startOfMonth(new Date(deepDate + "T12:00:00Z")));
+    setSelectedDay(deepDate);
+    setViewMode("month");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepDate]);
 
   useEffect(() => {
     if (loading) return;
@@ -184,6 +202,14 @@ export function CalendarPage() {
   // and "Day 2 [Cherry Hill East]" side by side rather than one row
   // labeled just "Elementary" or "High school".
   const rows = useMemo(() => filteredItems.flatMap((i) => expandItemRows(i, activeSchools)), [filteredItems, activeSchools]);
+
+  // Land on the specific event a "this week" pill pointed at, not just its
+  // day - the list can still hold several items for that date.
+  useEffect(() => {
+    if (!deepEvent) return;
+    const el = document.getElementById(`event-${deepEvent}`);
+    if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [deepEvent, rows]);
 
   const selectedLabel = selectedDay
     ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(undefined, {
@@ -391,7 +417,7 @@ export function CalendarPage() {
         ) : (
           <div className="list">
             {rows.map(({ key, item, label }) => (
-              <ItemRow item={item} color={label ? colorForName(label) : undefined} schoolName={label} key={key} />
+              <ItemRow item={item} color={label ? colorForName(label) : undefined} schoolName={label} highlighted={item.id === deepEvent} key={key} />
             ))}
           </div>
         ))}

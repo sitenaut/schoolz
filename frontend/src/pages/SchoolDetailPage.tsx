@@ -41,6 +41,7 @@ export function SchoolDetailPage() {
   const [today, setToday] = useState<SchoolToday | null>(null);
   const [items, setItems] = useState<SchoolContentItem[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staffQuery, setStaffQuery] = useState("");
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
   const [sacc, setSacc] = useState<SaccProgram | null>(null);
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
@@ -96,6 +97,20 @@ export function SchoolDetailPage() {
   const people = items.filter((i) => i.category === "person");
   const summary = newsletters.find((n) => n.latest_summary)?.latest_summary;
   const newsletterUrl = newsletters[0]?.url;
+
+  // Whitespace tokens AND across name/title/department/email, same
+  // matching rule as the district-wide directory - "beck math" narrows
+  // rather than widening. Client-side since a single school's roster is a
+  // few dozen rows already sitting in memory, not the ~1900-row case that
+  // needs the server-side directory search.
+  const filteredStaff = useMemo(() => {
+    const tokens = staffQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return staff;
+    return staff.filter((m) => {
+      const hay = [m.full_name, m.title, m.department, m.email].filter(Boolean).join(" ").toLowerCase();
+      return tokens.every((t) => hay.includes(t));
+    });
+  }, [staff, staffQuery]);
 
   usePrerenderReady(!!today || missing);
 
@@ -245,7 +260,7 @@ export function SchoolDetailPage() {
         <h2>This week</h2>
         <Link to={`/calendar?school=${s.slug}`}>Full calendar</Link>
       </div>
-      <WeekStrip week={today.week} />
+      <WeekStrip week={today.week} schoolSlug={s.slug} />
       {today.lunch.source_pdf_url && (
         <p className="note" style={{ marginTop: 8 }}>
           Lunch from the district's{" "}
@@ -301,20 +316,32 @@ export function SchoolDetailPage() {
       </div>
       <ContactGrid contacts={today.contacts} mainPhone={s.main_phone} />
       {staff.length > 0 && (
-        <details className="acc" style={{ marginTop: 8 }}>
+        <details className="acc" style={{ marginTop: 28 }}>
           <summary>Full staff directory ({staff.length})</summary>
-          <div className="body people-grid">
-            {staff.map((m) => (
-              <div className="person-card" key={m.id}>
-                <div className="person-name">{m.full_name}</div>
-                {m.title && <div className="person-title">{m.title}</div>}
-                {m.email && (
-                  <div className="person-title">
-                    <a href={`mailto:${m.email}`}>{m.email}</a>
+          <div className="body">
+            <input
+              className="staff-search"
+              placeholder="Search name, title, department…"
+              value={staffQuery}
+              onChange={(e) => setStaffQuery(e.target.value)}
+            />
+            {filteredStaff.length === 0 ? (
+              <div className="empty">No one matches "{staffQuery.trim()}".</div>
+            ) : (
+              <div className="people-grid">
+                {filteredStaff.map((m) => (
+                  <div className="person-card" key={m.id}>
+                    <div className="person-name">{m.full_name}</div>
+                    {m.title && <div className="person-title">{m.title}</div>}
+                    {m.email && (
+                      <div className="person-title">
+                        <a href={`mailto:${m.email}`}>{m.email}</a>
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </details>
       )}

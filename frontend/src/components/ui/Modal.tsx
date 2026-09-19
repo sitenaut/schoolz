@@ -18,6 +18,15 @@ type Props = {
 export function Modal({ open, onClose, title, subtitle, size = "md", footer, children }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
+  // Callers routinely pass an inline onClose (e.g. a closure that also
+  // resets form state), which gets a new identity on every parent render -
+  // including one triggered by typing into a field inside this modal. Kept
+  // in a ref so the effect below doesn't treat that as "close changed" and
+  // re-run its open/focus setup mid-keystroke.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -25,7 +34,7 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
     const first = panel.current?.querySelector<HTMLElement>("input, select, textarea, button:not(.modal-x)");
@@ -35,7 +44,10 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
       document.body.style.overflow = prevOverflow;
       (opener.current as HTMLElement | null)?.focus?.();
     };
-  }, [open, onClose]);
+    // Only re-run when the modal opens/closes, not on every re-render that
+    // happens to hand in a new onClose closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!open) return null;
   return (
