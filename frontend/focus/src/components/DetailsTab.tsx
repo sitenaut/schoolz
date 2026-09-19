@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { dueLabel, shortCourseName } from "../courses";
+import { displayCourseName, dueLabel } from "../courses";
+import type { CourseNameOverrides } from "../lib/courseNames";
 import type { CourseProgress, LatePolicy, TodoItem, TodoResponse } from "../types";
 import { LatePolicyEditor, describePolicy } from "./LatePolicyEditor";
 
@@ -28,6 +29,7 @@ export function DetailsTab({
   onDeletePolicy,
   onOpen,
   onToggle,
+  courseNames,
 }: {
   todo: TodoResponse | null;
   courses: CourseProgress[];
@@ -38,6 +40,7 @@ export function DetailsTab({
   onDeletePolicy: (courseKey: string) => Promise<void>;
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
+  courseNames: CourseNameOverrides;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -66,7 +69,7 @@ export function DetailsTab({
         return (
           <section className="card" key={course.course_key}>
             <h3 className="card-label">
-              {shortCourseName(course.course_name)}
+              {displayCourseName(course.course_name, courseNames[course.course_key])}
               {course.grade_percent !== null && ` · ${Math.round(course.grade_percent)}%`}
               {course.teacher_name && ` · ${course.teacher_name}`}
             </h3>

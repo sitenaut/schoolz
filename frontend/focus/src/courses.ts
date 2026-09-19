@@ -30,6 +30,17 @@ export function shortCourseName(name: string): string {
   return out || name;
 }
 
+/** The name to actually show for a class: a student's own rename (lib/
+ * courseNames.ts, keyed by course_key - same identity the color override
+ * uses) if one is set, otherwise shortCourseName's auto-stripped version.
+ * One function so every screen that shows a class name resolves it the
+ * same way - the color mismatch bug (two screens hashing two different
+ * strings for what was supposed to be one color) is exactly the failure
+ * mode a second, separately-applied override would risk repeating. */
+export function displayCourseName(rawName: string, customName?: string): string {
+  return customName?.trim() || shortCourseName(rawName);
+}
+
 // Deliberately a fixed palette rather than a generated hue: the mockup's
 // tiles read as a set, and generated hues drift into muddy or clashing
 // neighbours. Index is a stable hash of the course key so a class keeps

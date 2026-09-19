@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PALETTE_HEXES, courseColorProps, daysFromToday, dueLabel, shortCourseName } from "../courses";
+import { PALETTE_HEXES, courseColorProps, daysFromToday, displayCourseName, dueLabel, shortCourseName } from "../courses";
 import type { CourseProgress, TodoItem } from "../types";
 import { Capped } from "./Capped";
 import { Sheet } from "./Sheet";
@@ -19,6 +19,8 @@ export function CourseSheet({
   onToggle,
   customColor,
   onSetColor,
+  customName,
+  onSetName,
 }: {
   course: CourseProgress;
   items: TodoItem[];
@@ -28,8 +30,11 @@ export function CourseSheet({
   onToggle: (item: TodoItem, done: boolean) => void;
   customColor?: string;
   onSetColor: (hex: string | null) => void;
+  customName?: string;
+  onSetName: (name: string | null) => void;
 }) {
   const [showDone, setShowDone] = useState(false);
+  const displayName = displayCourseName(course.course_name, customName);
 
   const missing = items.filter((i) => i.category === "missing");
   const upcoming = items.filter((i) => i.category === "due" && i.due_date);
@@ -39,13 +44,14 @@ export function CourseSheet({
   const done = items.filter((i) => i.category === "done");
 
   return (
-    <Sheet onClose={onClose} label={course.course_name}>
-      <h2 className="sheet-title">{shortCourseName(course.course_name)}</h2>
+    <Sheet onClose={onClose} label={displayName}>
+      <h2 className="sheet-title">{displayName}</h2>
       <p className="sheet-course">
         {course.teacher_name ?? "Teacher unknown"}
         {course.grade_percent !== null && ` · ${Math.round(course.grade_percent)}%`}
       </p>
 
+      <NamePicker autoName={shortCourseName(course.course_name)} customName={customName} onSetName={onSetName} />
       <ColorPicker courseKey={course.course_key} customColor={customColor} onSetColor={onSetColor} />
 
       <ItemList label="Missing" items={missing} tone="missed" todayIso={todayIso} onOpen={onOpenItem} onToggle={onToggle} />
@@ -77,6 +83,52 @@ export function CourseSheet({
  * no library needed. Persisted client-side (lib/courseColors.ts), keyed
  * by course_key so it's the exact same identity Focus's chips and this
  * tile's own color already share. */
+/** "Give the class a display name that's also editable" - propagates
+ * everywhere the class is referenced, the same way the color override
+ * does and for the same reason: both are keyed by course_key, and both
+ * are resolved through one shared function (displayCourseName /
+ * courseColorProps) rather than each screen applying its own override
+ * separately, which is exactly how the color mismatch happened the first
+ * time.
+ *
+ * An empty field resets to the auto-derived name rather than needing a
+ * separate reset control - the field's own placeholder already IS that
+ * default, so leaving it blank and moving on reads as "use that". */
+function NamePicker({
+  autoName,
+  customName,
+  onSetName,
+}: {
+  autoName: string;
+  customName?: string;
+  onSetName: (name: string | null) => void;
+}) {
+  const [draft, setDraft] = useState(customName ?? "");
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed === (customName ?? "")) return;
+    onSetName(trimmed || null);
+  };
+
+  return (
+    <section className="sheet-row name-picker">
+      <h3>Class name</h3>
+      <input
+        className="name-input"
+        value={draft}
+        placeholder={autoName}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        aria-label="Class display name"
+      />
+    </section>
+  );
+}
+
 function ColorPicker({
   courseKey,
   customColor,

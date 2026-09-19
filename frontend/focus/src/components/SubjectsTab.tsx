@@ -1,5 +1,6 @@
-import { courseColorProps, shortCourseName } from "../courses";
+import { courseColorProps, displayCourseName } from "../courses";
 import type { CourseColorOverrides } from "../lib/courseColors";
+import type { CourseNameOverrides } from "../lib/courseNames";
 import type { CourseProgress, ScheduleResponse } from "../types";
 
 /** The tile grid from the mockup - and, by design, where "the future" is.
@@ -24,11 +25,13 @@ export function SubjectsTab({
   schedule,
   onOpenCourse,
   courseColors,
+  courseNames,
 }: {
   courses: CourseProgress[];
   schedule: ScheduleResponse | null;
   onOpenCourse: (course: CourseProgress) => void;
   courseColors: CourseColorOverrides;
+  courseNames: CourseNameOverrides;
 }) {
   if (courses.length === 0) {
     return (
@@ -49,7 +52,7 @@ export function SubjectsTab({
       {courses.map((course) => {
         const open = course.missing + course.due_soon;
         const period = periodByName.get(course.course_name);
-        const name = shortCourseName(course.course_name);
+        const name = displayCourseName(course.course_name, courseNames[course.course_key]);
         const initials = name
           .split(/\s+/)
           .filter(Boolean)

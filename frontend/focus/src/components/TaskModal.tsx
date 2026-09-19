@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { shortCourseName } from "../courses";
+import { displayCourseName } from "../courses";
+import type { CourseNameOverrides } from "../lib/courseNames";
 import type { HelpDraft, HelpKind, SuggestionState, TodoItem } from "../types";
 import { Sheet } from "./Sheet";
 
@@ -12,6 +13,7 @@ export function TaskModal({
   onSetException,
   onClose,
   onToggle,
+  courseNames,
 }: {
   item: TodoItem;
   suggestion: SuggestionState | null;
@@ -21,6 +23,7 @@ export function TaskModal({
   onSetException: (item: TodoItem, acceptedUntil: string | null, note?: string) => Promise<boolean>;
   onClose: () => void;
   onToggle: (item: TodoItem, done: boolean) => void;
+  courseNames: CourseNameOverrides;
 }) {
   const points = item.grade?.score_possible ?? null;
 
@@ -28,7 +31,9 @@ export function TaskModal({
     <Sheet onClose={onClose} label={item.title}>
       <h2 className="sheet-title">{item.title}</h2>
 
-      {item.course_name && <p className="sheet-course">{shortCourseName(item.course_name)}</p>}
+      {item.course_name && (
+        <p className="sheet-course">{displayCourseName(item.course_name, courseNames[item.course_key])}</p>
+      )}
 
       {/* First, before teacher or due date: not knowing how to begin is
           the thing that stalls an assignment, so the way in comes before

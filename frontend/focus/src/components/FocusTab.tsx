@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { courseColorProps, horizon, shortCourseName } from "../courses";
+import { courseColorProps, displayCourseName, horizon } from "../courses";
 import type { CourseColorOverrides } from "../lib/courseColors";
+import type { CourseNameOverrides } from "../lib/courseNames";
 import type { TodoItem, TodoResponse } from "../types";
 import { Capped } from "./Capped";
 import { InboxZero } from "./InboxZero";
@@ -53,12 +54,14 @@ export function FocusTab({
   onOpen,
   onToggle,
   courseColors,
+  courseNames,
 }: {
   todo: TodoResponse | null;
   todayIso: string;
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
   courseColors: CourseColorOverrides;
+  courseNames: CourseNameOverrides;
 }) {
   const [cleared, setCleared] = useState(() => readCleared(todayIso));
   const [showFinished, setShowFinished] = useState(false);
@@ -180,9 +183,9 @@ export function FocusTab({
               const backlog = visible.filter((i) => i.due_date !== h.today && i.due_date !== h.next);
               return (
                 <>
-                  {today.length > 0 && <TaskGroup label="Today" items={today} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
-                  {next.length > 0 && <TaskGroup label={h.nextLabel} items={next} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
-                  {backlog.length > 0 && <TaskGroup label="Also up next" items={backlog} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
+                  {today.length > 0 && <TaskGroup label="Today" items={today} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} courseNames={courseNames} />}
+                  {next.length > 0 && <TaskGroup label={h.nextLabel} items={next} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} courseNames={courseNames} />}
+                  {backlog.length > 0 && <TaskGroup label="Also up next" items={backlog} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} courseNames={courseNames} />}
                 </>
               );
             }}
@@ -215,7 +218,7 @@ export function FocusTab({
           <button type="button" className="finished-toggle" onClick={() => setShowFinished((s) => !s)}>
             {showFinished ? "Hide" : "Show"} finished ({finished.length})
           </button>
-          {showFinished && <TaskGroup label={null} items={finished} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} />}
+          {showFinished && <TaskGroup label={null} items={finished} onOpen={onOpen} onToggle={toggle} courseColors={courseColors} courseNames={courseNames} />}
         </section>
       )}
     </>
@@ -228,19 +231,28 @@ function TaskGroup({
   onOpen,
   onToggle,
   courseColors,
+  courseNames,
 }: {
   label: string | null;
   items: TodoItem[];
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
   courseColors: CourseColorOverrides;
+  courseNames: CourseNameOverrides;
 }) {
   return (
     <div className="task-group">
       {label && <h3 className="group-heading">{label}</h3>}
       <div className="task-grid">
         {items.map((item) => (
-          <TaskCard key={item.id} item={item} onOpen={onOpen} onToggle={onToggle} courseColors={courseColors} />
+          <TaskCard
+            key={item.id}
+            item={item}
+            onOpen={onOpen}
+            onToggle={onToggle}
+            courseColors={courseColors}
+            courseNames={courseNames}
+          />
         ))}
       </div>
     </div>
@@ -250,23 +262,27 @@ function TaskGroup({
 /** Subject, title, checkbox. Nothing else - the due date lives in the
  * group heading above, and every other detail waits in the sheet.
  *
- * Colored by course_key, not course_name - Subjects tiles already keyed
- * on course_key, and this card used to key on the raw name instead, so
- * the same class could show two different colors between the two tabs
- * (confirmed real, reported directly). courseColorProps also applies a
- * student's own custom pick here when one exists, keyed the same way. */
+ * Colored and named by course_key, not course_name - Subjects tiles
+ * already keyed color on course_key, and this card used to key on the raw
+ * name instead, so the same class could show two different colors between
+ * the two tabs (confirmed real, reported directly). Both courseColorProps
+ * and displayCourseName apply a student's own customization here when one
+ * exists, keyed the same way, so a rename or recolor shows up everywhere
+ * at once. */
 function TaskCard({
   item,
   onOpen,
   onToggle,
   courseColors,
+  courseNames,
 }: {
   item: TodoItem;
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
   courseColors: CourseColorOverrides;
+  courseNames: CourseNameOverrides;
 }) {
-  const course = item.course_name ? shortCourseName(item.course_name) : null;
+  const course = item.course_name ? displayCourseName(item.course_name, courseNames[item.course_key]) : null;
   const { className, style } = courseColorProps(item.course_key, courseColors[item.course_key]);
   return (
     <article className={`task-card${item.done ? " is-done" : ""}`}>
