@@ -166,10 +166,10 @@ def test_course_key_prefers_district_code():
 
 def test_course_progress_flags_low_grades_without_calculating_makeup():
     items = [
-        {"course_key": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "missing", "due_date": "2026-09-08", "teacher_name": "Gregory Rouen", "teacher_emails": ["grouen@chclc.org"]},
-        {"course_key": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "done", "due_date": "2026-09-09"},
-        {"course_key": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "due", "due_date": "2026-09-16"},
-        {"course_key": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "no_due_date", "due_date": None},
+        {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "missing", "due_date": "2026-09-08", "teacher_name": "Gregory Rouen", "teacher_emails": ["grouen@chclc.org"]},
+        {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "done", "due_date": "2026-09-09"},
+        {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "due", "due_date": "2026-09-16"},
+        {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "no_due_date", "due_date": None},
     ]
     entries = [
         SimpleNamespace(course_code="331", course_section="10", course_name=None, title="Density Activity", percent=0.0),

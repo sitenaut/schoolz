@@ -104,6 +104,9 @@ export type TodoItem = {
   title: string;
   item_type: string;
   course_name: string | null;
+  // Same identity CourseProgress.course_key uses - lets Focus and Subjects
+  // key a class's color off the same thing rather than disagreeing.
+  course_key: string;
   due_raw: string | null;
   due_date: string | null;
   category: "missing" | "due" | "done" | "no_due_date";

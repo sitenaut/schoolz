@@ -1,4 +1,5 @@
-import { shortCourseName, tileColor } from "../courses";
+import { courseColorProps, shortCourseName } from "../courses";
+import type { CourseColorOverrides } from "../lib/courseColors";
 import type { CourseProgress, ScheduleResponse } from "../types";
 
 /** The tile grid from the mockup - and, by design, where "the future" is.
@@ -22,10 +23,12 @@ export function SubjectsTab({
   courses,
   schedule,
   onOpenCourse,
+  courseColors,
 }: {
   courses: CourseProgress[];
   schedule: ScheduleResponse | null;
   onOpenCourse: (course: CourseProgress) => void;
+  courseColors: CourseColorOverrides;
 }) {
   if (courses.length === 0) {
     return (
@@ -46,18 +49,33 @@ export function SubjectsTab({
       {courses.map((course) => {
         const open = course.missing + course.due_soon;
         const period = periodByName.get(course.course_name);
+        const name = shortCourseName(course.course_name);
+        const initials = name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase();
+        const { className, style } = courseColorProps(course.course_key, courseColors[course.course_key]);
         return (
           <button
             type="button"
             key={course.course_key}
-            className={`tile ${tileColor(course.course_key)}`}
+            className={`tile ${className}`}
+            style={style}
             onClick={() => onOpenCourse(course)}
-            aria-label={`${shortCourseName(course.course_name)}${open ? `, ${open} outstanding` : ""}`}
+            aria-label={`${name}${open ? `, ${open} outstanding` : ""}`}
           >
-            {period && <span className="tile-period">Per. {period}</span>}
-            <span className="tile-name">{shortCourseName(course.course_name)}</span>
-            {open > 0 && <span className="tile-badge">{open}</span>}
-            {course.grade_percent !== null && <span className="tile-grade">{Math.round(course.grade_percent)}%</span>}
+            <div className="tile-top">
+              <span className="tile-avatar">{initials}</span>
+              {period && <span className="tile-period">Per. {period}</span>}
+            </div>
+            <span className="tile-name">{name}</span>
+            <div className="tile-bottom">
+              {course.grade_percent !== null && <span className="tile-grade">{Math.round(course.grade_percent)}%</span>}
+              {open > 0 && <span className="tile-badge">{open}</span>}
+            </div>
           </button>
         );
       })}

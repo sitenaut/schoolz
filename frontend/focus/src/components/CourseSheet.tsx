@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { daysFromToday, dueLabel, shortCourseName } from "../courses";
+import { PALETTE_HEXES, courseColorProps, daysFromToday, dueLabel, shortCourseName } from "../courses";
 import type { CourseProgress, TodoItem } from "../types";
 import { Capped } from "./Capped";
 import { Sheet } from "./Sheet";
@@ -17,6 +17,8 @@ export function CourseSheet({
   onClose,
   onOpenItem,
   onToggle,
+  customColor,
+  onSetColor,
 }: {
   course: CourseProgress;
   items: TodoItem[];
@@ -24,6 +26,8 @@ export function CourseSheet({
   onClose: () => void;
   onOpenItem: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
+  customColor?: string;
+  onSetColor: (hex: string | null) => void;
 }) {
   const [showDone, setShowDone] = useState(false);
 
@@ -41,6 +45,8 @@ export function CourseSheet({
         {course.teacher_name ?? "Teacher unknown"}
         {course.grade_percent !== null && ` · ${Math.round(course.grade_percent)}%`}
       </p>
+
+      <ColorPicker courseKey={course.course_key} customColor={customColor} onSetColor={onSetColor} />
 
       <ItemList label="Missing" items={missing} tone="missed" todayIso={todayIso} onOpen={onOpenItem} onToggle={onToggle} />
       <ItemList label="This week" items={thisWeek} todayIso={todayIso} onOpen={onOpenItem} onToggle={onToggle} />
@@ -60,6 +66,56 @@ export function CourseSheet({
         </section>
       )}
     </Sheet>
+  );
+}
+
+/** "She wanted to be able to customize the color of the class" - ten preset
+ * swatches (the same fixed palette every tile draws its default from, so
+ * picking one still reads as part of the same set) plus a native color
+ * input for anything else. The native input is the point for "like a
+ * color picker": it opens the OS's own picker on both iOS and Android,
+ * no library needed. Persisted client-side (lib/courseColors.ts), keyed
+ * by course_key so it's the exact same identity Focus's chips and this
+ * tile's own color already share. */
+function ColorPicker({
+  courseKey,
+  customColor,
+  onSetColor,
+}: {
+  courseKey: string;
+  customColor?: string;
+  onSetColor: (hex: string | null) => void;
+}) {
+  const { className: defaultClassName } = courseColorProps(courseKey);
+  return (
+    <section className="sheet-row color-picker">
+      <h3>Class color</h3>
+      <div className="swatch-row">
+        {PALETTE_HEXES.map((hex) => (
+          <button
+            key={hex}
+            type="button"
+            className={`swatch${customColor === hex ? " swatch-selected" : ""}`}
+            style={{ background: hex }}
+            aria-label={`Use ${hex}`}
+            onClick={() => onSetColor(hex)}
+          />
+        ))}
+        <label className="swatch swatch-custom" aria-label="Pick a custom color">
+          <input
+            type="color"
+            value={customColor ?? "#888888"}
+            onChange={(e) => onSetColor(e.target.value)}
+          />
+          <span aria-hidden="true">+</span>
+        </label>
+      </div>
+      {customColor && (
+        <button type="button" className="ask-restart" onClick={() => onSetColor(null)}>
+          Use the default color ({defaultClassName.replace("tile-", "")})
+        </button>
+      )}
+    </section>
   );
 }
 
