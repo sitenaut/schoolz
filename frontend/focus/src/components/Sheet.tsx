@@ -30,6 +30,16 @@ const CLOSE_ANIMATION_MS = 200;
  * looks like I could just scroll it down to hide it but that's not what
  * that panel does."
  *
+ * A drag started anywhere on the card (not just the handle) also
+ * participates: while there's more of the card's own content to scroll,
+ * the drag scrolls it exactly like a native touch scroll; once it's
+ * already at the top and the pointer keeps pulling down, that same
+ * gesture continues on into the dismiss - the pull-to-refresh handoff
+ * pattern, not two unrelated gestures fighting over the same finger. The
+ * card's own scroll is what should move here, never the page behind it
+ * (a body-scroll lock backs that up in case a touch ever slips past both
+ * the card and the backdrop).
+ *
  * Pointer Events (not touch-only), so mouse-drag dismiss works too and
  * this is drivable by Playwright for verification without a real touch
  * device. */
@@ -49,6 +59,10 @@ export function Sheet({
   const samples = useRef<{ y: number; t: number }[]>([]);
   const sheetHeight = useRef(0);
   const sheetRef = useRef<HTMLDivElement>(null);
+  // Which pointer is mid-gesture on the card body, so a second finger (or
+  // a stray event from a pointer we already let go of) can't be mistaken
+  // for the one being tracked.
+  const activePointerId = useRef<number | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -58,23 +72,93 @@ export function Sheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    startY.current = e.clientY;
-    samples.current = [{ y: e.clientY, t: e.timeStamp }];
+  // The sheet's own scroll is what a touch here should move - never the
+  // page underneath. Belt-and-braces alongside overscroll-behavior:
+  // contain on .sheet, for whatever a touch can still reach outside it
+  // (the backdrop's own margin, an odd browser quirk).
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
+  const beginDrag = (clientY: number, timeStamp: number) => {
+    startY.current = clientY;
+    samples.current = [{ y: clientY, t: timeStamp }];
     sheetHeight.current = sheetRef.current?.offsetHeight ?? 0;
     setDragging(true);
+  };
+
+  const trackDrag = (clientY: number, timeStamp: number) => {
+    const delta = clientY - startY.current;
+    // Only downward movement drags the sheet; upward clamps to 0 so it
+    // can't be dragged past its resting position.
+    setDragY(Math.max(0, delta));
+    samples.current.push({ y: clientY, t: timeStamp });
+    const cutoff = timeStamp - VELOCITY_WINDOW_MS;
+    while (samples.current.length > 1 && samples.current[0].t < cutoff) samples.current.shift();
+  };
+
+  // The handle's own gesture is fully separate from the card-level
+  // scroll-then-drag handoff below - it always drags, never scrolls (there's
+  // nothing to scroll in a 4px strip). Stopped from bubbling so the two
+  // sets of handlers never both process the same pointer sequence: without
+  // this, a handle drag also re-enters onCardPointerMove/onCardPointerEnd
+  // via bubbling and runs endDrag's dismiss logic (and onClose) twice.
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    beginDrag(e.clientY, e.timeStamp);
     (e.target as Element).setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     if (!dragging) return;
-    const delta = e.clientY - startY.current;
-    // Only downward movement drags the sheet; upward clamps to 0 so it
-    // can't be dragged past its resting position.
-    setDragY(Math.max(0, delta));
-    samples.current.push({ y: e.clientY, t: e.timeStamp });
-    const cutoff = e.timeStamp - VELOCITY_WINDOW_MS;
-    while (samples.current.length > 1 && samples.current[0].t < cutoff) samples.current.shift();
+    trackDrag(e.clientY, e.timeStamp);
+  };
+
+  /** A drag starting anywhere else on the card. Captured on the card so it
+   * keeps receiving move events even once the finger drifts past the
+   * card's edge, but nothing is hijacked yet - the browser's native
+   * scroll runs normally until the card can't scroll any further and the
+   * pointer is still pulling down, at which point this hands off into
+   * the same dismiss-drag the handle uses. */
+  const onCardPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // A native form control (the exception date picker, a checkbox) needs
+    // its own default pointer handling left completely alone - capturing
+    // the pointer on one of these risks fighting whatever native UI it
+    // shows on tap (a date wheel, a select dropdown).
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+    activePointerId.current = e.pointerId;
+    startY.current = e.clientY;
+    samples.current = [{ y: e.clientY, t: e.timeStamp }];
+    (e.target as Element).setPointerCapture(e.pointerId);
+  };
+
+  const onCardPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerId.current !== e.pointerId) return;
+    if (!dragging) {
+      const sheet = sheetRef.current;
+      const delta = e.clientY - startY.current;
+      // Anything but "already at the top and still pulling down" is left
+      // to native scrolling - re-checked on every move, not just the
+      // first, so a scroll that reaches the top mid-gesture still hands
+      // off instead of requiring a separate second drag.
+      if (!sheet || sheet.scrollTop > 0 || delta <= 0) return;
+      e.preventDefault();
+      beginDrag(e.clientY, e.timeStamp);
+      return;
+    }
+    e.preventDefault();
+    trackDrag(e.clientY, e.timeStamp);
+  };
+
+  const onCardPointerEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (activePointerId.current !== e.pointerId) return;
+    activePointerId.current = null;
+    if (dragging) endDrag();
   };
 
   /** Velocity across the whole retained window, not one event-pair - see
@@ -112,6 +196,10 @@ export function Sheet({
         aria-modal="true"
         aria-label={label}
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={onCardPointerDown}
+        onPointerMove={onCardPointerMove}
+        onPointerUp={onCardPointerEnd}
+        onPointerCancel={onCardPointerEnd}
         style={{
           transform: dragY ? `translateY(${dragY}px)` : undefined,
           transition: dragging ? "none" : undefined,
@@ -121,8 +209,14 @@ export function Sheet({
           className="sheet-grab-zone"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+            endDrag();
+          }}
+          onPointerCancel={(e) => {
+            e.stopPropagation();
+            endDrag();
+          }}
         >
           <div className="sheet-grab" aria-hidden="true" />
         </div>
