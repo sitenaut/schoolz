@@ -38,8 +38,68 @@ export type SuggestionState = Suggestion & {
   error: string | null;
 };
 
+// What this class's late policy says is still earnable on one item. Null on
+// the item when no policy is on file - "we don't know" stays distinct from
+// "we know it's zero", and only the second one is allowed to change what the
+// dashboard shows.
+export type LateCredit = {
+  accepted: boolean;
+  credit_pct: number | null;
+  closes_on: string | null;
+  days_left: number | null;
+  is_late: boolean;
+  extension_by_request: boolean;
+  // True when a teacher's own exception produced this, not the class rule.
+  by_exception: boolean;
+};
+
+/** "Turn it in by the 6th and I'll take it." Overrides the class policy for
+ * this one assignment, and outranks the marking-period filter - a human
+ * grant beats every rule the app applies on its own. */
+export type LateException = {
+  accepted_until: string;
+  credit_pct: number | null;
+  granted_note: string | null;
+};
+
+export type HelpKind = { kind: string; label: string };
+
+export type HelpDraft = {
+  kind: string;
+  label: string;
+  subject: string;
+  body: string;
+  teacher_email: string | null;
+};
+
+export type LatePolicy = {
+  course_key: string;
+  course_name: string | null;
+  shape: "full_credit" | "flat" | "daily_decay" | "window" | "tiered" | "not_accepted";
+  penalty_pct: number | null;
+  penalty_per_day: number | null;
+  floor_pct: number | null;
+  window_days: number | null;
+  steps: { days: number; credit_pct: number }[] | null;
+  accepted_until: string | null;
+  applies_to_types: string[] | null;
+  extension_by_request: boolean;
+  source_text: string | null;
+  notes: string | null;
+};
+
+export type LatePolicyParse = {
+  understood: boolean;
+  summary: string | null;
+  source_sentence: string | null;
+  policy: Partial<LatePolicy> | null;
+};
+
 export type TodoItem = {
   suggestion: Suggestion | null;
+  late_credit: LateCredit | null;
+  late_exception: LateException | null;
+  asked_kinds: string[];
   id: string;
   title: string;
   item_type: string;

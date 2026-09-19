@@ -13,7 +13,7 @@ import hashlib
 import logging
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -34,7 +34,11 @@ from models import (
     ChildScheduleBlock,
     ChildWorkItem,
     ChildWorkItemProgress,
+    CourseLatePolicy,
     GuardianStudentLink,
+    HelpRequest,
+    Notification,
+    WorkItemLateException,
     School,
     SchoolContentItem,
     StaffMember,
@@ -57,6 +61,7 @@ from schemas import (
     ChildWorkItemOut,
 )
 from services import bucket3_extract as ex
+from services import help_requests as help_svc
 from services import kids_suggestions, kids_view
 
 logger = logging.getLogger(__name__)
@@ -116,6 +121,34 @@ class SuggestionOut(BaseModel):
     cached: bool = True
 
 
+class LateCreditOut(BaseModel):
+    """What this class's late policy says is still earnable. Null on the item
+    when no policy is on file - "unknown" must stay distinct from "zero"."""
+
+    accepted: bool
+    credit_pct: int | None
+    closes_on: str | None
+    days_left: int | None
+    is_late: bool
+    extension_by_request: bool
+    # True when a teacher's own exception produced this, not the class rule.
+    by_exception: bool = False
+
+
+class LateExceptionOut(BaseModel):
+    accepted_until: str
+    credit_pct: float | None
+    granted_note: str | None
+
+
+class LateExceptionIn(BaseModel):
+    # "marking_period_end" or an ISO date - same vocabulary CourseLatePolicy
+    # uses for accepted_until.
+    accepted_until: str
+    credit_pct: float | None = None
+    granted_note: str | None = None
+
+
 class TodoItemOut(BaseModel):
     id: str
     title: str
@@ -135,6 +168,9 @@ class TodoItemOut(BaseModel):
     teacher_emails: list[str]
     link: str | None
     suggestion: SuggestionOut | None
+    late_credit: LateCreditOut | None = None
+    late_exception: LateExceptionOut | None = None
+    asked_kinds: list[str] = []
 
 
 class ProgressOut(BaseModel):
@@ -199,6 +235,72 @@ class CompleteOut(BaseModel):
 
 class PlanOut(BaseModel):
     text: str
+
+
+class LatePolicyIn(BaseModel):
+    course_key: str
+    course_name: str | None = None
+    shape: str
+    penalty_pct: float | None = None
+    penalty_per_day: float | None = None
+    floor_pct: float | None = None
+    window_days: int | None = None
+    steps: list[dict] | None = None
+    accepted_until: str | None = None
+    applies_to_types: list[str] | None = None
+    extension_by_request: bool = False
+    source_text: str | None = None
+    notes: str | None = None
+
+
+class LatePolicyOut(BaseModel):
+    course_key: str
+    course_name: str | None
+    shape: str
+    penalty_pct: float | None
+    penalty_per_day: float | None
+    floor_pct: float | None
+    window_days: int | None
+    steps: list[dict] | None
+    accepted_until: str | None
+    applies_to_types: list[str] | None
+    extension_by_request: bool
+    source_text: str | None
+    notes: str | None
+
+
+class LatePolicyParseRequest(BaseModel):
+    text: str
+
+
+class LatePolicyParseOut(BaseModel):
+    """A *proposal*, never a saved policy - the parent confirms it against
+    their own handout before anything is written."""
+
+    understood: bool
+    summary: str | None = None
+    source_sentence: str | None = None
+    policy: dict | None = None
+
+
+class HelpKindOut(BaseModel):
+    kind: str
+    label: str
+
+
+class HelpDraftRequest(BaseModel):
+    kind: str
+
+
+class HelpDraftOut(BaseModel):
+    kind: str
+    label: str
+    subject: str
+    body: str
+    teacher_email: str | None
+    # The student sends it from their own mail app; schoolz never sends mail
+    # on their behalf and never sees whether they did.
+    logged: bool
 
 
 # ---- access -----------------------------------------------------------------
@@ -975,6 +1077,28 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
 
     staff = await _staff_directory(db, student)
 
+    policies = {
+        (p.course_code, p.course_section): p
+        for p in (
+            await db.execute(select(CourseLatePolicy).where(CourseLatePolicy.student_id == student.id))
+        ).scalars().all()
+    }
+    exceptions = {
+        e.work_item_id: e
+        for e in (
+            await db.execute(select(WorkItemLateException).where(WorkItemLateException.student_id == student.id))
+        ).scalars().all()
+    }
+    asked: dict[str, list[str]] = {}
+    for h in (
+        await db.execute(
+            select(HelpRequest).where(HelpRequest.student_id == student.id).order_by(HelpRequest.created_at)
+        )
+    ).scalars().all():
+        kinds = asked.setdefault(h.work_item_id, [])
+        if h.kind not in kinds:
+            kinds.append(h.kind)
+
     keyed = [(w, kids_view.course_key(w.course_name, w.course_external_id), ex.normalize_title(w.title)) for w in work]
     suggestion_keys = {(code, section, norm) for _, (code, section), norm in keyed}
     suggestions = {}
@@ -997,7 +1121,13 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
         has_real_grade = bool(grade and grade.percent is not None and grade.status not in ("Missing", "Exempt"))
         done, source = kids_view.resolve_done(mark.done if mark else None, w.status, has_real_grade)
         category = kids_view.todo_category(w.item_type, w.due_date, done, today)
-        if not kids_view.in_current_marking_period(category, w.due_date, current_mp.start_date if current_mp else None):
+        exception = exceptions.get(w.id)
+        if not kids_view.in_current_marking_period(
+            category,
+            w.due_date,
+            current_mp.start_date if current_mp else None,
+            has_exception=exception is not None,
+        ):
             continue
         teacher = w.teacher_name or course_teacher.get(w.course_external_id)
         cached = suggestions.get((key[0], key[1], norm))
@@ -1029,6 +1159,24 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
                 "link": w.link,
                 "suggestion": {"text": cached.suggestion_text, "declined": cached.declined} if cached else None,
                 "course_key": key,
+                "late_credit": kids_view.late_credit(
+                    policies.get(key),
+                    w.due_date,
+                    today,
+                    mp_end=current_mp.end_date if current_mp else None,
+                    item_type=w.item_type,
+                    exception=exception,
+                ),
+                "late_exception": (
+                    {
+                        "accepted_until": exception.accepted_until,
+                        "credit_pct": exception.credit_pct,
+                        "granted_note": exception.granted_note,
+                    }
+                    if exception
+                    else None
+                ),
+                "asked_kinds": asked.get(w.id, []),
             }
         )
     return items, current_mp, today
@@ -1256,6 +1404,314 @@ async def suggest_plan(student_id: str, user: User = Depends(get_current_user), 
         logger.exception("plan_suggestion_failed", extra={"student_id": student.id})
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the suggestion service - try again in a bit")
     return PlanOut(text=text)
+
+
+def _policy_out(p: CourseLatePolicy) -> LatePolicyOut:
+    return LatePolicyOut(
+        course_key=f"{p.course_code}-{p.course_section}" if p.course_section else p.course_code,
+        course_name=p.course_name,
+        shape=p.shape,
+        penalty_pct=p.penalty_pct,
+        penalty_per_day=p.penalty_per_day,
+        floor_pct=p.floor_pct,
+        window_days=p.window_days,
+        steps=p.steps,
+        accepted_until=p.accepted_until,
+        applies_to_types=p.applies_to_types,
+        extension_by_request=p.extension_by_request,
+        source_text=p.source_text,
+        notes=p.notes,
+    )
+
+
+def _split_course_key(course_key: str) -> tuple[str, str]:
+    """Reverse of the "code-section" join course_progress emits. A fallback
+    key ("slug:..."/"name:...") has no section and must not be split on its
+    own hyphens, so only the last segment of a real code pair is peeled off."""
+    if course_key.startswith(("slug:", "name:")) or "-" not in course_key:
+        return course_key, ""
+    code, section = course_key.rsplit("-", 1)
+    return code, section
+
+
+@router.get("/students/{student_id}/bucket3/late-policies", response_model=list[LatePolicyOut])
+async def list_late_policies(
+    student_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    student = await _get_own_student(db, user.id, student_id)
+    rows = (
+        await db.execute(
+            select(CourseLatePolicy)
+            .where(CourseLatePolicy.student_id == student.id)
+            .order_by(CourseLatePolicy.course_name.nulls_last(), CourseLatePolicy.course_code)
+        )
+    ).scalars().all()
+    return [_policy_out(p) for p in rows]
+
+
+@router.put("/students/{student_id}/bucket3/late-policies", response_model=LatePolicyOut)
+async def save_late_policy(
+    student_id: str,
+    payload: LatePolicyIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create or replace one class's late-work policy. Per (student, course)
+    on purpose - one family's transcription of their own handout, never
+    shared with other families the way AssignmentSuggestion is."""
+    student = await _get_own_student(db, user.id, student_id)
+    if payload.shape not in kids_view.LATE_SHAPES:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unknown late-policy shape '{payload.shape}'")
+    code, section = _split_course_key(payload.course_key)
+    values = {
+        "student_id": student.id,
+        "course_code": code,
+        "course_section": section,
+        "course_name": payload.course_name,
+        "shape": payload.shape,
+        "penalty_pct": payload.penalty_pct,
+        "penalty_per_day": payload.penalty_per_day,
+        "floor_pct": payload.floor_pct,
+        "window_days": payload.window_days,
+        "steps": payload.steps,
+        "accepted_until": payload.accepted_until,
+        "applies_to_types": payload.applies_to_types,
+        "extension_by_request": payload.extension_by_request,
+        "source_text": payload.source_text,
+        "notes": payload.notes,
+    }
+    await db.execute(
+        pg_insert(CourseLatePolicy)
+        .values(**values)
+        .on_conflict_do_update(
+            index_elements=["student_id", "course_code", "course_section"],
+            set_={k: v for k, v in values.items() if k not in ("student_id", "course_code", "course_section")}
+            | {"updated_at": _now()},
+        )
+    )
+    await db.commit()
+    saved = (
+        await db.execute(
+            select(CourseLatePolicy).where(
+                CourseLatePolicy.student_id == student.id,
+                CourseLatePolicy.course_code == code,
+                CourseLatePolicy.course_section == section,
+            )
+        )
+    ).scalar_one()
+    return _policy_out(saved)
+
+
+@router.delete("/students/{student_id}/bucket3/late-policies/{course_key}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_late_policy(
+    student_id: str, course_key: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    student = await _get_own_student(db, user.id, student_id)
+    code, section = _split_course_key(course_key)
+    await db.execute(
+        delete(CourseLatePolicy).where(
+            CourseLatePolicy.student_id == student.id,
+            CourseLatePolicy.course_code == code,
+            CourseLatePolicy.course_section == section,
+        )
+    )
+    await db.commit()
+
+
+@router.post("/students/{student_id}/bucket3/late-policies/parse", response_model=LatePolicyParseOut)
+async def parse_late_policy(
+    student_id: str,
+    payload: LatePolicyParseRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Turn a pasted syllabus paragraph into a proposed policy. Deliberately
+    does NOT save: a misread late policy quietly changes what the dashboard
+    tells a kid to work on next, so a person confirms it against the handout
+    first."""
+    await _get_own_student(db, user.id, student_id)
+    text = payload.text.strip()
+    if not text:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Paste the late-work paragraph first")
+    try:
+        parsed = await kids_suggestions.parse_late_policy(text)
+    except kids_suggestions.SuggestionsUnavailable:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server")
+    except Exception:
+        logger.exception("late_policy_parse_failed", extra={"student_id": student_id})
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the parser - try again in a bit")
+
+    if not parsed.get("understood"):
+        return LatePolicyParseOut(understood=False)
+    policy = {
+        k: parsed[k]
+        for k in (
+            "shape",
+            "penalty_pct",
+            "penalty_per_day",
+            "floor_pct",
+            "window_days",
+            "steps",
+            "accepted_until",
+            "applies_to_types",
+            "extension_by_request",
+        )
+        if k in parsed
+    }
+    return LatePolicyParseOut(
+        understood=True,
+        summary=parsed.get("summary"),
+        source_sentence=parsed.get("source_sentence") or text,
+        policy=policy,
+    )
+
+
+@router.put(
+    "/students/{student_id}/bucket3/workitems/{work_item_id}/late-exception", response_model=LateExceptionOut
+)
+async def set_late_exception(
+    student_id: str,
+    work_item_id: str,
+    payload: LateExceptionIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record that a teacher said yes to this one assignment.
+
+    This overrides the class's late policy for this item and beats the
+    marking-period filter, so work the app had written off comes back -
+    which is the whole point. Confirmed real with more than one teacher:
+    "turn it in before the marking period ends and I'll take it"."""
+    student = await _get_own_student(db, user.id, student_id)
+    item = await _get_own_work_item(db, student, work_item_id)
+    until = payload.accepted_until.strip()
+    if until != "marking_period_end":
+        try:
+            date.fromisoformat(until)
+        except ValueError:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "accepted_until must be an ISO date (YYYY-MM-DD) or 'marking_period_end'",
+            )
+    values = {
+        "student_id": student.id,
+        "work_item_id": item.id,
+        "accepted_until": until,
+        "credit_pct": payload.credit_pct,
+        "granted_note": payload.granted_note,
+        "recorded_by_user_id": user.id,
+    }
+    await db.execute(
+        pg_insert(WorkItemLateException)
+        .values(**values)
+        .on_conflict_do_update(
+            index_elements=["student_id", "work_item_id"],
+            set_={
+                "accepted_until": until,
+                "credit_pct": payload.credit_pct,
+                "granted_note": payload.granted_note,
+                "recorded_by_user_id": user.id,
+                "updated_at": _now(),
+            },
+        )
+    )
+    await db.commit()
+    return LateExceptionOut(
+        accepted_until=until, credit_pct=payload.credit_pct, granted_note=payload.granted_note
+    )
+
+
+@router.delete(
+    "/students/{student_id}/bucket3/workitems/{work_item_id}/late-exception",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def clear_late_exception(
+    student_id: str, work_item_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    student = await _get_own_student(db, user.id, student_id)
+    item = await _get_own_work_item(db, student, work_item_id)
+    await db.execute(
+        delete(WorkItemLateException).where(
+            WorkItemLateException.student_id == student.id, WorkItemLateException.work_item_id == item.id
+        )
+    )
+    await db.commit()
+
+
+@router.get("/students/{student_id}/bucket3/help-kinds", response_model=list[HelpKindOut])
+async def list_help_kinds(
+    student_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """The pick-a-kind menu for "I have no idea what this is about"."""
+    await _get_own_student(db, user.id, student_id)
+    return [HelpKindOut(**k) for k in help_svc.menu()]
+
+
+@router.post("/students/{student_id}/bucket3/workitems/{work_item_id}/ask-teacher", response_model=HelpDraftOut)
+async def draft_teacher_email(
+    student_id: str,
+    work_item_id: str,
+    payload: HelpDraftRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Draft the email for one kind of stuck, and record that the ask
+    happened.
+
+    The draft is returned for a mailto: link - the student sends it from
+    their own mail app, so schoolz never transmits mail on their behalf and
+    never learns whether or what they sent. What's recorded is only that an
+    ask of this kind happened, which is what makes a pattern ("can't tell
+    what's being asked, every Geometry assignment") visible to a guardian."""
+    student = await _get_own_student(db, user.id, student_id)
+    item = await _get_own_work_item(db, student, work_item_id)
+    if payload.kind not in help_svc.KINDS:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unknown help kind '{payload.kind}'")
+
+    # Resolve the teacher exactly the way the dashboard did, not from
+    # item.teacher_name alone: a classwork-grid row carries no teacher, and
+    # _todo_items falls back to whoever posts most in that course. If the
+    # modal said "Pat Jones", the email has to go to Pat Jones - reading the
+    # raw column instead would silently address it to nobody.
+    items, _mp, _today = await _todo_items(db, student)
+    enriched = next((i for i in items if i["id"] == item.id), None)
+    if enriched:
+        teacher, emails = enriched["teacher_name"], enriched["teacher_emails"]
+    else:
+        # Filtered out of the dashboard (an older marking period, say) but
+        # still a real item someone opened - resolve it directly.
+        teacher = item.teacher_name
+        emails = kids_view.match_teacher_emails(teacher, await _staff_directory(db, student))
+    draft = help_svc.compose(payload.kind, item.title, item.course_name, teacher, student.first_name)
+
+    db.add(
+        HelpRequest(
+            student_id=student.id,
+            work_item_id=item.id,
+            kind=payload.kind,
+            teacher_email=emails[0] if emails else None,
+            created_by_user_id=user.id,
+        )
+    )
+    # Tell the guardians it happened - not what was written. A student
+    # asking for help is the behaviour this whole flow is trying to make
+    # easier; a parent who can see it happening can notice the pattern
+    # without reading over anyone's shoulder.
+    message = help_svc.notification_message(student.first_name, payload.kind, item.title, item.course_name)
+    for link in (
+        await db.execute(select(GuardianStudentLink).where(GuardianStudentLink.student_id == student.id))
+    ).scalars().all():
+        if link.guardian_user_id != user.id:
+            db.add(
+                Notification(
+                    user_id=link.guardian_user_id, type="help_asked", message=message, student_id=student.id
+                )
+            )
+    await db.commit()
+
+    return HelpDraftOut(
+        **draft, teacher_email=emails[0] if emails else None, logged=True
+    )
 
 
 @router.get("/admin/capture-page-kinds", response_model=list[CapturePageKindOut])
