@@ -25,6 +25,14 @@ def test_classify_page_recognizes_known_shapes():
         ex.classify_page("genesis", "https://parents.example.org/genesis/parents?tab2=studentsummary&studentid=1").pattern
         == "genesis:studentsummary"
     )
+    # The extension crawls down to each item's own detail page, so these
+    # arrive routinely and are named rather than left "unrecognized".
+    assert ex.classify_page("classroom", "https://classroom.google.com/u/0/c/AAA/a/BBB/details").pattern == (
+        "classroom:/u/N/c/:courseId/a/:id/details"
+    )
+    assert ex.classify_page("classroom", "https://classroom.google.com/u/0/c/AAA/m/DDD/details").pattern == (
+        "classroom:/u/N/c/:courseId/m/:id/details"
+    )
     assert ex.classify_page("classroom", "https://classroom.google.com/u/2/weird").pattern == "classroom:other"
 
 
@@ -139,6 +147,19 @@ def test_resolve_due_date_month_day_uses_school_year_boundary():
     # A June date captured in September is the end of the school year that
     # just started (2026-27), i.e. June 2027 - not ~3 months in the past.
     assert ex.resolve_due_date("Jun 10", anchor) == "2027-06-10"
+
+
+def test_resolve_due_date_prefers_an_explicit_year_over_inference():
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    # Classroom prints the year exactly when a bare month/day would be
+    # ambiguous - an item over a year old. Inferring one instead re-dated
+    # last year's work into the current school year, so it came back as
+    # current (and, once late policies existed, as still worth credit).
+    assert ex.resolve_due_date("Sep 4, 2025, 11:30 AM", anchor) == "2025-09-04"
+    assert ex.resolve_due_date("Due Sep 4, 2025", anchor) == "2025-09-04"
+    # A clock time following the day is not a year.
+    assert ex.resolve_due_date("Sep 16, 9:30 AM", anchor) == "2026-09-16"
+    assert ex.resolve_due_date("Fri, Sep 18, 11:59 PM", anchor) == "2026-09-18"
 
 
 def test_course_codes_from_name_excludes_academic_year_ranges():

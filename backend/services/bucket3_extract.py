@@ -39,6 +39,14 @@ def classify_page(adapter: str, source_url: str) -> PageKind:
     bucket rather than being dropped - the whole point of the page map is
     to surface what ISN'T recognized yet."""
     if adapter == "classroom":
+        # The extension follows every real detail-page anchor it finds on a
+        # Classwork/Stream page (backpack-capture's detailStepsFrom), so
+        # these arrive routinely and shouldn't sit in the "unrecognized"
+        # bucket the catalog exists to flag.
+        if re.search(r"/u/\d+/c/[\w-]+/a/[\w-]+/details", source_url):
+            return PageKind("classroom:/u/N/c/:courseId/a/:id/details", "Classroom: Assignment detail")
+        if re.search(r"/u/\d+/c/[\w-]+/m/[\w-]+/details", source_url):
+            return PageKind("classroom:/u/N/c/:courseId/m/:id/details", "Classroom: Material detail")
         if re.search(r"/u/\d+/w/[\w-]+/t/all", source_url):
             return PageKind("classroom:/u/N/w/:courseId/t/all", "Classroom: Classwork tab")
         if re.search(r"/u/\d+/c/[\w-]+$", source_url):
@@ -885,6 +893,18 @@ def resolve_due_date(due_raw: str | None, captured_at: datetime) -> str | None:
     if m:
         month = _MONTHS[m.group(1).lower()]
         day = int(m.group(2))
+        # Classroom spells the year out exactly when a bare month/day would
+        # be ambiguous - confirmed real on one Classwork page, where a
+        # ~4-month-old item reads "Due May 11, 7:30 AM" and one over a year
+        # old reads "Due Sep 4, 2025, 11:30 AM" (backpack-capture's
+        # docs/DESIGN.md). When it's there it's authoritative and must win:
+        # inferring instead silently re-dated genuinely old work into the
+        # current school year, which made stale assignments reappear as
+        # current ones - and, since late-credit is computed from this date,
+        # gave them a live "still worth N%" that was pure fiction.
+        explicit_year = _EXPLICIT_YEAR_RE.match(text[m.end() :])
+        if explicit_year:
+            return date(int(explicit_year.group(1)), month, day).isoformat()
         # A U.S. school year runs roughly Jul-Jun, not Jan-Dec - a due date
         # in Jul-Dec belongs to the school year that started that same
         # calendar year, one in Jan-Jun belongs to the school year that
@@ -904,6 +924,10 @@ def resolve_due_date(due_raw: str | None, captured_at: datetime) -> str | None:
 _LOCAL_TZ = ZoneInfo("America/New_York")
 _TIME_ONLY_RE = re.compile(r"^\d{1,2}:\d{2}\s*(AM|PM)?$", re.I)
 _MONTH_DAY_RE = re.compile(r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\.?\s+(\d{1,2})", re.I)
+# The year in "Sep 4, 2025, 11:30 AM", anchored so it only ever matches a year
+# sitting immediately after the day - a clock time ("Sep 16, 9:30 AM") must
+# never be read as one.
+_EXPLICIT_YEAR_RE = re.compile(r"^,?\s*(20\d{2})\b")
 
 
 def _local_anchor(captured_at: datetime) -> date:
