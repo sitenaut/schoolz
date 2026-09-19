@@ -9,6 +9,7 @@ from services.content_extractor import (
     _infer_lunch_menu_start_date,
     _may_supersede,
     _parse_lunch_menu_days,
+    _title_dedup_key,
 )
 
 # Confirmed real shape from a Chesterbrook Academy Smore lunch-menu flyer:
@@ -255,3 +256,13 @@ def test_nothing_to_backfill_reports_no_change():
     existing = SchoolContentItem(title="Picture Day", description="Already here.", link_url="https://e.org")
     assert _backfill_from_duplicate(existing, {"description": "Other wording."}, "https://other.org") is False
     assert existing.link_url == "https://e.org"
+
+
+def test_title_dedup_key_folds_ordinal_words_and_numerals():
+    # Real duplicate pair: two separate Chesterbrook newsletter extractions
+    # produced these for the same date, and an exact-title dedup missed it.
+    assert _title_dedup_key("First Day of Autumn") == _title_dedup_key("1st Day of Autumn")
+    assert _title_dedup_key("100th Day of School") == _title_dedup_key("100th Day of School")
+    # Genuinely different events must not collapse into each other.
+    assert _title_dedup_key("First Day of Autumn") != _title_dedup_key("First Day of Spring")
+    assert _title_dedup_key("First Day of School") != _title_dedup_key("Second Day of School")
