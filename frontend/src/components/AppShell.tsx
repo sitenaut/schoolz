@@ -5,7 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
-import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers } from "./icons";
+import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -101,6 +101,11 @@ export function AppShell() {
           schoolz<small>Cherry Hill, NJ</small>
         </Link>
         <div className="spacer" />
+        {user?.is_admin && (
+          <Link to="/admin" className="btn icon" title="Admin" aria-label="Admin">
+            <IconWrench />
+          </Link>
+        )}
         <ThemeToggle />
         <Link to="/start" className="ghost">
           My schools
@@ -176,10 +181,15 @@ export function AppShell() {
           Directory
         </NavLink>
         {user && (
-          <NavLink to="/kids">
+          // /focus is a separate app (its own Vite build, served from
+          // /focus/ - see nginx.conf.template) sharing only this origin's
+          // session, not a route in this router - a plain <a> forces the
+          // real browser navigation it needs; a <Link>/<NavLink> would try
+          // to client-route to a path this SPA has no match for.
+          <a href="/focus/">
             <IconUsers />
-            Kids
-          </NavLink>
+            Gradez
+          </a>
         )}
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>

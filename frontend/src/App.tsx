@@ -175,6 +175,7 @@ function Routed() {
           <Route path="newsletters" element={<SmoreNewslettersPage />} />
           <Route path="scans" element={<JobsPage />} />
           <Route path="config" element={<AdminConfigPage />} />
+          <Route path="kids" element={<KidsPage />} />
         </Route>
       </Route>
     </FaroRoutes>

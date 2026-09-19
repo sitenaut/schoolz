@@ -230,3 +230,8 @@ export const IconUpload = ({ className }: P) => (
     <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
   </svg>
 );
+export const IconWrench = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 18l3 3 6.6-6.3a4 4 0 0 0 5.1-5.4l-2.8 2.8-2.8-.7-.7-2.8 2.8-2.8z" />
+  </svg>
+);
