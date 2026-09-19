@@ -386,6 +386,33 @@ def _correct_stale_year(parsed: datetime | None, reference: datetime | None = No
     return parsed
 
 
+# Single-digit-ordinal only - the realistic range for a "Nth day of X"
+# school title ("First/1st Day of School", "First/1st Day of Autumn"), not
+# a general-purpose ordinal normalizer.
+_ORDINAL_WORD_TO_NUM = {
+    "first": "1", "second": "2", "third": "3", "fourth": "4", "fifth": "5",
+    "sixth": "6", "seventh": "7", "eighth": "8", "ninth": "9", "tenth": "10",
+}
+_ORDINAL_SUFFIX = {"1": "st", "2": "nd", "3": "rd"}
+
+
+def _fold_ordinal_word(word: str) -> str:
+    num = _ORDINAL_WORD_TO_NUM.get(word)
+    return num + _ORDINAL_SUFFIX.get(num, "th") if num else word
+
+
+def _title_dedup_key(title: str) -> str:
+    """normalize_name plus ordinal word/numeral folding, so two newsletters
+    phrasing the same day marker differently are recognised as the same
+    fact rather than two events. Confirmed real: the same Chesterbrook date
+    produced both "First Day of Autumn" and "1st Day of Autumn" from two
+    separate newsletter extractions - an exact-title dedup check doesn't
+    catch it, and there's no closure/status wording here for
+    same_status_fact to match on either. This is the general case that
+    exists for, one step narrower than a full fuzzy-title dedup."""
+    return " ".join(_fold_ordinal_word(w) for w in normalize_name(title).split(" "))
+
+
 def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: datetime | None = None) -> bool:
     """Guards the model's own supersedes_item_id against retiring a live
     item in favour of one that has already happened.
@@ -711,7 +738,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 new_title = item["title"][:300]
                 if any(
                     c.category == item["category"]
-                    or normalize_name(c.title) == normalize_name(new_title)
+                    or _title_dedup_key(c.title) == _title_dedup_key(new_title)
                     or same_status_fact(c.title, new_title)
                     for c in district_candidates
                 ):
@@ -733,17 +760,26 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
                 # of it. Keyed with title (unlike the district dedup
                 # above) since a school's own day can legitimately have
                 # two different events of the same category.
-                existing_school_item = await db.execute(
-                    select(SchoolContentItem).where(
-                        SchoolContentItem.scope == "school",
-                        SchoolContentItem.school_id == school_id,
-                        SchoolContentItem.category == item["category"],
-                        SchoolContentItem.title == item["title"][:300],
-                        SchoolContentItem.start_date == item_start_date,
-                        SchoolContentItem.is_current.is_(True),
+                #
+                # Matched via _title_dedup_key, not an exact string - two
+                # separate extraction runs produced "First Day of Autumn"
+                # and "1st Day of Autumn" for the same Chesterbrook date,
+                # and an exact match let the second one straight through.
+                new_title = item["title"][:300]
+                school_candidates = (
+                    await db.execute(
+                        select(SchoolContentItem).where(
+                            SchoolContentItem.scope == "school",
+                            SchoolContentItem.school_id == school_id,
+                            SchoolContentItem.category == item["category"],
+                            SchoolContentItem.start_date == item_start_date,
+                            SchoolContentItem.is_current.is_(True),
+                        )
                     )
+                ).scalars().all()
+                existing_row = next(
+                    (c for c in school_candidates if _title_dedup_key(c.title) == _title_dedup_key(new_title)), None
                 )
-                existing_row = existing_school_item.scalars().first()
                 if existing_row is not None:
                     # Keep the row already on file, but take anything it's
                     # missing from this restatement first - see
