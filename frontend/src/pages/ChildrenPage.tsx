@@ -136,6 +136,23 @@ export function ChildrenPage() {
               <button onClick={() => setInviteFor(s.id)} style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}>
                 Invite another guardian
               </button>
+              {/* The student's OWN login is a separate, stricter invite
+                  (routers/student_accounts.py) - the form for it lives on
+                  the Kids detail page (student.viewer_role === "guardian"
+                  gates it there), not duplicated here. This used to be
+                  reachable from the main nav's "Kids" link; once that got
+                  renamed to "Gradez" and repointed at /focus/, ordinary
+                  (non-admin) guardians had no way to reach it at all - the
+                  only remaining path was /admin/kids, which requires
+                  is_admin. This link is what makes it reachable again for
+                  everyone, not just admins. */}
+              <Link
+                to={`/kids/${s.id}`}
+                className="ghost"
+                style={{ marginTop: "0.5rem", marginRight: "0.5rem", display: "inline-block" }}
+              >
+                Give {s.first_name} their own login
+              </Link>
               <button onClick={() => removeStudent(s.id)}>Remove from my profile</button>
             </li>
           ))}
