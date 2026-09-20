@@ -79,16 +79,32 @@ export const PALETTE_HEXES = [
   "#3faa6d",
 ];
 
-function tileColorClass(key: string): string {
+// Shared between tileColorClass and defaultPaletteHex, which MUST agree on
+// which of the ten slots a given key lands in - TILE_COLORS and
+// PALETTE_HEXES are the same set in the same order, so one index picks the
+// matching entry from either.
+function paletteIndex(key: string): number {
   let hash = 0;
   for (let i = 0; i < key.length; i++) {
     hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   }
-  return TILE_COLORS[hash % TILE_COLORS.length];
+  return hash % TILE_COLORS.length;
+}
+
+function tileColorClass(key: string): string {
+  return TILE_COLORS[paletteIndex(key)];
 }
 
 export function tileColor(key: string): string {
   return tileColorClass(key);
+}
+
+/** The hex a class would get with no custom override - what the color
+ * picker highlights as "current" when nothing's been picked yet, so the
+ * picker never shows every swatch as unselected while a color is visibly
+ * already applied. */
+export function defaultPaletteHex(courseKey: string): string {
+  return PALETTE_HEXES[paletteIndex(courseKey)];
 }
 
 /** The class-key-first color resolution used everywhere a class needs a

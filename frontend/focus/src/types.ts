@@ -155,6 +155,7 @@ export type CourseProgress = {
   due_soon: number;
   completion_pct: number | null;
   teacher_name: string | null;
+  teacher_emails: string[];
 };
 
 export type ScheduleBlock = {
