@@ -1,4 +1,35 @@
 // Display-layer helpers for course names and tile colours.
+import type { TodoItem } from "./types";
+
+// Used by sortMissingByRecency - how many days from a closing late-credit
+// window still counts as urgent enough to jump the queue ahead of newer
+// backlog (see the function's own docstring for the reasoning).
+const CLOSING_SOON_DAYS = 2;
+
+/** Most-recently-missed first - the backend hands these oldest-first, but
+ * for anything meant to prompt action that's backwards: the thing missed
+ * two days ago is the one a teacher is most likely to still accept and the
+ * one a kid can still half-remember; the one from six weeks ago is
+ * neither. The one exception is a closing credit window, which has the
+ * same "acting now changes the outcome" property near-term due-soon work
+ * has, so it jumps the queue - soonest to close first.
+ *
+ * Shared by FocusTab (filling Up Next / ordering Needs Attention) and
+ * CourseSheet (a single class's own Missing section, "the Focus page
+ * filtered to just this class") so the two apply exactly one rule rather
+ * than risking two different orderings for what's supposed to be the same
+ * thing, scoped differently - the same class of bug the color/name
+ * mismatches already were. */
+export function sortMissingByRecency(items: TodoItem[]): TodoItem[] {
+  const closingSoon = (i: TodoItem) =>
+    i.late_credit?.days_left != null && i.late_credit.days_left <= CLOSING_SOON_DAYS;
+  return [...items].sort((a, b) => {
+    const [ac, bc] = [closingSoon(a), closingSoon(b)];
+    if (ac !== bc) return ac ? -1 : 1;
+    if (ac && bc) return (a.late_credit!.days_left ?? 0) - (b.late_credit!.days_left ?? 0);
+    return (a.due_date ?? "") < (b.due_date ?? "") ? 1 : -1;
+  });
+}
 
 /** Classroom course names carry the district's own bookkeeping in them -
  * "GEOM A Per A 2026-27 210-1", "F: CHEM-1A 331-10", "PD S1 PHILOSOPHY:
