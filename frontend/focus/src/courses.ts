@@ -61,9 +61,9 @@ export function shortCourseName(name: string): string {
   return out || name;
 }
 
-/** The name to actually show for a class: a student's own rename (lib/
- * courseNames.ts, keyed by course_key - same identity the color override
- * uses) if one is set, otherwise shortCourseName's auto-stripped version.
+/** The name to actually show for a class: a person's own rename (lib/
+ * coursePreferences.ts, keyed by course_key - same identity the color
+ * override uses) if one is set, otherwise shortCourseName's auto-stripped version.
  * One function so every screen that shows a class name resolves it the
  * same way - the color mismatch bug (two screens hashing two different
  * strings for what was supposed to be one color) is exactly the failure
@@ -140,7 +140,7 @@ export function defaultPaletteHex(courseKey: string): string {
 
 /** The class-key-first color resolution used everywhere a class needs a
  * color: Focus's task chips, Subjects tiles, the course sheet. A custom
- * pick (from lib/courseColors.ts, keyed by the same course_key) wins as an
+ * pick (from lib/coursePreferences.ts, keyed by the same course_key) wins as an
  * inline CSS-custom-property override; otherwise the deterministic
  * palette class applies. Centralising this is what keeps Focus and
  * Subjects from picking two different colors for the same class - they

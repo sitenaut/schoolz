@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { displayCourseName, dueLabel } from "../courses";
-import type { CourseNameOverrides } from "../lib/courseNames";
+import type { CourseNameOverrides } from "../lib/coursePreferences";
 import type { CourseProgress, LatePolicy, TodoItem, TodoResponse } from "../types";
 import { LatePolicyEditor, describePolicy } from "./LatePolicyEditor";
 

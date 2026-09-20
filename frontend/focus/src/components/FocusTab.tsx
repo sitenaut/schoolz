@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { courseColorProps, displayCourseName, horizon, sortMissingByRecency } from "../courses";
-import type { CourseColorOverrides } from "../lib/courseColors";
-import type { CourseNameOverrides } from "../lib/courseNames";
+import type { CourseColorOverrides, CourseNameOverrides } from "../lib/coursePreferences";
 import type { TodoItem, TodoResponse } from "../types";
 import { Capped } from "./Capped";
 import { InboxZero } from "./InboxZero";

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, apiGet, hasSession } from "./api";
 import { localTodayIso } from "./courses";
-import { useCourseColorOverrides } from "./lib/courseColors";
-import { useCourseDisplayNames } from "./lib/courseNames";
+import { useCoursePreferences } from "./lib/coursePreferences";
 import { CourseSheet } from "./components/CourseSheet";
 import { DetailsTab } from "./components/DetailsTab";
 import { FocusTab } from "./components/FocusTab";
@@ -35,8 +34,8 @@ export function App() {
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
   const [helpKinds, setHelpKinds] = useState<HelpKind[]>([]);
   const [latePolicies, setLatePolicies] = useState<LatePolicy[]>([]);
-  const { overrides: courseColors, setColor: setCourseColor } = useCourseColorOverrides();
-  const { overrides: courseNames, setName: setCourseName } = useCourseDisplayNames();
+  const { colors: courseColors, names: courseNames, setColor: setCourseColor, setName: setCourseName } =
+    useCoursePreferences();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
