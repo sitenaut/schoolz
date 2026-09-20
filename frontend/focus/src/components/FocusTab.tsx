@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { courseColorProps, displayCourseName, horizon } from "../courses";
+import { courseColorProps, displayCourseName, horizon, sortMissingByRecency } from "../courses";
 import type { CourseColorOverrides } from "../lib/courseColors";
 import type { CourseNameOverrides } from "../lib/courseNames";
 import type { TodoItem, TodoResponse } from "../types";
@@ -11,10 +11,6 @@ import { InboxZero } from "./InboxZero";
 // still reads as "handle these" rather than "here is a wall".
 const UP_NEXT_CAP = 4;
 const ATTENTION_CAP = 3;
-// A late window closing within this many days is treated as urgent enough to
-// jump ahead of newer backlog - past this, "recently missed" is the better
-// ordering.
-const CLOSING_SOON_DAYS = 2;
 
 /** Ids checked off through THIS screen today.
  *
@@ -103,22 +99,7 @@ export function FocusTab({
   // avoided. Only a policy that's on file can close anything: an item with
   // no policy is unknown, never assumed closed.
   const open = todo.missing.filter((i) => !i.late_credit || i.late_credit.accepted);
-  // Most recently missed first - the backend hands these oldest-first, but
-  // for filling Up Next that's backwards: the thing missed two days ago is
-  // the one a teacher is most likely to still accept and the one she can
-  // still half-remember; the one from six weeks ago is neither.
-  //
-  // The exception is a closing credit window. That's the one case where
-  // backlog has the same "acting now changes the outcome" property that
-  // near-term work has, so it jumps the queue - soonest to close first.
-  const closingSoon = (i: TodoItem) =>
-    i.late_credit?.days_left != null && i.late_credit.days_left <= CLOSING_SOON_DAYS;
-  const missing = [...open].sort((a, b) => {
-    const [ac, bc] = [closingSoon(a), closingSoon(b)];
-    if (ac !== bc) return ac ? -1 : 1;
-    if (ac && bc) return (a.late_credit!.days_left ?? 0) - (b.late_credit!.days_left ?? 0);
-    return (a.due_date ?? "") < (b.due_date ?? "") ? 1 : -1;
-  });
+  const missing = sortMissingByRecency(open);
   const backfillCount = Math.max(0, UP_NEXT_CAP - dueSoon.length);
   const backlogFill = missing.slice(0, backfillCount);
   const upNext = [...dueSoon, ...backlogFill];

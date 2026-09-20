@@ -7,6 +7,7 @@ import {
   displayCourseName,
   dueLabel,
   shortCourseName,
+  sortMissingByRecency,
 } from "../courses";
 import type { CourseProgress, TodoItem } from "../types";
 import { Capped } from "./Capped";
@@ -45,7 +46,10 @@ export function CourseSheet({
   const [editingAppearance, setEditingAppearance] = useState(false);
   const displayName = displayCourseName(course.course_name, customName);
 
-  const missing = items.filter((i) => i.category === "missing");
+  // Same rule Focus's Needs Attention uses - most recently missed first -
+  // scoped to just this class, per the request: "pretend you're filtering
+  // [Focus] by that particular class".
+  const missing = sortMissingByRecency(items.filter((i) => i.category === "missing"));
   const upcoming = items.filter((i) => i.category === "due" && i.due_date);
   const thisWeek = upcoming.filter((i) => daysFromToday(i.due_date!, todayIso) <= 7);
   const later = upcoming.filter((i) => daysFromToday(i.due_date!, todayIso) > 7);
