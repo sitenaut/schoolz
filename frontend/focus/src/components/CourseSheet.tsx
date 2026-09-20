@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   PALETTE_HEXES,
   courseColorProps,
@@ -131,9 +131,15 @@ export function CourseSheet({
  * separately, which is exactly how the color mismatch happened the first
  * time.
  *
- * An empty field resets to the auto-derived name rather than needing a
- * separate reset control - the field's own placeholder already IS that
- * default, so leaving it blank and moving on reads as "use that". */
+ * Two real complaints from actually using this: showing the auto-derived
+ * name AS the placeholder read as already-typed text that needed
+ * deleting first, not an empty field - now plain instructional text, with
+ * the default spelled out in a hint line instead. And on a phone,
+ * focusing the input zooms the page in (iOS Safari does this to any text
+ * input under 16px - see the CSS) and "tap elsewhere to save" isn't an
+ * obvious next step while the view is zoomed. Explicit check/✕ buttons,
+ * always in frame next to the field, are the way out - either one blurs
+ * the input, which is what lets the browser un-zoom. */
 function NamePicker({
   autoName,
   customName,
@@ -144,27 +150,53 @@ function NamePicker({
   onSetName: (name: string | null) => void;
 }) {
   const [draft, setDraft] = useState(customName ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // An empty field showing the auto name AS its placeholder read as
+  // already-filled-in text that needed deleting first, not as "type
+  // something here" - confirmed real, reported directly. Plain
+  // instructional text instead; the default name still shows up as soon
+  // as it's actually applied (the sheet title above updates live).
   const commit = () => {
     const trimmed = draft.trim();
-    if (trimmed === (customName ?? "")) return;
-    onSetName(trimmed || null);
+    if (trimmed !== (customName ?? "")) onSetName(trimmed || null);
+    inputRef.current?.blur();
+  };
+
+  const cancel = () => {
+    setDraft(customName ?? "");
+    inputRef.current?.blur();
   };
 
   return (
     <section className="sheet-row name-picker">
       <h3>Class name</h3>
-      <input
-        className="name-input"
-        value={draft}
-        placeholder={autoName}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-        }}
-        aria-label="Class display name"
-      />
+      <div className="name-row">
+        <input
+          ref={inputRef}
+          className="name-input"
+          value={draft}
+          placeholder="Enter a custom name"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") cancel();
+          }}
+          aria-label="Class display name"
+        />
+        {/* Always in frame next to the field itself, Jira-style, rather
+            than relying on "tap away to save" - on a phone that's also
+            "tap away" while the keyboard has the view zoomed in, with no
+            obvious next step. Tapping either one blurs the input, which
+            is what lets the browser un-zoom. */}
+        <button type="button" className="name-commit" aria-label="Save name" onClick={commit}>
+          <IconCheck />
+        </button>
+        <button type="button" className="name-cancel" aria-label="Cancel" onClick={cancel}>
+          <IconX />
+        </button>
+      </div>
+      <p className="name-hint">Leave blank to use the default: {autoName}</p>
     </section>
   );
 }
@@ -220,6 +252,22 @@ function IconEdit() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" />
       <path d="M14 6l4 4" />
+    </svg>
+  );
+}
+
+function IconCheck() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   );
 }

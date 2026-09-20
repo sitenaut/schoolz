@@ -1152,7 +1152,8 @@ body {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 13.5px;
+  /* Same iOS zoom-on-focus issue as .name-input - see its comment. */
+  font-size: 16px;
 }
 
 .policy-read {
@@ -1223,6 +1224,8 @@ body {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
+  /* Same iOS zoom-on-focus issue as .name-input - see its comment. */
+  font-size: 16px;
 }
 
 .policy-check {
@@ -1286,7 +1289,8 @@ body {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 13.5px;
+  /* Same iOS zoom-on-focus issue as .name-input - see its comment. */
+  font-size: 16px;
 }
 
 .exception-note {
@@ -1343,15 +1347,67 @@ body {
   padding: 0;
 }
 
-.name-picker .name-input {
-  width: 100%;
-  box-sizing: border-box;
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-top: 4px;
+}
+
+.name-picker .name-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 9px 11px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--bg);
   color: var(--ink);
   font: inherit;
-  font-size: 14px;
+  /* iOS Safari zooms the whole page in when a text input under 16px is
+     focused, and doesn't reliably zoom back out - confirmed real: this
+     field left the view stuck zoomed in with no obvious way back. 16px is
+     the documented threshold that suppresses the zoom outright. */
+  font-size: 16px;
+}
+
+.name-commit,
+.name-cancel {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+}
+
+.name-commit {
+  background: var(--tile-green);
+  color: #fff;
+}
+
+.name-cancel {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.name-commit svg,
+.name-cancel svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.name-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
 }
