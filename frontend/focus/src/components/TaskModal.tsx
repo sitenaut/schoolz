@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { displayCourseName } from "../courses";
-import type { CourseNameOverrides } from "../lib/courseNames";
+import type { CourseNameOverrides } from "../lib/coursePreferences";
 import type { HelpDraft, HelpKind, SuggestionState, TodoItem } from "../types";
 import { Sheet } from "./Sheet";
 

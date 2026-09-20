@@ -120,9 +120,9 @@ export function CourseSheet({
  * picking one still reads as part of the same set) plus a native color
  * input for anything else. The native input is the point for "like a
  * color picker": it opens the OS's own picker on both iOS and Android,
- * no library needed. Persisted client-side (lib/courseColors.ts), keyed
- * by course_key so it's the exact same identity Focus's chips and this
- * tile's own color already share. */
+ * no library needed. Persisted server-side, per account (lib/
+ * coursePreferences.ts), keyed by course_key so it's the exact same
+ * identity Focus's chips and this tile's own color already share. */
 /** "Give the class a display name that's also editable" - propagates
  * everywhere the class is referenced, the same way the color override
  * does and for the same reason: both are keyed by course_key, and both

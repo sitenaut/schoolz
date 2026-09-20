@@ -1311,6 +1311,40 @@ class WorkItemLateException(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class CourseDisplayPreference(Base):
+    """One person's own rename/recolor of one class - Focus's "give the
+    class a display name/color that's editable" feature.
+
+    Keyed by (user_id, course_key), deliberately NOT student_id. This is a
+    fact about the PERSON who picked it, not about the student the class
+    belongs to - a Student row is shared across every linked guardian
+    (see the domain-model docs), and if this were keyed by student_id
+    instead, one guardian's rename would show up for every other guardian
+    and the kid too. Explicit product requirement (2026-09-20): this must
+    stay local to the account that made the change. Keying on the account
+    rather than the device is the whole point of moving this server-side
+    at all - it's what makes the pick follow that person across their own
+    devices while staying invisible to everyone else who can see the same
+    student's data.
+
+    A guardian with two kids in the same class shares one row for it
+    across both - the color/name is the person's own scheme for that
+    class, not specific to which kid is taking it."""
+
+    __tablename__ = "course_display_preferences"
+    __table_args__ = (UniqueConstraint("user_id", "course_key", name="uq_course_display_preference"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    course_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    custom_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    custom_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
 class HelpRequest(Base):
     """A record that the student asked their teacher for help on one item,
     and which *kind* of stuck they picked.

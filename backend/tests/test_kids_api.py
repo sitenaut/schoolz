@@ -515,3 +515,37 @@ async def test_a_teacher_exception_brings_back_work_the_policy_closed(monkeypatc
             headers=_auth(guardian),
         )
         assert bad.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_course_preferences_are_per_account_not_per_student():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        run = uuid.uuid4().hex[:8]
+        _run, parent_a, _sid = await _family(client, student_id=f"5{uuid.uuid4().int % 10**6:06d}", first_name="A")
+        parent_b = await _register(client, f"parent_b_{run}@example.com")
+
+        # Set a preference as parent_a.
+        saved = await client.put(
+            "/course-preferences/101-1",
+            json={"custom_name": "Math", "custom_color": "#ff0000"},
+            headers=_auth(parent_a),
+        )
+        assert saved.status_code == 200, saved.text
+        assert saved.json() == {"course_key": "101-1", "custom_name": "Math", "custom_color": "#ff0000"}
+
+        # parent_a sees it, on any device (no student scoping at all).
+        mine = (await client.get("/course-preferences", headers=_auth(parent_a))).json()
+        assert mine == [{"course_key": "101-1", "custom_name": "Math", "custom_color": "#ff0000"}]
+
+        # A completely different account never sees it, even for the same
+        # course_key - the whole point.
+        other = (await client.get("/course-preferences", headers=_auth(parent_b))).json()
+        assert other == []
+
+        # Setting both fields back to null removes the row rather than
+        # leaving an empty husk behind.
+        cleared = await client.put(
+            "/course-preferences/101-1", json={"custom_name": None, "custom_color": None}, headers=_auth(parent_a)
+        )
+        assert cleared.status_code == 200
+        assert (await client.get("/course-preferences", headers=_auth(parent_a))).json() == []

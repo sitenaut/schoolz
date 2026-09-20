@@ -34,6 +34,7 @@ from models import (
     ChildScheduleBlock,
     ChildWorkItem,
     ChildWorkItemProgress,
+    CourseDisplayPreference,
     CourseLatePolicy,
     GuardianStudentLink,
     HelpRequest,
@@ -306,6 +307,17 @@ class HelpDraftOut(BaseModel):
     # The student sends it from their own mail app; schoolz never sends mail
     # on their behalf and never sees whether they did.
     logged: bool
+
+
+class CoursePreferenceIn(BaseModel):
+    custom_name: str | None = None
+    custom_color: str | None = None
+
+
+class CoursePreferenceOut(BaseModel):
+    course_key: str
+    custom_name: str | None
+    custom_color: str | None
 
 
 # ---- access -----------------------------------------------------------------
@@ -1722,6 +1734,67 @@ async def draft_teacher_email(
     return HelpDraftOut(
         **draft, teacher_email=emails[0] if emails else None, logged=True
     )
+
+
+# ---- per-account course display preferences ---------------------------------
+#
+# Deliberately NOT nested under /students/{student_id} the way everything
+# else in this file is - a color/name pick is a fact about the ACCOUNT that
+# made it, not about any one student. A Student row is shared across every
+# linked guardian, so scoping this by student_id would leak one guardian's
+# rename to every other guardian (and the kid) who can see the same
+# student - explicit product requirement (2026-09-20) that this stay local
+# to the account that picked it. Keying on the account rather than a device
+# (the original localStorage-only version) is the whole point: it's what
+# lets the pick follow that person across their own devices while staying
+# invisible to everyone else.
+
+
+@router.get("/course-preferences", response_model=list[CoursePreferenceOut])
+async def list_course_preferences(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    rows = (
+        await db.execute(select(CourseDisplayPreference).where(CourseDisplayPreference.user_id == user.id))
+    ).scalars().all()
+    return [
+        CoursePreferenceOut(course_key=r.course_key, custom_name=r.custom_name, custom_color=r.custom_color)
+        for r in rows
+    ]
+
+
+@router.put("/course-preferences/{course_key}", response_model=CoursePreferenceOut)
+async def set_course_preference(
+    course_key: str,
+    payload: CoursePreferenceIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upsert, or delete once both fields go back to null - a row that
+    carries no actual override is nothing to keep around."""
+    if payload.custom_name is None and payload.custom_color is None:
+        await db.execute(
+            delete(CourseDisplayPreference).where(
+                CourseDisplayPreference.user_id == user.id, CourseDisplayPreference.course_key == course_key
+            )
+        )
+        await db.commit()
+        return CoursePreferenceOut(course_key=course_key, custom_name=None, custom_color=None)
+
+    values = {
+        "user_id": user.id,
+        "course_key": course_key,
+        "custom_name": payload.custom_name,
+        "custom_color": payload.custom_color,
+    }
+    await db.execute(
+        pg_insert(CourseDisplayPreference)
+        .values(**values)
+        .on_conflict_do_update(
+            index_elements=["user_id", "course_key"],
+            set_={"custom_name": payload.custom_name, "custom_color": payload.custom_color, "updated_at": _now()},
+        )
+    )
+    await db.commit()
+    return CoursePreferenceOut(course_key=course_key, custom_name=payload.custom_name, custom_color=payload.custom_color)
 
 
 @router.get("/admin/capture-page-kinds", response_model=list[CapturePageKindOut])

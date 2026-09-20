@@ -1,6 +1,5 @@
 import { courseColorProps, displayCourseName } from "../courses";
-import type { CourseColorOverrides } from "../lib/courseColors";
-import type { CourseNameOverrides } from "../lib/courseNames";
+import type { CourseColorOverrides, CourseNameOverrides } from "../lib/coursePreferences";
 import type { CourseProgress, ScheduleResponse } from "../types";
 
 /** The tile grid from the mockup - and, by design, where "the future" is.
