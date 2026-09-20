@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { courseColorProps, displayCourseName, horizon, sortMissingByRecency } from "../courses";
+import { courseColorProps, displayCourseName, horizon, sortDueByPoints, sortMissingByRecency } from "../courses";
 import type { CourseColorOverrides, CourseNameOverrides } from "../lib/coursePreferences";
 import type { TodoItem, TodoResponse } from "../types";
 import { Capped } from "./Capped";
@@ -81,8 +81,11 @@ export function FocusTab({
 
   const h = horizon(todayIso);
   const inHorizon = (d: string | null) => d === h.today || d === h.next;
-  const dueToday = todo.due.filter((i) => i.due_date === h.today);
-  const dueNext = todo.due.filter((i) => i.due_date === h.next);
+  // Worth-more-points-first within the same day - urgency (which day
+  // something's due) still decides the group; points only break the tie
+  // between two things due on the same day.
+  const dueToday = sortDueByPoints(todo.due.filter((i) => i.due_date === h.today));
+  const dueNext = sortDueByPoints(todo.due.filter((i) => i.due_date === h.next));
   // Near-term deadlines go first - those are still full-credit opportunities,
   // and once they're missed that credit is gone regardless of what else gets
   // worked on. Missing work is already as late as it's going to get, so it

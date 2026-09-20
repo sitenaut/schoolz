@@ -1075,6 +1075,12 @@ class ChildWorkItem(Base):
     posted_raw: Mapped[str | None] = mapped_column(String(100), nullable=True)
     posted_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
     body: Mapped[str | None] = mapped_column(String, nullable=True)
+    # From the item's own detail page (.../a/<id>/details), never the
+    # classwork/stream cards - Classroom shows a point value there even
+    # before anything is graded ("100 points"), but the grid/feed cards
+    # this table is otherwise built from never carry it at all. See
+    # services/bucket3_extract.py:extract_classroom_detail_points.
+    points_possible: Mapped[float | None] = mapped_column(nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

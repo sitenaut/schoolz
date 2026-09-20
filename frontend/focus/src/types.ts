@@ -115,6 +115,10 @@ export type TodoItem = {
   marked_by: string | null;
   classroom_status: string | null;
   grade: TodoGrade | null;
+  // From the assignment's own detail page, not the classwork/stream card
+  // this item is otherwise built from - null means "not captured yet",
+  // never "worth zero".
+  points_possible: number | null;
   teacher_name: string | null;
   teacher_emails: string[];
   link: string | null;

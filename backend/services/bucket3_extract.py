@@ -430,6 +430,58 @@ _ANNOUNCEMENT_END_PREFIXES = (
 )
 _ANNOUNCEMENT_CHROME = {"more_vert", "(role=tooltip)", "More options"}
 
+_STREAM_ITEM_ID_RE = re.compile(r"\(data-stream-item-id:\s*(\d+)\)")
+# Confirmed real, several dozen captures inspected directly: a
+# "<teacher> • <posted date>" line is immediately followed (within a
+# few lines, before the next "(data-type: ...)" chrome marker starts the
+# next section of the page) by either nothing, a bare "<N> points"
+# (ungraded), or a graded "<earned>\n/<possible>\n<earned> points out of
+# possible <possible>" triple - each optionally followed by "Due ...".
+_POINTS_GRADED_RE = re.compile(r"^(\d+(?:\.\d+)?)\s+points\s+out\s+of\s+possible\s+(\d+(?:\.\d+)?)$", re.I | re.M)
+_POINTS_ONLY_RE = re.compile(r"^(\d+(?:\.\d+)?)\s+points$", re.I | re.M)
+
+
+def extract_classroom_detail_points(text: str) -> tuple[str, float | None] | None:
+    """From one assignment's own detail page (classify_page's
+    "classroom:/u/N/c/:courseId/a|m/:id/details"), the point value
+    Classroom shows next to the due date - the ONE place an UNGRADED
+    assignment's point value is available at all. The classwork-grid and
+    stream cards ChildWorkItem is otherwise built from never carry it,
+    confirmed across every real capture on file: only "Title, due X" or a
+    bare button label, never a points figure.
+
+    Returns (stream_item_id, points_possible). points_possible is None
+    when the block genuinely has no points line (confirmed real too - not
+    every assignment carries one) - the caller must not treat that as
+    "clear the stored value", only "nothing new to say" (see
+    _apply_capture). Returns None entirely when no stream-item-id was
+    found at all - not a details-page capture, or a page shape this
+    hasn't seen.
+
+    The graded shape ("N points out of possible M") is matched too, but
+    only M is kept - a real grade lives in Genesis's ChildGradeEntry, this
+    table has never tracked earned points, and adding a second, sometimes-
+    disagreeing source of "how many points did you get" is a fight this
+    function isn't taking on."""
+    id_m = _STREAM_ITEM_ID_RE.search(text)
+    if not id_m:
+        return None
+    item_id = id_m.group(1)
+
+    bullet_at = text.find("\n•\n")
+    if bullet_at == -1:
+        return item_id, None
+    chrome_at = text.find("(data-type:", bullet_at)
+    block = text[bullet_at:chrome_at] if chrome_at != -1 else text[bullet_at : bullet_at + 300]
+
+    graded = _POINTS_GRADED_RE.search(block)
+    if graded:
+        return item_id, float(graded.group(2))
+    only = _POINTS_ONLY_RE.search(block)
+    if only:
+        return item_id, float(only.group(1))
+    return item_id, None
+
 
 def extract_classroom_announcements(source_url: str, text: str, course_map: CourseMap) -> list[WorkItem]:
     """Teacher announcements from a class's Stream (or the feed section of its

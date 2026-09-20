@@ -17,7 +17,7 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import delete, func, select, tuple_
+from sqlalchemy import delete, func, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -170,6 +170,10 @@ class TodoItemOut(BaseModel):
     marked_by: str | None
     classroom_status: str | None
     grade: TodoGradeOut | None
+    # From the assignment's own detail page, not the classwork/stream card
+    # this row is otherwise built from - null means "not captured yet",
+    # never "worth zero". See bucket3_extract.py:extract_classroom_detail_points.
+    points_possible: float | None = None
     teacher_name: str | None
     teacher_emails: list[str]
     link: str | None
@@ -489,6 +493,40 @@ async def _apply_capture(
                 f"{classroom_student_id}, not {student.student_id} - skipped."
             )
             return
+
+        page_kind = ex.classify_page(adapter, source_url).pattern
+        if page_kind in (
+            "classroom:/u/N/c/:courseId/a/:id/details",
+            "classroom:/u/N/c/:courseId/m/:id/details",
+        ):
+            # A details page never carries the title/due/status fields the
+            # classwork-grid/stream shapes below extract - it's a wholly
+            # different page for a wholly different purpose (updating the
+            # one item this points value belongs to, not enumerating a
+            # course's worth of items) - so it's handled on its own rather
+            # than falling through into extract_classroom_work_items,
+            # which would find nothing there anyway (confirmed real: no
+            # "Assignment:"/"Material:" aria-label or classwork-button
+            # shape appears anywhere on a details page).
+            parsed = ex.extract_classroom_detail_points(reduced_text)
+            if parsed and parsed[1] is not None:
+                item_id, points_possible = parsed
+                result = await db.execute(
+                    update(ChildWorkItem)
+                    .where(
+                        ChildWorkItem.student_id == student.id,
+                        ChildWorkItem.external_uid == f"si:{item_id}",
+                    )
+                    .values(points_possible=points_possible, last_seen_at=captured_at)
+                )
+                # A details page crawled before its own classwork/stream
+                # capture has landed has nothing to attach to yet - the
+                # UPDATE above simply matches zero rows. Self-heals the
+                # next time either capture is reprocessed, so this is
+                # silently accepted rather than logged as a mismatch.
+                counters.work_items += result.rowcount or 0
+            return
+
         items = ex.extract_classroom_work_items(source_url, reduced_text, course_map)
         items += ex.extract_classroom_announcements(source_url, reduced_text, course_map)
         for item in items:
@@ -1172,6 +1210,7 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
                     if grade
                     else None
                 ),
+                "points_possible": w.points_possible,
                 "teacher_name": teacher,
                 "teacher_emails": kids_view.match_teacher_emails(teacher, staff),
                 "link": w.link,
