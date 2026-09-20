@@ -6,13 +6,32 @@ import type { TodoItem } from "./types";
 // backlog (see the function's own docstring for the reasoning).
 const CLOSING_SOON_DAYS = 2;
 
+/** Higher points first, unknown last - a tiebreaker, never the primary
+ * sort. Points can't outrank urgency: a low-point item due today still
+ * has full credit riding on acting today, while a high-point item due
+ * next week doesn't lose anything by waiting, so date-based urgency
+ * (sortMissingByRecency's closing-window/recency rule, or simply which
+ * day something's due) always runs first. This only breaks ties within
+ * whatever that rule already put in the same slot - e.g. two things due
+ * the same day. `null` (not yet captured, see
+ * bucket3_extract.py:extract_classroom_detail_points) sorts after every
+ * known value rather than being treated as worth 0. */
+function byPointsDesc(a: TodoItem, b: TodoItem): number {
+  if (a.points_possible === b.points_possible) return 0;
+  if (a.points_possible === null) return 1;
+  if (b.points_possible === null) return -1;
+  return b.points_possible - a.points_possible;
+}
+
 /** Most-recently-missed first - the backend hands these oldest-first, but
  * for anything meant to prompt action that's backwards: the thing missed
  * two days ago is the one a teacher is most likely to still accept and the
  * one a kid can still half-remember; the one from six weeks ago is
  * neither. The one exception is a closing credit window, which has the
  * same "acting now changes the outcome" property near-term due-soon work
- * has, so it jumps the queue - soonest to close first.
+ * has, so it jumps the queue - soonest to close first. Ties within either
+ * group (same closing window, or missed the same day) go to whichever is
+ * worth more points.
  *
  * Shared by FocusTab (filling Up Next / ordering Needs Attention) and
  * CourseSheet (a single class's own Missing section, "the Focus page
@@ -26,9 +45,22 @@ export function sortMissingByRecency(items: TodoItem[]): TodoItem[] {
   return [...items].sort((a, b) => {
     const [ac, bc] = [closingSoon(a), closingSoon(b)];
     if (ac !== bc) return ac ? -1 : 1;
-    if (ac && bc) return (a.late_credit!.days_left ?? 0) - (b.late_credit!.days_left ?? 0);
-    return (a.due_date ?? "") < (b.due_date ?? "") ? 1 : -1;
+    if (ac && bc) {
+      const byWindow = (a.late_credit!.days_left ?? 0) - (b.late_credit!.days_left ?? 0);
+      return byWindow !== 0 ? byWindow : byPointsDesc(a, b);
+    }
+    if (a.due_date !== b.due_date) return (a.due_date ?? "") < (b.due_date ?? "") ? 1 : -1;
+    return byPointsDesc(a, b);
   });
+}
+
+/** Same-day due items, worth-more-points-first - used to order what would
+ * otherwise just be "today's due items" or "next school day's due items"
+ * in whatever order the backend happened to return them (alphabetical by
+ * title). Exported alongside sortMissingByRecency for the same reason:
+ * one shared rule, not a second copy risking drift. */
+export function sortDueByPoints(items: TodoItem[]): TodoItem[] {
+  return [...items].sort(byPointsDesc);
 }
 
 /** Classroom course names carry the district's own bookkeeping in them -

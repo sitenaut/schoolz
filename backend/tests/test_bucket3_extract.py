@@ -337,3 +337,54 @@ def test_resolve_posted_date_is_never_in_the_future():
     january = datetime(2027, 1, 5, 15, 0, tzinfo=timezone.utc)
     assert ex.resolve_posted_date("Dec 20", january) == "2026-12-20"
     assert ex.resolve_posted_date(None, anchor) is None
+
+
+# Shapes below are trimmed, redacted reconstructions of real detail-page
+# captures already sitting in production (bucket3_captures rows with
+# adapter="classroom" and source_url matching .../a/<id>/details) -
+# confirmed real, not guessed: an ungraded assignment reads
+# "<teacher>\n•\n<posted>\n<N> points\n|\nDue <due>", a graded one reads
+# "...\n<earned>\n/<possible>\n<earned> points out of possible <possible>\n|\nDue <due>",
+# and some assignments carry no points line at all.
+_DETAIL_UNGRADED_WITH_DUE = (
+    "(role=main)\n(data-stream-item-id: 775191631526)\nassignment\nClass of 2029 OFFICER INTEREST MEETING\n"
+    "(data-hide-copy-link: false) (data-stream-item-id: 775191631526)\n"
+    "Holly Sassinsky\n•\nSep 1, 2025\n100 points\n|\nDue Sep 4, 2025, 11:30 AM\n"
+    "(data-type: 2) (data-visibility: 2)\nYour work\n"
+)
+_DETAIL_UNGRADED_NO_DUE = (
+    "(role=main)\n(data-stream-item-id: 555000111)\nassignment\nClass Officer Speech\n"
+    "Anne Smith\n•\nApr 29\n100 points\n(data-type: 2) (data-visibility: 2)\n"
+)
+_DETAIL_GRADED = (
+    "(role=main)\n(data-stream-item-id: 999888777)\nassignment\nWorksheet 4.2\n"
+    "Kenneth Smith\n•\nSep 8\n10\n/10\n10 points out of possible 10\n|\nDue Sep 8\n"
+    "(data-type: 2) (data-visibility: 2)\n"
+)
+_DETAIL_NO_POINTS_LINE = (
+    "(role=main)\n(data-stream-item-id: 111222333)\nassignment\nField Trip Permission Slip\n"
+    "Jane Doe\n•\nOct 10\nDue Oct 20, 2025\n(data-type: 2) (data-visibility: 2)\n"
+)
+_DETAIL_NOT_A_DETAIL_PAGE = "Classwork - 4th Period English\n[aria-label] Assignment: Chapter 4, due Tomorrow\n"
+
+
+def test_extract_classroom_detail_points_ungraded_with_and_without_due():
+    assert ex.extract_classroom_detail_points(_DETAIL_UNGRADED_WITH_DUE) == ("775191631526", 100.0)
+    assert ex.extract_classroom_detail_points(_DETAIL_UNGRADED_NO_DUE) == ("555000111", 100.0)
+
+
+def test_extract_classroom_detail_points_graded_keeps_only_possible():
+    # Real credit lives in Genesis's ChildGradeEntry - this only ever
+    # records the possible side, never a second, possibly-disagreeing
+    # "earned" figure.
+    assert ex.extract_classroom_detail_points(_DETAIL_GRADED) == ("999888777", 10.0)
+
+
+def test_extract_classroom_detail_points_no_points_line_is_not_zero():
+    # None must mean "nothing to say", not "worth 0 points" - some real
+    # assignments (permission slips, sign-ups) genuinely carry no points.
+    assert ex.extract_classroom_detail_points(_DETAIL_NO_POINTS_LINE) == ("111222333", None)
+
+
+def test_extract_classroom_detail_points_returns_none_off_a_non_detail_page():
+    assert ex.extract_classroom_detail_points(_DETAIL_NOT_A_DETAIL_PAGE) is None

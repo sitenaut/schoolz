@@ -549,3 +549,39 @@ async def test_course_preferences_are_per_account_not_per_student():
         )
         assert cleared.status_code == 200
         assert (await client.get("/course-preferences", headers=_auth(parent_a))).json() == []
+
+
+@pytest.mark.anyio
+async def test_detail_page_capture_attaches_points_possible_to_the_matching_item(monkeypatch):
+    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [lab] = todo["due"]
+        assert lab["title"].startswith("Lab Safety Contract")
+        assert lab["points_possible"] is None
+
+        # Lab Safety Contract's own stream-item-id (900030, confirmed in the
+        # fixture) - a details-page capture for it, in the same reduced-text
+        # shape confirmed real in prod (see test_bucket3_extract.py).
+        detail_text = (
+            "(role=main)\n(data-stream-item-id: 900030)\nassignment\nLab Safety Contract\n"
+            "Pat Jones\n•\nSep 11\n25 points\n|\nDue Fri, Sep 18, 11:59 PM\n"
+            "(data-type: 2) (data-visibility: 2)\n"
+        )
+        detail_url = "https://classroom.google.com/u/2/c/AAAASLUG/a/OTAwMDMw/details"
+        await _import(client, guardian, sid, [_env("classroom", detail_url, detail_text)])
+
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [lab] = todo["due"]
+        assert lab["points_possible"] == 25.0
+
+        # A details page crawled for an item that doesn't exist yet (or
+        # belongs to a different student's export) simply has nothing to
+        # attach to - no error, no phantom row.
+        orphan_text = detail_text.replace("900030", "424242")
+        result = await _import(client, guardian, sid, [_env("classroom", detail_url, orphan_text)])
+        assert result["identity_mismatches"] == []
+        assert result["work_items_upserted"] == 0

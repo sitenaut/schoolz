@@ -25,7 +25,10 @@ export function TaskModal({
   onToggle: (item: TodoItem, done: boolean) => void;
   courseNames: CourseNameOverrides;
 }) {
-  const points = item.grade?.score_possible ?? null;
+  // Graded work's own points_possible is the more authoritative figure
+  // when both exist (Genesis's real gradebook value); the detail-page
+  // figure is what's available before anything is graded at all.
+  const points = item.grade?.score_possible ?? item.points_possible;
 
   return (
     <Sheet onClose={onClose} label={item.title}>
