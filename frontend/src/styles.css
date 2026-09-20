@@ -38,6 +38,13 @@
   --font-d: "Bricolage Grotesque", "Nunito Sans", system-ui, sans-serif;
   --font-b: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --nav-h: 58px;
+  /* The bottom nav's inactive icon color, kept separate from --ink-3
+     (used in ~30 other places for ordinary muted text) so brightening
+     just the nav doesn't shift unrelated UI. Matches the Focus app's own
+     --ink-soft exactly - a real complaint was that schoolz's nav icons
+     read noticeably darker/more washed-out than Focus's, especially in
+     dark mode, and got lost against the nav bar. */
+  --nav-ink: #5b6878;
 
   /* Legacy aliases - older pages (Login/Children/Gmail/Jobs/Smore) still
      reference these names. */
@@ -71,6 +78,7 @@
     --ink: #eef1f4;
     --ink-2: #aab3bd;
     --ink-3: #737d88;
+    --nav-ink: #9aa8b8;
     --line: #2c323a;
     --line-2: #3a424c;
     --primary: #4fa9c8;
@@ -99,6 +107,7 @@
   --ink: #eef1f4;
   --ink-2: #aab3bd;
   --ink-3: #737d88;
+  --nav-ink: #9aa8b8;
   --line: #2c323a;
   --line-2: #3a424c;
   --primary: #4fa9c8;
@@ -290,7 +299,7 @@ h3 {
 .shell-nav a {
   border: 0;
   background: transparent;
-  color: var(--ink-3);
+  color: var(--nav-ink);
   padding: 8px 4px 9px;
   display: flex;
   flex-direction: column;
