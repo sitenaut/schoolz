@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { IconBell, IconSettings, IconShield, IconUser, IconUsers } from "../../components/icons";
+import { IconBell, IconLock, IconSettings, IconShield, IconUser, IconUsers } from "../../components/icons";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 
@@ -18,14 +18,17 @@ export function AccountLayout() {
           <NavLink to="/account" end>
             <IconUser /> Profile
           </NavLink>
+          <NavLink to="/account/family">
+            <IconUsers /> Family
+          </NavLink>
           <NavLink to="/account/security">
             <IconShield /> Security
           </NavLink>
+          <NavLink to="/account/privacy">
+            <IconLock /> Privacy
+          </NavLink>
           <NavLink to="/account/notifications">
             <IconBell /> Notifications
-          </NavLink>
-          <NavLink to="/account/family">
-            <IconUsers /> Family
           </NavLink>
           {user.is_admin && (
             <>

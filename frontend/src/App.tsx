@@ -35,6 +35,7 @@ import { AccountLayout } from "./pages/account/AccountLayout";
 import { ProfileSection } from "./pages/account/ProfileSection";
 import { SecuritySection } from "./pages/account/SecuritySection";
 import { NotificationsSection } from "./pages/account/NotificationsSection";
+import { PrivacySection } from "./pages/account/PrivacySection";
 import { FamilySection } from "./pages/account/FamilySection";
 import { AdminSection } from "./pages/account/AdminSection";
 
@@ -98,6 +99,7 @@ function Routed() {
         >
           <Route index element={<ProfileSection />} />
           <Route path="security" element={<SecuritySection />} />
+          <Route path="privacy" element={<PrivacySection />} />
           <Route path="notifications" element={<NotificationsSection />} />
           <Route path="family" element={<FamilySection />} />
           <Route
