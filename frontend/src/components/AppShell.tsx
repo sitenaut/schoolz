@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { NavLink, Link, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +9,7 @@ import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
+import { invitePath, loadPendingInvite } from "../lib/pendingInvite";
 
 // Route templates for the routes registered in App.tsx - used to keep
 // page_view's `route` attribute low-cardinality (a school slug or invite
@@ -16,7 +17,10 @@ import { countVisit, visitSource } from "../lib/visits";
 const ROUTE_TEMPLATES: [RegExp, string][] = [
   [/^\/schools\/[^/]+$/, "/schools/:schoolId"],
   [/^\/invites\/[^/]+$/, "/invites/:token"],
+  [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
 ];
+
+let resumedInviteToken: string | null = null;
 
 function routeTemplate(pathname: string): string {
   for (const [pattern, template] of ROUTE_TEMPLATES) {
@@ -50,7 +54,24 @@ export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+
+  // An invite opened before signing in is finished the moment a signed-in
+  // session shows up, wherever that happens - a Google redirect or an
+  // email-confirmation link can land on the site root rather than back on
+  // the invite (see lib/pendingInvite.ts). The invite page clears the entry
+  // once it is accepted or found dead, so this can't loop.
+  // Once per page load per token, so someone who lands on the invite, hits
+  // a dead end there and navigates away isn't dragged back to it.
+  useEffect(() => {
+    if (!user) return;
+    const pending = loadPendingInvite();
+    if (!pending || resumedInviteToken === pending.token) return;
+    resumedInviteToken = pending.token;
+    const target = invitePath(pending);
+    if (pathname !== target) navigate(target, { replace: true });
+  }, [user, pathname, navigate]);
   const isWide = WIDE_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 
   const fromRouteRef = useRef<string | undefined>(undefined);

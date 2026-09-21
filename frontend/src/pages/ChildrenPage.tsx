@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { IconChevronLeft } from "../components/icons";
+import { InviteShare } from "../components/InviteShare";
+import { StudentLoginInvite } from "../components/StudentLoginInvite";
 import type { School } from "../types";
 
 type Student = {
@@ -15,6 +17,8 @@ type Student = {
   matched_existing: boolean;
 };
 
+type Panel = { studentId: string; kind: "guardian" | "student" } | null;
+
 export function ChildrenPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -27,9 +31,7 @@ export function ChildrenPage() {
   const [studentId, setStudentId] = useState("");
   const [schoolId, setSchoolId] = useState("");
 
-  const [inviteFor, setInviteFor] = useState<string | null>(null);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [panel, setPanel] = useState<Panel>(null);
 
   const load = async () => {
     setLoading(true);
@@ -82,30 +84,11 @@ export function ChildrenPage() {
     await load();
   };
 
-  const sendInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteFor) return;
-    setError(null);
-    const res = await apiFetch(`/students/${inviteFor}/invites`, {
-      method: "POST",
-      body: JSON.stringify({ invitee_email: inviteEmail }),
-    });
-    const body = await res.json();
-    if (!res.ok) {
-      setError(body.detail ?? "Could not create invite");
-      return;
-    }
-    setInviteLink(body.accept_url);
-  };
-
-  const closeInvite = () => {
-    setInviteFor(null);
-    setInviteEmail("");
-    setInviteLink(null);
-  };
+  const toggle = (studentId: string, kind: "guardian" | "student") =>
+    setPanel((p) => (p && p.studentId === studentId && p.kind === kind ? null : { studentId, kind }));
 
   return (
-    <div style={{ maxWidth: 560, margin: "3rem auto", fontFamily: "sans-serif" }}>
+    <div className="page page-narrow">
       <p>
         <Link to="/" className="back-link">
           <IconChevronLeft /> Home
@@ -113,69 +96,80 @@ export function ChildrenPage() {
       </p>
       <h1>My Children</h1>
 
-      {notice && <p style={{ color: "green" }}>{notice}</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {notice && <div className="banner">{notice}</div>}
+      {error && <div className="banner bad">{error}</div>}
 
       {loading ? (
         <p>Loading…</p>
       ) : students.length === 0 ? (
-        <p>No children on your profile yet.</p>
+        <p className="note">
+          No children on your profile yet. Were you sent an invite link? Open it and the child appears here on its own.
+        </p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {students.map((s) => (
-            <li key={s.id} style={{ border: "1px solid #ccc", borderRadius: 6, padding: "0.75rem", marginBottom: "0.5rem" }}>
-              <strong>
-                {s.first_name} {s.last_name}
-              </strong>{" "}
-              (ID {s.student_id}){s.school_name && ` — ${s.school_name}`}
-              <br />
-              <small>
-                {s.guardian_count} guardian{s.guardian_count === 1 ? "" : "s"} · added via {s.linked_via.replace("_", " ")}
-              </small>
-              <br />
-              <button onClick={() => setInviteFor(s.id)} style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}>
-                Invite another guardian
-              </button>
-              {/* The student's OWN login is a separate, stricter invite
-                  (routers/student_accounts.py) - the form for it lives on
-                  the Kids detail page (student.viewer_role === "guardian"
-                  gates it there), not duplicated here. This used to be
-                  reachable from the main nav's "Kids" link; once that got
-                  renamed to "Gradez" and repointed at /focus/, ordinary
-                  (non-admin) guardians had no way to reach it at all - the
-                  only remaining path was /admin/kids, which requires
-                  is_admin. This link is what makes it reachable again for
-                  everyone, not just admins. */}
-              <Link
-                to={`/kids/${s.id}`}
-                className="ghost"
-                style={{ marginTop: "0.5rem", marginRight: "0.5rem", display: "inline-block" }}
-              >
-                Give {s.first_name} their own login
-              </Link>
-              <button onClick={() => removeStudent(s.id)}>Remove from my profile</button>
-            </li>
-          ))}
-        </ul>
+        students.map((s) => {
+          const open = panel?.studentId === s.id ? panel.kind : null;
+          return (
+            <div key={s.id} className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+                <div>
+                  <strong style={{ fontSize: 16 }}>
+                    {s.first_name} {s.last_name}
+                  </strong>
+                  <div className="note" style={{ margin: "2px 0 0" }}>
+                    ID {s.student_id}
+                    {s.school_name && ` · ${s.school_name}`} · {s.guardian_count} guardian{s.guardian_count === 1 ? "" : "s"}
+                  </div>
+                </div>
+                <Link to={`/kids/${s.id}`} className="btn sm">
+                  Open
+                </Link>
+              </div>
+
+              <div className="actions bare" style={{ flexWrap: "wrap", marginTop: 12 }}>
+                <button type="button" className={`btn ${open === "guardian" ? "btn-primary" : ""}`} onClick={() => toggle(s.id, "guardian")}>
+                  Invite another guardian
+                </button>
+                <button type="button" className={`btn ${open === "student" ? "btn-primary" : ""}`} onClick={() => toggle(s.id, "student")}>
+                  Give {s.first_name} their own login
+                </button>
+                <button type="button" className="btn subtle" onClick={() => removeStudent(s.id)}>
+                  Remove from my profile
+                </button>
+              </div>
+
+              {open === "guardian" && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                  <GuardianInvite student={s} onClose={() => setPanel(null)} />
+                </div>
+              )}
+              {open === "student" && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                  <StudentLoginInvite studentId={s.id} firstName={s.first_name} />
+                </div>
+              )}
+            </div>
+          );
+        })
       )}
 
       <h2>Add a child</h2>
+      <p className="note">
+        Only needed for a child nobody has invited you to yet. If another parent already has them on schoolz, ask them
+        for an invite instead - it links you to the same record with nothing to type.
+      </p>
       <form onSubmit={addStudent}>
         <label>
           First name
           <input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
         </label>
-        <br />
         <label>
           Last name
           <input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
         </label>
-        <br />
         <label>
           Student ID
           <input value={studentId} onChange={(e) => setStudentId(e.target.value)} required />
         </label>
-        <br />
         <label>
           School
           <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)} required>
@@ -194,44 +188,75 @@ export function ChildrenPage() {
             No schools tracked yet — <Link to="/schools">add one first</Link>.
           </p>
         )}
-        <br />
-        <button type="submit" disabled={schools.length === 0}>
+        <button type="submit" className="btn btn-primary" disabled={schools.length === 0}>
           Add child
         </button>
       </form>
-
-      {inviteFor && (
-        <div style={{ marginTop: "1.5rem", border: "1px solid #ccc", borderRadius: 6, padding: "1rem" }}>
-          <h3>Invite a guardian</h3>
-          {inviteLink ? (
-            <>
-              <p>Send this link to the person you're inviting:</p>
-              <input readOnly value={inviteLink} style={{ width: "100%" }} onFocus={(e) => e.target.select()} />
-              <br />
-              <button onClick={closeInvite} style={{ marginTop: "0.5rem" }}>
-                Done
-              </button>
-            </>
-          ) : (
-            <form onSubmit={sendInvite}>
-              <label>
-                Their email
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                />
-              </label>
-              <br />
-              <button type="submit">Create invite</button>
-              <button type="button" onClick={closeInvite} style={{ marginLeft: "0.5rem" }}>
-                Cancel
-              </button>
-            </form>
-          )}
-        </div>
-      )}
     </div>
+  );
+}
+
+/** Share a child with another guardian (the other parent, a grandparent).
+ * Accepting links them to this same Student row - they never re-type the
+ * name, ID or school, so there's nothing to get wrong. */
+function GuardianInvite({ student, onClose }: { student: Student; onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [invite, setInvite] = useState<{ link: string; email: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await apiFetch(`/students/${student.id}/invites`, {
+        method: "POST",
+        body: JSON.stringify({ invitee_email: email }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.detail ?? "Could not create invite");
+        return;
+      }
+      setInvite({ link: body.accept_url, email: body.invitee_email });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (invite) {
+    return (
+      <div>
+        <p style={{ marginTop: 0 }}>Send this to {invite.email}:</p>
+        <InviteShare
+          link={invite.link}
+          email={invite.email}
+          subject={`Follow ${student.first_name} on schoolz`}
+          body={`I added ${student.first_name} to schoolz - it pulls together school communications, assignments and grades. Open this link to see the same view I do:`}
+        />
+        <button type="button" className="btn sm" style={{ marginTop: 8 }} onClick={onClose}>
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={create} style={{ margin: 0 }}>
+      <label style={{ marginBottom: 0 }}>
+        Their email address
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ marginTop: 0 }} />
+          <button type="submit" className="btn btn-primary" style={{ flex: "none" }} disabled={busy}>
+            {busy ? "Creating…" : "Create invite"}
+          </button>
+        </div>
+      </label>
+      <p className="note" style={{ marginBottom: 0 }}>
+        They can sign in with any account - the email is just so you both remember who it was for.
+      </p>
+      {error && <div className="banner bad" style={{ marginTop: 10 }}>{error}</div>}
+    </form>
   );
 }

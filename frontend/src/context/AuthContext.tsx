@@ -30,9 +30,9 @@ type AuthContextValue = {
   error: string | null;
   registerLocal: (email: string, username: string, password: string) => Promise<void>;
   loginLocal: (usernameOrEmail: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: (returnTo?: string) => Promise<void>;
   loginWithPasswordSupabase: (email: string, password: string) => Promise<void>;
-  registerWithPasswordSupabase: (email: string, password: string) => Promise<void>;
+  registerWithPasswordSupabase: (email: string, password: string, returnTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -168,10 +168,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh();
   };
 
-  const loginWithGoogle = async () => {
+  // Supabase sends the browser back to its configured Site URL after Google
+  // or an email-confirmation link unless told otherwise - which is how an
+  // invite's ?next= used to get lost. `returnTo` is an app path to land on
+  // instead (it must be under the project's allowed redirect URLs).
+  const absoluteReturnTo = (returnTo?: string) => (returnTo ? `${window.location.origin}${returnTo}` : undefined);
+
+  const loginWithGoogle = async (returnTo?: string) => {
     if (!supabase) return;
     setError(null);
-    const { error: err } = await supabase.auth.signInWithOAuth({ provider: "google" });
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: absoluteReturnTo(returnTo) },
+    });
     if (err) setError(err.message);
   };
 
@@ -183,10 +192,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else await refresh();
   };
 
-  const registerWithPasswordSupabase = async (email: string, password: string) => {
+  const registerWithPasswordSupabase = async (email: string, password: string, returnTo?: string) => {
     if (!supabase) return;
     setError(null);
-    const { error: err } = await supabase.auth.signUp({ email, password });
+    const { error: err } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: absoluteReturnTo(returnTo) },
+    });
     if (err) setError(err.message);
   };
 

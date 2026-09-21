@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
+import { StudentLoginInvite } from "../components/StudentLoginInvite";
 import { IconCheck, IconChevronLeft, IconMail, IconRefresh, IconUpload } from "../components/icons";
 import { todayKey } from "../lib/calendar";
 
@@ -44,7 +45,6 @@ type Student = {
   viewer_role: "guardian" | "student";
 };
 
-type StudentAccountStatus = { has_account: boolean; account_email: string | null; pending_invite_email: string | null };
 
 type CourseGrade = {
   course_code: string;
@@ -1183,87 +1183,13 @@ function ManageSection({
             </span>
           </div>
         )}
-        {student.viewer_role === "guardian" && <StudentAccountPanel student={student} />}
+        {student.viewer_role === "guardian" && (
+          <div className="card" style={{ marginTop: 12, marginBottom: 0 }}>
+            <StudentLoginInvite studentId={student.id} firstName={student.first_name} />
+          </div>
+        )}
       </div>
     </details>
   );
 }
 
-// Guardian-only: give the child their own schoolz login, so both see the same
-// schedule/assignments/grades. The invite link comes back in the response
-// (local mode has no mailer, same as the guardian invite flow).
-function StudentAccountPanel({ student }: { student: Student }) {
-  const [status, setStatus] = useState<StudentAccountStatus | null>(null);
-  const [email, setEmail] = useState("");
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await apiFetch(`/students/${student.id}/student-account`);
-    setStatus(res.ok ? await res.json() : null);
-  }, [student.id]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const invite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const res = await apiFetch(`/students/${student.id}/account-invites`, { method: "POST", body: JSON.stringify({ invitee_email: email }) });
-    const body = await res.json();
-    if (!res.ok) {
-      setError(typeof body.detail === "string" ? body.detail : "Could not create invite");
-      return;
-    }
-    setInviteLink(body.accept_url);
-    setEmail("");
-    await load();
-  };
-
-  const revoke = async () => {
-    if (!confirm(`Remove ${student.first_name}'s own login? Their account stays, it just stops showing this data.`)) return;
-    await apiFetch(`/students/${student.id}/student-account`, { method: "DELETE" });
-    setInviteLink(null);
-    await load();
-  };
-
-  if (!status) return null;
-
-  return (
-    <div className="card" style={{ marginTop: 12, marginBottom: 0 }}>
-      {status.has_account ? (
-        <p style={{ margin: 0 }}>
-          {student.first_name} logs in as <strong>{status.account_email}</strong> and sees this same view.{" "}
-          <button className="action" onClick={revoke}>
-            Remove their login
-          </button>
-        </p>
-      ) : (
-        <form onSubmit={invite} style={{ margin: 0 }}>
-          <label style={{ marginBottom: 0 }}>
-            Give {student.first_name} their own login
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="email" placeholder="their email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ marginTop: 0 }} />
-              <button type="submit" className="action primary" style={{ flex: "none" }}>
-                Create invite
-              </button>
-            </div>
-          </label>
-          {status.pending_invite_email && !inviteLink && (
-            <p className="note" style={{ marginBottom: 0 }}>
-              Invite pending for {status.pending_invite_email} — creating a new one replaces it.
-            </p>
-          )}
-        </form>
-      )}
-      {inviteLink && (
-        <div className="note" style={{ marginBottom: 0, marginTop: 10 }}>
-          Send {student.first_name} this link (valid 7 days):
-          <input readOnly value={inviteLink} onFocus={(e) => e.target.select()} />
-        </div>
-      )}
-      {error && <div className="banner bad" style={{ marginTop: 10 }}>{error}</div>}
-    </div>
-  );
-}
