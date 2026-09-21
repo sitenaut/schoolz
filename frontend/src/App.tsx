@@ -31,6 +31,8 @@ import { ContactPage } from "./pages/ContactPage";
 import { ChCommsPage } from "./pages/ChCommsPage";
 import { SurveyPage } from "./pages/SurveyPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
+import { SubmitSourcePage } from "./pages/SubmitSourcePage";
+import { InboxPage } from "./pages/InboxPage";
 import { AccountLayout } from "./pages/account/AccountLayout";
 import { ProfileSection } from "./pages/account/ProfileSection";
 import { SecuritySection } from "./pages/account/SecuritySection";
@@ -155,6 +157,7 @@ function Routed() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/backpack-capture/privacy" element={<BackpackCapturePrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/contact/submit" element={<SubmitSourcePage />} />
         <Route path="/chcomms" element={<ChCommsPage />} />
         <Route path="/survey" element={<SurveyPage />} />
         <Route
@@ -175,6 +178,7 @@ function Routed() {
           }
         >
           <Route index element={<Navigate to="/admin/newsletters" replace />} />
+          <Route path="inbox" element={<InboxPage />} />
           <Route path="newsletters" element={<SmoreNewslettersPage />} />
           <Route path="scans" element={<JobsPage />} />
           <Route path="config" element={<AdminConfigPage />} />

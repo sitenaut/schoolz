@@ -2,41 +2,49 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { apiFetch } from "../api";
 
-const SEEN_EVENT = "schoolz:notifications-seen";
+const NOTIFICATIONS_SEEN = "schoolz:notifications-seen";
+const INBOX_SEEN = "schoolz:inbox-seen";
 
-/** Unread notification count for the signed-in user, refreshed on every
- * navigation and when the tab regains focus; 0 when signed out. */
-export function useUnreadNotifications(signedIn: boolean): number {
+/** An unread count from `endpoint`, refreshed on every navigation and when
+ * the tab regains focus; 0 while disabled or after `seenEvent` fires. */
+function useUnreadCount(endpoint: string, enabled: boolean, seenEvent: string): number {
   const [count, setCount] = useState(0);
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (!signedIn) {
+    if (!enabled) {
       setCount(0);
       return;
     }
     let cancelled = false;
     const refresh = () =>
-      apiFetch("/notifications/unread-count")
+      apiFetch(endpoint)
         .then((r) => (r.ok ? r.json() : { count: 0 }))
         .then((d: { count: number }) => !cancelled && setCount(d.count))
         .catch(() => undefined);
     const cleared = () => setCount(0);
     refresh();
     window.addEventListener("focus", refresh);
-    window.addEventListener(SEEN_EVENT, cleared);
+    window.addEventListener(seenEvent, cleared);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", refresh);
-      window.removeEventListener(SEEN_EVENT, cleared);
+      window.removeEventListener(seenEvent, cleared);
     };
-  }, [signedIn, pathname]);
+  }, [endpoint, enabled, seenEvent, pathname]);
 
   return count;
 }
 
-/** Opening the notifications page counts as seeing them all. */
-export async function markAllNotificationsSeen(): Promise<void> {
-  const r = await apiFetch("/notifications/read-all", { method: "POST" });
-  if (r.ok) window.dispatchEvent(new Event(SEEN_EVENT));
+async function markSeen(endpoint: string, seenEvent: string): Promise<void> {
+  const r = await apiFetch(endpoint, { method: "POST" });
+  if (r.ok) window.dispatchEvent(new Event(seenEvent));
 }
+
+export const useUnreadNotifications = (signedIn: boolean) => useUnreadCount("/notifications/unread-count", signedIn, NOTIFICATIONS_SEEN);
+/** Opening the notifications page counts as seeing them all. */
+export const markAllNotificationsSeen = () => markSeen("/notifications/read-all", NOTIFICATIONS_SEEN);
+
+export const useUnreadInbox = (isAdmin: boolean) => useUnreadCount("/contact-messages/unread-count", isAdmin, INBOX_SEEN);
+/** Opening the admin inbox counts as seeing every message - shared across admins. */
+export const markInboxSeen = () => markSeen("/contact-messages/read-all", INBOX_SEEN);

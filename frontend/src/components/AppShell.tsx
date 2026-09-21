@@ -5,8 +5,8 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
-import { IconBell, IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
-import { useUnreadNotifications } from "../lib/notifications";
+import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
+import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -54,6 +54,7 @@ const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
+  const unreadInbox = useUnreadInbox(!!user?.is_admin);
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -133,6 +134,17 @@ export function AppShell() {
           >
             <IconBell />
             <span className="bell-count">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>
+          </Link>
+        )}
+        {unreadInbox > 0 && (
+          <Link
+            to="/admin/inbox"
+            className="btn icon bell"
+            title={`${unreadInbox} new message${unreadInbox === 1 ? "" : "s"} in the inbox`}
+            aria-label={`${unreadInbox} new message${unreadInbox === 1 ? "" : "s"} in the inbox`}
+          >
+            <IconInbox />
+            <span className="bell-count">{unreadInbox > 9 ? "9+" : unreadInbox}</span>
           </Link>
         )}
         {user?.is_admin && (
@@ -229,9 +241,9 @@ export function AppShell() {
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
         <footer className="shell-footer">
-          <Link to="/chcomms">Why this exists</Link>
-          <Link to="/survey">Take the survey</Link>
-          <Link to="/contact">Contact us</Link>
+          <Link to="/chcomms">About</Link>
+          <Link to="/survey">Survey</Link>
+          <Link to="/contact">Contact</Link>
           <Link to="/privacy">Privacy &amp; cookies</Link>
         </footer>
       </main>

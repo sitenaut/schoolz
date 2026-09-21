@@ -128,7 +128,7 @@ export function ChCommsPage() {
       <ol className="chc-list">
         <li>
           <strong>Send me your school's newsletter.</strong> This is the big one — it's what makes your school's page
-          fill in. <Link to="/contact" onClick={() => cta("send_newsletter")}>Paste the link here.</Link>
+          fill in. <Link to="/contact/submit" onClick={() => cta("send_newsletter")}>Paste the link here.</Link>
         </li>
         <li>
           <strong>Take the survey.</strong> Two minutes, and it's the evidence I can actually hand the district.{" "}
@@ -144,7 +144,7 @@ export function ChCommsPage() {
         <p>
           It arrives as an email (usually from an app called Smore). At the very top there's a line like{" "}
           <em>"Not displaying correctly? View in browser."</em> That link is the whole thing I need.{" "}
-          <Link to="/contact" onClick={() => cta("send_newsletter_callout")}>Drop it here →</Link>
+          <Link to="/contact/submit" onClick={() => cta("send_newsletter_callout")}>Drop it here →</Link>
         </p>
       </div>
 
@@ -178,7 +178,7 @@ export function ChCommsPage() {
         </li>
       </ul>
       <p className="fine">
-        This is a lot of words for "please send me your school's newsletter link." <Link to="/contact" onClick={() => cta("send_newsletter_footer")}>Here's that link again.</Link>
+        This is a lot of words for "please send me your school's newsletter link." <Link to="/contact/submit" onClick={() => cta("send_newsletter_footer")}>Here's that link again.</Link>
       </p>
     </>
   );

@@ -1086,3 +1086,23 @@ class CapturePageKindOut(BaseModel):
     last_seen_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ContactMessageCreate(BaseModel):
+    name: str | None = Field(default=None, max_length=200)
+    email: str | None = Field(default=None, max_length=255)
+    message: str = Field(min_length=1, max_length=5000)
+    # Honeypot: hidden from people by the form, filled in by form-spam bots.
+    website: str | None = Field(default=None, max_length=500)
+
+
+class ContactMessageOut(BaseModel):
+    id: str
+    name: str | None
+    email: str | None
+    message: str
+    user_id: str | None
+    read_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
