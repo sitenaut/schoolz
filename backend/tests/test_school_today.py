@@ -133,3 +133,14 @@ def test_find_logo_url_known_overrides_bypass_generic_heuristic():
     html = '<header><img src="/anything.png" alt="logo"></header>'
     assert _find_logo_url(html, "https://www.primroseschools.com/schools/cherry-hill") == "https://www.primroseschools.com/favicon.ico"
     assert _find_logo_url(html, "https://www.centerffs.org/early-learning") is None
+
+
+def test_school_types_from_title_grade_spans():
+    from services.district_calendar import school_types_from_title
+
+    assert school_types_from_title("STUDENT EARLY DISMISSAL (PRESCHOOL-8): Pre-K, Elementary, and Middle Conferences") == ["other", "elementary", "middle"]
+    assert school_types_from_title("Early Dismissal (K-5)") == ["elementary"]
+    assert school_types_from_title("Conferences for Grades 9-12") == ["high", "alternative"]
+    assert school_types_from_title("SCHOOLS CLOSED - Presidents' Day") is None
+    assert school_types_from_title("IN-SERVICE (Eid al-Fitr)") is None
+    assert school_types_from_title("Board meeting 7-9 PM") is None

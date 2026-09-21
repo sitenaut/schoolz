@@ -954,11 +954,33 @@ class ChildScheduleBlockOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ScheduleDayBlockOut(BaseModel):
+    name: str  # block letter, or "L1"/"L2"
+    start_label: str | None
+    end_label: str | None
+    course_name: str | None  # None = nothing on file for this block this term
+    teacher: str | None
+    room: str | None
+
+
+class ScheduleDayOut(BaseModel):
+    """One school day's classes, computed from the list view + rotation calendar."""
+
+    date: str
+    weekday: str
+    status: str
+    rotation_day: str | None
+    long_blocks: bool
+    timed: bool  # False when no bell table fits the day (block order only)
+    blocks: list[ScheduleDayBlockOut]
+
+
 class ChildScheduleOut(BaseModel):
     cycle_date: str | None
     cycle_label: str | None
     daily: list[ChildScheduleBlockOut]
     list_view: list[ChildScheduleBlockOut]
+    days: list[ScheduleDayOut] = []
 
 
 class ChildWorkItemOut(BaseModel):

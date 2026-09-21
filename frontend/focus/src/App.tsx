@@ -231,7 +231,7 @@ export function App() {
           courseNames={courseNames}
         />
       ) : (
-        <ScheduleTab schedule={schedule} />
+        <ScheduleTab schedule={schedule} todayIso={todayIso} />
       )}
       {openCourse && todo && (
         <CourseSheet

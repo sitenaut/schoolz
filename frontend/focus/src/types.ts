@@ -180,4 +180,24 @@ export type ScheduleResponse = {
   cycle_label: string | null;
   daily: ScheduleBlock[];
   list_view: ScheduleBlock[];
+  days?: ScheduleDay[];
+};
+
+export type ScheduleDayBlock = {
+  name: string;
+  start_label: string | null;
+  end_label: string | null;
+  course_name: string | null;
+  teacher: string | null;
+  room: string | null;
+};
+
+export type ScheduleDay = {
+  date: string;
+  weekday: string;
+  status: string;
+  rotation_day: string | null;
+  long_blocks: boolean;
+  timed: boolean;
+  blocks: ScheduleDayBlock[];
 };
