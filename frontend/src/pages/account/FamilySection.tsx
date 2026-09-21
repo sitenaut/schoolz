@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { IconSchool, IconShield, IconUsers } from "../../components/icons";
+import { IconSchool, IconUsers } from "../../components/icons";
 import { SectionCard } from "../../components/ui/SectionCard";
 
 export function FamilySection() {
@@ -26,12 +26,6 @@ export function FamilySection() {
             </span>
           </Link>
         </div>
-      </SectionCard>
-      <SectionCard title="Privacy" description="What schoolz stores and why." icon={<IconShield />}>
-        <p className="note" style={{ margin: 0 }}>
-          Everything is spelled out on the <Link to="/privacy">privacy &amp; cookies page</Link>. To delete your account, see{" "}
-          <Link to="/account/security">Security</Link>.
-        </p>
       </SectionCard>
     </>
   );
