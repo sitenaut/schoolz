@@ -702,6 +702,79 @@ body {
   border-top-color: var(--ink);
 }
 
+/* ---- desktop: a left rail, like schoolz-web's own >=900px layout -------
+   Below 900px this is a single phone-width column because that's the only
+   layout the tiles/sheets were designed for; above it, the same content
+   used to just sit centered in a sea of empty page rather than picking up
+   schoolz-web's rail-plus-content shape. The DOM order stays
+   header/main/tabbar (nav after the content it controls, for a11y and for
+   the no-JS/slow-load order), so the rail is placed by grid-column/grid-row
+   rather than by moving markup - .tabbar becomes a normal member of the
+   grid instead of the fixed, self-centered bar mobile uses. */
+@media (min-width: 900px) {
+  .app {
+    max-width: none;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .app-header {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 22px 28px 14px;
+    box-sizing: border-box;
+  }
+  .app-main {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 28px 40px;
+    box-sizing: border-box;
+  }
+  .tabbar {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    left: 0;
+    transform: none;
+    width: auto;
+    max-width: none;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 16px 10px;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+  }
+  .tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border-top: 0;
+  }
+  .tab.active {
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    border-top: 0;
+    color: var(--accent);
+  }
+}
+
+
 /* ---- task sheet ----------------------------------------------------- */
 
 .sheet-backdrop {
