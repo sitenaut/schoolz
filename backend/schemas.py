@@ -368,7 +368,7 @@ class BellPeriodEntry(BaseModel):
     end: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
-_BELL_PERIOD_VARIANTS = ("regular", "delayed_opening", "early_dismissal")
+_BELL_PERIOD_VARIANTS = ("regular", "long_block", "delayed_opening", "early_dismissal")
 
 
 class SchoolUpdate(BaseModel):
@@ -584,6 +584,8 @@ class TodayDayOut(BaseModel):
     status: str  # "open" | "closed" | "early_dismissal" | "unknown"
     status_label: str | None  # e.g. "Labor Day", "Out 1:15"
     rotation_day: str | None  # "Day 3" for elementary
+    rotation_blocks: list[str] | None = None  # high school letters meeting that day, in clock order
+    long_blocks: bool = False
     lunch: str | None
     items: list[SchoolContentItemOut]
 
@@ -674,6 +676,21 @@ class CurrentPeriodOut(BaseModel):
     next_name: str | None
 
 
+class DayBlockOut(BaseModel):
+    """One slot of today's lettered high-school timeline."""
+
+    name: str  # "A".."H", or "L1"/"L2"
+    start_label: str
+    end_label: str
+
+
+class NextRotationOut(BaseModel):
+    label: str  # "Tomorrow" / "Mon"
+    rotation_day: str
+    blocks: list[str] | None
+    long_blocks: bool
+
+
 class SchoolTodayOut(BaseModel):
     """Everything one Today-feed card needs, assembled server-side so the
     home page makes exactly one request per school."""
@@ -685,6 +702,10 @@ class SchoolTodayOut(BaseModel):
     status_label: str | None
     hours: str | None
     rotation_day: str | None
+    rotation_blocks: list[str] | None = None
+    long_blocks: bool = False
+    day_blocks: list[DayBlockOut] | None = None
+    next_rotation: NextRotationOut | None = None
     current_period: CurrentPeriodOut | None
     transportation: TodayTransportationOut | None
     lunch: TodayLunchOut

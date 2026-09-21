@@ -4,7 +4,7 @@ import { isNoisyDistrictItem } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent } from "../lib/track";
-import type { CurrentPeriod, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
+import type { CurrentPeriod, DayBlock, NextRotation, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
 import { AbsenceButton } from "./AbsenceButton";
 import { IconChevronRight, IconPhone } from "./icons";
 
@@ -18,6 +18,49 @@ export function StatusPill({ status, label, hours }: { status: TodayDay["status"
   return <span className="status ok">Open{hours ? ` · ${hours}` : ""}</span>;
 }
 
+/** A high school slot is named by its block letter ("A block"), the lunch
+ * band by its own label ("L2"); every other school's slots are numbers. */
+export function periodLabel(name: string): string {
+  if (/^[A-H]$/.test(name)) return `${name} block`;
+  if (/^L\d$/.test(name)) return name;
+  return `Period ${name}`;
+}
+
+/** "Day 5 · A B E F · long blocks" - how students and parents at the high
+ * schools actually refer to a day: its letter configuration. */
+export function rotationLine(day: string | null | undefined, blocks: string[] | null | undefined, long: boolean | undefined): string | null {
+  if (!day) return null;
+  return [day, blocks?.join(" "), long && "long blocks"].filter(Boolean).join(" · ");
+}
+
+/** Today's lettered timeline - school-wide, identical for every student. */
+export function DayBlocks({ blocks, current, next }: { blocks: DayBlock[] | null | undefined; current: CurrentPeriod | null; next: NextRotation | null | undefined }) {
+  if (!blocks?.length && !next) return null;
+  return (
+    <div className="dayBlocks">
+      {!!blocks?.length && (
+        <ol className="dayBlocksRow" aria-label="Today's blocks">
+          {blocks.map((b) => {
+            const lunchBand = /^L\d$/.test(b.name);
+            const cls = ["blk", lunchBand && "blkBand", current?.name === b.name && "blkNow"].filter(Boolean).join(" ");
+            return (
+              <li className={cls} key={b.name} title={`${periodLabel(b.name)} ${b.start_label}–${b.end_label}`}>
+                <span className="blkL">{b.name}</span>
+                <span className="blkT tab-num">{b.start_label}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      {next && (
+        <div className="dayBlocksNext">
+          {next.label}: {rotationLine(next.rotation_day, next.blocks, next.long_blocks)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** "Period 6 · ends 2:30 PM" - only rendered when the school has a real
  * bell_periods table and the request landed inside a named period (the
  * backend already returns null for gaps the table doesn't cover, before
@@ -27,7 +70,7 @@ export function CurrentPeriodChip({ period }: { period: CurrentPeriod | null }) 
   const soon = period.minutes_left <= 5;
   return (
     <span className={`periodChip ${soon ? "periodChipSoon" : ""}`} title={`${period.minutes_in} min in, ${period.minutes_left} min left`}>
-      Period {period.name} · {soon ? `ends in ${period.minutes_left} min` : `ends ${period.end_label}`}
+      {periodLabel(period.name)} · {soon ? `ends in ${period.minutes_left} min` : `ends ${period.end_label}`}
     </span>
   );
 }
@@ -187,13 +230,15 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
           <h2>
             <Link to={`/schools/${s.slug}`}>{s.short_name || s.name}</Link>
           </h2>
-          <div className="kids">{[kind, data.rotation_day].filter(Boolean).join(" · ")}</div>
+          <div className="kids">{[kind, rotationLine(data.rotation_day, data.rotation_blocks, data.long_blocks)].filter(Boolean).join(" · ")}</div>
         </div>
         <div className="headerPills">
           <StatusPill status={data.status} label={data.status_label} hours={data.hours} />
           <CurrentPeriodChip period={data.current_period} />
         </div>
       </header>
+
+      <DayBlocks blocks={data.day_blocks} current={data.current_period} next={data.next_rotation} />
 
       {(data.lunch.today || data.lunch.next || sacc) && (
         <div className="facts">
@@ -325,7 +370,13 @@ export function WeekStrip({ week, schoolSlug }: { week: TodayDay[]; schoolSlug: 
             <Link className="dd tab-num" to={dayHref}>
               {md.day}
             </Link>
-            {d.rotation_day && <div className="rot">{d.rotation_day}</div>}
+            {d.rotation_day && (
+              <div className="rot">
+                {d.rotation_day}
+                {d.rotation_blocks && <span className="rotBlocks">{d.rotation_blocks.join("")}</span>}
+                {d.long_blocks && <span className="rotBlocks">long</span>}
+              </div>
+            )}
             {d.status === "closed" && <span className="pill bad">{d.status_label || "Closed"}</span>}
             {d.status === "early_dismissal" && <span className="pill warn">Early dismissal</span>}
             {d.status === "delayed" && <span className="pill warn">{d.status_label}</span>}

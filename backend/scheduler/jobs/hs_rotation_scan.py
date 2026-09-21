@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import scraper_client
 from models import District, SchoolContentItem
 from scheduler.registry import register_job
-from services.hs_rotation import find_pdf_link, parse_rotation_pdf
+from services.hs_rotation import BLOCKS_PREFIX, find_pdf_link, parse_rotation_pdf
 
 _TZ = ZoneInfo("America/New_York")
 _SOURCE = "rotation_pdf"
@@ -50,7 +50,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             blocks = parsed["blocks"].get(day["day_number"])
             desc_parts = []
             if blocks:
-                desc_parts.append("Blocks " + ", ".join(blocks))
+                desc_parts.append(BLOCKS_PREFIX + ", ".join(blocks))
             if day["cycle"]:
                 desc_parts.append(f"Cycle {day['cycle']}")
             wanted[f"hs_rotation:{d.isoformat()}"] = {

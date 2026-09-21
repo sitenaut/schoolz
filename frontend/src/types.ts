@@ -118,9 +118,14 @@ export type TodayDay = {
   status: "open" | "closed" | "early_dismissal" | "delayed" | "weekend" | "unknown";
   status_label: string | null;
   rotation_day: string | null;
+  rotation_blocks?: string[] | null;
+  long_blocks?: boolean;
   lunch: string | null;
   items: SchoolContentItem[];
 };
+
+export type DayBlock = { name: string; start_label: string; end_label: string };
+export type NextRotation = { label: string; rotation_day: string; blocks: string[] | null; long_blocks: boolean };
 
 export type TodayTransportation = { office_phone: string | null; late_bus_phone: string | null; late_bus_contractor: string | null };
 
@@ -167,6 +172,10 @@ export type SchoolToday = {
   status_label: string | null;
   hours: string | null;
   rotation_day: string | null;
+  rotation_blocks?: string[] | null;
+  long_blocks?: boolean;
+  day_blocks?: DayBlock[] | null;
+  next_rotation?: NextRotation | null;
   current_period: CurrentPeriod | null;
   transportation: TodayTransportation | null;
   lunch: { today: string | null; next_label: string | null; next: string | null; source_pdf_url: string | null };

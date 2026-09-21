@@ -81,3 +81,69 @@ def test_school_update_bell_periods_rejects_bad_time_format():
 
     with pytest.raises(ValidationError):
         SchoolUpdate(bell_periods={"regular": [{"name": "1", "start": "7:30am", "end": "08:00"}]})
+
+
+from services.bell_schedule import lettered_day  # noqa: E402
+
+EAST = {
+    "regular": [
+        {"name": n, "start": s, "end": e}
+        for n, s, e in [("1", "07:30", "08:27"), ("2", "08:31", "09:28"), ("3", "09:32", "10:29"), ("L1", "10:33", "10:58"),
+                        ("L2", "11:02", "11:27"), ("4", "11:31", "12:28"), ("5", "12:32", "13:29"), ("6", "13:33", "14:30")]
+    ],
+    "long_block": [
+        {"name": n, "start": s, "end": e}
+        for n, s, e in [("1", "07:30", "08:57"), ("2", "09:01", "10:29"), ("L1", "10:33", "10:58"),
+                        ("L2", "11:02", "11:27"), ("3", "11:31", "12:58"), ("4", "13:02", "14:30")]
+    ],
+    "early_dismissal": [
+        {"name": n, "start": s, "end": e}
+        for n, s, e in [("1", "07:30", "08:00"), ("2", "08:04", "08:34"), ("3", "08:38", "09:08"), ("L1", "09:12", "09:37"),
+                        ("L2", "09:41", "10:06"), ("4", "10:10", "10:39"), ("5", "10:43", "11:12"), ("6", "11:16", "11:45")]
+    ],
+}
+
+
+def test_lettered_day_zips_legend_letters_onto_slots_keeping_lunch_band():
+    variant, slots = lettered_day(EAST, "open", ["D", "A", "B", "H", "E", "F"])
+    assert variant == "regular"
+    assert [s["name"] for s in slots] == ["D", "A", "B", "L1", "L2", "H", "E", "F"]
+    assert slots[1]["start"] == "08:31"
+
+
+def test_lettered_day_four_letters_pick_the_long_block_table():
+    variant, slots = lettered_day(EAST, "open", ["A", "B", "E", "F"])
+    assert variant == "long_block"
+    assert [(s["name"], s["end"]) for s in slots][:2] == [("A", "08:57"), ("B", "10:29")]
+
+
+def test_lettered_day_none_when_no_table_fits():
+    # A long-block day with an early dismissal: no published timetable.
+    assert lettered_day(EAST, "early_dismissal", ["C", "D", "G", "H"]) is None
+    assert lettered_day({"regular": EAST["regular"]}, "open", ["A", "B", "E", "F"]) is None
+    assert lettered_day(EAST, "closed", ["A", "B", "C", "E", "F", "G"]) is None
+    assert lettered_day(EAST, "open", None) is None
+
+
+def test_lettered_day_early_dismissal_on_a_six_block_day():
+    variant, slots = lettered_day(EAST, "early_dismissal", ["A", "B", "C", "E", "F", "G"])
+    assert variant == "early_dismissal"
+    assert (slots[-1]["name"], slots[-1]["end"]) == ("G", "11:45")
+
+
+def test_lettered_day_feeds_current_period_with_block_names():
+    _, slots = lettered_day(EAST, "open", ["A", "B", "E", "F"])
+    result = current_period({"regular": slots}, "open", _at(8, 40))
+    assert result["name"] == "A"
+    assert result["end_label"] == "8:57 AM"
+    assert result["next_name"] == "B"
+
+
+def test_is_long_block_day_from_the_rotation_not_the_timetable():
+    from services.bell_schedule import is_long_block_day
+
+    regular_only = {"regular": EAST["regular"]}
+    assert is_long_block_day(regular_only, ["C", "D", "G", "H"]) is True
+    assert is_long_block_day(regular_only, ["A", "B", "C", "E", "F", "G"]) is False
+    assert is_long_block_day(regular_only, None) is False
+    assert is_long_block_day(None, ["A", "B", "E", "F"]) is False

@@ -16,8 +16,10 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import DistrictTransportation, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember
-from schemas import CurrentPeriodOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
+from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
 from services.bell_schedule import current_period as _compute_current_period
+from services.bell_schedule import is_long_block_day, lettered_day
+from services.hs_rotation import blocks_from_description
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 
@@ -123,6 +125,11 @@ async def resolve_lunch_menu(db: AsyncSession, school: School, meal_type: str = 
     return menu
 
 
+def _clock_label(hhmm: str) -> str:
+    hour, minute = (int(x) for x in hhmm.split(":"))
+    return f"{(hour - 1) % 12 + 1}:{minute:02d}"
+
+
 def _hours(school: School, status: str) -> str | None:
     if status == "closed":
         return None
@@ -169,11 +176,22 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
             return "weekend", None
         return classify_day([i.title for i in by_day.get(d, [])])
 
+    def rotation_item(d: date) -> SchoolContentItem | None:
+        return next((i for i in by_day.get(d, []) if _is_rotation_item(i)), None)
+
     def rotation(d: date) -> str | None:
-        for i in by_day.get(d, []):
-            if _is_rotation_item(i):
-                return i.title.strip()
-        return None
+        item = rotation_item(d)
+        return item.title.strip() if item else None
+
+    def rotation_blocks(d: date) -> list[str] | None:
+        item = rotation_item(d)
+        return blocks_from_description(item.description) if item else None
+
+    def lettered(d: date) -> tuple[str, list[dict]] | None:
+        return lettered_day(school.bell_periods, day_status(d)[0], rotation_blocks(d))
+
+    def is_long_block(d: date) -> bool:
+        return is_long_block_day(school.bell_periods, rotation_blocks(d))
 
     # Lunch: today's + the next school day's.
     menu = await resolve_lunch_menu(db, school)
@@ -255,6 +273,8 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
                 status=st,
                 status_label=lbl,
                 rotation_day=rotation(d),
+                rotation_blocks=rotation_blocks(d),
+                long_blocks=is_long_block(d),
                 lunch=lunch_by_day.get(d) if st != "closed" else None,
                 items=[out(i) for i in by_day.get(d, []) if not _is_rotation_item(i) and not _is_status_item(i)][:3],
             )
@@ -274,9 +294,32 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     # Only meaningful for the real, current moment - a caller (tests,
     # mainly) can pass a different `today` to inspect another date, and
     # "what period is it right now" would be nonsensical against that.
+    today_lettered = lettered(today)
+    day_blocks = (
+        [DayBlockOut(name=b["name"], start_label=_clock_label(b["start"]), end_label=_clock_label(b["end"])) for b in today_lettered[1]]
+        if today_lettered
+        else None
+    )
+    next_rot = None
+    if rotation_blocks(next_day):
+        next_rot = NextRotationOut(
+            label=next_label,
+            rotation_day=rotation(next_day),
+            blocks=rotation_blocks(next_day),
+            long_blocks=is_long_block(next_day),
+        )
+
     period = None
     if today == datetime.now(LOCAL_TZ).date():
-        raw = _compute_current_period(school.bell_periods, status, datetime.now(LOCAL_TZ))
+        now = datetime.now(LOCAL_TZ)
+        if today_lettered:
+            raw = _compute_current_period({"regular": today_lettered[1]}, "open", now)
+        elif rotation_blocks(today):
+            # A known rotation with no timetable that fits it (a long-block
+            # day with an early dismissal): no chip beats a wrong one.
+            raw = None
+        else:
+            raw = _compute_current_period(school.bell_periods, status, now)
         period = CurrentPeriodOut(**raw) if raw else None
 
     return SchoolTodayOut(
@@ -287,6 +330,10 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         status_label=status_label,
         hours=_hours(school, status),
         rotation_day=rotation(today),
+        rotation_blocks=rotation_blocks(today),
+        long_blocks=is_long_block(today),
+        day_blocks=day_blocks,
+        next_rotation=next_rot,
         current_period=period,
         transportation=transportation,
         lunch=lunch,

@@ -153,6 +153,17 @@ def _classify(value: str) -> dict:
     }
 
 
+BLOCKS_PREFIX = "Blocks "
+_BLOCKS_DESC_RE = re.compile(r"Blocks\s+([A-H](?:\s*,\s*[A-H])*)")
+
+
+def blocks_from_description(description: str | None) -> list[str] | None:
+    """Reads back the letter list hs_rotation_scan writes into each "Day N"
+    item's description ("Blocks A, B, E, F · Cycle 2")."""
+    m = _BLOCKS_DESC_RE.search(description or "")
+    return [b.strip() for b in m.group(1).split(",")] if m else None
+
+
 _PDF_LINK_RE = re.compile(r"\.pdf($|\?)", re.I)
 
 

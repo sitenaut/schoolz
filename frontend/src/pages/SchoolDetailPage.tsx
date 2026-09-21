@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
-import { ContactGrid, CurrentPeriodChip, ItemRow, StatusPill, WeekStrip, contactHref } from "../components/today";
+import { ContactGrid, CurrentPeriodChip, DayBlocks, ItemRow, StatusPill, WeekStrip, contactHref, rotationLine } from "../components/today";
 import { IconChevronLeft } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
 import { useAuth } from "../context/AuthContext";
@@ -180,8 +180,9 @@ export function SchoolDetailPage() {
         <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <StatusPill status={today.status} label={today.status_label} hours={today.hours} />
           <CurrentPeriodChip period={today.current_period} />
-          {today.rotation_day && <span className="note">{today.rotation_day} today</span>}
+          {today.rotation_day && <span className="note">{rotationLine(today.rotation_day, today.rotation_blocks, today.long_blocks)} today</span>}
         </div>
+        <DayBlocks blocks={today.day_blocks} current={today.current_period} next={today.next_rotation} />
         {(s.start_time && s.end_time) || user?.is_admin ? (
           <p className="note" style={{ marginTop: 6 }}>
             {s.start_time && s.end_time ? (
