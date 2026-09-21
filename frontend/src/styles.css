@@ -2332,3 +2332,63 @@ select {
 .dir-school.multi.district {
   color: var(--district, var(--ink-2));
 }
+
+/* High school lettered timeline on the Today card */
+.dayBlocks {
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--line);
+}
+.dayBlocksRow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+.blk {
+  flex: 1 0 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 2px;
+  border-radius: 7px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.blkL {
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.1;
+}
+.blkT {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+.blkBand {
+  flex-grow: 0.6;
+}
+.blkBand .blkL {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.blkNow {
+  background: var(--c, var(--primary));
+  border-color: transparent;
+}
+.blkNow .blkL,
+.blkNow .blkT {
+  color: #fff;
+}
+.dayBlocksNext {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.wd .rotBlocks {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}

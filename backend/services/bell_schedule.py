@@ -59,3 +59,45 @@ def current_period(bell_periods: dict | None, status: str, now: datetime | None 
                 "next_name": next_name,
             }
     return None
+
+
+_STATUS_VARIANTS = {
+    "open": ("regular", "long_block"),
+    "early_dismissal": ("early_dismissal",),
+    "delayed": ("delayed_opening",),
+}
+
+
+def _is_shared_slot(name: str) -> bool:
+    return name.upper().startswith("L")
+
+
+def lettered_day(bell_periods: dict | None, status: str, letters: list[str] | None) -> tuple[str, list[dict]] | None:
+    """Names each clock slot with the block letter that fills it on this
+    rotation day: the rotation legend lists a day's letters in clock order
+    (Day 2 = D,A,B,H,E,F), so they zip onto the variant's numbered slots,
+    while the L1/L2 lunch band keeps its own name. A variant only fits when
+    its slot count equals the letter count - a 4-block Day 5 can't be laid
+    onto a 6-slot table - and with no fitting table this returns None
+    rather than guessing (no published timetable exists for a long-block
+    early dismissal)."""
+    if not bell_periods or not letters:
+        return None
+    for variant in _STATUS_VARIANTS.get(status, ()):
+        slots = bell_periods.get(variant) or []
+        numbered = [s for s in slots if not _is_shared_slot(s["name"])]
+        if not numbered or len(numbered) != len(letters):
+            continue
+        it = iter(letters)
+        return variant, [
+            {"name": s["name"] if _is_shared_slot(s["name"]) else next(it), "start": s["start"], "end": s["end"]} for s in slots
+        ]
+    return None
+
+
+def is_long_block_day(bell_periods: dict | None, letters: list[str] | None) -> bool:
+    """Fewer blocks meet than the regular day has slots, so each runs long -
+    true of the rotation itself, whether or not this school's long-block
+    clock times are on file."""
+    regular = [s for s in (bell_periods or {}).get("regular") or [] if not _is_shared_slot(s["name"])]
+    return bool(letters and regular and len(letters) < len(regular))

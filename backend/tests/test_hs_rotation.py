@@ -31,3 +31,11 @@ def test_find_pdf_link_scoped_to_page_content():
     html = '<nav><a href="/footer.pdf">x</a></nav><main id="fsPageContent"><a href="/files/DayRotation.pdf">here</a></main>'
     assert find_pdf_link(html, "https://west.chclc.org/x") == "https://west.chclc.org/x/files/DayRotation.pdf"
     assert find_pdf_link("<main id='fsPageContent'><p>nothing</p></main>", "https://a") is None
+
+
+def test_blocks_from_description_reads_back_what_the_scan_writes():
+    from services.hs_rotation import blocks_from_description
+
+    assert blocks_from_description("Blocks A, B, E, F · Cycle 2") == ["A", "B", "E", "F"]
+    assert blocks_from_description("Cycle 3") is None
+    assert blocks_from_description(None) is None
