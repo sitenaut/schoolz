@@ -104,6 +104,28 @@ export function TaskModal({
         </section>
       )}
 
+      {/* This is the Genesis grade matched onto this Classroom-derived item
+          by normalized title (backend routers/bucket3.py:_todo_items) -
+          the two systems are never reconciled into one row server-side, so
+          this is the one place that grade actually gets shown next to the
+          assignment it belongs to, rather than only living in the Grades
+          list under whatever title Genesis itself used. */}
+      {item.grade && (item.grade.percent !== null || item.grade.score_earned !== null || item.grade.status) && (
+        <section className="sheet-row">
+          <h3>Grade</h3>
+          <p>
+            {[
+              item.grade.score_earned !== null && item.grade.score_possible !== null
+                ? `${item.grade.score_earned} / ${item.grade.score_possible}`
+                : null,
+              item.grade.percent !== null ? `${Math.round(item.grade.percent)}%` : item.grade.status,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        </section>
+      )}
+
       {/* Classroom's own status is shown as reported, never rewritten -
           a person's mark in schoolz beats it in both directions, and
           hiding the disagreement would make that confusing. */}

@@ -108,13 +108,22 @@ export function DetailsTab({
                         <span className="sheet-item-title">
                           {item.category === "missing" && !item.done ? `⚠ ${item.title}` : item.title}
                         </span>
-                        {closed ? (
-                          <span className="due">past cutoff</span>
-                        ) : item.due_date ? (
-                          <span className="due">{dueLabel(item.due_date, todayIso)}</span>
-                        ) : item.grade?.percent !== null && item.grade?.percent !== undefined ? (
-                          <span className="due">{Math.round(item.grade.percent)}%</span>
-                        ) : null}
+                        {/* Grade shown whenever one exists, independent of
+                            due-date status - a matched Genesis grade doesn't
+                            stop being true just because the item also has a
+                            due date on file (see TaskModal's own note on
+                            this same match). */}
+                        {(() => {
+                          const badge = [
+                            closed ? "past cutoff" : item.due_date ? dueLabel(item.due_date, todayIso) : null,
+                            item.grade?.percent !== null && item.grade?.percent !== undefined
+                              ? `${Math.round(item.grade.percent)}%`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ");
+                          return badge ? <span className="due">{badge}</span> : null;
+                        })()}
                       </button>
                       <label className="check">
                         <input

@@ -613,6 +613,69 @@ body {
   text-align: center;
 }
 
+/* ---- schedule --------------------------------------------------------- */
+
+.schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.schedule-period {
+  flex: none;
+  min-width: 26px;
+  text-align: center;
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #10202e;
+  background: color-mix(in srgb, var(--tile) 55%, var(--surface));
+}
+
+.schedule-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.schedule-course {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-time {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
 .tile-grade {
   font-size: 12px;
   font-weight: 800;
@@ -723,8 +786,13 @@ body {
     grid-column: 2;
     grid-row: 1;
     width: 100%;
-    max-width: 640px;
-    margin: 0 auto;
+    /* Flush against the rail, not centered in the leftover space - schoolz-
+       web's own .shell-main uses margin: 0 for the same reason. Centering a
+       640px column in a 1440px window just moves the empty gutter from
+       "whole page" to "both sides of the content", which read as no
+       different a bug to the person looking at it. */
+    max-width: 900px;
+    margin: 0;
     padding: 22px 28px 14px;
     box-sizing: border-box;
   }
@@ -732,10 +800,13 @@ body {
     grid-column: 2;
     grid-row: 2;
     width: 100%;
-    max-width: 640px;
-    margin: 0 auto;
+    max-width: 900px;
+    margin: 0;
     padding: 0 28px 40px;
     box-sizing: border-box;
+  }
+  .tile-grid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   }
   .tabbar {
     grid-column: 1;
@@ -1036,6 +1107,42 @@ body {
   text-align: center;
   font-size: 12px;
   color: var(--ink-soft);
+}
+
+/* A mobile bottom sheet, transplanted straight to a wide window, anchors
+   to the bottom of and is horizontally centered across the WHOLE viewport
+   (the backdrop covers the entire screen, rail included) rather than the
+   content column next to it - so a short card reads as a small box
+   stranded in the middle of a mostly-empty window, not clearly attached to
+   anything. Above 900px this becomes an ordinary centered dialog instead:
+   vertically centered too, rounded on every corner, a fixed reasonable
+   width rather than stretching to the phone-sheet's 460px cap. The drag-
+   to-dismiss handle is a touch affordance with no equivalent mouse
+   gesture, so it's hidden here - Escape and the backdrop click still
+   close it. Placed after every unconditional .sheet* rule above so it
+   isn't silently overridden by them at matching specificity (the same
+   source-order trap the rail layout hit the first time). */
+@media (min-width: 900px) {
+  .sheet-backdrop {
+    align-items: center;
+  }
+  .sheet {
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    border-radius: 18px;
+    animation: sheet-in-desktop 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sheet-grab-zone {
+    display: none;
+  }
+}
+
+@keyframes sheet-in-desktop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
 }
 
 /* ---- states --------------------------------------------------------- */

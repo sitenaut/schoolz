@@ -165,6 +165,7 @@ export type CourseProgress = {
 export type ScheduleBlock = {
   source: string;
   period: string;
+  schedule_date: string | null;
   course_name: string;
   teacher: string | null;
   room: string | null;
