@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { courseColorProps } from "../courses";
-import type { ScheduleResponse } from "../types";
+import { courseColorProps, dueLabel } from "../courses";
+import type { ScheduleDay, ScheduleResponse } from "../types";
 
-/** Today's class schedule and the full-year course list, both from Genesis
- * (schoolz-web's own ScheduleTab in KidsDetailPage.tsx renders the same two
- * lists as a plain HTML table - this is the same data, in Focus's own
- * card/chip visual language instead of a table, since that's what every
- * other tab here uses).
+/** The next few school days' classes, computed server-side from the Genesis
+ * list view + district rotation calendar (services/kids_schedule.py), so it
+ * works on days nobody captured Genesis's daily page. The captured daily view
+ * is only the fallback when no rotation calendar exists; the full-year list
+ * stays behind a toggle.
  *
  * Blocks carry only course_name, never course_key (bucket3.py's
  * ChildScheduleBlock has no course_key column - see SubjectsTab's own note
@@ -14,8 +14,11 @@ import type { ScheduleResponse } from "../types";
  * are keyed by name rather than the code+section key Focus/Subjects use.
  * Two tabs can therefore color the same class differently; that's an
  * existing, documented gap, not something introduced here. */
-export function ScheduleTab({ schedule }: { schedule: ScheduleResponse | null }) {
+export function ScheduleTab({ schedule, todayIso }: { schedule: ScheduleResponse | null; todayIso: string }) {
   const [showFullYear, setShowFullYear] = useState(false);
+  const [picked, setPicked] = useState(0);
+  const days = schedule?.days ?? [];
+  const day = days[Math.min(picked, days.length - 1)];
 
   if (!schedule || (schedule.daily.length === 0 && schedule.list_view.length === 0)) {
     return (
@@ -28,7 +31,27 @@ export function ScheduleTab({ schedule }: { schedule: ScheduleResponse | null })
 
   return (
     <>
-      {schedule.daily.length > 0 && (
+      {day && (
+        <section className="card">
+          <div className="day-picker" role="tablist" aria-label="School day">
+            {days.map((d, i) => (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={d === day}
+                className={`day-pick${d === day ? " is-on" : ""}`}
+                key={d.date}
+                onClick={() => setPicked(i)}
+              >
+                {dueLabel(d.date, todayIso)}
+              </button>
+            ))}
+          </div>
+          <ComputedDay day={day} />
+        </section>
+      )}
+
+      {!day && schedule.daily.length > 0 && (
         <section className="card">
           <h2 className="card-label">
             {schedule.cycle_date ? `Schedule for ${schedule.cycle_date}` : "Today's schedule"}
@@ -46,6 +69,42 @@ export function ScheduleTab({ schedule }: { schedule: ScheduleResponse | null })
           {showFullYear && <ScheduleList blocks={schedule.list_view} showDays />}
         </section>
       )}
+    </>
+  );
+}
+
+/** One computed school day: the letters that meet, in clock order, each
+ * filled with this student's course for the current semester. */
+function ComputedDay({ day }: { day: ScheduleDay }) {
+  const letters = day.blocks.filter((b) => !/^L\d$/.test(b.name)).map((b) => b.name);
+  const heading = [day.rotation_day, letters.join(" "), day.long_blocks && "long blocks", day.status === "early_dismissal" && "early dismissal", day.status === "delayed" && "delayed opening"]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <>
+      <h2 className="card-label">{heading || "No rotation on file for this day"}</h2>
+      {!day.timed && day.blocks.length > 0 && <p className="schedule-note">No published bell times for this day, so this is the class order only.</p>}
+      <ul className="schedule-list">
+        {day.blocks.map((b) => {
+          const { className, style } = courseColorProps(b.course_name ?? b.name);
+          return (
+            <li key={b.name} className={`schedule-row${b.course_name ? "" : " is-empty"}`}>
+              <span className={`schedule-period ${className}`} style={style}>
+                {b.name}
+              </span>
+              <span className="schedule-main">
+                <span className="schedule-course">{b.course_name ?? "Nothing scheduled"}</span>
+                {(b.teacher || b.room) && <span className="schedule-meta">{[b.teacher, b.room].filter(Boolean).join(" · ")}</span>}
+              </span>
+              {b.start_label && (
+                <span className="schedule-time">
+                  {b.start_label} – {b.end_label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

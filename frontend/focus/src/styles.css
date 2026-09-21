@@ -1636,3 +1636,40 @@ body {
   font-size: 12px;
   color: var(--ink-soft);
 }
+
+.day-picker {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.day-pick {
+  flex: none;
+  border: 1px solid var(--line, rgb(0 0 0 / 12%));
+  background: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.day-pick.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+.schedule-note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.schedule-row.is-empty .schedule-course {
+  font-weight: 500;
+  color: var(--ink-soft);
+}

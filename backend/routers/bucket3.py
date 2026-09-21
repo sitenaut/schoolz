@@ -63,7 +63,7 @@ from schemas import (
 )
 from services import bucket3_extract as ex
 from services import help_requests as help_svc
-from services import kids_suggestions, kids_view
+from services import kids_schedule, kids_suggestions, kids_view
 
 logger = logging.getLogger(__name__)
 
@@ -876,11 +876,15 @@ async def get_bucket3_schedule(
     )
     list_blocks = list_result.scalars().all()
 
+    school = await db.get(School, student.school_id) if student.school_id else None
+    days = await kids_schedule.upcoming_days(db, school, student.id) if school else []
+
     return ChildScheduleOut(
         cycle_date=latest_cycle.schedule_date if latest_cycle else None,
         cycle_label=latest_cycle.cycle_label if latest_cycle else None,
         daily=[ChildScheduleBlockOut.model_validate(b) for b in daily_today],
         list_view=[ChildScheduleBlockOut.model_validate(b) for b in list_blocks],
+        days=days,
     )
 
 
