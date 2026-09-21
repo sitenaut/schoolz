@@ -5,9 +5,13 @@
  * to private returns an access-denied page to a logged-out fetch, which the
  * Store treated as "not a valid privacy policy" (rejection reason: "Privacy
  * policy link does not lead to a valid privacy policy"). A route on a site
- * this project already controls and already prerenders for bots (see
- * frontend/nginx.conf.template) avoids depending on a Claude account's
- * sharing settings for something the Store re-checks on every review. */
+ * this project already controls avoids depending on a Claude account's
+ * sharing settings for something the Store re-checks on every review.
+ *
+ * nginx.conf.template's bot-detection proxy is a catch-all, but
+ * services/prerender.py gates it with its own explicit _ALLOWED_PATHS -
+ * this path has to be added there too, or a logged-out crawler hit 404
+ * exactly as if the page didn't exist. */
 import { SeoHead } from "../components/SeoHead";
 import { usePrerenderReady } from "../lib/prerenderReady";
 
