@@ -285,18 +285,30 @@ h3 {
   z-index: 20;
   background: var(--card);
   border-top: 1px solid var(--line);
-  display: grid;
-  /* However many real links there are (4 normally, 6 with the admin
-     items) get equal-width columns automatically - no hardcoded count
-     to keep in sync with the admin-only extra items. */
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  /* Equal-width columns used to squeeze every link into the viewport,
+     which meant a 6th item (Gradez, logged-in only) shrank every icon
+     and label rather than staying a fixed, tappable size. Scrolling
+     instead keeps every item the same size regardless of count - 5.5
+     items wide is deliberate, so a partial icon at the edge is the cue
+     that there's more to scroll to, not a sixth full item that would
+     hide the affordance entirely. */
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
   padding-bottom: env(safe-area-inset-bottom);
+}
+.shell-nav::-webkit-scrollbar {
+  display: none;
 }
 .nav-divider {
   display: none;
 }
 .shell-nav a {
+  flex: none;
+  width: calc(100% / 5.5);
+  scroll-snap-align: start;
   border: 0;
   background: transparent;
   color: var(--nav-ink);
@@ -471,9 +483,11 @@ h3 {
     top: 57px;
     align-self: start;
     grid-column: 1;
+    display: grid;
     grid-auto-flow: row;
     grid-template-columns: 1fr;
     align-content: start;
+    overflow: visible;
     border-top: 0;
     border-right: 1px solid var(--line);
     padding: 12px 8px;
@@ -481,6 +495,7 @@ h3 {
     height: calc(100vh - 57px);
   }
   .shell-nav a {
+    width: auto;
     flex-direction: row;
     justify-content: flex-start;
     gap: 10px;
