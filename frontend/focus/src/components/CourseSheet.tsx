@@ -298,7 +298,21 @@ function ItemList({
               <li key={item.id} className={`sheet-item${item.done ? " is-done" : ""}`}>
                 <button type="button" className="sheet-item-open" onClick={() => onOpen(item)}>
                   <span className="sheet-item-title">{item.title}</span>
-                  {item.due_date && <span className="due">{dueLabel(item.due_date, todayIso)}</span>}
+                  {(() => {
+                    // A matched Genesis grade (see TaskModal's note) is shown
+                    // alongside the due date, not instead of it - one class's
+                    // Done section is exactly where "due Fri · 92%" is most
+                    // useful to see at a glance.
+                    const badge = [
+                      item.due_date ? dueLabel(item.due_date, todayIso) : null,
+                      item.grade?.percent !== null && item.grade?.percent !== undefined
+                        ? `${Math.round(item.grade.percent)}%`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+                    return badge ? <span className="due">{badge}</span> : null;
+                  })()}
                 </button>
                 <label className="check">
                   <input

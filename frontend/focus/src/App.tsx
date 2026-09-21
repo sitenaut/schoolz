@@ -5,6 +5,7 @@ import { useCoursePreferences } from "./lib/coursePreferences";
 import { CourseSheet } from "./components/CourseSheet";
 import { DetailsTab } from "./components/DetailsTab";
 import { FocusTab } from "./components/FocusTab";
+import { ScheduleTab } from "./components/ScheduleTab";
 import { SubjectsTab } from "./components/SubjectsTab";
 import { TaskModal } from "./components/TaskModal";
 import type {
@@ -20,7 +21,7 @@ import type {
   TodoResponse,
 } from "./types";
 
-type Tab = "focus" | "subjects" | "calendar" | "details";
+type Tab = "focus" | "subjects" | "schedule" | "details";
 
 export function App() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -230,10 +231,7 @@ export function App() {
           courseNames={courseNames}
         />
       ) : (
-        <div className="empty-state">
-          <h2>Calendar</h2>
-          <p>Not built in this prototype — the Focus and Subjects tabs are the ones under test.</p>
-        </div>
+        <ScheduleTab schedule={schedule} />
       )}
       {openCourse && todo && (
         <CourseSheet
@@ -320,7 +318,7 @@ function Shell({
   onPick?: (id: string) => void;
 }) {
   const title =
-    tab === "focus" ? "Focus Dashboard" : tab === "subjects" ? "Subjects & Clubs" : tab === "details" ? "Details" : "Calendar";
+    tab === "focus" ? "Focus Dashboard" : tab === "subjects" ? "Subjects & Clubs" : tab === "details" ? "Details" : "Schedule";
   const current = students.find((s) => s.id === studentId);
   return (
     <div className="app">
@@ -351,7 +349,7 @@ function Shell({
         </a>
         <TabButton current={tab} value="focus" label="Focus" onSelect={setTab} icon={<IconCompass />} />
         <TabButton current={tab} value="subjects" label="Subjects" onSelect={setTab} icon={<IconGrid />} />
-        <TabButton current={tab} value="calendar" label="Calendar" onSelect={setTab} icon={<IconCalendar />} />
+        <TabButton current={tab} value="schedule" label="Schedule" onSelect={setTab} icon={<IconCalendar />} />
         <TabButton current={tab} value="details" label="Details" onSelect={setTab} icon={<IconList />} />
       </nav>
     </div>
