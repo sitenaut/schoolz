@@ -47,6 +47,7 @@ _ALLOWED_PATHS = {
     "/privacy",
     "/backpack-capture/privacy",
     "/contact",
+    "/contact/submit",
     "/chcomms",
     "/survey",
 }

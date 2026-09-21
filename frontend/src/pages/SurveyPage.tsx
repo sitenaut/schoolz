@@ -120,7 +120,7 @@ export function SurveyPage() {
             )}
           </p>
           <p className="fine">
-            One more thing that would help enormously: <Link to="/contact">send us your school's weekly newsletter link</Link> — that's
+            One more thing that would help enormously: <Link to="/contact/submit">send us your school's weekly newsletter link</Link> — that's
             what fills in your school's page.
           </p>
           <p style={{ marginTop: 20 }}>

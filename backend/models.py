@@ -869,6 +869,25 @@ class CommunitySubmission(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class ContactMessage(Base):
+    """A message sent from the public /contact form into the admins' shared
+    inbox. Shared on purpose: read state is one value for every admin (who
+    opened it is kept for reference), not per admin like Notification.
+    No account needed to send one; user_id is filled in when the sender
+    happens to be signed in."""
+
+    __tablename__ = "contact_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    message: Mapped[str] = mapped_column(String(5000), nullable=False)
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+
+
 class PageVisit(Base):
     """A daily tally of visits to a public page, broken down by where the
     visitor came from ("facebook", "direct", a referring host).

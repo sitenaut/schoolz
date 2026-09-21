@@ -25,6 +25,7 @@ from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
+from routers import contact_messages as contact_messages_router  # noqa: E402
 from routers import directory as directory_router  # noqa: E402
 from routers import districts as districts_router  # noqa: E402
 from routers import email_scanners as email_scanners_router  # noqa: E402
@@ -161,6 +162,7 @@ app.include_router(bucket3_router.router)
 app.include_router(student_accounts_router.router)
 app.include_router(invites_router.router)
 app.include_router(notifications_router.router)
+app.include_router(contact_messages_router.router)
 app.include_router(gmail_router.router)
 app.include_router(email_scanners_router.router)
 app.include_router(scheduled_jobs_router.router)
