@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import { IconLink, IconNewsletter, IconUpload } from "../components/icons";
 import { Field } from "../components/ui/Field";
+import { SectionCard } from "../components/ui/SectionCard";
 import { SeoHead } from "../components/SeoHead";
 import { useAuth } from "../context/AuthContext";
 import { usePrerenderReady } from "../lib/prerenderReady";
@@ -61,8 +63,7 @@ export function ContactPage() {
       <SeoHead title="Contact · schoolz" description="Questions, corrections, or ideas for schoolz - a real person reads every message." path="/contact" />
       <h2>Contact</h2>
       <p className="note">
-        Questions, something that looks wrong, or an idea - send it here and a real person will read it. Have a school flier
-        or newsletter link we're not tracking? <Link to="/contact/submit">Send that here instead.</Link>
+        Questions, something that looks wrong, or an idea - send it here and a real person will read it.
       </p>
 
       <form onSubmit={submit}>
@@ -93,6 +94,35 @@ export function ContactPage() {
           {busy ? "Sending…" : "Send message"}
         </button>
       </form>
+
+      <div style={{ marginTop: 32 }}>
+        <SectionCard
+          title="Send a flier, newsletter, or document"
+          description="A school newsletter link, a flier, a handbook, a lunch menu - anything we're not tracking yet. A real person checks it before it goes on the site."
+          icon={<IconNewsletter />}
+        >
+          <div className="link-grid">
+            <Link className="link-card" to="/contact/submit">
+              <span className="ico">
+                <IconLink />
+              </span>
+              <span>
+                <b>I have a link</b>
+                <small>A newsletter page, an online flier, a PDF</small>
+              </span>
+            </Link>
+            <Link className="link-card" to="/contact/submit?kind=file">
+              <span className="ico">
+                <IconUpload />
+              </span>
+              <span>
+                <b>I have a file</b>
+                <small>A photo or PDF of a flier, up to 15MB</small>
+              </span>
+            </Link>
+          </div>
+        </SectionCard>
+      </div>
     </div>
   );
 }

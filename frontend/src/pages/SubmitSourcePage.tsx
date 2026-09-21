@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Field } from "../components/ui/Field";
 import { SeoHead } from "../components/SeoHead";
 import { usePrerenderReady } from "../lib/prerenderReady";
@@ -13,7 +14,8 @@ type Kind = "link" | "file";
  * "so I can curate and validate the extractions" before anything an
  * anonymous visitor sends feeds the shared/public content pipeline. */
 export function SubmitSourcePage() {
-  const [kind, setKind] = useState<Kind>("link");
+  const [params] = useSearchParams();
+  const [kind, setKind] = useState<Kind>(params.get("kind") === "file" ? "file" : "link");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
