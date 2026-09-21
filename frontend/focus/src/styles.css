@@ -865,15 +865,24 @@ body {
 
 .starter-toggle {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
   border: 0;
   background: none;
-  padding: 2px 6px;
-  margin: -6px -4px 0 0;
+  padding: 6px 8px;
+  margin: -6px -8px 0 0;
   font: inherit;
   font-size: 11px;
   font-weight: 700;
   color: color-mix(in srgb, var(--tile-blue) 70%, var(--ink));
   cursor: pointer;
+}
+
+.chevron {
+  font-size: 17px;
+  line-height: 1;
 }
 
 .starter-collapsed {
@@ -1014,17 +1023,53 @@ body {
   color: color-mix(in srgb, var(--tile-green) 65%, var(--ink));
 }
 
-.ask-open {
-  width: 100%;
-  padding: 11px;
+.ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ask-head h3 {
+  margin: 0;
+}
+
+.ask-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
   border: 0;
-  border-radius: 999px;
-  background: var(--tile-green);
-  color: #fff;
+  background: none;
+  padding: 6px 8px;
+  margin: -6px -8px 0 0;
   font: inherit;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
+  color: color-mix(in srgb, var(--tile-green) 65%, var(--ink));
   cursor: pointer;
+}
+
+.ask-toggle:disabled {
+  opacity: 0.6;
+}
+
+.ask-collapsed {
+  padding: 0;
+  background: none;
+}
+
+.ask-collapsed .ask-toggle {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tile-green) 12%, var(--surface));
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
 }
 
 .ask-kinds {
