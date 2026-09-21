@@ -14,6 +14,7 @@ here to one specific district feed instead of many general-purpose ones.
 """
 
 import hashlib
+import re
 import logging
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
@@ -97,3 +98,29 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
             logger.warning("district_calendar_vevent_skipped", extra={"url": ics_url, "error": str(exc)})
             continue
     return out
+
+
+_GRADE_SPAN_RE = re.compile(
+    r"(?:\(|\bgrades?\s+)\s*(pre-?k|pk|preschool|k|\d{1,2})\s*[-–]\s*(\d{1,2})\b",
+    re.I,
+)
+# (lowest grade, highest grade, school type); preschool is grade -1.
+_TYPE_GRADES = [(-1, -1, "other"), (0, 5, "elementary"), (6, 8, "middle"), (9, 12, "high"), (9, 12, "alternative")]
+
+
+def school_types_from_title(title: str) -> list[str] | None:
+    """School types a district-wide feed event is really scoped to, when its
+    title names a grade span - confirmed real: "STUDENT EARLY DISMISSAL
+    (PRESCHOOL-8): Pre-K, Elementary, and Middle Conferences" sits on the
+    main district feed with no type filter, so both high schools showed an
+    early dismissal all conference week. Only a parenthesised span or one
+    after "Grade(s)" counts, so a stray number pair can't narrow a closure."""
+    m = _GRADE_SPAN_RE.search(title or "")
+    if not m:
+        return None
+    lo_raw, hi = m.group(1).lower(), int(m.group(2))
+    lo = -1 if lo_raw.startswith("p") else 0 if lo_raw == "k" else int(lo_raw)
+    if hi < lo or hi > 12:
+        return None
+    types = [t for g_lo, g_hi, t in _TYPE_GRADES if g_lo <= hi and lo <= g_hi]
+    return types or None

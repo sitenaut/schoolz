@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, SchoolContentItem
 from scheduler.registry import register_job
-from services.district_calendar import fetch_district_calendar
+from services.district_calendar import fetch_district_calendar, school_types_from_title
 from services.school_status import is_status_title, same_status_fact
 
 
@@ -39,7 +39,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             # Namespace the uid by feed - two different feeds could
             # otherwise coincidentally produce the same hash-based uid.
             event["external_uid"] = f"{feed_name}:{event['external_uid']}"
-            event["applies_to_school_types"] = school_types
+            event["applies_to_school_types"] = school_types or school_types_from_title(event["title"])
             events.append(event)
 
     if not events:
