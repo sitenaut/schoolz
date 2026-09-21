@@ -5,7 +5,8 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
-import { IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
+import { IconBell, IconCalendar, IconDirectory, IconHome, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
+import { useUnreadNotifications } from "../lib/notifications";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -52,6 +53,7 @@ const WIDE_PATH_PREFIXES = ["/admin", "/account"];
  * still goes to /start to add or remove schools from the list itself. */
 export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
+  const unreadNotifications = useUnreadNotifications(!!user);
   const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -122,6 +124,17 @@ export function AppShell() {
           schoolz<small>Cherry Hill, NJ</small>
         </Link>
         <div className="spacer" />
+        {unreadNotifications > 0 && (
+          <Link
+            to="/account/notifications"
+            className="btn icon bell"
+            title={`${unreadNotifications} new notification${unreadNotifications === 1 ? "" : "s"}`}
+            aria-label={`${unreadNotifications} new notification${unreadNotifications === 1 ? "" : "s"}`}
+          >
+            <IconBell />
+            <span className="bell-count">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>
+          </Link>
+        )}
         {user?.is_admin && (
           <Link to="/admin" className="btn icon" title="Admin" aria-label="Admin">
             <IconWrench />
