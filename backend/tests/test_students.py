@@ -89,6 +89,12 @@ async def test_gary_and_susan_share_only_common_children(monkeypatch, tmp_path):
         notifications = (await client.get("/notifications", headers=auth(susan))).json()
         assert any(n["type"] == "guardian_matched" for n in notifications)
 
+        unread = (await client.get("/notifications/unread-count", headers=auth(susan))).json()["count"]
+        assert unread == sum(1 for n in notifications if not n["read_at"]) > 0
+        assert (await client.post("/notifications/read-all", headers=auth(susan))).json()["marked"] == unread
+        assert (await client.get("/notifications/unread-count", headers=auth(susan))).json()["count"] == 0
+        assert (await client.get("/notifications/unread-count", headers=auth(gary))).status_code == 200
+
 
 @pytest.mark.anyio
 async def test_invite_flow(tmp_path):

@@ -4,6 +4,7 @@ import { IconBell, IconCheck } from "../../components/icons";
 import { Badge } from "../../components/ui/Badge";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { relativeTime } from "../../lib/format";
+import { markAllNotificationsSeen } from "../../lib/notifications";
 
 type Notification = { id: string; type: string; message: string; created_at: string; read_at: string | null };
 
@@ -18,8 +19,10 @@ export function NotificationsSection() {
       .then((r) => (r.ok ? r.json() : []))
       .then(setItems);
 
+  // Load first, then mark everything read: this visit still shows what was
+  // new, while the banner bell clears until something new arrives.
   useEffect(() => {
-    load();
+    load().then(() => markAllNotificationsSeen());
   }, []);
 
   const markRead = async (id: string) => {
