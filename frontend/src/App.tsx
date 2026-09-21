@@ -26,6 +26,7 @@ import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { AdminLayout } from "./pages/AdminLayout";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
 import { ContactPage } from "./pages/ContactPage";
 import { ChCommsPage } from "./pages/ChCommsPage";
 import { SurveyPage } from "./pages/SurveyPage";
@@ -150,6 +151,7 @@ function Routed() {
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
         <Route path="/directory" element={<DirectoryPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/backpack-capture/privacy" element={<BackpackCapturePrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/chcomms" element={<ChCommsPage />} />
         <Route path="/survey" element={<SurveyPage />} />
