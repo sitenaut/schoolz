@@ -165,13 +165,29 @@ function AskTeacher({
     setDraft(result);
   };
 
+  // Collapsing here always resets to the closed pill - a half-written pick
+  // is easy to redo, and the alternative (a third "collapsed but drafted"
+  // state) isn't worth the complexity.
+  const collapse = () => {
+    setOpen(false);
+    setDraft(null);
+  };
+  const collapseButton = (disabled?: boolean) => (
+    <button type="button" className="ask-toggle" onClick={collapse} disabled={disabled} aria-label="Collapse">
+      <span aria-hidden="true" className="chevron">▴</span>
+    </button>
+  );
+
   if (draft) {
     const mailto = `mailto:${draft.teacher_email ?? ""}?subject=${encodeURIComponent(
       draft.subject,
     )}&body=${encodeURIComponent(draft.body)}`;
     return (
       <section className="ask">
-        <h3>Ready to send</h3>
+        <div className="ask-head">
+          <h3>Ready to send</h3>
+          {collapseButton()}
+        </div>
         <p className="ask-preview">{draft.body}</p>
         {draft.teacher_email ? (
           <a className="ask-send" href={mailto}>
@@ -194,9 +210,9 @@ function AskTeacher({
 
   if (!open) {
     return (
-      <section className="ask">
-        <button type="button" className="ask-open" onClick={() => setOpen(true)}>
-          I don't know what this is about
+      <section className="ask ask-collapsed">
+        <button type="button" className="ask-toggle" onClick={() => setOpen(true)}>
+          I don't know what this is about <span aria-hidden="true" className="chevron">▾</span>
         </button>
         {asked && <p className="ask-note">You asked about this one already.</p>}
       </section>
@@ -205,7 +221,10 @@ function AskTeacher({
 
   return (
     <section className="ask">
-      <h3>What's the trouble?</h3>
+      <div className="ask-head">
+        <h3>What's the trouble?</h3>
+        {collapseButton(busy !== null)}
+      </div>
       <ul className="ask-kinds">
         {kinds.map((k) => (
           <li key={k.kind}>
@@ -216,9 +235,6 @@ function AskTeacher({
         ))}
       </ul>
       {error && <p className="ask-note">{error}</p>}
-      <button type="button" className="ask-restart" disabled={busy !== null} onClick={() => setOpen(false)}>
-        Cancel
-      </button>
     </section>
   );
 }
@@ -393,7 +409,7 @@ function Starter({
     return (
       <section className="starter starter-collapsed">
         <button type="button" className="starter-toggle" onClick={() => setCollapsed(false)}>
-          How to start <span aria-hidden="true">▾</span>
+          How to start <span aria-hidden="true" className="chevron">▾</span>
         </button>
       </section>
     );
@@ -401,7 +417,7 @@ function Starter({
 
   const collapseButton = (
     <button type="button" className="starter-toggle" onClick={() => setCollapsed(true)} aria-label="Collapse">
-      <span aria-hidden="true">▴</span>
+      <span aria-hidden="true" className="chevron">▴</span>
     </button>
   );
 

@@ -6,13 +6,29 @@ import { useAuth } from "../context/AuthContext";
 type Mode = "login" | "register";
 
 /** The actual login/register form fields and submit logic, shared by the
- * top-right popover (the normal path) and the full-page routes at
- * /login and /register (kept for deep links like an invite's
- * `?next=` redirect, which needs a real page to land on). */
-export function AuthPanel({ mode, onModeChange, onSuccess }: { mode: Mode; onModeChange: (m: Mode) => void; onSuccess?: () => void }) {
+ * top-right popover (the normal path), the full-page routes at /login and
+ * /register, and the invite landing page (which embeds it so the person
+ * never has to leave the invite to get an account).
+ *
+ * `returnTo` is the app path Supabase should bring the browser back to
+ * after Google or an email-confirmation link - without it both land on the
+ * site root and whatever the person was in the middle of is lost. */
+export function AuthPanel({
+  mode,
+  onModeChange,
+  onSuccess,
+  returnTo,
+  presetEmail,
+}: {
+  mode: Mode;
+  onModeChange: (m: Mode) => void;
+  onSuccess?: () => void;
+  returnTo?: string;
+  presetEmail?: string;
+}) {
   const { loginLocal, registerLocal, loginWithPasswordSupabase, registerWithPasswordSupabase, loginWithGoogle, error } = useAuth();
-  const [identifier, setIdentifier] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(presetEmail ?? "");
+  const [email, setEmail] = useState(presetEmail ?? "");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
@@ -24,7 +40,7 @@ export function AuthPanel({ mode, onModeChange, onSuccess }: { mode: Mode; onMod
       else await loginLocal(identifier, password);
     } else {
       if (IS_SUPABASE_AUTH) {
-        await registerWithPasswordSupabase(email, password);
+        await registerWithPasswordSupabase(email, password, returnTo);
         setDone(true);
         return;
       }
@@ -34,17 +50,34 @@ export function AuthPanel({ mode, onModeChange, onSuccess }: { mode: Mode; onMod
   };
 
   if (done) {
-    return <p className="note">Check your email to confirm your account.</p>;
+    return (
+      <div className="card" style={{ marginBottom: 0 }}>
+        <p style={{ margin: 0 }}>
+          <strong>Check your email.</strong> We sent a confirmation link to <strong>{email}</strong>. Tap it and you'll
+          come straight back here{returnTo ? " to finish" : ""}.
+        </p>
+      </div>
+    );
   }
 
   return (
     <>
+      {IS_SUPABASE_AUTH && (
+        <>
+          <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => loginWithGoogle(returnTo)} type="button">
+            Continue with Google
+          </button>
+          <p className="note" style={{ textAlign: "center", margin: "10px 0" }}>
+            or with an email and password
+          </p>
+        </>
+      )}
       <div className="tabs">
         <button className={`tab ${mode === "login" ? "active" : ""}`} onClick={() => onModeChange("login")} type="button">
           Sign in
         </button>
         <button className={`tab ${mode === "register" ? "active" : ""}`} onClick={() => onModeChange("register")} type="button">
-          Register
+          Create account
         </button>
       </div>
       <form onSubmit={onSubmit}>
@@ -82,15 +115,10 @@ export function AuthPanel({ mode, onModeChange, onSuccess }: { mode: Mode; onMod
             {error}
           </p>
         )}
-        <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+        <button type="submit" className={`btn ${IS_SUPABASE_AUTH ? "" : "btn-primary"}`} style={{ width: "100%", justifyContent: "center" }}>
           {mode === "login" ? "Sign in" : "Create account"}
         </button>
       </form>
-      {IS_SUPABASE_AUTH && (
-        <button className="btn" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={loginWithGoogle} type="button">
-          Continue with Google
-        </button>
-      )}
     </>
   );
 }

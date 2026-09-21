@@ -15,8 +15,7 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { ChildrenPage } from "./pages/ChildrenPage";
 import { KidsPage } from "./pages/KidsPage";
 import { KidsDetailPage } from "./pages/KidsDetailPage";
-import { StudentInviteAcceptPage } from "./pages/StudentInviteAcceptPage";
-import { InviteAcceptPage } from "./pages/InviteAcceptPage";
+import { InvitePage } from "./pages/InvitePage";
 import { GmailPage } from "./pages/GmailPage";
 import { SmoreNewslettersPage } from "./pages/SmoreNewslettersPage";
 import { SchoolsPage } from "./pages/SchoolsPage";
@@ -117,8 +116,8 @@ function Routed() {
             </RequireAuth>
           }
         />
-        <Route path="/invites/:token" element={<InviteAcceptPage />} />
-        <Route path="/student-invites/:token" element={<StudentInviteAcceptPage />} />
+        <Route path="/invites/:token" element={<InvitePage kind="guardian" />} />
+        <Route path="/student-invites/:token" element={<InvitePage kind="student" />} />
         <Route
           path="/kids"
           element={
