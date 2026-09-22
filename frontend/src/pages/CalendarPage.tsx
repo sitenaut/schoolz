@@ -285,17 +285,6 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <div className="filterChecks" style={{ marginBottom: 14 }}>
-        <label className="filterCheck" title="Rotation markers: Day 1, Day 2, …">
-          <input type="checkbox" checked={showDayRotation} onChange={(e) => setShowDayRotation(e.target.checked)} />
-          Show day rotation
-        </label>
-        <label className="filterCheck" title="Hides board meetings and other district items - never closures, half days, or grading dates">
-          <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
-          Exclude district
-        </label>
-      </div>
-
       {showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools on "My schools" to narrow it down.</p>}
 
       {!isSearching && viewMode === "month" && (
@@ -398,6 +387,17 @@ export function CalendarPage() {
           </div>
         </>
       )}
+
+      <div className="filterChecks" style={{ margin: "14px 0" }}>
+        <label className="filterCheck" title="Rotation markers: Day 1, Day 2, …">
+          <input type="checkbox" checked={showDayRotation} onChange={(e) => setShowDayRotation(e.target.checked)} />
+          Show day rotation
+        </label>
+        <label className="filterCheck" title="Hides board meetings and other district items - never closures, half days, or grading dates">
+          <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
+          Exclude district
+        </label>
+      </div>
 
       <div className={styles.toolbar}>
         <div className={styles.searchBox}>
