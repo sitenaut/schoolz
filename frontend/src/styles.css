@@ -789,12 +789,26 @@ h3 {
   padding: 6px 14px;
 }
 .next li {
+  border-bottom: 1px solid var(--line);
+}
+.next-row {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
   display: grid;
   grid-template-columns: 56px 1fr auto;
   gap: 10px;
   align-items: baseline;
   padding: 6px 0;
-  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  border-radius: 6px;
+}
+.next-row:hover .t {
+  color: var(--primary);
+}
+.next-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 .next li:last-child {
   border-bottom: 0;
@@ -2498,4 +2512,16 @@ select {
   background: color-mix(in srgb, var(--primary) 8%, var(--card));
   border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
   font-size: 14px;
+}
+
+/* Event details sheet (Today card) */
+.eventSheet-desc {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.eventSheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
