@@ -212,6 +212,7 @@ class JobKindOut(BaseModel):
     default_timezone: str
     description: str
     param_schema: dict | None = None
+    default_params: dict = {}
 
 
 class JobRunSummaryOut(BaseModel):

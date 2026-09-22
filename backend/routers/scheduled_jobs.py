@@ -2,11 +2,14 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from croniter import croniter
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_admin
 from database import get_db
+from local_events.billz_import import plan_import
+from local_events.test_fetch import TestFetchIn, TestFetchOut, run_test_fetch
 from models import District, EmailScanner, JobRun, ScheduledJob, School, SmoreNewsletter, User
 from schemas import JobKindOut, JobRunOut, JobRunSummaryOut, ScheduledJobCreate, ScheduledJobOut, ScheduledJobUpdate
 from scheduler.registry import registry
@@ -101,9 +104,17 @@ async def list_kinds():
             default_timezone=spec.default_timezone,
             description=spec.description,
             param_schema=spec.param_schema,
+            default_params=spec.default_params or {},
         )
         for spec in sorted(registry.values(), key=lambda s: s.kind)
     ]
+
+
+@router.post("/test-fetch", response_model=TestFetchOut, dependencies=[Depends(require_admin)])
+async def test_fetch(body: TestFetchIn) -> TestFetchOut:
+    """Dry-run a job's fetch step without persisting anything - validates
+    source URLs and params before a schedule saves them. Local events only."""
+    return await run_test_fetch(body)
 
 
 @router.get("", response_model=list[ScheduledJobOut], dependencies=[Depends(require_admin)])
@@ -151,6 +162,47 @@ async def create_job(payload: ScheduledJobCreate, user: User = Depends(require_a
     await db.commit()
     await db.refresh(job)
     return (await _attach_targets(db, [job]))[0]
+
+
+class BillzImportIn(BaseModel):
+    text: str = Field(min_length=2, max_length=2_000_000)
+
+
+class BillzImportSkipOut(BaseModel):
+    name: str
+    reason: str
+
+
+class BillzImportOut(BaseModel):
+    created: list[ScheduledJobOut]
+    skipped: list[BillzImportSkipOut]
+
+
+@router.post("/import-billz", response_model=BillzImportOut)
+async def import_billz_jobs(body: BillzImportIn, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Create local_events.refresh jobs from billz events.refresh jobs (or
+    their params) pasted as JSON - see local_events/billz_import.py. A job
+    whose params already match an existing one is skipped, so pasting the
+    same thing twice is harmless."""
+    try:
+        planned, skipped = plan_import(body.text)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    existing = (await db.execute(select(ScheduledJob.params).where(ScheduledJob.kind == "local_events.refresh"))).scalars().all()
+    created: list[ScheduledJob] = []
+    for item in planned:
+        if item["params"] in existing:
+            skipped.append({"name": item["name"], "reason": "same sources as an existing local events job"})
+            continue
+        _validate_timezone(item["timezone"])
+        job = ScheduledJob(owner_user_id=user.id, run_once=False, **item)
+        db.add(job)
+        created.append(job)
+        existing.append(item["params"])
+    await db.commit()
+    for job in created:
+        await db.refresh(job)
+    return BillzImportOut(created=await _attach_targets(db, created), skipped=[BillzImportSkipOut(**s) for s in skipped])
 
 
 async def _get_job_or_404(db: AsyncSession, job_id: str) -> ScheduledJob:

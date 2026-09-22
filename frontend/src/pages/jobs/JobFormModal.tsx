@@ -3,8 +3,9 @@ import { Field } from "../../components/ui/Field";
 import { Modal } from "../../components/ui/Modal";
 import { Switch } from "../../components/ui/Switch";
 import { CRON_PRESETS, describeCron } from "../../lib/cron";
-import type { JobKind, ScheduledJob } from "../../types";
-import { TARGET_LABELS, createJob, updateJob, type JobPayload } from "./jobsApi";
+import type { JobKind, ScheduledJob, TestFetchResult } from "../../types";
+import { TARGET_LABELS, createJob, testFetchJob, updateJob, type JobPayload } from "./jobsApi";
+import { JsonParamsEditor, ParamsHelp, TEST_FETCH_KINDS, TestFetchResults, needsJsonParams } from "./JsonParamsEditor";
 
 const TIMEZONES = ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "UTC"];
 
@@ -32,8 +33,14 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [paramsText, setParamsText] = useState("");
+  const [testResult, setTestResult] = useState<TestFetchResult | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testVerbose, setTestVerbose] = useState(false);
 
   const spec = useMemo(() => kinds.find((k) => k.kind === kind) ?? null, [kinds, kind]);
+  const jsonMode = needsJsonParams(spec);
+  const canTestFetch = TEST_FETCH_KINDS.has(kind);
   const paramKeys = useMemo(() => {
     const props = Object.keys(spec?.param_schema?.properties ?? {});
     const required = spec?.param_schema?.required ?? [];
@@ -51,6 +58,8 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
     setTimezone(job?.timezone ?? "America/New_York");
     setEnabled(job?.enabled ?? true);
     setParams(Object.fromEntries(Object.entries(job?.params ?? {}).map(([k, v]) => [k, String(v ?? "")])));
+    setParamsText(job ? JSON.stringify(job.params ?? {}, null, 2) : "");
+    setTestResult(null);
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, job?.id]);
@@ -61,6 +70,8 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
     if (editing || !spec) return;
     setCron(spec.default_cron);
     setTimezone(spec.default_timezone);
+    setParamsText(needsJsonParams(spec) ? JSON.stringify(spec.default_params ?? {}, null, 2) : "");
+    setTestResult(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, editing]);
 
@@ -73,8 +84,34 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
 
   const presetMatch = CRON_PRESETS.find((p) => p.expr === cron)?.expr ?? "custom";
 
+  const parseParamsText = (): Record<string, unknown> | null => {
+    try {
+      return paramsText.trim() ? JSON.parse(paramsText) : {};
+    } catch (e) {
+      setError(`Params must be valid JSON: ${e instanceof Error ? e.message : String(e)}`);
+      return null;
+    }
+  };
+
+  const runTestFetch = async () => {
+    const parsed = parseParamsText();
+    if (parsed === null) return;
+    setError(null);
+    setTestResult(null);
+    setTesting(true);
+    try {
+      setTestResult(await testFetchJob(kind, parsed, testVerbose));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Test fetch failed");
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const jsonParams = jsonMode ? parseParamsText() : null;
+    if (jsonMode && jsonParams === null) return;
     setBusy(true);
     setError(null);
     const payload: JobPayload = {
@@ -83,7 +120,7 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
       description: description.trim() || null,
       cron_expr: cron.trim(),
       timezone,
-      params: Object.fromEntries(Object.entries(params).filter(([, v]) => v !== "")),
+      params: jsonParams ?? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== "")),
       enabled,
     };
     try {
@@ -106,6 +143,17 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
       subtitle={editing ? <span className="code-chip">{job!.kind}</span> : "Pick what to scan, what it targets, and how often."}
       footer={
         <>
+          {canTestFetch && (
+            <div className="test-fetch-ctl">
+              <button className="btn" type="button" onClick={runTestFetch} disabled={testing || busy}>
+                {testing ? "Testing…" : "Test fetch"}
+              </button>
+              <label className="filterCheck">
+                <input type="checkbox" checked={testVerbose} onChange={(e) => setTestVerbose(e.target.checked)} />
+                Verbose
+              </label>
+            </div>
+          )}
           <button className="btn" type="button" onClick={onClose} disabled={busy}>
             Cancel
           </button>
@@ -129,7 +177,14 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
             </select>
           </Field>
 
-          {paramKeys.map((key) => {
+          {jsonMode && (
+            <Field label="Params (JSON)" className="span2">
+              <ParamsHelp kind={spec} onInsertDefaults={(p) => setParamsText(JSON.stringify(p, null, 2))} />
+              <JsonParamsEditor value={paramsText} onChange={setParamsText} />
+            </Field>
+          )}
+
+          {!jsonMode && paramKeys.map((key) => {
             const options = targets[key];
             const required = spec?.param_schema?.required?.includes(key);
             return (
@@ -204,6 +259,8 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
           </div>
           <Switch checked={enabled} onChange={setEnabled} label="Enabled" />
         </div>
+
+        {canTestFetch && testResult && <TestFetchResults result={testResult} />}
       </form>
     </Modal>
   );

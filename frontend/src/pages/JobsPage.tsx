@@ -12,6 +12,7 @@ import { trackEvent } from "../lib/track";
 import type { JobKind, ScheduledJob } from "../types";
 import { JobDetailModal } from "./jobs/JobDetailModal";
 import { JobFormModal } from "./jobs/JobFormModal";
+import { BillzImportModal } from "./jobs/BillzImportModal";
 import { deleteJob, getJob, listJobs, listKinds, loadTargetOptions, runJobNow, updateJob } from "./jobs/jobsApi";
 
 type StatusFilter = "" | "success" | "warning" | "error" | "running" | "never";
@@ -32,6 +33,7 @@ export function JobsPage() {
   const [detail, setDetail] = useState<{ job: ScheduledJob; tab: "runs" | "overview" } | null>(null);
   const [form, setForm] = useState<{ open: boolean; job: ScheduledJob | null }>({ open: false, job: null });
   const [pendingDelete, setPendingDelete] = useState<ScheduledJob | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [running, setRunning] = useState<Set<string>>(new Set());
   const [toggling, setToggling] = useState<Set<string>>(new Set());
@@ -263,6 +265,9 @@ export function JobsPage() {
             <button className="btn" onClick={refresh} title="Refresh">
               <IconRefresh /> Refresh
             </button>
+            <button className="btn" onClick={() => setImportOpen(true)} title="Import local events jobs from billz">
+              Import from billz
+            </button>
             <button className="btn btn-primary" onClick={() => setForm({ open: true, job: null })}>
               <IconPlus /> New job
             </button>
@@ -356,6 +361,15 @@ export function JobsPage() {
           if (form.job) patchLocal(saved);
           else setJobs((cur) => [...cur, saved]);
           toast({ title: form.job ? "Job updated" : "Job created", description: saved.name, tone: "ok" });
+        }}
+      />
+
+      <BillzImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={(created) => {
+          setJobs((cur) => [...cur, ...created]);
+          toast({ title: `Imported ${created.length} job${created.length === 1 ? "" : "s"} from billz`, tone: "ok" });
         }}
       />
 

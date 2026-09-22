@@ -1,5 +1,5 @@
 import { apiFetch } from "../../api";
-import type { JobKind, JobRun, ScheduledJob } from "../../types";
+import type { JobKind, JobRun, ScheduledJob, TestFetchResult } from "../../types";
 
 async function fail(res: Response, fallback: string): Promise<never> {
   let msg = fallback;
@@ -93,3 +93,18 @@ export const TARGET_LABELS: Record<string, string> = {
   newsletter_id: "Newsletter",
   scanner_id: "Email scanner",
 };
+
+/** Dry-run a job's fetch step - nothing is saved. Local events only. */
+export async function testFetchJob(kind: string, params: Record<string, unknown>, verbose = false): Promise<TestFetchResult> {
+  const res = await apiFetch("/scheduled-jobs/test-fetch", { method: "POST", body: JSON.stringify({ kind, params, verbose }) });
+  if (!res.ok) return fail(res, "Test fetch failed");
+  return res.json();
+}
+
+export type BillzImportResult = { created: ScheduledJob[]; skipped: { name: string; reason: string }[] };
+
+export async function importBillzJobs(text: string): Promise<BillzImportResult> {
+  const res = await apiFetch("/scheduled-jobs/import-billz", { method: "POST", body: JSON.stringify({ text }) });
+  if (!res.ok) return fail(res, "Import failed");
+  return res.json();
+}

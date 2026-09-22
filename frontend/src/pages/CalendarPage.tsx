@@ -9,35 +9,11 @@ import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { CLOSED_RE, HALF_DAY_RE, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import { itemDateKeys } from "../lib/calendar";
+import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
 import type { School, SchoolContentItem } from "../types";
 import styles from "./CalendarPage.module.css";
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
-const MONTH_NAMES = Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleDateString(undefined, { month: "short" }));
 type ViewMode = "month" | "year";
-
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-function endOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-}
-
-/** Calendar cells for one month (leading blanks + every day), used for
- * both the full month grid and each small grid in year view. */
-function monthCells(year: number, month: number): (Date | null)[] {
-  const leadingBlanks = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (Date | null)[] = [...Array(leadingBlanks).fill(null)];
-  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
-  return cells;
-}
 
 const TODAY_KEY = dateKey(new Date());
 

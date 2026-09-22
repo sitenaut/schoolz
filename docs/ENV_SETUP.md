@@ -70,6 +70,13 @@ ADMIN_PASSWORD=<a real password, min 8 chars>
 # Shared secret between backend and the scraper service (any random string).
 SCRAPER_API_KEY=<any long random string>
 
+# Local events (/local) scrape JS-heavy sites through the billz Playwright
+# droplet first (stealth + extra waits), falling back to the scraper above.
+# The key is billz's RECIPE_SCRAPER_KEY. Leave it unset to use only the local
+# scraper; URL defaults to https://scraper-droplet.profitnaut.com.
+LOCAL_EVENTS_SCRAPER_KEY=
+LOCAL_EVENTS_SCRAPER_URL=
+
 # Gmail OAuth (for the email parser - "Connect Gmail" on /gmail). NOT needed
 # for Smore newsletter scanning (/smore), which needs no Google credentials
 # at all. See notes/prod-checklist.md for how to create these in Google
