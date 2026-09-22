@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
@@ -6,6 +7,7 @@ import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent } from "../lib/track";
 import type { CurrentPeriod, DayBlock, NextRotation, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
 import { AbsenceButton } from "./AbsenceButton";
+import { Modal } from "./ui/Modal";
 import { IconChevronRight, IconPhone } from "./icons";
 
 /* ---------- small shared bits ---------- */
@@ -203,6 +205,49 @@ export function ContactGrid({ contacts, mainPhone }: { contacts: TodayContact[];
   );
 }
 
+/** "Wednesday, September 23 · 6:00 PM", or a date range for a multi-day item. */
+function eventWhen(item: SchoolContentItem): string {
+  if (!item.start_date) return "";
+  const keys = itemDateKeys(item);
+  const fmt = (key: string, withWeekday: boolean) =>
+    new Date(key + "T12:00:00Z").toLocaleDateString(undefined, { ...(withWeekday ? { weekday: "long" } : {}), month: "long", day: "numeric", timeZone: "UTC" });
+  const dates = keys.length > 1 ? `${fmt(keys[0], false)} – ${fmt(keys[keys.length - 1], false)}` : fmt(keys[0], true);
+  return item.is_all_day ? dates : `${dates} · ${timeOfDay(item.start_date)}`;
+}
+
+/** One event's details in a sheet, so a tap on the Today card gets the
+ * description, link and add-to-calendar without leaving the page. */
+export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentItem | null; schoolSlug: string; onClose: () => void }) {
+  if (!item) return null;
+  const cal = googleCalendarQuickAddUrl(item);
+  const dayKey = item.start_date ? localDateKey(item.start_date) : null;
+  return (
+    <Modal open onClose={onClose} title={item.title} subtitle={eventWhen(item)}>
+      {item.description && <p className="eventSheet-desc">{item.description}</p>}
+      <div className="tagrow" style={{ marginBottom: 14 }}>
+        <ItemTag item={item} />
+      </div>
+      <div className="eventSheet-actions">
+        {cal && (
+          <a className="btn btn-primary" href={cal} target="_blank" rel="noreferrer" onClick={() => trackEvent("action", { action: "add_to_calendar", method: "today_sheet" })}>
+            Add to calendar
+          </a>
+        )}
+        {item.link_url && (
+          <a className="btn" href={item.link_url} target="_blank" rel="noreferrer">
+            Open link
+          </a>
+        )}
+        {dayKey && (
+          <Link className="btn" to={`/calendar?school=${schoolSlug}&date=${dayKey}&event=${item.id}`}>
+            See on calendar
+          </Link>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 /* ---------- the Today-feed card ---------- */
 
 export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
@@ -222,6 +267,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   // reach `upcoming` at all (backend/services/school_today.py excludes
   // them - that's the metadata line under the school name instead).
   const upcoming = (excludeDistrict ? data.upcoming.filter((i) => !isNoisyDistrictItem(i)) : data.upcoming).slice(0, 3);
+  const [openItem, setOpenItem] = useState<SchoolContentItem | null>(null);
 
   return (
     <section className="day" style={{ ["--c" as string]: color }}>
@@ -287,12 +333,21 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         <ul className="next">
           {upcoming.map((i) => (
             <li key={i.id}>
-              <span className="d">{shortDay(i.start_date!)}</span>
-              <span className="t">
-                {i.title}
-                {!i.is_all_day && i.start_date && <small>{timeOfDay(i.start_date)}</small>}
-              </span>
-              <ItemTag item={i} />
+              <button
+                type="button"
+                className="next-row"
+                onClick={() => {
+                  setOpenItem(i);
+                  track("event_details", "sheet");
+                }}
+              >
+                <span className="d">{shortDay(i.start_date!)}</span>
+                <span className="t">
+                  {i.title}
+                  {!i.is_all_day && i.start_date && <small>{timeOfDay(i.start_date)}</small>}
+                </span>
+                <ItemTag item={i} />
+              </button>
             </li>
           ))}
           <li className="next-more">
@@ -359,6 +414,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
           Everything <IconChevronRight className="trailing-chevron" />
         </Link>
       </div>
+      <EventSheet item={openItem} schoolSlug={s.slug} onClose={() => setOpenItem(null)} />
     </section>
   );
 }
