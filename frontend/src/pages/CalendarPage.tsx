@@ -211,6 +211,22 @@ export function CalendarPage() {
     if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [deepEvent, rows]);
 
+  // "Show month" lands on today, like the lunch calendar: the whole month is
+  // listed, scrolled to today's first entry (or the next day that has one).
+  // Viewing another month, there's no "today" in the list, so it stays put.
+  const [scrollToToday, setScrollToToday] = useState(false);
+  const showMonth = () => {
+    setSelectedDay(null);
+    setScrollToToday(true);
+  };
+  useEffect(() => {
+    if (!scrollToToday || selectedDay) return;
+    setScrollToToday(false);
+    const target = rows.find(({ item }) => itemDateKeys(item).some((k) => k >= TODAY_KEY));
+    if (!target || !TODAY_KEY.startsWith(dateKey(viewDate).slice(0, 7))) return;
+    document.getElementById(`event-${target.item.id}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [scrollToToday, selectedDay, rows, viewDate]);
+
   const selectedLabel = selectedDay
     ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(undefined, {
         weekday: "long",
@@ -269,10 +285,16 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <label className="filterCheck" style={{ marginBottom: 14 }}>
-        <input type="checkbox" checked={showDayRotation} onChange={(e) => setShowDayRotation(e.target.checked)} />
-        Show day-rotation schedule (Day 1, Day 2, …)
-      </label>
+      <div className="filterChecks" style={{ marginBottom: 14 }}>
+        <label className="filterCheck" title="Rotation markers: Day 1, Day 2, …">
+          <input type="checkbox" checked={showDayRotation} onChange={(e) => setShowDayRotation(e.target.checked)} />
+          Show day rotation
+        </label>
+        <label className="filterCheck" title="Hides board meetings and other district items - never closures, half days, or grading dates">
+          <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
+          Exclude district
+        </label>
+      </div>
 
       {showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools on "My schools" to narrow it down.</p>}
 
@@ -317,7 +339,7 @@ export function CalendarPage() {
               {selectedDay ? (selectedDay === TODAY_KEY ? `Today, ${selectedLabel}` : selectedLabel) : "Showing the whole month"}
             </span>
             {selectedDay && (
-              <button className="ghost" onClick={() => setSelectedDay(null)}>
+              <button className="ghost" onClick={showMonth}>
                 Show month
               </button>
             )}
@@ -405,11 +427,6 @@ export function CalendarPage() {
           </button>
         </div>
       )}
-
-      <label className="filterCheck" style={{ margin: "4px 0 12px" }}>
-        <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
-        Exclude district (board meetings, etc.)
-      </label>
 
       {viewMode !== "year" &&
         (rows.length === 0 ? (

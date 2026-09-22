@@ -26,7 +26,9 @@ const INACTIVE_KEY = "schoolz_inactive_schools";
 // day/delayed) and grading dates always show regardless either way (see
 // lib/districtItems.ts:isNoisyDistrictItem). The Calendar page is the
 // only place with a control to turn it on.
-const EXCLUDE_DISTRICT_KEY = "schoolz_exclude_district";
+// _v2: the default flipped from on to off, and browsers that saved a value
+// under the old default kept it; a new key starts everyone at the new default.
+const EXCLUDE_DISTRICT_KEY = "schoolz_exclude_district_v2";
 
 function readBool(key: string, fallback: boolean): boolean {
   try {

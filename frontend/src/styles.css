@@ -2453,3 +2453,14 @@ select {
   gap: 8px;
   align-items: center;
 }
+
+.filterChecks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+/* Clears the sticky top banner when a list row is scrolled into view. */
+.list .row {
+  scroll-margin-top: 72px;
+}
