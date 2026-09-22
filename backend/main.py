@@ -32,6 +32,7 @@ from routers import email_scanners as email_scanners_router  # noqa: E402
 from routers import gmail as gmail_router  # noqa: E402
 from routers import health as health_router  # noqa: E402
 from routers import invites as invites_router  # noqa: E402
+from routers import local_events as local_events_router  # noqa: E402
 from routers import notifications as notifications_router  # noqa: E402
 from routers import scheduled_jobs as scheduled_jobs_router  # noqa: E402
 from routers import school_emails as school_emails_router  # noqa: E402
@@ -174,6 +175,7 @@ app.include_router(schools_router.router)
 app.include_router(districts_router.router)
 app.include_router(directory_router.router)
 app.include_router(calendar_router.router)
+app.include_router(local_events_router.router)
 app.include_router(community_submissions_router.router)
 app.include_router(seo_router.router)
 app.include_router(survey_router.router)

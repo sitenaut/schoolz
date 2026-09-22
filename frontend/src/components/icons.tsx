@@ -142,6 +142,12 @@ export const IconShield = ({ className }: P) => (
     <path d="m9 12 2 2 4-4" />
   </svg>
 );
+export const IconPin = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </svg>
+);
 export const IconBell = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" />

@@ -236,8 +236,52 @@ export type JobKind = {
   default_cron: string;
   default_timezone: string;
   description: string;
-  param_schema: { properties?: Record<string, { type?: string; description?: string }>; required?: string[] } | null;
+  param_schema: JobParamSchema | null;
+  default_params?: Record<string, unknown>;
 };
+
+export type JobParamSchema = {
+  type?: string;
+  description?: string;
+  properties?: Record<string, JobParamSchema>;
+  items?: JobParamSchema;
+  required?: string[];
+  default?: unknown;
+  enum?: unknown[];
+};
+
+export type TestFetchSourceResult = {
+  name: string;
+  url: string | null;
+  status: "ok" | "http_error" | "parse_error" | "misconfigured";
+  event_count: number;
+  sample_titles: string[];
+  error: string | null;
+  first_entry_fields: Record<string, string> | null;
+  source_type: string | null;
+};
+
+export type TestFetchResult = { kind: string; sources: TestFetchSourceResult[] };
+
+export type LocalEvent = {
+  id: string;
+  source: string;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string | null;
+  all_day: boolean;
+  venue_name: string | null;
+  venue_address: string | null;
+  url: string | null;
+  image_url: string | null;
+  price_min: number | null;
+  price_max: number | null;
+  is_free: boolean | null;
+  categories: string[];
+};
+
+export type LocalEventFacets = { categories: { value: string; count: number }[]; sources: { value: string; count: number }[] };
 
 export type SmoreNewsletter = {
   id: string;

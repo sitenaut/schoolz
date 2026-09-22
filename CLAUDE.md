@@ -88,6 +88,17 @@ Job kinds: `smore.scan`, `email.scan`, `lunch_menu.scan`, `staff_roster.scan`, `
 
 **Not every school publishes the same way.** Most reuse one stable Smore URL; some (Cooper, Clara Barton) publish a **new URL per issue** from an author/archive page, and the recurring job only re-checks the URL it's given. Those need re-adding by hand each issue. A site-nav link to `smore.com/u/<username>` is an *author profile*, not a newsletter — the real issue lives at its own `/n/<code>` URL.
 
+## Local events (/local)
+
+Community events (Evvnt/70and73, township calendars, the Mt Laurel Y, …) for **signed-in users only** — third-party data, not school data, so outside the public-by-default surface. `backend/local_events/` is a **port of billz's `events/` pipeline** (sources, normalizer, fuzzy cross-source deduper, Macaroni KID parser) and `local_events.refresh` takes billz's `events.refresh` params verbatim, so a source config moves between the apps unchanged (Scans tab → **Import from billz** accepts billz's params, one job, or its whole jobs list).
+
+- **Admin UI is billz's**: kinds whose `param_schema` has arrays/objects get the JSON params editor (bracket/JSON validation, params help, Insert defaults) and **Test fetch** (`POST /scheduled-jobs/test-fetch`, `local_events/test_fetch.py` — billz's dry run, per-source status, sample titles, Verbose first-entry fields). Test before saving.
+- **Scraping goes to the billz Playwright droplet first** (`LOCAL_EVENTS_SCRAPER_URL`/`_KEY`; key = billz's `RECIPE_SCRAPER_KEY`), schoolz's own scraper second. The droplet supports stealth + extra waits, and keeps these ~40-render runs off the 1GB Chromium that already absorbs the 12h burst. A full run takes ~10 min.
+- **A failed source makes the run `WARNING`** (billz only marks it `-1` in the summary), so a dead feed is visible in Scans.
+- **DPCalendar feeds need a date range** or return `{"events": []}` — confirmed on evesham-nj.org, which billz's own default has therefore always fetched as 0. `JsonApiSource.request_url` adds today→+90d unless the URL sets `date-start`.
+- The seeded job (migration 0049) uses billz's defaults **minus phila.gov's Google Calendars** (~30 city-government calendars — wedding schedules, tax board — and one ID now 404s).
+- **Local dev gotcha**: `uvicorn --reload` watches `backend/` including `tests/`, so editing any file mid-run kills a run-now job running in the API process. Run long jobs from `schoolz-scheduler-local`.
+
 ## Content extraction
 
 `content_extractor.py` turns new `SmoreBlock` rows into `SchoolContentItem`s: a Claude vision pass over new image blocks, then one structured tool-use call over all block text + vision output. Extraction runs **once per newsletter** and the result is shared/public — that's the whole point of not re-running Claude per interested parent.

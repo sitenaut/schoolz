@@ -2525,3 +2525,35 @@ select {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* /local list rows are buttons (tap opens the event sheet) */
+.localRow {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.localRow:hover .ttl {
+  color: var(--primary);
+}
+.localRow:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.eventSheet-img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin: 0 0 12px;
+}
+.eventSheet-venue {
+  margin: 0 0 12px;
+  font-size: 14px;
+}

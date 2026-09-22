@@ -1,8 +1,10 @@
 import re
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, LargeBinary, Numeric, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -887,6 +889,43 @@ class StudentSpecial(Base):
     subject: Mapped[str] = mapped_column(String(100), nullable=False)
     teacher: Mapped[str | None] = mapped_column(String(200), nullable=True)
     updated_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class LocalEvent(Base):
+    """A community event (library, township, YMCA, concerts, ...) pulled in
+    by the local_events.refresh job - the pipeline in local_events/ is a
+    port of billz's events feed. Unlike SchoolContentItem this is not
+    school data: it's shown only to signed-in users, on /local.
+
+    Same-source rows upsert on (source, source_event_id); a cross-source
+    duplicate (same title/time/venue from two feeds) is merged into the
+    first row by local_events/deduper.py rather than stored twice."""
+
+    __tablename__ = "local_events"
+    __table_args__ = (UniqueConstraint("source", "source_event_id", name="uq_local_events_source_event"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    source_event_id: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    all_day: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    venue_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    venue_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    price_min: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    price_max: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    is_free: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    categories: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 

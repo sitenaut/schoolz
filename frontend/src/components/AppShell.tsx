@@ -5,7 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
-import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
+import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
@@ -37,7 +37,7 @@ function routeTemplate(pathname: string): string {
 // /directory is school-scoped, but through its own in-page school picker
 // (it searches the whole district by default, which the ribbon filter
 // would silently contradict).
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms", "/kids", "/directory"];
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms", "/kids", "/directory", "/local"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
@@ -220,6 +220,12 @@ export function AppShell() {
           <IconLunch />
           Lunch
         </NavLink>
+        {user && (
+          <NavLink to="/local">
+            <IconPin />
+            Local
+          </NavLink>
+        )}
         <NavLink to="/schools">
           <IconSchool />
           Schools
