@@ -15,11 +15,12 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import DistrictTransportation, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember
-from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
+from models import DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember, Student
+from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayKidSpecialOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
 from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
+from services import specials as specials_svc
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 
@@ -125,6 +126,35 @@ async def resolve_lunch_menu(db: AsyncSession, school: School, meal_type: str = 
     return menu
 
 
+async def _my_specials(db: AsyncSession, school: School, user_id: str, rotation, today: date, next_day: date, next_label: str, week: list[date]) -> list[TodayKidSpecialOut]:
+    """The viewer's own children at this school (as a guardian, or the
+    student themself) who have specials on file, with today's/next/week's."""
+    guardian_of = select(GuardianStudentLink.student_id).where(GuardianStudentLink.guardian_user_id == user_id)
+    kids = (
+        await db.execute(
+            select(Student).where(Student.school_id == school.id, or_(Student.id.in_(guardian_of), Student.user_id == user_id)).order_by(Student.first_name)
+        )
+    ).scalars().all()
+    specials = await specials_svc.specials_by_student(db, [k.id for k in kids])
+    days = {d: rotation(d) for d in {today, next_day, *week}}
+    out = []
+    for kid in kids:
+        mine = specials.get(kid.id)
+        if not mine:
+            continue
+        out.append(
+            TodayKidSpecialOut(
+                student_id=kid.id,
+                first_name=kid.first_name,
+                today=specials_svc.subject_on(mine, days[today]),
+                next_label=next_label,
+                next=specials_svc.subject_on(mine, days[next_day]),
+                by_date=specials_svc.by_date(mine, {d: days[d] for d in week}),
+            )
+        )
+    return out
+
+
 def _clock_label(hhmm: str) -> str:
     hour, minute = (int(x) for x in hhmm.split(":"))
     return f"{(hour - 1) % 12 + 1}:{minute:02d}"
@@ -142,7 +172,7 @@ def _hours(school: School, status: str) -> str | None:
     return None
 
 
-async def build_today(db: AsyncSession, school: School, today: date | None = None) -> SchoolTodayOut:
+async def build_today(db: AsyncSession, school: School, today: date | None = None, user_id: str | None = None) -> SchoolTodayOut:
     today = today or datetime.now(LOCAL_TZ).date()
     week = week_window(today)
     range_start = min(today, week[0])
@@ -309,6 +339,8 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
             long_blocks=is_long_block(next_day),
         )
 
+    my_specials = await _my_specials(db, school, user_id, rotation, today, next_day, next_label, week) if user_id else []
+
     period = None
     if today == datetime.now(LOCAL_TZ).date():
         now = datetime.now(LOCAL_TZ)
@@ -334,6 +366,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         long_blocks=is_long_block(today),
         day_blocks=day_blocks,
         next_rotation=next_rot,
+        my_specials=my_specials,
         current_period=period,
         transportation=transportation,
         lunch=lunch,

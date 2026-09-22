@@ -40,6 +40,7 @@ from routers import scraper as scraper_router  # noqa: E402
 from routers import seo as seo_router  # noqa: E402
 from routers import survey as survey_router  # noqa: E402
 from routers import smore_newsletters as smore_newsletters_router  # noqa: E402
+from routers import specials as specials_router  # noqa: E402
 from routers import student_accounts as student_accounts_router  # noqa: E402
 from routers import students as students_router  # noqa: E402
 
@@ -158,6 +159,7 @@ app.include_router(admin_config_router.router)
 app.include_router(auth_router.router)
 app.include_router(scraper_router.router)
 app.include_router(students_router.router)
+app.include_router(specials_router.router)
 app.include_router(bucket3_router.router)
 app.include_router(student_accounts_router.router)
 app.include_router(invites_router.router)

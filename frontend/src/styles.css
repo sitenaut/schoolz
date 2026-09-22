@@ -2464,3 +2464,24 @@ select {
 .list .row {
   scroll-margin-top: 72px;
 }
+
+/* Elementary specials editor (My Children) */
+.specials-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.specials-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.specials-row input {
+  margin: 0;
+  min-width: 0;
+}
+.specials-day {
+  font-weight: 700;
+  font-size: 13px;
+}

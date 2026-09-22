@@ -31,6 +31,7 @@ async def _student_out(db: AsyncSession, student: Student, link: GuardianStudent
         student_id=student.student_id,
         school_name=student.school_name,
         school_id=student.school_id,
+        school_type=(await db.get(School, student.school_id)).school_type if student.school_id else None,
         guardian_count=await _guardian_count(db, student.id),
         linked_via=link.linked_via,
         matched_existing=matched_existing,

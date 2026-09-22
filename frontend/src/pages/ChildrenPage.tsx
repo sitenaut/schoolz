@@ -12,12 +12,14 @@ type Student = {
   last_name: string;
   student_id: string;
   school_name: string | null;
+  school_type: string | null;
   guardian_count: number;
   linked_via: string;
   matched_existing: boolean;
 };
 
-type Panel = { studentId: string; kind: "guardian" | "student" } | null;
+type PanelKind = "guardian" | "student" | "specials";
+type Panel = { studentId: string; kind: PanelKind } | null;
 
 export function ChildrenPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -84,7 +86,7 @@ export function ChildrenPage() {
     await load();
   };
 
-  const toggle = (studentId: string, kind: "guardian" | "student") =>
+  const toggle = (studentId: string, kind: PanelKind) =>
     setPanel((p) => (p && p.studentId === studentId && p.kind === kind ? null : { studentId, kind }));
 
   return (
@@ -126,6 +128,11 @@ export function ChildrenPage() {
               </div>
 
               <div className="actions bare" style={{ flexWrap: "wrap", marginTop: 12 }}>
+                {s.school_type === "elementary" && (
+                  <button type="button" className={`btn ${open === "specials" ? "btn-primary" : ""}`} onClick={() => toggle(s.id, "specials")}>
+                    Specials
+                  </button>
+                )}
                 <button type="button" className={`btn ${open === "guardian" ? "btn-primary" : ""}`} onClick={() => toggle(s.id, "guardian")}>
                   Invite another guardian
                 </button>
@@ -137,6 +144,11 @@ export function ChildrenPage() {
                 </button>
               </div>
 
+              {open === "specials" && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                  <SpecialsEditor student={s} onClose={() => setPanel(null)} />
+                </div>
+              )}
               {open === "guardian" && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
                   <GuardianInvite student={s} onClose={() => setPanel(null)} />
@@ -257,6 +269,102 @@ function GuardianInvite({ student, onClose }: { student: Student; onClose: () =>
         They can sign in with any account - the email is just so you both remember who it was for.
       </p>
       {error && <div className="banner bad" style={{ marginTop: 10 }}>{error}</div>}
+    </form>
+  );
+}
+
+type Special = { rotation_day: number; subject: string; teacher: string | null };
+
+/** Which special (Art, PE, Music, …) this child has on each rotation day.
+ * Shared with every guardian of the child; a blank day is "unknown". */
+function SpecialsEditor({ student, onClose }: { student: Student; onClose: () => void }) {
+  const [days, setDays] = useState<number[] | null>(null);
+  const [rows, setRows] = useState<Record<number, { subject: string; teacher: string }>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    apiFetch(`/students/${student.id}/specials`)
+      .then((r) => (r.ok ? r.json() : { rotation_days: [], specials: [] }))
+      .then((d: { rotation_days: number[]; specials: Special[] }) => {
+        setDays(d.rotation_days);
+        setRows(Object.fromEntries(d.specials.map((s) => [s.rotation_day, { subject: s.subject, teacher: s.teacher ?? "" }])));
+      });
+  }, [student.id]);
+
+  const set = (day: number, field: "subject" | "teacher", value: string) => {
+    setSaved(false);
+    setRows((cur) => ({ ...cur, [day]: { ...(cur[day] ?? { subject: "", teacher: "" }), [field]: value } }));
+  };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const body = Object.entries(rows)
+        .filter(([, r]) => r.subject.trim())
+        .map(([day, r]) => ({ rotation_day: Number(day), subject: r.subject.trim(), teacher: r.teacher.trim() || null }));
+      const res = await apiFetch(`/students/${student.id}/specials`, { method: "PUT", body: JSON.stringify(body) });
+      if (!res.ok) {
+        setError((await res.json()).detail ?? "Could not save");
+        return;
+      }
+      setSaved(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (days === null) return <p className="note">Loading…</p>;
+  if (days.length === 0) {
+    return <p className="note" style={{ margin: 0 }}>{student.school_name ?? "This school"} doesn't publish a day rotation we can match specials to yet.</p>;
+  }
+
+  return (
+    <form onSubmit={save} style={{ margin: 0 }}>
+      <p className="note" style={{ marginTop: 0 }}>
+        What {student.first_name} has on each rotation day. Every guardian of {student.first_name} sees the same list. Leave a
+        day blank if you don't know it.
+      </p>
+      <datalist id="specials-subjects">
+        {["Art", "PE", "Music", "Computers", "Library", "STEM", "Spanish"].map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
+      <div className="specials-grid">
+        {days.map((day) => (
+          <div className="specials-row" key={day}>
+            <span className="specials-day">Day {day}</span>
+            <input
+              list="specials-subjects"
+              placeholder="Special"
+              aria-label={`Day ${day} special`}
+              value={rows[day]?.subject ?? ""}
+              onChange={(e) => set(day, "subject", e.target.value)}
+              maxLength={100}
+            />
+            <input
+              placeholder="Teacher (optional)"
+              aria-label={`Day ${day} teacher`}
+              value={rows[day]?.teacher ?? ""}
+              onChange={(e) => set(day, "teacher", e.target.value)}
+              maxLength={200}
+            />
+          </div>
+        ))}
+      </div>
+      {error && <div className="banner bad" style={{ marginTop: 10 }}>{error}</div>}
+      <div className="actions bare" style={{ marginTop: 10 }}>
+        <button type="submit" className="btn btn-primary" disabled={busy}>
+          {busy ? "Saving…" : "Save specials"}
+        </button>
+        <button type="button" className="btn" onClick={onClose}>
+          {saved ? "Done" : "Cancel"}
+        </button>
+        {saved && <span className="note" style={{ margin: 0 }}>Saved</span>}
+      </div>
     </form>
   );
 }

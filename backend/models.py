@@ -869,6 +869,27 @@ class CommunitySubmission(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class StudentSpecial(Base):
+    """What a child has on one rotation day - an elementary "special" (Art,
+    PE, Music, Computers). Entered by a guardian or the student; never
+    imported, since specials appear nowhere in the Genesis pages captured.
+
+    Keyed per student, not per account like CourseDisplayPreference: it's a
+    fact about the child, so every guardian linked to them sees the same
+    row. A rotation day with no row is unknown, never "nothing"."""
+
+    __tablename__ = "student_specials"
+    __table_args__ = (UniqueConstraint("student_id", "rotation_day", name="uq_student_special_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    rotation_day: Mapped[int] = mapped_column(Integer, nullable=False)
+    subject: Mapped[str] = mapped_column(String(100), nullable=False)
+    teacher: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    updated_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
 class ContactMessage(Base):
     """A message sent from the public /contact form into the admins' shared
     inbox. Shared on purpose: read state is one value for every admin (who

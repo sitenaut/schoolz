@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, require_admin
+from auth import get_current_user, get_optional_user, require_admin
 from database import get_db
 from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
@@ -268,13 +268,15 @@ async def run_special_events_scan_now(school: School = Depends(resolve_school), 
 
 
 @router.get("/{school_id}/today", response_model=SchoolTodayOut)
-async def get_school_today(school: School = Depends(resolve_school), db: AsyncSession = Depends(get_db)):
+async def get_school_today(
+    school: School = Depends(resolve_school), user: User | None = Depends(get_optional_user), db: AsyncSession = Depends(get_db)
+):
     """Public. Everything one Today-feed card needs in a single request:
     day status (closed/early dismissal/open, from the district feed),
     hours, rotation day, today's + next lunch, SACC, role-based contacts,
     the next few dated items, this week's strip, and any closure/early
     dismissal alerts in the next 7 days."""
-    return await build_today(db, school)
+    return await build_today(db, school, user_id=user.id if user else None)
 
 
 @router.get("/{school_id}/transportation", response_model=SchoolTransportationOut | None)

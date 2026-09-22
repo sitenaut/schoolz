@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import ChildMarkingPeriod, ChildScheduleBlock, School, SchoolContentItem
+from models import ChildMarkingPeriod, ChildScheduleBlock, School, SchoolContentItem, StudentSpecial
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
 from services.school_today import LOCAL_TZ, _WEEKDAYS, _applies, _is_rotation_item, _item_date_range, _ROTATION_RE, classify_day
@@ -52,6 +52,24 @@ def courses_for(letter: str, day_number: int | None, term: str | None, list_bloc
             continue
         out.append(b)
     return out
+
+
+def special_day(d: date, status: str, rotation_day: str | None, specials: dict[int, StudentSpecial]) -> dict:
+    """An elementary day: the one special that meets on this rotation day,
+    or an empty day when the rotation (or the special for it) is unknown."""
+    m = _ROTATION_RE.match(rotation_day or "")
+    special = specials.get(int(m.group(1))) if m else None
+    return {
+        "date": d.isoformat(),
+        "weekday": _WEEKDAYS[d.weekday()],
+        "status": status,
+        "rotation_day": rotation_day,
+        "long_blocks": False,
+        "timed": False,
+        "blocks": [{"name": "Special", "start_label": None, "end_label": None, "course_name": special.subject, "teacher": special.teacher, "room": None}]
+        if special
+        else [],
+    }
 
 
 def build_day(d: date, status: str, rotation_day: str | None, letters: list[str] | None, bell_periods: dict | None, list_blocks: list, term: str | None) -> dict:
@@ -97,7 +115,10 @@ async def upcoming_days(db: AsyncSession, school: School, student_id: str, today
     list_blocks = (
         await db.execute(select(ChildScheduleBlock).where(ChildScheduleBlock.student_id == student_id, ChildScheduleBlock.source == "list"))
     ).scalars().all()
-    if not list_blocks:
+    specials = {
+        s.rotation_day: s for s in (await db.execute(select(StudentSpecial).where(StudentSpecial.student_id == student_id))).scalars().all()
+    }
+    if not list_blocks and not specials:
         return []
     mps = (await db.execute(select(ChildMarkingPeriod).where(ChildMarkingPeriod.student_id == student_id))).scalars().all()
 
@@ -134,7 +155,11 @@ async def upcoming_days(db: AsyncSession, school: School, student_id: str, today
             status, _ = classify_day([i.title for i in by_day.get(d, [])])
             if status != "closed":
                 rot = next((i for i in by_day.get(d, []) if _is_rotation_item(i)), None)
-                letters = blocks_from_description(rot.description) if rot else None
-                days.append(build_day(d, status, rot.title.strip() if rot else None, letters, school.bell_periods, list_blocks, term_for(d, mps)))
+                rotation_day = rot.title.strip() if rot else None
+                if list_blocks:
+                    letters = blocks_from_description(rot.description) if rot else None
+                    days.append(build_day(d, status, rotation_day, letters, school.bell_periods, list_blocks, term_for(d, mps)))
+                else:
+                    days.append(special_day(d, status, rotation_day, specials))
         d += timedelta(days=1)
     return days

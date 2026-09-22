@@ -124,6 +124,15 @@ export type TodayDay = {
   items: SchoolContentItem[];
 };
 
+export type KidSpecials = {
+  student_id: string;
+  first_name: string;
+  today: string | null;
+  next_label: string | null;
+  next: string | null;
+  by_date: Record<string, string>;
+};
+
 export type DayBlock = { name: string; start_label: string; end_label: string };
 export type NextRotation = { label: string; rotation_day: string; blocks: string[] | null; long_blocks: boolean };
 
@@ -176,6 +185,7 @@ export type SchoolToday = {
   long_blocks?: boolean;
   day_blocks?: DayBlock[] | null;
   next_rotation?: NextRotation | null;
+  my_specials?: KidSpecials[];
   current_period: CurrentPeriod | null;
   transportation: TodayTransportation | null;
   lunch: { today: string | null; next_label: string | null; next: string | null; source_pdf_url: string | null };
