@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_admin
 from database import get_db
 from local_events.billz_import import plan_import
+from local_events.prune import KIND as LOCAL_EVENTS_KIND, prune_orphaned_events
 from local_events.test_fetch import TestFetchIn, TestFetchOut, run_test_fetch
 from models import District, EmailScanner, JobRun, ScheduledJob, School, SmoreNewsletter, User
 from schemas import JobKindOut, JobRunOut, JobRunSummaryOut, ScheduledJobCreate, ScheduledJobOut, ScheduledJobUpdate
@@ -232,6 +233,10 @@ async def update_job(job_id: str, payload: ScheduledJobUpdate, db: AsyncSession 
     if payload.params is not None:
         _validate_params(job.kind, payload.params)
         job.params = payload.params
+        if job.kind == LOCAL_EVENTS_KIND:
+            # A source removed from the params takes its events with it.
+            await db.flush()
+            await prune_orphaned_events(db)
     if payload.name is not None:
         job.name = payload.name
     if payload.description is not None:
@@ -253,9 +258,13 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
     """Every *_job_id column pointing at scheduled_jobs is ON DELETE SET
     NULL, so a School/District/newsletter/scanner that owned this job keeps
     existing - it just no longer has a scan. The scheduler's 30s reconcile
-    loop drops the APScheduler entry on its own."""
+    loop drops the APScheduler entry on its own. Deleting a local events
+    job also deletes the events of any source no other job still lists."""
     job = await _get_job_or_404(db, job_id)
     await db.delete(job)
+    if job.kind == LOCAL_EVENTS_KIND:
+        await db.flush()
+        await prune_orphaned_events(db)
     await db.commit()
 
 

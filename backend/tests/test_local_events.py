@@ -158,3 +158,45 @@ def test_dpcalendar_source_adds_a_date_window_unless_the_url_has_one():
     assert src.request_url(date(2026, 9, 22)) == base + "&date-start=2026-09-22&date-end=2026-12-21"
     assert JsonApiSource(name="e", url=base + "&date-start=2026-01-01", parser="dpcalendar").request_url() == base + "&date-start=2026-01-01"
     assert JsonApiSource(name="e", url=base).request_url() == base
+
+
+async def test_removing_a_source_or_job_removes_its_events_unless_another_job_lists_it():
+    run = uuid.uuid4().hex[:8]
+    only_a, shared, only_b = f"only_a_{run}", f"shared_{run}", f"only_b_{run}"
+
+    def params(*names):
+        return {"ical_sources": [{"name": n, "url": f"https://example.com/{n}.ics"} for n in names]}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        admin = await _register(client, f"pr_{run}@example.com", f"pr_{run}")
+        await _make_admin(f"pr_{run}@example.com")
+
+        async def create(name, p):
+            body = {"kind": "local_events.refresh", "name": name, "cron_expr": "0 */6 * * *", "params": p}
+            res = await client.post("/scheduled-jobs", json=body, headers=auth(admin))
+            assert res.status_code == 201, res.text
+            return res.json()["id"]
+
+        job_a = await create(f"A {run}", params(only_a, shared))
+        job_b = await create(f"B {run}", params(shared, only_b))
+        async with database.SessionLocal() as db:
+            for i, src in enumerate((only_a, shared, only_b)):
+                db.add(LocalEvent(source=src, source_event_id=str(i), title=f"{src} event", start_time=_utc(2031, 1, 1 + i, 15)))
+            await db.commit()
+
+        async def sources_left():
+            async with database.SessionLocal() as db:
+                rows = (await db.execute(select(LocalEvent.source).where(LocalEvent.source.in_([only_a, shared, only_b])))).scalars().all()
+            return set(rows)
+
+        # Disabling keeps everything.
+        assert (await client.patch(f"/scheduled-jobs/{job_a}", json={"enabled": False}, headers=auth(admin))).status_code == 200
+        assert await sources_left() == {only_a, shared, only_b}
+
+        # Deleting A drops only_a; shared survives because B still lists it.
+        assert (await client.delete(f"/scheduled-jobs/{job_a}", headers=auth(admin))).status_code == 204
+        assert await sources_left() == {shared, only_b}
+
+        # Editing B to drop `shared` removes its events too.
+        assert (await client.patch(f"/scheduled-jobs/{job_b}", json={"params": params(only_b)}, headers=auth(admin))).status_code == 200
+        assert await sources_left() == {only_b}

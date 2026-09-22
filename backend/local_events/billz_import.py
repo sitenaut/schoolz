@@ -13,19 +13,9 @@ import json
 
 from croniter import croniter
 
+from .prune import KIND, SOURCE_KEYS
+
 BILLZ_KIND = "events.refresh"
-KIND = "local_events.refresh"
-SOURCE_KEYS = (
-    "evvnt_sources",
-    "json_sources",
-    "ical_sources",
-    "rss_sources",
-    "gcal_sources",
-    "listing_page_sources",
-    "sitemap_sources",
-    "deyra_schedule_sources",
-    "scraper_sources",
-)
 
 
 def _is_params(obj: dict) -> bool:
