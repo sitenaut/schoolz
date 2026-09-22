@@ -220,12 +220,6 @@ export function AppShell() {
           <IconLunch />
           Lunch
         </NavLink>
-        {user && (
-          <NavLink to="/local">
-            <IconPin />
-            Local
-          </NavLink>
-        )}
         <NavLink to="/schools">
           <IconSchool />
           Schools
@@ -244,6 +238,12 @@ export function AppShell() {
             <IconUsers />
             Gradez
           </a>
+        )}
+        {user && (
+          <NavLink to="/local">
+            <IconPin />
+            Local
+          </NavLink>
         )}
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
