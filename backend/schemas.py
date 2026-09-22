@@ -81,6 +81,7 @@ class StudentOut(BaseModel):
     student_id: str
     school_name: str | None
     school_id: str | None = None
+    school_type: str | None = None
     guardian_count: int
     linked_via: str
     matched_existing: bool = False
@@ -706,6 +707,7 @@ class SchoolTodayOut(BaseModel):
     long_blocks: bool = False
     day_blocks: list[DayBlockOut] | None = None
     next_rotation: NextRotationOut | None = None
+    my_specials: list["TodayKidSpecialOut"] = []  # signed-in viewer's own kids at this school
     current_period: CurrentPeriodOut | None
     transportation: TodayTransportationOut | None
     lunch: TodayLunchOut
@@ -1106,3 +1108,30 @@ class ContactMessageOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class StudentSpecialIn(BaseModel):
+    rotation_day: int = Field(ge=1, le=12)
+    subject: str = Field(min_length=1, max_length=100)
+    teacher: str | None = Field(default=None, max_length=200)
+
+
+class StudentSpecialOut(StudentSpecialIn):
+    model_config = {"from_attributes": True}
+
+
+class StudentSpecialsOut(BaseModel):
+    rotation_days: list[int]  # the rotation days this child's school actually uses
+    specials: list[StudentSpecialOut]
+
+
+class TodayKidSpecialOut(BaseModel):
+    student_id: str
+    first_name: str
+    today: str | None  # subject on today's rotation day, None when unknown or no school
+    next_label: str | None  # "Tomorrow" / "Mon"
+    next: str | None
+    by_date: dict[str, str]  # YYYY-MM-DD -> subject, for the week strip
+
+
+SchoolTodayOut.model_rebuild()

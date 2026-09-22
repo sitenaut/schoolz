@@ -261,7 +261,7 @@ export function SchoolDetailPage() {
         <h2>This week</h2>
         <Link to={`/calendar?school=${s.slug}`}>Full calendar</Link>
       </div>
-      <WeekStrip week={today.week} schoolSlug={s.slug} />
+      <WeekStrip week={today.week} schoolSlug={s.slug} specials={today.my_specials} />
       {today.lunch.source_pdf_url && (
         <p className="note" style={{ marginTop: 8 }}>
           Lunch from the district's{" "}

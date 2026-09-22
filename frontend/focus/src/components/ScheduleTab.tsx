@@ -20,7 +20,7 @@ export function ScheduleTab({ schedule, todayIso }: { schedule: ScheduleResponse
   const days = schedule?.days ?? [];
   const day = days[Math.min(picked, days.length - 1)];
 
-  if (!schedule || (schedule.daily.length === 0 && schedule.list_view.length === 0)) {
+  if (!schedule || (schedule.daily.length === 0 && schedule.list_view.length === 0 && days.length === 0)) {
     return (
       <div className="empty-state">
         <h2>No schedule yet</h2>
@@ -76,14 +76,15 @@ export function ScheduleTab({ schedule, todayIso }: { schedule: ScheduleResponse
 /** One computed school day: the letters that meet, in clock order, each
  * filled with this student's course for the current semester. */
 function ComputedDay({ day }: { day: ScheduleDay }) {
-  const letters = day.blocks.filter((b) => !/^L\d$/.test(b.name)).map((b) => b.name);
+  const letters = day.blocks.filter((b) => /^[A-H]$/.test(b.name)).map((b) => b.name);
   const heading = [day.rotation_day, letters.join(" "), day.long_blocks && "long blocks", day.status === "early_dismissal" && "early dismissal", day.status === "delayed" && "delayed opening"]
     .filter(Boolean)
     .join(" · ");
   return (
     <>
       <h2 className="card-label">{heading || "No rotation on file for this day"}</h2>
-      {!day.timed && day.blocks.length > 0 && <p className="schedule-note">No published bell times for this day, so this is the class order only.</p>}
+      {day.blocks.length === 0 && day.rotation_day && <p className="schedule-note">Nothing on file for {day.rotation_day} yet.</p>}
+      {!day.timed && letters.length > 0 && <p className="schedule-note">No published bell times for this day, so this is the class order only.</p>}
       <ul className="schedule-list">
         {day.blocks.map((b) => {
           const { className, style } = courseColorProps(b.course_name ?? b.name);

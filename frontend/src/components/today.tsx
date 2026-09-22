@@ -240,8 +240,19 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 
       <DayBlocks blocks={data.day_blocks} current={data.current_period} next={data.next_rotation} />
 
-      {(data.lunch.today || data.lunch.next || sacc) && (
+      {(data.lunch.today || data.lunch.next || sacc || !!data.my_specials?.length) && (
         <div className="facts">
+          {data.my_specials?.map((k) => (
+            <div className="fact" key={k.student_id}>
+              <div className="k">{data.my_specials!.length > 1 ? `${k.first_name}'s special` : "Special today"}</div>
+              <div className="v">{data.is_school_day ? (k.today ?? "Not on file") : "No school"}</div>
+              {k.next && (
+                <div className="sub">
+                  {k.next_label}: {k.next}
+                </div>
+              )}
+            </div>
+          ))}
           {(data.lunch.today || data.lunch.next) && (
             <div className="fact">
               <div className="fact-head">
@@ -354,7 +365,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 
 /* ---------- week strip on the school page ---------- */
 
-export function WeekStrip({ week, schoolSlug }: { week: TodayDay[]; schoolSlug: string }) {
+export function WeekStrip({ week, schoolSlug, specials }: { week: TodayDay[]; schoolSlug: string; specials?: SchoolToday["my_specials"] }) {
   const { excludeDistrict } = useMySchools();
   const today = todayKey();
   return (
@@ -377,6 +388,15 @@ export function WeekStrip({ week, schoolSlug }: { week: TodayDay[]; schoolSlug: 
                 {d.long_blocks && <span className="rotBlocks">long</span>}
               </div>
             )}
+            {d.status !== "closed" &&
+              specials?.map((k) =>
+                k.by_date[d.date] ? (
+                  <div className="rotBlocks" key={k.student_id}>
+                    {specials.length > 1 ? `${k.first_name}: ` : ""}
+                    {k.by_date[d.date]}
+                  </div>
+                ) : null,
+              )}
             {d.status === "closed" && <span className="pill bad">{d.status_label || "Closed"}</span>}
             {d.status === "early_dismissal" && <span className="pill warn">Early dismissal</span>}
             {d.status === "delayed" && <span className="pill warn">{d.status_label}</span>}
