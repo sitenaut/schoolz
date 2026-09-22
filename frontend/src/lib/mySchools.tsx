@@ -28,6 +28,10 @@ const INACTIVE_KEY = "schoolz_inactive_schools";
 // only place with a control to turn it on.
 // _v2: the default flipped from on to off, and browsers that saved a value
 // under the old default kept it; a new key starts everyone at the new default.
+/** Fired when someone taps a school-ribbon chip - pages that narrow to one
+ * school from a link (Calendar's ?school=) hand control back to the ribbon. */
+export const RIBBON_CHANGE_EVENT = "schoolz:ribbon-change";
+
 const EXCLUDE_DISTRICT_KEY = "schoolz_exclude_district_v2";
 
 function readBool(key: string, fallback: boolean): boolean {

@@ -2485,3 +2485,17 @@ select {
   font-weight: 700;
   font-size: 13px;
 }
+
+/* Calendar narrowed to one school by a link, until the ribbon takes over */
+.scopeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  font-size: 14px;
+}

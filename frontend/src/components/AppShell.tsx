@@ -4,7 +4,7 @@ import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
-import { useMySchools } from "../lib/mySchools";
+import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconSchool, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { getFaro } from "../lib/telemetry";
@@ -173,6 +173,7 @@ export function AppShell() {
               aria-pressed={!isFiltered}
               onClick={() => {
                 activateAll();
+                window.dispatchEvent(new Event(RIBBON_CHANGE_EVENT));
                 trackEvent("school_filter_toggle", { active_count: mySchools.length });
               }}
             >
@@ -186,6 +187,7 @@ export function AppShell() {
               aria-pressed={isActive(s.id)}
               onClick={() => {
                 toggleActive(s);
+                window.dispatchEvent(new Event(RIBBON_CHANGE_EVENT));
                 trackEvent("school_filter_toggle", { active_count: mySchools.length });
               }}
               title={s.name}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useMySchools } from "../lib/mySchools";
+import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { apiFetch } from "../api";
 import { ItemRow } from "../components/today";
 import { SeoHead } from "../components/SeoHead";
@@ -9,7 +9,7 @@ import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { CLOSED_RE, HALF_DAY_RE, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import { itemDateKeys } from "../lib/calendar";
-import type { SchoolContentItem } from "../types";
+import type { School, SchoolContentItem } from "../types";
 import styles from "./CalendarPage.module.css";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -42,8 +42,8 @@ function monthCells(year: number, month: number): (Date | null)[] {
 const TODAY_KEY = dateKey(new Date());
 
 export function CalendarPage() {
-  const { activeSchools, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
-  const [params] = useSearchParams();
+  const { mySchools, activeSchools, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
+  const [params, setParams] = useSearchParams();
   const deepSchool = params.get("school");
   // A "this week" tap (school page) deep-links a specific day, and an
   // event pill within it also carries which item to land on/highlight.
@@ -53,7 +53,42 @@ export function CalendarPage() {
   // selection every other page uses, no separate picker here anymore. A
   // school page's "see all dates" deep link narrows to just that one
   // school instead, same as before.
+  //
+  // That narrowing is temporary and visible: a bar says which school it is,
+  // and tapping it or any ribbon chip drops ?school= so the ribbon governs
+  // again. It used to override the ribbon silently, and survive a reload, so
+  // the ribbon looked broken on this page.
   const schoolSlugs = useMemo(() => (deepSchool ? [deepSchool] : activeSchools.map((s) => s.slug)), [deepSchool, activeSchools]);
+  const clearSchoolFilter = () => {
+    setScrollToToday(true);
+    setParams(
+      (cur) => {
+        const next = new URLSearchParams(cur);
+        next.delete("school");
+        next.delete("date");
+        next.delete("event");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+  useEffect(() => {
+    if (!deepSchool) return;
+    window.addEventListener(RIBBON_CHANGE_EVENT, clearSchoolFilter);
+    return () => window.removeEventListener(RIBBON_CHANGE_EVENT, clearSchoolFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepSchool]);
+  const [fetchedDeepSchool, setFetchedDeepSchool] = useState<School | null>(null);
+  const deepSchoolObj = deepSchool ? (mySchools.find((s) => s.slug === deepSchool) ?? (fetchedDeepSchool?.slug === deepSchool ? fetchedDeepSchool : null)) : null;
+  useEffect(() => {
+    if (!deepSchool || loading || mySchools.some((s) => s.slug === deepSchool)) return;
+    apiFetch(`/schools/${deepSchool}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setFetchedDeepSchool);
+  }, [deepSchool, loading, mySchools]);
+  // Rows are labeled per school the page is scoped to - the linked school,
+  // not the ribbon's, or its type-restricted district items get dropped.
+  const scopedSchools = useMemo(() => (deepSchoolObj ? [deepSchoolObj] : activeSchools), [deepSchoolObj, activeSchools]);
   const schoolIdsKey = schoolSlugs.join(",");
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [viewDate, setViewDate] = useState(() => startOfMonth(deepDate ? new Date(deepDate + "T12:00:00Z") : new Date()));
@@ -62,7 +97,9 @@ export function CalendarPage() {
   // by tapping today's cell again, any other cell, or "Show month". A
   // deep-linked date (from a school page's "this week" strip) wins over
   // today the same way an explicit school id already wins over the ribbon.
-  const [selectedDay, setSelectedDay] = useState<string | null>(deepDate ?? TODAY_KEY);
+  // A school's "All dates" link (no date) lands on that school's whole month
+  // instead, scrolled to today - same as "Show month".
+  const [selectedDay, setSelectedDay] = useState<string | null>(deepDate ?? (deepSchool ? null : TODAY_KEY));
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,6 +109,9 @@ export function CalendarPage() {
   // hide them instead.
   const [showDayRotation, setShowDayRotation] = useState(true);
   const [dataReady, setDataReady] = useState(false);
+  // Which school selection `items` was fetched for - scrolling to today has
+  // to wait for the list that matches the current selection.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   usePrerenderReady(dataReady);
 
   const readyStart = useRef(performance.now());
@@ -119,6 +159,7 @@ export function CalendarPage() {
       .then((data: SchoolContentItem[]) => {
         setItems(data);
         setDataReady(true);
+        setLoadedKey(schoolIdsKey);
         if (!readyReported.current) {
           readyReported.current = true;
           trackMeasurement("calendar_ready", performance.now() - readyStart.current, { mode: isSearching ? "search" : viewMode });
@@ -132,7 +173,7 @@ export function CalendarPage() {
   }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm]);
 
   const colorForName = (name: string | null) => {
-    const s = activeSchools.find((m) => (m.short_name || m.name) === name);
+    const s = scopedSchools.find((m) => (m.short_name || m.name) === name);
     return s ? colorFor(s.id) : "var(--district)";
   };
   const showEmptySelectionNote = activeSchools.length === 0;
@@ -201,7 +242,7 @@ export function CalendarPage() {
   // currently-active school of a matching type, e.g. "Day 3 [Bret Harte]"
   // and "Day 2 [Cherry Hill East]" side by side rather than one row
   // labeled just "Elementary" or "High school".
-  const rows = useMemo(() => filteredItems.flatMap((i) => expandItemRows(i, activeSchools)), [filteredItems, activeSchools]);
+  const rows = useMemo(() => filteredItems.flatMap((i) => expandItemRows(i, scopedSchools)), [filteredItems, scopedSchools]);
 
   // Land on the specific event a "this week" pill pointed at, not just its
   // day - the list can still hold several items for that date.
@@ -214,18 +255,18 @@ export function CalendarPage() {
   // "Show month" lands on today, like the lunch calendar: the whole month is
   // listed, scrolled to today's first entry (or the next day that has one).
   // Viewing another month, there's no "today" in the list, so it stays put.
-  const [scrollToToday, setScrollToToday] = useState(false);
+  const [scrollToToday, setScrollToToday] = useState(Boolean(deepSchool && !deepDate));
   const showMonth = () => {
     setSelectedDay(null);
     setScrollToToday(true);
   };
   useEffect(() => {
-    if (!scrollToToday || selectedDay) return;
+    if (!scrollToToday || selectedDay || loadedKey !== schoolIdsKey) return;
     setScrollToToday(false);
     const target = rows.find(({ item }) => itemDateKeys(item).some((k) => k >= TODAY_KEY));
     if (!target || !TODAY_KEY.startsWith(dateKey(viewDate).slice(0, 7))) return;
     document.getElementById(`event-${target.item.id}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }, [scrollToToday, selectedDay, rows, viewDate]);
+  }, [scrollToToday, selectedDay, rows, viewDate, loadedKey, schoolIdsKey]);
 
   const selectedLabel = selectedDay
     ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(undefined, {
@@ -285,7 +326,18 @@ export function CalendarPage() {
         </div>
       </div>
 
-      {showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools on "My schools" to narrow it down.</p>}
+      {deepSchool && (
+        <div className="scopeBar">
+          <span>
+            Only <b>{deepSchoolObj ? deepSchoolObj.short_name || deepSchoolObj.name : deepSchool}</b>
+          </span>
+          <button type="button" className="ghost" onClick={clearSchoolFilter}>
+            Show all my schools
+          </button>
+        </div>
+      )}
+
+      {!deepSchool && showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools on "My schools" to narrow it down.</p>}
 
       {!isSearching && viewMode === "month" && (
         <>
