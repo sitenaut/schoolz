@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_optional_user
@@ -101,8 +101,17 @@ async def list_calendar_items(
         like = f"%{q}%"
         query = query.where(or_(SchoolContentItem.title.ilike(like), SchoolContentItem.description.ilike(like)))
     if start:
-        # Overlaps the range: item's end (or start, if no end) is >= range start.
-        query = query.where(or_(SchoolContentItem.end_date >= start, SchoolContentItem.start_date >= start))
+        # Overlaps the range. An all-day item's end_date is the ICS-style
+        # exclusive day after its last day, so one ending exactly at the range
+        # start (an Aug 31 in-service ending "Sep 1 00:00") doesn't overlap -
+        # it used to lead September's list.
+        query = query.where(
+            or_(
+                SchoolContentItem.start_date >= start,
+                and_(SchoolContentItem.is_all_day.is_(True), SchoolContentItem.end_date > start),
+                and_(SchoolContentItem.is_all_day.is_(False), SchoolContentItem.end_date >= start),
+            )
+        )
     if end:
         query = query.where(SchoolContentItem.start_date <= end)
 
