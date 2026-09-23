@@ -148,7 +148,22 @@ export function SchoolClassYearPage() {
   }
   if (!school || !thisClassYear) return <p>Loading…</p>;
 
-  const totalCents = payments.reduce((sum, p) => (p.amount_cents ? sum + p.amount_cents : sum), 0);
+  // The trip's real total is what the "official" windows sum to (the
+  // amount a family owes if they pay nothing optionally in advance) - NOT
+  // a sum of every row's face amount. Confirmed real on East's own site:
+  // its FAQ states a flat "$2,275.00" total cost, which equals exactly
+  // its three official deposits ($750+$750+$775) and nothing more - the
+  // four optional deposits are early installments CREDITED toward that
+  // same total, not additional charges on top of it. Summing all seven
+  // face amounts (as an earlier version of this page did) double-counts
+  // an optional prepayment and whatever portion of the official schedule
+  // it was later credited against, overstating the trip by exactly
+  // however much was paid optionally - a real, live error caught by
+  // checking this page's numbers against the school's own stated total
+  // rather than trusting the arithmetic. paidCents still sums every
+  // ticked window (optional or official) - real money sent counts toward
+  // the total regardless of which window it went through.
+  const totalCents = payments.filter((p) => p.kind === "official").reduce((sum, p) => (p.amount_cents ? sum + p.amount_cents : sum), 0);
   const paidCents = payments.reduce((sum, p) => (p.ticked && p.amount_cents ? sum + p.amount_cents : sum), 0);
 
   return (
