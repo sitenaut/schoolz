@@ -59,6 +59,13 @@ export function AppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+  // Calendar only, by explicit product call. That page auto-scrolls ~3000px
+  // to today's entry, which parks its "Only <school>" bar off the top of the
+  // document - so there the ribbon stacks under the header and the bar under
+  // the ribbon. Everywhere else the ribbon keeps its original top:0, where it
+  // tucks under the header once the page moves: less pinned chrome on a phone
+  // on pages that don't need a second bar.
+  const stickyRibbon = pathname === "/calendar";
 
   // Both sticky bars stack at the top of the viewport, and anything a page
   // wants to pin under them (Calendar's "Only <school>" bar) needs to know
@@ -76,14 +83,17 @@ export function AppShell() {
     const root = document.documentElement;
     const measure = () => {
       root.style.setProperty("--header-h", `${headerRef.current?.offsetHeight ?? 54}px`);
-      root.style.setProperty("--ribbon-h", `${ribbonRef.current?.offsetHeight ?? 0}px`);
+      // 0 unless the ribbon is actually stacked below the header - the var
+      // means "how much pinned chrome is above me", and an unstacked ribbon
+      // sits under the header rather than adding to it.
+      root.style.setProperty("--ribbon-h", `${stickyRibbon ? (ribbonRef.current?.offsetHeight ?? 0) : 0}px`);
     };
     measure();
     const ro = new ResizeObserver(measure);
     if (headerRef.current) ro.observe(headerRef.current);
     if (ribbonRef.current) ro.observe(ribbonRef.current);
     return () => ro.disconnect();
-  }, [mySchools.length, hideSchoolFilter]);
+  }, [mySchools.length, hideSchoolFilter, stickyRibbon]);
 
   // An invite opened before signing in is finished the moment a signed-in
   // session shows up, wherever that happens - a Google redirect or an
@@ -191,7 +201,7 @@ export function AppShell() {
       </header>
 
       {mySchools.length > 0 && !hideSchoolFilter && (
-        <div className="ribbon" role="group" aria-label="Switch schools" ref={ribbonRef}>
+        <div className={`ribbon${stickyRibbon ? " ribbon-stacked" : ""}`} role="group" aria-label="Switch schools" ref={ribbonRef}>
           {mySchools.length > 1 && (
             <button
               className="ribbon-chip all"
