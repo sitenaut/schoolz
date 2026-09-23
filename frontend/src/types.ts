@@ -283,6 +283,9 @@ export type JobRun = {
   error_stage: string | null;
   log_excerpt: string | null;
   triggered_by: string;
+  machine_id: string | null;
+  trace_id: string | null;
+  last_progress_at: string | null;
 };
 
 export type JobKind = {

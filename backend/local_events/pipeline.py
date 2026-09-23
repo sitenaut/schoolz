@@ -27,6 +27,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import LocalEvent as Event
+from scheduler import progress
 
 from .deduper import find_duplicate, merge_into
 from .normalizer import normalize
@@ -200,7 +201,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     skipped = 0
     per_source: dict[str, int] = {}
 
-    for source in sources:
+    for source_index, source in enumerate(sources):
         try:
             raws: list[RawEvent] = await source.fetch()
         except Exception as exc:  # noqa: BLE001
@@ -246,6 +247,21 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
 
         # Commit per source so a later source's failure doesn't lose earlier work.
         await db.commit()
+        # Checkpoint too - if the process dies before the next source (or
+        # ever finishes), the reaper's generic "process exited mid-run"
+        # message otherwise carries no indication of how far it got. See
+        # scheduler/progress.py.
+        await progress.checkpoint(
+            {
+                "sources_done": source_index + 1,
+                "sources_total": len(sources),
+                "fetched": fetched,
+                "inserted": inserted,
+                "updated": updated,
+                "skipped": skipped,
+                "per_source": per_source,
+            }
+        )
 
     summary = {
         "sources": len(sources),
