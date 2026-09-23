@@ -133,7 +133,21 @@ async def run_chat_turn(
             messages=messages,
         )
         used_model = model
-        messages.append({"role": "assistant", "content": [block.model_dump() for block in response.content]})
+        # Only text/tool_use blocks are replayed - anthropic==0.34.2 (pinned,
+        # shared with content_extractor.py) predates "thinking" content
+        # blocks, which the newest models can return unprompted even
+        # without extended thinking requested. Its permissive parsing keeps
+        # them around, but model_dump()'ing one back into a request 400s
+        # ("thinking.text: Extra inputs are not permitted") - the SDK's
+        # loose parse isn't the API's strict input shape. Not needed here
+        # anyway: interleaved-thinking continuity is a deliberate opt-in
+        # feature (beta header) this endpoint doesn't use.
+        messages.append(
+            {
+                "role": "assistant",
+                "content": [block.model_dump() for block in response.content if block.type in ("text", "tool_use")],
+            }
+        )
 
         tool_uses = [b for b in response.content if b.type == "tool_use"]
         if not tool_uses:
