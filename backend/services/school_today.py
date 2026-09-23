@@ -16,7 +16,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember, Student
-from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayKidSpecialOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
+from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayCurrentClassOut, TodayKidSpecialOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
 from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
@@ -152,6 +152,37 @@ async def _my_specials(db: AsyncSession, school: School, user_id: str, rotation,
                 by_date=specials_svc.by_date(mine, {d: days[d] for d in week}),
             )
         )
+    return out
+
+
+async def _my_current_classes(db: AsyncSession, school: School, user_id: str, now: datetime | None = None) -> list[TodayCurrentClassOut]:
+    """The viewer's own children at this school who are in a class RIGHT
+    NOW, per their own Genesis-imported period schedule - the high-school
+    analogue of _my_specials' "every linked kid at this school" pattern,
+    just for a period schedule instead of an elementary specials rotation.
+    That shared pattern is what makes 2 or 3 kids at the same school just
+    work: each kid who has something to show gets their own row, in the
+    same list, with no per-kid-count branching anywhere in this function.
+
+    Local import to avoid a circular dependency - kids_schedule.py itself
+    imports several helpers FROM this module (LOCAL_TZ, classify_day,
+    etc), so importing it back at module scope here would deadlock the
+    import graph. Same lazy-import pattern already used in
+    routers/smore_newsletters.py for the same reason."""
+    from services import kids_schedule
+
+    guardian_of = select(GuardianStudentLink.student_id).where(GuardianStudentLink.guardian_user_id == user_id)
+    kids = (
+        await db.execute(
+            select(Student).where(Student.school_id == school.id, or_(Student.id.in_(guardian_of), Student.user_id == user_id)).order_by(Student.first_name)
+        )
+    ).scalars().all()
+    out = []
+    for kid in kids:
+        current = await kids_schedule.current_class_for_student(db, school, kid.id, now)
+        if not current:
+            continue
+        out.append(TodayCurrentClassOut(student_id=kid.id, first_name=kid.first_name, **current))
     return out
 
 
@@ -340,6 +371,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         )
 
     my_specials = await _my_specials(db, school, user_id, rotation, today, next_day, next_label, week) if user_id else []
+    my_current_classes = await _my_current_classes(db, school, user_id) if user_id else []
 
     period = None
     if today == datetime.now(LOCAL_TZ).date():
@@ -367,6 +399,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         day_blocks=day_blocks,
         next_rotation=next_rot,
         my_specials=my_specials,
+        my_current_classes=my_current_classes,
         current_period=period,
         transportation=transportation,
         lunch=lunch,
