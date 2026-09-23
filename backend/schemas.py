@@ -823,6 +823,7 @@ class SchoolTodayOut(BaseModel):
     day_blocks: list[DayBlockOut] | None = None
     next_rotation: NextRotationOut | None = None
     my_specials: list["TodayKidSpecialOut"] = []  # signed-in viewer's own kids at this school
+    my_current_classes: list["TodayCurrentClassOut"] = []  # ditto, for a HS kid's own period schedule
     current_period: CurrentPeriodOut | None
     transportation: TodayTransportationOut | None
     lunch: TodayLunchOut
@@ -1247,6 +1248,25 @@ class TodayKidSpecialOut(BaseModel):
     next_label: str | None  # "Tomorrow" / "Mon"
     next: str | None
     by_date: dict[str, str]  # YYYY-MM-DD -> subject, for the week strip
+
+
+class TodayCurrentClassOut(BaseModel):
+    """What one of the viewer's own kids is in class for RIGHT NOW at this
+    school - the high-school-schedule analogue of TodayKidSpecialOut's
+    elementary specials rotation. One row per kid who has something to
+    show (see services/school_today.py:_my_current_classes) - naturally
+    handles 1, 2, or 3+ kids at the same school the same way the specials
+    list already does, no special-casing needed."""
+
+    student_id: str
+    first_name: str
+    period_name: str
+    course_name: str
+    teacher: str | None
+    room: str | None
+    start_label: str
+    end_label: str
+    minutes_left: int
 
 
 SchoolTodayOut.model_rebuild()

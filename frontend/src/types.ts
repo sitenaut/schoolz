@@ -171,6 +171,18 @@ export type KidSpecials = {
   by_date: Record<string, string>;
 };
 
+export type CurrentClass = {
+  student_id: string;
+  first_name: string;
+  period_name: string;
+  course_name: string;
+  teacher: string | null;
+  room: string | null;
+  start_label: string;
+  end_label: string;
+  minutes_left: number;
+};
+
 export type DayBlock = { name: string; start_label: string; end_label: string };
 export type NextRotation = { label: string; rotation_day: string; blocks: string[] | null; long_blocks: boolean };
 
@@ -224,6 +236,7 @@ export type SchoolToday = {
   day_blocks?: DayBlock[] | null;
   next_rotation?: NextRotation | null;
   my_specials?: KidSpecials[];
+  my_current_classes?: CurrentClass[];
   current_period: CurrentPeriod | null;
   transportation: TodayTransportation | null;
   lunch: { today: string | null; next_label: string | null; next: string | null; source_pdf_url: string | null };

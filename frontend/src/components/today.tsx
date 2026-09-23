@@ -287,8 +287,15 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 
       <DayBlocks blocks={data.day_blocks} current={data.current_period} next={data.next_rotation} />
 
-      {(data.lunch.today || data.lunch.next || sacc || !!data.my_specials?.length) && (
+      {(data.lunch.today || data.lunch.next || sacc || !!data.my_specials?.length || !!data.my_current_classes?.length) && (
         <div className="facts">
+          {data.my_current_classes?.map((c) => (
+            <div className="fact" key={`class-${c.student_id}`}>
+              <div className="k">{data.my_current_classes!.length > 1 ? `${c.first_name}'s class now` : "In class now"}</div>
+              <div className="v">{c.course_name}</div>
+              <div className="sub">{[c.room, c.minutes_left <= 5 ? `ends in ${c.minutes_left} min` : `ends ${c.end_label}`].filter(Boolean).join(" · ")}</div>
+            </div>
+          ))}
           {data.my_specials?.map((k) => (
             <div className="fact" key={k.student_id}>
               <div className="k">{data.my_specials!.length > 1 ? `${k.first_name}'s special` : "Special today"}</div>
