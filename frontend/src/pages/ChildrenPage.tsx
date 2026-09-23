@@ -13,10 +13,21 @@ type Student = {
   student_id: string;
   school_name: string | null;
   school_type: string | null;
+  grad_year: number | null;
   guardian_count: number;
   linked_via: string;
   matched_existing: boolean;
 };
+
+// Options for the grad-year picker - this year through 6 years out covers
+// every currently-enrollable student (a rising kindergartner is ~13 years
+// from graduating, but grad_year only means anything once a kid is at a
+// high school, so a shorter, scannable list beats a 13-year dropdown).
+function gradYearOptions(): number[] {
+  const now = new Date();
+  const start = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  return Array.from({ length: 7 }, (_, i) => start + 1 + i);
+}
 
 type PanelKind = "guardian" | "student" | "specials";
 type Panel = { studentId: string; kind: PanelKind } | null;
@@ -86,6 +97,11 @@ export function ChildrenPage() {
     await load();
   };
 
+  const setGradYear = async (id: string, gradYear: number | null) => {
+    setStudents((cur) => cur.map((s) => (s.id === id ? { ...s, grad_year: gradYear } : s)));
+    await apiFetch(`/students/${id}`, { method: "PATCH", body: JSON.stringify({ grad_year: gradYear }) });
+  };
+
   const toggle = (studentId: string, kind: PanelKind) =>
     setPanel((p) => (p && p.studentId === studentId && p.kind === kind ? null : { studentId, kind }));
 
@@ -126,6 +142,24 @@ export function ChildrenPage() {
                   Open
                 </Link>
               </div>
+
+              {s.school_type === "high" && (
+                <label className="note" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+                  Graduating class
+                  <select
+                    value={s.grad_year ?? ""}
+                    onChange={(e) => setGradYear(s.id, e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: "auto" }}
+                  >
+                    <option value="">Not set</option>
+                    {gradYearOptions().map((y) => (
+                      <option key={y} value={y}>
+                        Class of {y}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
 
               <div className="actions bare" style={{ flexWrap: "wrap", marginTop: 12 }}>
                 {s.school_type === "elementary" && (

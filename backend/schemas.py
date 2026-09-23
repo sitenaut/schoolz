@@ -82,11 +82,19 @@ class StudentOut(BaseModel):
     school_name: str | None
     school_id: str | None = None
     school_type: str | None = None
+    # High school only - see Student.grad_year in models.py. Drives which
+    # class page (/schools/{slug}/class-of-{grad_year}) a guardian defaults
+    # to. Editable by any linked guardian, same as the rest of this record.
+    grad_year: int | None = None
     guardian_count: int
     linked_via: str
     matched_existing: bool = False
 
     model_config = {"from_attributes": True}
+
+
+class StudentUpdate(BaseModel):
+    grad_year: int | None = Field(default=None, ge=2000, le=2100)
 
 
 class InviteCreate(BaseModel):
@@ -385,6 +393,12 @@ class SchoolUpdate(BaseModel):
     athletics_url: str | None = Field(default=None, max_length=500)
     logo_url: str | None = Field(default=None, max_length=1000)
     special_events_calendar_url: str | None = Field(default=None, max_length=500)
+    # High-school class-pages sources - see School.activities_calendar_ics_url
+    # etc in models.py. Opt-in like special_events_calendar_url; no admin
+    # form exists for these either (set via PATCH, same as that field).
+    activities_calendar_ics_url: str | None = Field(default=None, max_length=500)
+    announcements_doc_url: str | None = Field(default=None, max_length=500)
+    activities_site_url: str | None = Field(default=None, max_length=500)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -428,6 +442,9 @@ class SchoolOut(BaseModel):
     athletics_url: str | None
     logo_url: str | None
     special_events_calendar_url: str | None
+    activities_calendar_ics_url: str | None
+    announcements_doc_url: str | None
+    activities_site_url: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
@@ -553,6 +570,14 @@ class SchoolContentItemOut(BaseModel):
     # way to say which one is which - "Day 2" and "Day 3" on the same day
     # read as a contradiction instead of two different school tiers.
     applies_to_school_types: list[str] | None = None
+    # Grad years this item is scoped to (null = whole school) - see
+    # SchoolContentItem.applies_to_grad_years in models.py.
+    applies_to_grad_years: list[int] | None = None
+    # Display label for a grad-year badge on a general calendar row
+    # ("Class of 2027") - populated only by endpoints that span classes
+    # (the general /calendar, a class page showing school-wide items too),
+    # same idea as school_name above.
+    class_label: str | None = None
     category: str
     title: str
     description: str | None
@@ -568,6 +593,95 @@ class SchoolContentItemOut(BaseModel):
     is_current: bool
 
     model_config = {"from_attributes": True}
+
+
+class StaffMiniOut(BaseModel):
+    """Just enough of a StaffMember to render "Dr. Kathy Lewis" on a class
+    page - the full StaffMemberOut carries department/title/phone that a
+    class page's advisor line doesn't need."""
+
+    id: str
+    full_name: str
+    title: str | None
+    email: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class SchoolClassYearOut(BaseModel):
+    id: str
+    school_id: str
+    grad_year: int
+    label: str
+    grade_level_principals: list[StaffMiniOut] = []
+    advisors: list[StaffMiniOut] = []
+    instagram_url: str | None
+    source_page_url: str | None
+    updated_at: datetime
+
+
+class SchoolClassYearUpdate(BaseModel):
+    """Manual correction of what services/hs_activities_site.py extracted -
+    e.g. an ambiguous advisor-name match the auto-resolution deliberately
+    left unset. Every field optional/patch-style, same convention as
+    SchoolUpdate."""
+
+    label: str | None = Field(default=None, max_length=50)
+    instagram_url: str | None = Field(default=None, max_length=500)
+    grade_level_principal_staff_ids: list[str] | None = None
+    advisor_staff_ids: list[str] | None = None
+
+
+class ClassPaymentOut(BaseModel):
+    id: str
+    school_class_year_id: str
+    sequence: int
+    kind: str
+    label: str
+    amount_cents: int | None
+    window_opens_at: datetime | None
+    window_closes_at: datetime | None
+    methods: list[str] | None
+    payschools_item_name: str | None
+    refundable_until: datetime | None
+    notes: str | None
+    # Whether the CURRENT VIEWER has ticked this off (see ClassPaymentTick
+    # in models.py) - null for an anonymous visitor, who has nothing to
+    # tick. Per-account, not per-student: two guardians of the same kid
+    # track their own payments independently.
+    ticked: bool | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ClassPaymentCreate(BaseModel):
+    sequence: int
+    kind: str = Field(pattern="^(optional|official)$")
+    label: str = Field(min_length=1, max_length=200)
+    amount_cents: int | None = None
+    window_opens_at: datetime | None = None
+    window_closes_at: datetime | None = None
+    methods: list[str] | None = None
+    payschools_item_name: str | None = Field(default=None, max_length=200)
+    refundable_until: datetime | None = None
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class ClassPaymentUpdate(BaseModel):
+    sequence: int | None = None
+    kind: str | None = Field(default=None, pattern="^(optional|official)$")
+    label: str | None = Field(default=None, max_length=200)
+    amount_cents: int | None = None
+    window_opens_at: datetime | None = None
+    window_closes_at: datetime | None = None
+    methods: list[str] | None = None
+    payschools_item_name: str | None = Field(default=None, max_length=200)
+    refundable_until: datetime | None = None
+    notes: str | None = Field(default=None, max_length=1000)
+    # amount_cents/notes/etc above can't distinguish "leave unchanged" from
+    # "clear it" for a nullable field via a plain PATCH body (both look
+    # like the field being omitted vs. explicitly null - FastAPI/Pydantic
+    # can tell those apart via `exclude_unset`, which the route uses).
 
 
 class TodayContactOut(BaseModel):

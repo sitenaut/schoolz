@@ -8,6 +8,8 @@ function item(overrides: Partial<SchoolContentItem>): SchoolContentItem {
     scope: "district",
     school_name: null,
     applies_to_school_types: null,
+    applies_to_grad_years: null,
+    class_label: null,
     category: "event",
     title: "Board of Education Meeting",
     description: null,

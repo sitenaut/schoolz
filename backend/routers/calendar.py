@@ -8,6 +8,7 @@ from auth import get_optional_user
 from database import get_db
 from models import GuardianStudentLink, School, SchoolContentItem, Student, User
 from schemas import SchoolContentItemOut
+from services.class_years import CLASS_PAGE_SOURCES
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
@@ -29,6 +30,36 @@ async def _my_school_and_district_ids(db: AsyncSession, user_id: str) -> tuple[l
     return school_ids, district_ids, school_types
 
 
+async def _my_grad_years(db: AsyncSession, user_id: str) -> set[int]:
+    result = await db.execute(
+        select(Student.grad_year)
+        .join(GuardianStudentLink, GuardianStudentLink.student_id == Student.id)
+        .where(GuardianStudentLink.guardian_user_id == user_id, Student.grad_year.is_not(None))
+        .distinct()
+    )
+    return set(result.scalars().all())
+
+
+def _applies_to_grad_years(item: SchoolContentItem, my_grad_years: set[int]) -> bool:
+    """Same null-means-everyone shape as _applies_to_types. Only narrows
+    for a signed-in guardian with a grad_year on file - an anonymous
+    visitor (or one with no grad_year typed in yet) sees every class's
+    items, same as the school-type filter only ever narrows when there's
+    something concrete to narrow by."""
+    if not item.applies_to_grad_years or not my_grad_years:
+        return True
+    return bool(set(item.applies_to_grad_years) & my_grad_years)
+
+
+def _class_label(item: SchoolContentItem) -> str | None:
+    if not item.applies_to_grad_years:
+        return None
+    if len(item.applies_to_grad_years) == 1:
+        return f"Class of {item.applies_to_grad_years[0]}"
+    years = ", ".join(str(y) for y in sorted(item.applies_to_grad_years))
+    return f"Classes of {years}"
+
+
 def _applies_to_types(item: SchoolContentItem, relevant_types: set[str]) -> bool:
     """A scope="district" item with applies_to_school_types set (e.g. an
     elementary-only rotation calendar) only shows up if at least one
@@ -47,6 +78,7 @@ async def list_calendar_items(
     school_ids: str | None = None,
     category: str | None = None,
     q: str | None = None,
+    include_class_sources: bool = False,
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -57,10 +89,20 @@ async def list_calendar_items(
     sees everything unfiltered instead - there's no "my schools" to narrow
     to, and the whole point of this being public is that it doesn't need
     an account to browse. An explicit school_id always narrows further,
-    logged in or not."""
+    logged in or not.
+
+    include_class_sources=False (the default) excludes a high school's own
+    activities-calendar/announcements items - too much club-meeting-level
+    detail for a district-wide view (see CLASS_PAGE_SOURCES). The Calendar
+    page's "Show club & interest meetings" toggle is the one place that
+    flips this on; when it's on, a signed-in guardian's own grad_year
+    narrows which classes' items they see, and every remaining item gets a
+    class_label badge ("Class of 2027")."""
     my_school_ids, my_district_ids, my_school_types = ([], [], set())
+    my_grad_years: set[int] = set()
     if user:
         my_school_ids, my_district_ids, my_school_types = await _my_school_and_district_ids(db, user.id)
+        my_grad_years = await _my_grad_years(db, user.id)
 
     filter_by_type = False
     if school_ids:
@@ -95,6 +137,8 @@ async def list_calendar_items(
         SchoolContentItem.category.in_(_CALENDAR_CATEGORIES),
         SchoolContentItem.start_date.is_not(None),
     )
+    if not include_class_sources:
+        query = query.where(SchoolContentItem.source.not_in(CLASS_PAGE_SOURCES))
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:
@@ -119,6 +163,7 @@ async def list_calendar_items(
     items = (await db.execute(query)).scalars().all()
     if filter_by_type:
         items = [i for i in items if _applies_to_types(i, relevant_types)]
+    items = [i for i in items if _applies_to_grad_years(i, my_grad_years)]
 
     school_ids_in_results = {i.school_id for i in items if i.school_id}
     school_names: dict[str, str] = {}
@@ -128,7 +173,10 @@ async def list_calendar_items(
 
     return [
         SchoolContentItemOut.model_validate(i, from_attributes=True).model_copy(
-            update={"school_name": school_names.get(i.school_id) if i.scope == "school" else None}
+            update={
+                "school_name": school_names.get(i.school_id) if i.scope == "school" else None,
+                "class_label": _class_label(i),
+            }
         )
         for i in items
     ]

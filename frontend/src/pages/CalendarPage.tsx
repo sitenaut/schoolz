@@ -95,6 +95,12 @@ export function CalendarPage() {
   // still see rotation days; the checkbox lets someone who doesn't care
   // hide them instead.
   const [showDayRotation, setShowDayRotation] = useState(true);
+  // Off by default - a high school's own activities calendar/announcements
+  // run to dozens of club-meeting-level items a week, exactly the "too
+  // much detail for a district-wide view" case a per-class page exists to
+  // absorb instead (see docs/HS_CLASS_PAGES_DESIGN.md). Calendar-page
+  // state only, like showDayRotation - not a shared mySchools filter.
+  const [includeClassSources, setIncludeClassSources] = useState(false);
   const [dataReady, setDataReady] = useState(false);
   // Which school selection `items` was fetched for - scrolling to today has
   // to wait for the list that matches the current selection.
@@ -140,6 +146,7 @@ export function CalendarPage() {
     }
     if (schoolSlugs.length) q.set("school_ids", schoolIdsKey);
     if (category) q.set("category", category);
+    if (includeClassSources) q.set("include_class_sources", "true");
     const searchedTerm = isSearching ? searchTerm.trim() : null;
     apiFetch(`/calendar?${q.toString()}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -157,7 +164,7 @@ export function CalendarPage() {
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm]);
+  }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm, includeClassSources]);
 
   const colorForName = (name: string | null) => {
     const s = scopedSchools.find((m) => (m.short_name || m.name) === name);
@@ -435,6 +442,10 @@ export function CalendarPage() {
         <label className="filterCheck" title="Hides board meetings and other district items - never closures, half days, or grading dates">
           <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
           Exclude district
+        </label>
+        <label className="filterCheck" title="A high school's own activities calendar and club/interest meetings - off by default, since it runs to dozens a week. Always visible on that school's own class pages.">
+          <input type="checkbox" checked={includeClassSources} onChange={(e) => setIncludeClassSources(e.target.checked)} />
+          Show club &amp; interest meetings
         </label>
       </div>
 

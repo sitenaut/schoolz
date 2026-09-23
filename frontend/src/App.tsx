@@ -22,6 +22,7 @@ import { SmoreNewslettersPage } from "./pages/SmoreNewslettersPage";
 import { SchoolsPage } from "./pages/SchoolsPage";
 import { DirectoryPage } from "./pages/DirectoryPage";
 import { SchoolDetailPage } from "./pages/SchoolDetailPage";
+import { SchoolClassYearPage } from "./pages/schools/SchoolClassYearPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
@@ -154,6 +155,12 @@ function Routed() {
         <Route path="/jobs" element={<Navigate to="/admin/scans" replace />} />
         <Route path="/schools" element={<SchoolsPage />} />
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
+        {/* react-router v6 can't match a literal prefix inside a dynamic
+            segment ("class-of-:gradYear") - a segment is either fully
+            static or fully dynamic. Routed on the whole segment instead
+            and parsed client-side, to keep the URL shape
+            /schools/{slug}/class-of-{year} intact. */}
+        <Route path="/schools/:schoolId/:classSlug" element={<SchoolClassYearPage />} />
         <Route path="/directory" element={<DirectoryPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/backpack-capture/privacy" element={<BackpackCapturePrivacyPage />} />
