@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { IconX } from "../icons";
 
 type Props = {
@@ -19,6 +19,8 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
   const panel = useRef<HTMLDivElement>(null);
   const bg = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
+  const titleId = useId();
+  const subtitleId = useId();
   // Callers routinely pass an inline onClose (e.g. a closure that also
   // resets form state), which gets a new identity on every parent render -
   // including one triggered by typing into a field inside this modal. Kept
@@ -77,11 +79,23 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
   if (!open) return null;
   return (
     <div className="modal-bg" ref={bg} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`modal ${size}`} role="dialog" aria-modal="true" ref={panel} tabIndex={-1}>
+      <div
+        className={`modal ${size}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={subtitle ? subtitleId : undefined}
+        ref={panel}
+        tabIndex={-1}
+      >
         <div className="modal-hd">
           <div style={{ minWidth: 0 }}>
-            <h2>{title}</h2>
-            {subtitle && <div className="sub">{subtitle}</div>}
+            <h2 id={titleId}>{title}</h2>
+            {subtitle && (
+              <div className="sub" id={subtitleId}>
+                {subtitle}
+              </div>
+            )}
           </div>
           <button className="btn icon modal-x" onClick={onClose} aria-label="Close">
             <IconX />

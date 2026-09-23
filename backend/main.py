@@ -24,6 +24,7 @@ from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
+from routers import chat as chat_router  # noqa: E402
 from routers import class_years as class_years_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
 from routers import contact_messages as contact_messages_router  # noqa: E402
@@ -182,8 +183,15 @@ app.include_router(community_submissions_router.router)
 app.include_router(seo_router.router)
 app.include_router(survey_router.router)
 app.include_router(analytics_router.router)
+app.include_router(chat_router.router)
 
 from mcp_server import build_mcp_server  # noqa: E402
 
 _mcp = build_mcp_server(app)
 app.mount("/mcp", _mcp.streamable_http_app())
+# The chat router (routers/chat.py) reads this at request time rather than
+# importing _mcp directly - chat_router is imported, and its router
+# included, before _mcp exists (routers are wired up before the MCP server
+# is built), so a module-level import would be a circular/order problem.
+# Request-time access via app.state sidesteps that entirely.
+app.state.mcp = _mcp

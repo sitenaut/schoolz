@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
+import { ChatWidget } from "./ChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
@@ -291,6 +292,7 @@ export function AppShell() {
           <Link to="/privacy">Privacy &amp; cookies</Link>
         </footer>
       </main>
+      <ChatWidget />
     </div>
   );
 }
