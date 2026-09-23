@@ -356,9 +356,14 @@ h3 {
   text-decoration: underline;
 }
 
+/* Sticks *below* the header, not at 0: both are sticky at top:0 and the
+   header wins on z-index, so the ribbon (51px) spent every scrolled
+   pixel completely buried under the header (53.84px) - the school chips,
+   the main way to change what's shown, were invisible and unclickable
+   the moment the page moved at all. */
 .ribbon {
   position: sticky;
-  top: 0;
+  top: var(--header-h, 54px);
   z-index: 15;
   background: var(--card);
   border-bottom: 1px solid var(--line);
@@ -426,7 +431,6 @@ h3 {
 }
 @media (min-width: 900px) {
   .ribbon {
-    top: 0;
     /* Without this, the ribbon has no explicit grid placement and CSS
        grid auto-flow drops it into column 1 (the left nav rail's
        column) instead of column 2 (the main content column) - it then
@@ -480,7 +484,7 @@ h3 {
   }
   .shell-nav {
     position: sticky;
-    top: 57px;
+    top: var(--header-h, 57px);
     align-self: start;
     grid-column: 1;
     display: grid;
@@ -492,7 +496,7 @@ h3 {
     border-right: 1px solid var(--line);
     padding: 12px 8px;
     gap: 2px;
-    height: calc(100vh - 57px);
+    height: calc(100vh - var(--header-h, 57px));
   }
   .shell-nav a {
     width: auto;
@@ -2500,8 +2504,15 @@ select {
   font-size: 13px;
 }
 
-/* Calendar narrowed to one school by a link, until the ribbon takes over */
+/* Calendar narrowed to one school by a link, until the ribbon takes over.
+   Sticky under the header+ribbon stack: the page auto-scrolls ~2500px to
+   today's entry on arrival, which left the only control for undoing the
+   narrowing parked off the top of the document. z-index stays below the
+   ribbon's 15 so the stack layers in source order. */
 .scopeBar {
+  position: sticky;
+  top: calc(var(--header-h, 54px) + var(--ribbon-h, 0px));
+  z-index: 12;
   display: flex;
   align-items: center;
   justify-content: space-between;

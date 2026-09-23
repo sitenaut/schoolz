@@ -18,7 +18,7 @@ type ViewMode = "month" | "year";
 const TODAY_KEY = dateKey(new Date());
 
 export function CalendarPage() {
-  const { mySchools, activeSchools, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
+  const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
   const [params, setParams] = useSearchParams();
   const deepSchool = params.get("school");
   // A "this week" tap (school page) deep-links a specific day, and an
@@ -47,6 +47,17 @@ export function CalendarPage() {
       },
       { replace: true },
     );
+  };
+  // The button's own handler, deliberately not the same function the ribbon
+  // event uses below. Dropping ?school= alone was not enough to make it do
+  // what it says: arriving here from a school's "All dates" link usually
+  // means that school's chip is the only active one in the ribbon, so the
+  // narrowing survived the click, the list came back byte-identical, and
+  // the bar just vanished - indistinguishable from a dead button.
+  // Un-hiding every chip is what "all my schools" actually means.
+  const showAllMySchools = () => {
+    activateAll();
+    clearSchoolFilter();
   };
   useEffect(() => {
     if (!deepSchool) return;
@@ -307,7 +318,7 @@ export function CalendarPage() {
           <span>
             Only <b>{deepSchoolObj ? deepSchoolObj.short_name || deepSchoolObj.name : deepSchool}</b>
           </span>
-          <button type="button" className="ghost" onClick={clearSchoolFilter}>
+          <button type="button" className="ghost" onClick={showAllMySchools}>
             Show all my schools
           </button>
         </div>
