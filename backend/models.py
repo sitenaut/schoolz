@@ -263,6 +263,19 @@ class JobRun(Base):
     log_excerpt: Mapped[str | None] = mapped_column(String, nullable=True)
     # "cron" | "manual"
     triggered_by: Mapped[str] = mapped_column(String(20), default="cron", nullable=False)
+    # Set once at run start, independent of the handler's own transaction -
+    # if the process is OOM-killed/crashed mid-run, the reaper's generic
+    # "process exited mid-run" message otherwise has no pointer back to
+    # which Fly machine or Grafana trace to go look at. FLY_MACHINE_ID (or
+    # hostname locally); OTel trace id as 32-char hex.
+    machine_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Bumped by scheduler/progress.py each time a long-running handler
+    # checkpoints an interim summary into log_excerpt. The reaper never
+    # touches log_excerpt, so a crash mid-run leaves whatever was last
+    # checkpointed here instead of nothing - and this timestamp says how
+    # stale that snapshot is relative to when the process actually died.
+    last_progress_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class EmailScanner(Base):

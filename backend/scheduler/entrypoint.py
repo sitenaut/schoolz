@@ -29,7 +29,15 @@ _REAP_STUCK_RUNS_SQL = text(
         status = 'error',
         error_code = 'abandoned',
         error_stage = 'runtime',
-        error = 'process exited mid-run (OOM kill, deploy, or crash)',
+        error = CASE
+            WHEN log_excerpt IS NOT NULL THEN
+                'process exited mid-run (OOM kill, deploy, or crash) - partial progress was ' ||
+                'checkpointed before it died, see log_excerpt (last update ' ||
+                COALESCE(to_char(last_progress_at, 'YYYY-MM-DD HH24:MI:SS UTC'), 'unknown') || ')'
+            ELSE
+                'process exited mid-run (OOM kill, deploy, or crash) - no progress checkpoint ' ||
+                'was captured; check Grafana for machine_id/trace_id and started_at on this run'
+        END,
         finished_at = now()
     WHERE status = 'running' AND started_at < now() - interval '45 minutes'
     RETURNING job_id

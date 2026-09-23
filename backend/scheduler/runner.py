@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 import observability
 from database import SessionLocal
 from models import JobRun, ScheduledJob
+from scheduler import progress
 from scheduler.errors import classify_exception, parse_warning
 from scheduler.registry import registry
 
@@ -153,7 +154,7 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                 observability.job_runs_total.add(1, {"job.kind": job.kind, "status": "error", "triggered_by": triggered_by})
                 return
 
-            run = JobRun(job_id=job_id, status="running", triggered_by=triggered_by)
+            run = JobRun(job_id=job_id, status="running", triggered_by=triggered_by, machine_id=os.getenv("FLY_MACHINE_ID"))
             db.add(run)
             job.last_status = "running"
             await db.commit()
@@ -167,11 +168,21 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
             error_code: str | None = None
             error_stage: str | None = None
             caught_exc: Exception | None = None
+            progress_token = progress.bind(run_id)
             try:
                 with _tracer.start_as_current_span(
                     "job.run",
                     attributes={"job.kind": job.kind, "job.id": job.id, "job.triggered_by": triggered_by},
-                ):
+                ) as span:
+                    # Committed immediately (not batched with the handler's
+                    # own work) so it survives even if the handler later
+                    # raises and its transaction rolls back - it's the
+                    # pointer a person follows into Grafana to find out
+                    # what actually happened.
+                    span_ctx = span.get_span_context()
+                    if span_ctx.trace_id:
+                        run.trace_id = format(span_ctx.trace_id, "032x")
+                        await db.commit()
                     log_excerpt = await spec.handler(db, dict(job.params or {}))
                 await db.commit()
                 # A handler signals a non-fatal partial result (e.g. "found
@@ -208,6 +219,7 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                     started_at=started_at,
                 )
             finally:
+                progress.unbind(progress_token)
                 observability.job_in_flight.add(-1, {"job.kind": job.kind})
                 duration_s = time.perf_counter() - handler_start
                 observability.job_duration_seconds.record(duration_s, {"job.kind": job.kind, "status": run_status})

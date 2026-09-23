@@ -255,6 +255,9 @@ class JobRunOut(BaseModel):
     error_stage: str | None
     log_excerpt: str | None
     triggered_by: str
+    machine_id: str | None = None
+    trace_id: str | None = None
+    last_progress_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

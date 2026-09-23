@@ -174,6 +174,17 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
                       ) : (
                         !r.error && <p className="note" style={{ margin: 0 }}>No output was captured for this run.</p>
                       )}
+                      {r.error_code === "abandoned" && (
+                        // A reaped run (process died mid-handler: OOM kill, deploy,
+                        // crash) - the row itself has no traceback, so this is what
+                        // points at where to actually go dig: which machine, and
+                        // which Grafana trace to search for around started_at.
+                        <div className="run-meta" style={{ marginTop: 8 }}>
+                          {r.machine_id && <span>machine: {r.machine_id}</span>}
+                          {r.trace_id && <span>trace: {r.trace_id}</span>}
+                          {r.last_progress_at && <span>last checkpoint: {fmtDateTime(r.last_progress_at)}</span>}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
