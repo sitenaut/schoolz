@@ -356,14 +356,9 @@ h3 {
   text-decoration: underline;
 }
 
-/* Sticks *below* the header, not at 0: both are sticky at top:0 and the
-   header wins on z-index, so the ribbon (51px) spent every scrolled
-   pixel completely buried under the header (53.84px) - the school chips,
-   the main way to change what's shown, were invisible and unclickable
-   the moment the page moved at all. */
 .ribbon {
   position: sticky;
-  top: var(--header-h, 54px);
+  top: 0;
   z-index: 15;
   background: var(--card);
   border-bottom: 1px solid var(--line);
@@ -373,6 +368,14 @@ h3 {
   overflow-x: auto;
   scrollbar-width: none;
   align-items: center;
+}
+/* Calendar only (AppShell sets the class). Both bars are otherwise sticky at
+   top:0 and the header wins on z-index, so the ribbon (51px) tucks under the
+   header (53.84px) once the page moves - fine everywhere else, but Calendar
+   pins its "Only <school>" bar beneath the ribbon and needs it to actually
+   hold a row of its own. */
+.ribbon-stacked {
+  top: var(--header-h, 54px);
 }
 .ribbon-chip {
   flex: none;
