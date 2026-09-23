@@ -98,6 +98,11 @@ export const IconX = ({ className }: P) => (
     <path d="M6 6l12 12M18 6 6 18" />
   </svg>
 );
+export const IconSend = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M4 12 21 3l-6 18-4-8-7-1Z" />
+  </svg>
+);
 export const IconPlay = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <path d="M7 4v16l13-8z" />
