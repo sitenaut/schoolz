@@ -58,6 +58,7 @@ export function TodayPage() {
     return (
       <>
         {HOME_SEO}
+        <h1 className="sr-only">Today at your kids' schools</h1>
         <p className="note">Loading…</p>
       </>
     );
@@ -65,6 +66,7 @@ export function TodayPage() {
     return (
       <>
         {HOME_SEO}
+        <h1 className="sr-only">Today at your kids' schools</h1>
         <div className="empty">
           <p>
             <strong>Pick your kids' schools</strong> to see today's status, bell schedules, lunch, and bus info here.
@@ -96,10 +98,10 @@ export function TodayPage() {
   return (
     <>
       {HOME_SEO}
-      <div className="eyebrow">
+      <h1 className="eyebrow" style={{ margin: 0 }}>
         {heading}
         {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· showing {activeSchools.length} of {mySchools.length}</span>}
-      </div>
+      </h1>
 
       {[...alerts.values()].map((a) => {
         const md = monthDay(localDateKey(a.start_date!));
