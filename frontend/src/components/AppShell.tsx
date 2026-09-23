@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
 import { ThemeToggle } from "./ThemeToggle";
@@ -60,6 +60,31 @@ export function AppShell() {
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 
+  // Both sticky bars stack at the top of the viewport, and anything a page
+  // wants to pin under them (Calendar's "Only <school>" bar) needs to know
+  // how tall that stack is. Measured, not hardcoded: the header's height
+  // depends on the font and the viewport, and the one place that guessed it
+  // (.shell-nav's `top: 57px`) was 3px off the real 53.84px - enough to
+  // show a sliver of scrolling content through the gap. --ribbon-h is 0
+  // when the ribbon isn't rendered at all, so the stack collapses cleanly.
+  // useLayoutEffect, not useEffect: the vars have to be on :root before the
+  // browser paints, or the first frame pins anything downstream at the
+  // fallback offset and it visibly jumps into place.
+  const headerRef = useRef<HTMLElement | null>(null);
+  const ribbonRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const measure = () => {
+      root.style.setProperty("--header-h", `${headerRef.current?.offsetHeight ?? 54}px`);
+      root.style.setProperty("--ribbon-h", `${ribbonRef.current?.offsetHeight ?? 0}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (ribbonRef.current) ro.observe(ribbonRef.current);
+    return () => ro.disconnect();
+  }, [mySchools.length, hideSchoolFilter]);
+
   // An invite opened before signing in is finished the moment a signed-in
   // session shows up, wherever that happens - a Google redirect or an
   // email-confirmation link can land on the site root rather than back on
@@ -120,7 +145,7 @@ export function AppShell() {
 
   return (
     <div className="shell">
-      <header className="shell-top">
+      <header className="shell-top" ref={headerRef}>
         <Link to="/" className="brand">
           schoolz<small>Cherry Hill, NJ</small>
         </Link>
@@ -166,7 +191,7 @@ export function AppShell() {
       </header>
 
       {mySchools.length > 0 && !hideSchoolFilter && (
-        <div className="ribbon" role="group" aria-label="Switch schools">
+        <div className="ribbon" role="group" aria-label="Switch schools" ref={ribbonRef}>
           {mySchools.length > 1 && (
             <button
               className="ribbon-chip all"
