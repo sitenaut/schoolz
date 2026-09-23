@@ -372,6 +372,61 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         return _finalize(_with_gap_note(data, "any tracked events, deadlines, or other content", school["short_name"] or school["name"]))
 
     # -----------------------------------------------------------------
+    # High-school class years
+    # -----------------------------------------------------------------
+
+    @mcp.tool()
+    async def list_school_class_years(school_id_or_slug: str) -> Any:
+        """List a high school's per-graduating-class pages (grad year, label,
+        grade-level principals/advisors, Instagram/source links).
+
+        Only high schools have class-year pages - every other school_type
+        always returns an empty list, which is expected and carries no gap
+        note (there's nothing to submit here). Use a grad_year from this
+        list with get_school_class_year to get one class's actual content
+        and payment schedule.
+        """
+        school = await _resolve_school(school_id_or_slug)
+        data = await _get(f"/schools/{school_id_or_slug}/class-years")
+        if not school or school.get("school_type") != "high":
+            return _finalize(data)
+        return _finalize(_with_gap_note(data, "any graduating-class pages", school["short_name"] or school["name"]))
+
+    @mcp.tool()
+    async def get_school_class_year(school_id_or_slug: str, grad_year: int) -> Any:
+        """One graduating class's page: its own record (label, grade-level
+        principals/advisors, Instagram/source links), its tracked content
+        (fundraisers, trip announcements, deadlines - the same extraction
+        list_school_content draws on, scoped to this class), and its
+        payment schedule (trip/dues amounts, payment windows, refund
+        deadlines - the same numbers a parent sees on the website; every
+        field is public except the per-account "have I paid this" checkbox,
+        which only exists for a real signed-in guardian and always comes
+        back null here).
+
+        grad_year: the class's graduating year, e.g. 2027 - as it appears
+            in the site's /schools/{slug}/class-of-2027 URL.
+
+        A class-year page is created lazily the first time anyone looks it
+        up, so this never 404s for a real high school - an unpopulated year
+        just comes back with empty content/payments and a note pointing at
+        submit_community_content (e.g. a link to the class's payschools
+        page or fundraiser announcement).
+        """
+        school = await _resolve_school(school_id_or_slug)
+        class_year = await _get(f"/schools/{school_id_or_slug}/class-years/{grad_year}")
+        content = await _get(f"/schools/{school_id_or_slug}/class-years/{grad_year}/content")
+        payments = await _get(f"/schools/{school_id_or_slug}/class-years/{grad_year}/payments")
+        if not school:
+            return {"class_year": class_year, "content": _finalize(content), "payments": _finalize(payments)}
+        name = f"the Class of {grad_year} at {school['short_name'] or school['name']}"
+        return {
+            "class_year": class_year,
+            "content": _finalize(_with_gap_note(content, "any tracked fundraisers, deadlines, or other content", name)),
+            "payments": _finalize(_with_gap_note(payments, "a payment schedule", name)),
+        }
+
+    # -----------------------------------------------------------------
     # Districts
     # -----------------------------------------------------------------
 
