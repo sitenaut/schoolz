@@ -174,13 +174,17 @@ export type KidSpecials = {
 export type CurrentClass = {
   student_id: string;
   first_name: string;
-  period_name: string;
-  course_name: string;
+  status: "in_class" | "passing_period";
+  period_name: string | null;
+  course_name: string | null;
   teacher: string | null;
   room: string | null;
-  start_label: string;
-  end_label: string;
-  minutes_left: number;
+  start_label: string | null;
+  end_label: string | null;
+  minutes_left: number | null;
+  next_course_name: string | null;
+  next_start_label: string | null;
+  minutes_until_next: number | null;
 };
 
 export type DayBlock = { name: string; start_label: string; end_label: string };

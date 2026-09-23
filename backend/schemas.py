@@ -1251,22 +1251,35 @@ class TodayKidSpecialOut(BaseModel):
 
 
 class TodayCurrentClassOut(BaseModel):
-    """What one of the viewer's own kids is in class for RIGHT NOW at this
+    """What one of the viewer's own kids is doing for RIGHT NOW at this
     school - the high-school-schedule analogue of TodayKidSpecialOut's
     elementary specials rotation. One row per kid who has something to
     show (see services/school_today.py:_my_current_classes) - naturally
     handles 1, 2, or 3+ kids at the same school the same way the specials
-    list already does, no special-casing needed."""
+    list already does, no special-casing needed.
+
+    status="in_class" (the period_name..minutes_left fields) or
+    status="passing_period" (the next_* fields instead) - a real gap
+    between two of today's blocks gets its own explicit label rather than
+    silently showing nothing, which read as "is this broken?" rather than
+    "hallway transition time" (confirmed real: East's own bell table
+    leaves a genuine 4-minute gap between periods A and B). A kid with
+    nothing to show at all (before/after the school day, no data) simply
+    isn't in this list - see _my_current_classes."""
 
     student_id: str
     first_name: str
-    period_name: str
-    course_name: str
-    teacher: str | None
-    room: str | None
-    start_label: str
-    end_label: str
-    minutes_left: int
+    status: str  # "in_class" | "passing_period"
+    period_name: str | None = None
+    course_name: str | None = None
+    teacher: str | None = None
+    room: str | None = None
+    start_label: str | None = None
+    end_label: str | None = None
+    minutes_left: int | None = None
+    next_course_name: str | None = None
+    next_start_label: str | None = None
+    minutes_until_next: int | None = None
 
 
 SchoolTodayOut.model_rebuild()
