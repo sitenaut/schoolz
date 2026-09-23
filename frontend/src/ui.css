@@ -702,7 +702,12 @@ pre.json {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   width: 100%;
   max-width: 560px;
-  max-height: calc(100vh - 32px);
+  /* Percentage, not vh: Modal.tsx pins .modal-bg's own box to
+     window.visualViewport (see its effect), so 100% of this flex parent's
+     content box is already the correct, zoom-safe available height - vh
+     tracks the layout viewport instead and can disagree once the page is
+     pinch-zoomed, letting this cap exceed what's actually visible. */
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   animation: ui-pop 0.16s ease-out;
@@ -761,7 +766,7 @@ pre.json {
     align-items: flex-end;
   }
   .modal {
-    max-height: 94vh;
+    max-height: 94%;
     border-radius: 16px 16px 0 0;
   }
 }
