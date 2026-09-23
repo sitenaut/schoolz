@@ -12,6 +12,11 @@
   --primary: #1f7f9f;
   --primary-ink: #ffffff;
   --primary-soft: #e3f1f6;
+  /* Darker than --primary: only for text set directly on --primary-soft
+     (e.g. the active-nav state), where --primary itself falls just short
+     of the 4.5:1 contrast ratio. --primary alone still passes against
+     --bg/--card, so it's left as-is everywhere else. */
+  --primary-strong: #185a70;
   --ok: #2f8f5b;
   --ok-soft: #e4f3ea;
   --warn: #b7791f;
@@ -84,6 +89,9 @@
     --primary: #4fa9c8;
     --primary-ink: #0e1a20;
     --primary-soft: #1c3440;
+    /* --primary already clears 4.5:1 against dark --primary-soft, unlike
+       in light mode, so --primary-strong doesn't need its own dark hue. */
+    --primary-strong: #4fa9c8;
     --ok: #5cc08a;
     --ok-soft: #1c342a;
     --warn: #e0a33c;
@@ -248,7 +256,7 @@ h3 {
   font-family: var(--font-b);
   font-weight: 600;
   font-size: 11px;
-  color: var(--ink-3);
+  color: var(--ink-2);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -331,7 +339,7 @@ h3 {
   stroke-linejoin: round;
 }
 .shell-nav a[aria-current="page"] {
-  color: var(--primary);
+  color: var(--primary-strong);
 }
 .shell-main {
   padding: 14px 16px calc(var(--nav-h) + 24px);
@@ -348,7 +356,7 @@ h3 {
   gap: 16px;
 }
 .shell-footer a {
-  color: var(--ink-3);
+  color: var(--ink-2);
   text-decoration: none;
 }
 .shell-footer a:hover {
@@ -575,6 +583,20 @@ h3 {
   margin: 0 0 10px;
   color: var(--ink-2);
   font-size: 13px;
+}
+/* Visually hidden but present for screen readers/heading navigation -
+   standard clip-based sr-only pattern (not display:none, which pulls it
+   from the accessibility tree too). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .fine {
   font-size: 12.5px;
