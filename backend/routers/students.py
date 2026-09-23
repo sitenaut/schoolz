@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models import GuardianInvite, GuardianStudentLink, Notification, School, Student, User, student_match_key
-from schemas import InviteCreate, InviteOut, StudentCreate, StudentOut
+from schemas import InviteCreate, InviteOut, StudentCreate, StudentOut, StudentUpdate
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -32,6 +32,7 @@ async def _student_out(db: AsyncSession, student: Student, link: GuardianStudent
         school_name=student.school_name,
         school_id=student.school_id,
         school_type=(await db.get(School, student.school_id)).school_type if student.school_id else None,
+        grad_year=student.grad_year,
         guardian_count=await _guardian_count(db, student.id),
         linked_via=link.linked_via,
         matched_existing=matched_existing,
@@ -128,6 +129,26 @@ async def _get_own_link(db: AsyncSession, user_id: str, student_id: str) -> Guar
     if not link:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Student not found on your profile")
     return link
+
+
+@router.patch("/{student_id}", response_model=StudentOut)
+async def update_student(
+    student_id: str, payload: StudentUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """Any linked guardian can set/correct grad_year - the Student row is
+    shared, same as everything else about it (name, school). Typed on My
+    Children, or left null (the class pages still work reached directly by
+    URL, just with no default class to land a guardian on)."""
+    link = await _get_own_link(db, user.id, student_id)
+    student = await db.get(Student, student_id)
+    if not student:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Student not found")
+    fields = payload.model_dump(exclude_unset=True)
+    if "grad_year" in fields:
+        student.grad_year = fields["grad_year"]
+    await db.commit()
+    await db.refresh(student)
+    return await _student_out(db, student, link)
 
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)

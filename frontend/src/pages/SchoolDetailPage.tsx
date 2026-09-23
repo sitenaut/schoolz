@@ -14,9 +14,10 @@ import { usePrerenderReady } from "../lib/prerenderReady";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { SITE_URL } from "../lib/site";
 import { trackEvent, trackMeasurement } from "../lib/track";
-import type { SaccProgram, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
+import type { SaccProgram, SchoolClassYear, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
 
 type Newsletter = { id: string; label: string | null; url: string; latest_summary: string | null; last_scanned_at: string | null };
+type StudentMini = { id: string; school_id: string | null; grad_year: number | null };
 
 const MORE_SECTIONS: { category: string; title: string }[] = [
   { category: "program", title: "Programs" },
@@ -46,6 +47,8 @@ export function SchoolDetailPage() {
   const [sacc, setSacc] = useState<SaccProgram | null>(null);
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [transport, setTransport] = useState<SchoolTransportation | null>(null);
+  const [classYears, setClassYears] = useState<SchoolClassYear[]>([]);
+  const [myStudents, setMyStudents] = useState<StudentMini[]>([]);
   const [missing, setMissing] = useState(false);
   const [editingHours, setEditingHours] = useState(false);
   const { user } = useAuth();
@@ -62,7 +65,11 @@ export function SchoolDetailPage() {
       apiFetch(`/schools/${schoolId}/sacc`).then((r) => (r.ok ? r.json() : null)),
       apiFetch(`/schools/${schoolId}/newsletters`).then((r) => (r.ok ? r.json() : [])),
       apiFetch(`/schools/${schoolId}/transportation`).then((r) => (r.ok ? r.json() : null)),
-    ]).then(([t, c, st, docs, sc, nl, tr]) => {
+      // Cheap for a non-high-school too (the endpoint just returns []) -
+      // fetched alongside everything else rather than gated on school_type,
+      // which isn't known until `today` itself resolves.
+      apiFetch(`/schools/${schoolId}/class-years`).then((r) => (r.ok ? r.json() : [])),
+    ]).then(([t, c, st, docs, sc, nl, tr, cy]) => {
       if (!t) setMissing(true);
       setToday(t);
       setItems(c);
@@ -71,9 +78,19 @@ export function SchoolDetailPage() {
       setSacc(sc);
       setNewsletters(nl);
       setTransport(tr);
+      setClassYears(cy);
       if (t) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
     });
   }, [schoolId]);
+
+  // Only fetched when signed in - which class, if any, is highlighted
+  // first in the strip.
+  useEffect(() => {
+    if (!user) return;
+    apiFetch("/students")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setMyStudents);
+  }, [user]);
 
   const { excludeDistrict } = useMySchools();
   const tk = todayKey();
@@ -256,6 +273,24 @@ export function SchoolDetailPage() {
         </div>
       </div>
       {s.absence_instructions && s.absence_method !== "portal" && <p className="note">{s.absence_instructions}</p>}
+
+      {classYears.length > 0 && (
+        <div className="tabs" style={{ margin: "12px 0" }}>
+          {classYears.map((c) => {
+            const isMine = myStudents.some((st) => st.school_id === s.id && st.grad_year === c.grad_year);
+            return (
+              <Link
+                key={c.grad_year}
+                className={`tab${isMine ? " active" : ""}`}
+                to={`/schools/${s.slug}/class-of-${c.grad_year}`}
+                onClick={() => track("class_strip", "link")}
+              >
+                Class of {c.grad_year}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <div className="h-row">
         <h2>This week</h2>

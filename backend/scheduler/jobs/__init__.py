@@ -1,6 +1,9 @@
 from . import district_calendar_scan  # noqa: F401
 from . import documents_scan  # noqa: F401
 from . import email_scan  # noqa: F401
+from . import hs_activities_site_scan  # noqa: F401
+from . import hs_announcements_scan  # noqa: F401
+from . import hs_class_calendar_scan  # noqa: F401
 from . import hs_rotation_scan  # noqa: F401
 from . import local_events_refresh  # noqa: F401
 from . import lunch_menu_scan  # noqa: F401

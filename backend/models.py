@@ -100,6 +100,17 @@ class Student(Base):
     # second guardian entering the same child gets auto-matched to this row
     # instead of creating a duplicate.
     match_key: Mapped[str] = mapped_column(String(400), unique=True, index=True, nullable=False)
+    # Graduating class year (e.g. 2027), high-school students only - typed
+    # on My Children or derived from a Genesis grade level via the same
+    # Jul-Jun school-year boundary used elsewhere in this app. Deliberately
+    # the graduating year, not the current grade number: the school's own
+    # materials describe multi-year things ("Fall of junior year") relative
+    # to the cohort, and a grade number silently means a different set of
+    # kids every July while "Class of 2027" never does. Drives the default
+    # class page a signed-in guardian lands on
+    # (/schools/{slug}/class-of-{grad_year}) - null just means no default,
+    # the pages still work when reached directly.
+    grad_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # The student's own schoolz login, if a guardian has granted one (see
     # StudentAccountInvite). A student account *is* this pointer - not a
     # guardian link, not a separate account type - so a student sees the
@@ -483,9 +494,152 @@ class School(Base):
     # first, confirmed 2026-09-12) - most schools have no such page at all.
     special_events_calendar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     special_events_scan_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # High-school class-pages sources (see docs/HS_CLASS_PAGES_DESIGN.md).
+    # Opt-in per school like special_events_calendar_url, not auto-derived
+    # from website_url - a Google Sites activities microsite, a public
+    # Google Calendar, and a Google Doc are each their own separate URL a
+    # human has to go find and paste in, unlike the school's own Finalsite
+    # site the other website_url-triggered scans assume.
+    #
+    # A school's own events calendar (.ics) - same shape as
+    # District.ics_feeds but singular, since a school publishes at most one
+    # of these (unlike a district's several grade-tier feeds). Tagged
+    # source="school_ics" on the resulting SchoolContentItem rows and off
+    # by default in the general calendar (too much club-meeting detail for
+    # a district-wide view - see CalendarPage's "Show club & interest
+    # meetings" toggle), always on within a class page.
+    activities_calendar_ics_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    activities_calendar_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # A single running Google Doc, appended to daily (Cherry Hill East's
+    # "Morning Announcements") - the richest source for same-day, lunch-
+    # block-level student life detail (club meetings, game results,
+    # same-day cancellations) that nothing else in the district publishes.
+    # Scanned on a tighter cadence than the 12h public-source default (see
+    # scheduler/jobs/hs_announcements_scan.py) because its content is
+    # genuinely same-day.
+    announcements_doc_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    announcements_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Watermark ("YYYY-MM-DD", the most recent day-block date header this
+    # school's announcements doc has been parsed through) - the doc is one
+    # running file appended to daily forever, so re-parsing it in full on
+    # every scan means re-sending an ever-growing document to the model for
+    # no gain: every block older than this has already been extracted and
+    # doesn't change (see services/hs_announcements.py).
+    announcements_last_parsed_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # A Google Sites (or similar) "class of 2027/2028/..." activities
+    # microsite - the base/home page URL; the scan crawls its own nav to
+    # find every sub-page (see services/hs_activities_site.py). Deliberately
+    # not scraper-fetched: Google Sites server-renders, so a plain httpx
+    # GET gets everything, keeping these ~20 page fetches off the 12h
+    # burst's shared Chromium.
+    activities_site_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    activities_site_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class SchoolClassYear(Base):
+    """One graduating class at a HIGH SCHOOL - the entity a class page
+    (/schools/{slug}/class-of-{grad_year}) renders. See
+    docs/HS_CLASS_PAGES_DESIGN.md for the full design.
+
+    Rows are provisioned lazily (GET /schools/{id}/class-years creates the
+    four in-progress classes - current freshmen through seniors - the
+    first time they're asked for), never by an admin form: the interesting
+    per-class facts (advisors, Instagram) come out of
+    services/hs_activities_site.py's own extraction, not hand entry."""
+
+    __tablename__ = "school_class_years"
+    __table_args__ = (UniqueConstraint("school_id", "grad_year", name="uq_school_class_year"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    school_id: Mapped[str] = mapped_column(String(36), ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
+    grad_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    # "Seniors" / "Juniors" / ... - derived from grad_year vs. the current
+    # academic year at read time by default; stored only when an admin
+    # overrides it (e.g. a school that labels itself differently).
+    label: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Resolved against the existing StaffMember directory by normalized
+    # name, same as SchoolContentItem.staff_member_id - an ambiguous match
+    # resolves to none, never a guess. Two lists: East's own activities
+    # site names a "Grade Level Principal" and separate class "Advisors"
+    # as distinct roles, and a class routinely has more than one of each.
+    grade_level_principal_staff_ids: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    advisor_staff_ids: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    instagram_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # The specific activities-site sub-page this class's own facts were
+    # extracted from (e.g. .../class-of-2027) - provenance, and lets a
+    # human spot-check against the real source.
+    source_page_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class ClassPayment(Base):
+    """One step in a graduating class's payment ladder (the senior trip is
+    the confirmed real case: four optional deposits over three years, then
+    three official ones). A sidecar next to SchoolContentItem the same way
+    LunchMenuItem sits next to category='lunch_menu' - a deadline row with
+    a title can't answer "how much do I still owe" or "which methods are
+    accepted this window", and East's own materials describe a real
+    payment method/window/refundability per step that a generic deadline
+    would lose.
+
+    amount_cents is nullable and that's load-bearing, following the same
+    rule as ChildWorkItem.points_possible and late_credit(): "unknown" must
+    stay distinguishable from "known to be zero" - a future class's ladder
+    is routinely entirely TBD ("Amount TBD in Spring of 2027") and showing
+    $0 there would be a lie."""
+
+    __tablename__ = "class_payments"
+    __table_args__ = (UniqueConstraint("school_class_year_id", "sequence", name="uq_class_payment_sequence"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    school_class_year_id: Mapped[str] = mapped_column(String(36), ForeignKey("school_class_years.id", ondelete="CASCADE"), nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)  # display order, 1-based
+    # "optional" | "official" - East's own vocabulary: optional deposits
+    # (freshman spring through junior fall) are PaySchools-only and
+    # refundable; official ones (junior spring, senior fall, senior
+    # November) also take cash/check and are the ones that actually commit
+    # the seat.
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    label: Mapped[str] = mapped_column(String(200), nullable=False)  # e.g. "Optional Deposit #3"
+    amount_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    window_opens_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    window_closes_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # e.g. ["payschools_ach", "payschools_card", "cash", "check"] - which
+    # of these are accepted THIS window (East's own real constraint: the
+    # four optional deposits are PaySchools-only; only the three official
+    # ones ever take cash/check).
+    methods: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    # The exact PaySchools line-item name, so a family can find the right
+    # one in a list of near-identical entries (e.g. "EAST - Senior Trip
+    # 2027 - Optional Deposit #4").
+    payschools_item_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    refundable_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class ClassPaymentTick(Base):
+    """One guardian's own record of "I've made this payment" - keyed on
+    user_id, deliberately never student_id, same reasoning as
+    CourseDisplayPreference: a Student row is shared across every linked
+    guardian, and one parent's tracking of what THEY'VE paid must not leak
+    to (or be overwritten by) another guardian of the same kid, nor imply
+    anything about whether the school has actually received it. This is a
+    personal checklist over the canonical ClassPayment ladder, not a
+    payment record - schoolz never touches PaySchools."""
+
+    __tablename__ = "class_payment_ticks"
+    __table_args__ = (UniqueConstraint("user_id", "class_payment_id", name="uq_class_payment_tick"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    class_payment_id: Mapped[str] = mapped_column(String(36), ForeignKey("class_payments.id", ondelete="CASCADE"), nullable=False, index=True)
+    ticked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 class LunchMenu(Base):
@@ -600,12 +754,21 @@ class SchoolContentItem(Base):
     newsletter_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("smore_newsletters.id", ondelete="SET NULL"), nullable=True)
     source_block_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("smore_blocks.id", ondelete="SET NULL"), nullable=True)
     # "newsletter" (default, from content_extractor.py) | "ics_feed" (from
-    # services/district_calendar.py). external_uid is the iCal UID for
-    # ics_feed rows - lets a re-scan update an existing row in place
-    # instead of creating a duplicate, and also lets the ics scan claim an
-    # already-newsletter-extracted row for the same district/category/date
-    # (e.g. "Labor Day" reported independently by both a school's own
-    # newsletter and the district calendar feed) rather than doubling it.
+    # services/district_calendar.py) | "school_ics" (from
+    # services/hs_class_calendar.py - a school's OWN calendar feed, as
+    # opposed to the district's; kept a distinct value rather than reusing
+    # "ics_feed" specifically so the frontend can default these off in the
+    # general calendar - a school activities feed runs to dozens of club
+    # interest meetings, which is exactly the "too much detail for the
+    # district view" case a per-class page exists to absorb instead) |
+    # "hs_announcements" (from services/hs_announcements.py) |
+    # "hs_activities_site" (from services/hs_activities_site.py).
+    # external_uid is the iCal UID for ics_feed/school_ics rows - lets a
+    # re-scan update an existing row in place instead of creating a
+    # duplicate, and also lets the ics scan claim an already-newsletter-
+    # extracted row for the same district/category/date (e.g. "Labor Day"
+    # reported independently by both a school's own newsletter and the
+    # district calendar feed) rather than doubling it.
     source: Mapped[str] = mapped_column(String(20), default="newsletter", nullable=False)
     external_uid: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
     # Restricts a scope="district" item to specific School.school_type
@@ -618,6 +781,20 @@ class SchoolContentItem(Base):
     # genuinely shared/identical across every school of that type, not
     # school-specific content that happens to repeat.
     applies_to_school_types: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    # Restricts an item to specific graduating class years at a HIGH SCHOOL
+    # (e.g. [2028, 2029] for "sophomores and juniors only" picture day) -
+    # the exact same nullable-means-everyone shape as
+    # applies_to_school_types, a filter on top of the row rather than one
+    # duplicated row per class. A list, not a scalar single year: real
+    # cases are routinely multi-class ("open to 10th through 12th graders"),
+    # and collapsing that to "all" would throw away the one thing that
+    # makes the item worth showing. Set by services/hs_activities_site.py
+    # from the source page's own URL (a class-of-2027 sub-page sets [2027]
+    # deterministically, before any model sees the text) or by
+    # services/hs_announcements.py from a bullet's stated audience
+    # ("ALL FRESHMEN", "10th through 12th graders"). See
+    # docs/HS_CLASS_PAGES_DESIGN.md.
+    applies_to_grad_years: Mapped[list[int] | None] = mapped_column(JSON, nullable=True)
     # "event" | "deadline" | "initiative" | "reminder" | "policy_change" |
     # "procedure" | "program" | "busing" | "funding" | "volunteer" |
     # "org_club" | "merch_ad" | "pta" | "person" | "lunch_menu" |

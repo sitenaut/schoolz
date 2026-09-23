@@ -145,6 +145,7 @@ export function ItemRow({ item, color, schoolName, highlighted }: { item: School
               {schoolName}
             </span>
           )}
+          {item.class_label && <span className="tag">{item.class_label}</span>}
           <ItemTag item={item} />
         </div>
         {(cal || item.link_url) && (

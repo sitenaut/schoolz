@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
@@ -8,7 +8,7 @@ import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconSearch } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
 import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
-import type { School } from "../types";
+import type { School, SchoolClassYear } from "../types";
 
 export function SchoolsPage() {
   const { user } = useAuth();
@@ -43,6 +43,28 @@ export function SchoolsPage() {
       ),
     [schools],
   );
+
+  // A high school's class chips, shown inline on its tile so a parent can
+  // jump straight to "Class of 2029" without a stop at the school page
+  // first. Fetched only for the high schools actually in view (a bounded,
+  // small set - a district has a handful at most).
+  const [classYearsBySlug, setClassYearsBySlug] = useState<Record<string, SchoolClassYear[]>>({});
+  const highSchoolSlugs = useMemo(() => schools.filter((s) => s.school_type === "high").map((s) => s.slug).join(","), [schools]);
+  useEffect(() => {
+    if (!highSchoolSlugs) return;
+    let cancelled = false;
+    Promise.all(
+      highSchoolSlugs.split(",").map((slug) => apiFetch(`/schools/${slug}/class-years`).then((r) => (r.ok ? r.json() : []))),
+    ).then((results) => {
+      if (cancelled) return;
+      const bySlug: Record<string, SchoolClassYear[]> = {};
+      highSchoolSlugs.split(",").forEach((slug, i) => (bySlug[slug] = results[i]));
+      setClassYearsBySlug(bySlug);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [highSchoolSlugs]);
 
   const addSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,10 +135,21 @@ export function SchoolsPage() {
             <div className="tier">{g.label}</div>
             <div className="sgrid">
               {g.schools.map((s) => (
-                <Link className="sopt" to={`/schools/${s.slug}`} key={s.id}>
-                  {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
-                  {s.short_name || s.name}
-                </Link>
+                <div key={s.id}>
+                  <Link className="sopt" to={`/schools/${s.slug}`}>
+                    {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
+                    {s.short_name || s.name}
+                  </Link>
+                  {(classYearsBySlug[s.slug]?.length ?? 0) > 0 && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                      {classYearsBySlug[s.slug].map((c) => (
+                        <Link key={c.grad_year} className="tag" style={{ textDecoration: "none" }} to={`/schools/${s.slug}/class-of-${c.grad_year}`}>
+                          {c.grad_year}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>

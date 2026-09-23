@@ -8,6 +8,7 @@ from auth import get_current_user, get_optional_user, require_admin
 from database import get_db
 from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
+from services.class_years import CLASS_PAGE_SOURCES
 from services.school_today import build_today, resolve_lunch_menu
 from services.transportation import late_bus_for_school
 from routers.smore_newsletters import _to_out as _newsletter_to_out
@@ -96,6 +97,65 @@ async def _ensure_special_events_job(db: AsyncSession, school: School, user: Use
     db.add(job)
     await db.flush()
     school.special_events_scan_job_id = job.id
+
+
+async def _ensure_activities_calendar_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring scan of a HIGH SCHOOL's own activities
+    calendar (.ics) the first time it gets activities_calendar_ics_url -
+    opt-in, like special_events_calendar_url, since most schools have no
+    such feed at all. See docs/HS_CLASS_PAGES_DESIGN.md."""
+    if school.activities_calendar_job_id or not school.activities_calendar_ics_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="hs_class_calendar.scan",
+        name=f"HS activities calendar scan: {school.name}",
+        cron_expr="0 */12 * * *",
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.activities_calendar_job_id = job.id
+
+
+async def _ensure_announcements_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring scan of a HIGH SCHOOL's Morning
+    Announcements doc the first time it gets announcements_doc_url. Tighter
+    cadence than the other HS scans, set on the job kind itself
+    (scheduler/jobs/hs_announcements_scan.py) - this source's value is
+    same-day content a 12h cadence would routinely miss."""
+    if school.announcements_job_id or not school.announcements_doc_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="hs_announcements.scan",
+        name=f"HS announcements scan: {school.name}",
+        cron_expr="0 6-18/2 * * 1-5",
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.announcements_job_id = job.id
+
+
+async def _ensure_activities_site_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring crawl of a HIGH SCHOOL's own activities
+    microsite the first time it gets activities_site_url."""
+    if school.activities_site_job_id or not school.activities_site_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="hs_activities_site.scan",
+        name=f"HS activities site scan: {school.name}",
+        cron_expr="0 */12 * * *",
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.activities_site_job_id = job.id
 
 
 async def _unique_slug(db: AsyncSession, base_text: str) -> str:
@@ -187,7 +247,10 @@ async def update_school(
         school.school_type = payload.school_type
     if payload.website_url is not None:
         school.website_url = payload.website_url
-    for field in ("start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url", "special_events_calendar_url"):
+    for field in (
+        "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
+        "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
+    ):
         value = getattr(payload, field)
         if value is not None:
             setattr(school, field, value or None)
@@ -200,6 +263,9 @@ async def update_school(
     await _ensure_documents_scan_job(db, school, user)
     await _ensure_school_info_job(db, school, user)
     await _ensure_special_events_job(db, school, user)
+    await _ensure_activities_calendar_job(db, school, user)
+    await _ensure_announcements_job(db, school, user)
+    await _ensure_activities_site_job(db, school, user)
     await db.commit()
     await db.refresh(school)
     return school
@@ -264,6 +330,39 @@ async def run_special_events_scan_now(school: School = Depends(resolve_school), 
     from scheduler.runner import run_job_now
 
     run_job_now(school.special_events_scan_job_id)
+    return {"status": "started"}
+
+
+@router.post("/{school_id}/activities-calendar/run-now")
+async def run_activities_calendar_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+    if not school.activities_calendar_job_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked activities-calendar job")
+
+    from scheduler.runner import run_job_now
+
+    run_job_now(school.activities_calendar_job_id)
+    return {"status": "started"}
+
+
+@router.post("/{school_id}/announcements/run-now")
+async def run_announcements_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+    if not school.announcements_job_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked announcements job")
+
+    from scheduler.runner import run_job_now
+
+    run_job_now(school.announcements_job_id)
+    return {"status": "started"}
+
+
+@router.post("/{school_id}/activities-site/run-now")
+async def run_activities_site_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+    if not school.activities_site_job_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked activities-site job")
+
+    from scheduler.runner import run_job_now
+
+    run_job_now(school.activities_site_job_id)
     return {"status": "started"}
 
 
@@ -348,19 +447,29 @@ async def list_school_content(
     category: str | None = None,
     q: str | None = None,
     include_superseded: bool = False,
+    include_class_sources: bool = False,
     school: School = Depends(resolve_school),
     db: AsyncSession = Depends(get_db),
 ):
     """A school's own view includes both its school-scoped items and its
     district's district-scoped items (e.g. holiday closures) - a parent
     looking at their kid's school page shouldn't have to separately check
-    a district page to see "school closed" days."""
+    a district page to see "school closed" days.
+
+    include_class_sources=False (the default) excludes the high-school
+    class-page sources (a school's own activities calendar/announcements,
+    which run to dozens of club-meeting-level items a week) - exactly the
+    "too much detail for a general view" case a per-class page
+    (/schools/{id}/class-years/{grad_year}/content, which always includes
+    them) exists to absorb instead. See docs/HS_CLASS_PAGES_DESIGN.md."""
     scope_filter = SchoolContentItem.school_id == school.id
     if school.district_id:
         scope_filter = or_(scope_filter, SchoolContentItem.district_id == school.district_id)
     query = select(SchoolContentItem).where(scope_filter)
     if not include_superseded:
         query = query.where(SchoolContentItem.is_current.is_(True))
+    if not include_class_sources:
+        query = query.where(SchoolContentItem.source.not_in(CLASS_PAGE_SOURCES))
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:

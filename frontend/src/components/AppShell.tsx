@@ -16,6 +16,7 @@ import { invitePath, loadPendingInvite } from "../lib/pendingInvite";
 // page_view's `route` attribute low-cardinality (a school slug or invite
 // token never appears in it) instead of the raw pathname.
 const ROUTE_TEMPLATES: [RegExp, string][] = [
+  [/^\/schools\/[^/]+\/class-of-\d+$/, "/schools/:schoolId/class-of-:gradYear"],
   [/^\/schools\/[^/]+$/, "/schools/:schoolId"],
   [/^\/invites\/[^/]+$/, "/invites/:token"],
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],

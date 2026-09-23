@@ -3,6 +3,12 @@ export type SchoolContentItem = {
   scope: "school" | "district";
   school_name: string | null;
   applies_to_school_types: string[] | null;
+  // Grad years this item is scoped to (null = whole school) - see
+  // docs/HS_CLASS_PAGES_DESIGN.md. class_label is a display badge
+  // ("Class of 2027"), populated only by endpoints that span classes
+  // (the general calendar), same idea as school_name.
+  applies_to_grad_years: number[] | null;
+  class_label: string | null;
   category: string;
   title: string;
   description: string | null;
@@ -45,6 +51,38 @@ export type School = {
 };
 
 export type BellPeriod = { name: string; start: string; end: string };
+
+export type StaffMini = { id: string; full_name: string; title: string | null; email: string | null };
+
+export type SchoolClassYear = {
+  id: string;
+  school_id: string;
+  grad_year: number;
+  label: string;
+  grade_level_principals: StaffMini[];
+  advisors: StaffMini[];
+  instagram_url: string | null;
+  source_page_url: string | null;
+  updated_at: string;
+};
+
+export type ClassPayment = {
+  id: string;
+  school_class_year_id: string;
+  sequence: number;
+  kind: "optional" | "official";
+  label: string;
+  amount_cents: number | null;
+  window_opens_at: string | null;
+  window_closes_at: string | null;
+  methods: string[] | null;
+  payschools_item_name: string | null;
+  refundable_until: string | null;
+  notes: string | null;
+  // null for an anonymous visitor (nothing to tick); a bool for anyone
+  // signed in - see ClassPaymentTick in the backend.
+  ticked: boolean | null;
+};
 
 export type StaffMember = {
   id: string;

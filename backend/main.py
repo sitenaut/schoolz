@@ -24,6 +24,7 @@ from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
+from routers import class_years as class_years_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
 from routers import contact_messages as contact_messages_router  # noqa: E402
 from routers import directory as directory_router  # noqa: E402
@@ -172,6 +173,7 @@ app.include_router(scheduled_jobs_router.router)
 app.include_router(school_emails_router.router)
 app.include_router(smore_newsletters_router.router)
 app.include_router(schools_router.router)
+app.include_router(class_years_router.router)
 app.include_router(districts_router.router)
 app.include_router(directory_router.router)
 app.include_router(calendar_router.router)
