@@ -110,10 +110,13 @@ def build_day(d: date, status: str, rotation_day: str | None, letters: list[str]
 async def current_class_for_student(db: AsyncSession, school: School, student_id: str, now: datetime | None = None) -> dict | None:
     """What class this student is in RIGHT NOW - the same block-letter ->
     course pipeline as upcoming_days(), resolved for one instant instead of
-    a multi-day list. None covers every reason there's nothing to show: a
-    weekend, a non-school day, no rotation letters found for today, no
-    bell table entry `now` falls inside (before/after the day, a gap the
-    table doesn't name), or no list-view course on file for that block.
+    a multi-day list. Returns {"status": "in_class", ...} or
+    {"status": "passing_period", ...} (see each branch below for the
+    exact fields), or None when there's genuinely nothing to say: a
+    weekend, a non-school day, no rotation letters found for today, `now`
+    outside the school day's span entirely (before the first block or
+    after the last), or no list-view course on file for the relevant
+    block.
 
     Deliberately its own small function rather than reusing build_day()'s
     output: build_day() formats clock times through bell_schedule's 12h
@@ -163,21 +166,50 @@ async def current_class_for_student(db: AsyncSession, school: School, student_id
     if not fit:
         return None
 
-    current_time = now.time()
-    slot = next((s for s in fit[1] if _parse_hm(s["start"]) <= current_time < _parse_hm(s["end"])), None)
-    if not slot:
-        return None
-
     m = _ROTATION_RE.match(rot.title.strip())
     day_number = int(m.group(1)) if m else None
     mps = (await db.execute(select(ChildMarkingPeriod).where(ChildMarkingPeriod.student_id == student_id))).scalars().all()
-    rows = courses_for(slot["name"], day_number, term_for(today, mps), list_blocks)
+    term = term_for(today, mps)
+
+    slots = fit[1]
+    current_time = now.time()
+    slot = next((s for s in slots if _parse_hm(s["start"]) <= current_time < _parse_hm(s["end"])), None)
+
+    if slot is None:
+        # Not inside any named period - either a real passing period
+        # (between two of today's blocks) or simply outside the school
+        # day's span (before the first block, after the last). Only the
+        # former is worth a label: a parent already knows from the
+        # school's own open/closed status elsewhere on the card that
+        # nothing is happening before school starts or after it lets out,
+        # so relabeling that would just be noise. A gap BETWEEN two real
+        # blocks is the one case that reads as "is this broken?" without
+        # an explicit label - confirmed real on East's own bell table,
+        # which leaves a genuine 4-minute gap between periods A and B.
+        first_start, last_end = _parse_hm(slots[0]["start"]), _parse_hm(slots[-1]["end"])
+        if not (first_start <= current_time < last_end):
+            return None
+        next_slot = next((s for s in slots if _parse_hm(s["start"]) > current_time), None)
+        if not next_slot:
+            return None
+        next_rows = courses_for(next_slot["name"], day_number, term, list_blocks)
+        next_start = _parse_hm(next_slot["start"])
+        next_start_dt = datetime.combine(today, next_start, LOCAL_TZ)
+        return {
+            "status": "passing_period",
+            "next_course_name": " / ".join(r.course_name for r in next_rows) or None,
+            "next_start_label": next_start.strftime("%-I:%M %p"),
+            "minutes_until_next": max(0, int((next_start_dt - now).total_seconds() // 60)),
+        }
+
+    rows = courses_for(slot["name"], day_number, term, list_blocks)
     if not rows:
         return None
 
     start, end = _parse_hm(slot["start"]), _parse_hm(slot["end"])
     end_dt = datetime.combine(today, end, LOCAL_TZ)
     return {
+        "status": "in_class",
         "period_name": slot["name"],
         "course_name": " / ".join(r.course_name for r in rows),
         "teacher": rows[0].teacher if len(rows) == 1 else None,
