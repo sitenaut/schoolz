@@ -20,6 +20,7 @@ from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 import httpx
+from bs4 import BeautifulSoup
 from icalendar import Calendar
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,43 @@ def _stable_uid(uid: str | None, title: str, dt: datetime) -> str:
     return f"hash:{digest[:24]}"
 
 
+_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
+_BLOCK_TAGS = ("p", "div", "li", "ul", "ol", "h1", "h2", "h3", "h4", "tr")
+
+
+def description_text(raw: str | None) -> str | None:
+    """Plain text for a VEVENT DESCRIPTION.
+
+    Google Calendar stores a description edited in its rich-text box as
+    HTML and exports it verbatim - confirmed on Cherry Hill East's school
+    calendar, where "PSAT DAY" arrived as `...all<i> </i><b><i>10</i></b>
+    <b><i>th </i></b>...` and the tags showed up literally on the page.
+    Plain-text descriptions pass through untouched (only trimmed). Line
+    breaks are kept - the frontend renders descriptions with pre-line.
+    """
+    text = (raw or "").strip()
+    if not text:
+        return None
+    if not _TAG_RE.search(text):
+        return text
+    soup = BeautifulSoup(text, "html.parser")
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
+    for a in soup.find_all("a", href=True):
+        # Keep the destination when the link text doesn't already show it,
+        # since the text alone ("Sign up here") is useless without the href.
+        label = a.get_text().strip()
+        href = a["href"].strip()
+        if href and href not in label and not href.startswith("mailto:"):
+            a.replace_with(f"{label} ({href})" if label else href)
+    for el in soup.find_all(_BLOCK_TAGS):
+        el.insert_before("\n")
+        el.insert_after("\n")
+    lines = [" ".join(line.replace("\xa0", " ").split()) for line in soup.get_text().split("\n")]
+    cleaned = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+    return cleaned or None
+
+
 async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[dict]:
     """Returns a list of {external_uid, title, description, start_date,
     end_date, is_all_day} dicts, one per VEVENT."""
@@ -81,7 +119,7 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
             end, _ = _as_datetime(dtend.dt) if dtend is not None else (None, False)
 
             title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
-            description = str(component.get("DESCRIPTION") or "").strip() or None
+            description = description_text(str(component.get("DESCRIPTION") or ""))
             uid = str(component.get("UID")) if component.get("UID") else None
 
             out.append(
