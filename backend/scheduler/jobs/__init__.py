@@ -10,6 +10,7 @@ from . import lunch_menu_scan  # noqa: F401
 from . import marking_period_scan  # noqa: F401
 from . import preschool_locations_scan  # noqa: F401
 from . import preschool_team_scan  # noqa: F401
+from . import school_events_doc_scan  # noqa: F401
 from . import school_info_scan  # noqa: F401
 from . import smore_scan  # noqa: F401
 from . import special_events_scan  # noqa: F401

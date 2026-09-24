@@ -547,6 +547,13 @@ class School(Base):
     # burst's shared Chromium.
     activities_site_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     activities_site_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # A school's own year-at-a-glance events calendar published as a Google
+    # Doc (Cherry Hill West embeds one on its activities site - its only
+    # published source of school-wide events). Parsed deterministically by
+    # services/school_events_doc.py; unlike the three sources above, its
+    # items are school-wide and show on the school page and /calendar.
+    events_doc_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    events_doc_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
@@ -775,7 +782,8 @@ class SchoolContentItem(Base):
     # interest meetings, which is exactly the "too much detail for the
     # district view" case a per-class page exists to absorb instead) |
     # "hs_announcements" (from services/hs_announcements.py) |
-    # "hs_activities_site" (from services/hs_activities_site.py).
+    # "hs_activities_site" (from services/hs_activities_site.py) |
+    # "school_events_doc" (from services/school_events_doc.py).
     # external_uid is the iCal UID for ics_feed/school_ics rows - lets a
     # re-scan update an existing row in place instead of creating a
     # duplicate, and also lets the ics scan claim an already-newsletter-
