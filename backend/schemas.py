@@ -402,6 +402,7 @@ class SchoolUpdate(BaseModel):
     activities_calendar_ics_url: str | None = Field(default=None, max_length=500)
     announcements_doc_url: str | None = Field(default=None, max_length=500)
     activities_site_url: str | None = Field(default=None, max_length=500)
+    events_doc_url: str | None = Field(default=None, max_length=500)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -448,6 +449,7 @@ class SchoolOut(BaseModel):
     activities_calendar_ics_url: str | None
     announcements_doc_url: str | None
     activities_site_url: str | None
+    events_doc_url: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
