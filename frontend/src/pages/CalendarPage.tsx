@@ -479,7 +479,7 @@ export function CalendarPage() {
         </div>
       )}
 
-      {viewMode !== "year" &&
+      {(viewMode !== "year" || isSearching) &&
         (rows.length === 0 ? (
           <div className="empty">{isSearching ? `No events match "${searchTerm.trim()}".` : `Nothing found${selectedDay ? " for this day" : " this month"}.`}</div>
         ) : (
