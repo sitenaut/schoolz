@@ -90,7 +90,22 @@ export function ItemTag({ item }: { item: SchoolContentItem }) {
 
 /** One dated item as a list row: big day number on the left, title +
  * description + links on the right. Used by school page + calendar. */
-export function ItemRow({ item, color, schoolName, highlighted }: { item: SchoolContentItem; color?: string; schoolName?: string | null; highlighted?: boolean }) {
+/** With `onOpen`, the whole row is one tap target that opens the event's
+ * sheet, and the inline links move into that sheet - a button can't
+ * contain other links, and the sheet already carries both. */
+export function ItemRow({
+  item,
+  color,
+  schoolName,
+  highlighted,
+  onOpen,
+}: {
+  item: SchoolContentItem;
+  color?: string;
+  schoolName?: string | null;
+  highlighted?: boolean;
+  onOpen?: () => void;
+}) {
   const key = item.start_date ? localDateKey(item.start_date) : null;
   const md = key ? monthDay(key) : null;
   // A multi-day item (a closure spanning several days, most often) only
@@ -102,8 +117,8 @@ export function ItemRow({ item, color, schoolName, highlighted }: { item: School
   const mdEnd = lastKey ? monthDay(lastKey) : null;
   const cal = item.start_date ? googleCalendarQuickAddUrl(item) : null;
   const timePart = item.start_date && !item.is_all_day ? timeOfDay(item.start_date) : null;
-  return (
-    <div className={`row${highlighted ? " rowHighlight" : ""}`} id={`event-${item.id}`}>
+  const body = (
+    <>
       <div className="when">
         {md ? (
           mdEnd ? (
@@ -148,7 +163,7 @@ export function ItemRow({ item, color, schoolName, highlighted }: { item: School
           {item.class_label && <span className="tag">{item.class_label}</span>}
           <ItemTag item={item} />
         </div>
-        {(cal || item.link_url) && (
+        {!onOpen && (cal || item.link_url) && (
           <div className="links">
             {item.link_url && (
               <a href={item.link_url} target="_blank" rel="noreferrer">
@@ -163,6 +178,16 @@ export function ItemRow({ item, color, schoolName, highlighted }: { item: School
           </div>
         )}
       </div>
+    </>
+  );
+  const className = `row${highlighted ? " rowHighlight" : ""}`;
+  return onOpen ? (
+    <button type="button" className={`${className} localRow`} id={`event-${item.id}`} onClick={onOpen}>
+      {body}
+    </button>
+  ) : (
+    <div className={className} id={`event-${item.id}`}>
+      {body}
     </div>
   );
 }
@@ -216,9 +241,10 @@ function eventWhen(item: SchoolContentItem): string {
   return item.is_all_day ? dates : `${dates} · ${timeOfDay(item.start_date)}`;
 }
 
-/** One event's details in a sheet, so a tap on the Today card gets the
- * description, link and add-to-calendar without leaving the page. */
-export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentItem | null; schoolSlug: string; onClose: () => void }) {
+/** One event's details in a sheet, so a tap on the Today card or a Calendar
+ * row gets the description, link and add-to-calendar without leaving the
+ * page. No `schoolSlug` (the Calendar itself) drops "See on calendar". */
+export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentItem | null; schoolSlug?: string; onClose: () => void }) {
   if (!item) return null;
   const cal = googleCalendarQuickAddUrl(item);
   const dayKey = item.start_date ? localDateKey(item.start_date) : null;
@@ -239,7 +265,7 @@ export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentI
             Open link
           </a>
         )}
-        {dayKey && (
+        {dayKey && schoolSlug && (
           <Link className="btn" to={`/calendar?school=${schoolSlug}&date=${dayKey}&event=${item.id}`}>
             See on calendar
           </Link>

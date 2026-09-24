@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { apiFetch } from "../api";
-import { ItemRow } from "../components/today";
+import { EventSheet, ItemRow } from "../components/today";
 import { SeoHead } from "../components/SeoHead";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
@@ -25,6 +25,7 @@ export function CalendarPage() {
   // event pill within it also carries which item to land on/highlight.
   const deepDate = params.get("date");
   const deepEvent = params.get("event");
+  const [openItem, setOpenItem] = useState<SchoolContentItem | null>(null);
   // Which schools' dates are shown - the same top-ribbon "my schools"
   // selection every other page uses, no separate picker here anymore. A
   // school page's "see all dates" deep link narrows to just that one
@@ -484,10 +485,21 @@ export function CalendarPage() {
         ) : (
           <div className="list">
             {rows.map(({ key, item, label }) => (
-              <ItemRow item={item} color={label ? colorForName(label) : undefined} schoolName={label} highlighted={item.id === deepEvent} key={key} />
+              <ItemRow
+                item={item}
+                color={label ? colorForName(label) : undefined}
+                schoolName={label}
+                highlighted={item.id === deepEvent}
+                onOpen={() => {
+                  setOpenItem(item);
+                  trackEvent("action", { action: "event_details", method: "calendar_sheet" });
+                }}
+                key={key}
+              />
             ))}
           </div>
         ))}
+      <EventSheet item={openItem} onClose={() => setOpenItem(null)} />
     </div>
   );
 }
