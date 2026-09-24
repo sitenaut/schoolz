@@ -17,7 +17,6 @@ type Props = {
  * above the shell's sticky bars. */
 export function Modal({ open, onClose, title, subtitle, size = "md", footer, children }: Props) {
   const panel = useRef<HTMLDivElement>(null);
-  const bg = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
   const titleId = useId();
   const subtitleId = useId();
@@ -43,31 +42,8 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
     const first = panel.current?.querySelector<HTMLElement>("input, select, textarea, button:not(.modal-x)");
     (first ?? panel.current)?.focus();
 
-    // On mobile, `position: fixed` tracks the layout viewport, not the visual
-    // one - if the page is even slightly pinch-zoomed the two diverge, and
-    // the fixed modal-bg (sized via inset:0 in CSS) can render with its
-    // header pushed outside what's actually visible, leaving the close
-    // button and backdrop unreachable. Pin the box to window.visualViewport
-    // instead whenever it's available, and keep it in sync as the visual
-    // viewport moves (zoom, keyboard, address-bar show/hide).
-    const vv = window.visualViewport;
-    const syncViewport = () => {
-      if (!vv || !bg.current) return;
-      bg.current.style.top = `${vv.offsetTop}px`;
-      bg.current.style.left = `${vv.offsetLeft}px`;
-      bg.current.style.right = "auto";
-      bg.current.style.bottom = "auto";
-      bg.current.style.width = `${vv.width}px`;
-      bg.current.style.height = `${vv.height}px`;
-    };
-    syncViewport();
-    vv?.addEventListener("resize", syncViewport);
-    vv?.addEventListener("scroll", syncViewport);
-
     return () => {
       document.removeEventListener("keydown", onKey);
-      vv?.removeEventListener("resize", syncViewport);
-      vv?.removeEventListener("scroll", syncViewport);
       document.body.style.overflow = prevOverflow;
       (opener.current as HTMLElement | null)?.focus?.();
     };
@@ -78,7 +54,7 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
 
   if (!open) return null;
   return (
-    <div className="modal-bg" ref={bg} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
         className={`modal ${size}`}
         role="dialog"
