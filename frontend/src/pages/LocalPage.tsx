@@ -274,7 +274,7 @@ export function LocalPage() {
         {total > items.length && <span className="note" style={{ margin: 0 }}>Showing the first {items.length} of {total} - narrow the filters to see the rest.</span>}
       </div>
 
-      {viewMode === "month" &&
+      {(viewMode === "month" || searchTerm) &&
         (listed.length === 0 ? (
           <div className="empty">{loadedKey === queryKey ? `Nothing found${selectedDay ? " for this day" : " this month"}.` : "Loading…"}</div>
         ) : (
