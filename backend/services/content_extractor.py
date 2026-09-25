@@ -31,6 +31,7 @@ import observability
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
 from services.links import unwrap_redirect
 from services.school_status import is_status_title, same_status_fact
+from services.tool_output import object_list, recover_spilled_input
 from scheduler.errors import record_parse_issue
 
 logger = logging.getLogger(__name__)
@@ -571,7 +572,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
         tool_use = next((b for b in response.content if b.type == "tool_use"), None)
         if not tool_use:
             continue
-        data = tool_use.input
+        data = recover_spilled_input(tool_use.input)
         if response.stop_reason == "max_tokens":
             truncated_chunks += 1
             logger.warning("extraction_chunk_truncated", extra={"newsletter_id": newsletter.id, "usage": str(response.usage)})
@@ -600,7 +601,10 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             latest_summary = data["summary"]
 
         block_by_position = {b.position: b for b in chunk}
-        for item in data.get("items", []):
+        items, dropped = object_list(data.get("items"))
+        if dropped:
+            record_parse_issue("smore.scan", "unexpected_format", newsletter_id=newsletter.id, sample=str(dropped)[:200])
+        for item in items:
             source_block = block_by_position.get(item.get("source_block_position"))
             source_block_id = source_block.id if source_block else None
             # Infer from the date string itself ('T' means a time was given)

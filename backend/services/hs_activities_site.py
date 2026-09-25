@@ -46,6 +46,7 @@ from scheduler.errors import record_parse_issue
 from services.class_years import default_label, get_or_create_class_year
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 from services.links import unwrap_redirect
+from services.tool_output import object_list, object_value, recover_spilled_input
 
 logger = logging.getLogger(__name__)
 
@@ -311,6 +312,9 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
     items_created = items_updated = 0
     truncated = 0
     touched_uids: set[str] = set()
+    # Pages whose extraction this run can't be trusted to be complete - see
+    # the retire step at the end.
+    unreliable_paths: set[str] = set()
 
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as http_client:
         page_urls = await discover_pages(school.activities_site_url, http_client)
@@ -342,10 +346,12 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
             observability.record_llm_call("hs_activities_site_extract", MODEL, response, time.perf_counter() - _llm_started)
             tool_use = next((b for b in response.content if b.type == "tool_use"), None)
             if not tool_use:
+                unreliable_paths.add(page_path)
                 continue
-            data = tool_use.input
+            data = recover_spilled_input(tool_use.input)
             if response.stop_reason == "max_tokens":
                 truncated += 1
+                unreliable_paths.add(page_path)
                 record_parse_issue(_JOB_KIND, "llm_max_tokens", url=page_url)
 
             if is_class_home_page and page_grad_years:
@@ -354,9 +360,13 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
                 # a sparse page (confirmed real: East's own class-of-2027
                 # page is a handful of short lines) shouldn't leave
                 # provenance null just because extraction came up empty.
-                await _resolve_class_year_facts(db, school.id, page_grad_years[0], data.get("class_year_facts") or {}, page_url, staff_by_name)
+                await _resolve_class_year_facts(db, school.id, page_grad_years[0], object_value(data.get("class_year_facts")), page_url, staff_by_name)
 
-            for item in data.get("items", []):
+            items, dropped = object_list(data.get("items"))
+            if dropped:
+                unreliable_paths.add(page_path)
+                record_parse_issue(_JOB_KIND, "unexpected_format", url=page_url, sample=str(dropped)[:200])
+            for item in items:
                 # "required" in a tool schema is a hint the model usually
                 # follows, not a guarantee the API enforces - confirmed
                 # real: an item came back with no title at all, and a bare
@@ -407,10 +417,18 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
     # should have ~50 items rendered over 300. Only when every discovered
     # page was actually fetched this run, never on a partial crawl (a
     # network hiccup on one page must not retire that page's real,
-    # still-true content just because this run didn't re-touch it).
+    # still-true content just because this run didn't re-touch it). The
+    # same goes for a page that was fetched but whose extraction came back
+    # incomplete (no tool call, truncated, or entries that couldn't be read):
+    # confirmed real on West, where a malformed `items` on one page retired
+    # that page's items even though nothing on the site had changed.
     retired = 0
     if page_urls and pages_scanned == len(page_urls):
-        stale = [row for uid, row in existing_by_uid.items() if uid not in touched_uids and row.is_current]
+        stale = [
+            row
+            for uid, row in existing_by_uid.items()
+            if uid not in touched_uids and row.is_current and not any(uid.startswith(f"site:{p}:") for p in unreliable_paths)
+        ]
         for row in stale:
             row.is_current = False
         retired = len(stale)
