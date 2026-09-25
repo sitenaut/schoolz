@@ -61,6 +61,12 @@ class FetchHtmlRequest(BaseModel):
     url: str
     wait_for_selector: Optional[str] = None
     timeout_ms: int = Field(default=DEFAULT_TIMEOUT_MS, le=60_000)
+    # page.content() never includes shadow DOM, so a web component that
+    # renders into its own shadow root comes back as an empty shell even
+    # though wait_for_selector (which does pierce shadow roots) matched.
+    # When set, open shadow roots are serialized inline as
+    # <template shadowrootmode="open"> (declarative shadow DOM).
+    include_shadow_dom: bool = False
 
 
 class FetchHtmlResponse(BaseModel):
@@ -106,6 +112,24 @@ async def health():
     return {"status": "ok", "browser_connected": _state.get("browser").is_connected() if _state.get("browser") else False}
 
 
+_SERIALIZE_WITH_SHADOW_JS = """() => {
+  if (typeof document.documentElement.getHTML !== "function") return null;
+  const roots = [];
+  const walk = (node) => {
+    for (const el of node.querySelectorAll("*")) {
+      if (el.shadowRoot) { roots.push(el.shadowRoot); walk(el.shadowRoot); }
+    }
+  };
+  walk(document);
+  return "<!DOCTYPE html><html>" + document.documentElement.getHTML({ serializableShadowRoots: true, shadowRoots: roots }) + "</html>";
+}"""
+
+
+async def _serialize_with_shadow_dom(page) -> str:
+    html = await page.evaluate(_SERIALIZE_WITH_SHADOW_JS)
+    return html if html else await page.content()
+
+
 @app.post("/fetch-html", response_model=FetchHtmlResponse, dependencies=[Depends(require_api_key)])
 async def fetch_html(req: FetchHtmlRequest):
     """Render a URL with a real browser and return the resulting HTML.
@@ -129,7 +153,7 @@ async def fetch_html(req: FetchHtmlRequest):
                     "wait_for_selector", attributes={"url.host": host, "selector": req.wait_for_selector}
                 ):
                     await page.wait_for_selector(req.wait_for_selector, timeout=req.timeout_ms)
-            html = await page.content()
+            html = await _serialize_with_shadow_dom(page) if req.include_shadow_dom else await page.content()
             title = await page.title()
         outcome = "ok"
         return FetchHtmlResponse(

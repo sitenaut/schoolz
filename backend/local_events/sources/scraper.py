@@ -77,6 +77,7 @@ async def fetch_rendered_html(
     wait_for_selector: str | None = None,
     extra_wait_ms: int | None = None,
     stealth: bool = True,
+    include_shadow_dom: bool = False,
 ) -> tuple[str, str]:
     """Fetch rendered HTML via the scraper service.
 
@@ -92,12 +93,17 @@ async def fetch_rendered_html(
     have been observed to break a site's own JS (philaymca.org's Deyra
     Finder widget throws reference errors and never initializes with
     stealth on). schoolz's own scraper ignores stealth and extra_wait_ms.
+    `include_shadow_dom` inlines open shadow roots into the returned HTML
+    (schoolz's scraper; see scraper/main.py) - for web components like the
+    Y's <deyra-finder>, whose content page.content() otherwise omits.
     """
     payload: dict = {"url": url, "stealth": stealth}
     if wait_for_selector:
         payload["wait_for_selector"] = wait_for_selector
     if extra_wait_ms:
         payload["extra_wait_ms"] = int(extra_wait_ms)
+    if include_shadow_dom:
+        payload["include_shadow_dom"] = True
 
     errors: list[str] = []
     for service_url, key in _services():

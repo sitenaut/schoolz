@@ -45,6 +45,9 @@ def _parse_time_on(day: date, text: str) -> datetime | None:
     return datetime.combine(day, t, tzinfo=_TZ)
 
 
+_TEMPLATE_TAG_RE = re.compile(r"</?template\b[^>]*>", re.I)
+
+
 class DeyraScheduleSource(Source):
     def __init__(
         self,
@@ -69,6 +72,8 @@ class DeyraScheduleSource(Source):
     async def fetch(self) -> list[RawEvent]:
         raws: list[RawEvent] = []
         today = datetime.now(_TZ).date()
+        failures: list[str] = []
+        fetched_days = 0
         for offset in range(self.days_ahead):
             day = today + timedelta(days=offset)
             day_url = self._day_url(day)
@@ -82,17 +87,36 @@ class DeyraScheduleSource(Source):
                     # never initializes) — confirmed by direct testing, not
                     # needed anyway since this site shows no bot-challenge.
                     stealth=False,
+                    # The schedule renders inside <deyra-finder>'s shadow
+                    # root, which a plain page.content() leaves out.
+                    include_shadow_dom=True,
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "deyra_schedule_fetch_failed",
                     extra={"source": self.name, "day": day.isoformat(), "error": str(exc)},
                 )
+                failures.append(f"{day.isoformat()}: {str(exc)[:200]}")
                 continue
+            fetched_days += 1
             raws.extend(self._parse_day(html, day, fetched_url))
+        # These used to be swallowed, so a dead renderer looked like "0 events,
+        # success" for days. Every day failing is a failed source; some days
+        # failing, or pages that rendered with no classes in them (the widget
+        # changed, or its content went missing again), is a WARNING.
+        if not fetched_days and failures:
+            raise RuntimeError(f"every day failed to render: {failures[0]}")
+        self.partial_failures = failures[:3]
+        if fetched_days and not raws:
+            self.partial_failures.append(f"{fetched_days} day(s) rendered but no classes were found in them")
         return raws
 
     def _parse_day(self, html: str, day: date, page_url: str) -> list[RawEvent]:
+        # The widget's content arrives as declarative shadow DOM
+        # (<template shadowrootmode="open">, from include_shadow_dom), and
+        # BeautifulSoup keeps text inside <template> as TemplateString, which
+        # get_text() skips - every field parsed as "". Unwrap the tags first.
+        html = _TEMPLATE_TAG_RE.sub("", html)
         soup = BeautifulSoup(html, "html.parser")
         out: list[RawEvent] = []
         for article in soup.find_all("article"):

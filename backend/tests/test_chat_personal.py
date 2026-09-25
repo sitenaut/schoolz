@@ -127,9 +127,9 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
         patch = next(e for e in res["items"] if e["title"] == "Sunday pumpkin patch")
         assert patch["when"] == "Sun Jun 8 11:00 AM" and patch["price"] == "free"
 
-        # Asking for classes by category still never surfaces a paid one.
+        # Asking for classes by category is explicit, so paid ones come back too.
         gym = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-08", "end_date": "2031-06-08", "categories": "ymca,open-gym"}))
-        assert [e["title"] for e in gym["items"]] == ["Aqua Fit"]
+        assert sorted(e["title"] for e in gym["items"]) == ["Aqua Fit", "Open Gym"]
 
         bad = json.loads(await tools.run("find_local_events", {"start_date": "this weekend", "end_date": "2031-06-08"}))
         assert "YYYY-MM-DD" in bad["error"]
@@ -198,5 +198,29 @@ async def test_routine_class_tags_stay_out_of_the_category_list(monkeypatch):
     try:
         listed = (await tools._category_list()).split(", ")
         assert "ymca" not in listed and "pool" not in listed
+    finally:
+        await tools.aclose()
+
+
+@pytest.mark.anyio
+async def test_naming_a_place_includes_its_paid_classes():
+    from datetime import datetime, timezone
+
+    import database
+    from models import LocalEvent
+
+    src = f"chatplace_{uuid.uuid4().hex[:8]}"
+    async with database.SessionLocal() as db:
+        db.add(LocalEvent(source=src, source_event_id="swim", title="Lap Swimming", start_time=datetime(2031, 6, 7, 12, tzinfo=timezone.utc),
+                          venue_name="Mt. Laurel YMCA", categories=["pool", "swim", "ymca"]))
+        await db.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _register(client, f"chatplace_{uuid.uuid4().hex[:8]}@example.com")
+    tools = PersonalTools(app, token)
+    try:
+        browse = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-07", "end_date": "2031-06-07"}))
+        assert "Lap Swimming" not in [e["title"] for e in browse["items"]]  # open-ended: paid class hidden
+        named = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-07", "end_date": "2031-06-07", "query": "YMCA"}))
+        assert [e["title"] for e in named["items"]] == ["Lap Swimming"]
     finally:
         await tools.aclose()

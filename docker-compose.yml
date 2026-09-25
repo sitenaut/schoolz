@@ -113,6 +113,10 @@ services:
 
   scraper:
     build: ./scraper
+    # The image binds "::" for Fly's IPv6-only private network, and asyncio
+    # makes that socket IPv6-only - so on compose's IPv4 network the backend
+    # got "connection refused". Locally, bind IPv4 instead.
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8765"]
     environment:
       SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
     ports:

@@ -122,8 +122,9 @@ _TOOLS["find_local_events"] = (
     "dates. For 'what can I take the kids to', don't rely on categories alone - the family/kids tags are "
     "keyword-inferred and miss plenty; search the whole range and judge from each title and description. "
     "Categories in use: {categories}. Classes (gym/pool/fitness, lessons, "
-    "workshops, courses) are usually paid, so they're only included when the listing explicitly says they're "
-    "free. Returns at most 40 events spread across the days in the range, "
+    "workshops, courses) are usually paid, so an open-ended search only includes them when the listing "
+    "explicitly says they're free; pass a place or class as `query` (e.g. 'YMCA', 'swim') to get all of them. "
+    "Returns at most 40 events spread across the days in the range, "
     "plus the total that matched.",
     {
         "type": "object",
@@ -131,7 +132,7 @@ _TOOLS["find_local_events"] = (
             "start_date": {"type": "string", "description": "First day, YYYY-MM-DD (local time)."},
             "end_date": {"type": "string", "description": "Last day, inclusive, YYYY-MM-DD. Same as start_date for one day."},
             "categories": {"type": "string", "description": "Optional comma-separated categories; any match."},
-            "query": {"type": "string", "description": "Optional text search (title/description/venue), e.g. 'pumpkin'."},
+            "query": {"type": "string", "description": "Optional text search over title, description and venue - e.g. 'pumpkin', or a place like 'YMCA' or 'library' to see what's on there."},
             "free_only": {"type": "boolean", "description": "Only events known to be free."},
         },
         "required": ["start_date", "end_date"],
@@ -303,7 +304,15 @@ class PersonalTools:
         events = body["items"]
         truncated = body.get("total", len(events)) > len(events)
 
-        events = [e for e in events if not _is_class(e) or _is_explicitly_free(e)]
+        # The free-only rule is for open-ended browsing ("what can we do this
+        # weekend"), where paid classes are noise. Naming a place or asking
+        # for classes is the opposite: "what's on at the Y tomorrow" is
+        # almost entirely classes, and hiding them made the assistant claim
+        # it couldn't look the Y up at all.
+        asked = {c.strip() for c in categories.split(",") if c.strip()}
+        explicit = bool(args.get("query")) or bool(asked & _CLASS_CATEGORIES)
+        if not explicit:
+            events = [e for e in events if not _is_class(e) or _is_explicitly_free(e)]
         matched = len(events)
 
         # Round-robin across days so Sunday isn't cut off by Saturday
