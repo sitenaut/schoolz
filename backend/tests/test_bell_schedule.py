@@ -147,3 +147,32 @@ def test_is_long_block_day_from_the_rotation_not_the_timetable():
     assert is_long_block_day(regular_only, ["A", "B", "C", "E", "F", "G"]) is False
     assert is_long_block_day(regular_only, None) is False
     assert is_long_block_day(None, ["A", "B", "E", "F"]) is False
+
+
+WEST_LONG_EARLY = [
+    {"name": n, "start": s, "end": e}
+    for n, s, e in [("1", "07:30", "08:17"), ("2", "08:21", "09:08"), ("L1", "09:12", "09:37"),
+                    ("L2", "09:41", "10:06"), ("3", "10:10", "10:55"), ("4", "10:59", "11:45")]
+]
+WEST_LONG_DELAYED = [
+    {"name": n, "start": s, "end": e}
+    for n, s, e in [("1", "09:30", "10:28"), ("2", "10:32", "11:29"), ("L1", "11:33", "11:58"),
+                    ("L2", "12:02", "12:27"), ("3", "12:31", "13:28"), ("4", "13:32", "14:30")]
+]
+
+
+def test_a_long_block_early_dismissal_uses_its_own_table():
+    # The real Dec 4 case: "6 (Early Dismissal - Afternoon PD)", Day 6 = C, D, G, H.
+    periods = {**EAST, "long_block_early_dismissal": WEST_LONG_EARLY}
+    variant, slots = lettered_day(periods, "early_dismissal", ["C", "D", "G", "H"])
+    assert variant == "long_block_early_dismissal"
+    assert [(s["name"], s["start"], s["end"]) for s in slots][-2:] == [("G", "10:10", "10:55"), ("H", "10:59", "11:45")]
+    # A six-block early dismissal still gets the six-slot table.
+    assert lettered_day(periods, "early_dismissal", ["A", "B", "C", "E", "F", "G"])[0] == "early_dismissal"
+
+
+def test_a_long_block_delayed_opening_uses_its_own_table():
+    periods = {**EAST, "long_block_delayed_opening": WEST_LONG_DELAYED}
+    variant, slots = lettered_day(periods, "delayed", ["A", "B", "E", "F"])
+    assert variant == "long_block_delayed_opening"
+    assert (slots[0]["name"], slots[0]["start"]) == ("A", "09:30")

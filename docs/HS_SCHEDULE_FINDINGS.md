@@ -94,7 +94,7 @@ Consequences today:
 - **`kids_view.right_now`** is fine for current/next, because it uses the child's own captured Genesis daily blocks. But its `period_number` lookup matches start times against the regular table, so on long-block days B (9:01) and F (1:02) get no period number.
 - **Long-block days with early dismissal are completely unmodeled.** The rotation calendar has one: *Dec 4, "6 (Early Dismissal – Afternoon PD)"*. We have no timetable for a shortened Day 6, and neither printout contains one.
 
-**Fixed for East** (migration `0046`), and surfaced in Today, as described in the next section. West shares the rotation sheet, but its long-block clock times aren't confirmed yet, so West gets the letters and a "long blocks" label with no clock times and no period chip. Showing nothing is better than showing wrong times.
+**Fixed for East** (migration `0046`), and surfaced in Today, as described in the next section. **Fixed for West, and long-block delayed/early-dismissal days for both** (migration `0055`): each school publishes a one-page bell-schedule PDF on its own site (`west.chclc.org/our-school/chw-bell-schedule`, `east.chclc.org/our-school/bell-schedule`) that prints Days 5–6 for all three day types. The two schools' timetables are identical, and match East's Genesis print. Dec 4 is a long-block early dismissal, 7:30–11:45. The only disagreement anywhere is East's PDF (linked as 2024-25) starting the second long block at 9:02, where both 2026-27 sources say 9:01.
 
 ## In the Today view
 
@@ -157,7 +157,7 @@ Places in our own code that currently use a word for the wrong concept, to renam
 
 ## Actionable list
 
-1. ~~**Model long-block days**~~: done for East (see below). West's long-block times and a long-block early-dismissal timetable (Dec 4) still need confirming with the schools.
+1. ~~**Model long-block days**~~: done for both schools, including long-block delayed openings and early dismissals (see below).
 2. **Compute "next meets" per course** from the rotation calendar and the legend. This is the single most useful fact missing from every document.
 3. **Present marking-period ends and the semester changeover as dated deadlines** in the family calendar, not only as grade-page metadata.
 4. **Never show `Days 123456` or cycle numbers to a family.** Translate the first to "meets 4 of every 6 days" and drop the second. **Do show letters.** They're the shared language, and showing them needs no student data at all.
