@@ -40,6 +40,7 @@ from models import School, SchoolContentItem
 from scheduler.errors import record_parse_issue
 from services.class_years import current_grad_years
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
+from services.tool_output import object_list, recover_spilled_input
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +228,10 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
         if response.stop_reason == "max_tokens":
             record_parse_issue(_JOB_KIND, "llm_max_tokens", school_id=school.id, sample=anchor_date.isoformat())
 
-        for item in tool_use.input.get("items", []):
+        items, dropped = object_list(recover_spilled_input(tool_use.input).get("items"))
+        if dropped:
+            record_parse_issue(_JOB_KIND, "unexpected_format", school_id=school.id, sample=str(dropped)[:200])
+        for item in items:
             # "required" in a tool schema is a hint the model usually
             # follows, not an API-enforced guarantee (confirmed real in
             # services/hs_activities_site.py - a missing title there
