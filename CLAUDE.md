@@ -46,6 +46,8 @@ Three tiers, enforced in `backend/auth.py` + per-router:
 - **Admin-only** — creating/editing District/School/SmoreNewsletter, any `run-now`, the `/scheduled-jobs` API, and Gmail connection + email scanners (connecting an inbox is data-source management, not a guardian task). Gated by `require_admin`; a plain `is_admin` check with no ownership fallback. Scanner rows stay owner-scoped so two admins don't see each other's captures.
 - **Authenticated** — register/login, students, guardian links, invites, notifications, account settings. Registering never grants `is_admin`.
 
+**The chatbot (`POST /chat`) straddles the tiers.** Anonymous callers get only the public MCP tools. A signed-in caller also gets personal tools (`services/chatbot_personal.py`) that call the existing authenticated GET routes in-process **with the caller's own bearer token forwarded** — deliberately no new access code, so the chatbot can never see more than that person could by clicking around (`_get_own_student` still decides). These tools are never registered on the public `/mcp` server, which holds no credentials. Read-only; a bad token degrades to public instead of 401ing.
+
 Frontend: public pages are plain routes. `RequireAuth` gates the personal pages; `RequireAdmin` gates `/admin/*` (a logged-in non-admin bounces to `/`, not `/login` — they're already logged in). Pages branch on `useAuth().user` to choose `/schools/mine` vs `/schools`, so an anonymous visitor never calls an endpoint that would 401.
 
 ## Domain model
