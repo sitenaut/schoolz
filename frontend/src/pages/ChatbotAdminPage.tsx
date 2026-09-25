@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FocusEvent } from "react";
 import { apiFetch } from "../api";
 import { Badge } from "../components/ui/Badge";
 import { ChatText } from "../lib/chatFormat";
@@ -21,6 +21,7 @@ type CompareResult = {
   requested_model: string;
   model: string | null;
   escalated: boolean;
+  escalation_error: string | null;
   reply: string | null;
   error: string | null;
   rounds: number;
@@ -94,11 +95,6 @@ export function ChatbotAdminPage() {
 
   return (
     <div className="cb-admin">
-      <datalist id="cb-models">
-        {allModels.map((m) => (
-          <option key={m} value={m} />
-        ))}
-      </datalist>
 
       <SectionCard
         title="Live settings"
@@ -114,12 +110,14 @@ export function ChatbotAdminPage() {
             title="Anonymous visitors"
             value={settings.anonymous}
             providers={providers}
+            models={models}
             onChange={(v) => setAudience("anonymous", v)}
           />
           <AudienceEditor
             title="Signed-in users"
             value={settings.signed_in}
             providers={providers}
+            models={models}
             onChange={(v) => setAudience("signed_in", v)}
             privacyNote
           />
@@ -135,10 +133,10 @@ export function ChatbotAdminPage() {
           </button>
         }
       >
-        <PriceTable prices={settings.prices} onChange={(prices) => setSettings({ ...settings, prices })} />
+        <PriceTable prices={settings.prices} models={allModels} onChange={(prices) => setSettings({ ...settings, prices })} />
       </SectionCard>
 
-      <ComparePanel settings={settings} providers={providers} />
+      <ComparePanel settings={settings} providers={providers} models={models} />
     </div>
   );
 }
@@ -147,19 +145,21 @@ function AudienceEditor({
   title,
   value,
   providers,
+  models,
   onChange,
   privacyNote,
 }: {
   title: string;
   value: AudienceConfig;
   providers: Provider[];
+  models: Record<string, string[]>;
   onChange: (v: AudienceConfig) => void;
   privacyNote?: boolean;
 }) {
   return (
     <div className="cb-col">
       <div className="cb-col-h">{title}</div>
-      <ConfigFields value={value} providers={providers} onChange={onChange} />
+      <ConfigFields value={value} providers={providers} models={models} onChange={onChange} />
       {privacyNote && value.provider !== "anthropic" && (
         <p className="small cb-warn">
           Signed-in conversations send a family's children's names, grades and schedules to this provider. Use a paid API tier
@@ -170,11 +170,33 @@ function AudienceEditor({
   );
 }
 
-function ConfigFields({ value, providers, onChange }: { value: AudienceConfig; providers: Provider[]; onChange: (v: AudienceConfig) => void }) {
+function ConfigFields({
+  value,
+  providers,
+  models,
+  onChange,
+}: {
+  value: AudienceConfig;
+  providers: Provider[];
+  models: Record<string, string[]>;
+  onChange: (v: AudienceConfig) => void;
+}) {
+  const options = models[value.provider];
+  // Switching provider can't keep a model that belongs to the old one - that
+  // mismatch is exactly what took prod's escalated questions down.
+  const switchProvider = (provider: string) => {
+    const list = models[provider] ?? [];
+    onChange({
+      ...value,
+      provider,
+      model: list.includes(value.model) ? value.model : defaultModel(list),
+      escalation_model: value.escalation_model && list.includes(value.escalation_model) ? value.escalation_model : null,
+    });
+  };
   return (
     <>
       <Field label="Provider">
-        <select value={value.provider} onChange={(e) => onChange({ ...value, provider: e.target.value })}>
+        <select value={value.provider} onChange={(e) => switchProvider(e.target.value)}>
           {providers.map((p) => (
             <option key={p.name} value={p.name} disabled={!p.configured}>
               {PROVIDER_LABEL[p.name] ?? p.name}
@@ -183,14 +205,16 @@ function ConfigFields({ value, providers, onChange }: { value: AudienceConfig; p
           ))}
         </select>
       </Field>
-      <Field label="Model" hint="Type or pick from the provider's list.">
-        <input list="cb-models" value={value.model} onChange={(e) => onChange({ ...value, model: e.target.value })} />
+      <Field label="Model">
+        <ModelSelect provider={value.provider} value={value.model} options={options} onChange={(m) => onChange({ ...value, model: m ?? "" })} />
       </Field>
-      <Field label="Escalation model" hint="Used once a question needs several lookups. Blank = never escalate.">
-        <input
-          list="cb-models"
-          value={value.escalation_model ?? ""}
-          onChange={(e) => onChange({ ...value, escalation_model: e.target.value.trim() || null })}
+      <Field label="Escalation model" hint="Used once a question needs several lookups.">
+        <ModelSelect
+          provider={value.provider}
+          value={value.escalation_model}
+          options={options}
+          allowNone
+          onChange={(m) => onChange({ ...value, escalation_model: m })}
         />
       </Field>
       {value.provider !== "anthropic" && (
@@ -208,10 +232,110 @@ function ConfigFields({ value, providers, onChange }: { value: AudienceConfig; p
   );
 }
 
-function PriceTable({ prices, onChange }: { prices: Record<string, ModelPrice>; onChange: (p: Record<string, ModelPrice>) => void }) {
-  const [newModel, setNewModel] = useState("");
-  const num = (s: string) => (s.trim() === "" ? null : Number(s));
+/** A dropdown of the provider's own models (GET /admin/chatbot/models), so
+ * there's nothing to guess at and no way to pick another provider's model.
+ * Falls back to a text box only when the list couldn't be loaded. A saved
+ * value that isn't in the list is still shown, flagged, rather than
+ * silently replaced - the save would reject it anyway. */
+function ModelSelect({
+  provider,
+  value,
+  options,
+  allowNone,
+  onChange,
+}: {
+  provider: string;
+  value: string | null;
+  options: string[] | undefined;
+  allowNone?: boolean;
+  onChange: (m: string | null) => void;
+}) {
+  if (!options?.length) {
+    return (
+      <input
+        value={value ?? ""}
+        placeholder={allowNone ? "Blank = never escalate" : "Model list unavailable — type a model id"}
+        onChange={(e) => onChange(e.target.value.trim() || null)}
+      />
+    );
+  }
+  const stray = value && !options.includes(value);
+  return (
+    <select value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
+      {allowNone ? <option value="">Never escalate</option> : !value && <option value="" disabled>Pick a model…</option>}
+      {stray && <option value={value}>{value} — not a {PROVIDER_LABEL[provider] ?? provider} model</option>}
+      {options.map((m) => (
+        <option key={m} value={m}>
+          {m}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** What a provider switch lands on: the cheap everyday tier (Haiku, or the
+ * newest plain Flash), never just the list's first entry - Anthropic lists
+ * newest first, so that would silently pick its most expensive model. */
+function defaultModel(list: string[]): string {
+  const flashVersion = (m: string) => Number(/^gemini-(\d+(?:\.\d+)?)-flash$/.exec(m)?.[1] ?? NaN);
+  const newestFlash = list.filter((m) => !Number.isNaN(flashVersion(m))).sort((a, b) => flashVersion(b) - flashVersion(a))[0];
+  return list.find((m) => m.includes("haiku")) ?? newestFlash ?? list[0] ?? "";
+}
+
+const selectAll = (e: FocusEvent<HTMLInputElement>) => e.target.select();
+
+/** A number box that can actually be emptied while typing. Binding the input
+ * straight to the number snapped a cleared field back to "0" on every
+ * keystroke, so the 0 had to be selected and typed over. The text is kept
+ * as typed and only the parsed number is passed up; focusing selects it, so
+ * typing replaces whatever was there. */
+function PriceInput({
+  value,
+  nullable,
+  step,
+  placeholder,
+  onChange,
+}: {
+  value: number | null;
+  nullable?: boolean;
+  step: string;
+  placeholder?: string;
+  onChange: (n: number | null) => void;
+}) {
+  const parse = (s: string) => (s.trim() === "" ? (nullable ? null : 0) : Number(s));
+  const [draft, setDraft] = useState(value == null ? "" : String(value));
+  useEffect(() => {
+    setDraft((cur) => (parse(cur) === value ? cur : value == null ? "" : String(value)));
+  }, [value]);
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      min={0}
+      step={step}
+      value={draft}
+      placeholder={placeholder}
+      onFocus={selectAll}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const n = parse(e.target.value);
+        if (n === null || Number.isFinite(n)) onChange(n);
+      }}
+    />
+  );
+}
+
+function PriceTable({
+  prices,
+  models,
+  onChange,
+}: {
+  prices: Record<string, ModelPrice>;
+  models: string[];
+  onChange: (p: Record<string, ModelPrice>) => void;
+}) {
   const update = (model: string, patch: Partial<ModelPrice>) => onChange({ ...prices, [model]: { ...prices[model], ...patch } });
+  const unpriced = models.filter((m) => !(m in prices));
 
   return (
     <div className="cb-prices">
@@ -230,20 +354,13 @@ function PriceTable({ prices, onChange }: { prices: Record<string, ModelPrice>; 
             <tr key={model}>
               <td className="mono">{model}</td>
               <td>
-                <input type="number" min={0} step="0.01" value={p.input} onChange={(e) => update(model, { input: num(e.target.value) ?? 0 })} />
+                <PriceInput value={p.input} step="0.01" onChange={(n) => update(model, { input: n ?? 0 })} />
               </td>
               <td>
-                <input type="number" min={0} step="0.01" value={p.output} onChange={(e) => update(model, { output: num(e.target.value) ?? 0 })} />
+                <PriceInput value={p.output} step="0.01" onChange={(n) => update(model, { output: n ?? 0 })} />
               </td>
               <td>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.001"
-                  value={p.cache_read ?? ""}
-                  placeholder="= input"
-                  onChange={(e) => update(model, { cache_read: num(e.target.value) })}
-                />
+                <PriceInput value={p.cache_read} nullable step="0.001" placeholder="= input" onChange={(n) => update(model, { cache_read: n })} />
               </td>
               <td>
                 <button
@@ -262,24 +379,27 @@ function PriceTable({ prices, onChange }: { prices: Record<string, ModelPrice>; 
           ))}
         </tbody>
       </table>
-      <div className="cb-add">
-        <input list="cb-models" placeholder="Add a model…" value={newModel} onChange={(e) => setNewModel(e.target.value)} />
-        <button
-          className="btn sm"
-          disabled={!newModel.trim() || newModel.trim() in prices}
-          onClick={() => {
-            onChange({ ...prices, [newModel.trim()]: { input: 0, output: 0, cache_read: null } });
-            setNewModel("");
-          }}
-        >
-          Add
-        </button>
-      </div>
+      {unpriced.length > 0 && (
+        <div className="cb-add">
+          <select
+            value=""
+            aria-label="Add a price for a model"
+            onChange={(e) => e.target.value && onChange({ ...prices, [e.target.value]: { input: 0, output: 0, cache_read: null } })}
+          >
+            <option value="">Add a model…</option>
+            {unpriced.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
 
-function ComparePanel({ settings, providers }: { settings: Settings; providers: Provider[] }) {
+function ComparePanel({ settings, providers, models }: { settings: Settings; providers: Provider[]; models: Record<string, string[]> }) {
   const gemini = providers.find((p) => p.name === "gemini");
   const [configs, setConfigs] = useState<AudienceConfig[]>(() => [
     { ...settings.anonymous },
@@ -341,7 +461,7 @@ function ComparePanel({ settings, providers }: { settings: Settings; providers: 
                 </button>
               )}
             </div>
-            <ConfigFields value={c} providers={providers} onChange={(v) => setConfigs(configs.map((x, j) => (j === i ? v : x)))} />
+            <ConfigFields value={c} providers={providers} models={models} onChange={(v) => setConfigs(configs.map((x, j) => (j === i ? v : x)))} />
           </div>
         ))}
       </div>
@@ -373,6 +493,9 @@ function ComparePanel({ settings, providers }: { settings: Settings; providers: 
                   </>
                 )}
               </div>
+              {r.escalation_error && (
+                <div className="small cb-warn">Escalation model failed, so this answer came from the base model: {r.escalation_error}</div>
+              )}
               {r.error ? <div className="chat-error">{r.error}</div> : <div className="cb-reply"><ChatText text={r.reply ?? ""} /></div>}
               <dl className="cb-stats">
                 <dt>Cost</dt>

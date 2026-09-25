@@ -96,19 +96,22 @@ async def test_openai_compatible_round_trip_through_the_agent_loop(monkeypatch):
 
 
 class _FakeProvider:
-    def __init__(self, name, reply):
-        self.name, self.reply = name, reply
+    def __init__(self, name, reply, models=("m-1", "m-2")):
+        self.name, self.reply, self.models = name, reply, list(models)
 
     async def complete(self, model, **_):
         return Completion(content=[{"type": "text", "text": f"{self.reply} ({model})"}], usage=Usage(input_tokens=1_000_000, output_tokens=0))
 
     async def list_models(self):
-        return ["m-1", "m-2"]
+        return self.models
 
 
 @pytest.mark.anyio
 async def test_admin_settings_and_compare(monkeypatch):
-    fakes = {"anthropic": _FakeProvider("anthropic", "claude says"), "gemini": _FakeProvider("gemini", "gemini says")}
+    fakes = {
+        "anthropic": _FakeProvider("anthropic", "claude says", ["claude-haiku-4-5-20251001", "claude-sonnet-5"]),
+        "gemini": _FakeProvider("gemini", "gemini says", ["gemini-x", "gemini-y"]),
+    }
     monkeypatch.setattr(admin_chatbot, "configured_providers", lambda: fakes)
     monkeypatch.setattr(chat_settings, "_cache", {"value": None, "at": 0.0})
 
@@ -137,7 +140,24 @@ async def test_admin_settings_and_compare(monkeypatch):
         assert rejected.status_code == 400 and "no API key" in rejected.json()["detail"]
         monkeypatch.setattr(admin_chatbot, "configured_providers", lambda: fakes)
 
-        assert (await client.get("/admin/chatbot/models", params={"provider": "gemini"}, headers=_auth(admin))).json() == ["m-1", "m-2"]
+        assert (await client.get("/admin/chatbot/models", params={"provider": "gemini"}, headers=_auth(admin))).json() == ["gemini-x", "gemini-y"]
+
+        # The prod outage: a Claude escalation model saved under Gemini.
+        settings["anonymous"]["escalation_model"] = "claude-sonnet-5"
+        mismatched = await client.put("/admin/chatbot", json=settings, headers=_auth(admin))
+        assert mismatched.status_code == 400 and "isn't a gemini model" in mismatched.json()["detail"]
+        settings["anonymous"]["escalation_model"] = "gemini-y"
+        assert (await client.put("/admin/chatbot", json=settings, headers=_auth(admin))).status_code == 200
+
+        # With the provider's list unavailable, the prefix rule still catches it.
+        async def down():
+            raise httpx.ConnectError("down")
+
+        monkeypatch.setattr(fakes["gemini"], "list_models", down)
+        settings["anonymous"]["model"] = "claude-haiku-4-5-20251001"
+        assert (await client.put("/admin/chatbot", json=settings, headers=_auth(admin))).status_code == 400
+        settings["anonymous"]["model"] = "gemini-x"
+        assert (await client.put("/admin/chatbot", json=settings, headers=_auth(admin))).status_code == 200
 
         compared = await client.post("/admin/chatbot/compare", headers=_auth(admin), json={
             "message": "hi",
@@ -152,3 +172,50 @@ async def test_admin_settings_and_compare(monkeypatch):
         assert a["reply"] == "claude says (claude-haiku-4-5)" and a["cost_usd"] == pytest.approx(1.0)  # 1M input at $1
         assert b["reply"] == "gemini says (gemini-x)" and b["cost_usd"] == pytest.approx(0.3)
         assert c["cost_usd"] is None  # no price on file: no guess
+
+
+class _BrokenEscalation:
+    """Tool call on the base model, then a 404 for the escalation model -
+    what Gemini returned on prod for claude-sonnet-5."""
+
+    name = "gemini"
+
+    def __init__(self):
+        self.models = []
+
+    async def complete(self, model, messages, **_):
+        self.models.append(model)
+        if model == "claude-sonnet-5":
+            raise RuntimeError("gemini returned 404: model not found")
+        if len(self.models) == 1:
+            return Completion(content=[{"type": "tool_use", "id": "t1", "name": "list_schools", "input": {}}], usage=Usage())
+        return Completion(content=[{"type": "text", "text": "Here you go."}], usage=Usage())
+
+
+@pytest.mark.anyio
+async def test_a_failing_escalation_model_falls_back_to_the_base_model():
+    provider = _BrokenEscalation()
+    config = AudienceConfig(provider="gemini", model="gemini-x", escalation_model="claude-sonnet-5")
+    # "compare ... and ... or" trips the escalation heuristic on the first tool round.
+    result = await run_chat_turn(
+        app.state.mcp, history=[], message="compare East and West or Rosa lunch", already_escalated=False,
+        config=config, providers={"gemini": provider},
+    )
+    assert result["reply"] == "Here you go."
+    assert provider.models == ["gemini-x", "claude-sonnet-5", "gemini-x"]
+    assert result["escalated"] is False and result["model"] == "gemini-x"
+    assert "404" in result["escalation_error"]
+
+    # A client echoing escalated=true from an earlier turn falls back too.
+    provider = _BrokenEscalation()
+    provider.models = ["already-past-round-one"]
+    result = await run_chat_turn(
+        app.state.mcp, history=[], message="hi", already_escalated=True, config=config, providers={"gemini": provider},
+    )
+    assert result["reply"] == "Here you go." and result["escalated"] is False
+
+
+def test_gemini_list_keeps_only_chat_models():
+    ids = ["gemini-3.8-flash", "gemini-3.8-flash-tts", "gemini-3-pro-image", "gemini-embedding-2", "gemini-3.8-live",
+           "gemini-2.5-flash-native-audio-latest", "gemma-4-31b-it", "veo-3.1-generate-preview", "gemini-pro-latest"]
+    assert [i for i in ids if chat_providers.gemini_chat_model(i)] == ["gemini-3.8-flash", "gemini-pro-latest"]

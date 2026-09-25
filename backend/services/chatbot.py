@@ -165,12 +165,26 @@ async def run_chat_turn(
     used_model = model
     usage_by_model: dict[str, Usage] = {}
     tools_called: list[str] = []
+    escalation_error: str | None = None
 
     while True:
-        completion = await provider.complete(
-            model=model, system=stable_system, dynamic_system=dynamic_system, tools=tools, messages=messages,
-            reasoning_effort=config.reasoning_effort,
-        )
+        try:
+            completion = await provider.complete(
+                model=model, system=stable_system, dynamic_system=dynamic_system, tools=tools, messages=messages,
+                reasoning_effort=config.reasoning_effort,
+            )
+        except Exception as exc:
+            if model == config.model:
+                raise
+            # The escalation model failed (retired, or saved under the wrong
+            # provider - a Claude model under Gemini 404'd every escalated
+            # question on prod). Finish on the base model rather than 500,
+            # and stop escalating for the rest of the conversation.
+            logger.exception("chatbot_escalation_failed", extra={"provider": config.provider, "model": model})
+            escalation_error = f"{model}: {exc}"[:300]
+            escalated = False
+            model = config.model
+            continue
         used_model = model
         usage_by_model.setdefault(model, Usage()).add(completion.usage)
         _log_usage(config.provider, model, completion.usage)
@@ -182,7 +196,7 @@ async def run_chat_turn(
             break
 
         tool_rounds += 1
-        if not escalated and config.escalation_model and _should_escalate(message, tool_rounds, escalated):
+        if not escalated and not escalation_error and config.escalation_model and _should_escalate(message, tool_rounds, escalated):
             # Escalate mid-turn, not just on the next call - a cheap model
             # already spinning through 2+ tool calls is exactly the case
             # worth upgrading before it produces a shaky answer.
@@ -217,4 +231,5 @@ async def run_chat_turn(
         "usage_by_model": usage_by_model,
         "tools_called": tools_called,
         "rounds": tool_rounds,
+        "escalation_error": escalation_error,
     }
