@@ -273,3 +273,42 @@ def test_class_in_description_needs_signup_wording(description, is_class):
     from local_events.normalizer import _infer_categories
 
     assert ("classes-&-lessons" in _infer_categories("Evening with the band", description, [])) is is_class
+
+
+def test_deyra_parses_shadow_dom_template_markup():
+    """The schedule now arrives as declarative shadow DOM; BeautifulSoup keeps
+    <template> text as TemplateString, which get_text() skips."""
+    from datetime import date
+
+    from local_events.sources.deyra_schedule import DeyraScheduleSource
+
+    html = (
+        '<html><body><deyra-finder><template shadowrootmode="open"><div data-test="success"><article>'
+        '<div class="o:grid"><div class="o:font-sunflower o:font-medium"><span>7:15 AM</span> - <span>8:00 AM</span></div>'
+        '<div class="o:h6"><div class="">Lap Swimming</div></div>'
+        '<div class="o:typography/regular"><div class="o:mb-1">Lap Pool (6 Lanes)</div></div><div></div></div>'
+        '</article></div></template></deyra-finder></body></html>'
+    )
+    events = DeyraScheduleSource(name="y", url="https://example.test")._parse_day(html, date(2031, 6, 7), "https://example.test")
+    assert [(e.title, e.start_time.strftime("%H:%M")) for e in events] == [("Lap Swimming", "07:15")]
+
+
+@pytest.mark.anyio
+async def test_deyra_no_longer_hides_failures(monkeypatch):
+    from local_events.sources import deyra_schedule
+    from local_events.sources.deyra_schedule import DeyraScheduleSource
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("all scraper services failed")
+
+    monkeypatch.setattr(deyra_schedule, "fetch_rendered_html", boom)
+    with pytest.raises(RuntimeError):
+        await DeyraScheduleSource(name="y", url="https://example.test", days_ahead=2).fetch()
+
+    async def empty_shell(*_a, **_k):
+        return "<html><body><deyra-finder></deyra-finder></body></html>", "https://example.test"
+
+    monkeypatch.setattr(deyra_schedule, "fetch_rendered_html", empty_shell)
+    src = DeyraScheduleSource(name="y", url="https://example.test", days_ahead=2)
+    assert await src.fetch() == []
+    assert src.partial_failures == ["2 day(s) rendered but no classes were found in them"]
