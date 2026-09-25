@@ -82,3 +82,56 @@ async def test_chat_offers_personal_tools_only_when_signed_in(monkeypatch):
     assert seen[0] is None
     assert seen[1] is None  # a bad token degrades to public, never 401s
     assert isinstance(seen[2], PersonalTools)
+
+
+@pytest.mark.anyio
+async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
+    from datetime import datetime, timezone
+
+    import database
+    from models import LocalEvent
+
+    src = f"chat_{uuid.uuid4().hex[:8]}"
+
+    def utc(day, hour):  # 2031-06-07 (Sat) / 08 (Sun); hour in UTC, EDT = UTC-4
+        return datetime(2031, 6, day, hour, tzinfo=timezone.utc)
+
+    async with database.SessionLocal() as db:
+        # Saturday alone overflows the 40-event cap.
+        for i in range(60):
+            db.add(LocalEvent(source=src, source_event_id=f"sat{i}", title=f"Sat thing {i}", start_time=utc(7, 14), categories=["music"]))
+        db.add(LocalEvent(source=src, source_event_id="sun", title="Sunday pumpkin patch", start_time=utc(8, 15),
+                          categories=["outdoor"], is_free=True, description="Hayrides for kids"))
+        # Classes: paid/unknown ones are dropped, explicitly free ones kept.
+        db.add(LocalEvent(source=src, source_event_id="gym", title="Open Gym", start_time=utc(8, 12), categories=["ymca", "open-gym"]))
+        db.add(LocalEvent(source=src, source_event_id="pottery", title="Kids Pottery Class", start_time=utc(8, 13), categories=["arts"],
+                          description="Gluten-free snacks provided. Feel free to bring a friend."))
+        db.add(LocalEvent(source=src, source_event_id="yoga", title="Family Yoga Workshop", start_time=utc(8, 14), categories=["fitness"],
+                          description="Complimentary for residents."))
+        db.add(LocalEvent(source=src, source_event_id="swim", title="Aqua Fit", start_time=utc(8, 16), categories=["ymca", "pool"], is_free=True))
+        # 01:00 UTC Monday is still Sunday evening locally - inside the range.
+        db.add(LocalEvent(source=src, source_event_id="late", title="Sunday evening story time", start_time=utc(9, 1), categories=["library", "kids"]))
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _register(client, f"chatlocal_{uuid.uuid4().hex[:8]}@example.com")
+
+    tools = PersonalTools(app, token)
+    try:
+        res = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-07", "end_date": "2031-06-08"}))
+        titles = [e["title"] for e in res["items"]]
+        assert res["matched"] == 64 and res["returned"] == 40 and "note" in res
+        assert "Open Gym" not in titles and "Kids Pottery Class" not in titles  # no sign it's free
+        assert "Family Yoga Workshop" in titles and "Aqua Fit" in titles  # explicitly free
+        assert "Sunday pumpkin patch" in titles and "Sunday evening story time" in titles  # ...and Sunday survives the cap
+        patch = next(e for e in res["items"] if e["title"] == "Sunday pumpkin patch")
+        assert patch["when"] == "Sun Jun 8 11:00 AM" and patch["price"] == "free"
+
+        # Asking for classes by category still never surfaces a paid one.
+        gym = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-08", "end_date": "2031-06-08", "categories": "ymca,open-gym"}))
+        assert [e["title"] for e in gym["items"]] == ["Aqua Fit"]
+
+        bad = json.loads(await tools.run("find_local_events", {"start_date": "this weekend", "end_date": "2031-06-08"}))
+        assert "YYYY-MM-DD" in bad["error"]
+    finally:
+        await tools.aclose()
