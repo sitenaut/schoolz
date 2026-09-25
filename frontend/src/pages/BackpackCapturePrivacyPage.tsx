@@ -31,14 +31,15 @@ export function BackpackCapturePrivacyPage() {
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
         Classroom and Genesis Parent Portal pages a parent already has open, so they can see what's due
         without hand-copying it. This page describes, plainly, what that involves - what's read, what's
-        kept, and the two specific actions that can move any of it off the device.
+        kept, and the specific actions that can move any of it off the device.
       </p>
 
       <h3>In short</h3>
       <ul>
         <li>
-          <strong>Nothing is captured</strong> until you press Start capture, and only on Classroom or
-          Genesis pages - Chrome enforces this, the extension's code never loads anywhere else.
+          <strong>Nothing is captured</strong> until you press Start capture (or turn on the optional
+          scheduled walk), and only on Classroom or Genesis pages - Chrome enforces this, the extension's
+          code never loads anywhere else.
         </li>
         <li>
           <strong>It never logs in, and never reads passwords or cookies.</strong> It only reads the
@@ -49,8 +50,9 @@ export function BackpackCapturePrivacyPage() {
           you export a file or choose to publish.
         </li>
         <li>
-          <strong>Two actions move data off the device</strong>, and both require pressing a button each
-          time: exporting a local file, or publishing to your own schoolz account.
+          <strong>Only you decide what leaves the device</strong>: exporting a local file, publishing to
+          your own schoolz account, or - only if you turn it on - a scheduled walk that publishes there on
+          its own.
         </li>
         <li>
           <strong>No analytics, no telemetry, no advertising, no third-party trackers</strong> - anywhere in
@@ -73,8 +75,8 @@ export function BackpackCapturePrivacyPage() {
         compact text form.
       </p>
       <p>
-        Nothing is captured before you press <strong>Start capture</strong>, and a badge stays visible on
-        the toolbar icon for as long as capture is active.
+        Nothing is captured before you press <strong>Start capture</strong> (or a scheduled walk you
+        turned on runs), and a badge stays visible on the toolbar icon for as long as capture is active.
       </p>
 
       <h3>What it stores</h3>
@@ -125,16 +127,17 @@ export function BackpackCapturePrivacyPage() {
         <li>Passwords, or any part of a login form</li>
         <li>Cookies, session tokens, or <code>localStorage</code> belonging to Classroom or Genesis</li>
         <li>Any website other than the two listed above</li>
-        <li>Anything before you explicitly start a capture session or press Capture</li>
+        <li>Anything before you explicitly start a capture session, press Capture, or turn on the scheduled walk</li>
       </ul>
       <p>
         The extension's declared permissions reflect this directly: it has no <code>cookies</code> or{" "}
         <code>webRequest</code> permission, and no access to any host beyond Classroom, Genesis, and (only
-        for the optional feature below) schoolz's own API.
+        for the optional features below) schoolz's own API. Its <code>alarms</code> permission exists only
+        for the scheduled walk.
       </p>
 
       <h3>What can leave your device - and only this</h3>
-      <p>Exactly two actions ever send anything anywhere, and both require a person to press a button, each time:</p>
+      <p>Only these send anything anywhere, and each is something a person chose:</p>
       <ol>
         <li>
           <strong>Export capture</strong> - writes everything currently stored to a single JSON file, saved
@@ -145,8 +148,15 @@ export function BackpackCapturePrivacyPage() {
           <strong>Publish captures</strong> - sends the same stored records to your own schoolz family
           account (see below). Off until you log in, and only runs when you press Publish.
         </li>
+        <li>
+          <strong>Scheduled walk</strong> - off by default. If you turn it on, every four hours (never
+          between 10pm and 6am) it opens Classroom in its own window, walks your child's classes the same
+          way a capture session does, and publishes what's new to the student you picked. It never signs
+          in to Google: when that sign-in expires it stops and tells schoolz, which notifies you. Turning
+          it off stops it completely.
+        </li>
       </ol>
-      <p>There is no background sync, no scheduled upload, and no telemetry of any kind.</p>
+      <p>Apart from a scheduled walk you turned on, there is no background sync or upload, and there is no telemetry of any kind.</p>
 
       <h3>Publishing to schoolz</h3>
       <p>

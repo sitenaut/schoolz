@@ -585,3 +585,33 @@ async def test_detail_page_capture_attaches_points_possible_to_the_matching_item
         result = await _import(client, guardian, sid, [_env("classroom", detail_url, orphan_text)])
         assert result["identity_mismatches"] == []
         assert result["work_items_upserted"] == 0
+
+
+@pytest.mark.anyio
+async def test_capture_status_notifies_once_and_clears_on_success():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        url = f"/students/{sid}/bucket3/capture-status"
+
+        async def unread() -> list[dict]:
+            res = await client.get("/notifications", headers=_auth(guardian))
+            return [n for n in res.json() if n["type"] == "capture_needs_login" and n["read_at"] is None]
+
+        # Informational statuses never notify.
+        res = await client.post(url, json={"status": "aborted", "detail": "3 pages broke"}, headers=_auth(guardian))
+        assert res.json() == {"notified": False}
+        assert await unread() == []
+
+        # A lapsed sign-in notifies once, not again every four hours.
+        assert (await client.post(url, json={"status": "needs_login"}, headers=_auth(guardian))).json()["notified"] is True
+        assert (await client.post(url, json={"status": "needs_login"}, headers=_auth(guardian))).json()["notified"] is False
+        assert len(await unread()) == 1
+
+        # A successful run retires it.
+        await client.post(url, json={"status": "ok"}, headers=_auth(guardian))
+        assert await unread() == []
+
+        # Someone else's student is a 404, same as everywhere in bucket3.
+        stranger = await _register(client, f"stranger_{uuid.uuid4().hex[:8]}@example.com")
+        res = await client.post(url, json={"status": "needs_login"}, headers=_auth(stranger))
+        assert res.status_code == 404

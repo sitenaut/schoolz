@@ -1062,6 +1062,19 @@ class Bucket3ImportResult(BaseModel):
     identity_mismatches: list[str] = []
 
 
+class CaptureStatusIn(BaseModel):
+    """How a scheduled Backpack Capture walk ended (see backpack-capture's
+    background.js finishAutoWalk). Free-form rather than an enum so a newer
+    extension's status never 422s against an older schoolz."""
+
+    status: str = Field(max_length=40)
+    detail: str | None = Field(default=None, max_length=300)
+
+
+class CaptureStatusOut(BaseModel):
+    notified: bool
+
+
 class ChildScheduleBlockOut(BaseModel):
     source: str
     period: str
