@@ -120,7 +120,7 @@ _TOOLS["find_local_events"] = (
     "dates. For 'what can I take the kids to', don't rely on categories alone - the family/kids tags are "
     "keyword-inferred and miss plenty; search the whole range and judge from each title and description. "
     "Categories in use: family, kids, teen, outdoor, library, arts, music, live-music, theatre, comedy, circus, "
-    "sports, running, free, municipal, entertainment, talks-&-lectures. Classes (gym/pool/fitness, lessons, "
+    "sports, running, free, municipal, entertainment, talks-&-lectures, classes-&-lessons, exercise. Classes (gym/pool/fitness, lessons, "
     "workshops, courses) are usually paid, so they're only included when the listing explicitly says they're "
     "free. Returns at most 40 events spread across the days in the range, "
     "plus the total that matched.",
@@ -142,7 +142,7 @@ _TOOLS["find_local_events"] = (
 # otherwise be mostly "Open Gym" and "Aqua Fit". Product rule: a class is
 # only shown with explicit evidence it costs nothing - never on "no price
 # listed", which for a class almost always means "ask at the desk".
-_CLASS_CATEGORIES = {"group-exercise", "open-gym", "gym", "pool", "swim", "fitness", "ymca", "child-care", "class"}
+_CLASS_CATEGORIES = {"group-exercise", "open-gym", "gym", "pool", "swim", "fitness", "ymca", "child-care", "class", "classes-&-lessons", "exercise"}
 _CLASS_TITLE_RE = re.compile(r"\b(class(es)?|lessons?|courses?|workshops?|clinics?|bootcamp)\b", re.I)
 # "gluten-free", "sugar-free", "feel free", "free-throw" aren't about price.
 _FREE_TEXT_RE = re.compile(

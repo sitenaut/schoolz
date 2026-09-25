@@ -19,17 +19,46 @@ DEFAULT_TZ = ZoneInfo("America/New_York")
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _WHITESPACE_RE = re.compile(r"\s+")
 
+CLASSES_CATEGORY = "classes-&-lessons"  # the Local page labels it "Classes & Lessons"
+
 KEYWORD_CATEGORIES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\b(kid|kids|children|child|family)\b", re.I), "family"),
     (re.compile(r"\b(kid|kids|children|child)\b", re.I), "kids"),
     (re.compile(r"\bteen(s|ager)?\b", re.I), "teen"),
     (re.compile(r"\bfree\b|\bno cost\b", re.I), "free"),
-    (re.compile(r"\boutdoor|park|nature|trail|festival\b", re.I), "outdoor"),
-    (re.compile(r"\blibrary|story ?time|book\b", re.I), "library"),
-    (re.compile(r"\bmusic|concert|band|symphony\b", re.I), "music"),
-    (re.compile(r"\bsport|game|race|run\b", re.I), "sports"),
-    (re.compile(r"\bmuseum|art|gallery|exhibit\b", re.I), "arts"),
+    # Each alternation is wrapped in (?:...) so \b applies to every word -
+    # without it, r"\bsport|game|race|run\b" matched "race" inside "brace"
+    # and "art" inside "start"/"party", tagging most of the feed arts/sports.
+    (re.compile(r"\b(?:outdoors?|parks?|nature|trails?|festivals?)\b", re.I), "outdoor"),
+    (re.compile(r"\b(?:library|story ?time|books?)\b", re.I), "library"),
+    (re.compile(r"\b(?:music|concerts?|band|symphony)\b", re.I), "music"),
+    (re.compile(r"\b(?:sports?|games?|races?|run|running)\b", re.I), "sports"),
+    (re.compile(r"\b(?:museums?|art|arts|gallery|galleries|exhibits?)\b", re.I), "arts"),
+    (re.compile(r"\bpersonal train(?:ing|er|ers)\b", re.I), "exercise"),
 ]
+
+# "Classes & Lessons": one umbrella for anything you sign up to learn, so a
+# filter doesn't mean picking "piano" and "cello" and "violin" separately.
+# Overlaps freely with other categories. The title is trusted; a description
+# is prose - a musician's bio says "began piano lessons at 3" or "prepared
+# 800 lessons", a concert blurb "over the course of" - so there it takes
+# sign-up wording: The Philadelphia School's bare "Cello"/"Piano" rows say
+# "Lessons will be scheduled...".
+_CLASS_TITLE_RE = re.compile(
+    r"\b(?:lessons?|class(?:es)?|courses?|training)\b"
+    r"(?<!world-class)(?<!first-class)(?<!middle class)(?<!working class)"
+    r"(?<!golf course)(?<!obstacle course)(?<!race course)(?! of \d)",
+    re.I,
+)
+_CLASS_DESCRIPTION_RE = re.compile(
+    r"\b(?:lessons|classes) (?:will be|are|is) (?:scheduled|offered|held|available)"
+    r"|\b(?:sign up|register|enroll)(?:ing)?(?: for)? (?:the |this |our |a )?(?:lessons?|class(?:es)?|course)\b",
+    re.I,
+)
+
+# Source-supplied categories that mean the same thing (Evvnt's, and the
+# Yodel source's mapping of its "Classes/Workshops").
+_CLASS_ALIASES = {"classes-/-courses", "class", "workshops"}
 
 
 def _strip_html(text: str | None) -> str | None:
@@ -54,6 +83,12 @@ def _infer_categories(title: str, description: str | None, defaults: list[str]) 
     for pattern, tag in KEYWORD_CATEGORIES:
         if pattern.search(haystack) and tag not in found:
             found.append(tag)
+    if CLASSES_CATEGORY not in found and (
+        _CLASS_TITLE_RE.search(title)
+        or _CLASS_DESCRIPTION_RE.search(description or "")
+        or _CLASS_ALIASES & set(found)
+    ):
+        found.append(CLASSES_CATEGORY)
     return found
 
 
