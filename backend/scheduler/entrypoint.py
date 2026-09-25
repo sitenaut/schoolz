@@ -39,7 +39,13 @@ _REAP_STUCK_RUNS_SQL = text(
                 'was captured; check Grafana for machine_id/trace_id and started_at on this run'
         END,
         finished_at = now()
-    WHERE status = 'running' AND started_at < now() - interval '45 minutes'
+    -- Judged by the last progress heartbeat, not the start: a job that
+    -- reports progress (local_events.refresh checkpoints after every source)
+    -- can legitimately run past 45 minutes - with the Y's schedules rendered
+    -- on prod's 1GB scraper it takes ~50 - and keying on started_at marked
+    -- live runs "abandoned" mid-flight. Jobs that never report progress
+    -- fall back to started_at, as before.
+    WHERE status = 'running' AND COALESCE(last_progress_at, started_at) < now() - interval '45 minutes'
     RETURNING job_id
     """
 )

@@ -101,6 +101,8 @@ async def test_refresh_upserts_dedupes_across_sources_and_warns_on_failure():
             again = await local_events_refresh.run(db, {})
         rows = (await db.execute(select(LocalEvent).where(LocalEvent.title == f"Story Time {run}"))).scalars().all()
     assert result.startswith("WARNING[local_event_source_failed]") and f"dead_{run}" in result
+    summary = json.loads(result.split(": ", 1)[1].split(": ", 1)[1])
+    assert f"dead_{run}" in summary["errors"]  # the reason, not just -1
     assert again.startswith("WARNING")
     [row] = rows
     assert row.source == a and row.description == "a much longer description"
