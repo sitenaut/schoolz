@@ -751,6 +751,9 @@ pre.json {
 .modal-body {
   padding: 16px 20px;
   overflow-y: auto;
+  /* A swipe that reaches the end of the dialog's own scroll must not carry
+     on into the page behind it. */
+  overscroll-behavior: contain;
   min-height: 0;
 }
 .modal-ft {
@@ -769,6 +772,13 @@ pre.json {
     max-height: 94%;
     border-radius: 16px 16px 0 0;
   }
+}
+
+/* The chat panel's body lays out as a column so .chat-body can shrink to
+   whatever height is left above the keyboard (styles.css). */
+.modal-body:has(> .chat-body) {
+  display: flex;
+  flex-direction: column;
 }
 
 /* ---------- modal tabs (underline style, distinct from pill .tabs) ---------- */

@@ -2626,13 +2626,19 @@ select {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 60vh;
+  /* A preferred height that can shrink: with the keyboard open the modal
+     only has the space above it, and a fixed 60vh pushed the input out of
+     view. flex + min-height:0 inside a flex .modal-body (ui.css) lets the
+     message list give way while the input row stays put. */
+  flex: 0 1 60vh;
   max-height: 520px;
+  min-height: 0;
 }
 .chat-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 8px;
