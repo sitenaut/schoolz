@@ -22,6 +22,7 @@ SOURCE_KEYS = (
     "sitemap_sources",
     "deyra_schedule_sources",
     "scraper_sources",
+    "yodel_sources",
 )
 
 

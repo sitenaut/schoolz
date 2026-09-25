@@ -36,6 +36,10 @@ class Source(ABC):
     """Adapter interface. Each source produces a list of RawEvent."""
 
     name: str
+    # Parts of a multi-feed source (e.g. one Google Calendar of several) that
+    # failed while the rest fetched fine - set by fetch(), surfaced by the
+    # pipeline as a partial failure so the run still goes WARNING.
+    partial_failures: list[str] = []
 
     @abstractmethod
     async def fetch(self) -> list[RawEvent]:  # pragma: no cover — abstract

@@ -73,7 +73,10 @@ class GoogleCalendarSource(Source):
         timeout: float = 30.0,
     ):
         self.name = name
-        self.calendar_ids = list(calendar_ids)
+        # A bare id with no "@" is the short form of a group calendar, and the
+        # API 404s it - confirmed on two of phila.gov's calendars as billz
+        # stored them. Normalizing here keeps billz's params portable.
+        self.calendar_ids = [c if "@" in c else f"{c}@group.calendar.google.com" for c in calendar_ids]
         self.api_key = api_key
         self.default_categories = default_categories or []
         self.months_ahead = max(1, int(months_ahead))
@@ -148,9 +151,20 @@ class GoogleCalendarSource(Source):
         async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
             all_events: list[RawEvent] = []
             seen_ids: set[str] = set()
+            failures: list[str] = []
             for cal_id in self.calendar_ids:
-                for event in await self._fetch_calendar(client, cal_id):
+                # One dead calendar used to fail the whole source, dropping
+                # every other calendar's events along with it.
+                try:
+                    events = await self._fetch_calendar(client, cal_id)
+                except Exception as exc:  # noqa: BLE001
+                    failures.append(str(exc)[:300])
+                    continue
+                for event in events:
                     if event.source_event_id not in seen_ids:
                         seen_ids.add(event.source_event_id)
                         all_events.append(event)
+        if failures and len(failures) == len(self.calendar_ids):
+            raise RuntimeError("; ".join(failures))
+        self.partial_failures = failures
         return all_events

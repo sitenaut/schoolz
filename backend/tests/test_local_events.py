@@ -200,3 +200,28 @@ async def test_removing_a_source_or_job_removes_its_events_unless_another_job_li
         # Editing B to drop `shared` removes its events too.
         assert (await client.patch(f"/scheduled-jobs/{job_b}", json={"params": params(only_b)}, headers=auth(admin))).status_code == 200
         assert await sources_left() == {only_b}
+
+
+@pytest.mark.anyio
+async def test_gcal_bare_ids_get_group_suffix_and_one_dead_calendar_doesnt_sink_the_rest(monkeypatch):
+    from local_events.sources.base import RawEvent
+    from local_events.sources.gcal import GoogleCalendarSource
+
+    src = GoogleCalendarSource("phila_gov", ["mayor@gmail.com", "6kfp8odc1an5o5sl874rr3hhck", "dead@gmail.com"], "key")
+    assert src.calendar_ids[1] == "6kfp8odc1an5o5sl874rr3hhck@group.calendar.google.com"
+
+    async def fake_fetch(client, cal_id):
+        if cal_id == "dead@gmail.com":
+            raise RuntimeError("Google Calendar API returned HTTP 404 for calendar 'dead@gmail.com'")
+        return [RawEvent(source="phila_gov", source_event_id=cal_id, title=cal_id, start_time=datetime(2031, 6, 1, tzinfo=timezone.utc))]
+
+    monkeypatch.setattr(src, "_fetch_calendar", fake_fetch)
+    events = await src.fetch()
+    assert len(events) == 2
+    assert len(src.partial_failures) == 1 and "dead@gmail.com" in src.partial_failures[0]
+
+    # Every calendar failing is still a failed source.
+    only_dead = GoogleCalendarSource("x", ["dead@gmail.com"], "key")
+    monkeypatch.setattr(only_dead, "_fetch_calendar", fake_fetch)
+    with pytest.raises(RuntimeError):
+        await only_dead.fetch()

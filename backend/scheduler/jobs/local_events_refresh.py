@@ -103,9 +103,21 @@ DEFAULT_PARAMS = {
     ],
     "listing_page_sources": [
     ],
+    "yodel_sources": [
+        # Yodel (events.yodel.today) calendar widgets. Macaroni KID moved its
+        # calendar here - its sitemap no longer lists events. Plain HTTP, no
+        # scraper; see local_events/sources/yodel.py.
+        {
+            "name": "macaronikid_cherryhill",
+            "widget_url": "https://events.yodel.today/y/widget/69cd3f9d63e5877b4044dac3",
+            "fallback_url": "https://cherryhill.macaronikid.com/events",
+            "default_categories": ["kids", "family"],
+        }
+    ],
     "sitemap_sources": [
         # For sites whose listing/calendar pages are JS-rendered shells but
-        # whose per-event detail pages are server-rendered (e.g. Macaroni KID).
+        # whose per-event detail pages are server-rendered. (Macaroni KID
+        # used to work this way; it's a yodel_sources entry now.)
         # We walk sitemap.xml, regex-filter URLs, scrape each detail page
         # through the scraper service, and dispatch to a named parser.
         #
@@ -367,6 +379,20 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "yodel_sources": {
+            "type": "array",
+            "description": "Yodel (events.yodel.today) calendar widgets, e.g. the one Macaroni KID embeds on its /events page. Plain HTTP, no scraper: reads the widget's server-rendered first page, then pages through its own 'load more' call.",
+            "items": {
+                "type": "object",
+                "required": ["name", "widget_url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "widget_url": {"type": "string", "description": "The widget URL from the host page's iframe, https://events.yodel.today/y/widget/<id>."},
+                    "fallback_url": {"type": "string", "description": "Link used for an event with no website/tickets/registration URL of its own (Yodel's event pages block non-browser clients)."},
+                    "max_pages": {"type": "integer", "default": 10},
+                },
+            },
+        },
         "scraper_sources": {
             "type": "array",
             "description": "JS-rendered or fetch-blocked sites — routed through the scraper service.",
@@ -417,4 +443,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     text = json.dumps(summary, default=str)
     if failed:
         return f"WARNING[local_event_source_failed]: {len(failed)} source(s) failed ({', '.join(failed)}): {text}"
+    partial = summary.get("partial_failures") or {}
+    if partial:
+        return f"WARNING[local_event_source_partial]: part of {len(partial)} source(s) failed ({', '.join(partial)}): {text}"
     return text
