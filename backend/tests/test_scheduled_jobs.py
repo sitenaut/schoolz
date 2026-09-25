@@ -117,3 +117,32 @@ async def test_jobs_api_is_admin_only():
             assert res.status_code == 403, f"{method} {path}: {res.status_code}"
         anon = await client.get("/scheduled-jobs")
         assert anon.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_stuck_run_reaper_keys_on_last_progress_not_start():
+    """A long job that keeps checkpointing progress (local_events.refresh with
+    the Y's slow schedules runs ~50 min) must not be reaped mid-flight; a run
+    with no heartbeat for 45 min still is."""
+    from datetime import datetime, timedelta, timezone
+
+    import database
+    from models import JobRun, ScheduledJob
+    from scheduler.entrypoint import _REAP_STUCK_RUNS_SQL
+
+    now = datetime.now(timezone.utc)
+    async with database.SessionLocal() as db:
+        job = ScheduledJob(kind="local_events.refresh", name="reaper test", cron_expr="0 */3 * * *", params={})
+        db.add(job)
+        await db.flush()
+        alive = JobRun(job_id=job.id, status="running", started_at=now - timedelta(minutes=60), last_progress_at=now - timedelta(minutes=2))
+        dead = JobRun(job_id=job.id, status="running", started_at=now - timedelta(minutes=60), last_progress_at=now - timedelta(minutes=50))
+        silent = JobRun(job_id=job.id, status="running", started_at=now - timedelta(minutes=60))
+        db.add_all([alive, dead, silent])
+        await db.flush()
+        await db.execute(_REAP_STUCK_RUNS_SQL)
+        for run in (alive, dead, silent):
+            await db.refresh(run)
+        assert alive.status == "running"
+        assert dead.status == "error" and dead.error_code == "abandoned"
+        assert silent.status == "error"  # no heartbeat at all: falls back to started_at

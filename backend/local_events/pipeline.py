@@ -230,6 +230,10 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     skipped = 0
     per_source: dict[str, int] = {}
     partial_failures: dict[str, list[str]] = {}
+    # Why each -1 source failed. It used to live only in the logs, so the run
+    # summary in Scans said "failed" with no way to tell a one-off timeout
+    # from a site that changed.
+    source_errors: dict[str, str] = {}
 
     for source_index, source in enumerate(sources):
         try:
@@ -237,6 +241,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         except Exception as exc:  # noqa: BLE001
             logger.warning("event_source_failed", extra={"source": source.name, "error": str(exc)})
             per_source[source.name] = -1
+            source_errors[source.name] = f"{type(exc).__name__}: {exc}"[:300]
             continue
         fetched += len(raws)
         per_source[source.name] = len(raws)
@@ -305,5 +310,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     }
     if partial_failures:
         summary["partial_failures"] = partial_failures
+    if source_errors:
+        summary["errors"] = source_errors
     logger.info("events_pipeline_complete", extra=summary)
     return summary
