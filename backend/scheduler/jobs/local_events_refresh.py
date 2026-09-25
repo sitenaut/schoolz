@@ -114,6 +114,17 @@ DEFAULT_PARAMS = {
             "default_categories": ["kids", "family"],
         }
     ],
+    "tribe_sources": [
+        # WordPress sites running The Events Calendar - public REST API, no
+        # scraper; see local_events/sources/tribe.py.
+        {
+            "name": "visit_south_jersey",
+            "base_url": "https://visitsouthjersey.com",
+            "days_ahead": 60,
+            "max_miles": 25,
+        },
+        {"name": "downtown_haddonfield", "base_url": "https://downtownhaddonfield.com", "days_ahead": 60},
+    ],
     "sitemap_sources": [
         # For sites whose listing/calendar pages are JS-rendered shells but
         # whose per-event detail pages are server-rendered. (Macaroni KID
@@ -376,6 +387,23 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "venue_name": {"type": "string", "description": "Branch name shown as the event venue."},
                     "venue_address": {"type": "string", "description": "Branch street address shown as the event venue address."},
                     "days_ahead": {"type": "integer", "default": 14, "description": "How many days ahead to render and expand into events (max 60)."},
+                },
+            },
+        },
+        "tribe_sources": {
+            "type": "array",
+            "description": "WordPress sites running The Events Calendar (look for /wp-json/tribe/events/v1/events). Public JSON API, no scraper. Times are read as Eastern regardless of the site's own time zone setting.",
+            "items": {
+                "type": "object",
+                "required": ["name", "base_url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "base_url": {"type": "string", "description": "The site root, e.g. https://visitsouthjersey.com."},
+                    "days_ahead": {"type": "integer", "default": 60, "description": "How far ahead to fetch."},
+                    "max_miles": {"type": "number", "description": "Drop venues farther than this from `center`. Omit to keep everything."},
+                    "center": {"type": "array", "items": {"type": "number"}, "description": "[lat, lng] for max_miles; defaults to Cherry Hill."},
+                    "nearby_zip_prefixes": {"type": "array", "items": {"type": "string"}, "description": "For venues with no coordinates: keep only zips starting with these. Default 080, 081, 190, 191."},
+                    "max_pages": {"type": "integer", "default": 40, "description": "50 events per page."},
                 },
             },
         },

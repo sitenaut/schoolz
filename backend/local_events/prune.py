@@ -23,6 +23,7 @@ SOURCE_KEYS = (
     "deyra_schedule_sources",
     "scraper_sources",
     "yodel_sources",
+    "tribe_sources",
 )
 
 
