@@ -66,6 +66,10 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # The chatbot's own keys (services/chat_providers.py) - listed here
+      # because only variables named in this block reach the container.
+      CHATBOT_ANTHROPIC_API_KEY: ${CHATBOT_ANTHROPIC_API_KEY:-}
+      CHATBOT_GEMINI_API_KEY: ${CHATBOT_GEMINI_API_KEY:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-}
       OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-}
