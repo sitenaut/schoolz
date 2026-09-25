@@ -3,6 +3,7 @@ import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { Modal } from "./ui/Modal";
 import { ChatAvatar } from "./ChatAvatar";
+import { ChatText } from "../lib/chatFormat";
 import { IconSend } from "./icons";
 
 type DisplayMessage = { role: "user" | "assistant"; text: string };
@@ -86,7 +87,7 @@ export function ChatWidget() {
             <div className="chat-bubble assistant">{user ? SIGNED_IN_GREETING : GREETING}</div>
             {messages.map((m, i) => (
               <div className={`chat-bubble ${m.role}`} key={i}>
-                {m.text}
+                {m.role === "assistant" ? <ChatText text={m.text} /> : m.text}
               </div>
             ))}
             {sending && (
