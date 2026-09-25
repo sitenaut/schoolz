@@ -151,8 +151,11 @@ async def run_chat_turn(
         tools += await personal.tool_defs()
         stable_system += PERSONAL_PROMPT
     # Kept out of the stable system text so the cached prefix doesn't change
-    # daily (see AnthropicProvider.complete).
-    dynamic_system = f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}." if personal else None
+    # daily (see AnthropicProvider.complete). Every audience needs it: when it
+    # was signed-in only, anonymous "what's on next week" questions were
+    # searched against a guessed date (January/April 2025) and came back
+    # "no events" while the real week had a dozen.
+    dynamic_system = f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."
 
     escalated = already_escalated and bool(config.escalation_model)
     model = config.escalation_model if escalated else config.model

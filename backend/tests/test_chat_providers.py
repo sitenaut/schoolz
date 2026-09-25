@@ -219,3 +219,47 @@ def test_gemini_list_keeps_only_chat_models():
     ids = ["gemini-3.8-flash", "gemini-3.8-flash-tts", "gemini-3-pro-image", "gemini-embedding-2", "gemini-3.8-live",
            "gemini-2.5-flash-native-audio-latest", "gemma-4-31b-it", "veo-3.1-generate-preview", "gemini-pro-latest"]
     assert [i for i in ids if chat_providers.gemini_chat_model(i)] == ["gemini-3.8-flash", "gemini-pro-latest"]
+
+
+@pytest.mark.anyio
+async def test_anonymous_turns_are_told_todays_date():
+    seen = {}
+
+    class _Capture:
+        name = "anthropic"
+
+        async def complete(self, model, dynamic_system=None, **_):
+            seen["dynamic_system"] = dynamic_system
+            return Completion(content=[{"type": "text", "text": "ok"}], usage=Usage())
+
+    await run_chat_turn(app.state.mcp, history=[], message="what's on next week?", already_escalated=False,
+                        personal=None, config=AudienceConfig(escalation_model=None), providers={"anthropic": _Capture()})
+    assert seen["dynamic_system"].startswith("Today is ")
+
+
+
+@pytest.mark.anyio
+async def test_calendar_tool_drops_rotation_markers_unless_asked():
+    from datetime import datetime, timezone
+
+    import database
+    from models import District, School, SchoolContentItem
+    from services.chatbot import _run_tool
+
+    async with database.SessionLocal() as db:
+        district = District(name="Rotation Test District")
+        db.add(district)
+        await db.flush()
+        db.add(School(name="Rotation Test High", slug="rotation-test-high", school_type="high", district_id=district.id))
+        common = dict(scope="district", district_id=district.id, category="event", is_current=True, source="ics_feed",
+                      is_all_day=True, start_date=datetime(2026, 9, 29, 4, tzinfo=timezone.utc))
+        db.add_all([SchoolContentItem(title=t, **common) for t in ("Day 2", "Day 5", "ROTTEST Senior Portraits", "Day 2 Field Trip")])
+        await db.commit()
+
+    args = {"start": "2026-09-29T00:00:00Z", "end": "2026-09-29T23:59:59Z", "school_ids": "rotation-test-high"}
+    default = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", args))
+    titles = {i["title"] for i in default["items"]}
+    assert "ROTTEST Senior Portraits" in titles and "Day 2 Field Trip" in titles
+    assert not {"Day 2", "Day 5"} & titles
+    asked = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", {**args, "include_rotation_days": True}))
+    assert {"Day 2", "Day 5"} <= {i["title"] for i in asked["items"]}
