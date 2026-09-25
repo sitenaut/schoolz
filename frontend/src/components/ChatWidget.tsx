@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../api";
+import { useAuth } from "../context/AuthContext";
 import { Modal } from "./ui/Modal";
 import { ChatAvatar } from "./ChatAvatar";
 import { IconSend } from "./icons";
@@ -11,6 +12,8 @@ type DisplayMessage = { role: "user" | "assistant"; text: string };
 type ApiMessage = { role: string; content: unknown };
 
 const GREETING = "Hi! Ask me about bell times, lunch menus, buses, or a school's calendar - anything on schoolz.";
+const SIGNED_IN_GREETING =
+  "Hi! Ask me about your kids - what's due or missing, grades, today's schedule - or anything else on schoolz.";
 
 /** The floating chat trigger + panel, mounted once in AppShell so it
  * persists across every route. A plain fixed-position button rather than
@@ -18,6 +21,7 @@ const GREETING = "Hi! Ask me about bell times, lunch menus, buses, or a school's
  * or bottom) would compete with the header and the mobile tab bar for
  * already-tight vertical space, where a FAB costs nothing until tapped. */
 export function ChatWidget() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [apiHistory, setApiHistory] = useState<ApiMessage[]>([]);
@@ -26,6 +30,17 @@ export function ChatWidget() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // The backend offers personal tools per request based on the login, so a
+  // transcript from before a sign-in/out would carry one account's kids'
+  // data into the next account's conversation. Start over instead.
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    setMessages([]);
+    setApiHistory([]);
+    setEscalated(false);
+    setError(null);
+  }, [userId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -68,7 +83,7 @@ export function ChatWidget() {
       <Modal open={open} onClose={() => setOpen(false)} title="Ask schoolz" subtitle="Answers pulled live from schoolz - never invented">
         <div className="chat-body">
           <div className="chat-scroll" ref={scrollRef}>
-            <div className="chat-bubble assistant">{GREETING}</div>
+            <div className="chat-bubble assistant">{user ? SIGNED_IN_GREETING : GREETING}</div>
             {messages.map((m, i) => (
               <div className={`chat-bubble ${m.role}`} key={i}>
                 {m.text}
@@ -94,7 +109,7 @@ export function ChatWidget() {
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about a school, bell times, lunch..."
+              placeholder={user ? "What's due tomorrow? Any missing work?" : "Ask about a school, bell times, lunch..."}
               maxLength={2000}
               disabled={sending}
               autoFocus

@@ -18,10 +18,14 @@ import json
 import logging
 import os
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from anthropic import AsyncAnthropic
 from mcp.server.fastmcp import FastMCP
+
+from services.chatbot_personal import PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, PersonalTools, anthropic_tool_defs
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +93,7 @@ async def run_chat_turn(
     history: list[dict[str, Any]],
     message: str,
     already_escalated: bool,
+    personal: PersonalTools | None = None,
 ) -> dict[str, Any]:
     """One user turn. `history` is exactly the plain role/content list the
     client sent back from the previous turn's response - this endpoint
@@ -97,6 +102,9 @@ async def run_chat_turn(
     `already_escalated` is likewise echoed back by the client so escalation
     stays sticky for the rest of a conversation without needing a session
     store.
+
+    `personal` is set only for a signed-in caller (routers/chat.py) and adds
+    the tools in services/chatbot_personal.py on top of the public ones.
     """
     if not ANTHROPIC_API_KEY:
         return {
@@ -113,6 +121,10 @@ async def run_chat_turn(
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     tools = await _anthropic_tools(mcp)
+    system = SYSTEM_PROMPT
+    if personal:
+        tools += anthropic_tool_defs()
+        system += PERSONAL_PROMPT + f" Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."
 
     escalated = already_escalated
     model = SONNET if escalated else HAIKU
@@ -128,7 +140,7 @@ async def run_chat_turn(
         response = await client.messages.create(
             model=model,
             max_tokens=1024,
-            system=SYSTEM_PROMPT,
+            system=system,
             tools=tools,
             messages=messages,
         )
@@ -168,7 +180,14 @@ async def run_chat_turn(
 
         results = []
         for use in tool_uses:
-            result_text = await _run_tool(mcp, use.name, use.input)
+            if use.name in PERSONAL_TOOL_NAMES:
+                result_text = (
+                    await personal.run(use.name, use.input)
+                    if personal
+                    else json.dumps({"error": "Sign in to schoolz to ask about your own children."})
+                )
+            else:
+                result_text = await _run_tool(mcp, use.name, use.input)
             results.append({"type": "tool_result", "tool_use_id": use.id, "content": result_text})
         messages.append({"role": "user", "content": results})
 

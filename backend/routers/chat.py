@@ -1,5 +1,8 @@
-"""The on-site chatbot's HTTP surface. Public, no auth - same access model
-as every other MCP-backed tool (see mcp_server.py's module docstring).
+"""The on-site chatbot's HTTP surface. Public, no auth required - same
+access model as every other MCP-backed tool (see mcp_server.py's module
+docstring). A signed-in caller additionally gets personal tools over their
+own children's data (services/chatbot_personal.py); an invalid or expired
+token degrades to the public tools rather than 401ing, like GET /calendar.
 
 Rate-limited per client IP with a simple in-memory sliding window: good
 enough for a single Fly machine (min_machines_running=1 - see fly.toml),
@@ -13,10 +16,13 @@ a first version of a feature nobody's used in prod yet.
 import time
 from collections import defaultdict, deque
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from auth import get_optional_user, oauth2_scheme
+from models import User
 from services.chatbot import run_chat_turn
+from services.chatbot_personal import PersonalTools
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -54,15 +60,27 @@ class ChatResponse(BaseModel):
 
 
 @router.post("", response_model=ChatResponse)
-async def send_chat_message(body: ChatRequest, request: Request) -> ChatResponse:
+async def send_chat_message(
+    body: ChatRequest,
+    request: Request,
+    user: User | None = Depends(get_optional_user),
+    token: str | None = Depends(oauth2_scheme),
+) -> ChatResponse:
     ip = request.client.host if request.client else "unknown"
     _check_rate_limit(ip)
 
-    mcp = request.app.state.mcp
-    result = await run_chat_turn(
-        mcp,
-        history=[m.model_dump() for m in body.history],
-        message=body.message,
-        already_escalated=body.escalated,
-    )
+    # Only a token get_optional_user actually accepted is forwarded - the
+    # personal tools then re-present it to each route, which re-checks it.
+    personal = PersonalTools(request.app, token) if user and token else None
+    try:
+        result = await run_chat_turn(
+            request.app.state.mcp,
+            history=[m.model_dump() for m in body.history],
+            message=body.message,
+            already_escalated=body.escalated,
+            personal=personal,
+        )
+    finally:
+        if personal:
+            await personal.aclose()
     return ChatResponse(**result)
