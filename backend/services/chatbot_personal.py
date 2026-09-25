@@ -19,7 +19,9 @@ import json
 import logging
 import re
 from collections import defaultdict
-from datetime import date, datetime, time
+import time
+from datetime import date, datetime, timedelta
+from datetime import time as time_of_day
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -119,8 +121,7 @@ _TOOLS["find_local_events"] = (
     "Community events near Cherry Hill (township calendars, libraries, the Y, concerts, festivals) between two "
     "dates. For 'what can I take the kids to', don't rely on categories alone - the family/kids tags are "
     "keyword-inferred and miss plenty; search the whole range and judge from each title and description. "
-    "Categories in use: family, kids, teen, outdoor, library, arts, music, live-music, theatre, comedy, circus, "
-    "sports, running, free, municipal, entertainment, talks-&-lectures, classes-&-lessons, exercise. Classes (gym/pool/fitness, lessons, "
+    "Categories in use: {categories}. Classes (gym/pool/fitness, lessons, "
     "workshops, courses) are usually paid, so they're only included when the listing explicitly says they're "
     "free. Returns at most 40 events spread across the days in the range, "
     "plus the total that matched.",
@@ -142,6 +143,7 @@ _TOOLS["find_local_events"] = (
 # otherwise be mostly "Open Gym" and "Aqua Fit". Product rule: a class is
 # only shown with explicit evidence it costs nothing - never on "no price
 # listed", which for a class almost always means "ask at the desk".
+_ROUTINE_CLASS_TAGS = {"group-exercise", "open-gym", "gym", "pool", "swim", "fitness", "ymca", "child-care", "class"}
 _CLASS_CATEGORIES = {"group-exercise", "open-gym", "gym", "pool", "swim", "fitness", "ymca", "child-care", "class", "classes-&-lessons", "exercise"}
 _CLASS_TITLE_RE = re.compile(r"\b(class(es)?|lessons?|courses?|workshops?|clinics?|bootcamp)\b", re.I)
 # "gluten-free", "sugar-free", "feel free", "free-throw" aren't about price.
@@ -165,8 +167,27 @@ PERSONAL_PROMPT = (
 )
 
 
-def anthropic_tool_defs() -> list[dict[str, Any]]:
-    return [{"name": name, "description": desc, "input_schema": schema} for name, (desc, schema, _) in _TOOLS.items()]
+# The category list in find_local_events' description comes from the live
+# data (sources keep adding tags; a hand-kept list went stale twice in one
+# day). It's deliberately coarse so the tool definitions stay byte-identical
+# between requests - they're part of the prompt prefix that prompt caching
+# matches on: names only (counts change every refresh), sorted, re-read at
+# most hourly, and one-off tags dropped.
+_FALLBACK_CATEGORIES = (
+    "arts, classes-&-lessons, community, entertainment, exercise, family, food-&-drink, free, kids, library, "
+    "live-music, music, outdoor, shopping, sports, teen, theatre"
+)
+_CATEGORY_TTL_SECONDS = 3600
+_MIN_CATEGORY_COUNT = 3
+_MAX_CATEGORIES = 30
+_category_cache: dict[str, Any] = {"text": None, "at": 0.0}
+
+
+def anthropic_tool_defs(categories: str = _FALLBACK_CATEGORIES) -> list[dict[str, Any]]:
+    return [
+        {"name": name, "description": desc.replace("{categories}", categories), "input_schema": schema}
+        for name, (desc, schema, _) in _TOOLS.items()
+    ]
 
 
 class PersonalTools:
@@ -182,6 +203,34 @@ class PersonalTools:
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+    async def tool_defs(self) -> list[dict[str, Any]]:
+        return anthropic_tool_defs(await self._category_list())
+
+    async def _category_list(self) -> str:
+        now = time.monotonic()
+        if _category_cache["text"] and now - _category_cache["at"] < _CATEGORY_TTL_SECONDS:
+            return _category_cache["text"]
+        try:
+            today = datetime.now(ET).date()
+            response = await self._client.get(
+                "/local-events/facets",
+                params={"start": datetime.combine(today, time_of_day.min, ET).isoformat(),
+                        "end": datetime.combine(today + timedelta(days=60), time_of_day.max, ET).isoformat()},
+            )
+            response.raise_for_status()
+            # Routine class tags (the Y's ~30 a day) would take a quarter of the
+            # slots for events the tool drops anyway unless they're free.
+            facets = [
+                f for f in response.json()["categories"]
+                if f["count"] >= _MIN_CATEGORY_COUNT and f["value"] not in _ROUTINE_CLASS_TAGS
+            ][:_MAX_CATEGORIES]
+            text = ", ".join(sorted(f["value"] for f in facets)) or _FALLBACK_CATEGORIES
+        except Exception:  # noqa: BLE001 - a stale or default list beats failing the turn
+            logger.warning("chatbot_category_list_failed", exc_info=True)
+            text = _category_cache["text"] or _FALLBACK_CATEGORIES
+        _category_cache.update(text=text, at=now)
+        return text
 
     async def _get(self, path: str) -> Any:
         response = await self._client.get(path)
@@ -232,9 +281,13 @@ class PersonalTools:
 
         categories = str(args.get("categories") or "").strip()
         params: dict[str, Any] = {
-            "start": datetime.combine(first, time.min, ET).isoformat(),
-            "end": datetime.combine(last, time.max, ET).isoformat(),
-            "limit": 1000,
+            "start": datetime.combine(first, time_of_day.min, ET).isoformat(),
+            "end": datetime.combine(last, time_of_day.max, ET).isoformat(),
+            # Classes are dropped *after* fetching, so this must cover the whole
+            # range: sorted by start time, a short limit silently cut off the
+            # last days of a month (prod: ~930 events/31 days before the Y's
+            # ~30 classes a day). 3000 is the endpoint's max.
+            "limit": 3000,
         }
         if categories:
             params["categories"] = categories
@@ -246,7 +299,9 @@ class PersonalTools:
         response = await self._client.get("/local-events", params=params)
         if response.status_code >= 400:
             return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
-        events = response.json()["items"]
+        body = response.json()
+        events = body["items"]
+        truncated = body.get("total", len(events)) > len(events)
 
         events = [e for e in events if not _is_class(e) or _is_explicitly_free(e)]
         matched = len(events)
@@ -267,7 +322,7 @@ class PersonalTools:
         picked.sort(key=lambda e: e["start_time"])
 
         result: dict[str, Any] = {"matched": matched, "returned": len(picked), "items": [_compact_event(e) for e in picked]}
-        if matched > len(picked):
+        if matched > len(picked) or truncated:
             result["note"] = "More events matched than shown - narrow by day, category, or a search term to see others."
         return result
 

@@ -25,7 +25,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 from mcp.server.fastmcp import FastMCP
 
-from services.chatbot_personal import PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, PersonalTools, anthropic_tool_defs
+from services.chatbot_personal import PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, PersonalTools
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,41 @@ async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
     return "\n".join(parts) if parts else "null"
 
 
+def _with_tail_breakpoint(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """A copy of `messages` with a cache breakpoint on the last block, so a
+    turn's later tool rounds re-read the conversation (including big tool
+    results) from cache. A copy, never the list itself: the history goes
+    back to the client and is replayed next turn, and markers accumulating
+    there would pass the API's limit of 4 breakpoints per request.
+    """
+    if not messages:
+        return messages
+    last = dict(messages[-1])
+    content = last["content"]
+    blocks = [{"type": "text", "text": content}] if isinstance(content, str) else [dict(b) for b in content]
+    if not blocks:
+        return messages
+    blocks[-1]["cache_control"] = {"type": "ephemeral"}
+    last["content"] = blocks
+    return [*messages[:-1], last]
+
+
+def _log_usage(model: str, usage: Any) -> None:
+    # Read back in Loki as structured metadata: cache_read vs input shows
+    # whether caching is actually hitting (a silent invalidator shows up as
+    # cache_read_tokens stuck at 0).
+    logger.info(
+        "chatbot_usage",
+        extra={
+            "model": model,
+            "input_tokens": getattr(usage, "input_tokens", None),
+            "output_tokens": getattr(usage, "output_tokens", None),
+            "cache_read_tokens": getattr(usage, "cache_read_input_tokens", None),
+            "cache_write_tokens": getattr(usage, "cache_creation_input_tokens", None),
+        },
+    )
+
+
 async def run_chat_turn(
     mcp: FastMCP,
     history: list[dict[str, Any]],
@@ -121,10 +156,20 @@ async def run_chat_turn(
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     tools = await _anthropic_tools(mcp)
-    system = SYSTEM_PROMPT
+    stable_system = SYSTEM_PROMPT
     if personal:
-        tools += anthropic_tool_defs()
-        system += PERSONAL_PROMPT + f" Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."
+        tools += await personal.tool_defs()
+        stable_system += PERSONAL_PROMPT
+    # Prompt caching: tools render first, then system, so one breakpoint on
+    # the stable system block caches every tool definition too (~4.3k tokens
+    # anonymous, ~5.6k signed in - over Haiku 4.5's 4,096-token minimum, but
+    # only just for anonymous; a much shorter prompt would silently stop
+    # caching). The prefix is shared by every visitor, so it stays warm
+    # across people, not just within one conversation. Anything that changes
+    # - like today's date - goes in a block *after* the breakpoint.
+    system: list[dict[str, Any]] = [{"type": "text", "text": stable_system, "cache_control": {"type": "ephemeral"}}]
+    if personal:
+        system.append({"type": "text", "text": f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."})
 
     escalated = already_escalated
     model = SONNET if escalated else HAIKU
@@ -142,9 +187,10 @@ async def run_chat_turn(
             max_tokens=1024,
             system=system,
             tools=tools,
-            messages=messages,
+            messages=_with_tail_breakpoint(messages),
         )
         used_model = model
+        _log_usage(model, response.usage)
         # Only text/tool_use blocks are replayed - anthropic==0.34.2 (pinned,
         # shared with content_extractor.py) predates "thinking" content
         # blocks, which the newest models can return unprompted even

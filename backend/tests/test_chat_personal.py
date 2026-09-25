@@ -135,3 +135,68 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
         assert "YYYY-MM-DD" in bad["error"]
     finally:
         await tools.aclose()
+
+
+@pytest.mark.anyio
+async def test_category_list_is_live_sorted_and_cached(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    import database
+    from models import LocalEvent
+    from services import chatbot_personal
+
+    monkeypatch.setattr(chatbot_personal, "_category_cache", {"text": None, "at": 0.0})
+    monkeypatch.setattr(chatbot_personal, "_MAX_CATEGORIES", 10_000)  # the dev DB has real tags too
+    src = f"chatcat_{uuid.uuid4().hex[:8]}"
+    soon = datetime.now(timezone.utc) + timedelta(days=2)
+    async with database.SessionLocal() as db:
+        for i in range(3):
+            db.add(LocalEvent(source=src, source_event_id=f"z{i}", title="z", start_time=soon, categories=["zzz-test-tag"]))
+        db.add(LocalEvent(source=src, source_event_id="once", title="once", start_time=soon, categories=["one-off-tag"]))
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _register(client, f"chatcat_{uuid.uuid4().hex[:8]}@example.com")
+
+    tools = PersonalTools(app, token)
+    try:
+        first = {t["name"]: t["description"] for t in await tools.tool_defs()}["find_local_events"]
+        listed = first.split("Categories in use: ")[1].split(". ")[0].split(", ")
+        assert "zzz-test-tag" in listed and "one-off-tag" not in listed  # below the 3-event floor
+        assert listed == sorted(listed)
+
+        # Within the hour the description is byte-identical, even if the data moves.
+        async with database.SessionLocal() as db:
+            for i in range(5):
+                db.add(LocalEvent(source=src, source_event_id=f"n{i}", title="n", start_time=soon, categories=["new-tag"]))
+            await db.commit()
+        second = {t["name"]: t["description"] for t in await tools.tool_defs()}["find_local_events"]
+        assert second == first
+    finally:
+        await tools.aclose()
+
+
+@pytest.mark.anyio
+async def test_routine_class_tags_stay_out_of_the_category_list(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    import database
+    from models import LocalEvent
+    from services import chatbot_personal
+
+    monkeypatch.setattr(chatbot_personal, "_category_cache", {"text": None, "at": 0.0})
+    monkeypatch.setattr(chatbot_personal, "_MAX_CATEGORIES", 10_000)
+    src = f"chaty_{uuid.uuid4().hex[:8]}"
+    soon = datetime.now(timezone.utc) + timedelta(days=1)
+    async with database.SessionLocal() as db:
+        for i in range(5):
+            db.add(LocalEvent(source=src, source_event_id=f"y{i}", title="Aqua Fit", start_time=soon, categories=["ymca", "pool"]))
+        await db.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _register(client, f"chaty_{uuid.uuid4().hex[:8]}@example.com")
+    tools = PersonalTools(app, token)
+    try:
+        listed = (await tools._category_list()).split(", ")
+        assert "ymca" not in listed and "pool" not in listed
+    finally:
+        await tools.aclose()
