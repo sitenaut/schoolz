@@ -26,6 +26,7 @@ import { SchoolClassYearPage } from "./pages/schools/SchoolClassYearPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
+import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
 import { AdminLayout } from "./pages/AdminLayout";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
@@ -197,6 +198,7 @@ function Routed() {
           <Route path="inbox" element={<InboxPage />} />
           <Route path="newsletters" element={<SmoreNewslettersPage />} />
           <Route path="scans" element={<JobsPage />} />
+          <Route path="chatbot" element={<ChatbotAdminPage />} />
           <Route path="config" element={<AdminConfigPage />} />
           <Route path="kids" element={<KidsPage />} />
         </Route>

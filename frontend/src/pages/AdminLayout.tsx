@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 
 /** Shell for the centrally-managed admin tooling - one page with tabs
- * (Inbox / Newsletters / Scans / Import-export / Kids) instead of separate nav
+ * (Inbox / Newsletters / Scans / Chatbot / Import-export / Kids) instead of separate nav
  * entries, to cut down on nav clutter. Each tab keeps its own full page
  * (header, stat tiles, table) - this just swaps which one is mounted.
  *
@@ -12,7 +12,7 @@ import { NavLink, Outlet } from "react-router-dom";
 export function AdminLayout() {
   return (
     <div>
-      <div className="tabs" role="tablist" style={{ marginBottom: 20 }}>
+      <div className="tabs admin-tabs" role="tablist" style={{ marginBottom: 20 }}>
         <NavLink to="/admin/inbox" className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
           Inbox
         </NavLink>
@@ -21,6 +21,9 @@ export function AdminLayout() {
         </NavLink>
         <NavLink to="/admin/scans" className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
           Scans
+        </NavLink>
+        <NavLink to="/admin/chatbot" className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
+          Chatbot
         </NavLink>
         <NavLink to="/admin/config" className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
           Import/export

@@ -25,6 +25,7 @@ from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
 from routers import chat as chat_router  # noqa: E402
+from routers import admin_chatbot as admin_chatbot_router  # noqa: E402
 from routers import class_years as class_years_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
 from routers import contact_messages as contact_messages_router  # noqa: E402
@@ -184,6 +185,7 @@ app.include_router(seo_router.router)
 app.include_router(survey_router.router)
 app.include_router(analytics_router.router)
 app.include_router(chat_router.router)
+app.include_router(admin_chatbot_router.router)
 
 from mcp_server import build_mcp_server  # noqa: E402
 

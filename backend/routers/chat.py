@@ -19,8 +19,12 @@ from collections import defaultdict, deque
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from auth import get_optional_user, oauth2_scheme
+from database import get_db
 from models import User
+from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
 from services.chatbot_personal import PersonalTools
 
@@ -65,6 +69,7 @@ async def send_chat_message(
     request: Request,
     user: User | None = Depends(get_optional_user),
     token: str | None = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
 ) -> ChatResponse:
     ip = request.client.host if request.client else "unknown"
     _check_rate_limit(ip)
@@ -72,6 +77,7 @@ async def send_chat_message(
     # Only a token get_optional_user actually accepted is forwarded - the
     # personal tools then re-present it to each route, which re-checks it.
     personal = PersonalTools(request.app, token) if user and token else None
+    settings = await get_settings(db)
     try:
         result = await run_chat_turn(
             request.app.state.mcp,
@@ -79,8 +85,9 @@ async def send_chat_message(
             message=body.message,
             already_escalated=body.escalated,
             personal=personal,
+            config=settings.signed_in if personal else settings.anonymous,
         )
     finally:
         if personal:
             await personal.aclose()
-    return ChatResponse(**result)
+    return ChatResponse(reply=result["reply"], model=result["model"], history=result["history"], escalated=result["escalated"])

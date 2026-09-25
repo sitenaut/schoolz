@@ -4,7 +4,9 @@ this endpoint is effectively just another MCP client, sharing that
 server's tool definitions and execution rather than duplicating them.
 
 Runs on Haiku by default and escalates to Sonnet for compound or
-multi-tool questions - see _should_escalate. Uses ITS OWN Anthropic API
+multi-tool questions - see _should_escalate. The provider and both models
+are switchable per audience in /admin -> Chatbot (services/chat_settings.py,
+services/chat_providers.py), e.g. to compare Gemini against Claude. Uses ITS OWN Anthropic API
 key/spend pool (CHATBOT_ANTHROPIC_API_KEY), separate from the one
 services/content_extractor.py uses for newsletter extraction: that job is
 internal and scheduled, this endpoint is public and unauthenticated, so a
@@ -22,19 +24,13 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from anthropic import AsyncAnthropic
 from mcp.server.fastmcp import FastMCP
 
+from services.chat_providers import Usage, configured_providers
+from services.chat_settings import AudienceConfig
 from services.chatbot_personal import PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, PersonalTools
 
 logger = logging.getLogger(__name__)
-
-_DEDICATED_KEY = os.getenv("CHATBOT_ANTHROPIC_API_KEY", "")
-_SHARED_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-ANTHROPIC_API_KEY = _DEDICATED_KEY or _SHARED_KEY
-
-HAIKU = "claude-haiku-4-5-20251001"
-SONNET = "claude-sonnet-5"
 
 # A hard ceiling on tool-call round trips within one turn - this is a
 # public, unauthenticated endpoint, so a model that gets stuck chasing its
@@ -88,37 +84,19 @@ async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
     return "\n".join(parts) if parts else "null"
 
 
-def _with_tail_breakpoint(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """A copy of `messages` with a cache breakpoint on the last block, so a
-    turn's later tool rounds re-read the conversation (including big tool
-    results) from cache. A copy, never the list itself: the history goes
-    back to the client and is replayed next turn, and markers accumulating
-    there would pass the API's limit of 4 breakpoints per request.
-    """
-    if not messages:
-        return messages
-    last = dict(messages[-1])
-    content = last["content"]
-    blocks = [{"type": "text", "text": content}] if isinstance(content, str) else [dict(b) for b in content]
-    if not blocks:
-        return messages
-    blocks[-1]["cache_control"] = {"type": "ephemeral"}
-    last["content"] = blocks
-    return [*messages[:-1], last]
-
-
-def _log_usage(model: str, usage: Any) -> None:
+def _log_usage(provider: str, model: str, usage: Usage) -> None:
     # Read back in Loki as structured metadata: cache_read vs input shows
     # whether caching is actually hitting (a silent invalidator shows up as
     # cache_read_tokens stuck at 0).
     logger.info(
         "chatbot_usage",
         extra={
+            "provider": provider,
             "model": model,
-            "input_tokens": getattr(usage, "input_tokens", None),
-            "output_tokens": getattr(usage, "output_tokens", None),
-            "cache_read_tokens": getattr(usage, "cache_read_input_tokens", None),
-            "cache_write_tokens": getattr(usage, "cache_creation_input_tokens", None),
+            "input_tokens": usage.input_tokens,
+            "output_tokens": usage.output_tokens,
+            "cache_read_tokens": usage.cache_read_tokens,
+            "cache_write_tokens": usage.cache_write_tokens,
         },
     )
 
@@ -129,6 +107,8 @@ async def run_chat_turn(
     message: str,
     already_escalated: bool,
     personal: PersonalTools | None = None,
+    config: AudienceConfig | None = None,
+    providers: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One user turn. `history` is exactly the plain role/content list the
     client sent back from the previous turn's response - this endpoint
@@ -140,39 +120,36 @@ async def run_chat_turn(
 
     `personal` is set only for a signed-in caller (routers/chat.py) and adds
     the tools in services/chatbot_personal.py on top of the public ones.
+    `config` picks the provider and models (admin-editable, see
+    services/chat_settings.py); the default is Haiku escalating to Sonnet.
     """
-    if not ANTHROPIC_API_KEY:
+    config = config or AudienceConfig()
+    providers = providers if providers is not None else configured_providers()
+    provider = providers.get(config.provider)
+    if provider is None:
         return {
-            "reply": "The assistant isn't configured yet - ask a schoolz admin to set an Anthropic API key.",
+            "reply": f"The assistant isn't configured yet - ask a schoolz admin to set an API key for {config.provider}.",
             "model": None,
             "history": history,
             "escalated": already_escalated,
         }
-    if not _DEDICATED_KEY:
+    if config.provider == "anthropic" and not os.getenv("CHATBOT_ANTHROPIC_API_KEY"):
         logger.warning(
             "chatbot_using_shared_anthropic_key",
             extra={"note": "set CHATBOT_ANTHROPIC_API_KEY for a spend limit independent of newsletter extraction"},
         )
 
-    client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     tools = await _anthropic_tools(mcp)
     stable_system = SYSTEM_PROMPT
     if personal:
         tools += await personal.tool_defs()
         stable_system += PERSONAL_PROMPT
-    # Prompt caching: tools render first, then system, so one breakpoint on
-    # the stable system block caches every tool definition too (~4.3k tokens
-    # anonymous, ~5.6k signed in - over Haiku 4.5's 4,096-token minimum, but
-    # only just for anonymous; a much shorter prompt would silently stop
-    # caching). The prefix is shared by every visitor, so it stays warm
-    # across people, not just within one conversation. Anything that changes
-    # - like today's date - goes in a block *after* the breakpoint.
-    system: list[dict[str, Any]] = [{"type": "text", "text": stable_system, "cache_control": {"type": "ephemeral"}}]
-    if personal:
-        system.append({"type": "text", "text": f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."})
+    # Kept out of the stable system text so the cached prefix doesn't change
+    # daily (see AnthropicProvider.complete).
+    dynamic_system = f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}." if personal else None
 
-    escalated = already_escalated
-    model = SONNET if escalated else HAIKU
+    escalated = already_escalated and bool(config.escalation_model)
+    model = config.escalation_model if escalated else config.model
 
     messages: list[dict[str, Any]] = list(history)
     messages.append({"role": "user", "content": message})
@@ -180,45 +157,31 @@ async def run_chat_turn(
     tool_rounds = 0
     final_text = ""
     used_model = model
+    usage_by_model: dict[str, Usage] = {}
+    tools_called: list[str] = []
 
     while True:
-        response = await client.messages.create(
-            model=model,
-            max_tokens=1024,
-            system=system,
-            tools=tools,
-            messages=_with_tail_breakpoint(messages),
+        completion = await provider.complete(
+            model=model, system=stable_system, dynamic_system=dynamic_system, tools=tools, messages=messages,
+            reasoning_effort=config.reasoning_effort,
         )
         used_model = model
-        _log_usage(model, response.usage)
-        # Only text/tool_use blocks are replayed - anthropic==0.34.2 (pinned,
-        # shared with content_extractor.py) predates "thinking" content
-        # blocks, which the newest models can return unprompted even
-        # without extended thinking requested. Its permissive parsing keeps
-        # them around, but model_dump()'ing one back into a request 400s
-        # ("thinking.text: Extra inputs are not permitted") - the SDK's
-        # loose parse isn't the API's strict input shape. Not needed here
-        # anyway: interleaved-thinking continuity is a deliberate opt-in
-        # feature (beta header) this endpoint doesn't use.
-        messages.append(
-            {
-                "role": "assistant",
-                "content": [block.model_dump() for block in response.content if block.type in ("text", "tool_use")],
-            }
-        )
+        usage_by_model.setdefault(model, Usage()).add(completion.usage)
+        _log_usage(config.provider, model, completion.usage)
+        messages.append({"role": "assistant", "content": completion.content})
 
-        tool_uses = [b for b in response.content if b.type == "tool_use"]
+        tool_uses = [b for b in completion.content if b.get("type") == "tool_use"]
         if not tool_uses:
-            final_text = "".join(b.text for b in response.content if b.type == "text")
+            final_text = "".join(b.get("text", "") for b in completion.content if b.get("type") == "text")
             break
 
         tool_rounds += 1
-        if not escalated and _should_escalate(message, tool_rounds, escalated):
-            # Escalate mid-turn, not just on the next call - a Haiku
-            # response already spinning through 2+ tool calls is exactly
-            # the case worth upgrading before it produces a shaky answer.
+        if not escalated and config.escalation_model and _should_escalate(message, tool_rounds, escalated):
+            # Escalate mid-turn, not just on the next call - a cheap model
+            # already spinning through 2+ tool calls is exactly the case
+            # worth upgrading before it produces a shaky answer.
             escalated = True
-            model = SONNET
+            model = config.escalation_model
 
         if tool_rounds > MAX_TOOL_ROUNDS:
             final_text = "That's a more involved question than I can chase down right now - try narrowing it to one school or one topic."
@@ -226,15 +189,26 @@ async def run_chat_turn(
 
         results = []
         for use in tool_uses:
-            if use.name in PERSONAL_TOOL_NAMES:
+            tools_called.append(use["name"])
+            if use["name"] in PERSONAL_TOOL_NAMES:
                 result_text = (
-                    await personal.run(use.name, use.input)
+                    await personal.run(use["name"], use.get("input") or {})
                     if personal
                     else json.dumps({"error": "Sign in to schoolz to ask about your own children."})
                 )
             else:
-                result_text = await _run_tool(mcp, use.name, use.input)
-            results.append({"type": "tool_result", "tool_use_id": use.id, "content": result_text})
+                result_text = await _run_tool(mcp, use["name"], use.get("input") or {})
+            results.append({"type": "tool_result", "tool_use_id": use["id"], "content": result_text})
         messages.append({"role": "user", "content": results})
 
-    return {"reply": final_text, "model": used_model, "history": messages, "escalated": escalated}
+    return {
+        "reply": final_text,
+        "model": used_model,
+        "history": messages,
+        "escalated": escalated,
+        # Not part of the public /chat response - read by the admin compare panel.
+        "provider": config.provider,
+        "usage_by_model": usage_by_model,
+        "tools_called": tools_called,
+        "rounds": tool_rounds,
+    }
