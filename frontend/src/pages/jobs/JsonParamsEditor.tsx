@@ -208,7 +208,7 @@ export function TestFetchResults({ result }: { result: TestFetchResult }) {
         <div className="muted small">
           No sources defined in params. Add at least one entry under <code>evvnt_sources</code>, <code>gcal_sources</code>, <code>json_sources</code>,{" "}
           <code>ical_sources</code>, <code>rss_sources</code>, <code>scraper_sources</code>, <code>sitemap_sources</code>, <code>listing_page_sources</code>,{" "}
-          <code>deyra_schedule_sources</code>, or <code>yodel_sources</code>.
+          <code>deyra_schedule_sources</code>, <code>yodel_sources</code>, or <code>tribe_sources</code>.
         </div>
       )}
       {result.sources.map((s) => (

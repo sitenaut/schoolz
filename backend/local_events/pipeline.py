@@ -41,6 +41,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
+from .sources.tribe import TribeEventsSource
 from .sources.yodel import YodelSource
 
 logger = logging.getLogger(__name__)
@@ -198,6 +199,21 @@ def _build_sources(params: dict) -> list[Source]:
                 fallback_url=entry.get("fallback_url"),
                 default_categories=list(entry.get("default_categories") or []),
                 max_pages=int(entry.get("max_pages", 10)),
+            )
+        )
+    for entry in params.get("tribe_sources") or []:
+        if not entry.get("base_url") or not entry.get("name"):
+            continue
+        sources.append(
+            TribeEventsSource(
+                name=entry["name"],
+                base_url=entry["base_url"],
+                default_categories=list(entry.get("default_categories") or []),
+                days_ahead=int(entry.get("days_ahead", 60)),
+                max_miles=entry.get("max_miles"),
+                center=entry.get("center"),
+                nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
+                max_pages=int(entry.get("max_pages", 40)),
             )
         )
     return sources

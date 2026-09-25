@@ -19,6 +19,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
+from .sources.tribe import TribeEventsSource
 from .sources.yodel import YodelSource
 
 KIND = "local_events.refresh"
@@ -82,6 +83,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     json_sources = body.params.get("json_sources") or []
     deyra_schedule_sources = body.params.get("deyra_schedule_sources") or []
     yodel_sources = body.params.get("yodel_sources") or []
+    tribe_sources = body.params.get("tribe_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -102,6 +104,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.deyra_schedule_sources must be a list")
     if not isinstance(yodel_sources, list):
         raise HTTPException(status_code=400, detail="params.yodel_sources must be a list")
+    if not isinstance(tribe_sources, list):
+        raise HTTPException(status_code=400, detail="params.tribe_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -408,5 +412,27 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         )
         yodel_source.url = widget_url  # type: ignore[attr-defined]
         results.append(await _probe("yodel", yodel_source))
+
+    for entry in tribe_sources:
+        name = (entry or {}).get("name") or "(unnamed events calendar)"
+        base_url = (entry or {}).get("base_url")
+        if not base_url:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'base_url' field", source_type="tribe",
+            ))
+            continue
+        results.append(await _probe("tribe", TribeEventsSource(
+            name=name,
+            base_url=base_url,
+            default_categories=list(entry.get("default_categories") or []),
+            days_ahead=int(entry.get("days_ahead", 60)),
+            max_miles=entry.get("max_miles"),
+            center=entry.get("center"),
+            nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
+            # First page only for a fast dry-run.
+            max_pages=1,
+        )))
 
     return TestFetchOut(kind=body.kind, sources=results)
