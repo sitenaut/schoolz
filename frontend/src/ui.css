@@ -1532,3 +1532,18 @@ button.link-card:disabled {
 .tabs.admin-tabs::-webkit-scrollbar {
   display: none;
 }
+
+/* iOS Safari zooms the whole page when a form field under 16px gets focus,
+   and does not zoom back - on the chat panel that pushed the Send button
+   off-screen. Every field is at least 16px on touch devices, everywhere.
+   Deliberately not maximum-scale=1 in the viewport meta: on Android that
+   also blocks pinch-zoom, an accessibility regression. !important because
+   component rules (.field input, .chat-input, ...) set smaller sizes with
+   higher specificity; max() keeps any field that is already larger. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
