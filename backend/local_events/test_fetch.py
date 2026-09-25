@@ -19,6 +19,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
+from .sources.yodel import YodelSource
 
 KIND = "local_events.refresh"
 _API_URL_EVVNT = "https://discovery.evvnt.com/api/events"
@@ -80,6 +81,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     sitemap_sources = body.params.get("sitemap_sources") or []
     json_sources = body.params.get("json_sources") or []
     deyra_schedule_sources = body.params.get("deyra_schedule_sources") or []
+    yodel_sources = body.params.get("yodel_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -98,6 +100,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.evvnt_sources must be a list")
     if not isinstance(deyra_schedule_sources, list):
         raise HTTPException(status_code=400, detail="params.deyra_schedule_sources must be a list")
+    if not isinstance(yodel_sources, list):
+        raise HTTPException(status_code=400, detail="params.yodel_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -135,7 +139,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
                 name=source.name, url=url, status="ok",
                 event_count=len(raws),
                 sample_titles=[r.title for r in raws[:5]],
-                error=None,
+                # Some feeds of a multi-feed source failed; the rest worked.
+                error="; ".join(source.partial_failures) or None,
                 first_entry_fields=diag,
                 source_type=source_type,
             )
@@ -382,5 +387,26 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             # Cap to 1 day for a fast dry-run; full pipeline uses the configured days_ahead.
             days_ahead=1,
         )))
+
+    for entry in yodel_sources:
+        name = (entry or {}).get("name") or "(unnamed yodel widget)"
+        widget_url = (entry or {}).get("widget_url")
+        if not widget_url:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'widget_url' field", source_type="yodel",
+            ))
+            continue
+        yodel_source = YodelSource(
+            name=name,
+            widget_url=widget_url,
+            fallback_url=entry.get("fallback_url"),
+            default_categories=list(entry.get("default_categories") or []),
+            # First page only for a fast dry-run.
+            max_pages=1,
+        )
+        yodel_source.url = widget_url  # type: ignore[attr-defined]
+        results.append(await _probe("yodel", yodel_source))
 
     return TestFetchOut(kind=body.kind, sources=results)

@@ -13,7 +13,7 @@ type ApiMessage = { role: string; content: unknown };
 
 const GREETING = "Hi! Ask me about bell times, lunch menus, buses, or a school's calendar - anything on schoolz.";
 const SIGNED_IN_GREETING =
-  "Hi! Ask me about your kids - what's due or missing, grades, today's schedule - or anything else on schoolz.";
+  "Hi! Ask me about your kids - what's due or missing, grades, today's schedule - what's on this weekend, or anything else on schoolz.";
 
 /** The floating chat trigger + panel, mounted once in AppShell so it
  * persists across every route. A plain fixed-position button rather than

@@ -41,6 +41,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
+from .sources.yodel import YodelSource
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +188,18 @@ def _build_sources(params: dict) -> list[Source]:
                 days_ahead=int(entry.get("days_ahead", 14)),
             )
         )
+    for entry in params.get("yodel_sources") or []:
+        if not entry.get("widget_url") or not entry.get("name"):
+            continue
+        sources.append(
+            YodelSource(
+                name=entry["name"],
+                widget_url=entry["widget_url"],
+                fallback_url=entry.get("fallback_url"),
+                default_categories=list(entry.get("default_categories") or []),
+                max_pages=int(entry.get("max_pages", 10)),
+            )
+        )
     return sources
 
 
@@ -200,6 +213,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     updated = 0
     skipped = 0
     per_source: dict[str, int] = {}
+    partial_failures: dict[str, list[str]] = {}
 
     for source_index, source in enumerate(sources):
         try:
@@ -210,6 +224,8 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
             continue
         fetched += len(raws)
         per_source[source.name] = len(raws)
+        if getattr(source, "partial_failures", None):
+            partial_failures[source.name] = list(source.partial_failures)
 
         for raw in raws:
             try:
@@ -271,5 +287,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         "skipped": skipped,
         "per_source": per_source,
     }
+    if partial_failures:
+        summary["partial_failures"] = partial_failures
     logger.info("events_pipeline_complete", extra=summary)
     return summary
