@@ -24,6 +24,7 @@ React (Vite/TS) → FastAPI → Postgres. Two environments only: **local** and *
 ```
 ./scripts/compose-local.sh up --build                    # postgres, migrate, backend, frontend, scraper
 OBSERVABILITY=1 ./scripts/compose-local.sh up --build    # + Grafana/Mimir/Loki/Promtail/Alloy
+SCHEDULER=1 ./scripts/compose-local.sh up --build        # + the cron scheduler (off by default)
 ./scripts/alembic_env.sh local revision --autogenerate -m "..."
 ./scripts/alembic_env.sh prod upgrade head
 cd backend && pytest -q
@@ -77,7 +78,7 @@ Frontend: public pages are plain routes. `RequireAuth` gates the personal pages;
 
 ## Scheduler and scans
 
-Domain-agnostic scheduler (`backend/scheduler/`) ported from billz: `registry.py` (kind → handler via `@register_job`), `runner.py` (Postgres advisory-lock execution, `run_job_now()`), `entrypoint.py` (separate process, 30s reconcile loop against `scheduled_jobs` — **no restart needed** to pick up job changes). Runs as its own compose service and Fly process group.
+Domain-agnostic scheduler (`backend/scheduler/`) ported from billz: `registry.py` (kind → handler via `@register_job`), `runner.py` (Postgres advisory-lock execution, `run_job_now()`), `entrypoint.py` (separate process, 30s reconcile loop against `scheduled_jobs` — **no restart needed** to pick up job changes). Runs as its own compose service and Fly process group. **Locally it's opt-in** (`SCHEDULER=1`, compose profile `scheduler`): left on, it re-ran every scan from the home IP on prod's own 12h cron, and the Google Docs/Calendar/Sites fetches got that network CAPTCHA'd by Google. Test a scan with its run-now instead.
 
 - **Advisory-lock keys must be deterministic** — derived from the job uuid via `hashlib.sha256`, never Python's `hash()`, which is randomized per process. Otherwise the API process (run-now) and the scheduler process compute different keys for the same job and never actually exclude each other.
 - **Three-state results**: `success` / `warning` / `error`. A handler returning a string starting with `"WARNING:"` gets `warning` — it didn't raise, but "the fetch worked and found nothing" was previously indistinguishable from real success, silently hiding coverage gaps.
@@ -105,7 +106,7 @@ Community events (Evvnt/70and73, township calendars, the Mt Laurel Y, …) for *
 - **Keyword categories** (`normalizer.py`): every alternation must be grouped, `\b(?:a|b)\b` — the billz-ported `\bsport|game|race|run\b` bound `\b` to only the first and last word, so "art" in "start"/"party" tagged about two-thirds of the feed `arts`. **Classes & Lessons** (`classes-&-lessons`) trusts the title, but a description only with sign-up wording: bios say "began piano lessons at 3" and blurbs "over the course of". A same-source refresh recomputes categories; a cross-source merge only unions them.
 - **Google Calendar IDs**: a bare id (no `@`) is auto-suffixed `@group.calendar.google.com` (billz stores two phila.gov ones that way, and the API 404s them), and one dead calendar no longer sinks the rest of its source — it's a `local_event_source_partial` WARNING instead.
 - The seeded job (migration 0049) uses billz's defaults **minus phila.gov's Google Calendars** (~30 city-government calendars — wedding schedules, tax board — and one ID now 404s).
-- **Local dev gotcha**: `uvicorn --reload` watches `backend/` including `tests/`, so editing any file mid-run kills a run-now job running in the API process. Run long jobs from `schoolz-scheduler-local`.
+- **Local dev gotcha**: `uvicorn --reload` watches `backend/` including `tests/`, so editing any file mid-run kills a run-now job running in the API process. Run long jobs from `schoolz-scheduler-local` (start it with `SCHEDULER=1`).
 
 ## Content extraction
 

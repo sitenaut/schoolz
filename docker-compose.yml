@@ -77,6 +77,11 @@ services:
 
   scheduler:
     build: ./backend
+    # Opt-in (SCHEDULER=1 scripts/compose-local.sh up): left running, it
+    # re-scans every Google Doc/Calendar/Site source from the home IP on the
+    # same 12h cron prod already runs, which got that network CAPTCHA'd by
+    # Google. Run-now from the admin UI still works without it.
+    profiles: ["scheduler"]
     depends_on:
       migrate:
         condition: service_completed_successfully
