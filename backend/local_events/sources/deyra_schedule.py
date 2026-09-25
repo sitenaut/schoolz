@@ -78,25 +78,15 @@ class DeyraScheduleSource(Source):
             day = today + timedelta(days=offset)
             day_url = self._day_url(day)
             try:
-                html, fetched_url = await fetch_rendered_html(
-                    day_url,
-                    wait_for_selector='[data-test="success"] article, [data-test="success"]',
-                    extra_wait_ms=1500,
-                    # playwright-stealth's patches break this widget's own JS
-                    # outright (it throws "DeyraFinder is not defined" and
-                    # never initializes) — confirmed by direct testing, not
-                    # needed anyway since this site shows no bot-challenge.
-                    stealth=False,
-                    # The schedule renders inside <deyra-finder>'s shadow
-                    # root, which a plain page.content() leaves out.
-                    include_shadow_dom=True,
-                )
+                html, fetched_url = await self._render_day(day_url)
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "deyra_schedule_fetch_failed",
                     extra={"source": self.name, "day": day.isoformat(), "error": str(exc)},
                 )
-                failures.append(f"{day.isoformat()}: {str(exc)[:200]}")
+                # The tail of the message names the service that actually
+                # failed last (the fallback) - the head is the droplet.
+                failures.append(f"{day.isoformat()}: ...{str(exc)[-240:]}")
                 continue
             fetched_days += 1
             raws.extend(self._parse_day(html, day, fetched_url))
@@ -110,6 +100,31 @@ class DeyraScheduleSource(Source):
         if fetched_days and not raws:
             self.partial_failures.append(f"{fetched_days} day(s) rendered but no classes were found in them")
         return raws
+
+    async def _render_day(self, day_url: str) -> tuple[str, str]:
+        """One retry: on prod's 1GB scraper this page (240KB plus ad
+        trackers) took ~16s to reach "success" against a 15s default limit,
+        so days failed at random - a different set each run."""
+        for attempt in range(2):
+            try:
+                return await fetch_rendered_html(
+                    day_url,
+                    wait_for_selector='[data-test="success"] article, [data-test="success"]',
+                    extra_wait_ms=1500,
+                    # playwright-stealth's patches break this widget's own JS
+                    # outright (it throws "DeyraFinder is not defined" and
+                    # never initializes) — confirmed by direct testing, not
+                    # needed anyway since this site shows no bot-challenge.
+                    stealth=False,
+                    # The schedule renders inside <deyra-finder>'s shadow
+                    # root, which a plain page.content() leaves out.
+                    include_shadow_dom=True,
+                    timeout_ms=40_000,
+                )
+            except Exception:
+                if attempt == 1:
+                    raise
+        raise AssertionError("unreachable")
 
     def _parse_day(self, html: str, day: date, page_url: str) -> list[RawEvent]:
         # The widget's content arrives as declarative shadow DOM
