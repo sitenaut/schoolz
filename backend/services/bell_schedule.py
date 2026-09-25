@@ -61,10 +61,13 @@ def current_period(bell_periods: dict | None, status: str, now: datetime | None 
     return None
 
 
+# Each status's candidate tables; lettered_day takes the one whose slot count
+# fits the day's letters, so a long-block (Days 5-6) delayed opening or early
+# dismissal finds its own table (migration 0055) instead of none.
 _STATUS_VARIANTS = {
     "open": ("regular", "long_block"),
-    "early_dismissal": ("early_dismissal",),
-    "delayed": ("delayed_opening",),
+    "early_dismissal": ("early_dismissal", "long_block_early_dismissal"),
+    "delayed": ("delayed_opening", "long_block_delayed_opening"),
 }
 
 
@@ -79,8 +82,7 @@ def lettered_day(bell_periods: dict | None, status: str, letters: list[str] | No
     while the L1/L2 lunch band keeps its own name. A variant only fits when
     its slot count equals the letter count - a 4-block Day 5 can't be laid
     onto a 6-slot table - and with no fitting table this returns None
-    rather than guessing (no published timetable exists for a long-block
-    early dismissal)."""
+    rather than guessing (a school with no long-block table on file)."""
     if not bell_periods or not letters:
         return None
     for variant in _STATUS_VARIANTS.get(status, ()):
