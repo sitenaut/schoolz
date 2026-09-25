@@ -315,7 +315,7 @@ function LocalRow({ event: e, onOpen }: { event: LocalEvent; onOpen: () => void 
           {p && <span className={`tag${e.is_free ? " new" : ""}`}>{p}</span>}
           {e.categories.slice(0, 3).map((c) => (
             <span className="tag" key={c}>
-              {c}
+              {labelize(c)}
             </span>
           ))}
         </div>
@@ -354,7 +354,7 @@ function LocalEventSheet({ event: e, onClose }: { event: LocalEvent | null; onCl
         {p && <span className={`tag${e.is_free ? " new" : ""}`}>{p}</span>}
         {e.categories.map((c) => (
           <span className="tag" key={c}>
-            {c}
+            {labelize(c)}
           </span>
         ))}
         <span className="tag district">{labelize(e.source)}</span>

@@ -45,8 +45,8 @@ _CATEGORY_MAP = {
     "Arts": ["arts"],
     "Music & Entertainment": ["music", "entertainment"],
     "Sports, Youth": ["sports"],
-    "Health & Fitness": ["fitness"],
-    "Classes/Workshops": ["class"],
+    "Health & Fitness": ["fitness", "exercise"],
+    "Classes/Workshops": ["classes-&-lessons"],
     "Seasonal & Holiday": ["seasonal"],
 }
 

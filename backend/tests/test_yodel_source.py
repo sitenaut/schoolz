@@ -83,7 +83,7 @@ async def test_yodel_reads_first_page_then_loads_more(monkeypatch):
     assert harvest.is_free is True and harvest.latitude == 39.89 and harvest.venue_name == "Borough of Haddonfield"
     assert harvest.default_categories == ["kids", "family", "outdoor"]
     assert harvest.url == "https://cherryhill.macaronikid.com/events"
-    assert pottery.price_min == 36 and "class" in pottery.default_categories
+    assert pottery.price_min == 36 and "classes-&-lessons" in pottery.default_categories
     assert src.partial_failures == []
 
 

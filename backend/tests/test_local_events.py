@@ -225,3 +225,51 @@ async def test_gcal_bare_ids_get_group_suffix_and_one_dead_calendar_doesnt_sink_
     monkeypatch.setattr(only_dead, "_fetch_calendar", fake_fetch)
     with pytest.raises(RuntimeError):
         await only_dead.fetch()
+
+
+@pytest.mark.parametrize(
+    "title, description, expect, reject",
+    [
+        # The Philadelphia School's rows: bare instrument titles, "Lessons" only in the description.
+        ("Cello", "Lessons will be scheduled on a first-come, first-served basis.", {"classes-&-lessons"}, {"sports", "arts"}),
+        ("Intro to Watercolor Class", None, {"classes-&-lessons"}, set()),
+        ("CPR Training", None, {"classes-&-lessons"}, {"exercise"}),
+        ("Personal Training at the Y", None, {"classes-&-lessons", "exercise"}, set()),
+        ("Adult Education Course: Spanish I", None, {"classes-&-lessons"}, set()),
+        # Not classes.
+        ("A world-class jazz trio", None, set(), {"classes-&-lessons"}),
+        ("Class of 2027 Fundraiser", None, set(), {"classes-&-lessons"}),
+        ("Golf Course Cleanup", "Of course, all are welcome.", set(), {"classes-&-lessons"}),
+        # The old ungrouped alternations: "brace"/"start"/"party"/"sparkle" matched sports/arts/outdoor.
+        ("Brace yourself: start of the party season", "Sparkle and shine", set(), {"sports", "arts", "outdoor"}),
+        ("Art in the Park", None, {"arts", "outdoor"}, set()),
+    ],
+)
+def test_keyword_categories(title, description, expect, reject):
+    from local_events.normalizer import _infer_categories
+
+    cats = set(_infer_categories(title, description, []))
+    assert expect <= cats, cats
+    assert not (reject & cats), cats
+
+
+def test_source_class_categories_fold_into_classes_and_lessons():
+    from local_events.normalizer import _infer_categories
+
+    assert "classes-&-lessons" in _infer_categories("Pottery", None, ["classes-/-courses"])
+
+
+@pytest.mark.parametrize(
+    "description, is_class",
+    [
+        ("Lessons will be scheduled on a first-come, first-served basis.", True),
+        ("Register for the class by Friday.", True),
+        ("He has prepared over 800 lessons for online instruction.", False),
+        ("Albright began piano lessons at the age of 3.", False),
+        ("Over the course of three boisterously received concerts...", False),
+    ],
+)
+def test_class_in_description_needs_signup_wording(description, is_class):
+    from local_events.normalizer import _infer_categories
+
+    assert ("classes-&-lessons" in _infer_categories("Evening with the band", description, [])) is is_class
