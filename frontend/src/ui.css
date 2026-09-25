@@ -1407,3 +1407,128 @@ button.link-card:disabled {
   color: var(--ink-2);
   word-break: break-all;
 }
+
+/* ---------- admin: chatbot (pages/ChatbotAdminPage.tsx) ---------- */
+.cb-admin {
+  display: grid;
+  /* minmax(0, 1fr), not the default auto: a <select> is as wide as its
+     longest option, and an auto track let that push the page past a phone. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+.cb-admin select {
+  min-width: 0;
+  max-width: 100%;
+}
+.cb-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+.cb-col {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.cb-col-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+.cb-warn {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+  color: var(--ink);
+}
+.cb-results {
+  margin-top: 16px;
+}
+.cb-reply {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.cb-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+.cb-stats dt {
+  color: var(--ink-3);
+}
+.cb-stats dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cb-prices {
+  overflow-x: auto;
+}
+.cb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.cb-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-3);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.cb-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.cb-table input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+}
+.cb-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.cb-add input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* The admin tab row outgrew a phone (6 tabs); scroll it sideways on its own
+   instead of widening the whole page. */
+.tabs.admin-tabs {
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+.tabs.admin-tabs::-webkit-scrollbar {
+  display: none;
+}

@@ -88,6 +88,17 @@ GOOGLE_CLIENT_SECRET=
 # backend and scheduler containers, but not yet used anywhere - that pass
 # isn't built yet (see CLAUDE.md).
 ANTHROPIC_API_KEY=
+
+# Chatbot (services/chat_providers.py). Its own Anthropic key keeps the
+# public chatbot's spend separate from newsletter extraction; falls back to
+# ANTHROPIC_API_KEY. The Gemini key enables Gemini in /admin -> Chatbot
+# (provider switch + side-by-side compare); unset, Gemini shows as
+# "no API key on server". Use a paid-tier Gemini key: signed-in chats carry
+# children's grades/schedules, and free-tier prompts may be used by Google.
+# In prod both are Fly secrets on schoolz-api:
+#   fly secrets set CHATBOT_GEMINI_API_KEY=... -a schoolz-api
+CHATBOT_ANTHROPIC_API_KEY=
+CHATBOT_GEMINI_API_KEY=
 ```
 
 ## env/secrets.prod.env

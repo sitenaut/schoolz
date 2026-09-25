@@ -1676,3 +1676,17 @@ class CapturePageKind(Base):
     count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class AppSetting(Base):
+    """Small admin-editable runtime settings, one JSON value per key - so a
+    switch like which model the chatbot runs on is a click in /admin, not an
+    env var and a redeploy. Read through a short in-process cache by the code
+    that owns each key (e.g. services/chat_settings.py for "chatbot")."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+    updated_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

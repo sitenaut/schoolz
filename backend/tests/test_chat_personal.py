@@ -66,7 +66,7 @@ async def test_student_account_sees_itself():
 async def test_chat_offers_personal_tools_only_when_signed_in(monkeypatch):
     seen = []
 
-    async def fake_turn(mcp, history, message, already_escalated, personal=None):
+    async def fake_turn(mcp, history, message, already_escalated, personal=None, config=None):
         seen.append(personal)
         return {"reply": "ok", "model": None, "history": [], "escalated": False}
 
