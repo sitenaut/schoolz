@@ -54,6 +54,8 @@ from schemas import (
     Bucket3ImportResult,
     Bucket3StudentOut,
     CapturePageKindOut,
+    CaptureStatusIn,
+    CaptureStatusOut,
     ChildCourseGradeOut,
     ChildGradeEntryOut,
     ChildMarkingPeriodOut,
@@ -844,6 +846,58 @@ async def reprocess_bucket3(
         page_kinds_seen=len({ex.classify_page(c.adapter, c.source_url).pattern for c in stored}),
         identity_mismatches=counters.mismatches,
     )
+
+
+# The one scheduled-walk outcome a person has to act on: the Google sign-in
+# in the capturing Chrome lapsed, and the extension never signs in by itself.
+# Goes only to the account whose extension reported it - it's that person's
+# browser that needs attention, not every guardian of the student.
+CAPTURE_NEEDS_LOGIN = "capture_needs_login"
+
+
+@router.post("/students/{student_id}/bucket3/capture-status", response_model=CaptureStatusOut)
+async def report_capture_status(
+    student_id: str,
+    payload: CaptureStatusIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reported by Backpack Capture after each scheduled walk. `needs_login`
+    raises one unread notification (never a second while the first is still
+    unread - a lapsed sign-in fails every four hours until someone fixes it);
+    any successful run marks that notification read, so a stale "sign in
+    again" never outlives the fix. Every other status is informational only."""
+    student = await _get_own_student(db, user.id, student_id)
+    unread = (
+        Notification.user_id == user.id,
+        Notification.student_id == student.id,
+        Notification.type == CAPTURE_NEEDS_LOGIN,
+        Notification.read_at.is_(None),
+    )
+
+    if payload.status == "ok":
+        await db.execute(update(Notification).where(*unread).values(read_at=_now()))
+        await db.commit()
+        return CaptureStatusOut(notified=False)
+
+    if payload.status != "needs_login":
+        return CaptureStatusOut(notified=False)
+
+    if (await db.execute(select(Notification.id).where(*unread).limit(1))).scalar_one_or_none():
+        return CaptureStatusOut(notified=False)
+    db.add(
+        Notification(
+            user_id=user.id,
+            type=CAPTURE_NEEDS_LOGIN,
+            student_id=student.id,
+            message=(
+                f"Backpack Capture couldn't read {student.first_name}'s Google Classroom: the sign-in in that "
+                "Chrome has expired. Sign in to Classroom there again and the next scheduled walk picks up on its own."
+            ),
+        )
+    )
+    await db.commit()
+    return CaptureStatusOut(notified=True)
 
 
 # ---- raw views ----------------------------------------------------------------

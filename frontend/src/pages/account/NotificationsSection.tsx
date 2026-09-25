@@ -8,7 +8,11 @@ import { markAllNotificationsSeen } from "../../lib/notifications";
 
 type Notification = { id: string; type: string; message: string; created_at: string; read_at: string | null };
 
-const TYPE_LABEL: Record<string, string> = { guardian_matched: "Guardian matched", invite_accepted: "Invite accepted" };
+const TYPE_LABEL: Record<string, string> = {
+  guardian_matched: "Guardian matched",
+  invite_accepted: "Invite accepted",
+  capture_needs_login: "Backpack Capture needs sign-in",
+};
 
 export function NotificationsSection() {
   const [items, setItems] = useState<Notification[] | null>(null);
