@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -29,6 +30,17 @@ logger = logging.getLogger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models"
+
+# Gemini's /models lists ~60 ids, most of which can't hold a tool-using chat
+# (image/video/music generation, TTS, live audio, embeddings, research
+# agents). The admin picks from this list, so a chat model is all it offers.
+_GEMINI_NON_CHAT_RE = re.compile(
+    r"image|tts|audio|live|embedding|transcribe|translate|robotics|computer-use|customtools"
+)
+
+
+def gemini_chat_model(model_id: str) -> bool:
+    return model_id.startswith("gemini-") and not _GEMINI_NON_CHAT_RE.search(model_id)
 
 
 @dataclass
@@ -215,11 +227,12 @@ class OpenAICompatibleProvider:
     """Gemini via its OpenAI-compatible endpoint (and, later, anything else
     that speaks the same wire format). Raw httpx - no new dependency."""
 
-    def __init__(self, name: str, base_url: str, api_key: str, *, schema_fixer=None):
+    def __init__(self, name: str, base_url: str, api_key: str, *, schema_fixer=None, model_filter=None):
         self.name = name
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self._schema_fixer = schema_fixer or (lambda s: s)
+        self._model_filter = model_filter or (lambda _m: True)
 
     async def complete(
         self, model: str, system: str, dynamic_system: str | None, tools: list[dict], messages: list[dict],
@@ -263,7 +276,8 @@ class OpenAICompatibleProvider:
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(f"{self.base_url}/models", headers={"Authorization": f"Bearer {self.api_key}"})
             response.raise_for_status()
-            return sorted(m["id"].removeprefix("models/") for m in response.json().get("data", []))
+            ids = (m["id"].removeprefix("models/") for m in response.json().get("data", []))
+            return sorted(i for i in ids if self._model_filter(i))
 
 
 def configured_providers() -> dict[str, Any]:
@@ -276,7 +290,9 @@ def configured_providers() -> dict[str, Any]:
         providers["anthropic"] = AnthropicProvider(anthropic_key)
     gemini_key = os.getenv("CHATBOT_GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
     if gemini_key:
-        providers["gemini"] = OpenAICompatibleProvider("gemini", GEMINI_BASE_URL, gemini_key, schema_fixer=_gemini_schema)
+        providers["gemini"] = OpenAICompatibleProvider(
+            "gemini", GEMINI_BASE_URL, gemini_key, schema_fixer=_gemini_schema, model_filter=gemini_chat_model
+        )
     return providers
 
 

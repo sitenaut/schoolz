@@ -54,6 +54,32 @@ async def get_chatbot_admin(_: User = Depends(require_admin), db: AsyncSession =
     )
 
 
+# Used only when the provider's own model list can't be fetched, so a
+# provider outage doesn't block saving - loose, but it still catches the
+# real mistake: a Claude model saved under Gemini (every escalated question
+# 500'd on prod until the escalation model was changed).
+_MODEL_PREFIXES = {"anthropic": ("claude-",), "gemini": ("gemini-",)}
+
+
+async def _check_models_belong(audiences: list[tuple[str, AudienceConfig]], configured: dict[str, Any]) -> None:
+    lists: dict[str, list[str] | None] = {}
+    for label, audience in audiences:
+        if audience.provider not in lists:
+            try:
+                lists[audience.provider] = await configured[audience.provider].list_models()
+            except Exception:  # noqa: BLE001 - fall back to the prefix rule below
+                lists[audience.provider] = None
+        known = lists[audience.provider]
+        for field, model in (("Model", audience.model), ("Escalation model", audience.escalation_model)):
+            if not model:
+                continue
+            ok = model in known if known else model.startswith(_MODEL_PREFIXES.get(audience.provider, ("",)))
+            if not ok:
+                raise HTTPException(
+                    400, f"{label}: {field} {model!r} isn't a {audience.provider} model - pick one from the list."
+                )
+
+
 @router.put("", response_model=ChatbotAdminOut)
 async def put_chatbot_admin(body: ChatbotSettings, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     _validate(body)
@@ -62,6 +88,7 @@ async def put_chatbot_admin(body: ChatbotSettings, user: User = Depends(require_
         if audience.provider not in configured:
             # Saving it would make the live chatbot answer "not configured".
             raise HTTPException(400, f"{audience.provider} has no API key set on the server")
+    await _check_models_belong([("Anonymous visitors", body.anonymous), ("Signed-in users", body.signed_in)], configured)
     settings = await save_settings(db, body, user.id)
     return ChatbotAdminOut(settings=settings, providers=[ProviderStatus(name=p, configured=p in configured) for p in KNOWN_PROVIDERS])
 
@@ -88,6 +115,10 @@ class CompareResult(BaseModel):
     requested_model: str
     model: str | None
     escalated: bool = False
+    # Set when the escalation model failed and the turn finished on the base
+    # model instead - the live chatbot does this silently, so the compare
+    # panel is where an admin finds out the escalation model is broken.
+    escalation_error: str | None = None
     reply: str | None = None
     error: str | None = None
     rounds: int = 0
@@ -127,7 +158,8 @@ async def compare(
                 await personal.aclose()
         out = CompareResult(
             provider=config.provider, requested_model=config.model, model=result.get("model"),
-            escalated=result.get("escalated", False), reply=result.get("reply"),
+            escalated=result.get("escalated", False), escalation_error=result.get("escalation_error"),
+            reply=result.get("reply"),
             rounds=result.get("rounds", 0), tools_called=result.get("tools_called", []),
             latency_ms=int((time.monotonic() - started) * 1000),
         )
