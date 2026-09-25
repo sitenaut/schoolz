@@ -78,6 +78,7 @@ async def fetch_rendered_html(
     extra_wait_ms: int | None = None,
     stealth: bool = True,
     include_shadow_dom: bool = False,
+    timeout_ms: int | None = None,
 ) -> tuple[str, str]:
     """Fetch rendered HTML via the scraper service.
 
@@ -96,6 +97,9 @@ async def fetch_rendered_html(
     `include_shadow_dom` inlines open shadow roots into the returned HTML
     (schoolz's scraper; see scraper/main.py) - for web components like the
     Y's <deyra-finder>, whose content page.content() otherwise omits.
+    `timeout_ms` is the scraper's own per-step limit (page load and the
+    selector wait each get it; its default is 15s, max 60s) - raise it for
+    heavy pages on prod's 1GB scraper.
     """
     payload: dict = {"url": url, "stealth": stealth}
     if wait_for_selector:
@@ -104,6 +108,11 @@ async def fetch_rendered_html(
         payload["extra_wait_ms"] = int(extra_wait_ms)
     if include_shadow_dom:
         payload["include_shadow_dom"] = True
+    if timeout_ms:
+        payload["timeout_ms"] = int(timeout_ms)
+        # The scraper spends up to timeout_ms on the page load and again on
+        # the selector wait, so the HTTP call has to outlast both.
+        timeout = max(timeout, 2 * timeout_ms / 1000 + 20)
 
     errors: list[str] = []
     for service_url, key in _services():
