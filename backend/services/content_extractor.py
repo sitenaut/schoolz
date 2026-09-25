@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
+from services.links import unwrap_redirect
 from services.school_status import is_status_title, same_status_fact
 from scheduler.errors import record_parse_issue
 
@@ -611,7 +612,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             # the prompt asks it to always copy it over, but don't rely on
             # that alone; the block's own link_url is ground truth we
             # already have.
-            link_url = item.get("link_url") or (source_block.link_url if source_block else None)
+            link_url = unwrap_redirect(item.get("link_url") or (source_block.link_url if source_block else None))
             person_name = item.get("person_name")
             # Confirmed real case: despite the schema wording, the model
             # sometimes puts the person's name in `title` instead of

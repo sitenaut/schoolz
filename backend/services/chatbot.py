@@ -46,9 +46,15 @@ SYSTEM_PROMPT = (
     "return. If a lookup comes back with a 'note' about missing data, relay that note's "
     "suggestion (ask the school to publish it, or submit a link with "
     "submit_community_content) instead of just saying there's no data. Keep answers "
-    "short and concrete - most people are reading this on a phone. Plain text only - "
-    "no markdown (no **bold**, no bullet/numbered lists, no headers) - this is rendered "
-    "as plain text, so markdown syntax would show up as literal asterisks and dashes."
+    "short and concrete - most people are reading this on a phone. Formatting: the chat "
+    "renders a small markdown subset - **bold**, '- ' bullet lists, '1. ' numbered lists, "
+    "[text](url) links, and a blank line between groups. Nothing else (no headers, tables, "
+    "or code blocks). Use it only when it helps scanning: a one-fact answer stays one "
+    "plain sentence. For a list of events or dated items, group by day - the day as its "
+    "own bold line (**Saturday, Oct 3**), then one '- ' bullet per item: time first, then "
+    "the title (as a [title](url) link when there's a url), then the place, e.g. "
+    "'- 10:00 AM · [Fall Festival](https://...) · Croft Farm'. Keep each bullet to one line; "
+    "put a price or 'free' at the end only if known."
 )
 
 

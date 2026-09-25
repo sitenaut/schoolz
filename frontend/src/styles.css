@@ -2652,6 +2652,33 @@ select {
   border: 1px solid var(--line);
   border-radius: 12px 12px 12px 2px;
 }
+.chat-text p,
+.chat-text ul,
+.chat-text ol {
+  margin: 0;
+}
+.chat-text > * + * {
+  margin-top: 8px;
+}
+.chat-text ul,
+.chat-text ol {
+  padding-left: 18px;
+}
+.chat-text li + li {
+  margin-top: 4px;
+}
+.chat-text li::marker {
+  color: var(--ink-3);
+}
+.chat-text hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 10px 0;
+}
+.chat-text a {
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
 .chat-bubble.user {
   align-self: flex-end;
   background: var(--primary-soft);

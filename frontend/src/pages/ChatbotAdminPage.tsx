@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api";
 import { Badge } from "../components/ui/Badge";
+import { ChatText } from "../lib/chatFormat";
 import { Field } from "../components/ui/Field";
 import { SectionCard } from "../components/ui/SectionCard";
 import { Switch } from "../components/ui/Switch";
@@ -372,7 +373,7 @@ function ComparePanel({ settings, providers }: { settings: Settings; providers: 
                   </>
                 )}
               </div>
-              {r.error ? <div className="chat-error">{r.error}</div> : <div className="cb-reply">{r.reply}</div>}
+              {r.error ? <div className="chat-error">{r.error}</div> : <div className="cb-reply"><ChatText text={r.reply ?? ""} /></div>}
               <dl className="cb-stats">
                 <dt>Cost</dt>
                 <dd>{money(r.cost_usd)}</dd>

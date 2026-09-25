@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 
 import scraper_client
 from scheduler.errors import record_parse_issue
+from services.links import unwrap_redirect
 
 _WAIT_SELECTOR = ".block-wrapper"
 # Fallback for links that aren't real <a href> tags - Smore renders some
@@ -112,6 +113,11 @@ async def fetch_and_parse(url: str) -> list[dict]:
     for position, wrapper in enumerate(soup.select(_WAIT_SELECTOR)):
         classified = _classify(wrapper)
         if classified:
+            # Unwrapped only after _classify has hashed it: a link block's
+            # content_hash is keyed on the URL as published, so hashing the
+            # unwrapped one would make every already-stored wrapped link
+            # look new on the next scan and get re-extracted.
+            classified["link_url"] = unwrap_redirect(classified["link_url"])
             classified["position"] = position
             blocks.append(classified)
         else:

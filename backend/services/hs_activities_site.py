@@ -45,6 +45,7 @@ from models import School, SchoolClassYear, SchoolContentItem, StaffMember, norm
 from scheduler.errors import record_parse_issue
 from services.class_years import default_label, get_or_create_class_year
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
+from services.links import unwrap_redirect
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ def _own_block_text(el: Tag) -> tuple[str, str | None] | None:
                 if link is None and child.name == "a" and child.get("href"):
                     href = child["href"].strip()
                     if href and not _SKIP_LINK_RE.match(href):
-                        link = href
+                        link = unwrap_redirect(href)
                 walk(child)
 
     walk(el)
@@ -389,7 +390,7 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
                 row.start_date = start_date
                 row.end_date = end_date
                 row.is_all_day = "T" not in (item.get("start_date") or "")
-                row.link_url = item.get("link_url")
+                row.link_url = unwrap_redirect(item.get("link_url"))
                 row.person_name = item.get("person_name")
                 row.person_title = item.get("person_title")
                 row.applies_to_grad_years = grad_years
