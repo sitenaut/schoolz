@@ -39,6 +39,7 @@ admin to review, the same as a submission through the website's own
 *external* URL, so it uses a real network client, not the in-process one.
 """
 
+import re
 from typing import Any
 
 import httpx
@@ -48,6 +49,11 @@ from mcp.server.fastmcp import FastMCP
 
 def _is_empty(data: Any) -> bool:
     return data is None or data == []
+
+
+# Same rule as services/school_today.py:_ROTATION_RE - kept local because this
+# module reaches the app only through its HTTP routes.
+_ROTATION_TITLE_RE = re.compile(r"^\s*Day\s+\d\s*$", re.I)
 
 
 def _finalize(data: Any) -> Any:
@@ -468,10 +474,13 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         school_ids: str | None = None,
         category: str | None = None,
         q: str | None = None,
+        include_rotation_days: bool = False,
     ) -> Any:
         """Search dated calendar items (events/deadlines/initiatives/marking
         periods) across schools and districts. Entirely public data - called
         with no filters at all, it returns everything tracked system-wide.
+        "The district calendar" in a question means all of this - district
+        and school items together - not just district-wide ones.
 
         start/end: ISO-8601 datetimes bounding the search window (both optional).
         school_id: narrow to one school (id or slug).
@@ -480,13 +489,18 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         q: free-text search across title/description, unbounded by date -
            useful for finding something like "graduation" regardless of when
            start/end would otherwise cut the search off.
+        include_rotation_days: the "Day 1".."Day 6" rotation markers (which
+           letter-day it is) are left out by default - there's one on nearly
+           every school day, and listed as events they buried the real ones.
+           Set true only when asked which rotation day a date is.
         """
-        return _finalize(
-            await _get(
-                "/calendar",
-                {"start": start, "end": end, "school_id": school_id, "school_ids": school_ids, "category": category, "q": q},
-            )
+        data = await _get(
+            "/calendar",
+            {"start": start, "end": end, "school_id": school_id, "school_ids": school_ids, "category": category, "q": q},
         )
+        if not include_rotation_days and isinstance(data, list):
+            data = [i for i in data if not _ROTATION_TITLE_RE.match(str(i.get("title", "")))]
+        return _finalize(data)
 
     # -----------------------------------------------------------------
     # Smore newsletters
