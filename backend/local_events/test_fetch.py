@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from .sources.deyra_schedule import DeyraScheduleSource
+from .sources.ccls import CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
@@ -84,6 +85,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     deyra_schedule_sources = body.params.get("deyra_schedule_sources") or []
     yodel_sources = body.params.get("yodel_sources") or []
     tribe_sources = body.params.get("tribe_sources") or []
+    ccls_sources = body.params.get("ccls_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -106,6 +108,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.yodel_sources must be a list")
     if not isinstance(tribe_sources, list):
         raise HTTPException(status_code=400, detail="params.tribe_sources must be a list")
+    if not isinstance(ccls_sources, list):
+        raise HTTPException(status_code=400, detail="params.ccls_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -434,5 +438,26 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             # First page only for a fast dry-run.
             max_pages=1,
         )))
+
+    for entry in ccls_sources:
+        name = (entry or {}).get("name") or "(unnamed library branch)"
+        branch_name = (entry or {}).get("branch_name")
+        if not branch_name:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'branch_name' field", source_type="ccls",
+            ))
+            continue
+        ccls_source = CCLSSource(
+            name=name,
+            branch_name=branch_name,
+            default_categories=list(entry.get("default_categories") or []),
+            days_ahead=int(entry.get("days_ahead", 90)),
+            # First page only for a fast dry-run.
+            max_pages=1,
+        )
+        ccls_source.url = "https://events.camdencountylibrary.org/jsonapi/node/event"  # type: ignore[attr-defined]
+        results.append(await _probe("ccls", ccls_source))
 
     return TestFetchOut(kind=body.kind, sources=results)
