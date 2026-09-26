@@ -12,15 +12,13 @@ from services.class_years import CLASS_PAGE_SOURCES
 from services.school_today import build_today, resolve_lunch_menu
 from services.transportation import late_bus_for_school
 from routers.smore_newsletters import _to_out as _newsletter_to_out
+from scheduler.cron import public_scan_cron
 
 router = APIRouter(prefix="/schools", tags=["schools"])
 
 # All of these scan public sources (a school's own site, not Smore) - kept
 # fresh on a 12h cadence rather than the weekly/monthly cadence that was
 # here originally.
-_STAFF_ROSTER_CRON = "0 */12 * * *"
-_DOCUMENTS_SCAN_CRON = "0 */12 * * *"
-_SCHOOL_INFO_CRON = "0 */12 * * *"
 
 
 async def _ensure_staff_roster_job(db: AsyncSession, school: School, user: User) -> None:
@@ -32,7 +30,7 @@ async def _ensure_staff_roster_job(db: AsyncSession, school: School, user: User)
         owner_user_id=user.id,
         kind="staff_roster.scan",
         name=f"Staff roster scan: {school.name}",
-        cron_expr=_STAFF_ROSTER_CRON,
+        cron_expr=public_scan_cron("staff_roster.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
     )
@@ -51,7 +49,7 @@ async def _ensure_documents_scan_job(db: AsyncSession, school: School, user: Use
         owner_user_id=user.id,
         kind="documents.scan",
         name=f"Documents scan: {school.name}",
-        cron_expr=_DOCUMENTS_SCAN_CRON,
+        cron_expr=public_scan_cron("documents.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
     )
@@ -69,7 +67,7 @@ async def _ensure_school_info_job(db: AsyncSession, school: School, user: User) 
         owner_user_id=user.id,
         kind="school_info.scan",
         name=f"School info scan: {school.name}",
-        cron_expr=_SCHOOL_INFO_CRON,
+        cron_expr=public_scan_cron("school_info.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
     )
@@ -110,7 +108,7 @@ async def _ensure_activities_calendar_job(db: AsyncSession, school: School, user
         owner_user_id=user.id,
         kind="hs_class_calendar.scan",
         name=f"HS activities calendar scan: {school.name}",
-        cron_expr="0 */12 * * *",
+        cron_expr=public_scan_cron("hs_class_calendar.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
     )
@@ -149,7 +147,7 @@ async def _ensure_activities_site_job(db: AsyncSession, school: School, user: Us
         owner_user_id=user.id,
         kind="hs_activities_site.scan",
         name=f"HS activities site scan: {school.name}",
-        cron_expr="0 */12 * * *",
+        cron_expr=public_scan_cron("hs_activities_site.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
     )
@@ -167,7 +165,7 @@ async def _ensure_events_doc_job(db: AsyncSession, school: School, user: User) -
         owner_user_id=user.id,
         kind="school_events_doc.scan",
         name=f"School events doc scan: {school.name}",
-        cron_expr="0 */12 * * *",
+        cron_expr=public_scan_cron("school_events_doc.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
     )
