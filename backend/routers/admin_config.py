@@ -55,6 +55,7 @@ from routers.schools import (
     _ensure_staff_roster_job,
 )
 from routers.smore_newsletters import _validate_cron
+from scheduler.cron import public_scan_cron
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
 
@@ -166,7 +167,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_admi
                 owner_user_id=user.id,
                 kind="lunch_menu.scan",
                 name=f"Lunch menu scan: {district.name}",
-                cron_expr="0 */12 * * *",
+                cron_expr=public_scan_cron("lunch_menu.scan", district.id),
                 params={"district_id": district.id},
                 enabled=True,
             )
