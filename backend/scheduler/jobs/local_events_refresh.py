@@ -407,6 +407,20 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "ccls_sources": {
+            "type": "array",
+            "description": "Camden County Library System branches (events.camdencountylibrary.org) - its own Drupal JSON:API, no scraper. One entry per branch; branch_name is matched case-insensitively against whatever GET /jsonapi/node/location currently returns, so a renamed/added/closed branch needs no code change.",
+            "items": {
+                "type": "object",
+                "required": ["name", "branch_name"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "branch_name": {"type": "string", "description": "e.g. 'Voorhees', 'Downtown Camden', 'Bellmawr' - as CCLS names it."},
+                    "days_ahead": {"type": "integer", "default": 90},
+                    "max_pages": {"type": "integer", "default": 20, "description": "50 events per page."},
+                },
+            },
+        },
         "yodel_sources": {
             "type": "array",
             "description": "Yodel (events.yodel.today) calendar widgets, e.g. the one Macaroni KID embeds on its /events page. Plain HTTP, no scraper: reads the widget's server-rendered first page, then pages through its own 'load more' call.",

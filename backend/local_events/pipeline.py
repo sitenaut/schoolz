@@ -33,6 +33,7 @@ from .deduper import find_duplicate, merge_into
 from .normalizer import normalize
 from .sources.base import RawEvent, Source
 from .sources.deyra_schedule import DeyraScheduleSource
+from .sources.ccls import CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
@@ -199,6 +200,18 @@ def _build_sources(params: dict) -> list[Source]:
                 fallback_url=entry.get("fallback_url"),
                 default_categories=list(entry.get("default_categories") or []),
                 max_pages=int(entry.get("max_pages", 10)),
+            )
+        )
+    for entry in params.get("ccls_sources") or []:
+        if not entry.get("name") or not entry.get("branch_name"):
+            continue
+        sources.append(
+            CCLSSource(
+                name=entry["name"],
+                branch_name=entry["branch_name"],
+                default_categories=list(entry.get("default_categories") or []),
+                days_ahead=int(entry.get("days_ahead", 90)),
+                max_pages=int(entry.get("max_pages", 20)),
             )
         )
     for entry in params.get("tribe_sources") or []:
