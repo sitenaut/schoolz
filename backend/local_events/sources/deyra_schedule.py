@@ -84,9 +84,12 @@ class DeyraScheduleSource(Source):
                     "deyra_schedule_fetch_failed",
                     extra={"source": self.name, "day": day.isoformat(), "error": str(exc)},
                 )
-                # The tail of the message names the service that actually
-                # failed last (the fallback) - the head is the droplet.
-                failures.append(f"{day.isoformat()}: ...{str(exc)[-240:]}")
+                # One line per service (droplet, then fallback), each already
+                # reduced to its cause by scraper._describe_failure.
+                reasons = " | ".join(
+                    line.strip() for line in str(exc).splitlines()[1:] if line.strip()
+                ) or str(exc)
+                failures.append(f"{day.isoformat()}: {reasons[:600]}")
                 continue
             fetched_days += 1
             raws.extend(self._parse_day(html, day, fetched_url))
