@@ -314,3 +314,45 @@ async def test_deyra_no_longer_hides_failures(monkeypatch):
     src = DeyraScheduleSource(name="y", url="https://example.test", days_ahead=2)
     assert await src.fetch() == []
     assert src.partial_failures == ["2 day(s) rendered but no classes were found in them"]
+
+
+@pytest.mark.anyio
+async def test_scraper_failure_records_the_scrapers_own_reason(monkeypatch):
+    """A failed Y day used to record only httpx's "Server error '502 Bad
+    Gateway'... MDN link" - the scraper's actual cause was in the response
+    body and got thrown away."""
+    import httpx
+
+    from local_events.sources import deyra_schedule, scraper
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "droplet" in str(request.url):
+            return httpx.Response(502, text="<html>Bad Gateway</html>")
+        return httpx.Response(502, json={"detail": (
+            "Failed to fetch https://y.test/?day=1: Page.wait_for_selector: Timeout 40000ms exceeded.\n"
+            "Call log:\n  - waiting for locator('[data-test=success]')"
+        )})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(scraper.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler)))
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_URL", "https://droplet.test")
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_KEY", "k")
+    monkeypatch.setenv("SCRAPER_URL", "http://scraper.test")
+    monkeypatch.setenv("SCRAPER_API_KEY", "k")
+
+    good_day = {"n": 0}
+    real_fetch = deyra_schedule.fetch_rendered_html
+
+    async def first_day_ok(url, **kw):
+        good_day["n"] += 1
+        if good_day["n"] == 1:
+            return "<html></html>", url
+        return await real_fetch(url, **kw)
+
+    monkeypatch.setattr(deyra_schedule, "fetch_rendered_html", first_day_ok)
+    src = deyra_schedule.DeyraScheduleSource(name="y", url="https://y.test", days_ahead=2)
+    await src.fetch()
+    failure = src.partial_failures[0]
+    assert "https://droplet.test: HTTP 502: <html>Bad Gateway</html>" in failure
+    assert "http://scraper.test: HTTP 502: Failed to fetch https://y.test/?day=1: Page.wait_for_selector: Timeout 40000ms exceeded." in failure
+    assert "Call log" not in failure and "developer.mozilla.org" not in failure

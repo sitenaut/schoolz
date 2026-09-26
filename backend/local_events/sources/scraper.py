@@ -57,6 +57,25 @@ def _looks_like_challenge(html: str) -> bool:
     return any(m in head for m in _CHALLENGE_MARKERS)
 
 
+def _describe_failure(exc: Exception) -> str:
+    """One line saying why a scraper call failed. For an HTTP error that's
+    the scraper's own `detail` (e.g. Playwright's "Timeout 40000ms
+    exceeded"), not httpx's message, which is only the status line plus an
+    MDN link - that was all a failed Y day used to record."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        resp = exc.response
+        try:
+            detail = resp.json().get("detail")
+        except Exception:  # noqa: BLE001 - not JSON (a proxy's HTML error page)
+            detail = None
+        if not isinstance(detail, str) or not detail.strip():
+            detail = re.sub(r"\s+", " ", resp.text or "")[:200] or "(no body)"
+        # Playwright appends a multi-line call log; its first line is the cause.
+        detail = detail.strip().splitlines()[0][:300]
+        return f"HTTP {resp.status_code}: {detail}"
+    return f"{type(exc).__name__}: {exc}"
+
+
 def _services() -> list[tuple[str, str]]:
     """(base_url, api_key) pairs to try in order, skipping any without a key."""
     # `or`, not env.get(..., default): an env var set to "" (compose's
@@ -137,10 +156,10 @@ async def fetch_rendered_html(
                 continue
             return html, fetched_url
         except Exception as exc:  # noqa: BLE001
-            errors.append(f"{service_url}: {type(exc).__name__}: {exc}")
+            errors.append(f"{service_url}: {_describe_failure(exc)}")
             logger.warning(
                 "scraper_service_failed",
-                extra={"service": service_url, "url": url, "error": str(exc)},
+                extra={"service": service_url, "url": url, "error": _describe_failure(exc)},
             )
             continue
 
@@ -174,10 +193,10 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0) -> str:
                 continue
             return body
         except Exception as exc:  # noqa: BLE001
-            errors.append(f"{service_url}: {type(exc).__name__}: {exc}")
+            errors.append(f"{service_url}: {_describe_failure(exc)}")
             logger.warning(
                 "scraper_raw_failed",
-                extra={"service": service_url, "url": url, "error": str(exc)},
+                extra={"service": service_url, "url": url, "error": _describe_failure(exc)},
             )
             continue
 
