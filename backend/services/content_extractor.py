@@ -93,7 +93,7 @@ _EXTRACTION_TOOL = {
                         "end_date": {"type": "string", "description": "Same local-time format as start_date, for date ranges."},
                         "link_url": {
                             "type": "string",
-                            "description": "The URL from the source block's '(link: ...)' annotation, if that block has one - ALWAYS include it here when present, even if the item also has other fields. Never drop a link.",
+                            "description": "The URL from the source block's '(link: ...)' annotation, ONLY if that link is actually about THIS item specifically (e.g. a 'click here' right next to this item, or the block is entirely about this one thing). A block can list several unrelated dated items with only one link mentioned in passing (e.g. a link to an activities calendar sits in a block that also reports five unrelated dates) - in that case the link belongs to the item it's actually next to/about, not to every item pulled from that block. Leave this unset rather than guess.",
                         },
                         "person_name": {"type": "string"},
                         "person_title": {"type": "string"},
@@ -139,9 +139,13 @@ Dates should be resolved to actual ISO 8601 dates when the text gives enough con
 year from the newsletter's own dateline); omit start_date/end_date if you can't determine an \
 actual date. If an item clearly corrects or updates one of the CURRENT ITEMS given to you \
 (same event/deadline, different date, typo fix), set supersedes_item_id to that item's id \
-instead of creating a duplicate. Every link mentioned in the source (marked "(link: ...)") must \
-be preserved - if an item is based on a block with a link annotation, copy that URL into the \
-item's link_url field. Never omit a link that's present in the source. Set scope='district' for \
+instead of creating a duplicate. Every link mentioned in the source (marked "(link: ...)") must be preserved on the item \
+it actually belongs to - but a single block often reports several unrelated dated items while \
+mentioning only one link (e.g. "click here for the activities calendar" inside a block that also \
+lists five other unrelated dates); in that case the link is about whichever item it's adjacent to \
+or about, not every item extracted from that block. Only put a block's link on more than one item \
+when the block is genuinely all about that one link (a single flyer, a shared sign-up, a staff \
+bio page). Set scope='district' for \
 anything that applies district-wide (school closures/holidays, district-wide policy or deadlines) \
 rather than being specific to this one school - this school's newsletter reports district holidays \
 too, but every other school in the district reports the exact same ones, so marking them 'district' \
@@ -162,6 +166,29 @@ _MAGIC = (
 )
 _MAX_IMAGE_BYTES = 4_500_000  # the API rejects images over 5MB
 _MAX_IMAGE_EDGE = 1568  # what the API downsamples to anyway; re-encoding to it keeps flyers under the byte cap
+
+
+def _count_items_per_block_position(items: list[dict]) -> dict[int, int]:
+    counts: dict[int, int] = {}
+    for item in items:
+        pos = item.get("source_block_position")
+        counts[pos] = counts.get(pos, 0) + 1
+    return counts
+
+
+def fallback_link_for_item(item: dict, source_block, items_per_position: dict[int, int]) -> str | None:
+    """The block's own link_url, but only when it can't be ambiguous - i.e.
+    that block produced exactly one item this call. A multi-item block
+    (several unrelated dated lines, one passing link mention) fed its
+    single link onto every item pulled from it in testing - e.g. a senior-
+    portraits ordering link landing on "Graduation" and "Senior Prom" too.
+    One item per block is the case this exists for (a single flyer/sign-up),
+    where the block's link is unambiguously that item's."""
+    if not source_block:
+        return None
+    if items_per_position.get(item.get("source_block_position")) != 1:
+        return None
+    return source_block.link_url
 
 
 def _sniff_media_type(data: bytes) -> str | None:
@@ -604,6 +631,7 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
         items, dropped = object_list(data.get("items"))
         if dropped:
             record_parse_issue("smore.scan", "unexpected_format", newsletter_id=newsletter.id, sample=str(dropped)[:200])
+        items_per_position = _count_items_per_block_position(items)
         for item in items:
             source_block = block_by_position.get(item.get("source_block_position"))
             source_block_id = source_block.id if source_block else None
@@ -612,11 +640,8 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             # reliably omits that flag, and item.get(..., True) silently
             # defaulted every timed event to "all day" in testing.
             is_all_day = "T" not in (item.get("start_date") or "")
-            # Backfill from the source block if the model dropped the link -
-            # the prompt asks it to always copy it over, but don't rely on
-            # that alone; the block's own link_url is ground truth we
-            # already have.
-            link_url = unwrap_redirect(item.get("link_url") or (source_block.link_url if source_block else None))
+            fallback_link = fallback_link_for_item(item, source_block, items_per_position)
+            link_url = unwrap_redirect(item.get("link_url") or fallback_link)
             person_name = item.get("person_name")
             # Confirmed real case: despite the schema wording, the model
             # sometimes puts the person's name in `title` instead of

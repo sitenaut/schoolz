@@ -266,3 +266,28 @@ def test_title_dedup_key_folds_ordinal_words_and_numerals():
     # Genuinely different events must not collapse into each other.
     assert _title_dedup_key("First Day of Autumn") != _title_dedup_key("First Day of Spring")
     assert _title_dedup_key("First Day of School") != _title_dedup_key("Second Day of School")
+
+
+class _FakeBlock:
+    def __init__(self, link_url):
+        self.link_url = link_url
+
+
+def test_fallback_link_only_fills_a_block_with_exactly_one_item():
+    """Regression: a block reporting several unrelated dated items but
+    mentioning one link (a senior-portraits ordering link inside a block
+    that also lists Graduation, Senior Prom, etc) used to land that link
+    on every item pulled from the block, not just the one it's about."""
+    from services.content_extractor import fallback_link_for_item
+
+    block = _FakeBlock("https://home.cady.com/for-seniors/")
+    multi_item_positions = {5: 3}
+    single_item_positions = {5: 1}
+
+    graduation = {"source_block_position": 5, "title": "Graduation"}
+    assert fallback_link_for_item(graduation, block, multi_item_positions) is None
+
+    portraits = {"source_block_position": 5, "title": "Senior Portraits"}
+    assert fallback_link_for_item(portraits, block, single_item_positions) == "https://home.cady.com/for-seniors/"
+
+    assert fallback_link_for_item(graduation, None, single_item_positions) is None
