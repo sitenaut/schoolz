@@ -318,6 +318,12 @@ class IcsFeed(BaseModel):
     # e.g. ["elementary"] to restrict this feed's events to one or more
     # School.school_type values - omit/null for a district-wide feed.
     school_types: list[str] | None = None
+    # A school's own calendar published from the district's calendar system
+    # (one Finalsite instance, one feed per building). Its events land
+    # scope="school", minus any that also appear on a district-wide feed.
+    # A slug, not an id, so a config export/import carries it across
+    # environments.
+    school_slug: str | None = None
 
 
 class DistrictCreate(BaseModel):
@@ -325,6 +331,8 @@ class DistrictCreate(BaseModel):
     website_url: str | None = None
     food_services_menu_url: str | None = None
     ics_feeds: list[IcsFeed] = Field(default_factory=list)
+    towns: list[str] = Field(default_factory=list)
+    schoolcafe_shortname: str | None = None
     marking_period_url: str | None = None
     preschool_locations_url: str | None = None
     preschool_team_url: str | None = None
@@ -336,11 +344,23 @@ class DistrictUpdate(BaseModel):
     website_url: str | None = None
     food_services_menu_url: str | None = None
     ics_feeds: list[IcsFeed] | None = None
+    towns: list[str] | None = None
+    schoolcafe_shortname: str | None = None
     marking_period_url: str | None = None
     preschool_locations_url: str | None = None
     preschool_team_url: str | None = None
     hs_rotation_url: str | None = None
     transportation_url: str | None = None
+
+
+class DistrictSummaryOut(BaseModel):
+    """Public, for the school picker - no job/source-config detail."""
+
+    id: str
+    name: str
+    towns: list[str]
+
+    model_config = {"from_attributes": True}
 
 
 class DistrictOut(BaseModel):
@@ -349,6 +369,8 @@ class DistrictOut(BaseModel):
     website_url: str | None
     food_services_menu_url: str | None
     ics_feeds: list[IcsFeed]
+    towns: list[str]
+    schoolcafe_shortname: str | None
     marking_period_url: str | None
     preschool_locations_url: str | None
     preschool_team_url: str | None
@@ -564,6 +586,7 @@ class LunchMenuOut(BaseModel):
 class SchoolContentItemOut(BaseModel):
     id: str
     scope: str
+    district_id: str | None = None
     # Display label for the scope badge: the school's short_name (for
     # scope="school") - not populated by every endpoint (redundant on a
     # single school's own page, only set by /calendar which spans schools).
@@ -912,6 +935,7 @@ class ExportSchoolOut(BaseModel):
     logo_url: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     sacc: ExportSaccOut | None
+    activities_calendar_ics_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -926,6 +950,9 @@ class ExportDistrictOut(BaseModel):
     preschool_team_url: str | None
     hs_rotation_url: str | None
     transportation_url: str | None
+    # Defaulted so an export file from before these existed still imports.
+    towns: list[str] = []
+    schoolcafe_shortname: str | None = None
 
     model_config = {"from_attributes": True}
 

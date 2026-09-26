@@ -5,17 +5,22 @@ import { DayCard } from "../components/today";
 import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
+import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
 import type { SchoolContentItem, SchoolToday } from "../types";
 
-const HOME_SEO = (
-  <SeoHead
-    title="schoolz · Cherry Hill — Today at your kids' schools"
-    description="Live school-day status, bell schedules, lunch menus, bus info, and calendar dates for Cherry Hill Public Schools - free, public, no account needed."
-    path="/"
-  />
-);
+function HomeSeo() {
+  const where = townsLabel(useMySchools().myTowns);
+  return (
+    <SeoHead
+      title={`schoolz · ${where} — Today at your kids' schools`}
+      description={`Live school-day status, bell schedules, lunch menus, bus info, and calendar dates for ${where} public schools - free, public, no account needed.`}
+      path="/"
+    />
+  );
+}
+const HOME_SEO = <HomeSeo />;
 
 /** The home page: one day-card per active school, with any district-wide
  * closure/early-dismissal in the next week pulled up into a banner so
@@ -23,7 +28,7 @@ const HOME_SEO = (
  * is fetched (so toggling one on/off in the top ribbon is instant, no
  * refetch), but only the active ones render. */
 export function TodayPage() {
-  const { mySchools, activeSchools, loading, colorFor, isFiltered } = useMySchools();
+  const { mySchools, activeSchools, loading, colorFor, isFiltered, districtsById } = useMySchools();
   const [cards, setCards] = useState<Record<string, SchoolToday>>({});
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
@@ -114,7 +119,7 @@ export function TodayPage() {
                 {md.month} {md.day}
               </b>{" "}
               · {a.title}
-              {a.scope === "district" ? " (all Cherry Hill schools)" : ""}
+              {a.scope === "district" && a.district_id ? ` (all ${districtsById.get(a.district_id)?.name ?? "district"} schools)` : ""}
             </span>
           </div>
         );

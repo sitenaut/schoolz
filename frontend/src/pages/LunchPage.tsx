@@ -5,12 +5,13 @@ import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay, todayKey } from "../lib/calendar";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { useMySchools } from "../lib/mySchools";
+import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
 import type { LunchMenu } from "../types";
 
 export function LunchPage() {
-  const { mySchools, activeSchools, loading, colorFor } = useMySchools();
+  const { mySchools, activeSchools, loading, colorFor, myTowns } = useMySchools();
   const [params] = useSearchParams();
   // "Lunch schedule" links from a specific school's Today card / school
   // page (?school=slug) must land on THAT school, not always the ribbon's
@@ -97,8 +98,8 @@ export function LunchPage() {
   return (
     <>
       <SeoHead
-        title="Lunch menus · Cherry Hill · schoolz"
-        description="Daily lunch menus for Cherry Hill Public Schools, by school - synced from district and school-published menus."
+        title={`Lunch menus · ${townsLabel(myTowns)} · schoolz`}
+        description={`Daily lunch menus for ${townsLabel(myTowns)} public schools, by school - synced from district and school-published menus.`}
         path="/lunch"
       />
       <div className="h-row" style={{ marginTop: 0 }}>

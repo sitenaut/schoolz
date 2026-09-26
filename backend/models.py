@@ -378,6 +378,17 @@ class District(Base):
     # via a clipboard write, never a plain link in the page (see
     # services/district_calendar.py for how these were actually found).
     ics_feeds: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    # Towns whose kids attend this district's schools - what the school
+    # picker groups by, because families think in towns, not districts: a
+    # Voorhees family's K-8 schools and high school are two different
+    # districts (Voorhees Township, then Eastern Regional, which also serves
+    # Berlin and Gibbsboro).
+    towns: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    # The district's SchoolCafé site short name (the path segment in
+    # www.schoolcafe.com/<SHORTNAME>/menus) - an alternative to
+    # food_services_menu_url's PDFs for districts that publish menus there.
+    schoolcafe_shortname: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    schoolcafe_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     calendar_scan_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     # Page listing interim/marking-period/report-card dates per school tier
     # (High/Middle/Grades K-5/Preschool) - parsed deterministically via real

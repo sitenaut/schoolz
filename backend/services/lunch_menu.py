@@ -29,6 +29,26 @@ _PDF_FILENAME_RE = re.compile(
 )
 
 
+_MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december")
+# Eastern Regional's single monthly menu: "08182026_September2026_002.pdf" -
+# no grade band, since the district is one high school.
+_MONTH_YEAR_RE = re.compile(r"(" + "|".join(_MONTHS) + r")_?(\d{4})", re.IGNORECASE)
+
+
+def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
+    match = _MONTH_YEAR_RE.search(url.rsplit("/", 1)[-1])
+    if not match:
+        return None
+    month, year = match.groups()
+    return {
+        "school_type": school_type,
+        "meal_type": "lunch",
+        "period_label": f"{month.title()} {year}",
+        "pdf_url": url,
+        "_sort": (int(year), _MONTHS.index(month.lower())),
+    }
+
+
 def _classify_pdf_link(url: str) -> dict | None:
     match = _PDF_FILENAME_RE.search(url)
     if not match:
@@ -45,10 +65,14 @@ def _classify_pdf_link(url: str) -> dict | None:
     }
 
 
-async def discover_current_menus(menu_page_url: str) -> list[dict]:
+async def discover_current_menus(menu_page_url: str, single_school_type: str | None = None) -> list[dict]:
     """Returns one entry per (school_type, meal_type) found on the page,
     e.g. {"school_type": "elementary", "meal_type": "lunch",
-    "period_label": "September 2026", "pdf_url": "..."}."""
+    "period_label": "September 2026", "pdf_url": "..."}.
+
+    `single_school_type` is for a district whose schools are all one type:
+    its menu PDFs carry no grade band, so a bare month+year filename is
+    taken as that type's lunch menu, latest month winning."""
     result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a")
     urls = set(re.findall(r'href="([^"]+\.pdf)"', result["html"], re.IGNORECASE))
 
@@ -57,6 +81,12 @@ async def discover_current_menus(menu_page_url: str) -> list[dict]:
         classified = _classify_pdf_link(url)
         if classified:
             by_key[(classified["school_type"], classified["meal_type"])] = classified
+    if not by_key and single_school_type:
+        unbanded = [c for c in (_classify_unbanded_pdf_link(u, single_school_type) for u in urls) if c]
+        if unbanded:
+            latest = max(unbanded, key=lambda c: c["_sort"])
+            latest.pop("_sort")
+            return [latest]
     return list(by_key.values())
 
 

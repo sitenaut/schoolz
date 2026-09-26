@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_admin
 from database import get_db
 from models import District, DistrictTransportation, ScheduledJob, User
-from schemas import DistrictCreate, DistrictOut, DistrictUpdate, ScheduledJobOut, DistrictTransportationOut
+from schemas import DistrictCreate, DistrictOut, DistrictSummaryOut, DistrictUpdate, ScheduledJobOut, DistrictTransportationOut
 
 router = APIRouter(prefix="/districts", tags=["districts"])
 
@@ -112,6 +112,22 @@ async def _ensure_transportation_job(db: AsyncSession, district: District, user:
     district.transportation_job_id = job.id
 
 
+async def _ensure_schoolcafe_job(db: AsyncSession, district: District, user: User) -> None:
+    if district.schoolcafe_job_id or not district.schoolcafe_shortname:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="schoolcafe_menu.scan",
+        name=f"SchoolCafé menu scan: {district.name}",
+        cron_expr=_DEFAULT_CRON,
+        params={"district_id": district.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    district.schoolcafe_job_id = job.id
+
+
 async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
     job = None
     if district.scheduled_job_id:
@@ -137,6 +153,8 @@ async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
         website_url=district.website_url,
         food_services_menu_url=district.food_services_menu_url,
         ics_feeds=district.ics_feeds,
+        towns=district.towns or [],
+        schoolcafe_shortname=district.schoolcafe_shortname,
         marking_period_url=district.marking_period_url,
         preschool_locations_url=district.preschool_locations_url,
         preschool_team_url=district.preschool_team_url,
@@ -147,6 +165,11 @@ async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
         calendar_scan_job=calendar_job,
         marking_period_job=marking_period_job,
     )
+
+
+@router.get("/summary", response_model=list[DistrictSummaryOut])
+async def list_district_summaries(db: AsyncSession = Depends(get_db)):
+    return (await db.execute(select(District).order_by(District.name))).scalars().all()
 
 
 @router.get("", response_model=list[DistrictOut])
@@ -166,6 +189,8 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
         website_url=payload.website_url,
         food_services_menu_url=payload.food_services_menu_url,
         ics_feeds=[f.model_dump() for f in payload.ics_feeds],
+        towns=payload.towns,
+        schoolcafe_shortname=payload.schoolcafe_shortname,
         marking_period_url=payload.marking_period_url,
         preschool_locations_url=payload.preschool_locations_url,
         preschool_team_url=payload.preschool_team_url,
@@ -194,6 +219,7 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
     await _ensure_preschool_team_job(db, district, user)
     await _ensure_hs_rotation_job(db, district, user)
     await _ensure_transportation_job(db, district, user)
+    await _ensure_schoolcafe_job(db, district, user)
 
     await db.commit()
     await db.refresh(district)
@@ -213,6 +239,10 @@ async def update_district(
         district.food_services_menu_url = payload.food_services_menu_url
     if payload.ics_feeds is not None:
         district.ics_feeds = [f.model_dump() for f in payload.ics_feeds]
+    if payload.towns is not None:
+        district.towns = payload.towns
+    if payload.schoolcafe_shortname is not None:
+        district.schoolcafe_shortname = payload.schoolcafe_shortname or None
     if payload.marking_period_url is not None:
         district.marking_period_url = payload.marking_period_url
     if payload.preschool_locations_url is not None:
@@ -229,6 +259,7 @@ async def update_district(
     await _ensure_preschool_team_job(db, district, user)
     await _ensure_hs_rotation_job(db, district, user)
     await _ensure_transportation_job(db, district, user)
+    await _ensure_schoolcafe_job(db, district, user)
     await db.commit()
     await db.refresh(district)
     return await _to_out(db, district)

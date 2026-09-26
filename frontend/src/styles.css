@@ -2234,6 +2234,34 @@ select {
   font-weight: 700;
   color: var(--ink-3);
 }
+.town-chips {
+  margin-top: 10px;
+}
+.chip.town-chip {
+  font-size: 14px;
+  padding: 8px 14px;
+}
+.chip.town-chip[aria-pressed="false"] {
+  opacity: 1;
+}
+.chip.town-chip[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary, #fff);
+}
+.chip.town-chip[aria-pressed="true"] .chip-count {
+  color: inherit;
+}
+.sopt-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sopt-text small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
 .chip[aria-pressed="true"] .chip-count {
   color: var(--primary);
 }

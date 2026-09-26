@@ -9,7 +9,8 @@ import type { School, SchoolContentItem } from "../types";
 export const CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bin-?service\b|\bconference\b/i;
 export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
-const ROTATION_RE = /^\s*Day\s+\d+\s*$/i;
+// Eastern Regional appends the class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
+const ROTATION_RE = /^\s*Day\s+\d+\s*(?:\([^)]*\))?\s*$/i;
 
 export function isStatusItem(title: string): boolean {
   return CLOSED_RE.test(title) || HALF_DAY_RE.test(title) || DELAY_RE.test(title);
@@ -43,14 +44,24 @@ export type LabeledRow = { key: string; item: SchoolContentItem; label: string |
  * one confusing type-labeled row. An item that matches none of the active
  * schools' types doesn't apply to anyone currently being viewed, so it's
  * dropped entirely (returns no rows). */
-export function expandItemRows(item: SchoolContentItem, activeSchools: School[]): LabeledRow[] {
+export function expandItemRows(
+  item: SchoolContentItem,
+  activeSchools: School[],
+  districtName?: (districtId: string) => string | undefined,
+): LabeledRow[] {
   if (item.scope === "school") {
     return [{ key: item.id, item, label: item.school_name }];
   }
+  // A district's items only ever apply to its own schools - with two
+  // districts active, an elementary "Day 2" from one must not be labeled
+  // onto the other's elementary schools.
+  const ownSchools = item.district_id ? activeSchools.filter((s) => s.district_id === item.district_id) : activeSchools;
   if (!item.applies_to_school_types?.length) {
-    return [{ key: item.id, item, label: "All schools" }];
+    const spansDistricts = new Set(activeSchools.map((s) => s.district_id)).size > 1;
+    const name = spansDistricts && item.district_id ? districtName?.(item.district_id) : undefined;
+    return [{ key: item.id, item, label: name ? `All ${name}` : "All schools" }];
   }
   const types = new Set(item.applies_to_school_types);
-  const matching = activeSchools.filter((s) => s.school_type && types.has(s.school_type));
+  const matching = ownSchools.filter((s) => s.school_type && types.has(s.school_type));
   return matching.map((s) => ({ key: `${item.id}-${s.id}`, item, label: s.short_name || s.name }));
 }

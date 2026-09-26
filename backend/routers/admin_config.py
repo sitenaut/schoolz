@@ -45,9 +45,15 @@ from routers.districts import (
     _ensure_marking_period_job,
     _ensure_preschool_locations_job,
     _ensure_preschool_team_job,
+    _ensure_schoolcafe_job,
     _ensure_transportation_job,
 )
-from routers.schools import _ensure_documents_scan_job, _ensure_school_info_job, _ensure_staff_roster_job
+from routers.schools import (
+    _ensure_activities_calendar_job,
+    _ensure_documents_scan_job,
+    _ensure_school_info_job,
+    _ensure_staff_roster_job,
+)
 from routers.smore_newsletters import _validate_cron
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
@@ -90,6 +96,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 logo_url=s.logo_url,
                 bell_periods=s.bell_periods,
                 sacc=ExportSaccOut.model_validate(saccs[s.id], from_attributes=True) if s.id in saccs else None,
+                activities_calendar_ics_url=s.activities_calendar_ics_url,
             )
             for s in schools
         ],
@@ -136,12 +143,17 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_admi
         district.preschool_team_url = d.preschool_team_url
         district.hs_rotation_url = d.hs_rotation_url
         district.transportation_url = d.transportation_url
+        if d.towns:
+            district.towns = d.towns
+        if d.schoolcafe_shortname:
+            district.schoolcafe_shortname = d.schoolcafe_shortname
         await _ensure_calendar_scan_job(db, district, user)
         await _ensure_marking_period_job(db, district, user)
         await _ensure_preschool_locations_job(db, district, user)
         await _ensure_preschool_team_job(db, district, user)
         await _ensure_hs_rotation_job(db, district, user)
         await _ensure_transportation_job(db, district, user)
+        await _ensure_schoolcafe_job(db, district, user)
         # food_services_menu_url's lunch_menu.scan job is created only at
         # district *creation* time in the normal POST /districts flow
         # (see routers/districts.py) - mirror that here for a newly-created
@@ -223,6 +235,9 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_admi
         await _ensure_staff_roster_job(db, school, user)
         await _ensure_documents_scan_job(db, school, user)
         await _ensure_school_info_job(db, school, user)
+        if s.activities_calendar_ics_url:
+            school.activities_calendar_ics_url = s.activities_calendar_ics_url
+            await _ensure_activities_calendar_job(db, school, user)
 
         if s.sacc:
             existing_sacc = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()

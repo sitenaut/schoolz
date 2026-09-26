@@ -1,6 +1,7 @@
 export type SchoolContentItem = {
   id: string;
   scope: "school" | "district";
+  district_id?: string | null;
   school_name: string | null;
   applies_to_school_types: string[] | null;
   // Grad years this item is scoped to (null = whole school) - see
@@ -22,6 +23,13 @@ export type SchoolContentItem = {
   source_excerpt: string | null;
   extracted_at: string;
   is_current: boolean;
+};
+
+/** GET /districts/summary - what the picker needs to group schools by town. */
+export type DistrictSummary = {
+  id: string;
+  name: string;
+  towns: string[];
 };
 
 export type School = {

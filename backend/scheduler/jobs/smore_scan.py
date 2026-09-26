@@ -59,6 +59,19 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     blocks = await fetch_and_parse(newsletter.url)
 
+    if not blocks:
+        # A real newsletter always has at least one block - a Smore link
+        # that has expired (confirmed real: several Cherry Hill schools'
+        # "stable" URLs went stale mid-week while still reporting success)
+        # renders a different page entirely, with no .block-wrapper
+        # elements, rather than 404ing or timing out. That made an expired
+        # link indistinguishable from "no new content this week" - both
+        # produced status=success with nothing for anyone to notice. Zero
+        # blocks total (not just zero new ones) is the honest signal that
+        # the URL itself needs attention, not the newsletter's content.
+        newsletter.last_scanned_at = datetime.now(timezone.utc)
+        return f"WARNING[smore_no_blocks]: fetched 0 blocks from {newsletter.url} - link may be dead or expired"
+
     existing_hashes = {
         row[0]
         for row in (

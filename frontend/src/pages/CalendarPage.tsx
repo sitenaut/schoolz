@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
+import { townsLabel } from "../lib/towns";
 import { apiFetch } from "../api";
 import { EventSheet, ItemRow } from "../components/today";
 import { SeoHead } from "../components/SeoHead";
@@ -18,7 +19,7 @@ type ViewMode = "month" | "year";
 const TODAY_KEY = dateKey(new Date());
 
 export function CalendarPage() {
-  const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict } = useMySchools();
+  const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict, districtsById, myTowns } = useMySchools();
   const [params, setParams] = useSearchParams();
   const deepSchool = params.get("school");
   // A "this week" tap (school page) deep-links a specific day, and an
@@ -237,7 +238,10 @@ export function CalendarPage() {
   // currently-active school of a matching type, e.g. "Day 3 [Bret Harte]"
   // and "Day 2 [Cherry Hill East]" side by side rather than one row
   // labeled just "Elementary" or "High school".
-  const rows = useMemo(() => filteredItems.flatMap((i) => expandItemRows(i, scopedSchools)), [filteredItems, scopedSchools]);
+  const rows = useMemo(
+    () => filteredItems.flatMap((i) => expandItemRows(i, scopedSchools, (id) => districtsById.get(id)?.name)),
+    [filteredItems, scopedSchools, districtsById],
+  );
 
   // Land on the specific event a "this week" pill pointed at, not just its
   // day - the list can still hold several items for that date.
@@ -305,8 +309,8 @@ export function CalendarPage() {
   return (
     <div>
       <SeoHead
-        title="School calendar · Cherry Hill · schoolz"
-        description="District-wide and per-school calendar for Cherry Hill Public Schools - closures, early dismissals, deadlines, and events, searchable and filterable by school."
+        title={`School calendar · ${townsLabel(myTowns)} · schoolz`}
+        description={`District-wide and per-school calendar for ${townsLabel(myTowns)} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.`}
         path="/calendar"
       />
       <div className="h-row" style={{ marginTop: 0 }}>

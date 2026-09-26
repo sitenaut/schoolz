@@ -19,7 +19,7 @@ _ROLE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("nurse", re.compile(r"\bnurse\b", re.I)),
     ("counselor", re.compile(r"\b(counselor|counsellor|guidance)\b", re.I)),
     ("sacc", re.compile(r"\bsacc\b", re.I)),
-    ("secretary", re.compile(r"\b(secretary|office manager|administrative assistant|main office)\b", re.I)),
+    ("secretary", re.compile(r"\b(secretary|office manager|administrative assistant|main office|office staff)\b", re.I)),
     ("social_worker", re.compile(r"\bsocial worker\b", re.I)),
     ("psychologist", re.compile(r"\bpsychologist\b", re.I)),
 ]

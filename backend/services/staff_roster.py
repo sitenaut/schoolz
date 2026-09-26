@@ -45,7 +45,16 @@ def _parse_page(html: str) -> list[dict]:
     return items
 
 
-_DIRECTORY_PATHS = ("/contact-us", "/contact-us/alphabetical-staff-directory")
+# The rest are Voorhees Township's per-school subsites (Voorhees Middle's
+# is the odd one out) and Eastern Regional - same Finalsite constituent
+# cards, different page path.
+_DIRECTORY_PATHS = (
+    "/contact-us",
+    "/contact-us/alphabetical-staff-directory",
+    "/staff-directory",
+    "/staff-directory-websites",
+    "/parents-students/staff-directory",
+)
 
 
 async def fetch_roster(school_website_url: str) -> list[dict]:
@@ -57,7 +66,8 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
 
     Most schools' directory lives directly at /contact-us, but some (seen on
     the district's high schools) instead put it at
-    /contact-us/alphabetical-staff-directory - try both, in order, and use
+    /contact-us/alphabetical-staff-directory, and other districts elsewhere
+    again - try each, in order, and use
     the first one that actually yields results."""
     base = school_website_url.rstrip("/")
     for path in _DIRECTORY_PATHS:

@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { telHref } from "../lib/calendar";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
+import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackEvent } from "../lib/track";
 import { SeoHead } from "../components/SeoHead";
@@ -36,7 +37,7 @@ function initials(name: string): string {
  * not something to hand a phone on a school-morning connection just so
  * the filtering can happen in the browser. */
 export function DirectoryPage() {
-  const { allSchools } = useMySchools();
+  const { allSchools, myTowns } = useMySchools();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [school, setSchool] = useState("");
@@ -120,8 +121,8 @@ export function DirectoryPage() {
   return (
     <div>
       <SeoHead
-        title="Cherry Hill schools staff directory · schoolz"
-        description="Search every Cherry Hill Public Schools staff member by name, role, or school - teachers, front office, nurses, counselors - with their email and phone number."
+        title={`${townsLabel(myTowns)} schools staff directory · schoolz`}
+        description={`Search every ${townsLabel(myTowns)} public school staff member by name, role, or school - teachers, front office, nurses, counselors - with their email and phone number.`}
         path="/directory"
       />
       <div className="h-row" style={{ marginTop: 0 }}>

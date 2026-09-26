@@ -1,3 +1,14 @@
+import os
+import uuid
+
+os.environ.setdefault("JWT_SECRET", "test-secret")
+os.environ.setdefault("AUTH_MODE", "local")
+
+import pytest
+
+import database
+from models import SmoreNewsletter
+from scheduler.jobs import smore_scan
 from scheduler.jobs.smore_scan import select_unseen_blocks
 
 
@@ -61,3 +72,34 @@ def test_the_callers_hash_set_is_not_mutated():
     select_unseen_blocks([_block(0, "hash-new", "New")], existing)
 
     assert existing == {"hash-old"}
+
+
+@pytest.mark.anyio
+async def test_zero_blocks_is_a_warning_not_a_silent_success(monkeypatch):
+    """Regression: a Smore link that has expired renders a page with no
+    .block-wrapper elements at all rather than 404ing, so fetch_and_parse
+    returns []. Confirmed real on prod - several Cherry Hill schools'
+    "stable" URLs went stale mid-week while every run still logged
+    status=success, because 0 new blocks looks identical to "nothing
+    changed this week". Zero blocks *total* is the only signal available
+    that the URL itself, not the content, needs attention."""
+
+    async def _empty(url: str) -> list[dict]:
+        return []
+
+    monkeypatch.setattr(smore_scan, "fetch_and_parse", _empty)
+
+    newsletter = SmoreNewsletter(url=f"https://app.smore.com/n/{uuid.uuid4().hex[:8]}")
+    async with database.SessionLocal() as db:
+        db.add(newsletter)
+        await db.commit()
+        await db.refresh(newsletter)
+
+        result = await smore_scan.run(db, {"newsletter_id": newsletter.id})
+
+        assert result is not None
+        assert result.startswith("WARNING[smore_no_blocks]:")
+        assert newsletter.url in result
+        # last_scanned_at still advances - this isn't "we didn't check",
+        # it's "we checked and found the link is dead".
+        assert newsletter.last_scanned_at is not None

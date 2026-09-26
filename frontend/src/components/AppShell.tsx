@@ -6,6 +6,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
+import { townsLabel } from "../lib/towns";
 import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { getFaro } from "../lib/telemetry";
@@ -57,7 +58,7 @@ export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
   const unreadInbox = useUnreadInbox(!!user?.is_admin);
-  const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
+  const { mySchools, myTowns, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
@@ -159,7 +160,7 @@ export function AppShell() {
     <div className="shell">
       <header className="shell-top" ref={headerRef}>
         <Link to="/" className="brand">
-          schoolz<small>Cherry Hill, NJ</small>
+          schoolz<small>{mySchools.length ? `${myTowns[0]}, NJ` : townsLabel([])}</small>
         </Link>
         <div className="spacer" />
         {unreadNotifications > 0 && (
