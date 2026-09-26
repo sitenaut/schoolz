@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import District, LunchMenu, LunchMenuItem
+from models import District, LunchMenu, LunchMenuItem, School
 from scheduler.registry import register_job
 from services.lunch_menu import discover_current_menus, parse_menu_pdf
 
@@ -24,7 +24,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not district.food_services_menu_url:
         return "district has no food_services_menu_url configured"
 
-    discovered = await discover_current_menus(district.food_services_menu_url)
+    school_types = set(
+        (await db.execute(select(School.school_type).where(School.district_id == district.id).distinct())).scalars().all()
+    )
+    single_type = next(iter(school_types)) if len(school_types) == 1 else None
+    discovered = await discover_current_menus(district.food_services_menu_url, single_school_type=single_type)
     if not discovered:
         return "WARNING[no_menu_pdfs]: no menu PDFs found on the food-services page"
     new_menus = 0

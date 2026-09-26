@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
-import type { School } from "../types";
+import type { DistrictSummary, School } from "../types";
+import { pickerTowns, townsForSchool } from "./towns";
 
 /**
  * "My schools" without an account: the picker saves slugs on this device
@@ -73,6 +74,10 @@ function writeList(key: string, values: string[]) {
 type Ctx = {
   /** Every tracked school, for the picker. */
   allSchools: School[];
+  districtsById: Map<string, DistrictSummary>;
+  /** Towns of the picked schools (falls back to every tracked town) - for
+   * copy that used to say "Cherry Hill" unconditionally. */
+  myTowns: string[];
   /** The schools the visitor has picked (or their account's), in order. */
   mySchools: School[];
   /** mySchools minus whatever's currently hidden via the ribbon filter. */
@@ -102,6 +107,7 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [allSchools, setAllSchools] = useState<School[]>([]);
   const [loadedAll, setLoadedAll] = useState(false);
+  const [districts, setDistricts] = useState<DistrictSummary[]>([]);
   const [localSlugs, setLocalSlugs] = useState<string[]>(readList(KEY));
   const [accountSchools, setAccountSchools] = useState<School[] | null>(null);
   // Separate from authLoading/loadedAll - fetching this guardian's linked
@@ -117,6 +123,14 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
     setExcludeDistrictState(value);
     writeBool(EXCLUDE_DISTRICT_KEY, value);
   }, []);
+
+  useEffect(() => {
+    apiFetch("/districts/summary")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setDistricts)
+      .catch(() => setDistricts([]));
+  }, []);
+  const districtsById = useMemo(() => new Map(districts.map((d) => [d.id, d])), [districts]);
 
   useEffect(() => {
     apiFetch("/schools")
@@ -192,8 +206,22 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
     [mySchools],
   );
 
+  const myTowns = useMemo(() => {
+    const source = mySchools.length ? mySchools : allSchools;
+    // Only towns with their own schools here - Eastern also serves Berlin,
+    // but a Voorhees family's header shouldn't read "Voorhees & Berlin".
+    const known = new Set(pickerTowns(allSchools, districtsById));
+    const counts = new Map<string, number>();
+    for (const sc of source) {
+      for (const t of townsForSchool(sc, districtsById)) if (known.has(t)) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([t]) => t);
+  }, [mySchools, allSchools, districtsById]);
+
   const value: Ctx = {
     allSchools,
+    districtsById,
+    myTowns,
     mySchools,
     activeSchools,
     // What the picker should show as already checked - the union too,

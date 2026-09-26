@@ -24,8 +24,8 @@ export function PrivacyPage() {
       <p className="note">Last updated September 2026.</p>
 
       <p>
-        schoolz ("we", "us") helps parents and guardians in the Cherry Hill, NJ school
-        district keep up with their kids' schools. This page explains what data the
+        schoolz ("we", "us") helps parents and guardians in South Jersey school
+        districts keep up with their kids' schools. This page explains what data the
         site stores about you and why. Questions or requests (including to access,
         correct, or delete your data) can be sent to{" "}
         <a href="mailto:enr@profitnaut.com">enr@profitnaut.com</a>.

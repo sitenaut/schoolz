@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
+import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconSearch } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
@@ -12,7 +13,7 @@ import type { School, SchoolClassYear } from "../types";
 
 export function SchoolsPage() {
   const { user } = useAuth();
-  const { allSchools, activeSchools, loading } = useMySchools();
+  const { allSchools, activeSchools, loading, myTowns } = useMySchools();
   usePrerenderReady(!loading);
   // "My schools" reflects exactly the top ribbon's current picks/filter -
   // there's no separate "linked children" concept here anymore. That used
@@ -84,8 +85,8 @@ export function SchoolsPage() {
   return (
     <div>
       <SeoHead
-        title="Cherry Hill schools directory · schoolz"
-        description="Browse every Cherry Hill Public Schools elementary, middle, and high school, plus tracked local preschools - addresses, phone numbers, and websites."
+        title={`${townsLabel(myTowns)} schools directory · schoolz`}
+        description={`Browse every ${townsLabel(myTowns)} public elementary, middle, and high school, plus tracked local preschools - addresses, phone numbers, and websites.`}
         path="/schools"
       />
       <div className="h-row" style={{ marginTop: 0 }}>

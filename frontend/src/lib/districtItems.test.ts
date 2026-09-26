@@ -108,6 +108,21 @@ describe("expandItemRows", () => {
     expect(rows[0].key).toBe("i1-s1");
   });
 
+  it("never labels one district's item onto another district's schools", () => {
+    const chElem = school({ id: "s1", short_name: "Bret Harte", school_type: "elementary", district_id: "ch" });
+    const vtElem = school({ id: "s3", short_name: "Kresson", school_type: "elementary", district_id: "vt" });
+    const rows = expandItemRows(item({ title: "Day 2", district_id: "ch", applies_to_school_types: ["elementary"] }), [chElem, vtElem]);
+    expect(rows.map((r) => r.label)).toEqual(["Bret Harte"]);
+  });
+
+  it("names the district on a district-wide item once active schools span two districts", () => {
+    const chElem = school({ id: "s1", short_name: "Bret Harte", school_type: "elementary", district_id: "ch" });
+    const vtElem = school({ id: "s3", short_name: "Kresson", school_type: "elementary", district_id: "vt" });
+    const names: Record<string, string> = { ch: "Cherry Hill Public Schools" };
+    const rows = expandItemRows(item({ district_id: "ch", applies_to_school_types: null }), [chElem, vtElem], (id) => names[id]);
+    expect(rows.map((r) => r.label)).toEqual(["All Cherry Hill Public Schools"]);
+  });
+
   it("drops a type-restricted item that matches none of the active schools", () => {
     const rows = expandItemRows(item({ applies_to_school_types: ["middle"] }), [bretHarte, east]);
     expect(rows).toEqual([]);

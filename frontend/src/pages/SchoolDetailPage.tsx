@@ -92,7 +92,7 @@ export function SchoolDetailPage() {
       .then(setMyStudents);
   }, [user]);
 
-  const { excludeDistrict } = useMySchools();
+  const { excludeDistrict, districtsById } = useMySchools();
   const tk = todayKey();
   const upcoming = useMemo(
     () =>
@@ -134,13 +134,14 @@ export function SchoolDetailPage() {
   if (missing) return <div className="empty">School not found.</div>;
   if (!today) return <p className="note">Loading…</p>;
   const s = today.school;
+  const district = s.district_id ? districtsById.get(s.district_id) : undefined;
   const nurse = today.contacts.find((c) => c.role === "nurse");
   const counselor = today.contacts.find((c) => c.role === "counselor");
   const thisYear = currentAcademicYear();
   const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
   const typeLabel = schoolTypeLabel(s.school_type);
   const seoDescription = [
-    `${s.name}${typeLabel ? ` (${typeLabel})` : ""} in Cherry Hill, NJ.`,
+    `${s.name}${typeLabel ? ` (${typeLabel})` : ""}${district?.towns.length ? ` in ${district.towns[0]}, NJ` : ""}.`,
     s.address,
     "Bell schedule, absence reporting, lunch menu, bus info, and calendar dates.",
   ]
@@ -169,7 +170,7 @@ export function SchoolDetailPage() {
         <IconChevronLeft /> Today
       </Link>
       <div className="school-hd">
-        <div className="eyebrow">{[schoolTypeLabel(s.school_type), "Cherry Hill Public Schools"].filter(Boolean).join(" · ")}</div>
+        <div className="eyebrow">{[schoolTypeLabel(s.school_type), district?.name].filter(Boolean).join(" · ")}</div>
         <h1>{s.name}</h1>
         <div className="meta">
           {s.address && (

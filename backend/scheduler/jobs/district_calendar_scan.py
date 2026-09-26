@@ -1,7 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import District, SchoolContentItem
+from models import District, School, SchoolContentItem
 from scheduler.registry import register_job
 from services.district_calendar import fetch_district_calendar, school_types_from_title
 from services.school_status import is_status_title, same_status_fact
@@ -25,32 +25,61 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not district.ics_feeds:
         return "district has no ics_feeds configured"
 
-    events = []
+    slugs = [f["school_slug"] for f in district.ics_feeds if f.get("school_slug")]
+    school_id_by_slug = dict(
+        (await db.execute(select(School.slug, School.id).where(School.slug.in_(slugs)))).all()
+    ) if slugs else {}
+
+    fetched = []
+    district_wide_uids: set[str] = set()
+    missing_schools: list[str] = []
     for feed in district.ics_feeds:
-        feed_name, feed_url = feed.get("name"), feed.get("url")
-        if not feed_url:
+        if not feed.get("url"):
             continue
+        slug = feed.get("school_slug")
+        if slug and slug not in school_id_by_slug:
+            missing_schools.append(slug)
+            continue
+        feed_events = await fetch_district_calendar(feed["url"])
+        fetched.append((feed, feed_events))
+        if not slug:
+            district_wide_uids.update(e["external_uid"] for e in feed_events)
+
+    events = []
+    for feed, feed_events in fetched:
+        feed_name = feed.get("name")
+        school_id = school_id_by_slug.get(feed.get("school_slug") or "")
         # e.g. ["elementary"] for a feed that only applies to elementary
         # schools (a specials rotation calendar) - null/omitted means it
         # applies district-wide regardless of school type, same as the
         # main holidays/closures calendar.
         school_types = feed.get("school_types") or None
-        for event in await fetch_district_calendar(feed_url):
+        for event in feed_events:
+            # A Finalsite per-school feed repeats every district event
+            # under the same UID (Voorhees: 63 of Kresson's 65 are the
+            # district's), so only the school's own remainder is kept.
+            if school_id and event["external_uid"] in district_wide_uids:
+                continue
             # Namespace the uid by feed - two different feeds could
             # otherwise coincidentally produce the same hash-based uid.
             event["external_uid"] = f"{feed_name}:{event['external_uid']}"
-            event["applies_to_school_types"] = school_types or school_types_from_title(event["title"])
+            event["school_id"] = school_id
+            event["applies_to_school_types"] = None if school_id else (school_types or school_types_from_title(event["title"]))
             events.append(event)
 
     if not events:
         return "WARNING[no_ics_events]: no events found in any configured ics feed"
 
+    feed_school_ids = set(school_id_by_slug.values())
     existing_by_uid = {
         d.external_uid: d
         for d in (
             await db.execute(
                 select(SchoolContentItem).where(
-                    SchoolContentItem.district_id == district_id,
+                    or_(
+                        SchoolContentItem.district_id == district_id,
+                        SchoolContentItem.school_id.in_(feed_school_ids),
+                    ),
                     SchoolContentItem.source == "ics_feed",
                     SchoolContentItem.external_uid.is_not(None),
                 )
@@ -71,6 +100,24 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.is_all_day = event["is_all_day"]
             row.applies_to_school_types = event["applies_to_school_types"]
             updated += 1
+            continue
+
+        if event["school_id"]:
+            db.add(
+                SchoolContentItem(
+                    scope="school",
+                    school_id=event["school_id"],
+                    category="event",
+                    title=event["title"],
+                    description=event["description"],
+                    start_date=event["start_date"],
+                    end_date=event["end_date"],
+                    is_all_day=event["is_all_day"],
+                    source="ics_feed",
+                    external_uid=event["external_uid"],
+                )
+            )
+            created += 1
             continue
 
         # Cross-source dedup: a school's own newsletter may have already
@@ -148,4 +195,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         )
         created += 1
 
-    return f"district calendar: {created} new, {updated} updated, {claimed} deduped against newsletter items, {len(events)} total across {len(district.ics_feeds)} feed(s)"
+    summary = f"district calendar: {created} new, {updated} updated, {claimed} deduped against newsletter items, {len(events)} total across {len(district.ics_feeds)} feed(s)"
+    if missing_schools:
+        return f"WARNING[ics_feed_school_missing]: {summary}; no school with slug: {', '.join(missing_schools)}"
+    return summary

@@ -1,0 +1,258 @@
+{
+  "exported_at": "2026-09-26T12:00:00Z",
+  "source": "onboarding: Voorhees Township + Eastern Regional",
+  "districts": [
+    {
+      "name": "Voorhees Township Public Schools",
+      "website_url": "https://www.voorhees.k12.nj.us",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "VTPS District",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=3"
+        },
+        {
+          "name": "VTPS Hamilton",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=5",
+          "school_slug": "et-hamilton"
+        },
+        {
+          "name": "VTPS Kresson",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=6",
+          "school_slug": "kresson"
+        },
+        {
+          "name": "VTPS Osage",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=7",
+          "school_slug": "osage"
+        },
+        {
+          "name": "VTPS Signal Hill",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=4",
+          "school_slug": "signal-hill"
+        },
+        {
+          "name": "VTPS Voorhees ECDC",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=8",
+          "school_slug": "voorhees-ecdc"
+        },
+        {
+          "name": "VTPS Voorhees Middle",
+          "url": "https://www.voorhees.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=9",
+          "school_slug": "voorhees-middle"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Voorhees"
+      ],
+      "schoolcafe_shortname": "VOORHEESTWPPSNUTRISERVE"
+    },
+    {
+      "name": "Eastern Camden County Regional School District",
+      "website_url": "https://www.eccrsd.us",
+      "food_services_menu_url": "https://www.eccrsd.us/parents-students/food-services/student-monthly-menu",
+      "ics_feeds": [
+        {
+          "name": "ERHS School",
+          "url": "https://www.eccrsd.us/fs/calendar-manager/events.ics?calendar_ids[]=4"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Voorhees",
+        "Berlin",
+        "Gibbsboro"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "et-hamilton",
+      "name": "Edward T. Hamilton Elementary",
+      "short_name": "Hamilton",
+      "district_name": "Voorhees Township Public Schools",
+      "school_type": "elementary",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://hamilton.voorhees.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 767-4888",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call by 9 AM with your child's name, grade/teacher, and the reason. A note to the teacher is still required on return.",
+      "start_time": "9:00 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "kresson",
+      "name": "Kresson Elementary",
+      "short_name": "Kresson",
+      "district_name": "Voorhees Township Public Schools",
+      "school_type": "elementary",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://kresson.voorhees.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 424-1816",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Press 1 to leave a message. Call by 9 AM with your child's name, grade/teacher, and the reason. A note to the teacher is still required on return.",
+      "start_time": "9:00 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "osage",
+      "name": "Osage Elementary",
+      "short_name": "Osage",
+      "district_name": "Voorhees Township Public Schools",
+      "school_type": "elementary",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://osage.voorhees.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 428-2990",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Press 1 to leave a message. Call by 9 AM with your child's name, grade/teacher, and the reason. A note to the teacher is still required on return.",
+      "start_time": "9:00 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "signal-hill",
+      "name": "Signal Hill Elementary",
+      "short_name": "Signal Hill",
+      "district_name": "Voorhees Township Public Schools",
+      "school_type": "elementary",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://signalhill.voorhees.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 767-6749",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Select option 2 for the attendance line. Call by 9 AM with your child's name, grade/teacher, and the reason. A note to the teacher is still required on return.",
+      "start_time": "9:00 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "voorhees-ecdc",
+      "name": "Voorhees Early Childhood Development Center",
+      "short_name": "Voorhees ECDC",
+      "district_name": "Voorhees Township Public Schools",
+      "school_type": "other",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://vecdc.voorhees.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 528-2410",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call by 9 AM with your child's name, grade/teacher, and the reason. A note to the teacher is still required on return.",
+      "start_time": "9:00 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "voorhees-middle",
+      "name": "Voorhees Middle School",
+      "short_name": "Voorhees Middle",
+      "district_name": "Voorhees Township Public Schools",
+      "school_type": "middle",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://vms.voorhees.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 795-2025",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Press 1 for Voorhees Middle School, then 1 for the absentee line. Call by 9 AM with your child's name, grade/teacher, and the reason. A note to the teacher is still required on return.",
+      "start_time": "8:13 AM",
+      "end_time": "2:51 PM",
+      "early_dismissal_time": "1:03 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "eastern-regional",
+      "name": "Eastern Regional High School",
+      "short_name": "Eastern",
+      "district_name": "Eastern Camden County Regional School District",
+      "school_type": "high",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://www.eccrsd.us",
+      "absence_method": "email",
+      "absence_emails": [
+        "attendance@eccrsd.us"
+      ],
+      "absence_phone": "(856) 784-4441 ext. 1000",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Report by 9 AM to the Attendance Office - email attendance@eccrsd.us or call (856) 784-4441 ext. 1000 (24 hours). Reporting does not by itself excuse the absence.",
+      "start_time": "7:30 AM",
+      "end_time": "2:13 PM",
+      "early_dismissal_time": "12:05 PM",
+      "delayed_opening_time": "9:30 AM",
+      "athletics_url": "https://easternvikings.arbiterwebsites.com/",
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": "https://www.eccrsd.us/fs/calendar-manager/events.ics?calendar_ids[]=6"
+    }
+  ],
+  "smore_newsletters": []
+}

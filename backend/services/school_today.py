@@ -34,7 +34,8 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 _CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b", re.I)
 _EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b", re.I)
 _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
-_ROTATION_RE = re.compile(r"^\s*Day\s+(\d)\s*$", re.I)
+# Eastern Regional's feed appends the day's class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
+_ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(?:\([^)]*\))?\s*$", re.I)
 _UPCOMING_CATEGORIES = ("event", "deadline", "initiative", "reminder", "marking_period")
 _UPCOMING_WINDOW_DAYS = 60
 _ALERT_WINDOW_DAYS = 7
@@ -242,7 +243,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
 
     def rotation(d: date) -> str | None:
         item = rotation_item(d)
-        return item.title.strip() if item else None
+        return f"Day {_ROTATION_RE.match(item.title).group(1)}" if item else None
 
     def rotation_blocks(d: date) -> list[str] | None:
         item = rotation_item(d)
