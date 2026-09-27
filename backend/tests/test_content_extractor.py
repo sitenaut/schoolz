@@ -291,3 +291,15 @@ def test_fallback_link_only_fills_a_block_with_exactly_one_item():
     assert fallback_link_for_item(portraits, block, single_item_positions) == "https://home.cady.com/for-seniors/"
 
     assert fallback_link_for_item(graduation, None, single_item_positions) is None
+
+
+def test_stale_year_correction_tags_the_givebacks_job_kind(monkeypatch):
+    # PTA pages reuse the exact same stale-artwork rollforward as Smore
+    # (CLAUDE.md: a real PTA flyer reused "SEPTEMBER 24, 2025" artwork) via
+    # services/givebacks_extractor.py - only the job_kind passed through to
+    # record_parse_issue should differ, so a stale PTA flyer groups under
+    # givebacks.scan in Grafana instead of masquerading as a Smore issue.
+    calls = []
+    monkeypatch.setattr("services.content_extractor.record_parse_issue", lambda job_kind, code, **ctx: calls.append((job_kind, code)))
+    _correct_stale_year(datetime(2025, 9, 24, tzinfo=_NY), _REF, job_kind="givebacks.scan")
+    assert calls == [("givebacks.scan", "stale_year")]
