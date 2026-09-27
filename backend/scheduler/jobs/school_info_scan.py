@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School
 from scheduler.registry import register_job
+from services.apptegy import discover_school_info as discover_apptegy_school_info
 from services.school_info import discover_school_info
 
 
@@ -24,7 +25,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not school.website_url:
         return "school has no website_url configured"
 
-    info = await discover_school_info(school.website_url)
+    info = await (discover_apptegy_school_info(school.website_url) if school.apptegy_org_id else discover_school_info(school.website_url))
 
     changed = []
     if info["address"] and info["address"] != school.address:
