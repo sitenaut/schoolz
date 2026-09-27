@@ -79,6 +79,7 @@ async def list_calendar_items(
     category: str | None = None,
     q: str | None = None,
     include_class_sources: bool = False,
+    include_athletics: bool = False,
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -97,7 +98,12 @@ async def list_calendar_items(
     page's "Show club & interest meetings" toggle is the one place that
     flips this on; when it's on, a signed-in guardian's own grad_year
     narrows which classes' items they see, and every remaining item gets a
-    class_label badge ("Class of 2027")."""
+    class_label badge ("Class of 2027").
+
+    include_athletics=False (the default) excludes a school's ArbiterLive
+    game schedule the same way - dozens of games a week (every sport/level
+    combined) would swamp a district-wide view even worse than club
+    meetings do. The "Show sports & band" toggle flips this on."""
     my_school_ids, my_district_ids, my_school_types = ([], [], set())
     my_grad_years: set[int] = set()
     if user:
@@ -139,11 +145,8 @@ async def list_calendar_items(
     )
     if not include_class_sources:
         query = query.where(SchoolContentItem.source.not_in(CLASS_PAGE_SOURCES))
-    # Not yet surfaced anywhere - no toggle exists for this one yet, unlike
-    # CLASS_PAGE_SOURCES (see services/arbiter.py). Unconditional until
-    # that's decided, so the data can be captured now without dumping
-    # dozens of games a week into every family's calendar meanwhile.
-    query = query.where(SchoolContentItem.source != "arbiter_athletics")
+    if not include_athletics:
+        query = query.where(SchoolContentItem.source != "arbiter_athletics")
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:

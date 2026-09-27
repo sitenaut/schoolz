@@ -103,6 +103,7 @@ export function CalendarPage() {
   // absorb instead (see docs/HS_CLASS_PAGES_DESIGN.md). Calendar-page
   // state only, like showDayRotation - not a shared mySchools filter.
   const [includeClassSources, setIncludeClassSources] = useState(false);
+  const [includeAthletics, setIncludeAthletics] = useState(false);
   const [dataReady, setDataReady] = useState(false);
   // Which school selection `items` was fetched for - scrolling to today has
   // to wait for the list that matches the current selection.
@@ -149,6 +150,7 @@ export function CalendarPage() {
     if (schoolSlugs.length) q.set("school_ids", schoolIdsKey);
     if (category) q.set("category", category);
     if (includeClassSources) q.set("include_class_sources", "true");
+    if (includeAthletics) q.set("include_athletics", "true");
     const searchedTerm = isSearching ? searchTerm.trim() : null;
     apiFetch(`/calendar?${q.toString()}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -166,7 +168,7 @@ export function CalendarPage() {
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm, includeClassSources]);
+  }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm, includeClassSources, includeAthletics]);
 
   const colorForName = (name: string | null) => {
     const s = scopedSchools.find((m) => (m.short_name || m.name) === name);
@@ -451,6 +453,10 @@ export function CalendarPage() {
         <label className="filterCheck" title="A high school's own activities calendar and club/interest meetings - off by default, since it runs to dozens a week. Always visible on that school's own class pages.">
           <input type="checkbox" checked={includeClassSources} onChange={(e) => setIncludeClassSources(e.target.checked)} />
           Show club &amp; interest meetings
+        </label>
+        <label className="filterCheck" title="A school's full ArbiterLive game schedule, every sport and level combined - off by default, since it runs to dozens of games a week.">
+          <input type="checkbox" checked={includeAthletics} onChange={(e) => setIncludeAthletics(e.target.checked)} />
+          Show sports &amp; band
         </label>
       </div>
 
