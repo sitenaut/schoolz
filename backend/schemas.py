@@ -314,7 +314,8 @@ _SCHOOL_TYPES = ("elementary", "middle", "high", "alternative", "other")
 
 class IcsFeed(BaseModel):
     name: str
-    url: str
+    # Required unless platform="apptegy", which uses org_id instead.
+    url: str | None = None
     # e.g. ["elementary"] to restrict this feed's events to one or more
     # School.school_type values - omit/null for a district-wide feed.
     school_types: list[str] | None = None
@@ -324,6 +325,11 @@ class IcsFeed(BaseModel):
     # A slug, not an id, so a config export/import carries it across
     # environments.
     school_slug: str | None = None
+    # "apptegy" routes this feed through services/apptegy.py:fetch_events
+    # (org_id required) instead of the default .ics fetch (url required).
+    # Collingswood/Oaklyn/Woodlynne run Apptegy, not Finalsite.
+    platform: str | None = None
+    org_id: str | None = None
 
 
 class DistrictCreate(BaseModel):
@@ -425,6 +431,10 @@ class SchoolUpdate(BaseModel):
     announcements_doc_url: str | None = Field(default=None, max_length=500)
     activities_site_url: str | None = Field(default=None, max_length=500)
     events_doc_url: str | None = Field(default=None, max_length=500)
+    # Apptegy (Thrillshare) org id for this building - Collingswood/Oaklyn/
+    # Woodlynne, a different CMS from every Finalsite-assuming scraper
+    # elsewhere. Set only for schools on that platform.
+    apptegy_org_id: str | None = Field(default=None, max_length=20)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -472,6 +482,7 @@ class SchoolOut(BaseModel):
     announcements_doc_url: str | None
     activities_site_url: str | None
     events_doc_url: str | None
+    apptegy_org_id: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
@@ -936,6 +947,7 @@ class ExportSchoolOut(BaseModel):
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     sacc: ExportSaccOut | None
     activities_calendar_ics_url: str | None = None
+    apptegy_org_id: str | None = None
 
     model_config = {"from_attributes": True}
 

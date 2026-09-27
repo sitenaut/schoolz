@@ -98,6 +98,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 bell_periods=s.bell_periods,
                 sacc=ExportSaccOut.model_validate(saccs[s.id], from_attributes=True) if s.id in saccs else None,
                 activities_calendar_ics_url=s.activities_calendar_ics_url,
+                apptegy_org_id=s.apptegy_org_id,
             )
             for s in schools
         ],
@@ -239,6 +240,8 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_admi
         if s.activities_calendar_ics_url:
             school.activities_calendar_ics_url = s.activities_calendar_ics_url
             await _ensure_activities_calendar_job(db, school, user)
+        if s.apptegy_org_id:
+            school.apptegy_org_id = s.apptegy_org_id
 
         if s.sacc:
             existing_sacc = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()

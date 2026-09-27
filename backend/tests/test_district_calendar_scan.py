@@ -65,3 +65,37 @@ async def test_school_feed_keeps_only_its_own_events_scoped_to_the_school(monkey
         await db.flush()
         again = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == school.id))).scalars().all()
         assert len(again) == 2
+
+
+@pytest.mark.anyio
+async def test_apptegy_feed_uses_org_id_not_url(monkeypatch):
+    """Collingswood/Oaklyn/Woodlynne run Apptegy, not Finalsite - a feed
+    entry with platform="apptegy" goes through services/apptegy.py instead
+    of the .ics fetcher, keyed on org_id rather than url."""
+    seen_org_ids = []
+
+    async def fake_apptegy_fetch(org_id, start, end):
+        seen_org_ids.append(org_id)
+        return [_event("u-apptegy", "Staff PD", 5)]
+
+    async def fail_if_called(url):
+        raise AssertionError("ics fetcher should not be called for an apptegy feed")
+
+    monkeypatch.setattr(district_calendar_scan, "fetch_apptegy_events", fake_apptegy_fetch)
+    monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fail_if_called)
+
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Test Apptegy District {tag}")
+        db.add(district)
+        await db.flush()
+        district.ics_feeds = [{"name": "District", "platform": "apptegy", "org_id": "4848"}]
+        await db.commit()
+
+        result = await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+
+        assert seen_org_ids == ["4848"]
+        rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.district_id == district.id))).scalars().all()
+        assert [r.title for r in rows] == ["Staff PD"]
+        assert "1 new" in result

@@ -266,7 +266,7 @@ async def update_school(
     for field in (
         "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
         "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
-        "events_doc_url",
+        "events_doc_url", "apptegy_org_id",
     ):
         value = getattr(payload, field)
         if value is not None:
