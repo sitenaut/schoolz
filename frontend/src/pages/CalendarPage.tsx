@@ -456,7 +456,7 @@ export function CalendarPage() {
         </label>
         <label className="filterCheck" title="A school's full ArbiterLive game schedule, every sport and level combined - off by default, since it runs to dozens of games a week.">
           <input type="checkbox" checked={includeAthletics} onChange={(e) => setIncludeAthletics(e.target.checked)} />
-          Show sports &amp; band
+          <span aria-hidden="true">🏀🎺</span> Show sports &amp; band
         </label>
       </div>
 
