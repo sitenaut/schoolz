@@ -54,6 +54,9 @@ _DIRECTORY_PATHS = (
     "/staff-directory",
     "/staff-directory-websites",
     "/parents-students/staff-directory",
+    # Haddon Township Public Schools - confirmed same .fsConstituentItem
+    # cards, just a different Finalsite nav path.
+    "/our-school/staff-directory",
 )
 
 
