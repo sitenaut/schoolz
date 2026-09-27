@@ -576,6 +576,14 @@ class School(Base):
     # scheduled games-calendar scan has been created for it - most schools'
     # athletics_url is just a plain outbound link with nothing to scan.
     athletics_calendar_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # The PTA's Givebacks org shortname (the <shortname>.givebacks.com
+    # subdomain) - confirmed one org per school in every case seen, unlike
+    # SmoreNewsletter which allows several per school. Only ever set once a
+    # shortname has been verified to actually be this school's own PTA
+    # (services/givebacks.py:verified_match) - a wrong PTA's events showing
+    # up on the wrong school's page is worse than none.
+    givebacks_shortname: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    givebacks_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
@@ -931,6 +939,40 @@ class SmoreBlock(Base):
     image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     link_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     # sha256 of (block_type, text_content/image_url/link_url) - the dedup key.
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    pending_vision_extraction: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    vision_extracted_text: Mapped[str | None] = mapped_column(String, nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class GivebacksBlock(Base):
+    """One content block from a PTA's Givebacks page (givebacks.com) -
+    deliberately parallel to SmoreBlock, but keyed by (school_id, page_path)
+    rather than a single newsletter_id: one PTA's site has several pages
+    (no fixed naming - "UpcomingEvents", "/calendar", "/meetings" all seen
+    for real), not one recurring issue, so every page is crawled and kept
+    dedup'd against its own history independently.
+
+    image_url is null for a block whose image came from the older Givebacks
+    page-builder format, which embeds the image as a `data:` URI directly
+    in the HTML rather than a real hosted URL (confirmed real: Thomas
+    Sharp's "Events and Opportunities" page) - there's no fetchable URL to
+    store. The newer block-tree builder format always uses a real S3 URL
+    (confirmed real: Bret Harte's page), same as Smore, and populates this
+    normally."""
+
+    __tablename__ = "givebacks_blocks"
+    __table_args__ = (UniqueConstraint("school_id", "page_path", "content_hash", name="uq_givebacks_block_school_page_hash"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    school_id: Mapped[str] = mapped_column(String(36), ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
+    page_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    # "text" | "image" | "link"
+    block_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    text_content: Mapped[str | None] = mapped_column(String, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    link_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     pending_vision_extraction: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     vision_extracted_text: Mapped[str | None] = mapped_column(String, nullable=True)

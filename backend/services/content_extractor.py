@@ -236,15 +236,24 @@ def _prepare_image(data: bytes) -> tuple[bytes, str] | None:
 # doesn't read as a format problem; (2) route the fetch through the
 # scraper's fetch_raw (real browser fingerprint) the way other
 # bot-blocked downloads already do, rather than a bare httpx.get() here.
-async def _vision_extract(client: AsyncAnthropic, image_url: str) -> str | None:
+async def _vision_extract(client: AsyncAnthropic, image_url: str, image_bytes: bytes | None = None, job_kind: str = "smore.scan") -> str | None:
+    """`image_bytes`, when given, skips the httpx fetch entirely and is
+    used as-is - for a caller that already has the bytes in hand (a
+    Givebacks page embeds its flyer as a `data:` URI directly in the HTML;
+    httpx has no `data:` scheme support, so passing that URI through to a
+    fetch here would just join the same "every failure looks like
+    image_unsupported" bucket the TODO above already flags, for a case
+    that isn't actually a fetch failure at all)."""
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http_client:
-            resp = await http_client.get(image_url)
-            resp.raise_for_status()
-        prepared = _prepare_image(resp.content)
+        if image_bytes is None:
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http_client:
+                resp = await http_client.get(image_url)
+                resp.raise_for_status()
+            image_bytes = resp.content
+        prepared = _prepare_image(image_bytes)
         if prepared is None:
             logger.warning("vision_extraction_unsupported_image", extra={"image_url": image_url})
-            record_parse_issue("smore.scan", "image_unsupported", url=image_url)
+            record_parse_issue(job_kind, "image_unsupported", url=image_url)
             return None
         image_bytes, media_type = prepared
         image_b64 = base64.b64encode(image_bytes).decode("ascii")
@@ -353,7 +362,7 @@ def _infer_lunch_menu_start_date(item: dict, extracted_at: datetime) -> datetime
     return datetime(extracted_at.year, extracted_at.month, 1, tzinfo=_DEFAULT_TZ)
 
 
-def _parse_date(value: str | None) -> datetime | None:
+def _parse_date(value: str | None, job_kind: str = "smore.scan") -> datetime | None:
     """Claude is asked for ISO dates but has no real notion of timezone -
     it reasons in the school's own local time. A bare date/time with no
     offset is therefore local (America/New_York), not UTC; treating it as
@@ -365,7 +374,7 @@ def _parse_date(value: str | None) -> datetime | None:
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
-        record_parse_issue("smore.scan", "unexpected_format", sample=value[:200])
+        record_parse_issue(job_kind, "unexpected_format", sample=value[:200])
         return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=_DEFAULT_TZ)
@@ -395,7 +404,7 @@ def _add_years(value: datetime, years: int) -> datetime:
         return value.replace(year=value.year + years, day=28)  # Feb 29 in a non-leap year
 
 
-def _correct_stale_year(parsed: datetime | None, reference: datetime | None = None, **context) -> datetime | None:
+def _correct_stale_year(parsed: datetime | None, reference: datetime | None = None, job_kind: str = "smore.scan", **context) -> datetime | None:
     """Rolls a stale-looking date forward to its next plausible occurrence."""
     if parsed is None:
         return None
@@ -407,7 +416,7 @@ def _correct_stale_year(parsed: datetime | None, reference: datetime | None = No
         candidate = _add_years(parsed, years)
         if candidate >= cutoff:
             record_parse_issue(
-                "smore.scan", "stale_year", sample=f"{parsed.date()} -> {candidate.date()}", **context
+                job_kind, "stale_year", sample=f"{parsed.date()} -> {candidate.date()}", **context
             )
             return candidate
     # Older than _MAX_YEAR_ROLL and so not a plausibly mis-yeared current
@@ -442,7 +451,7 @@ def _title_dedup_key(title: str) -> str:
     return " ".join(_fold_ordinal_word(w) for w in normalize_name(title).split(" "))
 
 
-def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: datetime | None = None) -> bool:
+def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: datetime | None = None, job_kind: str = "smore.scan") -> bool:
     """Guards the model's own supersedes_item_id against retiring a live
     item in favour of one that has already happened.
 
@@ -461,7 +470,7 @@ def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: da
     reference = reference or datetime.now(_DEFAULT_TZ)
     if new.start_date < reference <= old.start_date:
         record_parse_issue(
-            "smore.scan",
+            job_kind,
             "stale_supersede",
             sample=f"{new.title[:60]}: {new.start_date.date()} would retire {old.start_date.date()}",
         )

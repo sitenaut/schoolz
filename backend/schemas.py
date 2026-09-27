@@ -435,6 +435,11 @@ class SchoolUpdate(BaseModel):
     # Woodlynne, a different CMS from every Finalsite-assuming scraper
     # elsewhere. Set only for schools on that platform.
     apptegy_org_id: str | None = Field(default=None, max_length=20)
+    # The school's PTA Givebacks org shortname (<shortname>.givebacks.com) -
+    # opt-in like the other scan-triggering fields above. Set only after
+    # verifying it's the right org (see services/givebacks.py:verified_match)
+    # - a wrong shortname's content is worse than none.
+    givebacks_shortname: str | None = Field(default=None, max_length=100)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -483,6 +488,7 @@ class SchoolOut(BaseModel):
     activities_site_url: str | None
     events_doc_url: str | None
     apptegy_org_id: str | None
+    givebacks_shortname: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
@@ -948,6 +954,7 @@ class ExportSchoolOut(BaseModel):
     sacc: ExportSaccOut | None
     activities_calendar_ics_url: str | None = None
     apptegy_org_id: str | None = None
+    givebacks_shortname: str | None = None
 
     model_config = {"from_attributes": True}
 

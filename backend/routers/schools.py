@@ -138,6 +138,28 @@ async def _ensure_athletics_calendar_job(db: AsyncSession, school: School, user:
     school.athletics_calendar_job_id = job.id
 
 
+async def _ensure_givebacks_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring Givebacks PTA-site scan the first time
+    givebacks_shortname is set - same opt-in pattern as
+    _ensure_athletics_calendar_job, but there's no URL-shape check to make
+    here: a shortname is either set to a verified org or it isn't (see
+    services/givebacks.py:verified_match, used at onboarding time, not
+    every scan)."""
+    if school.givebacks_job_id or not school.givebacks_shortname:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="givebacks.scan",
+        name=f"Givebacks PTA scan: {school.name}",
+        cron_expr=public_scan_cron("givebacks.scan", school.id),
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.givebacks_job_id = job.id
+
+
 async def _ensure_announcements_job(db: AsyncSession, school: School, user: User) -> None:
     """Auto-creates the recurring scan of a HIGH SCHOOL's Morning
     Announcements doc the first time it gets announcements_doc_url. Tighter
@@ -287,7 +309,7 @@ async def update_school(
     for field in (
         "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
         "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
-        "events_doc_url", "apptegy_org_id",
+        "events_doc_url", "apptegy_org_id", "givebacks_shortname",
     ):
         value = getattr(payload, field)
         if value is not None:
@@ -306,6 +328,7 @@ async def update_school(
     await _ensure_activities_site_job(db, school, user)
     await _ensure_events_doc_job(db, school, user)
     await _ensure_athletics_calendar_job(db, school, user)
+    await _ensure_givebacks_job(db, school, user)
     await db.commit()
     await db.refresh(school)
     return school
