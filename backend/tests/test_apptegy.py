@@ -69,6 +69,74 @@ async def test_fetch_staff_paginates_and_drops_nameless_entries(monkeypatch):
     assert roster[1]["phone"] == "856-962-8822"
 
 
+_FIND_US_TEMPLATE = """<html><body><footer>
+  <div class="footer-column-main">
+    <div class="logo-wrapper"><img src="/logo.png" class="footer-logo"></div>
+    <h2>Find Us</h2>
+    <p>
+      <span>Thomas Sharp Elementary </span>
+      <span> 400 Comly Ave</span>
+      <span>Collingswood , NJ 08107</span>
+      <span><a href="tel:(856) 962-5707" class="tel-link">(856) 962-5707</a></span>
+    </p>
+  </div>
+</footer></body></html>"""
+
+_CONTACT_US_TEMPLATE = """<html><body><footer>
+  <img src="/oaklyn-logo.png" class="footer-logo">
+  <div class="contact-data">
+    <div class="info bold">
+      <span>Oaklyn Public School District</span>
+      <span>136 Kendall Boulevard</span>
+      <span>Oaklyn, NJ 08107</span>
+      <span>Number: <span><a href="tel:856-858-0335" class="tel-link">856-858-0335</a></span></span>
+    </div>
+  </div>
+</footer></body></html>"""
+
+
+@pytest.mark.anyio
+async def test_discover_school_info_find_us_template(monkeypatch):
+    async def fake_fetch_html(url, wait_for_selector=None, timeout_ms=15000):
+        return {"html": _FIND_US_TEMPLATE}
+
+    monkeypatch.setattr(apptegy.scraper_client, "fetch_html", fake_fetch_html)
+
+    info = await apptegy.discover_school_info("https://www.collsk12.org/o/tse")
+    assert info["address"] == "400 Comly Ave, Collingswood , NJ 08107"
+    assert info["main_phone"] == "(856) 962-5707"
+    assert info["logo_url"] == "https://www.collsk12.org/logo.png"
+
+
+@pytest.mark.anyio
+async def test_discover_school_info_contact_us_template(monkeypatch):
+    """Regression: Oaklyn's site uses a different footer template
+    ("Contact Us:", a .contact-data/.info block with the phone nested one
+    level deeper) from Collingswood/Woodlynne's "Find Us" template - the
+    first version of this parser only handled the first template and
+    silently returned nothing for Oaklyn."""
+
+    async def fake_fetch_html(url, wait_for_selector=None, timeout_ms=15000):
+        return {"html": _CONTACT_US_TEMPLATE}
+
+    monkeypatch.setattr(apptegy.scraper_client, "fetch_html", fake_fetch_html)
+
+    info = await apptegy.discover_school_info("https://www.oaklynschool.org")
+    assert info["address"] == "136 Kendall Boulevard, Oaklyn, NJ 08107"
+    assert info["main_phone"] == "856-858-0335"
+    assert info["logo_url"] == "https://www.oaklynschool.org/oaklyn-logo.png"
+
+
+@pytest.mark.anyio
+async def test_discover_school_info_returns_nulls_when_footer_never_loads(monkeypatch):
+    async def fake_fetch_html(url, wait_for_selector=None, timeout_ms=15000):
+        raise TimeoutError("no footer on this page")
+
+    monkeypatch.setattr(apptegy.scraper_client, "fetch_html", fake_fetch_html)
+
+    assert await apptegy.discover_school_info("https://example.org") == {"address": None, "main_phone": None, "logo_url": None}
+
+
 @pytest.mark.anyio
 async def test_fetch_staff_empty_directory_returns_nothing(monkeypatch):
     def handler(request: httpx.Request) -> httpx.Response:
