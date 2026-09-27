@@ -1,10 +1,28 @@
+from datetime import date, timedelta
+
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, School, SchoolContentItem
 from scheduler.registry import register_job
+from services.apptegy import fetch_events as fetch_apptegy_events
 from services.district_calendar import fetch_district_calendar, school_types_from_title
 from services.school_status import is_status_title, same_status_fact
+
+# Apptegy's events API needs an explicit date range, unlike an .ics feed
+# which just hands over everything it has. Wide enough to cover a school
+# year looking both directions from whenever this happens to run.
+_APPTEGY_WINDOW_PAST_DAYS = 120
+_APPTEGY_WINDOW_FUTURE_DAYS = 400
+
+
+async def _fetch_feed(feed: dict) -> list[dict]:
+    if feed.get("platform") == "apptegy":
+        today = date.today()
+        return await fetch_apptegy_events(
+            feed["org_id"], today - timedelta(days=_APPTEGY_WINDOW_PAST_DAYS), today + timedelta(days=_APPTEGY_WINDOW_FUTURE_DAYS)
+        )
+    return await fetch_district_calendar(feed["url"])
 
 
 @register_job(
@@ -34,13 +52,16 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     district_wide_uids: set[str] = set()
     missing_schools: list[str] = []
     for feed in district.ics_feeds:
-        if not feed.get("url"):
+        is_apptegy = feed.get("platform") == "apptegy"
+        if is_apptegy and not feed.get("org_id"):
+            continue
+        if not is_apptegy and not feed.get("url"):
             continue
         slug = feed.get("school_slug")
         if slug and slug not in school_id_by_slug:
             missing_schools.append(slug)
             continue
-        feed_events = await fetch_district_calendar(feed["url"])
+        feed_events = await _fetch_feed(feed)
         fetched.append((feed, feed_events))
         if not slug:
             district_wide_uids.update(e["external_uid"] for e in feed_events)

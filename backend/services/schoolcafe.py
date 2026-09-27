@@ -19,12 +19,25 @@ _HEADERS = {"User-Agent": "Mozilla/5.0 (schoolz menu sync)", "Accept": "applicat
 # per school type is enough for a one-line "what's for lunch".
 _GRADE_FOR_TYPE = {"elementary": "03", "middle": "07", "high": "10", "alternative": "10", "other": "PK"}
 _ENTREE_CATEGORIES = ("ENTREE", "ENTREES", "MAIN", "MAIN DISH", "ENTRÉES")
-_NAME_NOISE = re.compile(r"\b(school|elementary|middle|high|the|of|and)\b")
+# Deliberately does NOT strip "elementary"/"middle"/"high" - confirmed real
+# at Collingswood: the high school and middle school are literally named
+# "Collingswood High School" and "Collingswood Middle School", nothing else
+# distinguishes them, so stripping those words collapsed both to the same
+# "collingswood" token and made them ambiguous against each other. The
+# symmetric containment check in match_school() already handles a level
+# word present on only one side (Kresson vs Kresson Elementary School), so
+# there's no need to strip it as noise - only strip words that are never
+# part of a real school's name.
+_NAME_NOISE = re.compile(r"\b(school|the|of|and)\b")
 
 
 def _norm(name: str) -> str:
     cleaned = re.sub(r"[^a-z0-9 ]", " ", name.lower())
     return " ".join(_NAME_NOISE.sub(" ", cleaned).split())
+
+
+def _either_contains(a: set[str], b: set[str]) -> bool:
+    return bool(a) and bool(b) and (a <= b or b <= a)
 
 
 def match_school(our_name: str, cafe_schools: list[dict]) -> dict | None:
@@ -36,7 +49,14 @@ def match_school(our_name: str, cafe_schools: list[dict]) -> dict | None:
     if len(exact) == 1:
         return exact[0]
     ours_tokens = set(ours.split())
-    contained = [s for s in cafe_schools if ours_tokens and ours_tokens <= set(_norm(s["SchoolName"]).split())]
+    # Containment has to work either direction: ours can be missing a word
+    # theirs has ("Zane Elementary" vs their "Zane North Elementary
+    # School"), but ours can just as easily have an extra word theirs
+    # doesn't - confirmed real, Collingswood's "William P. Tatem Elementary"
+    # (our middle initial) against their "William Tatem Elementary School"
+    # (no middle initial) failed a ours-must-be-subset-of-theirs check even
+    # though every other token lines up exactly.
+    contained = [s for s in cafe_schools if _either_contains(ours_tokens, set(_norm(s["SchoolName"]).split()))]
     return contained[0] if len(contained) == 1 else None
 
 

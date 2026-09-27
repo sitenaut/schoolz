@@ -565,6 +565,13 @@ class School(Base):
     # items are school-wide and show on the school page and /calendar.
     events_doc_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     events_doc_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Apptegy (Thrillshare) org id for this building - a different CMS from
+    # the Finalsite one every other scraper assumes (Collingswood, Oaklyn,
+    # Woodlynne). Set only for schools on that platform; staff_roster_scan.py
+    # branches on it instead of scraping website_url, and a district's
+    # ics_feeds entry can carry the same id (see IcsFeed.apptegy_org_id) to
+    # pull that building's calendar the same way.
+    apptegy_org_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

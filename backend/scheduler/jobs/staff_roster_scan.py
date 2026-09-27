@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School, StaffMember
 from scheduler.registry import register_job
+from services.apptegy import fetch_staff as fetch_apptegy_staff
 from services.staff_roles import classify_role
 from services.contact_page import fetch_contacts
 from services.staff_roster import fetch_roster
@@ -25,19 +26,27 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     school = (await db.execute(select(School).where(School.id == school_id))).scalar_one_or_none()
     if not school:
         return f"school {school_id} no longer exists"
-    if not school.website_url:
-        return "school has no website_url configured"
 
-    roster = await fetch_roster(school.website_url)
-    # A directory with no titles (Voorhees: teachers' websites only) can't
-    # say who the nurse or principal is - read the school's own contact
-    # page for those instead.
     contacts_added = 0
-    if not any(classify_role(e["title"]) for e in roster):
-        roster_emails = {(e["email"] or "").lower() for e in roster}
-        extra = [c for c in await fetch_contacts(school.website_url) if c["email"] not in roster_emails]
-        roster = roster + extra
-        contacts_added = len(extra)
+    if school.apptegy_org_id:
+        # Apptegy's own directory API already carries title/email/phone
+        # directly - no Finalsite-style contact-page fallback needed (or
+        # possible: apptegy.py has no website scraper of its own).
+        roster = await fetch_apptegy_staff(school.apptegy_org_id)
+        checked = f"Apptegy org {school.apptegy_org_id}"
+    elif school.website_url:
+        roster = await fetch_roster(school.website_url)
+        # A directory with no titles (Voorhees: teachers' websites only) can't
+        # say who the nurse or principal is - read the school's own contact
+        # page for those instead.
+        if not any(classify_role(e["title"]) for e in roster):
+            roster_emails = {(e["email"] or "").lower() for e in roster}
+            extra = [c for c in await fetch_contacts(school.website_url) if c["email"] not in roster_emails]
+            roster = roster + extra
+            contacts_added = len(extra)
+        checked = school.website_url
+    else:
+        return "school has no website_url or apptegy_org_id configured"
 
     existing = (await db.execute(select(StaffMember).where(StaffMember.school_id == school.id))).scalars().all()
     existing_by_constituent = {s.source_constituent_id: s for s in existing}
@@ -72,7 +81,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     if not roster:
         return (
-            f"WARNING[no_staff_found]: no staff found at {school.website_url} - site may use a directory "
+            f"WARNING[no_staff_found]: no staff found at {checked} - site may use a directory "
             "structure this parser doesn't recognize (or genuinely has no public directory)"
         )
     note = f" ({contacts_added} from the contact page)" if contacts_added else ""
