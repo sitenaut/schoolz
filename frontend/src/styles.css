@@ -1682,11 +1682,21 @@ details.accordion > summary::-webkit-details-marker {
 details.accordion .accordion-body {
   padding: 0 var(--space-3) var(--space-3);
 }
+/* overflow-x: auto scrolls a too-wide tab row sideways on its own instead
+   of widening the whole page - confirmed real on a school's class-year
+   strip (4 grad years) on a narrow phone, where swiping the row scrolled
+   the entire page horizontally instead. */
 .tabs {
   display: flex;
   gap: var(--space-2);
   margin-bottom: var(--space-4);
   flex: none;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 /* Qualified as ".tabs .tab" (not bare ".tab") so this always wins over
    ".h-row button" (a plain text-link reset for "view all"-style buttons)

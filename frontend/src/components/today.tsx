@@ -454,7 +454,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         )}
         {s.athletics_url && (
           <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
-            Sports &amp; band
+            <span aria-hidden="true">🏀🎺</span> Sports &amp; band
           </a>
         )}
         <Link className="action" to={`/schools/${s.slug}`}>

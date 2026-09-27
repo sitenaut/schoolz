@@ -1532,16 +1532,8 @@ button.link-card:disabled {
   color: var(--ink);
 }
 
-/* The admin tab row outgrew a phone (6 tabs); scroll it sideways on its own
-   instead of widening the whole page. */
-.tabs.admin-tabs {
-  overflow-x: auto;
-  max-width: 100%;
-  scrollbar-width: none;
-}
-.tabs.admin-tabs::-webkit-scrollbar {
-  display: none;
-}
+/* Base .tabs (styles.css) now scrolls sideways on its own by default -
+   this exists only in case admin-tabs needs its own tuning later. */
 
 /* iOS Safari zooms the whole page when a form field under 16px gets focus,
    and does not zoom back - on the chat panel that pushed the Send button
