@@ -572,6 +572,10 @@ class School(Base):
     # ics_feeds entry can carry the same id (see IcsFeed.apptegy_org_id) to
     # pull that building's calendar the same way.
     apptegy_org_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Set once athletics_url is a real ArbiterLive team page and the
+    # scheduled games-calendar scan has been created for it - most schools'
+    # athletics_url is just a plain outbound link with nothing to scan.
+    athletics_calendar_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

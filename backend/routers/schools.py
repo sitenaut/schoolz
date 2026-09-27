@@ -8,6 +8,7 @@ from auth import get_current_user, get_optional_user, require_admin
 from database import get_db
 from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
+from services.arbiter import entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
 from services.school_today import build_today, resolve_lunch_menu
 from services.transportation import late_bus_for_school
@@ -115,6 +116,26 @@ async def _ensure_activities_calendar_job(db: AsyncSession, school: School, user
     db.add(job)
     await db.flush()
     school.activities_calendar_job_id = job.id
+
+
+async def _ensure_athletics_calendar_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring ArbiterLive games-calendar scan the first
+    time athletics_url is a real /m/team/<id> page - most schools' link is
+    just a plain outbound site link with nothing to scan, so this checks
+    the URL shape rather than firing on athletics_url alone."""
+    if school.athletics_calendar_job_id or not entity_id_from_athletics_url(school.athletics_url):
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="athletics_calendar.scan",
+        name=f"Athletics calendar scan: {school.name}",
+        cron_expr=public_scan_cron("athletics_calendar.scan", school.id),
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.athletics_calendar_job_id = job.id
 
 
 async def _ensure_announcements_job(db: AsyncSession, school: School, user: User) -> None:
@@ -284,6 +305,7 @@ async def update_school(
     await _ensure_announcements_job(db, school, user)
     await _ensure_activities_site_job(db, school, user)
     await _ensure_events_doc_job(db, school, user)
+    await _ensure_athletics_calendar_job(db, school, user)
     await db.commit()
     await db.refresh(school)
     return school
@@ -499,6 +521,11 @@ async def list_school_content(
         query = query.where(SchoolContentItem.is_current.is_(True))
     if not include_class_sources:
         query = query.where(SchoolContentItem.source.not_in(CLASS_PAGE_SOURCES))
+    # Not yet surfaced anywhere - no toggle exists for this one yet, unlike
+    # CLASS_PAGE_SOURCES (see services/arbiter.py). Unconditional until
+    # that's decided, so the data can be captured now without dumping
+    # dozens of games a week into every family's calendar meanwhile.
+    query = query.where(SchoolContentItem.source != "arbiter_athletics")
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:

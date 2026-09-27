@@ -1,4 +1,5 @@
 from . import district_calendar_scan  # noqa: F401
+from . import athletics_calendar_scan  # noqa: F401
 from . import documents_scan  # noqa: F401
 from . import email_scan  # noqa: F401
 from . import hs_activities_site_scan  # noqa: F401

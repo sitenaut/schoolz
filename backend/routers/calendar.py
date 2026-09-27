@@ -139,6 +139,11 @@ async def list_calendar_items(
     )
     if not include_class_sources:
         query = query.where(SchoolContentItem.source.not_in(CLASS_PAGE_SOURCES))
+    # Not yet surfaced anywhere - no toggle exists for this one yet, unlike
+    # CLASS_PAGE_SOURCES (see services/arbiter.py). Unconditional until
+    # that's decided, so the data can be captured now without dumping
+    # dozens of games a week into every family's calendar meanwhile.
+    query = query.where(SchoolContentItem.source != "arbiter_athletics")
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:
