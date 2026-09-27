@@ -50,6 +50,7 @@ from routers.districts import (
 )
 from routers.schools import (
     _ensure_activities_calendar_job,
+    _ensure_athletics_calendar_job,
     _ensure_documents_scan_job,
     _ensure_school_info_job,
     _ensure_staff_roster_job,
@@ -231,6 +232,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_admi
         school.early_dismissal_time = s.early_dismissal_time or school.early_dismissal_time
         school.delayed_opening_time = s.delayed_opening_time or school.delayed_opening_time
         school.athletics_url = s.athletics_url or school.athletics_url
+        await _ensure_athletics_calendar_job(db, school, user)
         school.logo_url = s.logo_url or school.logo_url
         if s.bell_periods:
             school.bell_periods = {variant: [p.model_dump() for p in periods] for variant, periods in s.bell_periods.items()}

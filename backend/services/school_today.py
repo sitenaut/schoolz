@@ -219,6 +219,11 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
             .where(
                 scope_filter,
                 SchoolContentItem.is_current.is_(True),
+                # Not yet surfaced anywhere in the UI (see arbiter.py) -
+                # dozens of games a week per school would swamp the day
+                # cards and "upcoming" slots, which have no volume limit of
+                # their own the way the general calendar's toggle does.
+                SchoolContentItem.source != "arbiter_athletics",
                 SchoolContentItem.start_date.is_not(None),
                 SchoolContentItem.start_date >= datetime.combine(range_start, datetime.min.time(), LOCAL_TZ),
                 SchoolContentItem.start_date <= datetime.combine(range_end, datetime.max.time(), LOCAL_TZ),
