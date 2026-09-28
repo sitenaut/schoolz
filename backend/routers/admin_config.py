@@ -52,6 +52,7 @@ from routers.schools import (
     _ensure_activities_calendar_job,
     _ensure_athletics_calendar_job,
     _ensure_documents_scan_job,
+    _ensure_fdmealplanner_job,
     _ensure_givebacks_job,
     _ensure_school_info_job,
     _ensure_staff_roster_job,
@@ -102,6 +103,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 activities_calendar_ics_url=s.activities_calendar_ics_url,
                 apptegy_org_id=s.apptegy_org_id,
                 givebacks_shortname=s.givebacks_shortname,
+                fdmealplanner_location=s.fdmealplanner_location,
             )
             for s in schools
         ],
@@ -249,6 +251,9 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_admi
         if s.givebacks_shortname:
             school.givebacks_shortname = s.givebacks_shortname
             await _ensure_givebacks_job(db, school, user)
+        if s.fdmealplanner_location:
+            school.fdmealplanner_location = s.fdmealplanner_location
+            await _ensure_fdmealplanner_job(db, school, user)
 
         if s.sacc:
             existing_sacc = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()

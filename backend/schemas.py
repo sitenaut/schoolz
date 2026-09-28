@@ -440,6 +440,8 @@ class SchoolUpdate(BaseModel):
     # verifying it's the right org (see services/givebacks.py:verified_match)
     # - a wrong shortname's content is worse than none.
     givebacks_shortname: str | None = Field(default=None, max_length=100)
+    # FD MealPlanner menu location, "tenant/account/location" (services/fdmealplanner.py).
+    fdmealplanner_location: str | None = Field(default=None, max_length=40, pattern=r"^\d+/\d+/\d+$")
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -489,6 +491,7 @@ class SchoolOut(BaseModel):
     events_doc_url: str | None
     apptegy_org_id: str | None
     givebacks_shortname: str | None
+    fdmealplanner_location: str | None = None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
@@ -973,6 +976,7 @@ class ExportSchoolOut(BaseModel):
     activities_calendar_ics_url: str | None = None
     apptegy_org_id: str | None = None
     givebacks_shortname: str | None = None
+    fdmealplanner_location: str | None = None
 
     model_config = {"from_attributes": True}
 
