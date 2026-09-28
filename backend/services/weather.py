@@ -259,6 +259,15 @@ def summarize(
     }
 
 
+def pick_weather_day(school, today: date, today_status: str, next_day: date, next_status: str, now: datetime) -> tuple[date, str, bool]:
+    """(day, its status, is_today). Today's weather until today's window
+    closes; after that - the evening, when clothes get laid out - and all
+    day on weekends and closed days, the next school day's."""
+    if today_status not in ("weekend", "closed") and now < school_window(school, today_status, today)[3]:
+        return today, today_status, True
+    return next_day, next_status, False
+
+
 async def today_weather(school, status: str, day: date) -> dict | None:
     """The Today card's weather, or None. Never raises and never waits more
     than a few seconds - a slow NWS must not hold up the whole card."""

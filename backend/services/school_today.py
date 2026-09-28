@@ -9,7 +9,7 @@ StaffMember.role (services/staff_roles.py).
 """
 
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select
@@ -23,7 +23,7 @@ from services.hs_rotation import blocks_from_description
 from services import specials as specials_svc
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
-from services.weather import today_weather
+from services.weather import pick_weather_day, today_weather
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
@@ -282,6 +282,14 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         source_pdf_url=menu.source_pdf_url if menu and not menu.source_pdf_url.startswith("newsletter:") else None,
     )
 
+    now = datetime.now(LOCAL_TZ)
+    if now.date() != today:  # an explicit other day: show that day's own weather
+        now = datetime.combine(today, time(0), LOCAL_TZ)
+    weather_day, weather_status, weather_is_today = pick_weather_day(school, today, status, next_day, day_status(next_day)[0], now)
+    weather = await today_weather(school, weather_status, weather_day)
+    if weather:
+        weather["day_label"] = "Today" if weather_is_today else next_label
+
     sacc_row = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()
     sacc = (
         TodaySaccOut(
@@ -410,7 +418,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         current_period=period,
         transportation=transportation,
         lunch=lunch,
-        weather=await today_weather(school, status, today),
+        weather=weather,
         sacc=sacc,
         contacts=contacts,
         upcoming=upcoming,

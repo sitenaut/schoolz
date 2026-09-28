@@ -870,6 +870,9 @@ class TodayWeatherOut(BaseModel):
     condition: str
     uv_max: int | None
     items: list[str]
+    # "Today", or the next school day's label ("Tomorrow", "Monday") once
+    # today's school day is over - services/weather.py:pick_weather_day.
+    day_label: str = "Today"
 
 
 class SchoolTodayOut(BaseModel):
