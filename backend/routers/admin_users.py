@@ -155,24 +155,56 @@ async def _user_out(db: AsyncSession, users: list[User]) -> list[AdminUserOut]:
     ]
 
 
+_USER_SORTS = ("username", "email", "created_at", "access")
+
+
 @router.get("/users", response_model=UsersPageOut)
 async def list_users(
     q: str | None = None,
-    admins_only: bool = False,
+    access: str = Query("all", pattern="^(all|staff|super|role|none)$"),
+    role_id: str | None = None,
+    sort: str = Query("access", pattern="^(" + "|".join(_USER_SORTS) + ")$"),
+    dir: str = Query("asc", pattern="^(asc|desc)$"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
+    """access: staff = super admin or any role; super; role = holds at least
+    one role; none = neither. Sorting is whitelisted and always ends on the
+    id so paging through equal values is stable."""
     query = select(User)
     if q and q.strip():
         for token in q.split():
             like = f"%{token}%"
             query = query.where(or_(User.email.ilike(like), User.username.ilike(like)))
-    if admins_only:
-        has_role = select(UserRole.user_id).where(UserRole.user_id == User.id).exists()
+    has_role = select(UserRole.user_id).where(UserRole.user_id == User.id).exists()
+    if access == "staff":
         query = query.where(or_(User.is_admin.is_(True), has_role))
+    elif access == "super":
+        query = query.where(User.is_admin.is_(True))
+    elif access == "role":
+        query = query.where(has_role)
+    elif access == "none":
+        query = query.where(User.is_admin.is_(False), ~has_role)
+    if role_id:
+        query = query.where(select(UserRole.user_id).where(UserRole.user_id == User.id, UserRole.role_id == role_id).exists())
+
     total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
-    users = (await db.execute(query.order_by(User.is_admin.desc(), User.email).limit(limit).offset(offset))).scalars().all()
+
+    role_count = select(func.count()).select_from(UserRole).where(UserRole.user_id == User.id).scalar_subquery()
+    if sort == "access":
+        keys = [User.is_admin, role_count]
+    elif sort == "created_at":
+        keys = [User.created_at]
+    elif sort == "username":
+        keys = [func.lower(User.username)]
+    else:
+        keys = [func.lower(User.email)]
+    ordering = [k.desc() if dir == "desc" else k.asc() for k in keys]
+    # "Most access first" reads naturally for the default sort.
+    if sort == "access":
+        ordering = [k.asc() if dir == "desc" else k.desc() for k in keys]
+    users = (await db.execute(query.order_by(*ordering, User.id).limit(limit).offset(offset))).scalars().all()
     return UsersPageOut(items=await _user_out(db, list(users)), total=total)
 
 

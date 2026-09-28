@@ -21,17 +21,24 @@ type Props<T> = {
   onRowClick?: (row: T) => void;
   rowActions?: (row: T) => ReactNode;
   defaultSort?: { id: string; dir: "asc" | "desc" };
+  /** Server-side sorting: the parent owns the sort and the row order; the
+   * table only draws the arrows and reports clicks. Columns need a
+   * `sortValue` (any) to be clickable. */
+  sort?: { id: string; dir: "asc" | "desc" };
+  onSortChange?: (sort: { id: string; dir: "asc" | "desc" }) => void;
 };
 
 /** Small client-side table: sortable headers, row click, trailing actions,
  * and a CSS-driven card layout under 720px (see ui.css .dt). Deliberately
  * not a full TanStack table - the jobs list is ~100 rows, filtering happens
  * above it, and pagination would just hide things. */
-export function DataTable<T>({ columns, rows, getRowId, loading, empty, onRowClick, rowActions, defaultSort }: Props<T>) {
-  const [sort, setSort] = useState(defaultSort ?? null);
+export function DataTable<T>({ columns, rows, getRowId, loading, empty, onRowClick, rowActions, defaultSort, sort: controlledSort, onSortChange }: Props<T>) {
+  const [localSort, setLocalSort] = useState(defaultSort ?? null);
+  const controlled = onSortChange !== undefined;
+  const sort = controlled ? (controlledSort ?? null) : localSort;
 
   const sorted = useMemo(() => {
-    if (!sort) return rows;
+    if (controlled || !sort) return rows;
     const col = columns.find((c) => c.id === sort.id);
     if (!col?.sortValue) return rows;
     const dir = sort.dir === "asc" ? 1 : -1;
@@ -43,10 +50,13 @@ export function DataTable<T>({ columns, rows, getRowId, loading, empty, onRowCli
       if (bv == null) return -1;
       return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
     });
-  }, [rows, sort, columns]);
+  }, [rows, sort, columns, controlled]);
 
-  const toggleSort = (id: string) =>
-    setSort((cur) => (cur?.id === id ? { id, dir: cur.dir === "asc" ? "desc" : "asc" } : { id, dir: "asc" }));
+  const toggleSort = (id: string) => {
+    const next = sort?.id === id ? { id, dir: sort.dir === "asc" ? ("desc" as const) : ("asc" as const) } : { id, dir: "asc" as const };
+    if (controlled) onSortChange!(next);
+    else setLocalSort(next);
+  };
 
   return (
     <div className="dt-wrap">
