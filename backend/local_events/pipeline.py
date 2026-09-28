@@ -42,6 +42,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
+from .sources.theatre import TheatreSiteSource
 from .sources.tribe import TribeEventsSource
 from .sources.yodel import YodelSource
 
@@ -227,6 +228,18 @@ def _build_sources(params: dict) -> list[Source]:
                 center=entry.get("center"),
                 nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
                 max_pages=int(entry.get("max_pages", 40)),
+            )
+        )
+    for entry in params.get("theatre_sources") or []:
+        if not entry.get("name") or not entry.get("urls"):
+            continue
+        sources.append(
+            TheatreSiteSource(
+                name=entry["name"],
+                urls=list(entry["urls"]),
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []) or None,
             )
         )
     return sources
