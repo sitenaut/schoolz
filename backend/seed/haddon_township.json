@@ -52,7 +52,9 @@
       "preschool_team_url": null,
       "hs_rotation_url": null,
       "transportation_url": null,
-      "towns": ["Haddon Township"],
+      "towns": [
+        "Haddon Township"
+      ],
       "schoolcafe_shortname": null
     }
   ],
@@ -81,7 +83,8 @@
       "bell_periods": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "givebacks_shortname": "hthsnjpta-08108"
+      "givebacks_shortname": "hthsnjpta-08108",
+      "fdmealplanner_location": "3/297/1469"
     },
     {
       "slug": "rms",
@@ -106,7 +109,8 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "3/297/1470"
     },
     {
       "slug": "edison",
@@ -132,7 +136,8 @@
       "bell_periods": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "givebacks_shortname": "edison"
+      "givebacks_shortname": "edison",
+      "fdmealplanner_location": "3/297/1472"
     },
     {
       "slug": "jennings",
@@ -157,7 +162,8 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "3/297/1473"
     },
     {
       "slug": "stoy",
@@ -182,7 +188,8 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "3/297/1474"
     },
     {
       "slug": "strawbridge",
@@ -207,7 +214,8 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "3/297/1475"
     },
     {
       "slug": "vansciver",
@@ -232,7 +240,8 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "3/297/1471"
     }
   ],
   "smore_newsletters": [
