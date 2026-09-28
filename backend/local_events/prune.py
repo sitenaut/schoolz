@@ -24,6 +24,8 @@ SOURCE_KEYS = (
     "scraper_sources",
     "yodel_sources",
     "tribe_sources",
+    "ccls_sources",
+    "theatre_sources",
 )
 
 

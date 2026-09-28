@@ -20,6 +20,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
+from .sources.theatre import TheatreSiteSource
 from .sources.tribe import TribeEventsSource
 from .sources.yodel import YodelSource
 
@@ -86,6 +87,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     yodel_sources = body.params.get("yodel_sources") or []
     tribe_sources = body.params.get("tribe_sources") or []
     ccls_sources = body.params.get("ccls_sources") or []
+    theatre_sources = body.params.get("theatre_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -110,6 +112,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.tribe_sources must be a list")
     if not isinstance(ccls_sources, list):
         raise HTTPException(status_code=400, detail="params.ccls_sources must be a list")
+    if not isinstance(theatre_sources, list):
+        raise HTTPException(status_code=400, detail="params.theatre_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -459,5 +463,23 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         )
         ccls_source.url = "https://events.camdencountylibrary.org/jsonapi/node/event"  # type: ignore[attr-defined]
         results.append(await _probe("ccls", ccls_source))
+
+    for entry in theatre_sources:
+        name = (entry or {}).get("name") or "(unnamed theatre)"
+        urls = (entry or {}).get("urls")
+        if not urls:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'urls' field", source_type="theatre",
+            ))
+            continue
+        results.append(await _probe("theatre", TheatreSiteSource(
+            name=name,
+            urls=list(urls),
+            venue_name=entry.get("venue_name"),
+            venue_address=entry.get("venue_address"),
+            default_categories=list(entry.get("default_categories") or []) or None,
+        )))
 
     return TestFetchOut(kind=body.kind, sources=results)

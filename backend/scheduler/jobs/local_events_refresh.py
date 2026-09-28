@@ -407,6 +407,20 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "theatre_sources": {
+            "type": "array",
+            "description": "Community theatre companies whose season is only on their own website. Each page in `urls` is read and Haiku lists the productions on it (a title is kept only if it appears in the page text; unchanged pages are cached, so most runs cost nothing). Needs ANTHROPIC_API_KEY. Point `urls` at the season / shows / calendar pages, not the home page alone.",
+            "items": {
+                "type": "object",
+                "required": ["name", "urls"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "urls": {"type": "array", "items": {"type": "string"}, "description": "Season, shows or calendar pages."},
+                    "venue_name": {"type": "string", "description": "The company's home theatre, used unless a page names another."},
+                    "venue_address": {"type": "string"},
+                },
+            },
+        },
         "ccls_sources": {
             "type": "array",
             "description": "Camden County Library System branches (events.camdencountylibrary.org) - its own Drupal JSON:API, no scraper. One entry per branch; branch_name is matched case-insensitively against whatever GET /jsonapi/node/location currently returns, so a renamed/added/closed branch needs no code change.",
