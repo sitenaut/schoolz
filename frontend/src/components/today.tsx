@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
@@ -293,7 +293,7 @@ const WEAR: Record<string, string> = {
 /** Drop-off through just after pickup (backend/services/weather.py) - what
  * to wear or pack, not a daily high/low: a cold bus stop and a warm pickup
  * need a jacket that comes home in the backpack. */
-export function WeatherFact({ w }: { w: TodayWeather }) {
+export function WeatherFact({ w, children }: { w: TodayWeather; children?: React.ReactNode }) {
   const temp = (t: number | null) => (t === null ? "–" : `${t}°`);
   const details = [
     w.condition,
@@ -302,7 +302,7 @@ export function WeatherFact({ w }: { w: TodayWeather }) {
   ].filter(Boolean);
   const items = w.items.map((i) => WEAR[i]).filter(Boolean);
   return (
-    <div className="facts">
+    <div className={`facts${children ? " weatherRow" : ""}`}>
       <div className="fact weather">
         <div className="k">{!w.day_label || w.day_label === "Today" ? "Weather at school" : `${w.day_label}'s weather at school`}</div>
         <div className="v">
@@ -312,6 +312,50 @@ export function WeatherFact({ w }: { w: TodayWeather }) {
         <div className="sub">{details.join(" · ")}</div>
         <div className="wear">{items.length ? items.map((i) => <span key={i}>{i}</span>) : <span>Nothing extra needed</span>}</div>
       </div>
+      {children}
+    </div>
+  );
+}
+
+/** Caps long content (some districts' lunch lines run to a paragraph) at a
+ * few lines with a fade; "See more" appears only when it actually overflows. */
+function Clamp({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [children]);
+  return (
+    <>
+      <div ref={ref} className={`clamp${open ? " clampOpen" : ""}${overflows && !open ? " clampFade" : ""}`}>
+        {children}
+      </div>
+      {(overflows || open) && (
+        <button type="button" className="clampToggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? "See less" : "See more"}
+        </button>
+      )}
+    </>
+  );
+}
+
+function SaccFact({ sacc }: { sacc: NonNullable<SchoolToday["sacc"]> }) {
+  return (
+    <div className="fact">
+      <div className="k">After school</div>
+      <div className="v">{sacc.pm_hours ? `SACC ${sacc.pm_hours.replace(/\s*-\s*/, "–")}` : "SACC"}</div>
+      {sacc.site_phone && (
+        <div className="sub">
+          Site: <a href={telHref(sacc.site_phone)}>{sacc.site_phone}</a>
+        </div>
+      )}
     </div>
   );
 }
@@ -325,6 +369,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   const nurseHref = nurse ? contactHref(nurse) : null;
   const counselorHref = counselor ? contactHref(counselor) : null;
   const sacc = data.sacc;
+  // After-school shares the weather row; it only falls back to the lunch
+  // grid when there's no weather to sit beside.
+  const saccInFacts = data.weather ? null : sacc;
   const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
   // Same "exclude district" setting as the Calendar page - a parent who
   // hid board-of-ed-meeting-style noise there shouldn't see it resurface
@@ -352,9 +399,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 
       <DayBlocks blocks={data.day_blocks} current={data.current_period} next={data.next_rotation} />
 
-      {data.weather && <WeatherFact w={data.weather} />}
+      {data.weather && <WeatherFact w={data.weather}>{sacc && <SaccFact sacc={sacc} />}</WeatherFact>}
 
-      {(data.lunch.today || data.lunch.next || sacc || !!data.my_specials?.length || !!data.my_current_classes?.length) && (
+      {(data.lunch.today || data.lunch.next || saccInFacts || !!data.my_specials?.length || !!data.my_current_classes?.length) && (
         <div className="facts">
           {data.my_current_classes?.map((c) => {
             const many = data.my_current_classes!.length > 1;
@@ -395,25 +442,17 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
                   Lunch schedule <IconChevronRight className="trailing-chevron" />
                 </Link>
               </div>
-              <div className="v">{data.lunch.today ?? data.lunch.next}</div>
-              {data.lunch.today && data.lunch.next && (
-                <div className="sub">
-                  {data.lunch.next_label}: {data.lunch.next}
-                </div>
-              )}
+              <Clamp>
+                <div className="v">{data.lunch.today ?? data.lunch.next}</div>
+                {data.lunch.today && data.lunch.next && (
+                  <div className="sub">
+                    {data.lunch.next_label}: {data.lunch.next}
+                  </div>
+                )}
+              </Clamp>
             </div>
           )}
-          {sacc && (
-            <div className="fact">
-              <div className="k">After school</div>
-              <div className="v">{sacc.pm_hours ? `SACC ${sacc.pm_hours.replace(/\s*-\s*/, "–")}` : "SACC"}</div>
-              {sacc.site_phone && (
-                <div className="sub">
-                  Site: <a href={telHref(sacc.site_phone)}>{sacc.site_phone}</a>
-                </div>
-              )}
-            </div>
-          )}
+          {saccInFacts && <SaccFact sacc={saccInFacts} />}
         </div>
       )}
 
