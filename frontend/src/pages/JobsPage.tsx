@@ -9,6 +9,8 @@ import { IconEdit, IconInfo, IconPlay, IconPlus, IconRefresh, IconSearch, IconTr
 import { describeCron } from "../lib/cron";
 import { fmtDateTime, fmtDuration, relativeTime } from "../lib/format";
 import { trackEvent } from "../lib/track";
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 import type { JobKind, ScheduledJob } from "../types";
 import { JobDetailModal } from "./jobs/JobDetailModal";
 import { JobFormModal } from "./jobs/JobFormModal";
@@ -22,6 +24,8 @@ const POLL_MAX = 60; // ~3 minutes - vision extraction on a big newsletter is th
 
 export function JobsPage() {
   const toast = useToast();
+  const { user } = useAuth();
+  const canEdit = can(user, "scans.manage");
   const [jobs, setJobs] = useState<ScheduledJob[]>([]);
   const [kinds, setKinds] = useState<JobKind[]>([]);
   const [targets, setTargets] = useState<Record<string, { id: string; label: string }[]>>({});
@@ -250,7 +254,7 @@ export function JobsPage() {
       id: "enabled",
       header: "On",
       width: "56px",
-      cell: (j) => <Switch checked={j.enabled} disabled={toggling.has(j.id)} onChange={(v) => toggleEnabled(j, v)} label={`Enable ${j.name}`} />,
+      cell: (j) => <Switch checked={j.enabled} disabled={!canEdit || toggling.has(j.id)} onChange={(v) => toggleEnabled(j, v)} label={`Enable ${j.name}`} />,
     },
   ];
 
@@ -265,12 +269,16 @@ export function JobsPage() {
             <button className="btn" onClick={refresh} title="Refresh">
               <IconRefresh /> Refresh
             </button>
-            <button className="btn" onClick={() => setImportOpen(true)} title="Import local events jobs from billz">
-              Import from billz
-            </button>
-            <button className="btn btn-primary" onClick={() => setForm({ open: true, job: null })}>
-              <IconPlus /> New job
-            </button>
+            {canEdit && (
+              <>
+                <button className="btn" onClick={() => setImportOpen(true)} title="Import local events jobs from billz">
+                  Import from billz
+                </button>
+                <button className="btn btn-primary" onClick={() => setForm({ open: true, job: null })}>
+                  <IconPlus /> New job
+                </button>
+              </>
+            )}
           </>
         }
       />
@@ -326,18 +334,24 @@ export function JobsPage() {
         empty={jobs.length === 0 ? "No jobs yet - create one, or add a school/district and its scans are created automatically." : "No jobs match these filters."}
         rowActions={(j) => (
           <>
-            <button className={`btn icon ${running.has(j.id) ? "spin" : ""}`} title="Run now" onClick={() => runNow(j)} disabled={running.has(j.id)}>
-              {running.has(j.id) ? <IconRefresh /> : <IconPlay />}
-            </button>
+            {canEdit && (
+              <button className={`btn icon ${running.has(j.id) ? "spin" : ""}`} title="Run now" onClick={() => runNow(j)} disabled={running.has(j.id)}>
+                {running.has(j.id) ? <IconRefresh /> : <IconPlay />}
+              </button>
+            )}
             <button className="btn icon" title="Details & run history" onClick={() => setDetail({ job: j, tab: "runs" })}>
               <IconInfo />
             </button>
-            <button className="btn icon" title="Edit" onClick={() => setForm({ open: true, job: j })}>
-              <IconEdit />
-            </button>
-            <button className="btn icon danger" title="Delete" onClick={() => setPendingDelete(j)}>
-              <IconTrash />
-            </button>
+            {canEdit && (
+              <>
+                <button className="btn icon" title="Edit" onClick={() => setForm({ open: true, job: j })}>
+                  <IconEdit />
+                </button>
+                <button className="btn icon danger" title="Delete" onClick={() => setPendingDelete(j)}>
+                  <IconTrash />
+                </button>
+              </>
+            )}
           </>
         )}
       />
@@ -349,6 +363,7 @@ export function JobsPage() {
         onClose={() => setDetail(null)}
         onRun={runNow}
         onEdit={(j) => setForm({ open: true, job: j })}
+        readOnly={!canEdit}
       />
 
       <JobFormModal

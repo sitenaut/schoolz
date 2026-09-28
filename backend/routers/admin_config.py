@@ -29,7 +29,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from auth import require_admin
+from auth import require_permission
 from models import District, SaccProgram, School, SmoreNewsletter, User
 from schemas import (
     ConfigExport,
@@ -63,7 +63,7 @@ from scheduler.cron import public_scan_cron
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
 
 
-@router.get("/export", response_model=ConfigExport, dependencies=[Depends(require_admin)])
+@router.get("/export", response_model=ConfigExport, dependencies=[Depends(require_permission("config.view"))])
 async def export_config(db: AsyncSession = Depends(get_db)):
     districts = (await db.execute(select(District))).scalars().all()
     schools = (await db.execute(select(School))).scalars().all()
@@ -121,8 +121,8 @@ async def export_config(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/import", response_model=ConfigImportResult, dependencies=[Depends(require_admin)])
-async def import_config(payload: ConfigExport, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+@router.post("/import", response_model=ConfigImportResult, dependencies=[Depends(require_permission("config.manage"))])
+async def import_config(payload: ConfigExport, user: User = Depends(require_permission("config.manage")), db: AsyncSession = Depends(get_db)):
     result = {
         "districts_created": 0, "districts_updated": 0,
         "schools_created": 0, "schools_updated": 0,

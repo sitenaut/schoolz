@@ -1,3 +1,4 @@
+import { can } from "../../lib/permissions";
 import { NavLink, Outlet } from "react-router-dom";
 import { IconBell, IconLock, IconSettings, IconShield, IconUser, IconUsers } from "../../components/icons";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -30,7 +31,7 @@ export function AccountLayout() {
           <NavLink to="/account/notifications">
             <IconBell /> Notifications
           </NavLink>
-          {user.is_admin && (
+          {can(user, "analytics.view") && (
             <>
               <div className="nav-sep" aria-hidden="true" />
               <NavLink to="/account/admin">

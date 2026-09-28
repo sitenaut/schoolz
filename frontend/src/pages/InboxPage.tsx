@@ -6,6 +6,8 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { SectionCard } from "../components/ui/SectionCard";
 import { relativeTime } from "../lib/format";
 import { markInboxSeen } from "../lib/notifications";
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 
 type Message = { id: string; name: string | null; email: string | null; message: string; user_id: string | null; read_at: string | null; created_at: string };
 
@@ -13,6 +15,8 @@ type Message = { id: string; name: string | null; email: string | null; message:
  * everything read for every admin (clearing the banner icon); this visit
  * still highlights what was new. */
 export function InboxPage() {
+  const { user } = useAuth();
+  const canEdit = can(user, "inbox.manage");
   const [items, setItems] = useState<Message[] | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<Message | null>(null);
@@ -23,7 +27,7 @@ export function InboxPage() {
       .then((rows: Message[]) => {
         setItems(rows);
         setNewIds(new Set(rows.filter((m) => !m.read_at).map((m) => m.id)));
-        return markInboxSeen();
+        return canEdit ? markInboxSeen() : undefined;
       });
   }, []);
 
@@ -65,14 +69,16 @@ export function InboxPage() {
                     <IconMail /> Reply
                   </a>
                 )}
-                {!newIds.has(m.id) && (
+                {canEdit && !newIds.has(m.id) && (
                   <button className="btn sm" onClick={() => markUnread(m)}>
                     Mark unread
                   </button>
                 )}
-                <button className="btn icon danger" title="Delete" aria-label="Delete message" onClick={() => setDeleting(m)}>
-                  <IconTrash />
-                </button>
+                {canEdit && (
+                  <button className="btn icon danger" title="Delete" aria-label="Delete message" onClick={() => setDeleting(m)}>
+                    <IconTrash />
+                  </button>
+                )}
               </div>
             </li>
           ))}

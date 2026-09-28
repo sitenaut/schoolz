@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { apiFetch } from "../api";
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 
 type ImportResult = {
   districts_created: number;
@@ -23,6 +25,8 @@ type ImportResult = {
  * (scripts/migrate_config.py), which does the same thing without a
  * browser open on both environments at once. */
 export function AdminConfigPage() {
+  const { user } = useAuth();
+  const canImport = can(user, "config.manage");
   const [exportSummary, setExportSummary] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -115,6 +119,8 @@ export function AdminConfigPage() {
         {exportError && <p className="note" style={{ color: "var(--bad)" }}>{exportError}</p>}
       </div>
 
+      {canImport && (
+      <>
       <div className="h-row">
         <h2>Import into this environment</h2>
       </div>
@@ -174,6 +180,8 @@ export function AdminConfigPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </>
   );
 }

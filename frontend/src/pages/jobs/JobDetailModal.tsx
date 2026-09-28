@@ -16,13 +16,15 @@ type Props = {
   onClose: () => void;
   onRun: (job: ScheduledJob) => void;
   onEdit: (job: ScheduledJob) => void;
+  /** No scans.manage: show history only, no Edit / Run now. */
+  readOnly?: boolean;
 };
 
 /** Everything about one job in one place - and, the reason it exists: the
  * full text of a run's warning or failure (error, error code + stage, and
  * the captured traceback/log excerpt), which is far too much for a table
  * cell. Runs tab opens by default when arriving from a status badge. */
-export function JobDetailModal({ job, initialTab = "runs", running, onClose, onRun, onEdit }: Props) {
+export function JobDetailModal({ job, initialTab = "runs", running, onClose, onRun, onEdit, readOnly }: Props) {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [runs, setRuns] = useState<JobRun[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,6 +78,7 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
         </>
       }
       footer={
+        readOnly ? undefined : (
         <>
           <button className="btn" onClick={() => onEdit(job)}>
             <IconEdit /> Edit
@@ -84,6 +87,7 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
             {running ? <IconRefresh /> : <IconPlay />} {running ? "Running…" : "Run now"}
           </button>
         </>
+        )
       }
     >
       <div className="utabs" role="tablist">

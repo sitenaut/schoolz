@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import oauth2_scheme, require_admin
+from auth import oauth2_scheme, require_permission
 from database import get_db
 from models import User
 from services.chat_providers import KNOWN_PROVIDERS, configured_providers
@@ -46,7 +46,7 @@ def _validate(settings: ChatbotSettings) -> None:
 
 
 @router.get("", response_model=ChatbotAdminOut)
-async def get_chatbot_admin(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def get_chatbot_admin(_: User = Depends(require_permission("chatbot.view")), db: AsyncSession = Depends(get_db)):
     configured = configured_providers()
     return ChatbotAdminOut(
         settings=await get_settings(db, fresh=True),
@@ -81,7 +81,7 @@ async def _check_models_belong(audiences: list[tuple[str, AudienceConfig]], conf
 
 
 @router.put("", response_model=ChatbotAdminOut)
-async def put_chatbot_admin(body: ChatbotSettings, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def put_chatbot_admin(body: ChatbotSettings, user: User = Depends(require_permission("chatbot.manage")), db: AsyncSession = Depends(get_db)):
     _validate(body)
     configured = configured_providers()
     for audience in (body.anonymous, body.signed_in):
@@ -94,7 +94,7 @@ async def put_chatbot_admin(body: ChatbotSettings, user: User = Depends(require_
 
 
 @router.get("/models", response_model=list[str])
-async def list_provider_models(provider: str, _: User = Depends(require_admin)):
+async def list_provider_models(provider: str, _: User = Depends(require_permission("chatbot.view"))):
     prov = configured_providers().get(provider)
     if prov is None:
         raise HTTPException(400, f"{provider} has no API key set on the server")
@@ -135,7 +135,7 @@ class CompareResult(BaseModel):
 async def compare(
     body: CompareIn,
     request: Request,
-    user: User = Depends(require_admin),
+    user: User = Depends(require_permission("chatbot.manage")),
     token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ):

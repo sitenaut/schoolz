@@ -21,7 +21,7 @@ from sqlalchemy import delete, func, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, require_admin
+from auth import get_current_user, require_permission
 from database import get_db
 from models import (
     AssignmentSuggestion,
@@ -1895,6 +1895,6 @@ async def set_course_preference(
 
 
 @router.get("/admin/capture-page-kinds", response_model=list[CapturePageKindOut])
-async def list_capture_page_kinds(user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def list_capture_page_kinds(user: User = Depends(require_permission("kids.view")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(CapturePageKind).order_by(CapturePageKind.last_seen_at.desc()))
     return [CapturePageKindOut.model_validate(k) for k in result.scalars().all()]

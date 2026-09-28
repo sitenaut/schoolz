@@ -27,7 +27,9 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
-import { AdminLayout } from "./pages/AdminLayout";
+import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
+import { UsersRolesPage } from "./pages/UsersRolesPage";
+import { can, isStaff } from "./lib/permissions";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
 import { ContactPage } from "./pages/ContactPage";
@@ -73,13 +75,25 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 }
 
 // Gates the centrally-managed admin tooling (districts, Smore links,
-// scheduled scans, Gmail scanners) - a logged-in guardian without is_admin gets bounced
-// to the public home, not the login page (they're already logged in).
-function RequireAdmin({ children }: { children: React.ReactElement }) {
+// scheduled scans, Gmail scanners). `permission` names the role grant the
+// page needs; `superOnly` restricts it to super admins; with neither, any
+// admin (super or scoped) may enter. Anyone else - a plain guardian, or a
+// scoped admin lacking the grant - gets bounced to the public home, not the
+// login page (they're already logged in).
+function RequireAdmin({
+  children,
+  permission,
+  superOnly,
+}: {
+  children: React.ReactElement;
+  permission?: string;
+  superOnly?: boolean;
+}) {
   const { user, loading, authTimedOut } = useAuth();
   if (loading) return <AuthGateFallback timedOut={authTimedOut} />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!user.is_admin) return <Navigate to="/" replace />;
+  const allowed = superOnly ? user.is_admin : permission ? can(user, permission) : isStaff(user);
+  if (!allowed) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -110,7 +124,7 @@ function Routed() {
           <Route
             path="admin"
             element={
-              <RequireAdmin>
+              <RequireAdmin permission="analytics.view">
                 <AdminSection />
               </RequireAdmin>
             }
@@ -145,7 +159,7 @@ function Routed() {
         <Route
           path="/gmail"
           element={
-            <RequireAdmin>
+            <RequireAdmin permission="email.view">
               <GmailPage />
             </RequireAdmin>
           }
@@ -172,7 +186,7 @@ function Routed() {
         <Route
           path="/admin/submissions"
           element={
-            <RequireAdmin>
+            <RequireAdmin permission="submissions.view">
               <SubmissionsPage />
             </RequireAdmin>
           }
@@ -194,13 +208,14 @@ function Routed() {
             </RequireAdmin>
           }
         >
-          <Route index element={<Navigate to="/admin/newsletters" replace />} />
-          <Route path="inbox" element={<InboxPage />} />
-          <Route path="newsletters" element={<SmoreNewslettersPage />} />
-          <Route path="scans" element={<JobsPage />} />
-          <Route path="chatbot" element={<ChatbotAdminPage />} />
-          <Route path="config" element={<AdminConfigPage />} />
-          <Route path="kids" element={<KidsPage />} />
+          <Route index element={<AdminIndexRedirect />} />
+          <Route path="inbox" element={<RequireAdmin permission="inbox.view"><InboxPage /></RequireAdmin>} />
+          <Route path="newsletters" element={<RequireAdmin permission="newsletters.manage"><SmoreNewslettersPage /></RequireAdmin>} />
+          <Route path="scans" element={<RequireAdmin permission="scans.view"><JobsPage /></RequireAdmin>} />
+          <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
+          <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
+          <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
+          <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
         </Route>
       </Route>
     </FaroRoutes>

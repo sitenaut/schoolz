@@ -1,3 +1,4 @@
+import { can } from "../lib/permissions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
@@ -201,7 +202,7 @@ export function SchoolDetailPage() {
           {today.rotation_day && <span className="note">{rotationLine(today.rotation_day, today.rotation_blocks, today.long_blocks)} today</span>}
         </div>
         <DayBlocks blocks={today.day_blocks} current={today.current_period} next={today.next_rotation} />
-        {(s.start_time && s.end_time) || user?.is_admin ? (
+        {(s.start_time && s.end_time) || can(user, "schools.manage") ? (
           <p className="note" style={{ marginTop: 6 }}>
             {s.start_time && s.end_time ? (
               <>
@@ -212,7 +213,7 @@ export function SchoolDetailPage() {
             ) : (
               "No hours on file yet"
             )}
-            {user?.is_admin && (
+            {can(user, "schools.manage") && (
               <>
                 {" · "}
                 <button type="button" className="linklike" onClick={() => setEditingHours(true)}>
@@ -224,7 +225,7 @@ export function SchoolDetailPage() {
         ) : null}
       </div>
 
-      {user?.is_admin && (
+      {can(user, "schools.manage") && (
         <SchoolHoursModal
           open={editingHours}
           onClose={() => setEditingHours(false)}

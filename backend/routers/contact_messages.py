@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_optional_user, require_admin
+from auth import get_optional_user, require_permission
 from database import get_db
 from models import ContactMessage, User
 from schemas import ContactMessageCreate, ContactMessageOut
@@ -36,19 +36,19 @@ async def send_message(
 
 
 @router.get("", response_model=list[ContactMessageOut])
-async def list_messages(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def list_messages(_: User = Depends(require_permission("inbox.view")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ContactMessage).order_by(ContactMessage.created_at.desc()))
     return result.scalars().all()
 
 
 @router.get("/unread-count")
-async def unread_count(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)) -> dict:
+async def unread_count(_: User = Depends(require_permission("inbox.view")), db: AsyncSession = Depends(get_db)) -> dict:
     count = await db.scalar(select(func.count()).select_from(ContactMessage).where(ContactMessage.read_at.is_(None)))
     return {"count": count or 0}
 
 
 @router.post("/read-all")
-async def mark_all_read(admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)) -> dict:
+async def mark_all_read(admin: User = Depends(require_permission("inbox.manage")), db: AsyncSession = Depends(get_db)) -> dict:
     result = await db.execute(
         update(ContactMessage)
         .where(ContactMessage.read_at.is_(None))
@@ -66,7 +66,7 @@ async def _get(db: AsyncSession, message_id: str) -> ContactMessage:
 
 
 @router.post("/{message_id}/unread", response_model=ContactMessageOut)
-async def mark_unread(message_id: str, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def mark_unread(message_id: str, _: User = Depends(require_permission("inbox.manage")), db: AsyncSession = Depends(get_db)):
     row = await _get(db, message_id)
     row.read_at = None
     row.read_by_user_id = None
@@ -76,7 +76,7 @@ async def mark_unread(message_id: str, _: User = Depends(require_admin), db: Asy
 
 
 @router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_message(message_id: str, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def delete_message(message_id: str, _: User = Depends(require_permission("inbox.manage")), db: AsyncSession = Depends(get_db)):
     await db.delete(await _get(db, message_id))
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

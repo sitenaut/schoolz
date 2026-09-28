@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, Upl
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_admin
+from auth import require_permission
 from database import get_db
 from models import CommunitySubmission, District, School, User
 from schemas import CommunitySubmissionOut, CommunitySubmissionUpdate
@@ -113,7 +113,7 @@ async def create_submission(
 
 @router.get("", response_model=list[CommunitySubmissionOut])
 async def list_submissions(
-    status_filter: str | None = None, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    status_filter: str | None = None, user: User = Depends(require_permission("submissions.view")), db: AsyncSession = Depends(get_db)
 ):
     query = select(CommunitySubmission).order_by(CommunitySubmission.created_at.desc())
     if status_filter:
@@ -124,7 +124,7 @@ async def list_submissions(
 
 @router.get("/{submission_id}/file")
 async def download_file(
-    submission_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    submission_id: str, user: User = Depends(require_permission("submissions.view")), db: AsyncSession = Depends(get_db)
 ):
     submission = (
         await db.execute(select(CommunitySubmission).where(CommunitySubmission.id == submission_id))
@@ -142,7 +142,7 @@ async def download_file(
 async def update_submission(
     submission_id: str,
     payload: CommunitySubmissionUpdate,
-    user: User = Depends(require_admin),
+    user: User = Depends(require_permission("submissions.manage")),
     db: AsyncSession = Depends(get_db),
 ):
     submission = (
@@ -164,7 +164,7 @@ async def update_submission(
 
 
 @router.delete("/{submission_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_submission(submission_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def delete_submission(submission_id: str, user: User = Depends(require_permission("submissions.manage")), db: AsyncSession = Depends(get_db)):
     submission = (
         await db.execute(select(CommunitySubmission).where(CommunitySubmission.id == submission_id))
     ).scalar_one_or_none()

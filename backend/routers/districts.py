@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_admin
+from auth import require_permission
 from database import get_db
 from models import District, DistrictTransportation, ScheduledJob, User
 from schemas import DistrictCreate, DistrictOut, DistrictSummaryOut, DistrictUpdate, ScheduledJobOut, DistrictTransportationOut
@@ -179,7 +179,7 @@ async def list_districts(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=DistrictOut, status_code=status.HTTP_201_CREATED)
-async def create_district(payload: DistrictCreate, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def create_district(payload: DistrictCreate, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(District).where(District.name == payload.name))
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, "A district with that name already exists")
@@ -228,7 +228,7 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
 
 @router.patch("/{district_id}", response_model=DistrictOut)
 async def update_district(
-    district_id: str, payload: DistrictUpdate, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    district_id: str, payload: DistrictUpdate, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)
 ):
     district = (await db.execute(select(District).where(District.id == district_id))).scalar_one_or_none()
     if not district:
@@ -266,7 +266,7 @@ async def update_district(
 
 
 @router.post("/{district_id}/run-now")
-async def run_district_menu_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_district_menu_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.scheduled_job_id:
@@ -279,7 +279,7 @@ async def run_district_menu_scan_now(district_id: str, user: User = Depends(requ
 
 
 @router.post("/{district_id}/calendar/run-now")
-async def run_district_calendar_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_district_calendar_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.calendar_scan_job_id:
@@ -292,7 +292,7 @@ async def run_district_calendar_scan_now(district_id: str, user: User = Depends(
 
 
 @router.post("/{district_id}/marking-period/run-now")
-async def run_marking_period_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_marking_period_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.marking_period_job_id:
@@ -305,7 +305,7 @@ async def run_marking_period_scan_now(district_id: str, user: User = Depends(req
 
 
 @router.post("/{district_id}/preschool-locations/run-now")
-async def run_preschool_locations_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_preschool_locations_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.preschool_locations_job_id:
@@ -318,7 +318,7 @@ async def run_preschool_locations_scan_now(district_id: str, user: User = Depend
 
 
 @router.post("/{district_id}/preschool-team/run-now")
-async def run_preschool_team_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_preschool_team_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.preschool_team_job_id:
@@ -331,7 +331,7 @@ async def run_preschool_team_scan_now(district_id: str, user: User = Depends(req
 
 
 @router.post("/{district_id}/hs-rotation/run-now")
-async def run_hs_rotation_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_hs_rotation_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.hs_rotation_job_id:
@@ -344,7 +344,7 @@ async def run_hs_rotation_scan_now(district_id: str, user: User = Depends(requir
 
 
 @router.post("/{district_id}/transportation/run-now")
-async def run_transportation_scan_now(district_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_transportation_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(District).where(District.id == district_id))
     district = result.scalar_one_or_none()
     if not district or not district.transportation_job_id:

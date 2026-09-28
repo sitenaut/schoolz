@@ -1,3 +1,4 @@
+import { can } from "../lib/permissions";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
@@ -30,7 +31,7 @@ function price(e: LocalEvent): string | null {
 
 export function LocalPage() {
   const { user } = useAuth();
-  const isAdmin = Boolean(user?.is_admin);
+  const isAdmin = can(user, "scans.view");
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<string | null>(TODAY_KEY);

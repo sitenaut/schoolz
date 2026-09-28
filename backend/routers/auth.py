@@ -45,7 +45,7 @@ _RESET_TOKEN_TTL = timedelta(hours=1)
 _DELETE_CONFIRMATION = "DELETE"
 
 
-def _user_out(user: User, student_profile_id: str | None = None) -> UserOut:
+def _user_out(user: User, student_profile_id: str | None = None, permissions: set[str] | None = None) -> UserOut:
     # A Supabase user with no local password and a Google identity has
     # nothing to "change" password-wise - the settings page hides the form.
     method = "password"
@@ -60,6 +60,7 @@ def _user_out(user: User, student_profile_id: str | None = None) -> UserOut:
         sign_in_method=method,
         created_at=user.created_at,
         student_profile_id=student_profile_id,
+        permissions=sorted(permissions or ()),
     )
 
 
@@ -108,7 +109,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return _user_out(user, await _student_profile_id(db, user))
+    return _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))
 
 
 @router.patch("/me", response_model=UserOut)
@@ -120,7 +121,7 @@ async def update_me(payload: UserUpdate, user: User = Depends(get_current_user),
         user.username = payload.username
     await db.commit()
     await db.refresh(user)
-    return _user_out(user, await _student_profile_id(db, user))
+    return _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)

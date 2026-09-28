@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_admin
+from auth import require_permission
 from database import get_db
 from models import District, ScheduledJob, School, SmoreBlock, SmoreNewsletter, User
 from schemas import ScheduledJobOut, SmoreBlockOut, SmoreNewsletterCreate, SmoreNewsletterOut, SmoreNewsletterUpdate
@@ -80,7 +80,7 @@ async def list_newsletters(db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=SmoreNewsletterOut, status_code=status.HTTP_201_CREATED)
 async def create_newsletter(
-    payload: SmoreNewsletterCreate, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    payload: SmoreNewsletterCreate, user: User = Depends(require_permission("newsletters.manage")), db: AsyncSession = Depends(get_db)
 ):
     _validate_cron(payload.cron_expr)
 
@@ -130,7 +130,7 @@ async def create_newsletter(
 async def update_newsletter(
     newsletter_id: str,
     payload: SmoreNewsletterUpdate,
-    user: User = Depends(require_admin),
+    user: User = Depends(require_permission("newsletters.manage")),
     db: AsyncSession = Depends(get_db),
 ):
     newsletter = await _require_manageable(db, newsletter_id)
@@ -194,7 +194,7 @@ async def list_blocks(newsletter_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{newsletter_id}/run-now")
-async def run_now(newsletter_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def run_now(newsletter_id: str, user: User = Depends(require_permission("newsletters.manage")), db: AsyncSession = Depends(get_db)):
     newsletter = await _require_manageable(db, newsletter_id)
     if not newsletter.scheduled_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Newsletter has no linked scheduled job")
@@ -206,7 +206,7 @@ async def run_now(newsletter_id: str, user: User = Depends(require_admin), db: A
 
 
 @router.post("/{newsletter_id}/reextract-all")
-async def reextract_all(newsletter_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def reextract_all(newsletter_id: str, user: User = Depends(require_permission("newsletters.manage")), db: AsyncSession = Depends(get_db)):
     """Re-runs extraction over every block this newsletter has ever
     fetched, not just newly-seen ones. `run-now`'s normal scan+extract path
     only ever passes *new* blocks to extraction - once a block is stored,
@@ -240,7 +240,7 @@ async def reextract_all(newsletter_id: str, user: User = Depends(require_admin),
 
 @router.delete("/{newsletter_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_newsletter(
-    newsletter_id: str, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    newsletter_id: str, user: User = Depends(require_permission("newsletters.manage")), db: AsyncSession = Depends(get_db)
 ):
     newsletter = await _require_manageable(db, newsletter_id)
     if newsletter.scheduled_job_id:

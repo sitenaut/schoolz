@@ -1,3 +1,4 @@
+import functools
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -13,7 +14,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import SessionLocal, get_db
-from models import User
+from models import RolePermission, User, UserRole
+from permissions import PERMISSION_KEYS, expand
 
 logger = logging.getLogger(__name__)
 
@@ -199,11 +201,39 @@ async def get_optional_user(
         return None
 
 
-async def require_admin(user: User = Depends(get_current_user)) -> User:
-    """The centrally-managed-data-sources gate: creating/editing a
-    District, School, SmoreNewsletter, or triggering a scan is an admin
-    action, not something any logged-in guardian can do - registering is
-    only ever for the optional personal view (my kids, my calendar)."""
+async def require_super_admin(user: User = Depends(get_current_user)) -> User:
+    """Super admin = `User.is_admin`. Holds every permission and is the only
+    tier that can manage users and roles."""
     if not user.is_admin:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Super admin access required")
     return user
+
+
+async def get_user_permissions(db: AsyncSession, user: User) -> set[str]:
+    if user.is_admin:
+        return set(PERMISSION_KEYS)
+    rows = await db.execute(
+        select(RolePermission.permission)
+        .join(UserRole, UserRole.role_id == RolePermission.role_id)
+        .where(UserRole.user_id == user.id)
+    )
+    return expand(set(rows.scalars().all()))
+
+
+@functools.cache
+def require_permission(permission: str):
+    """Dependency factory: the centrally-managed-data-sources gate. Creating
+    or editing a District, School or newsletter, or triggering a scan, is an
+    admin action - a super admin, or a user whose role grants `permission`.
+    Cached so a test can override one gate by its identity."""
+    if permission not in PERMISSION_KEYS:
+        raise ValueError(f"Unknown permission {permission!r}")
+
+    async def _dep(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
+        if user.is_admin:
+            return user
+        if permission not in await get_user_permissions(db, user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+        return user
+
+    return _dep

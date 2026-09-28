@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, get_optional_user, require_admin
+from auth import get_current_user, get_optional_user, require_permission
 from database import get_db
 from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
@@ -279,7 +279,7 @@ async def list_my_schools(user: User = Depends(get_current_user), db: AsyncSessi
 
 
 @router.post("", response_model=SchoolOut, status_code=status.HTTP_201_CREATED)
-async def create_school(payload: SchoolCreate, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def create_school(payload: SchoolCreate, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
     district_name = None
     if payload.district_id:
         district = (await db.execute(select(District).where(District.id == payload.district_id))).scalar_one_or_none()
@@ -314,7 +314,7 @@ async def get_school(school: School = Depends(resolve_school)):
 
 @router.patch("/{school_id}", response_model=SchoolOut)
 async def update_school(
-    payload: SchoolUpdate, school: School = Depends(resolve_school), user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    payload: SchoolUpdate, school: School = Depends(resolve_school), user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)
 ):
     if payload.short_name is not None:
         school.short_name = payload.short_name
@@ -360,7 +360,7 @@ async def list_school_staff(school: School = Depends(resolve_school), db: AsyncS
 
 
 @router.post("/{school_id}/staff/run-now")
-async def run_staff_roster_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_staff_roster_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.staff_roster_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked staff-roster job")
 
@@ -371,7 +371,7 @@ async def run_staff_roster_now(school: School = Depends(resolve_school), _: User
 
 
 @router.post("/{school_id}/info/run-now")
-async def run_school_info_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_school_info_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.school_info_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked school-info job")
 
@@ -394,7 +394,7 @@ async def list_school_documents(
 
 
 @router.post("/{school_id}/documents/run-now")
-async def run_documents_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_documents_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.documents_scan_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked documents-scan job")
 
@@ -405,7 +405,7 @@ async def run_documents_scan_now(school: School = Depends(resolve_school), _: Us
 
 
 @router.post("/{school_id}/special-events/run-now")
-async def run_special_events_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_special_events_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.special_events_scan_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked special-events-scan job")
 
@@ -416,7 +416,7 @@ async def run_special_events_scan_now(school: School = Depends(resolve_school), 
 
 
 @router.post("/{school_id}/activities-calendar/run-now")
-async def run_activities_calendar_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_activities_calendar_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.activities_calendar_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked activities-calendar job")
 
@@ -427,7 +427,7 @@ async def run_activities_calendar_scan_now(school: School = Depends(resolve_scho
 
 
 @router.post("/{school_id}/announcements/run-now")
-async def run_announcements_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_announcements_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.announcements_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked announcements job")
 
@@ -438,7 +438,7 @@ async def run_announcements_scan_now(school: School = Depends(resolve_school), _
 
 
 @router.post("/{school_id}/events-doc/run-now")
-async def run_events_doc_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_events_doc_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.events_doc_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked events-doc job")
 
@@ -449,7 +449,7 @@ async def run_events_doc_scan_now(school: School = Depends(resolve_school), _: U
 
 
 @router.post("/{school_id}/activities-site/run-now")
-async def run_activities_site_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_admin)):
+async def run_activities_site_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
     if not school.activities_site_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked activities-site job")
 

@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_admin
+from auth import require_permission
 from database import get_db
 from models import CommunitySubmission, PageVisit, SurveyResponse, User
 
@@ -83,7 +83,7 @@ class PageVisitReport(BaseModel):
 
 @router.get("", response_model=PageVisitReport)
 async def read_page_views(
-    days: int = 30, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+    days: int = 30, _: User = Depends(require_permission("analytics.view")), db: AsyncSession = Depends(get_db)
 ) -> PageVisitReport:
     since = (datetime.now(_SCHOOL_TZ) - timedelta(days=max(1, min(days, 365)))).strftime("%Y-%m-%d")
     result = await db.execute(
@@ -135,7 +135,7 @@ async def _path_total(db: AsyncSession, path: str) -> int:
 
 
 @router.get("/campaign-report", response_model=CampaignReport)
-async def campaign_report(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)) -> CampaignReport:
+async def campaign_report(_: User = Depends(require_permission("analytics.view")), db: AsyncSession = Depends(get_db)) -> CampaignReport:
     today = _today()
     yesterday = (datetime.now(_SCHOOL_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
 

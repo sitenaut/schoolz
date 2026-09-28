@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_admin
+from auth import require_permission
 from database import get_db
 from models import School, SurveyResponse, User
 from schemas import SurveyResponseCreate, SurveyResponseOut, SurveySummaryOut
@@ -108,7 +108,7 @@ async def survey_summary(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/responses", response_model=list[SurveyResponseOut])
-async def list_responses(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def list_responses(_: User = Depends(require_permission("analytics.view")), db: AsyncSession = Depends(get_db)):
     rows = (await db.execute(select(SurveyResponse).order_by(SurveyResponse.created_at.desc()))).scalars().all()
     school_ids = {sid for row in rows for sid in (row.school_ids or [])}
     names: dict[str, str] = {}
@@ -134,7 +134,7 @@ async def list_responses(_: User = Depends(require_admin), db: AsyncSession = De
 
 
 @router.get("/responses.csv", include_in_schema=False)
-async def export_responses_csv(_: User = Depends(require_admin), db: AsyncSession = Depends(get_db)) -> Response:
+async def export_responses_csv(_: User = Depends(require_permission("analytics.view")), db: AsyncSession = Depends(get_db)) -> Response:
     """A spreadsheet is the format this data actually gets used in - the
     point of the survey is handing the district something they can sort,
     count and read, not a JSON blob."""
