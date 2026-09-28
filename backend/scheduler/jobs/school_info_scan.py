@@ -5,6 +5,7 @@ from models import School
 from scheduler.registry import register_job
 from services.apptegy import discover_school_info as discover_apptegy_school_info
 from services.school_info import discover_school_info
+from services.weather import ensure_location
 
 
 @register_job(
@@ -30,6 +31,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     changed = []
     if info["address"] and info["address"] != school.address:
         school.address = info["address"]
+        # A new address means new coordinates - drop the old ones so the
+        # weather lookup below re-geocodes instead of keeping a stale grid.
+        school.latitude = school.longitude = school.nws_grid = None
         changed.append("address")
     if info["main_phone"] and info["main_phone"] != school.main_phone:
         school.main_phone = info["main_phone"]
@@ -37,6 +41,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if info["logo_url"] and info["logo_url"] != school.logo_url:
         school.logo_url = info["logo_url"]
         changed.append("logo")
+
+    weather_note = await ensure_location(school)
+    if weather_note:
+        changed.append(weather_note)
 
     if not info["address"] or not info["main_phone"]:
         missing = [f for f in ("address", "main_phone") if not info[f]]

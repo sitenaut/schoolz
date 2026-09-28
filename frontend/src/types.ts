@@ -235,6 +235,20 @@ export type CurrentPeriod = {
   next_name: string | null;
 };
 
+export type TodayWeather = {
+  dropoff_label: string;
+  dropoff_temp: number | null;
+  pickup_label: string;
+  pickup_temp: number | null;
+  low: number;
+  high: number;
+  rain_chance: number;
+  rain_from: string | null;
+  condition: string;
+  uv_max: number | null;
+  items: string[];
+};
+
 export type SchoolToday = {
   school: School;
   date: string;
@@ -252,6 +266,7 @@ export type SchoolToday = {
   current_period: CurrentPeriod | null;
   transportation: TodayTransportation | null;
   lunch: { today: string | null; next_label: string | null; next: string | null; source_pdf_url: string | null };
+  weather?: TodayWeather | null;
   sacc: { am_hours: string | null; pm_hours: string | null; site_phone: string | null; absence_form_url: string | null; absence_phone: string | null } | null;
   contacts: TodayContact[];
   upcoming: SchoolContentItem[];

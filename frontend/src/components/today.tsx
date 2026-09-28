@@ -5,7 +5,7 @@ import { isNoisyDistrictItem } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent } from "../lib/track";
-import type { CurrentPeriod, DayBlock, NextRotation, SchoolContentItem, SchoolToday, TodayContact, TodayDay } from "../types";
+import type { CurrentPeriod, DayBlock, NextRotation, SchoolContentItem, SchoolToday, TodayContact, TodayDay, TodayWeather } from "../types";
 import { AbsenceButton } from "./AbsenceButton";
 import { Modal } from "./ui/Modal";
 import { IconChevronRight, IconPhone } from "./icons";
@@ -277,6 +277,45 @@ export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentI
 
 /* ---------- the Today-feed card ---------- */
 
+const WEAR: Record<string, string> = {
+  heavy_coat: "🧥 Heavy coat",
+  coat: "🧥 Coat",
+  jacket: "🧥 Light jacket",
+  layers: "👕 Layers",
+  hat_gloves: "🧤 Hat & gloves",
+  umbrella: "☂️ Umbrella",
+  boots: "🥾 Boots",
+  sunscreen: "🧴 Sunscreen",
+  sun_hat: "🧢 Sun hat",
+  water: "💧 Water bottle",
+};
+
+/** Drop-off through just after pickup (backend/services/weather.py) - what
+ * to wear or pack, not a daily high/low: a cold bus stop and a warm pickup
+ * need a jacket that comes home in the backpack. */
+export function WeatherFact({ w }: { w: TodayWeather }) {
+  const temp = (t: number | null) => (t === null ? "–" : `${t}°`);
+  const details = [
+    w.condition,
+    w.rain_chance >= 20 && (w.rain_from ? `${w.rain_chance}% rain from ${w.rain_from}` : `${w.rain_chance}% rain`),
+    w.uv_max !== null && w.uv_max >= 6 && `UV ${w.uv_max}`,
+  ].filter(Boolean);
+  const items = w.items.map((i) => WEAR[i]).filter(Boolean);
+  return (
+    <div className="facts">
+      <div className="fact weather">
+        <div className="k">Weather at school</div>
+        <div className="v">
+          {temp(w.dropoff_temp)} {w.dropoff_label.toLowerCase().startsWith("morning") ? "in the morning" : `at ${w.dropoff_label}`} → {temp(w.pickup_temp)}{" "}
+          {w.pickup_label.toLowerCase().startsWith("afternoon") ? "in the afternoon" : `at ${w.pickup_label}`}
+        </div>
+        <div className="sub">{details.join(" · ")}</div>
+        <div className="wear">{items.length ? items.map((i) => <span key={i}>{i}</span>) : <span>Nothing extra needed</span>}</div>
+      </div>
+    </div>
+  );
+}
+
 export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   const { excludeDistrict } = useMySchools();
   const s = data.school;
@@ -312,6 +351,8 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
       </header>
 
       <DayBlocks blocks={data.day_blocks} current={data.current_period} next={data.next_rotation} />
+
+      {data.weather && <WeatherFact w={data.weather} />}
 
       {(data.lunch.today || data.lunch.next || sacc || !!data.my_specials?.length || !!data.my_current_classes?.length) && (
         <div className="facts">

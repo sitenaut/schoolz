@@ -584,6 +584,13 @@ class School(Base):
     # up on the wrong school's page is worse than none.
     givebacks_shortname: Mapped[str | None] = mapped_column(String(100), nullable=True)
     givebacks_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Geocoded once from `address` (services/weather.py:ensure_location) and
+    # reset whenever the address changes. nws_grid is the NWS forecast office
+    # + gridpoint ("PHI/54,79") - stable for a location, so the two-step
+    # points lookup runs once, and nearby schools share one cached forecast.
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    nws_grid: Mapped[str | None] = mapped_column(String(30), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

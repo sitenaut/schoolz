@@ -803,6 +803,27 @@ h3 {
 .fact a {
   text-decoration: none;
 }
+/* The weather row sits directly on top of the lunch/SACC facts grid - one
+   shared divider between them, not two stacked borders. */
+.facts + .facts {
+  border-top: 0;
+}
+.fact .wear {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.fact .wear span {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--bg);
+  color: var(--ink);
+  white-space: nowrap;
+}
 .next {
   list-style: none;
   margin: 0;
