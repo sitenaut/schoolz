@@ -247,6 +247,7 @@ export type TodayWeather = {
   condition: string;
   uv_max: number | null;
   items: string[];
+  day_label?: string;
 };
 
 export type SchoolToday = {

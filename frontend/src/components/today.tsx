@@ -304,7 +304,7 @@ export function WeatherFact({ w }: { w: TodayWeather }) {
   return (
     <div className="facts">
       <div className="fact weather">
-        <div className="k">Weather at school</div>
+        <div className="k">{!w.day_label || w.day_label === "Today" ? "Weather at school" : `${w.day_label}'s weather at school`}</div>
         <div className="v">
           {temp(w.dropoff_temp)} {w.dropoff_label.toLowerCase().startsWith("morning") ? "in the morning" : `at ${w.dropoff_label}`} → {temp(w.pickup_temp)}{" "}
           {w.pickup_label.toLowerCase().startsWith("afternoon") ? "in the afternoon" : `at ${w.pickup_label}`}

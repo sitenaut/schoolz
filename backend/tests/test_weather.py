@@ -111,3 +111,29 @@ def test_default_hours_are_labeled_as_such_not_as_real_bell_times():
     school = _school(start_time=None, end_time=None)
     out = summarize(_hours([60] * 11), None, school_window(school, "open", _DAY), known_hours=(False, False))
     assert (out["dropoff_label"], out["pickup_label"]) == ("Morning", "Afternoon")
+
+
+def _pick(status, now_hour, now_minute=0, next_status="open"):
+    from services.weather import pick_weather_day
+    now = datetime(2026, 10, 14, now_hour, now_minute, tzinfo=LOCAL_TZ)
+    return pick_weather_day(_school(), _DAY, status, date(2026, 10, 15), next_status, now)
+
+
+def test_school_morning_and_afternoon_show_today():
+    assert _pick("open", 6) == (_DAY, "open", True)
+    assert _pick("open", 15, 29) == (_DAY, "open", True)  # still inside the hour after 2:30 dismissal
+
+
+def test_after_the_window_closes_it_is_tomorrows_weather():
+    assert _pick("open", 15, 30) == (date(2026, 10, 15), "open", False)
+    assert _pick("open", 21) == (date(2026, 10, 15), "open", False)
+
+
+def test_an_early_dismissal_day_hands_off_earlier():
+    # Out at 11:45, so by 1 PM the day is over.
+    assert _pick("early_dismissal", 13)[2] is False
+
+
+def test_no_school_today_shows_the_next_school_day_all_day():
+    assert _pick("weekend", 8) == (date(2026, 10, 15), "open", False)
+    assert _pick("closed", 8, next_status="delayed") == (date(2026, 10, 15), "delayed", False)
