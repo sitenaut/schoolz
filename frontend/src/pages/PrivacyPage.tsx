@@ -1,23 +1,25 @@
 /** Plain privacy/cookies notice, linked from the persistent footer on every
  * page (AppShell). No consent popup by design: everything schoolz stores
  * today (localStorage school picks, Supabase Auth's own session storage,
- * an optional Gmail token, anonymous RUM performance/error data - added
- * 2026-09-11, see docs/OBSERVABILITY_PLAN.md Phase 4) is "strictly
- * necessary" or purely functional/anonymous under GDPR/ePrivacy, so
- * there's nothing here that needs opt-in consent. If that changes (ads,
- * cross-session/identified analytics), this page and a real consent
- * banner both need revisiting - that call belongs to the site owner, not
- * something to decide unilaterally while adding RUM. */
+ * an optional Gmail token, anonymous RUM performance/error data) is
+ * functional or anonymous. Google Analytics (lib/analytics.ts) is the
+ * exception: it sets a first-party cookie, so it is disclosed below and has
+ * a per-device opt-out instead of a banner. Whether that is enough is the
+ * site owner's call - revisit this page if ads or identified analytics are
+ * ever added. */
 import { SeoHead } from "../components/SeoHead";
+import { useState } from "react";
+import { isAnalyticsOptedOut, setAnalyticsOptOut } from "../lib/analytics";
 import { usePrerenderReady } from "../lib/prerenderReady";
 
 export function PrivacyPage() {
   usePrerenderReady(true);
+  const [optedOut, setOptedOut] = useState(isAnalyticsOptedOut());
   return (
     <>
       <SeoHead
         title="Privacy & cookies · schoolz"
-        description="What schoolz stores about visitors and account holders, and why - no ad tracking, no consent banner needed."
+        description="What schoolz stores about visitors and account holders, and why - anonymous usage analytics, no advertising or ad tracking."
         path="/privacy"
       />
       <h2>Privacy &amp; cookies</h2>
@@ -103,6 +105,31 @@ export function PrivacyPage() {
           </tr>
           <tr>
             <td>
+              Anonymous usage statistics from Google Analytics: which pages are viewed, device type (phone or
+              computer), approximate area, the town and school district of the schools you picked, and how you got
+              here
+            </td>
+            <td>A first-party analytics cookie, and Google Analytics</td>
+            <td>
+              So we can see which towns and districts actually use schoolz and which pages help, and so this project
+              can be shown to the districts it serves. Advertising features and Google signals are turned off, we
+              send Google no name, email, account or child information, and personal pages are reported only as
+              "account" or "children", never with anything on them. You can{" "}
+              <button
+                type="button"
+                className="linklike"
+                onClick={() => {
+                  setAnalyticsOptOut(!optedOut);
+                  setOptedOut(!optedOut);
+                }}
+              >
+                {optedOut ? "turn analytics back on for this device" : "turn analytics off for this device"}
+              </button>
+              {optedOut ? " (currently off)" : ""}.
+            </td>
+          </tr>
+          <tr>
+            <td>
               Your survey answers (the schools you picked, what you said is hard to find, your comments, and your name
               and email if you chose to give them)
             </td>
@@ -142,7 +169,7 @@ export function PrivacyPage() {
 
       <h3>What we don't do</h3>
       <ul>
-        <li>No advertising or ad-tracking cookies of any kind.</li>
+        <li>No advertising or ad-tracking cookies of any kind — Google Analytics runs with advertising features off.</li>
         <li>No selling or sharing your data with advertisers or data brokers.</li>
         <li>No cross-site tracking — nothing here follows you to other websites.</li>
         <li>
@@ -153,17 +180,17 @@ export function PrivacyPage() {
 
       <h3>Why there's no "accept cookies" popup</h3>
       <p>
-        Under GDPR and the ePrivacy Directive, a consent banner is required for
-        non-essential tracking (like ad cookies or analytics that identifies you
-        personally) — not for things a site needs to function, or anonymous, aggregate
-        performance monitoring. Everything schoolz currently stores falls into that
-        "strictly necessary" / functional / anonymous category, so there's nothing here
-        that requires your opt-in consent. If that ever changes, this notice (and a real
-        consent choice) will change with it.
+        schoolz serves families in New Jersey, and the only non-essential thing it uses is the anonymous usage
+        analytics described above, with advertising turned off. Rather than a popup, there's an opt-out you can
+        use on this page at any time, and this notice says exactly what is collected. If that ever changes (for
+        example ads, or analytics that identifies you), this notice and a real consent choice will change with it.
       </p>
 
       <h3>Third parties involved</h3>
       <ul>
+        <li>
+          <strong>Google Analytics</strong> — receives the anonymous usage statistics described above.
+        </li>
         <li>
           <strong>Supabase</strong> — handles login/authentication for registered users.
         </li>

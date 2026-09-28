@@ -156,3 +156,24 @@ order — later files win) and then runs
 scripts/alembic_env.sh local revision --autogenerate -m "..."
 scripts/alembic_env.sh prod upgrade head
 ```
+
+## Google Analytics (GA4)
+
+The only value is the **Measurement ID** (`G-XXXXXXXXXX`), which is public: set
+`VITE_GA_MEASUREMENT_ID` in `frontend/fly.toml` `[build.args]`. Empty = analytics
+off (local, tests). No secret is needed; a Measurement Protocol API secret or a
+Data API service account would only be required for server-side events / an
+in-app dashboard, neither of which exists.
+
+`lib/analytics.ts` only ever loads on the production hostname (`VITE_PUBLIC_WEB_URL`)
+and never for automation (`navigator.webdriver`, which covers the prerender pass).
+
+**One-time GA console setup** (dimensions and filters aren't retroactive):
+1. Admin → Data streams → Web → `schoolz.sitenaut.com`. Copy the Measurement ID.
+2. Admin → Data settings → Data retention: set event data retention (2 or 14 months). Data collection: leave Google signals off.
+3. Admin → Custom definitions → create **user-scoped**: `town`, `district`, `school_type`, `auth_state`, `schools_picked`. **Event-scoped**: `school_slug`, `route`, `method`.
+4. Admin → Data streams → Configure tag settings → Define internal traffic is not needed (traffic is flagged in-browser as `traffic_type=internal`). Instead: Admin → Data settings → Data filters → the built-in **Internal Traffic** filter → set to **Active** (it starts in Testing and excludes nothing until switched).
+5. Admin → Events → mark as key events: `sign_up`, `schools_picked`, `action_absence`.
+6. Admin → Product links → Search Console links → link the schoolz property, so queries appear beside on-site behavior.
+
+**Keeping your own visits out:** open `https://schoolz.sitenaut.com/?internal=1` once on each browser/device you test with (`?internal=0` undoes it). Admin accounts are flagged automatically on login. Verify in GA Realtime, not the daily reports.

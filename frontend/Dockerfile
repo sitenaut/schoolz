@@ -11,6 +11,8 @@ ARG VITE_APP_VERSION=dev
 # below - never the real Grafana collector URL directly, so ad-blockers
 # that flag *.grafana.net don't silently drop RUM data.
 ARG VITE_FARO_URL=
+# GA4 Measurement ID (public). Empty = analytics off (src/lib/analytics.ts).
+ARG VITE_GA_MEASUREMENT_ID=
 # The site's real public origin (src/lib/site.ts) - matches the backend's
 # own PUBLIC_WEB_URL. Needed so canonical/Open Graph tags are still
 # correct when the backend's prerender service renders a page via an
@@ -22,6 +24,7 @@ ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
     VITE_API_URL=$VITE_API_URL \
     VITE_APP_VERSION=$VITE_APP_VERSION \
     VITE_FARO_URL=$VITE_FARO_URL \
+    VITE_GA_MEASUREMENT_ID=$VITE_GA_MEASUREMENT_ID \
     VITE_PUBLIC_WEB_URL=$VITE_PUBLIC_WEB_URL
 
 COPY package.json ./

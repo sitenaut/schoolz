@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
 import { ChatWidget } from "./ChatWidget";
@@ -8,6 +8,7 @@ import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
+import { gaPageView, gaSetUserProperties, setInternalTraffic } from "../lib/analytics";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -22,6 +23,8 @@ const ROUTE_TEMPLATES: [RegExp, string][] = [
   [/^\/invites\/[^/]+$/, "/invites/:token"],
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
 ];
+
+const GA_HOLD_MS = 3000;
 
 let resumedInviteToken: string | null = null;
 
@@ -57,8 +60,8 @@ export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
   const unreadInbox = useUnreadInbox(!!user?.is_admin);
-  const { mySchools, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
-  const { pathname } = useLocation();
+  const { mySchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
   // Calendar only, by explicit product call. That page auto-scrolls ~3000px
@@ -129,6 +132,55 @@ export function AppShell() {
     countVisit(route);
     fromRouteRef.current = route;
   }, [pathname]);
+
+  // GA page_view. Held until the auth check settles so an admin's first hit
+  // is already flagged internal (see setInternalTraffic) instead of leaking
+  // one visit per session; the short delay lets react-helmet-async update
+  // document.title first. lastGaView dedupes StrictMode's double effect.
+  const lastGaView = useRef<string | null>(null);
+  const gaFrom = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (user?.is_admin) setInternalTraffic(true);
+  }, [user?.is_admin]);
+  // The hold is capped: a stalled auth/schools request must never cost a
+  // page view. After GA_HOLD_MS the hit goes out, and town is attached by the
+  // user-properties effect below once schools do arrive.
+  const [gaHoldExpired, setGaHoldExpired] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setGaHoldExpired(true), GA_HOLD_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (((authLoading && !authTimedOut) || schoolsLoading) && !gaHoldExpired) return;
+    const key = pathname + search;
+    if (lastGaView.current === key) return;
+    const timer = window.setTimeout(() => {
+      lastGaView.current = key;
+      const schoolMatch = pathname.match(/^\/schools\/([^/]+)/);
+      gaPageView(pathname, search, {
+        route: routeTemplate(pathname),
+        ...(gaFrom.current ? { page_referrer: gaFrom.current } : {}),
+        ...(schoolMatch ? { school_slug: schoolMatch[1] } : {}),
+      });
+      gaFrom.current = window.location.origin + pathname;
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [pathname, search, authLoading, authTimedOut, schoolsLoading, gaHoldExpired]);
+
+  // Who the visitor is, as dimensions: town/district/school type come from
+  // the schools they picked (never IP geography, which for this audience
+  // mostly reports an ISP hub). Nothing here identifies a person or child.
+  useEffect(() => {
+    if ((authLoading && !authTimedOut) || schoolsLoading) return;
+    const first = mySchools[0];
+    gaSetUserProperties({
+      town: mySchools.length ? myTowns[0] : undefined,
+      district: first?.district_id ? districtsById.get(first.district_id)?.name : undefined,
+      school_type: first?.school_type ?? undefined,
+      auth_state: user ? "authenticated" : "anonymous",
+      schools_picked: mySchools.length ? String(Math.min(mySchools.length, 5)) : "0",
+    });
+  }, [user, authLoading, authTimedOut, schoolsLoading, mySchools, myTowns, districtsById]);
 
   useEffect(() => {
     const faro = getFaro();

@@ -9,3 +9,6 @@ export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "dev";
 // Same-origin proxy path (frontend/nginx.conf) in prod, empty locally - RUM
 // is off entirely when this isn't set (see src/lib/telemetry.ts).
 export const FARO_URL = import.meta.env.VITE_FARO_URL ?? "";
+// GA4 Measurement ID (G-XXXXXXXXXX) - public by design, ships in the bundle.
+// Empty (local, vitest) means analytics is off entirely - src/lib/analytics.ts.
+export const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID ?? "";

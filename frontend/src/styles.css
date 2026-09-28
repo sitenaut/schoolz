@@ -808,6 +808,33 @@ h3 {
 .facts + .facts {
   border-top: 0;
 }
+/* Weather + after school in one row; weather's clothing chips need the room. */
+.facts.weatherRow {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+.clamp {
+  max-height: 5.6em;
+  overflow: hidden;
+}
+.clampOpen {
+  max-height: none;
+}
+.clampFade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+}
+.clampToggle {
+  all: unset;
+  cursor: pointer;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.clampToggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .fact .wear {
   display: flex;
   flex-wrap: wrap;
