@@ -11,4 +11,4 @@ Disallow: /gmail
 Disallow: /start
 Disallow: /invites/
 
-Sitemap: https://schoolz-api.sitenaut.com/sitemap.xml
+Sitemap: https://schoolz.sitenaut.com/sitemap.xml

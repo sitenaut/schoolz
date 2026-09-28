@@ -144,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { access_token } = await res.json();
     setLocalToken(access_token);
+    trackEvent("sign_up", { method: "password" });
     await refresh();
   };
 
@@ -165,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { access_token } = await res.json();
     setLocalToken(access_token);
+    trackEvent("login", { method: "password" });
     await refresh();
   };
 
@@ -189,7 +191,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     if (err) setError(err.message);
-    else await refresh();
+    else {
+      trackEvent("login", { method: "password" });
+      await refresh();
+    }
   };
 
   const registerWithPasswordSupabase = async (email: string, password: string, returnTo?: string) => {
@@ -201,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { emailRedirectTo: absoluteReturnTo(returnTo) },
     });
     if (err) setError(err.message);
+    else trackEvent("sign_up", { method: "password" });
   };
 
   const logout = async () => {

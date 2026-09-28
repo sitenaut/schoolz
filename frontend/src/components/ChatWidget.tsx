@@ -1,3 +1,4 @@
+import { trackEvent } from "../lib/track";
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
@@ -54,6 +55,7 @@ export function ChatWidget() {
     setError(null);
     setMessages((m) => [...m, { role: "user", text }]);
     setSending(true);
+    trackEvent("chat_message_sent", { turn: apiHistory.length + 1 });
     try {
       const r = await apiFetch("/chat", {
         method: "POST",
@@ -77,7 +79,14 @@ export function ChatWidget() {
 
   return (
     <>
-      <button className="chat-fab" onClick={() => setOpen(true)} aria-label="Ask schoolz">
+      <button
+        className="chat-fab"
+        onClick={() => {
+          setOpen(true);
+          trackEvent("chat_opened");
+        }}
+        aria-label="Ask schoolz"
+      >
         <ChatAvatar size={56} />
       </button>
 
