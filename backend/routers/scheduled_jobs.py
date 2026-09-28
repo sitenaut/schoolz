@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_admin
+from auth import require_permission
 from database import get_db
 from local_events.billz_import import plan_import
 from local_events.prune import KIND as LOCAL_EVENTS_KIND, prune_orphaned_events
@@ -92,7 +92,7 @@ async def _attach_targets(db: AsyncSession, jobs: list[ScheduledJob]) -> list[Sc
     return out
 
 
-@router.get("/kinds", response_model=list[JobKindOut], dependencies=[Depends(require_admin)])
+@router.get("/kinds", response_model=list[JobKindOut], dependencies=[Depends(require_permission("scans.view"))])
 async def list_kinds():
     """Every registered job kind, with the param schema the create form
     needs to know which target (school/district/newsletter/scanner) to ask
@@ -111,14 +111,14 @@ async def list_kinds():
     ]
 
 
-@router.post("/test-fetch", response_model=TestFetchOut, dependencies=[Depends(require_admin)])
+@router.post("/test-fetch", response_model=TestFetchOut, dependencies=[Depends(require_permission("scans.manage"))])
 async def test_fetch(body: TestFetchIn) -> TestFetchOut:
     """Dry-run a job's fetch step without persisting anything - validates
     source URLs and params before a schedule saves them. Local events only."""
     return await run_test_fetch(body)
 
 
-@router.get("", response_model=list[ScheduledJobOut], dependencies=[Depends(require_admin)])
+@router.get("", response_model=list[ScheduledJobOut], dependencies=[Depends(require_permission("scans.view"))])
 async def list_jobs(kind: str | None = None, db: AsyncSession = Depends(get_db)):
     """Admin-only - this is the visibility view for every centrally-managed
     scan (district feeds, staff rosters, documents, lunch menus, Smore,
@@ -131,7 +131,7 @@ async def list_jobs(kind: str | None = None, db: AsyncSession = Depends(get_db))
     return await _attach_targets(db, jobs)
 
 
-@router.get("/runs/summary", response_model=JobRunSummaryOut, dependencies=[Depends(require_admin)])
+@router.get("/runs/summary", response_model=JobRunSummaryOut, dependencies=[Depends(require_permission("scans.view"))])
 async def runs_summary(db: AsyncSession = Depends(get_db)):
     """Current state of every enabled job, rolled up by last_status - the
     numbers for the stat tiles at the top of the jobs page."""
@@ -143,7 +143,7 @@ async def runs_summary(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=ScheduledJobOut, status_code=status.HTTP_201_CREATED)
-async def create_job(payload: ScheduledJobCreate, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def create_job(payload: ScheduledJobCreate, user: User = Depends(require_permission("scans.manage")), db: AsyncSession = Depends(get_db)):
     _validate_params(payload.kind, payload.params)
     _validate_cron(payload.cron_expr)
     _validate_timezone(payload.timezone)
@@ -180,7 +180,7 @@ class BillzImportOut(BaseModel):
 
 
 @router.post("/import-billz", response_model=BillzImportOut)
-async def import_billz_jobs(body: BillzImportIn, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def import_billz_jobs(body: BillzImportIn, user: User = Depends(require_permission("scans.manage")), db: AsyncSession = Depends(get_db)):
     """Create local_events.refresh jobs from billz events.refresh jobs (or
     their params) pasted as JSON - see local_events/billz_import.py. A job
     whose params already match an existing one is skipped, so pasting the
@@ -214,13 +214,13 @@ async def _get_job_or_404(db: AsyncSession, job_id: str) -> ScheduledJob:
     return job
 
 
-@router.get("/{job_id}", response_model=ScheduledJobOut, dependencies=[Depends(require_admin)])
+@router.get("/{job_id}", response_model=ScheduledJobOut, dependencies=[Depends(require_permission("scans.view"))])
 async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     job = await _get_job_or_404(db, job_id)
     return (await _attach_targets(db, [job]))[0]
 
 
-@router.patch("/{job_id}", response_model=ScheduledJobOut, dependencies=[Depends(require_admin)])
+@router.patch("/{job_id}", response_model=ScheduledJobOut, dependencies=[Depends(require_permission("scans.manage"))])
 async def update_job(job_id: str, payload: ScheduledJobUpdate, db: AsyncSession = Depends(get_db)):
     job = await _get_job_or_404(db, job_id)
 
@@ -253,7 +253,7 @@ async def update_job(job_id: str, payload: ScheduledJobUpdate, db: AsyncSession 
     return (await _attach_targets(db, [job]))[0]
 
 
-@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("scans.manage"))])
 async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
     """Every *_job_id column pointing at scheduled_jobs is ON DELETE SET
     NULL, so a School/District/newsletter/scanner that owned this job keeps
@@ -268,14 +268,14 @@ async def delete_job(job_id: str, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
 
-@router.get("/{job_id}/runs", response_model=list[JobRunOut], dependencies=[Depends(require_admin)])
+@router.get("/{job_id}/runs", response_model=list[JobRunOut], dependencies=[Depends(require_permission("scans.view"))])
 async def list_runs(job_id: str, limit: int = Query(default=50, ge=1, le=200), db: AsyncSession = Depends(get_db)):
     await _get_job_or_404(db, job_id)
     result = await db.execute(select(JobRun).where(JobRun.job_id == job_id).order_by(JobRun.started_at.desc()).limit(limit))
     return result.scalars().all()
 
 
-@router.post("/{job_id}/run-now", dependencies=[Depends(require_admin)])
+@router.post("/{job_id}/run-now", dependencies=[Depends(require_permission("scans.manage"))])
 async def run_now(job_id: str, db: AsyncSession = Depends(get_db)):
     """Generic manual trigger for any job, regardless of kind - the
     per-entity run-now endpoints (schools/districts/newsletters/scanners)

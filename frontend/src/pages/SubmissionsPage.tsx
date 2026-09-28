@@ -8,6 +8,8 @@ import { useToast } from "../components/ui/Toast";
 import { IconCheck, IconInbox, IconLink, IconRefresh, IconSearch, IconTrash, IconUpload, IconX } from "../components/icons";
 import { fmtDateTime, relativeTime } from "../lib/format";
 import { apiFetch } from "../api";
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 import {
   deleteSubmission,
   listSubmissions,
@@ -27,6 +29,8 @@ function statusTone(status: string): "warn" | "ok" | "bad" | "muted" {
 
 export function SubmissionsPage() {
   const toast = useToast();
+  const { user } = useAuth();
+  const canEdit = can(user, "submissions.manage");
   const [rows, setRows] = useState<CommunitySubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -226,11 +230,13 @@ export function SubmissionsPage() {
           </div>
         }
         defaultSort={{ id: "when", dir: "desc" }}
-        rowActions={(r) => (
-          <button className="btn icon danger" title="Delete" onClick={() => setPendingDelete(r)}>
-            <IconTrash />
-          </button>
-        )}
+        rowActions={(r) =>
+          canEdit ? (
+            <button className="btn icon danger" title="Delete" onClick={() => setPendingDelete(r)}>
+              <IconTrash />
+            </button>
+          ) : null
+        }
       />
 
       <Modal
@@ -240,7 +246,7 @@ export function SubmissionsPage() {
         title={detail?.kind === "link" ? "Link submission" : "File submission"}
         subtitle={detail && <Badge tone={statusTone(detail.status)}>{detail.status}</Badge>}
         footer={
-          detail && (
+          detail && canEdit && (
             <>
               <button className="btn solid-danger" onClick={() => setStatus(detail, "rejected")} disabled={busy}>
                 <IconX /> Reject

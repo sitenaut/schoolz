@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, get_optional_user, require_admin
+from auth import get_current_user, get_optional_user, require_permission
 from database import get_db
 from models import ClassPayment, ClassPaymentTick, School, SchoolClassYear, SchoolContentItem, StaffMember, User
 from schemas import (
@@ -88,7 +88,7 @@ async def update_class_year(
     grad_year: int,
     payload: SchoolClassYearUpdate,
     school: School = Depends(resolve_school),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_permission("schools.manage")),
     db: AsyncSession = Depends(get_db),
 ):
     """Manual correction of what services/hs_activities_site.py extracted -
@@ -178,7 +178,7 @@ async def create_class_payment(
     grad_year: int,
     payload: ClassPaymentCreate,
     school: School = Depends(resolve_school),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_permission("schools.manage")),
     db: AsyncSession = Depends(get_db),
 ):
     class_year = await get_or_create_class_year(db, school.id, grad_year)
@@ -209,7 +209,7 @@ async def update_class_payment(
     payment_id: str,
     payload: ClassPaymentUpdate,
     school: School = Depends(resolve_school),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_permission("schools.manage")),
     db: AsyncSession = Depends(get_db),
 ):
     payment = await _resolve_payment(school.id, grad_year, payment_id, db)
@@ -225,7 +225,7 @@ async def delete_class_payment(
     grad_year: int,
     payment_id: str,
     school: School = Depends(resolve_school),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_permission("schools.manage")),
     db: AsyncSession = Depends(get_db),
 ):
     payment = await _resolve_payment(school.id, grad_year, payment_id, db)

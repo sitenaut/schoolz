@@ -34,18 +34,18 @@ _FAKE_EVENT = RawEvent(
 
 @pytest.fixture
 async def admin_client():
-    from auth import require_admin
+    from auth import require_permission
     from main import app
 
     async def _require_admin():
         return None
 
-    app.dependency_overrides[require_admin] = _require_admin
+    app.dependency_overrides[require_permission("scans.manage")] = _require_admin
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             yield ac
     finally:
-        app.dependency_overrides.pop(require_admin, None)
+        app.dependency_overrides.pop(require_permission("scans.manage"), None)
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

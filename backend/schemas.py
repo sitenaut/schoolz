@@ -23,7 +23,11 @@ class UserOut(BaseModel):
     id: str
     email: str
     username: str
+    # Super admin: holds every permission and manages users/roles.
     is_admin: bool
+    # Permission keys this user holds (all of them for a super admin) - the
+    # UI shows an admin surface if this is non-empty.
+    permissions: list[str] = []
     auth_mode: str
     # "password" (local, or Supabase email+password) | "google" (Supabase
     # OAuth, no password to change) - the settings page uses this to decide

@@ -1,3 +1,4 @@
+import { can, isStaff } from "../lib/permissions";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthPopover } from "./AuthPopover";
@@ -59,7 +60,7 @@ const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
-  const unreadInbox = useUnreadInbox(!!user?.is_admin);
+  const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
   const { mySchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
@@ -140,8 +141,8 @@ export function AppShell() {
   const lastGaView = useRef<string | null>(null);
   const gaFrom = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (user?.is_admin) setInternalTraffic(true);
-  }, [user?.is_admin]);
+    if (isStaff(user)) setInternalTraffic(true);
+  }, [user]);
   // The hold is capped: a stalled auth/schools request must never cost a
   // page view. After GA_HOLD_MS the hit goes out, and town is attached by the
   // user-properties effect below once schools do arrive.
@@ -236,7 +237,7 @@ export function AppShell() {
             <span className="bell-count">{unreadInbox > 9 ? "9+" : unreadInbox}</span>
           </Link>
         )}
-        {user?.is_admin && (
+        {isStaff(user) && (
           <Link to="/admin" className="btn icon" title="Admin" aria-label="Admin">
             <IconWrench />
           </Link>

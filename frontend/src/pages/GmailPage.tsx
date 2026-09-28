@@ -1,3 +1,5 @@
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
@@ -39,6 +41,8 @@ function csvToList(value: string): string[] {
 }
 
 export function GmailPage() {
+  const { user } = useAuth();
+  const canEdit = can(user, "email.manage");
   const [connections, setConnections] = useState<Connection[]>([]);
   const [scanners, setScanners] = useState<Scanner[]>([]);
   const [emails, setEmails] = useState<SchoolEmail[]>([]);
@@ -138,12 +142,12 @@ export function GmailPage() {
           {connections.map((c) => (
             <li key={c.google_email}>
               {c.google_email}{" "}
-              <button onClick={() => disconnect(c.google_email)}>Disconnect</button>
+              {canEdit && <button onClick={() => disconnect(c.google_email)}>Disconnect</button>}
             </li>
           ))}
         </ul>
       )}
-      <button onClick={connectGmail}>Connect Gmail account</button>
+      {canEdit && <button onClick={connectGmail}>Connect Gmail account</button>}
 
       <h2>Recurring scanners</h2>
       {scanners.length === 0 ? (
@@ -158,14 +162,19 @@ export function GmailPage() {
                 cron: {s.scheduled_job?.cron_expr} · last run: {s.scheduled_job?.last_status ?? "never"}
                 {s.scheduled_job?.last_error && ` (${s.scheduled_job.last_error})`}
               </small>
-              <br />
-              <button onClick={() => runNow(s.id)}>Run now</button>
+              {canEdit && (
+                <>
+                  <br />
+                  <button onClick={() => runNow(s.id)}>Run now</button>
+                </>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      <h3>Add a scanner</h3>
+      {canEdit && <h3>Add a scanner</h3>}
+      {canEdit && (
       <form onSubmit={createScanner}>
         <label>
           Name
@@ -189,6 +198,7 @@ export function GmailPage() {
         <br />
         <button type="submit">Create scanner</button>
       </form>
+      )}
 
       <h2>Captured school emails</h2>
       {emails.length === 0 ? (

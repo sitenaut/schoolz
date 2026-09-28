@@ -1,3 +1,4 @@
+import { isStaff } from "../../lib/permissions";
 import { useEffect, useState } from "react";
 import { APP_VERSION } from "../../authConfig";
 import { IconMail, IconUser } from "../../components/icons";
@@ -70,11 +71,15 @@ export function ProfileSection() {
               <Badge tone="info" dot={false}>
                 {method}
               </Badge>
-              {user.is_admin && (
+              {user.is_admin ? (
+                <Badge tone="warn" dot={false}>
+                  Super admin
+                </Badge>
+              ) : isStaff(user) ? (
                 <Badge tone="warn" dot={false}>
                   Admin
                 </Badge>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

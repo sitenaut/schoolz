@@ -1,3 +1,4 @@
+import { can } from "../lib/permissions";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
@@ -157,7 +158,7 @@ export function SchoolsPage() {
         ))
       )}
 
-      {user?.is_admin && (
+      {can(user, "schools.manage") && (
         <>
           <div className="section-title">Add a school</div>
           {error && <p style={{ color: "var(--color-danger)" }}>{error}</p>}

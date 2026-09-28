@@ -12,7 +12,9 @@ type CurrentUser = {
   id: string;
   email: string;
   username: string;
+  /** Super admin: every permission, and manages users/roles. */
   is_admin: boolean;
+  permissions: string[];
   auth_mode: string;
   sign_in_method: "password" | "google";
   created_at: string | null;

@@ -6,6 +6,8 @@ import { Field } from "../components/ui/Field";
 import { SectionCard } from "../components/ui/SectionCard";
 import { Switch } from "../components/ui/Switch";
 import { useToast } from "../components/ui/Toast";
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 
 type AudienceConfig = {
   provider: string;
@@ -48,6 +50,8 @@ async function errorText(res: Response): Promise<string> {
  * runs one question through up to three configurations with the real tools. */
 export function ChatbotAdminPage() {
   const toast = useToast();
+  const { user } = useAuth();
+  const canEdit = can(user, "chatbot.manage");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [models, setModels] = useState<Record<string, string[]>>({});
@@ -100,11 +104,14 @@ export function ChatbotAdminPage() {
         title="Live settings"
         description="What the assistant runs on right now. Changes take effect within about 30 seconds."
         footer={
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save all changes"}
-          </button>
+          canEdit ? (
+            <button className="btn btn-primary" onClick={save} disabled={saving}>
+              {saving ? "Saving…" : "Save all changes"}
+            </button>
+          ) : undefined
         }
       >
+        <fieldset disabled={!canEdit} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <div className="cb-grid">
           <AudienceEditor
             title="Anonymous visitors"
@@ -122,21 +129,26 @@ export function ChatbotAdminPage() {
             privacyNote
           />
         </div>
+        </fieldset>
       </SectionCard>
 
       <SectionCard
         title="Prices"
         description="$ per million tokens, used only for the compare panel's cost estimates. Cache writes are counted at 1.25× input. Fill in Gemini's from Google's pricing page — unpriced models show no cost rather than a guess."
         footer={
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save all changes"}
-          </button>
+          canEdit ? (
+            <button className="btn btn-primary" onClick={save} disabled={saving}>
+              {saving ? "Saving…" : "Save all changes"}
+            </button>
+          ) : undefined
         }
       >
-        <PriceTable prices={settings.prices} models={allModels} onChange={(prices) => setSettings({ ...settings, prices })} />
+        <fieldset disabled={!canEdit} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+          <PriceTable prices={settings.prices} models={allModels} onChange={(prices) => setSettings({ ...settings, prices })} />
+        </fieldset>
       </SectionCard>
 
-      <ComparePanel settings={settings} providers={providers} models={models} />
+      {canEdit && <ComparePanel settings={settings} providers={providers} models={models} />}
     </div>
   );
 }
