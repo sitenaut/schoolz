@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { Badge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { DataTable, type Column } from "../components/ui/DataTable";
+import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { Field } from "../components/ui/Field";
 import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -14,6 +16,16 @@ type Permission = { key: string; label: string; description: string; sensitive: 
 /** Mirrors the backend: a `.manage` permission implies its `.view`. */
 const impliedView = (key: string) => (key.endsWith(".manage") ? key.replace(/\.manage$/, ".view") : null);
 type Role = { id: string; name: string; description: string | null; permissions: string[]; user_count: number };
+type Sort = { id: string; dir: "asc" | "desc" };
+const PAGE_SIZES = [25, 50, 100];
+const ACCESS_FILTERS = [
+  { value: "all", label: "Everyone" },
+  { value: "staff", label: "Any admin access" },
+  { value: "super", label: "Super admins" },
+  { value: "role", label: "Has a role" },
+  { value: "none", label: "No admin access" },
+];
+
 type AdminUser = { id: string; email: string; username: string; is_admin: boolean; role_ids: string[]; created_at: string | null };
 
 async function errorText(res: Response, fallback: string): Promise<string> {
@@ -37,8 +49,14 @@ export function UsersRolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [total, setTotal] = useState(0);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [adminsOnly, setAdminsOnly] = useState(false);
+  const [access, setAccess] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [sort, setSort] = useState<Sort>({ id: "access", dir: "asc" });
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const [offset, setOffset] = useState(0);
+  const latestLoad = useRef(0);
 
   const [editingRole, setEditingRole] = useState<Role | "new" | null>(null);
   const [deletingRole, setDeletingRole] = useState<Role | null>(null);
@@ -55,16 +73,29 @@ export function UsersRolesPage() {
   }, []);
 
   const loadUsers = useCallback(async () => {
-    const params = new URLSearchParams({ limit: "100" });
+    // A slower, older response must never overwrite a newer one.
+    const mine = ++latestLoad.current;
+    setUsersLoading(true);
+    const params = new URLSearchParams({ limit: String(pageSize), offset: String(offset), sort: sort.id, dir: sort.dir, access });
     if (q.trim()) params.set("q", q.trim());
-    if (adminsOnly) params.set("admins_only", "true");
-    const r = await apiFetch(`/admin/users?${params}`);
-    if (r.ok) {
-      const body = await r.json();
-      setUsers(body.items);
-      setTotal(body.total);
+    if (roleFilter) params.set("role_id", roleFilter);
+    try {
+      const r = await apiFetch(`/admin/users?${params}`);
+      if (mine !== latestLoad.current) return;
+      if (r.ok) {
+        const body = await r.json();
+        // Filters shrank the list out from under this page: go to the last one.
+        if (body.items.length === 0 && body.total > 0 && offset > 0) {
+          setOffset(Math.floor((body.total - 1) / pageSize) * pageSize);
+          return;
+        }
+        setUsers(body.items);
+        setTotal(body.total);
+      }
+    } finally {
+      if (mine === latestLoad.current) setUsersLoading(false);
     }
-  }, [q, adminsOnly]);
+  }, [q, access, roleFilter, sort, pageSize, offset]);
 
   useEffect(() => {
     apiFetch("/admin/permissions").then((r) => (r.ok ? r.json() : [])).then(setPermissions);
@@ -125,6 +156,49 @@ export function UsersRolesPage() {
     }
   };
 
+  const userColumns: Column<AdminUser>[] = [
+    {
+      id: "username",
+      header: "Username",
+      sortValue: (u) => u.username,
+      cell: (u) => (
+        <>
+          <strong>{u.username}</strong>
+          {u.id === me?.id && <span className="note"> · you</span>}
+        </>
+      ),
+    },
+    { id: "email", header: "Email", sortValue: (u) => u.email, cell: (u) => u.email },
+    {
+      id: "access",
+      header: "Access",
+      sortValue: (u) => u.role_ids.length,
+      cell: (u) =>
+        !u.is_admin && u.role_ids.length === 0 ? (
+          <span className="note">None</span>
+        ) : (
+          <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 6 }}>
+            {u.is_admin && (
+              <Badge tone="warn" dot={false}>
+                Super admin
+              </Badge>
+            )}
+            {u.role_ids.map((id) => (
+              <Badge key={id} tone="info" dot={false}>
+                {roleName.get(id) ?? "Unknown role"}
+              </Badge>
+            ))}
+          </span>
+        ),
+    },
+    {
+      id: "created_at",
+      header: "Joined",
+      sortValue: (u) => u.created_at,
+      cell: (u) => (u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"),
+    },
+  ];
+
   return (
     <div>
       <PageHeader
@@ -176,62 +250,110 @@ export function UsersRolesPage() {
         )}
       </SectionCard>
 
-      <SectionCard
-        title="People"
-        description="People appear here after their first sign-in."
-      >
+      <SectionCard title="People" description="People appear here after their first sign-in.">
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
           <input
             type="search"
             placeholder="Search email or username"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setOffset(0);
+            }}
             aria-label="Search users"
-            style={{ flex: "1 1 220px" }}
+            style={{ flex: "1 1 220px", width: "auto", margin: 0 }}
           />
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input type="checkbox" checked={adminsOnly} onChange={(e) => setAdminsOnly(e.target.checked)} />
-            Admins only
-          </label>
-        </div>
-        {users === null ? (
-          <p className="note">Loading…</p>
-        ) : users.length === 0 ? (
-          <p className="note">No matching users.</p>
-        ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            {users.map((u) => (
-              <div key={u.id} className="card" style={{ display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
-                <div style={{ minWidth: 0 }}>
-                  <strong>{u.username}</strong> <span className="note">{u.email}</span>
-                  {u.id === me?.id && <span className="note"> · you</span>}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                    {u.is_admin && (
-                      <Badge tone="warn" dot={false}>
-                        Super admin
-                      </Badge>
-                    )}
-                    {u.role_ids.map((id) => (
-                      <Badge key={id} tone="info" dot={false}>
-                        {roleName.get(id) ?? "Unknown role"}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button className="btn" onClick={() => setEditingUser(u)}>
-                    Roles
-                  </button>
-                  <button className="btn" disabled={u.id === me?.id && u.is_admin} onClick={() => setTogglingSuper(u)}
-                    title={u.id === me?.id && u.is_admin ? "Ask another super admin to remove your access" : undefined}>
-                    {u.is_admin ? "Remove super admin" : "Make super admin"}
-                  </button>
-                </div>
-              </div>
+          <select
+            value={access}
+            onChange={(e) => {
+              setAccess(e.target.value);
+              setOffset(0);
+            }}
+            aria-label="Filter by access"
+            style={{ width: "auto", margin: 0 }}
+          >
+            {ACCESS_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
             ))}
-            {total > users.length && <p className="note">Showing {users.length} of {total} - search to narrow.</p>}
+          </select>
+          <select
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setOffset(0);
+            }}
+            aria-label="Filter by role"
+            style={{ width: "auto", margin: 0 }}
+          >
+            <option value="">Any role</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <DataTable
+          columns={userColumns}
+          rows={users ?? []}
+          getRowId={(u) => u.id}
+          loading={usersLoading && users === null}
+          sort={sort}
+          onSortChange={(next) => {
+            setSort(next);
+            setOffset(0);
+          }}
+          empty={q || access !== "all" || roleFilter ? "No users match these filters." : "No users yet."}
+          rowActions={(u) => (
+            <>
+              <button className="btn sm" onClick={() => setEditingUser(u)}>
+                Roles
+              </button>
+              <button
+                className="btn sm"
+                disabled={u.id === me?.id && u.is_admin}
+                onClick={() => setTogglingSuper(u)}
+                title={u.id === me?.id && u.is_admin ? "Ask another super admin to remove your access" : undefined}
+              >
+                {u.is_admin ? "Remove super admin" : "Make super admin"}
+              </button>
+            </>
+          )}
+        />
+
+        <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginTop: 12 }}>
+          <span className="note" aria-live="polite" style={{ opacity: usersLoading ? 0.6 : 1 }}>
+            {total === 0 ? "0 users" : `${offset + 1}–${Math.min(offset + pageSize, total)} of ${total}`}
+          </span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <label className="note" style={{ display: "flex", gap: 6, alignItems: "center", margin: 0 }}>
+              Per page
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setOffset(0);
+                }}
+                style={{ width: "auto", margin: 0 }}
+              >
+                {PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn" disabled={offset === 0 || usersLoading} onClick={() => setOffset(Math.max(0, offset - pageSize))}>
+              <IconChevronLeft /> Previous
+            </button>
+            <button className="btn" disabled={offset + pageSize >= total || usersLoading} onClick={() => setOffset(offset + pageSize)}>
+              Next <IconChevronRight />
+            </button>
           </div>
-        )}
+        </div>
       </SectionCard>
 
       {editingRole && (

@@ -135,12 +135,38 @@ async def test_promote_and_demote_super_admin():
 
 
 @pytest.mark.anyio
-async def test_user_list_search_and_admins_only_filter():
+async def test_user_list_filters_sorts_and_pages():
+    tag = uuid.uuid4().hex[:6]
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        boss, boss_id = await _register(client, "boss", super_admin=True)
-        helper, helper_id = await _register(client, "needle")
-        found = (await client.get("/admin/users", headers=boss, params={"q": "needle"})).json()
-        assert [u["id"] for u in found["items"]] == [helper_id]
-        admins = (await client.get("/admin/users", headers=boss, params={"admins_only": True, "limit": 200})).json()
-        ids = {u["id"] for u in admins["items"]}
-        assert boss_id in ids and helper_id not in ids
+        boss, boss_id = await _register(client, f"zz{tag}boss", super_admin=True)
+        a, a_id = await _register(client, f"zz{tag}alpha")
+        b, b_id = await _register(client, f"zz{tag}bravo")
+        c, c_id = await _register(client, f"zz{tag}charlie")
+        role = (await client.post("/admin/roles", headers=boss, json={"name": f"R{tag}", "permissions": ["scans.view"]})).json()
+        await client.put(f"/admin/users/{b_id}/roles", headers=boss, json={"role_ids": [role["id"]]})
+
+        async def ids(**params):
+            r = await client.get("/admin/users", headers=boss, params={"q": f"zz{tag}", "limit": 200, **params})
+            assert r.status_code == 200, r.text
+            return [u["id"] for u in r.json()["items"]], r.json()["total"]
+
+        assert (await ids())[1] == 4
+        assert set((await ids(access="super"))[0]) == {boss_id}
+        assert set((await ids(access="role"))[0]) == {b_id}
+        assert set((await ids(access="staff"))[0]) == {boss_id, b_id}
+        assert set((await ids(access="none"))[0]) == {a_id, c_id}
+        assert (await ids(role_id=role["id"]))[0] == [b_id]
+
+        # Default sort is most access first; username sorts both ways.
+        assert (await ids())[0][:2] == [boss_id, b_id]
+        assert (await ids(sort="username", dir="asc"))[0] == [a_id, boss_id, b_id, c_id]
+        assert (await ids(sort="username", dir="desc"))[0] == [c_id, b_id, boss_id, a_id]
+
+        # Paging: total stays the full count, pages don't overlap.
+        p1 = await client.get("/admin/users", headers=boss, params={"q": f"zz{tag}", "sort": "username", "limit": 3, "offset": 0})
+        p2 = await client.get("/admin/users", headers=boss, params={"q": f"zz{tag}", "sort": "username", "limit": 3, "offset": 3})
+        assert p1.json()["total"] == p2.json()["total"] == 4
+        assert [u["id"] for u in p1.json()["items"]] + [u["id"] for u in p2.json()["items"]] == [a_id, boss_id, b_id, c_id]
+
+        bad = await client.get("/admin/users", headers=boss, params={"sort": "password_hash"})
+        assert bad.status_code == 422
