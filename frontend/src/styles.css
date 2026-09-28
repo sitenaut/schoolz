@@ -710,7 +710,18 @@ h3 {
   align-items: flex-end;
   gap: 6px;
   margin-left: auto;
-  flex: none;
+  /* Shrinkable, not fixed: a long period name ("Period Arrival Choice/Table
+     Top Activities") or hours range used to push the pills off the card. */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 62%;
+}
+.headerPills .status,
+.headerPills .periodChip {
+  white-space: normal;
+  text-align: right;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .periodChip {
   flex: none;
@@ -770,9 +781,10 @@ h3 {
 }
 .fact-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 0 8px;
 }
 .fact-more {
   font-size: 11px;

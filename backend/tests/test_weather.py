@@ -96,6 +96,14 @@ def test_dropoff_and_pickup_temps_come_from_their_own_hours():
     assert out["dropoff_label"] == "7:30 AM" and out["pickup_label"] == "2:30 PM"
 
 
+def test_a_passed_dropoff_shows_the_current_hour_as_now_not_a_dash():
+    # NWS hourly starts at the current hour, so by 9 AM the 7:30 bell is gone.
+    periods = _hours([55, 58, 60, 62, 64, 63, 60], start_hour=9)
+    out = summarize(periods, None, school_window(_school(), "open", _DAY))
+    assert (out["dropoff_temp"], out["dropoff_label"]) == (55, "Now")
+    assert out["pickup_temp"] == 63 and out["pickup_label"] == "2:30 PM"
+
+
 def test_forecast_that_does_not_cover_the_window_is_none():
     tomorrow = [dict(p, start=p["start"] + timedelta(days=1)) for p in _hours([60] * 11)]
     assert summarize(tomorrow, None, school_window(_school(), "open", _DAY)) is None
