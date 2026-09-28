@@ -243,9 +243,15 @@ def summarize(
 
     midday = _period_at(hours, bell.replace(hour=12, minute=0)) or hours[len(hours) // 2]
     dropoff = _period_at(hours, bell)
+    dropoff_label = bell.strftime("%-I:%M %p") if known_hours[0] else "Morning"
+    if dropoff is None and bell < hours[0]["start"]:
+        # NWS's hourly forecast starts at the current hour, so once drop-off
+        # has passed there is no period for the bell - the card showed "–".
+        # The current hour is the honest number to show, labeled as such.
+        dropoff, dropoff_label = hours[0], "Now"
     pickup = _period_at(hours, dismissal)
     return {
-        "dropoff_label": bell.strftime("%-I:%M %p") if known_hours[0] else "Morning",
+        "dropoff_label": dropoff_label,
         "dropoff_temp": dropoff["temp"] if dropoff else None,
         "pickup_label": dismissal.strftime("%-I:%M %p") if known_hours[1] else "Afternoon",
         "pickup_temp": pickup["temp"] if pickup else None,
