@@ -852,6 +852,23 @@ class NextRotationOut(BaseModel):
     long_blocks: bool
 
 
+class TodayWeatherOut(BaseModel):
+    """Drop-off through just-after-pickup, from services/weather.py. `items`
+    are stable codes (coat, umbrella, sunscreen, ...) the UI maps to labels."""
+
+    dropoff_label: str
+    dropoff_temp: int | None
+    pickup_label: str
+    pickup_temp: int | None
+    low: int
+    high: int
+    rain_chance: int
+    rain_from: str | None
+    condition: str
+    uv_max: int | None
+    items: list[str]
+
+
 class SchoolTodayOut(BaseModel):
     """Everything one Today-feed card needs, assembled server-side so the
     home page makes exactly one request per school."""
@@ -872,6 +889,7 @@ class SchoolTodayOut(BaseModel):
     current_period: CurrentPeriodOut | None
     transportation: TodayTransportationOut | None
     lunch: TodayLunchOut
+    weather: TodayWeatherOut | None = None
     sacc: TodaySaccOut | None
     contacts: list[TodayContactOut]
     upcoming: list[SchoolContentItemOut]

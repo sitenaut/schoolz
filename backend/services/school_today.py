@@ -23,6 +23,7 @@ from services.hs_rotation import blocks_from_description
 from services import specials as specials_svc
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
+from services.weather import today_weather
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
@@ -409,6 +410,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         current_period=period,
         transportation=transportation,
         lunch=lunch,
+        weather=await today_weather(school, status, today),
         sacc=sacc,
         contacts=contacts,
         upcoming=upcoming,
