@@ -949,8 +949,11 @@ class SmoreNewsletter(Base):
     # Ordinarily exactly one of school_id/district_id is set, matching
     # SchoolContentItem's scope split - not enforced by a DB constraint.
     district_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("districts.id", ondelete="SET NULL"), nullable=True)
-    # "smore" (default) | "smore_archive" | "virtual_backpack" - which scan
-    # job kind and parser this row's `url` is scanned with.
+    # "smore" (default) | "smore_archive" | "virtual_backpack" | "ptboard" -
+    # which scan job kind and parser this row's `url` is scanned with.
+    # "ptboard": a PTBoard (ptboard.com) PTA site's home page
+    # (services/ptboard_parser.py) - public, no login, forms/announcements/
+    # signups/campaigns all land in one feed the same way Smore blocks do.
     # "smore_archive": `url` is the SCHOOL'S OWN "newsletter archive" page
     # (confirmed real: Cherry Hill's Cooper and Clara Barton elementaries),
     # not an issue - a fixed issue link goes dead the moment a newer one is

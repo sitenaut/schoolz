@@ -15,8 +15,18 @@ router = APIRouter(prefix="/smore-newsletters", tags=["smore-newsletters"])
 # itself (see scheduler/jobs/smore_scan.py) - only the label differs, so an
 # admin can tell at a glance which of their newsletters are tracked by a
 # stable archive page rather than a link that goes stale every issue.
-_JOB_KIND_BY_SOURCE_TYPE = {"smore": "smore.scan", "smore_archive": "smore.scan", "virtual_backpack": "virtual_backpack.scan"}
-_JOB_LABEL_BY_SOURCE_TYPE = {"smore": "Smore scan", "smore_archive": "Smore archive scan", "virtual_backpack": "Virtual backpack scan"}
+_JOB_KIND_BY_SOURCE_TYPE = {
+    "smore": "smore.scan",
+    "smore_archive": "smore.scan",
+    "virtual_backpack": "virtual_backpack.scan",
+    "ptboard": "ptboard.scan",
+}
+_JOB_LABEL_BY_SOURCE_TYPE = {
+    "smore": "Smore scan",
+    "smore_archive": "Smore archive scan",
+    "virtual_backpack": "Virtual backpack scan",
+    "ptboard": "PTBoard scan",
+}
 
 
 def _validate_cron(cron_expr: str) -> None:
