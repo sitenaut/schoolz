@@ -10,6 +10,8 @@ from models import District, DistrictTransportation, GuardianStudentLink, LunchM
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
 from services.arbiter import entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
+from services.content_translation import localize_outs
+from services.i18n import fold, folded, request_lang
 from services.school_today import build_today, resolve_lunch_menu
 from services.transportation import late_bus_for_school
 from routers.smore_newsletters import _to_out as _newsletter_to_out
@@ -461,14 +463,17 @@ async def run_activities_site_scan_now(school: School = Depends(resolve_school),
 
 @router.get("/{school_id}/today", response_model=SchoolTodayOut)
 async def get_school_today(
-    school: School = Depends(resolve_school), user: User | None = Depends(get_optional_user), db: AsyncSession = Depends(get_db)
+    school: School = Depends(resolve_school),
+    user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
+    lang: str = Depends(request_lang),
 ):
     """Public. Everything one Today-feed card needs in a single request:
     day status (closed/early dismissal/open, from the district feed),
     hours, rotation day, today's + next lunch, SACC, role-based contacts,
     the next few dated items, this week's strip, and any closure/early
     dismissal alerts in the next 7 days."""
-    return await build_today(db, school, user_id=user.id if user else None)
+    return await build_today(db, school, user_id=user.id if user else None, lang=lang)
 
 
 @router.get("/{school_id}/transportation", response_model=SchoolTransportationOut | None)
@@ -543,6 +548,7 @@ async def list_school_content(
     include_class_sources: bool = False,
     school: School = Depends(resolve_school),
     db: AsyncSession = Depends(get_db),
+    lang: str = Depends(request_lang),
 ):
     """A school's own view includes both its school-scoped items and its
     district's district-scoped items (e.g. holiday closures) - a parent
@@ -571,15 +577,19 @@ async def list_school_content(
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:
-        like = f"%{q}%"
-        query = query.where(or_(SchoolContentItem.title.ilike(like), SchoolContentItem.description.ilike(like)))
+        like = f"%{fold(q)}%"
+        query = query.where(or_(folded(SchoolContentItem.title).like(like), folded(SchoolContentItem.description).like(like)))
     query = query.order_by(SchoolContentItem.extracted_at.desc())
     items = (await db.execute(query)).scalars().all()
     # A district item restricted to specific school types (e.g. an
     # elementary-only rotation calendar) shouldn't show up on a middle/high
     # school's own page just because they share a district.
-    return [
+    items = [
         i
         for i in items
         if not i.applies_to_school_types or not school.school_type or school.school_type in i.applies_to_school_types
     ]
+    if lang == "en":
+        return items
+    outs = [SchoolContentItemOut.model_validate(i, from_attributes=True) for i in items]
+    return await localize_outs(db, items, outs, lang)

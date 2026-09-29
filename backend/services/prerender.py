@@ -12,6 +12,7 @@ just means the next crawl of each path pays one render.
 import asyncio
 import logging
 import os
+import re
 import time
 
 import scraper_client
@@ -58,7 +59,12 @@ class PathNotAllowed(ValueError):
     pass
 
 
+_LANG_PREFIX = re.compile(r"^/(?:es)(?=/|$)")
+
+
 def _is_allowed(path: str) -> bool:
+    # A language prefix ("/es/schools/x") renders the same routes.
+    path = _LANG_PREFIX.sub("", path) or "/"
     return path in _ALLOWED_PATHS or path.startswith(_ALLOWED_PREFIXES)
 
 

@@ -1,6 +1,8 @@
 import { can } from "../lib/permissions";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { foldAccents } from "../lib/i18n";
 import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
@@ -13,6 +15,7 @@ import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
 import type { School, SchoolClassYear } from "../types";
 
 export function SchoolsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { allSchools, activeSchools, loading, myTowns } = useMySchools();
   usePrerenderReady(!loading);
@@ -30,9 +33,9 @@ export function SchoolsPage() {
 
   const baseList = tab === "mine" ? activeSchools : (allSchoolsAfterAdd ?? allSchools);
   const schools = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = foldAccents(query.trim());
     if (!q) return baseList;
-    return baseList.filter((s) => s.name.toLowerCase().includes(q) || (s.short_name ?? "").toLowerCase().includes(q));
+    return baseList.filter((s) => foldAccents(s.name).includes(q) || foldAccents(s.short_name ?? "").includes(q));
   }, [baseList, query]);
 
   // Grouped by tier (elementary/middle/high/...) like the /start picker,
@@ -40,7 +43,7 @@ export function SchoolsPage() {
   // visitor knows roughly what kind of school they're after.
   const groups = useMemo(
     () =>
-      SCHOOL_TYPE_TIERS.map((t) => ({ ...t, schools: schools.filter((s) => (s.school_type ?? "other") === t.key) })).filter(
+      SCHOOL_TYPE_TIERS.map((tier) => ({ ...tier, schools: schools.filter((s) => (s.school_type ?? "other") === tier.key) })).filter(
         (g) => g.schools.length > 0,
       ),
     [schools],
@@ -86,23 +89,23 @@ export function SchoolsPage() {
   return (
     <div>
       <SeoHead
-        title={`${townsLabel(myTowns)} schools directory · schoolz`}
-        description={`Browse every ${townsLabel(myTowns)} public elementary, middle, and high school, plus tracked local preschools - addresses, phone numbers, and websites.`}
+        title={t("{{towns}} schools directory · schoolz", { towns: townsLabel(myTowns) })}
+        description={t("Browse every {{towns}} public elementary, middle, and high school, plus tracked local preschools - addresses, phone numbers, and websites.", { towns: townsLabel(myTowns) })}
         path="/schools"
       />
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>Schools</h2>
-        <Link to="/start">Manage my schools</Link>
+        <h2>{t("Schools")}</h2>
+        <Link to="/start">{t("Manage my schools")}</Link>
       </div>
 
       <div className="tabs">
         {activeSchools.length > 0 && (
           <button className={`tab ${tab === "mine" ? "active" : ""}`} onClick={() => setTab("mine")}>
-            My schools
+            {t("My schools")}
           </button>
         )}
         <button className={`tab ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
-          All schools
+          {t("All schools")}
         </button>
       </div>
 
@@ -111,21 +114,21 @@ export function SchoolsPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search schools by name…"
-          aria-label="Search schools by name"
+          placeholder={t("Search schools by name…")}
+          aria-label={t("Search schools by name")}
         />
       </div>
 
       {schools.length === 0 ? (
         <p>
           {query.trim() ? (
-            `No schools match "${query.trim()}".`
+            t("No schools match \"{{q}}\".", { q: query.trim() })
           ) : tab === "mine" ? (
             <>
-              You haven't picked any schools yet. <Link to="/start">Pick some</Link> to see them here.
+              {t("You haven't picked any schools yet.")} <Link to="/start">{t("Pick some")}</Link> {t("to see them here.")}
             </>
           ) : (
-            "No schools tracked yet — add one below."
+            t("No schools tracked yet — add one below.")
           )}
         </p>
       ) : (
@@ -134,7 +137,7 @@ export function SchoolsPage() {
         // than toggling a pick, so no checkbox box, just the card.
         groups.map((g) => (
           <div key={g.key}>
-            <div className="tier">{g.label}</div>
+            <div className="tier">{t(g.label)}</div>
             <div className="sgrid">
               {g.schools.map((s) => (
                 <div key={s.id}>
@@ -160,15 +163,15 @@ export function SchoolsPage() {
 
       {can(user, "schools.manage") && (
         <>
-          <div className="section-title">Add a school</div>
+          <div className="section-title">{t("Add a school")}</div>
           {error && <p style={{ color: "var(--color-danger)" }}>{error}</p>}
           <form onSubmit={addSchool} className="card">
             <label>
-              School name
+              {t("School name")}
               <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Bret Harte Elementary" />
             </label>
             <button type="submit" className="btn btn-primary">
-              Add school
+              {t("Add school")}
             </button>
           </form>
         </>

@@ -20,7 +20,9 @@ from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayCurrent
 from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
+from services import i18n_strings
 from services import specials as specials_svc
+from services.content_translation import Localized, apply_translations, localize_out
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 from services.weather import pick_weather_day, today_weather
@@ -193,19 +195,19 @@ def _clock_label(hhmm: str) -> str:
     return f"{(hour - 1) % 12 + 1}:{minute:02d}"
 
 
-def _hours(school: School, status: str) -> str | None:
+def _hours(school: School, status: str, lang: str = "en") -> str | None:
     if status == "closed":
         return None
     if status == "delayed" and school.delayed_opening_time:
-        return f"{school.delayed_opening_time}–{school.end_time}" if school.end_time else f"Opens {school.delayed_opening_time}"
+        return f"{school.delayed_opening_time}–{school.end_time}" if school.end_time else i18n_strings.hours_phrase("opens", school.delayed_opening_time, lang)
     if status == "early_dismissal" and school.early_dismissal_time:
-        return f"{school.start_time}–{school.early_dismissal_time}" if school.start_time else f"Out {school.early_dismissal_time}"
+        return f"{school.start_time}–{school.early_dismissal_time}" if school.start_time else i18n_strings.hours_phrase("out", school.early_dismissal_time, lang)
     if school.start_time and school.end_time:
         return f"{school.start_time}–{school.end_time}"
     return None
 
 
-async def build_today(db: AsyncSession, school: School, today: date | None = None, user_id: str | None = None) -> SchoolTodayOut:
+async def build_today(db: AsyncSession, school: School, today: date | None = None, user_id: str | None = None, lang: str = "en") -> SchoolTodayOut:
     today = today or datetime.now(LOCAL_TZ).date()
     week = week_window(today)
     range_start = min(today, week[0])
@@ -249,7 +251,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
 
     def rotation(d: date) -> str | None:
         item = rotation_item(d)
-        return f"Day {_ROTATION_RE.match(item.title).group(1)}" if item else None
+        return i18n_strings.rotation_label(_ROTATION_RE.match(item.title).group(1), lang) if item else None
 
     def rotation_blocks(d: date) -> list[str] | None:
         item = rotation_item(d)
@@ -268,13 +270,15 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         menu_items = (await db.execute(select(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu.id))).scalars().all()
         lunch_by_day = {local_date(m.menu_date): m.description for m in menu_items}
 
-    status, status_label = day_status(today)
+    status, _ = day_status(today)
     next_day = today + timedelta(days=1)
     while next_day.weekday() >= 5 or day_status(next_day)[0] == "closed":
         next_day += timedelta(days=1)
         if next_day > today + timedelta(days=14):
             break
     next_label = "Tomorrow" if next_day == today + timedelta(days=1) else _WEEKDAYS[next_day.weekday()]
+    next_label_en = next_label
+    next_label = i18n_strings.day_label(next_label, next_day.weekday(), lang)
     lunch = TodayLunchOut(
         today=lunch_by_day.get(today) if status != "closed" else None,
         next_label=next_label if lunch_by_day.get(next_day) else None,
@@ -286,9 +290,11 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     if now.date() != today:  # an explicit other day: show that day's own weather
         now = datetime.combine(today, time(0), LOCAL_TZ)
     weather_day, weather_status, weather_is_today = pick_weather_day(school, today, status, next_day, day_status(next_day)[0], now)
-    weather = await today_weather(school, weather_status, weather_day)
+    weather = await today_weather(school, weather_status, weather_day, lang)
     if weather:
-        weather["day_label"] = "Today" if weather_is_today else next_label
+        # Kept English in every language: the frontend compares these and
+        # translates them itself (see i18n_strings.localize_weather).
+        weather["day_label"] = "Today" if weather_is_today else next_label_en
 
     sacc_row = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()
     sacc = (
@@ -311,19 +317,16 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     for role, label in CONTACT_ROLES:
         match = next((s for s in staff if s.role == role), None)
         if match:
-            contacts.append(TodayContactOut(role=role, label=label, name=match.full_name, email=match.email, phone=match.phone))
+            contacts.append(TodayContactOut(role=role, label=i18n_strings.contact_label(label, lang), name=match.full_name, email=match.email, phone=match.phone))
 
-    def out(i: SchoolContentItem) -> SchoolContentItemOut:
-        return SchoolContentItemOut.model_validate(i, from_attributes=True)
-
-    upcoming = [
-        out(i)
+    upcoming_items = [
+        i
         for i in items
         if local_date(i.start_date) >= today and i.category in _UPCOMING_CATEGORIES and not _is_rotation_item(i)
     ][:5]
 
     seen: set[tuple[date, str]] = set()
-    alerts: list[SchoolContentItemOut] = []
+    alert_items: list[SchoolContentItem] = []
     for i in items:
         if not _is_status_item(i):
             continue
@@ -337,22 +340,58 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
             key = (window_day, classify_day([i.title])[0])
             if key not in seen:
                 seen.add(key)
-                alerts.append(out(i))
+                alert_items.append(i)
+
+    week_items = {d: [i for i in by_day.get(d, []) if not _is_rotation_item(i) and not _is_status_item(i)][:3] for d in week}
+
+    def status_source(d: date, st: str) -> SchoolContentItem | None:
+        """The item whose own title is the day's status label (a closure's
+        reason, a delay's wording) - the only labels that aren't fixed text."""
+        pattern = {"closed": _CLOSED_RE, "delayed": _DELAY_RE}.get(st)
+        return next((i for i in by_day.get(d, []) if pattern.search(i.title)), None) if pattern else None
+
+    localized: dict[str, Localized] = {}
+    if lang != "en":
+        shown = {i.id: i for i in [*upcoming_items, *alert_items, *(i for v in week_items.values() for i in v)]}
+        for d in {today, *week}:
+            src = status_source(d, day_status(d)[0])
+            if src:
+                shown[src.id] = src
+        localized = await apply_translations(db, list(shown.values()), lang)
+
+    def out(i: SchoolContentItem) -> SchoolContentItemOut:
+        base = SchoolContentItemOut.model_validate(i, from_attributes=True)
+        return localize_out(base, i, localized[i.id]) if i.id in localized else base
+
+    def status_of(d: date) -> tuple[str, str | None]:
+        st, lbl = day_status(d)
+        if lang == "en":
+            return st, lbl
+        if st == "early_dismissal":
+            return st, i18n_strings.early_dismissal_label(lang)
+        src = status_source(d, st)
+        loc = localized.get(src.id) if src else None
+        if not loc or not loc.translated:
+            return st, lbl
+        return st, (i18n_strings.strip_closed_prefix(loc.title) if st == "closed" else loc.title)
+
+    upcoming = [out(i) for i in upcoming_items]
+    alerts = [out(i) for i in alert_items]
 
     week_out: list[TodayDayOut] = []
     for d in week:
-        st, lbl = day_status(d)
+        st, lbl = status_of(d)
         week_out.append(
             TodayDayOut(
                 date=d.isoformat(),
-                weekday=_WEEKDAYS[d.weekday()],
+                weekday=i18n_strings.weekday_abbr(d.weekday(), _WEEKDAYS[d.weekday()], lang),
                 status=st,
                 status_label=lbl,
                 rotation_day=rotation(d),
                 rotation_blocks=rotation_blocks(d),
                 long_blocks=is_long_block(d),
                 lunch=lunch_by_day.get(d) if st != "closed" else None,
-                items=[out(i) for i in by_day.get(d, []) if not _is_rotation_item(i) and not _is_status_item(i)][:3],
+                items=[out(i) for i in week_items[d]],
             )
         )
 
@@ -406,8 +445,8 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         date=today.isoformat(),
         is_school_day=status not in ("weekend", "closed"),
         status=status,
-        status_label=status_label,
-        hours=_hours(school, status),
+        status_label=status_of(today)[1],
+        hours=_hours(school, status, lang),
         rotation_day=rotation(today),
         rotation_blocks=rotation_blocks(today),
         long_blocks=is_long_block(today),

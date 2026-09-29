@@ -1,9 +1,11 @@
+import { LOCALE } from "./i18n";
+
 /** "3 minutes ago" / "in 2 hours" - coarse, for tables. */
 export function relativeTime(iso: string | null | undefined, now = Date.now()): string {
   if (!iso) return "—";
   const diff = new Date(iso).getTime() - now;
   const abs = Math.abs(diff);
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat(LOCALE, { numeric: "auto" });
   if (abs < 45_000) return rtf.format(Math.round(diff / 1000), "second");
   if (abs < 3_600_000) return rtf.format(Math.round(diff / 60_000), "minute");
   if (abs < 86_400_000) return rtf.format(Math.round(diff / 3_600_000), "hour");
@@ -14,7 +16,7 @@ export function relativeTime(iso: string | null | undefined, now = Date.now()): 
 
 export function fmtDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleString(LOCALE, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 export function fmtDuration(ms: number | null | undefined): string {

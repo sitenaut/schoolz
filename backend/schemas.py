@@ -29,6 +29,7 @@ class UserOut(BaseModel):
     # UI shows an admin surface if this is non-empty.
     permissions: list[str] = []
     auth_mode: str
+    preferred_language: str | None = None
     # "password" (local, or Supabase email+password) | "google" (Supabase
     # OAuth, no password to change) - the settings page uses this to decide
     # whether to show a change-password form at all.
@@ -44,6 +45,7 @@ class UserOut(BaseModel):
 
 class UserUpdate(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=64)
+    preferred_language: str | None = Field(default=None, pattern="^(en|es)$")
 
 
 class ChangePasswordRequest(BaseModel):
@@ -670,6 +672,12 @@ class SchoolContentItemOut(BaseModel):
     source_excerpt: str | None
     extracted_at: datetime
     is_current: bool
+    # Set only when title/description above are a machine translation
+    # (Spanish pages - services/content_translation.py); the school's own
+    # English is then in the *_original fields, for a "show original" link.
+    translated: bool = False
+    title_original: str | None = None
+    description_original: str | None = None
 
     model_config = {"from_attributes": True}
 

@@ -1,6 +1,7 @@
 import { apiFetch } from "../api";
 import { IS_SUPABASE_AUTH } from "../authConfig";
 import { supabase } from "../supabase";
+import { ROUTER_BASENAME } from "./i18n";
 
 /** Account self-service. Every function is mode-aware: in prod the
  * password lives in Supabase Auth (the backend never sees it), locally
@@ -18,6 +19,16 @@ async function detail(res: Response, fallback: string): Promise<string> {
 export async function updateProfile(username: string): Promise<void> {
   const res = await apiFetch("/auth/me", { method: "PATCH", body: JSON.stringify({ username }) });
   if (!res.ok) throw new Error(await detail(res, "Could not update profile"));
+}
+
+/** Best effort: the URL prefix and localStorage already carry the choice on
+ * this device; this is what lets it follow the account to another one. */
+export async function saveAccountLanguage(lang: string): Promise<void> {
+  try {
+    await apiFetch("/auth/me", { method: "PATCH", body: JSON.stringify({ preferred_language: lang }) });
+  } catch {
+    /* not worth surfacing */
+  }
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -39,7 +50,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 export async function sendPasswordReset(email: string): Promise<string | null> {
   if (IS_SUPABASE_AUTH) {
     if (!supabase) throw new Error("Auth is not configured");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}${ROUTER_BASENAME}/reset-password` });
     if (error) throw new Error(error.message);
     return null;
   }

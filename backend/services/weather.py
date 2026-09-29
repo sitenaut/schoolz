@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
+from services import i18n_strings
 from services.kids_view import parse_clock
 
 logger = logging.getLogger(__name__)
@@ -274,7 +275,7 @@ def pick_weather_day(school, today: date, today_status: str, next_day: date, nex
     return next_day, next_status, False
 
 
-async def today_weather(school, status: str, day: date) -> dict | None:
+async def today_weather(school, status: str, day: date, lang: str = "en") -> dict | None:
     """The Today card's weather, or None. Never raises and never waits more
     than a few seconds - a slow NWS must not hold up the whole card."""
     if not school.nws_grid or status in ("weekend", "closed"):
@@ -299,4 +300,5 @@ async def today_weather(school, status: str, day: date) -> dict | None:
     if isinstance(uv, BaseException):
         uv = None
     known = (bool(parse_clock(school.start_time)), bool(parse_clock(school.end_time)))
-    return summarize(periods, uv, school_window(school, status, day), known)
+    summary = summarize(periods, uv, school_window(school, status, day), known)
+    return i18n_strings.localize_weather(summary, lang) if summary else None

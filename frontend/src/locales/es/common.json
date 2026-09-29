@@ -1,0 +1,22 @@
+{
+  "1 new notification": "1 notificación nueva",
+  "{{count}} new notifications": "{{count}} notificaciones nuevas",
+  "1 new message in the inbox": "1 mensaje nuevo en la bandeja de entrada",
+  "{{count}} new messages in the inbox": "{{count}} mensajes nuevos en la bandeja de entrada",
+  "Admin": "Administración",
+  "My schools": "Mis escuelas",
+  "Switch schools": "Cambiar de escuela",
+  "All": "Todas",
+  "Add or remove schools": "Agregar o quitar escuelas",
+  "Sections": "Secciones",
+  "Today": "Hoy",
+  "Calendar": "Calendario",
+  "Lunch": "Almuerzo",
+  "Schools": "Escuelas",
+  "Directory": "Directorio",
+  "Local": "Local",
+  "About": "Acerca de",
+  "Survey": "Encuesta",
+  "Contact": "Contacto",
+  "Privacy & cookies": "Privacidad y cookies"
+}

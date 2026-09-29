@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { apiFetch } from "../../api";
 import { Field } from "../../components/ui/Field";
 import { Modal } from "../../components/ui/Modal";
@@ -29,6 +30,7 @@ function emptyPeriods(): Record<Variant, BellPeriod[]> {
  * already fully supported by PATCH /schools/{id}; before this modal, the
  * only way to set either was a raw API call or a one-off migration. */
 export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
+  const { t } = useTranslation();
   const toast = useToast();
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -89,15 +91,15 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
             ? body.detail
             : Array.isArray(body?.detail)
               ? body.detail.map((d: { msg: string }) => d.msg).join("; ")
-              : "Could not save",
+              : t("Could not save"),
         );
       }
       const saved: School = await res.json();
       onSaved(saved);
-      toast({ title: "Hours saved", tone: "ok" });
+      toast({ title: t("Hours saved"), tone: "ok" });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save");
+      setError(err instanceof Error ? err.message : t("Could not save"));
     } finally {
       setBusy(false);
     }
@@ -108,15 +110,15 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
       open={open}
       onClose={onClose}
       size="lg"
-      title="Edit hours & bell schedule"
+      title={t("Edit hours & bell schedule")}
       subtitle={school.short_name || school.name}
       footer={
         <>
           <button className="btn" type="button" onClick={onClose} disabled={busy}>
-            Cancel
+            {t("Cancel")}
           </button>
           <button className="btn btn-primary" type="submit" form="school-hours-form" disabled={busy || hasIncompleteRow}>
-            {busy ? "Saving…" : "Save changes"}
+            {busy ? t("Saving…") : t("Save changes")}
           </button>
         </>
       }
@@ -125,22 +127,22 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
         {error && <div className="form-error">{error}</div>}
 
         <div className="fgrid two">
-          <Field label="Start time" hint="Free text, e.g. 8:00 AM">
+          <Field label={t("Start time")} hint={t("Free text, e.g. 8:00 AM")}>
             <input value={startTime} onChange={(e) => setStartTime(e.target.value)} placeholder="8:00 AM" />
           </Field>
-          <Field label="End time">
+          <Field label={t("End time")}>
             <input value={endTime} onChange={(e) => setEndTime(e.target.value)} placeholder="3:00 PM" />
           </Field>
-          <Field label="Early dismissal time" hint="What time a half day lets out">
+          <Field label={t("Early dismissal time")} hint={t("What time a half day lets out")}>
             <input value={earlyDismissalTime} onChange={(e) => setEarlyDismissalTime(e.target.value)} placeholder="11:45 AM" />
           </Field>
-          <Field label="Delayed opening time" hint="What time class starts on a 2-hour-delay day">
+          <Field label={t("Delayed opening time")} hint={t("What time class starts on a 2-hour-delay day")}>
             <input value={delayedOpeningTime} onChange={(e) => setDelayedOpeningTime(e.target.value)} placeholder="9:30 AM" />
           </Field>
         </div>
 
         <div className="section-title">
-          Period-by-period schedule <span className="fine">(optional — powers the "what period is it now" chip)</span>
+          {t("Period-by-period schedule")} <span className="fine">{t('(optional — powers the "what period is it now" chip)')}</span>
         </div>
         <div className="tabs">
           {VARIANTS.map((v) => (
@@ -150,14 +152,14 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
               className={`tab ${activeVariant === v.key ? "active" : ""}`}
               onClick={() => setActiveVariant(v.key)}
             >
-              {v.label}
+              {t(v.label)}
               {periods[v.key].length > 0 && ` (${periods[v.key].length})`}
             </button>
           ))}
         </div>
 
         <div className="bell-rows">
-          {rows.length === 0 && <p className="note">No periods for {VARIANTS.find((v) => v.key === activeVariant)?.label.toLowerCase()} yet.</p>}
+          {rows.length === 0 && <p className="note">{t("No periods for {{variant}} yet.", { variant: t(VARIANTS.find((v) => v.key === activeVariant)!.label).toLowerCase() })}</p>}
           {rows.map((row, i) => (
             <div className="bell-row" key={i}>
               <input
@@ -166,19 +168,19 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
                 onChange={(e) => updateRow(i, { name: e.target.value })}
                 placeholder="1, L1, WIN, Outdoor Play…"
                 maxLength={40}
-                aria-label="Period name"
+                aria-label={t("Period name")}
               />
-              <input type="time" value={row.start} onChange={(e) => updateRow(i, { start: e.target.value })} aria-label="Start time" />
+              <input type="time" value={row.start} onChange={(e) => updateRow(i, { start: e.target.value })} aria-label={t("Start time")} />
               <span className="bell-sep">–</span>
-              <input type="time" value={row.end} onChange={(e) => updateRow(i, { end: e.target.value })} aria-label="End time" />
-              <button type="button" className="btn icon danger" onClick={() => removeRow(i)} aria-label="Remove period">
+              <input type="time" value={row.end} onChange={(e) => updateRow(i, { end: e.target.value })} aria-label={t("End time")} />
+              <button type="button" className="btn icon danger" onClick={() => removeRow(i)} aria-label={t("Remove period")}>
                 ×
               </button>
             </div>
           ))}
         </div>
         <button type="button" className="btn sm" onClick={addRow}>
-          + Add period
+          {t("+ Add period")}
         </button>
       </form>
     </Modal>

@@ -1,3 +1,5 @@
+import { LOCALE } from "./i18n";
+
 export type CalendarableItem = {
   title: string;
   description?: string | null;
@@ -39,8 +41,8 @@ export function googleCalendarQuickAddUrl(item: CalendarableItem): string | null
 export function formatDate(iso: string, allDay: boolean): string {
   const d = new Date(iso);
   return allDay
-    ? d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
-    : d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    ? d.toLocaleDateString(LOCALE, { weekday: "short", month: "short", day: "numeric" })
+    : d.toLocaleString(LOCALE, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 /** School-local calendar date (YYYY-MM-DD) for an ISO timestamp - every
@@ -91,17 +93,17 @@ export function shortDay(iso: string, relativeTo = todayKey()): string {
   const key = localDateKey(iso);
   const d = new Date(key + "T12:00:00Z");
   const diff = (Date.parse(key) - Date.parse(relativeTo)) / 86_400_000;
-  if (diff >= 0 && diff < 7) return `${d.toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" })} ${d.getUTCDate()}`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+  if (diff >= 0 && diff < 7) return `${d.toLocaleDateString(LOCALE, { weekday: "short", timeZone: "UTC" })} ${d.getUTCDate()}`;
+  return d.toLocaleDateString(LOCALE, { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 export function monthDay(key: string): { month: string; day: string } {
   const d = new Date(key.slice(0, 10) + "T12:00:00Z");
-  return { month: d.toLocaleDateString(undefined, { month: "short", timeZone: "UTC" }), day: String(d.getUTCDate()) };
+  return { month: d.toLocaleDateString(LOCALE, { month: "short", timeZone: "UTC" }), day: String(d.getUTCDate()) };
 }
 
 export function timeOfDay(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  return new Date(iso).toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 }
 
 export function telHref(phone: string): string {

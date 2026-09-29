@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { School } from "../types";
 import { telHref } from "../lib/calendar";
 import { IconMail, IconPhone } from "./icons";
@@ -8,6 +9,7 @@ import { trackEvent } from "../lib/track";
  * the Genesis portal (confirmed real - see CLAUDE.md). Falls back to the
  * raw extracted instructions only when no direct link can be built. */
 export function AbsenceButton({ school, className = "action primary" }: { school: School; className?: string }) {
+  const { t } = useTranslation();
   const track = (method: string) => trackEvent("action", { action: "absence", method, school_slug: school.slug });
   if (school.absence_method === "email" && school.absence_emails.length > 0) {
     const subject = encodeURIComponent(`${school.name}: Student absence`);
@@ -19,7 +21,7 @@ export function AbsenceButton({ school, className = "action primary" }: { school
         onClick={() => track("mailto")}
       >
         <IconMail />
-        Report absence
+        {t("Report absence")}
       </a>
     );
   }
@@ -27,7 +29,7 @@ export function AbsenceButton({ school, className = "action primary" }: { school
     return (
       <a className={className} href={telHref(school.absence_phone)} onClick={() => track("tel")}>
         <IconPhone />
-        Report absence
+        {t("Report absence")}
       </a>
     );
   }
@@ -40,7 +42,7 @@ export function AbsenceButton({ school, className = "action primary" }: { school
         rel="noreferrer"
         onClick={() => track("portal")}
       >
-        Report absence in {school.absence_portal_name || "the portal"}
+        {t("Report absence in {{portal}}", { portal: school.absence_portal_name || t("the portal") })}
       </a>
     );
   }

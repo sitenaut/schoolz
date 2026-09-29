@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { IS_SUPABASE_AUTH } from "../authConfig";
 import { useAuth } from "../context/AuthContext";
+import { Trans, useTranslation } from "react-i18next";
 
 type Mode = "login" | "register";
 
@@ -26,6 +27,7 @@ export function AuthPanel({
   returnTo?: string;
   presetEmail?: string;
 }) {
+  const { t } = useTranslation();
   const { loginLocal, registerLocal, loginWithPasswordSupabase, registerWithPasswordSupabase, loginWithGoogle, error } = useAuth();
   const [identifier, setIdentifier] = useState(presetEmail ?? "");
   const [email, setEmail] = useState(presetEmail ?? "");
@@ -53,8 +55,8 @@ export function AuthPanel({
     return (
       <div className="card" style={{ marginBottom: 0 }}>
         <p style={{ margin: 0 }}>
-          <strong>Check your email.</strong> We sent a confirmation link to <strong>{email}</strong>. Tap it and you'll
-          come straight back here{returnTo ? " to finish" : ""}.
+          <strong>{t("Check your email.")}</strong>{" "}
+          <Trans i18nKey={returnTo ? "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here to finish." : "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here."} values={{ email }} components={{ 1: <strong /> }} />
         </p>
       </div>
     );
@@ -65,49 +67,49 @@ export function AuthPanel({
       {IS_SUPABASE_AUTH && (
         <>
           <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => loginWithGoogle(returnTo)} type="button">
-            Continue with Google
+            {t("Continue with Google")}
           </button>
           <p className="note" style={{ textAlign: "center", margin: "10px 0" }}>
-            or with an email and password
+            {t("or with an email and password")}
           </p>
         </>
       )}
       <div className="tabs">
         <button className={`tab ${mode === "login" ? "active" : ""}`} onClick={() => onModeChange("login")} type="button">
-          Sign in
+          {t("Sign in")}
         </button>
         <button className={`tab ${mode === "register" ? "active" : ""}`} onClick={() => onModeChange("register")} type="button">
-          Create account
+          {t("Create account")}
         </button>
       </div>
       <form onSubmit={onSubmit}>
         {mode === "login" ? (
           <label>
-            {IS_SUPABASE_AUTH ? "Email" : "Username or email"}
+            {IS_SUPABASE_AUTH ? t("Email") : t("Username or email")}
             <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} required autoFocus />
           </label>
         ) : (
           <>
             <label>
-              Email
+              {t("Email")}
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
             </label>
             {!IS_SUPABASE_AUTH && (
               <label>
-                Username
+                {t("Username")}
                 <input value={username} onChange={(e) => setUsername(e.target.value)} required />
               </label>
             )}
           </>
         )}
         <label>
-          Password
+          {t("Password")}
           <input type="password" minLength={mode === "register" ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
         {mode === "login" && (
           <div className="auth-links">
             <span />
-            <Link to="/forgot-password">Forgot password?</Link>
+            <Link to="/forgot-password">{t("Forgot password?")}</Link>
           </div>
         )}
         {error && (
@@ -116,7 +118,7 @@ export function AuthPanel({
           </p>
         )}
         <button type="submit" className={`btn ${IS_SUPABASE_AUTH ? "" : "btn-primary"}`} style={{ width: "100%", justifyContent: "center" }}>
-          {mode === "login" ? "Sign in" : "Create account"}
+          {mode === "login" ? t("Sign in") : t("Create account")}
         </button>
       </form>
     </>

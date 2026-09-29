@@ -3,6 +3,7 @@ import { FaroRoutes } from "./lib/telemetry";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppShell } from "./components/AppShell";
 import { ToastProvider } from "./components/ui/Toast";
+import { ROUTER_BASENAME } from "./lib/i18n";
 import { MySchoolsProvider } from "./lib/mySchools";
 import { ThemeProvider } from "./lib/theme";
 import { TodayPage } from "./pages/TodayPage";
@@ -224,7 +225,7 @@ function Routed() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={ROUTER_BASENAME}>
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>

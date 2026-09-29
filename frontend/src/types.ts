@@ -23,6 +23,11 @@ export type SchoolContentItem = {
   source_excerpt: string | null;
   extracted_at: string;
   is_current: boolean;
+  // Set when title/description are a machine translation; the school's own
+  // English is in *_original.
+  translated?: boolean;
+  title_original?: string | null;
+  description_original?: string | null;
 };
 
 /** GET /districts/summary - what the picker needs to group schools by town. */

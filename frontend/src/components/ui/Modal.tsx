@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { IconX } from "../icons";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   open: boolean;
@@ -17,6 +18,7 @@ type Props = {
  * to the opener on close. Rendered inline (no portal) - z-index stacks it
  * above the shell's sticky bars. */
 export function Modal({ open, onClose, title, subtitle, size = "md", footer, children }: Props) {
+  const { t } = useTranslation();
   const panel = useRef<HTMLDivElement>(null);
   const bg = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
@@ -113,7 +115,7 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
               </div>
             )}
           </div>
-          <button className="btn icon modal-x" onClick={onClose} aria-label="Close">
+          <button className="btn icon modal-x" onClick={onClose} aria-label={t("Close")}>
             <IconX />
           </button>
         </div>

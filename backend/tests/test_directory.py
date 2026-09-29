@@ -192,6 +192,21 @@ async def test_search_tokens_are_anded_across_fields():
 
 
 @pytest.mark.anyio
+async def test_search_ignores_accents():
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        school = School(name=f"Acento {tag}", slug=f"acento-{tag}", school_type="elementary", short_name="Acento")
+        db.add(school)
+        await db.flush()
+        db.add(StaffMember(school_id=school.id, source_constituent_id="1", full_name=f"José Muñoz{tag}", title="Maestro de Español"))
+        await db.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        for q in (f"jose munoz{tag}", f"JOSÉ MUÑOZ{tag}", f"munoz{tag} espanol"):
+            res = await client.get("/directory/staff", params={"q": q})
+            assert _names(res.json()) == [f"José Muñoz{tag}"], q
+
+
+@pytest.mark.anyio
 async def test_school_filter_accepts_slug_and_school_type():
     elem_slug, _ = await _seed()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

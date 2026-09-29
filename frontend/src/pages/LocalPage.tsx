@@ -10,6 +10,7 @@ import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCell
 import { trackEvent } from "../lib/track";
 import type { LocalEvent, LocalEventFacets } from "../types";
 import styles from "./CalendarPage.module.css";
+import { LOCALE } from "../lib/i18n";
 
 /** Community events near Cherry Hill (libraries, townships, the Y, concerts),
  * from the local_events.refresh job - billz's events feed, ported. Same
@@ -144,7 +145,7 @@ export function LocalPage() {
   };
 
   const selectedLabel = selectedDay
-    ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
+    ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
     : null;
 
   return (
@@ -174,7 +175,7 @@ export function LocalPage() {
         <button className={styles.navButton} onClick={() => changeMonth(-1)} aria-label={viewMode === "year" ? "Previous year" : "Previous month"}>
           <IconChevronLeft className={styles.navIcon} />
         </button>
-        <h2>{viewMode === "year" ? viewDate.getFullYear() : viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</h2>
+        <h2>{viewMode === "year" ? viewDate.getFullYear() : viewDate.toLocaleDateString(LOCALE, { month: "long", year: "numeric" })}</h2>
         <button className={styles.navButton} onClick={() => changeMonth(1)} aria-label={viewMode === "year" ? "Next year" : "Next month"}>
           <IconChevronRight className={styles.navIcon} />
         </button>
@@ -330,7 +331,7 @@ function LocalEventSheet({ event: e, onClose }: { event: LocalEvent | null; onCl
   const cal = googleCalendarQuickAddUrl(asItem(e));
   const keys = itemDateKeys(asItem(e));
   const fmt = (k: string, wd: boolean) =>
-    new Date(k + "T12:00:00Z").toLocaleDateString(undefined, { ...(wd ? { weekday: "long" } : {}), month: "long", day: "numeric", timeZone: "UTC" });
+    new Date(k + "T12:00:00Z").toLocaleDateString(LOCALE, { ...(wd ? { weekday: "long" } : {}), month: "long", day: "numeric", timeZone: "UTC" });
   const dates = keys.length > 1 ? `${fmt(keys[0], false)} – ${fmt(keys[keys.length - 1], false)}` : fmt(keys[0] ?? localDateKey(e.start_time), true);
   const when = e.all_day ? dates : `${dates} · ${timeOfDay(e.start_time)}${e.end_time ? `–${timeOfDay(e.end_time)}` : ""}`;
   const p = price(e);

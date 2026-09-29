@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiFetch } from "../api";
 import { telHref } from "../lib/calendar";
 import { logoClass } from "../lib/logos";
@@ -37,6 +38,7 @@ function initials(name: string): string {
  * not something to hand a phone on a school-morning connection just so
  * the filtering can happen in the browser. */
 export function DirectoryPage() {
+  const { t } = useTranslation();
   const { allSchools, myTowns } = useMySchools();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -51,11 +53,11 @@ export function DirectoryPage() {
   // against 1900 rows is pointless churn, and the chip counts visibly
   // flickering as you type reads as the page glitching.
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setQuery(search);
       setOffset(0);
     }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [search]);
 
   // Responses can land out of order once a filter changes mid-flight (the
@@ -98,9 +100,9 @@ export function DirectoryPage() {
   // 27-entry select of mixed elementary/middle/high/preschool is a wall.
   const schoolGroups = useMemo(
     () =>
-      SCHOOL_TYPE_TIERS.map((t) => ({
-        ...t,
-        schools: allSchools.filter((s) => (s.school_type ?? "other") === t.key),
+      SCHOOL_TYPE_TIERS.map((tier) => ({
+        ...tier,
+        schools: allSchools.filter((s) => (s.school_type ?? "other") === tier.key),
       })).filter((g) => g.schools.length > 0),
     [allSchools],
   );
@@ -121,13 +123,13 @@ export function DirectoryPage() {
   return (
     <div>
       <SeoHead
-        title={`${townsLabel(myTowns)} schools staff directory · schoolz`}
-        description={`Search every ${townsLabel(myTowns)} public school staff member by name, role, or school - teachers, front office, nurses, counselors - with their email and phone number.`}
+        title={t("{{towns}} schools staff directory · schoolz", { towns: townsLabel(myTowns) })}
+        description={t("Search every {{towns}} public school staff member by name, role, or school - teachers, front office, nurses, counselors - with their email and phone number.", { towns: townsLabel(myTowns) })}
         path="/directory"
       />
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>Staff directory</h2>
-        <Link to="/schools">Browse schools</Link>
+        <h2>{t("Staff directory")}</h2>
+        <Link to="/schools">{t("Browse schools")}</Link>
       </div>
 
       <div className="search" style={{ marginBottom: 8 }}>
@@ -135,12 +137,12 @@ export function DirectoryPage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, title, or school…"
-          aria-label="Search the staff directory"
+          placeholder={t("Search by name, title, or school…")}
+          aria-label={t("Search the staff directory")}
           autoComplete="off"
         />
         {search && (
-          <button className="search-clear" onClick={() => setSearch("")} aria-label="Clear search">
+          <button className="search-clear" onClick={() => setSearch("")} aria-label={t("Clear search")}>
             <IconX />
           </button>
         )}
@@ -153,9 +155,9 @@ export function DirectoryPage() {
             setSchool(e.target.value);
             setOffset(0);
           }}
-          aria-label="Filter by school"
+          aria-label={t("Filter by school")}
         >
-          <option value="">All schools</option>
+          <option value="">{t("All schools")}</option>
           {schoolGroups.map((g) => (
             <optgroup label={g.label} key={g.key}>
               {g.schools.map((s) => (
@@ -169,7 +171,7 @@ export function DirectoryPage() {
         {isFiltered && (
           <button className="dir-clear" onClick={clearAll}>
             <IconX />
-            Clear
+            {t("Clear")}
           </button>
         )}
       </div>
@@ -178,7 +180,7 @@ export function DirectoryPage() {
           filter is applied - so a chip always says how many you'd get by
           picking it, and picking one never zeroes out the others. */}
       {(data?.categories.length ?? 0) > 0 && (
-        <div className="chips" role="group" aria-label="Filter by kind of staff">
+        <div className="chips" role="group" aria-label={t("Filter by kind of staff")}>
           <button
             className="chip"
             aria-pressed={category === ""}
@@ -187,7 +189,7 @@ export function DirectoryPage() {
               setOffset(0);
             }}
           >
-            All
+            {t("All", { context: "directory" })}
           </button>
           {data!.categories.map((c) => (
             <button
@@ -207,7 +209,7 @@ export function DirectoryPage() {
       )}
 
       {error ? (
-        <p className="note">Couldn't load the directory just now. Try again in a moment.</p>
+        <p className="note">{t("Couldn't load the directory just now. Try again in a moment.")}</p>
       ) : loading && !data ? (
         <div className="dir-list" aria-hidden="true">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -222,12 +224,12 @@ export function DirectoryPage() {
         </div>
       ) : total === 0 ? (
         <p className="note">
-          {query.trim() ? `Nobody in the directory matches "${query.trim()}".` : "No staff listed yet for this filter."}
+          {query.trim() ? t('Nobody in the directory matches "{{query}}".', { query: query.trim() }) : t("No staff listed yet for this filter.")}
         </p>
       ) : (
         <>
           <div className="dir-count">
-            {from}–{to} of {total} {total === 1 ? "person" : "people"}
+            {total === 1 ? t("{{from}}–{{to}} of {{total}} person", { from, to, total }) : t("{{from}}–{{to}} of {{total}} people", { from, to, total })}
           </div>
           <div className={`dir-list ${loading ? "busy" : ""}`}>
             {data!.items.map((m) => {
@@ -273,7 +275,7 @@ export function DirectoryPage() {
                         className="btn icon dir-mail"
                         href={`mailto:${m.email}`}
                         title={m.email}
-                        aria-label={`Email ${m.full_name}`}
+                        aria-label={t("Email {{name}}", { name: m.full_name })}
                         onClick={() => trackEvent("action", { action: "directory_email", method: "mailto" })}
                       >
                         <IconMail />
@@ -290,7 +292,7 @@ export function DirectoryPage() {
                         className="btn icon"
                         href={telHref(m.phone)}
                         title={m.phone}
-                        aria-label={`Call ${m.full_name}`}
+                        aria-label={t("Call {{name}}", { name: m.full_name })}
                         onClick={() => trackEvent("action", { action: "directory_call", method: "tel" })}
                       >
                         <IconPhone />
@@ -306,10 +308,10 @@ export function DirectoryPage() {
             <div className="dir-pager">
               <button className="btn" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
                 <IconChevronLeft />
-                Previous
+                {t("Previous")}
               </button>
               <button className="btn" disabled={to >= total} onClick={() => setOffset(offset + PAGE_SIZE)}>
-                Next
+                {t("Next")}
                 <IconChevronRight />
               </button>
             </div>

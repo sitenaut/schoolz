@@ -1,6 +1,7 @@
 import { can } from "../lib/permissions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, DayBlocks, ItemRow, StatusPill, WeekStrip, contactHref, rotationLine } from "../components/today";
@@ -9,6 +10,7 @@ import { SeoHead } from "../components/SeoHead";
 import { useAuth } from "../context/AuthContext";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
+import { CURRENT_LANG, localizedPath } from "../lib/i18n";
 import { useMySchools } from "../lib/mySchools";
 import { SchoolHoursModal } from "./schools/SchoolHoursModal";
 import { usePrerenderReady } from "../lib/prerenderReady";
@@ -39,6 +41,7 @@ function currentAcademicYear(): string {
 }
 
 export function SchoolDetailPage() {
+  const { t } = useTranslation();
   const { schoolId } = useParams<{ schoolId: string }>();
   const [today, setToday] = useState<SchoolToday | null>(null);
   const [items, setItems] = useState<SchoolContentItem[]>([]);
@@ -70,9 +73,9 @@ export function SchoolDetailPage() {
       // fetched alongside everything else rather than gated on school_type,
       // which isn't known until `today` itself resolves.
       apiFetch(`/schools/${schoolId}/class-years`).then((r) => (r.ok ? r.json() : [])),
-    ]).then(([t, c, st, docs, sc, nl, tr, cy]) => {
-      if (!t) setMissing(true);
-      setToday(t);
+    ]).then(([td, c, st, docs, sc, nl, tr, cy]) => {
+      if (!td) setMissing(true);
+      setToday(td);
       setItems(c);
       setStaff(st);
       setDocuments(docs);
@@ -80,7 +83,7 @@ export function SchoolDetailPage() {
       setNewsletters(nl);
       setTransport(tr);
       setClassYears(cy);
-      if (t) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
+      if (td) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
     });
   }, [schoolId]);
 
@@ -126,14 +129,14 @@ export function SchoolDetailPage() {
     if (tokens.length === 0) return staff;
     return staff.filter((m) => {
       const hay = [m.full_name, m.title, m.department, m.email].filter(Boolean).join(" ").toLowerCase();
-      return tokens.every((t) => hay.includes(t));
+      return tokens.every((tok) => hay.includes(tok));
     });
   }, [staff, staffQuery]);
 
   usePrerenderReady(!!today || missing);
 
-  if (missing) return <div className="empty">School not found.</div>;
-  if (!today) return <p className="note">Loading…</p>;
+  if (missing) return <div className="empty">{t("School not found.")}</div>;
+  if (!today) return <p className="note">{t("Loading…")}</p>;
   const s = today.school;
   const district = s.district_id ? districtsById.get(s.district_id) : undefined;
   const nurse = today.contacts.find((c) => c.role === "nurse");
@@ -141,10 +144,11 @@ export function SchoolDetailPage() {
   const thisYear = currentAcademicYear();
   const track = (action: string, method: string) => trackEvent("action", { action, method, school_slug: s.slug });
   const typeLabel = schoolTypeLabel(s.school_type);
+  const seoName = typeLabel ? t("{{name}} ({{type}})", { name: s.name, type: typeLabel }) : s.name;
   const seoDescription = [
-    `${s.name}${typeLabel ? ` (${typeLabel})` : ""}${district?.towns.length ? ` in ${district.towns[0]}, NJ` : ""}.`,
+    district?.towns.length ? t("{{name}} in {{town}}, NJ.", { name: seoName, town: district.towns[0] }) : `${seoName}.`,
     s.address,
-    "Bell schedule, absence reporting, lunch menu, bus info, and calendar dates.",
+    t("Bell schedule, absence reporting, lunch menu, bus info, and calendar dates."),
   ]
     .filter(Boolean)
     .join(" ");
@@ -152,7 +156,7 @@ export function SchoolDetailPage() {
   return (
     <>
       <SeoHead
-        title={`${s.name} · schoolz`}
+        title={t("{{name}} · schoolz", { name: s.name })}
         description={seoDescription}
         path={`/schools/${s.slug}`}
         image={s.logo_url ?? undefined}
@@ -160,7 +164,7 @@ export function SchoolDetailPage() {
           "@context": "https://schema.org",
           "@type": "School",
           name: s.name,
-          url: `${SITE_URL}/schools/${s.slug}`,
+          url: `${SITE_URL}${localizedPath(`/schools/${s.slug}`, CURRENT_LANG)}`,
           ...(s.address ? { address: s.address } : {}),
           ...(s.main_phone ? { telephone: s.main_phone } : {}),
           ...(s.website_url ? { sameAs: s.website_url } : {}),
@@ -168,7 +172,7 @@ export function SchoolDetailPage() {
         }}
       />
       <Link to="/" className="back-link">
-        <IconChevronLeft /> Today
+        <IconChevronLeft /> {t("Today")}
       </Link>
       <div className="school-hd">
         <div className="eyebrow">{[schoolTypeLabel(s.school_type), district?.name].filter(Boolean).join(" · ")}</div>
@@ -182,42 +186,44 @@ export function SchoolDetailPage() {
           {s.main_phone && <a href={telHref(s.main_phone)}>{s.main_phone}</a>}
           {s.website_url && (
             <a href={s.website_url} target="_blank" rel="noreferrer">
-              Website
+              {t("Website")}
             </a>
           )}
           {newsletterUrl && (
             <a href={newsletterUrl} target="_blank" rel="noreferrer">
-              Newsletter
+              {t("Newsletter")}
             </a>
           )}
           {s.athletics_url && (
             <a href={s.athletics_url} target="_blank" rel="noreferrer">
-              <span aria-hidden="true">🏀🎺</span> Sports &amp; band schedule
+              <span aria-hidden="true">🏀🎺</span> {t("Sports & band schedule")}
             </a>
           )}
         </div>
         <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <StatusPill status={today.status} label={today.status_label} hours={today.hours} />
           <CurrentPeriodChip period={today.current_period} />
-          {today.rotation_day && <span className="note">{rotationLine(today.rotation_day, today.rotation_blocks, today.long_blocks)} today</span>}
+          {today.rotation_day && <span className="note">{t("{{rotation}} today", { rotation: rotationLine(today.rotation_day, today.rotation_blocks, today.long_blocks) })}</span>}
         </div>
         <DayBlocks blocks={today.day_blocks} current={today.current_period} next={today.next_rotation} />
         {(s.start_time && s.end_time) || can(user, "schools.manage") ? (
           <p className="note" style={{ marginTop: 6 }}>
             {s.start_time && s.end_time ? (
-              <>
-                Regular day {s.start_time}–{s.end_time}
-                {s.early_dismissal_time && ` · early dismissal ends ${s.early_dismissal_time}`}
-                {s.delayed_opening_time && ` · delayed opening starts ${s.delayed_opening_time}`}
-              </>
+              [
+                t("Regular day {{start}}–{{end}}", { start: s.start_time, end: s.end_time }),
+                s.early_dismissal_time && t("early dismissal ends {{time}}", { time: s.early_dismissal_time }),
+                s.delayed_opening_time && t("delayed opening starts {{time}}", { time: s.delayed_opening_time }),
+              ]
+                .filter(Boolean)
+                .join(" · ")
             ) : (
-              "No hours on file yet"
+              t("No hours on file yet")
             )}
             {can(user, "schools.manage") && (
               <>
                 {" · "}
                 <button type="button" className="linklike" onClick={() => setEditingHours(true)}>
-                  {s.start_time && s.end_time ? "Edit" : "Add hours & bell schedule"}
+                  {s.start_time && s.end_time ? t("Edit") : t("Add hours & bell schedule")}
                 </button>
               </>
             )}
@@ -230,7 +236,7 @@ export function SchoolDetailPage() {
           open={editingHours}
           onClose={() => setEditingHours(false)}
           school={s}
-          onSaved={(saved) => setToday((t) => (t ? { ...t, school: saved } : t))}
+          onSaved={(saved) => setToday((prev) => (prev ? { ...prev, school: saved } : prev))}
         />
       )}
 
@@ -239,37 +245,37 @@ export function SchoolDetailPage() {
           <AbsenceButton school={s} />
           {nurse && contactHref(nurse) && (
             <a className="action" href={contactHref(nurse)!.href} onClick={() => track("nurse", "tel")}>
-              Nurse
+              {t("Nurse")}
             </a>
           )}
           {counselor && contactHref(counselor) && (
             <a className="action" href={contactHref(counselor)!.href} onClick={() => track("counselor", "tel")}>
-              Counselor
+              {t("Counselor")}
             </a>
           )}
           {today.sacc?.site_phone && (
             <a className="action" href={telHref(today.sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
-              SACC late line
+              {t("SACC late line")}
             </a>
           )}
           {s.main_phone && (
             <a className="action" href={telHref(s.main_phone)} onClick={() => track("main_office", "tel")}>
-              Main office
+              {t("Main office")}
             </a>
           )}
           {transport?.district.office_phone && (
             <a
               className="action"
               href={telHref(transport.district.office_phone)}
-              title="District transportation office"
+              title={t("District transportation office")}
               onClick={() => track("bus_office", "tel")}
             >
-              Bus office
+              {t("Bus office")}
             </a>
           )}
           {s.athletics_url && (
             <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
-              <span aria-hidden="true">🏀🎺</span> Sports &amp; band
+              <span aria-hidden="true">🏀🎺</span> {t("Sports & band")}
             </a>
           )}
         </div>
@@ -287,7 +293,7 @@ export function SchoolDetailPage() {
                 to={`/schools/${s.slug}/class-of-${c.grad_year}`}
                 onClick={() => track("class_strip", "link")}
               >
-                Class of {c.grad_year}
+                {t("Class of {{year}}", { year: c.grad_year })}
               </Link>
             );
           })}
@@ -295,24 +301,26 @@ export function SchoolDetailPage() {
       )}
 
       <div className="h-row">
-        <h2>This week</h2>
-        <Link to={`/calendar?school=${s.slug}`}>Full calendar</Link>
+        <h2>{t("This week")}</h2>
+        <Link to={`/calendar?school=${s.slug}`}>{t("Full calendar")}</Link>
       </div>
       <WeekStrip week={today.week} schoolSlug={s.slug} specials={today.my_specials} />
       {today.lunch.source_pdf_url && (
         <p className="note" style={{ marginTop: 8 }}>
-          Lunch from the district's{" "}
-          <a href={today.lunch.source_pdf_url} target="_blank" rel="noreferrer">
-            monthly menu
-          </a>
-          . <Link to={`/lunch?school=${s.slug}`}>Whole month</Link>
+          <Trans
+            i18nKey="Lunch from the district's <menu>monthly menu</menu>. <month>Whole month</month>"
+            components={{
+              menu: <a href={today.lunch.source_pdf_url} target="_blank" rel="noreferrer" />,
+              month: <Link to={`/lunch?school=${s.slug}`} />,
+            }}
+          />
         </p>
       )}
 
       {reminders.length > 0 && (
         <>
           <div className="h-row">
-            <h2>Reminders</h2>
+            <h2>{t("Reminders")}</h2>
           </div>
           <div className="list">
             {reminders.map((i) => (
@@ -323,11 +331,11 @@ export function SchoolDetailPage() {
       )}
 
       <div className="h-row">
-        <h2>Coming up</h2>
-        <Link to={`/calendar?school=${s.slug}`}>All dates</Link>
+        <h2>{t("Coming up")}</h2>
+        <Link to={`/calendar?school=${s.slug}`}>{t("All dates")}</Link>
       </div>
       {upcoming.length === 0 ? (
-        <div className="empty">Nothing dated yet. Check back after the next newsletter.</div>
+        <div className="empty">{t("Nothing dated yet. Check back after the next newsletter.")}</div>
       ) : (
         <div className="list">
           {upcoming.map((i) => (
@@ -339,7 +347,7 @@ export function SchoolDetailPage() {
       {pta.length > 0 && (
         <>
           <div className="h-row">
-            <h2>PTA</h2>
+            <h2>{t("PTA")}</h2>
           </div>
           <div className="list">
             {pta.map((i) => (
@@ -350,21 +358,21 @@ export function SchoolDetailPage() {
       )}
 
       <div className="h-row">
-        <h2>Who to contact</h2>
+        <h2>{t("Who to contact")}</h2>
       </div>
       <ContactGrid contacts={today.contacts} mainPhone={s.main_phone} />
       {staff.length > 0 && (
         <details className="acc" style={{ marginTop: 28 }}>
-          <summary>Full staff directory ({staff.length})</summary>
+          <summary>{t("Full staff directory ({{n}})", { n: staff.length })}</summary>
           <div className="body">
             <input
               className="staff-search"
-              placeholder="Search name, title, department…"
+              placeholder={t("Search name, title, department…")}
               value={staffQuery}
               onChange={(e) => setStaffQuery(e.target.value)}
             />
             {filteredStaff.length === 0 ? (
-              <div className="empty">No one matches "{staffQuery.trim()}".</div>
+              <div className="empty">{t('No one matches "{{query}}".', { query: staffQuery.trim() })}</div>
             ) : (
               <div className="people-grid">
                 {filteredStaff.map((m) => (
@@ -387,67 +395,67 @@ export function SchoolDetailPage() {
       {sacc && (
         <>
           <div className="h-row">
-            <h2>After-school care (SACC)</h2>
+            <h2>{t("After-school care (SACC)")}</h2>
           </div>
           <div className="sacc">
             <div className="hours">
               {sacc.am_hours && (
                 <div>
-                  <b>AM</b>
+                  <b>{t("AM")}</b>
                   {sacc.am_hours}
                 </div>
               )}
               {sacc.pm_hours && (
                 <div>
-                  <b>PM</b>
+                  <b>{t("PM")}</b>
                   {sacc.pm_hours}
                 </div>
               )}
               {sacc.site_phone && (
                 <div>
-                  <b>Site phone</b>
+                  <b>{t("Site phone")}</b>
                   <a href={telHref(sacc.site_phone)}>{sacc.site_phone}</a>
                 </div>
               )}
             </div>
             <ul className="qa">
               <li>
-                <b>Kid won't be at PM SACC today?</b>
-                <span>Report it by 3:00 PM. Telling the teacher or school office does not count - SACC doesn't cross-check.</span>{" "}
+                <b>{t("Kid won't be at PM SACC today?")}</b>
+                <span>{t("Report it by 3:00 PM. Telling the teacher or school office does not count - SACC doesn't cross-check.")}</span>{" "}
                 {sacc.absence_form_url && (
                   <a href={sacc.absence_form_url} target="_blank" rel="noreferrer">
-                    Report a PM absence
+                    {t("Report a PM absence")}
                   </a>
                 )}
                 {sacc.absence_phone && (
                   <>
                     {" "}
-                    · <a href={telHref(sacc.absence_phone)}>SACC office {sacc.absence_phone}</a>
+                    · <a href={telHref(sacc.absence_phone)}>{t("SACC office {{phone}}", { phone: sacc.absence_phone })}</a>
                   </>
                 )}
               </li>
               {sacc.pickup_change_procedure && (
                 <li>
-                  <b>Someone else picking up?</b>
+                  <b>{t("Someone else picking up?")}</b>
                   <span>{sacc.pickup_change_procedure}</span>
                 </li>
               )}
               {sacc.late_pickup_policy && (
                 <li>
-                  <b>Running late?</b>
+                  <b>{t("Running late?")}</b>
                   <span>{sacc.late_pickup_policy}</span>
                 </li>
               )}
               {sacc.closures_notes && (
                 <li>
-                  <b>Delays & early dismissals</b>
+                  <b>{t("Delays & early dismissals")}</b>
                   <span>{sacc.closures_notes}</span>
                 </li>
               )}
               {sacc.handbook_url && (
                 <li>
                   <a href={sacc.handbook_url} target="_blank" rel="noreferrer">
-                    SACC Family Handbook
+                    {t("SACC Family Handbook")}
                   </a>
                 </li>
               )}
@@ -459,10 +467,10 @@ export function SchoolDetailPage() {
       {transport && (
         <>
           <div className="h-row">
-            <h2>Buses &amp; transportation</h2>
+            <h2>{t("Buses & transportation")}</h2>
             {transport.district.main_url && (
               <a href={transport.district.main_url} target="_blank" rel="noreferrer">
-                District page
+                {t("District page")}
               </a>
             )}
           </div>
@@ -470,82 +478,87 @@ export function SchoolDetailPage() {
             <div className="hours">
               {transport.district.office_phone && (
                 <div>
-                  <b>Transportation office</b>
+                  <b>{t("Transportation office")}</b>
                   <a href={telHref(transport.district.office_phone)}>{transport.district.office_phone}</a>
                 </div>
               )}
               {transport.district.office_hours && (
                 <div>
-                  <b>Hours</b>
+                  <b>{t("Hours")}</b>
                   {transport.district.office_hours}
                 </div>
               )}
               {transport.late_bus && (
                 <div>
-                  <b>Late bus</b>
+                  <b>{t("Late bus")}</b>
                   <a href={telHref(transport.late_bus.phone)}>{transport.late_bus.phone}</a>
                 </div>
               )}
             </div>
             <ul className="qa">
               <li>
-                <b>Bus running late?</b>
+                <b>{t("Bus running late?")}</b>
                 <span>
-                  Call the transportation office{transport.district.office_hours ? ` (${transport.district.office_hours})` : ""}.
+                  {transport.district.office_hours
+                    ? t("Call the transportation office ({{hours}}).", { hours: transport.district.office_hours })
+                    : t("Call the transportation office.")}
                   {transport.district.delay_policy ? ` ${transport.district.delay_policy}` : ""}
                 </span>
               </li>
               <li>
-                <b>Late bus after activities</b>
+                <b>{t("Late bus after activities")}</b>
                 {transport.late_bus ? (
                   <span>
-                    {transport.late_bus.contractor} runs this school's late buses (routes {transport.late_bus.routes.join(", ")}). Ask the school secretary which route your child is
-                    on. {transport.district.late_bus_policy}
+                    {t("{{contractor}} runs this school's late buses (routes {{routes}}). Ask the school secretary which route your child is on.", {
+                      contractor: transport.late_bus.contractor,
+                      routes: transport.late_bus.routes.join(", "),
+                    })}{" "}
+                    {transport.district.late_bus_policy}
                   </span>
                 ) : (
-                  <span>Late buses only run for the middle and high schools; there is no late bus at this school.</span>
+                  <span>{t("Late buses only run for the middle and high schools; there is no late bus at this school.")}</span>
                 )}
               </li>
               {transport.district.bus_stop_change_procedure && (
                 <li>
-                  <b>Need a different stop for today?</b>
+                  <b>{t("Need a different stop for today?")}</b>
                   <span>{transport.district.bus_stop_change_procedure}</span>
                 </li>
               )}
               {(transport.district.bus_stop_change_deadline || transport.district.bus_stop_change_form_url) && (
                 <li>
-                  <b>Changing your regular bus stop</b>
+                  <b>{t("Changing your regular bus stop")}</b>
                   {transport.district.bus_stop_change_deadline && <span>{transport.district.bus_stop_change_deadline}</span>}{" "}
                   {transport.district.bus_stop_change_form_url && (
                     <a href={transport.district.bus_stop_change_form_url} target="_blank" rel="noreferrer">
-                      Bus stop change request form
+                      {t("Bus stop change request form")}
                     </a>
                   )}
                 </li>
               )}
               {transport.district.lost_items_policy && (
                 <li>
-                  <b>Left something on the bus?</b>
+                  <b>{t("Left something on the bus?")}</b>
                   <span>{transport.district.lost_items_policy}</span>{" "}
                   {transport.district.lost_items_url && (
                     <a href={transport.district.lost_items_url} target="_blank" rel="noreferrer">
-                      Lost items
+                      {t("Lost items")}
                     </a>
                   )}
                 </li>
               )}
               {transport.district.closing_info_url && (
                 <li>
-                  <b>Weather closings &amp; delays</b>
+                  <b>{t("Weather closings & delays")}</b>
                   <a href={transport.district.closing_info_url} target="_blank" rel="noreferrer">
-                    School closing information
+                    {t("School closing information")}
                   </a>
                 </li>
               )}
             </ul>
             {transport.district.contacts.length > 0 && (
               <details className="acc" style={{ marginTop: 10 }}>
-                <summary>Transportation department staff ({transport.district.contacts.length})</summary>
+                <summary>{t("Transportation department staff ({{n}})", { n: transport.district.contacts.length })}</summary>
                 <div className="body people-grid">
                   {transport.district.contacts.map((c) => (
                     <div className="person-card" key={c.email ?? c.name}>
@@ -569,7 +582,7 @@ export function SchoolDetailPage() {
       {documents.length > 0 && (
         <>
           <div className="h-row">
-            <h2>Documents</h2>
+            <h2>{t("Documents")}</h2>
           </div>
           <div className="list docs">
             {documents.map((d) => {
@@ -583,8 +596,8 @@ export function SchoolDetailPage() {
                   key={d.id}
                   onClick={() => trackEvent("action", { action: "document_open", method: "link", school_slug: s.slug })}
                 >
-                  📄 {d.doc_type === "bell_schedule" ? "Bell schedule" : d.title}
-                  <small>{d.academic_year ? (stale ? `${d.academic_year} · may be outdated` : d.academic_year) : d.source}</small>
+                  📄 {d.doc_type === "bell_schedule" ? t("Bell schedule") : d.title}
+                  <small>{d.academic_year ? (stale ? t("{{year}} · may be outdated", { year: d.academic_year }) : d.academic_year) : d.source}</small>
                 </a>
               );
             })}
@@ -594,12 +607,12 @@ export function SchoolDetailPage() {
 
       {(summary || people.length > 0 || MORE_SECTIONS.some((m) => items.some((i) => i.category === m.category))) && (
         <div className="h-row">
-          <h2>More from the newsletter</h2>
+          <h2>{t("More from the newsletter")}</h2>
         </div>
       )}
       {summary && (
         <details className="acc">
-          <summary>Latest newsletter summary</summary>
+          <summary>{t("Latest newsletter summary")}</summary>
           <div className="body">{summary}</div>
         </details>
       )}
@@ -609,7 +622,7 @@ export function SchoolDetailPage() {
         return (
           <details className="acc" key={category}>
             <summary>
-              {title} ({sectionItems.length})
+              {t("{{title}} ({{n}})", { title: t(title), n: sectionItems.length })}
             </summary>
             <div className="body">
               <div className="list" style={{ boxShadow: "none", border: "1px solid var(--line)" }}>
@@ -623,7 +636,7 @@ export function SchoolDetailPage() {
       })}
       {people.length > 0 && (
         <details className="acc">
-          <summary>People mentioned ({people.length})</summary>
+          <summary>{t("People mentioned ({{n}})", { n: people.length })}</summary>
           <div className="body people-grid">
             {people.map((p) => {
               const matched = staff.find((m) => m.id === p.staff_member_id);
@@ -642,7 +655,7 @@ export function SchoolDetailPage() {
           </div>
         </details>
       )}
-      <p className="fine">Pulled from the school's newsletter and website, and the district calendar.</p>
+      <p className="fine">{t("Pulled from the school's newsletter and website, and the district calendar.")}</p>
     </>
   );
 }

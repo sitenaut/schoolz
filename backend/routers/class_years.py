@@ -27,6 +27,8 @@ from schemas import (
     StaffMiniOut,
 )
 from services.class_years import CLASS_PAGE_SOURCES, default_label, ensure_current_class_years, get_or_create_class_year
+from services.content_translation import localize_outs
+from services.i18n import request_lang
 from routers.schools import resolve_school
 
 router = APIRouter(prefix="/schools/{school_id}/class-years", tags=["class-years"])
@@ -113,6 +115,7 @@ async def list_class_year_content(
     category: str | None = None,
     school: School = Depends(resolve_school),
     db: AsyncSession = Depends(get_db),
+    lang: str = Depends(request_lang),
 ):
     """Items scoped to this class specifically, plus the school's own
     activities calendar (always shown within a class page, even though it
@@ -133,11 +136,9 @@ async def list_class_year_content(
     # _applies_to_types, school_today.py, bucket3.py) - these are plain
     # JSON columns (Postgres "json", not "jsonb"), which don't support the
     # @> containment operator .contains() would generate.
-    return [
-        SchoolContentItemOut.model_validate(i, from_attributes=True)
-        for i in items
-        if not i.applies_to_grad_years or grad_year in i.applies_to_grad_years
-    ]
+    items = [i for i in items if not i.applies_to_grad_years or grad_year in i.applies_to_grad_years]
+    outs = [SchoolContentItemOut.model_validate(i, from_attributes=True) for i in items]
+    return await localize_outs(db, items, outs, lang)
 
 
 @router.get("/{grad_year}/payments", response_model=list[ClassPaymentOut])

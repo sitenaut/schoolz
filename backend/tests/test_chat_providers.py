@@ -263,3 +263,23 @@ async def test_calendar_tool_drops_rotation_markers_unless_asked():
     assert not {"Day 2", "Day 5"} & titles
     asked = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", {**args, "include_rotation_days": True}))
     assert {"Day 2", "Day 5"} <= {i["title"] for i in asked["items"]}
+
+
+@pytest.mark.anyio
+async def test_spanish_visitor_gets_spanish_instruction_after_the_cache_breakpoint():
+    seen = {}
+
+    class _Capture:
+        name = "anthropic"
+
+        async def complete(self, model, system=None, dynamic_system=None, **_):
+            seen["system"], seen["dynamic_system"] = system, dynamic_system
+            return Completion(content=[{"type": "text", "text": "ok"}], usage=Usage())
+
+    kwargs = dict(history=[], message="hola", already_escalated=False, personal=None,
+                  config=AudienceConfig(escalation_model=None), providers={"anthropic": _Capture()})
+    await run_chat_turn(app.state.mcp, lang="es", **kwargs)
+    es_system, es_dynamic = seen["system"], seen["dynamic_system"]
+    await run_chat_turn(app.state.mcp, lang="en", **kwargs)
+    assert "Spanish" in es_dynamic and "Spanish" not in seen["dynamic_system"]
+    assert es_system == seen["system"]
