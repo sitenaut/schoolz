@@ -79,6 +79,8 @@ Frontend: public pages are plain routes. `RequireAuth` gates the personal pages;
 
 ## Onboarding a district
 
+**Read `docs/ONBOARDING_CRAWL_GUIDE.md` first** — the crawl procedure for finding each data point (bell schedules, lunch, calendar, newsletters, athletics, PTA, ...) on a district/school you haven't onboarded yet: what shapes to expect, which pages to check, and known gotchas per category. This section covers the *import* mechanics once you have the data; that doc covers *finding* it.
+
 Seed it through **Admin → Import/export** (`POST /admin/config/import`) with a JSON file like `backend/seed/voorhees_eastern.json`: idempotent, admin-only, runs the same `_ensure_*_job` hooks as the forms, and works identically on local and prod with no SSH. `IcsFeed.school_slug` (not an id) is what makes a per-school feed portable across environments. Process fields with no newsletter to extract them from (absence method/phone, hours) are typed into the seed from the district's own pages.
 
 - **The picker groups by town, not district** (`District.towns`, `lib/towns.ts`). A Voorhees family's K-8 schools and high school are two districts; a family shouldn't need to know that to find both. A town gets a chip only once it has a tracked elementary school, so Berlin/Gibbsboro (Eastern only) don't get a one-school chip — search still finds Eastern. Town copy (header, SEO) likewise counts only chip towns.
