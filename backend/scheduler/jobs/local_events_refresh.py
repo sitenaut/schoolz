@@ -418,6 +418,26 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "urls": {"type": "array", "items": {"type": "string"}, "description": "Season, shows or calendar pages."},
                     "venue_name": {"type": "string", "description": "The company's home theatre, used unless a page names another."},
                     "venue_address": {"type": "string"},
+                    "school_slug": {"type": "string", "description": "Set only when this whole site is one tracked school's own theatre program (e.g. a booster site) - every production is also published on that School's public page. Omit for a general community theatre company."},
+                },
+            },
+        },
+        "ludus_sources": {
+            "type": "array",
+            "description": "Ludus-hosted ticketing sites (ludus.com), e.g. a school's own theatre program - plain server-rendered HTML, no model call: each show and showtime carries the platform's own stable id. `school_labels` maps a page's category labels (e.g. 'CHS'/'CMS' on a page shared by two schools) to a School.slug - a matched show is also published on that school's own public page, in addition to appearing here. Point `url` at the site's events page (`.../index.php?sections=events`), not the home page.",
+            "items": {
+                "type": "object",
+                "required": ["name", "url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "url": {"type": "string", "description": "The site's events listing page."},
+                    "venue_name": {"type": "string"},
+                    "venue_address": {"type": "string"},
+                    "school_labels": {
+                        "type": "object",
+                        "description": "Category label (as the page shows it, e.g. 'CHS') -> School.slug. Omit if the site belongs to no tracked school.",
+                        "additionalProperties": {"type": "string"},
+                    },
                 },
             },
         },
@@ -502,4 +522,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     partial = summary.get("partial_failures") or {}
     if partial:
         return f"WARNING[local_event_source_partial]: part of {len(partial)} source(s) failed ({', '.join(partial)}): {text}"
+    unknown_slugs = (summary.get("school_content") or {}).get("unknown_slugs") or []
+    if unknown_slugs:
+        return f"WARNING[local_event_unknown_school_slug]: {unknown_slugs}: {text}"
     return text
