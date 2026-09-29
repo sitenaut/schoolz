@@ -374,11 +374,24 @@ as every sport (`"title":"Band - Coed Varsity"`, its own `sportId`). No
 separate integration needed; this was purely a "does the entity id even
 resolve" problem, not a "band isn't tracked" problem.
 
-**Not every school is on ArbiterLive at all** — confirmed real: Haddon
-Township HS is on a completely different platform (`bigteams.com` /
-`<id>.digitalsports.com`), which nothing in this codebase supports yet. Say
-so plainly rather than reporting a gap as "still investigating" — a
-different-platform school needs a new integration, not a better search.
+**"BigTeams" (`<school>.bigteams.com`) is also just ArbiterLive white-label
+branding** — confirmed real: Haddon Township HS's `bigteams.com` site's own
+homepage links `arbiterlive.com/School/Calendar/<id>` exactly like
+`audubonathletics.com`/`easternvikings.arbiterwebsites.com` do. A search
+engine describing a school's site as "on BigTeams" is *not* evidence it
+needs a different integration - always fetch the branded site's own
+homepage and check for a real `arbiterlive.com` link before concluding a
+platform is unsupported (an earlier pass of this guide wrongly wrote
+Haddon Township off as unsupported based on search snippets alone, without
+actually fetching the site - a five-minute mistake, caught and fixed the
+same session).
+
+**`<id>.digitalsports.com`, seen alongside a BigTeams/Arbiter link for the
+same school, is a genuinely separate, unconfirmed platform** - nothing in
+this codebase reads it, and it wasn't needed once the Arbiter link resolved
+Haddon Township's real schedule. Worth a real look only if a school's
+*only* athletics link is a `digitalsports.com` one with no Arbiter link
+findable anywhere on the branded site.
 
 ---
 
@@ -421,7 +434,9 @@ exact page layout doesn't.
 ## Known-unsupported platforms (don't rebuild these from scratch without checking first)
 
 If a new district uses one of these, treat it as a genuinely new integration
-decision, not a quick add:
+decision, not a quick add. **Note the false alarm above: "BigTeams" is NOT
+on this list** - it's ArbiterLive branding, already supported.
 
-- **BigTeams / `<id>.digitalsports.com`** (athletics) — confirmed real,
-  Haddon Township HS. No code in this repo reads it.
+- **`<id>.digitalsports.com`** (athletics) — seen alongside a working
+  Arbiter link for the same school (Haddon Township HS), never needed on
+  its own so far. No code in this repo reads it.
