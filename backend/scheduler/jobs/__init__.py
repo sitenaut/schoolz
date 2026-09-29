@@ -20,3 +20,4 @@ from . import smore_scan  # noqa: F401
 from . import special_events_scan  # noqa: F401
 from . import staff_roster_scan  # noqa: F401
 from . import transportation_scan  # noqa: F401
+from . import virtual_backpack_scan  # noqa: F401

@@ -273,6 +273,9 @@ class SmoreNewsletterCreate(BaseModel):
     # For a district-wide newsletter with no single school (e.g. "CHPS
     # Weekly") - ordinarily exactly one of school_id/district_id is set.
     district_id: str | None = None
+    # "smore" (default) or "virtual_backpack" - picks which scan job kind
+    # gets created (smore.scan vs virtual_backpack.scan).
+    source_type: str = "smore"
     cron_expr: str = "0 8 * * 1"
     timezone: str = "America/New_York"
     enabled: bool = True
@@ -290,6 +293,7 @@ class SmoreNewsletterOut(BaseModel):
     label: str | None
     school_id: str | None
     district_id: str | None = None
+    source_type: str = "smore"
     # Resolved display names - only populated by GET (list/create/update),
     # so the table can say "Bret Harte Elementary" without a client-side join.
     school_name: str | None = None
@@ -1012,6 +1016,7 @@ class ExportSmoreOut(BaseModel):
     cron_expr: str
     timezone: str
     enabled: bool
+    source_type: str = "smore"  # defaulted so an export file from before this existed still imports
 
 
 class ConfigExport(BaseModel):

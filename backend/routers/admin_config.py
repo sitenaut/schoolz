@@ -57,7 +57,7 @@ from routers.schools import (
     _ensure_school_info_job,
     _ensure_staff_roster_job,
 )
-from routers.smore_newsletters import _validate_cron
+from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
 from scheduler.cron import public_scan_cron
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
@@ -115,6 +115,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 cron_expr="0 8 * * 1",
                 timezone="America/New_York",
                 enabled=True,
+                source_type=n.source_type,
             )
             for n in newsletters
         ],
@@ -281,15 +282,17 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         _validate_cron(n.cron_expr)
         newsletter = newsletter_by_url.get(n.url)
         if newsletter is None:
-            newsletter = SmoreNewsletter(url=n.url, label=n.label, school_id=school.id if school else None, created_by_user_id=user.id)
+            newsletter = SmoreNewsletter(
+                url=n.url, label=n.label, school_id=school.id if school else None, source_type=n.source_type, created_by_user_id=user.id
+            )
             db.add(newsletter)
             await db.flush()
             from models import ScheduledJob
 
             job = ScheduledJob(
                 owner_user_id=user.id,
-                kind="smore.scan",
-                name=f"Smore scan: {n.label or n.url}",
+                kind=_JOB_KIND_BY_SOURCE_TYPE[n.source_type],
+                name=f"{_JOB_LABEL_BY_SOURCE_TYPE[n.source_type]}: {n.label or n.url}",
                 cron_expr=n.cron_expr,
                 timezone=n.timezone,
                 params={"newsletter_id": newsletter.id},

@@ -10,10 +10,20 @@ from schemas import ScheduledJobOut, SmoreBlockOut, SmoreNewsletterCreate, Smore
 
 router = APIRouter(prefix="/smore-newsletters", tags=["smore-newsletters"])
 
+# Which scan job kind a newsletter's source_type gets, and the label prefix
+# used for that job's auto-generated name.
+_JOB_KIND_BY_SOURCE_TYPE = {"smore": "smore.scan", "virtual_backpack": "virtual_backpack.scan"}
+_JOB_LABEL_BY_SOURCE_TYPE = {"smore": "Smore scan", "virtual_backpack": "Virtual backpack scan"}
+
 
 def _validate_cron(cron_expr: str) -> None:
     if not croniter.is_valid(cron_expr):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid cron expression: {cron_expr}")
+
+
+def _validate_source_type(source_type: str) -> None:
+    if source_type not in _JOB_KIND_BY_SOURCE_TYPE:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown source_type: {source_type}")
 
 
 async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter]) -> list[SmoreNewsletterOut]:
@@ -45,6 +55,7 @@ async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter]) -> list
                 label=n.label,
                 school_id=n.school_id,
                 district_id=n.district_id,
+                source_type=n.source_type,
                 school_name=schools_by_id.get(n.school_id) if n.school_id else None,
                 district_name=districts_by_id.get(n.district_id) if n.district_id else None,
                 last_scanned_at=n.last_scanned_at,
@@ -83,6 +94,7 @@ async def create_newsletter(
     payload: SmoreNewsletterCreate, user: User = Depends(require_permission("newsletters.manage")), db: AsyncSession = Depends(get_db)
 ):
     _validate_cron(payload.cron_expr)
+    _validate_source_type(payload.source_type)
 
     existing = await db.execute(select(SmoreNewsletter).where(SmoreNewsletter.url == payload.url))
     if existing.scalar_one_or_none():
@@ -93,6 +105,7 @@ async def create_newsletter(
         label=payload.label,
         school_id=payload.school_id,
         district_id=payload.district_id,
+        source_type=payload.source_type,
         created_by_user_id=user.id,
     )
     db.add(newsletter)
@@ -100,8 +113,8 @@ async def create_newsletter(
 
     job = ScheduledJob(
         owner_user_id=user.id,
-        kind="smore.scan",
-        name=f"Smore scan: {payload.label or payload.url}",
+        kind=_JOB_KIND_BY_SOURCE_TYPE[payload.source_type],
+        name=f"{_JOB_LABEL_BY_SOURCE_TYPE[payload.source_type]}: {payload.label or payload.url}",
         cron_expr=payload.cron_expr,
         timezone=payload.timezone,
         params={"newsletter_id": newsletter.id},
@@ -150,8 +163,8 @@ async def update_newsletter(
         _validate_cron(cron_expr)
         job = ScheduledJob(
             owner_user_id=user.id,
-            kind="smore.scan",
-            name=f"Smore scan: {newsletter.label or newsletter.url}",
+            kind=_JOB_KIND_BY_SOURCE_TYPE[newsletter.source_type],
+            name=f"{_JOB_LABEL_BY_SOURCE_TYPE[newsletter.source_type]}: {newsletter.label or newsletter.url}",
             cron_expr=cron_expr,
             timezone=timezone,
             params={"newsletter_id": newsletter.id},
@@ -233,7 +246,7 @@ async def reextract_all(newsletter_id: str, user: User = Depends(require_permiss
 
     from services.content_extractor import extract_from_newsletter
 
-    summary = await extract_from_newsletter(db, newsletter, list(blocks))
+    summary = await extract_from_newsletter(db, newsletter, list(blocks), job_kind=_JOB_KIND_BY_SOURCE_TYPE[newsletter.source_type])
     await db.commit()
     return {"status": "done", "summary": summary}
 

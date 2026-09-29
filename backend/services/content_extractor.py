@@ -284,6 +284,48 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str, image_bytes: b
         return None
 
 
+async def _document_extract(client: AsyncAnthropic, pdf_url: str, job_kind: str = "smore.scan") -> str | None:
+    """Same job as `_vision_extract` but for a PDF flyer rather than an
+    image - confirmed real on Audubon's "virtual backpack" bulletin board,
+    where most links resolve straight to a PDF rather than an image, and
+    the flyer's own text (a date, a sign-up link) never otherwise reaches
+    the corpus since the page's link text alone ("Flyer", "PTA Newsletter")
+    doesn't carry it. Uses Claude's native PDF document support rather than
+    an image fetch - no Pillow re-encoding needed, since the API accepts
+    the file as-is."""
+    try:
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as http_client:
+            resp = await http_client.get(pdf_url)
+            resp.raise_for_status()
+        pdf_b64 = base64.b64encode(resp.content).decode("ascii")
+
+        _llm_started = time.perf_counter()
+        response = await client.messages.create(
+            model=MODEL,
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_b64}},
+                        {
+                            "type": "text",
+                            "text": "Transcribe the key text of this flyer/document verbatim, and describe any "
+                            "dates, events, deadlines, names, or contact info shown. This is a document from a "
+                            "school's bulletin board for parents.",
+                        },
+                    ],
+                }
+            ],
+        )
+        observability.record_llm_call("document_extract", MODEL, response, time.perf_counter() - _llm_started)
+        return "".join(block.text for block in response.content if block.type == "text")
+    except Exception:
+        logger.exception("document_extraction_failed", extra={"pdf_url": pdf_url})
+        record_parse_issue(job_kind, "document_unsupported", url=pdf_url)
+        return None
+
+
 _DEFAULT_TZ = ZoneInfo("America/New_York")
 
 # Matches the model's own "[Weekday] [M/]DD: description." shape for a
@@ -504,7 +546,9 @@ def _backfill_from_duplicate(existing: SchoolContentItem, item: dict, link_url: 
     return changed
 
 
-async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter, new_blocks: list[SmoreBlock]) -> str:
+async def extract_from_newsletter(
+    db: AsyncSession, newsletter: SmoreNewsletter, new_blocks: list[SmoreBlock], job_kind: str = "smore.scan"
+) -> str:
     if not ANTHROPIC_API_KEY:
         return "skipped - ANTHROPIC_API_KEY not configured"
     if not new_blocks:
@@ -513,18 +557,28 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
     vision_failures = 0
+    document_failures = 0
     for block in new_blocks:
-        if block.block_type == "image" and block.pending_vision_extraction:
-            text = await _vision_extract(client, block.image_url)
-            if text is None:
-                # Leave it pending: flipping the flag on failure used to mark
-                # the flyer as done with no text - permanently, since only
-                # never-seen blocks get another look - so a transient API
-                # error silently dropped whole flyers with a "success" run.
+        if not block.pending_vision_extraction:
+            continue
+        if block.block_type == "image":
+            text = await _vision_extract(client, block.image_url, job_kind=job_kind)
+        elif block.block_type == "link" and block.link_url and block.link_url.lower().endswith(".pdf"):
+            text = await _document_extract(client, block.link_url, job_kind=job_kind)
+        else:
+            continue
+        if text is None:
+            # Leave it pending: flipping the flag on failure used to mark
+            # the flyer as done with no text - permanently, since only
+            # never-seen blocks get another look - so a transient API
+            # error silently dropped whole flyers with a "success" run.
+            if block.block_type == "image":
                 vision_failures += 1
-                continue
-            block.vision_extracted_text = text
-            block.pending_vision_extraction = False
+            else:
+                document_failures += 1
+            continue
+        block.vision_extracted_text = text
+        block.pending_vision_extraction = False
     await db.flush()
 
     def _corpus_line(block: SmoreBlock) -> str | None:
@@ -539,11 +593,11 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             return f"[block {block.position}, link] {block.link_url}"
         return None
 
-    vision_note = (
-        f"WARNING[image_unsupported]: {vision_failures} image block(s) failed vision extraction (left pending) · "
-        if vision_failures
-        else ""
-    )
+    vision_note = ""
+    if vision_failures:
+        vision_note += f"WARNING[image_unsupported]: {vision_failures} image block(s) failed vision extraction (left pending) · "
+    if document_failures:
+        vision_note += f"WARNING[document_unsupported]: {document_failures} document block(s) failed extraction (left pending) · "
     extractable_blocks = [b for b in new_blocks if _corpus_line(b) is not None]
     if not extractable_blocks:
         return f"{vision_note}no extractable text in new blocks"
@@ -662,14 +716,26 @@ async def extract_from_newsletter(db: AsyncSession, newsletter: SmoreNewsletter,
             )
 
             raw_start_date = _parse_date(item.get("start_date"))
-            item_start_date = _correct_stale_year(raw_start_date, newsletter_id=newsletter.id)
+            # Stale-year roll-forward assumes a stale-looking date means
+            # reused flyer artwork for THIS week's issue (true for a Smore
+            # newsletter, which is always the current issue). A "virtual
+            # backpack" bulletin board is the opposite: it's a permanent,
+            # ever-growing archive where most links genuinely are old
+            # (confirmed real: Audubon's page mixes a 2024 "October 2024
+            # Public Library Events" flyer with this week's). Rolling those
+            # forward fabricated several false upcoming events on first run
+            # (a 2024 flyer became an "October 2026" event, "Healthy Kids
+            # Running Spring 2025" became "Spring 2027") - so this source
+            # type trusts the model's own parsed date/year as-is.
+            correct_stale_years = job_kind != "virtual_backpack.scan"
+            item_start_date = _correct_stale_year(raw_start_date, newsletter_id=newsletter.id) if correct_stale_years else raw_start_date
             # Keep a date range intact: if the start rolled forward a year,
             # the end moves with it rather than being corrected on its own
             # (an end date judged against the same cutoff could otherwise
             # land a different number of years away from its own start).
             year_shift = (item_start_date.year - raw_start_date.year) if (raw_start_date and item_start_date) else 0
             item_end_date = _parse_date(item.get("end_date"))
-            if item_end_date is not None:
+            if item_end_date is not None and correct_stale_years:
                 item_end_date = (
                     _add_years(item_end_date, year_shift)
                     if year_shift

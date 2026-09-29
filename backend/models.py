@@ -949,6 +949,13 @@ class SmoreNewsletter(Base):
     # Ordinarily exactly one of school_id/district_id is set, matching
     # SchoolContentItem's scope split - not enforced by a DB constraint.
     district_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("districts.id", ondelete="SET NULL"), nullable=True)
+    # "smore" (default) | "virtual_backpack" - which scan job kind and
+    # parser this row's URL is scanned with. Added for Audubon's "virtual
+    # backpack" bulletin-board page (services/backpack_parser.py), which
+    # isn't a Smore issue at all but reuses the exact same
+    # newsletter/block/extraction machinery, since the docstring above
+    # already anticipated "or similar" pages.
+    source_type: Mapped[str] = mapped_column(String(20), default="smore", nullable=False)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     scheduled_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     last_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
