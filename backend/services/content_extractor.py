@@ -775,8 +775,20 @@ async def extract_from_newsletter(
                     ).scalars().all()
                     existing_dates = {d.date() for d in existing_days}
                     for day in days:
+                        # Checked against dates added earlier in *this* loop
+                        # too, not just the pre-fetched DB snapshot - a
+                        # single description can itself name the same date
+                        # twice (confirmed real: a "Week of Sept 8-11"
+                        # recap whose regex split produced both a real meal
+                        # entry and a stray "Mon" fragment for 9/11), and
+                        # two separate lunch_menu items in the same
+                        # extraction chunk can also target the same
+                        # LunchMenu row. Either way a same-date second
+                        # INSERT hit the unique constraint and took down
+                        # the whole extraction, not just that one date.
                         if day["date"].date() in existing_dates:
                             continue
+                        existing_dates.add(day["date"].date())
                         db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=day["description"]))
                     created += 1
                     continue
