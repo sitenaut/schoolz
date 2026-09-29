@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-from services.smore_parser import _classify
+from services.smore_parser import _classify, _find_author_profile_link, _pick_current_issue_link
 
 
 def _block(html: str):
@@ -118,3 +118,77 @@ def test_image_with_data_uri_src_falls_back_to_text_not_a_bad_image_url():
     result = _classify(block)
     assert result["block_type"] == "text"
     assert result["image_url"] is None
+
+
+def test_picks_latest_dated_issue_from_a_real_archive_page():
+    # Confirmed real shape: Cherry Hill's James F. Cooper Elementary lists
+    # every issue with its date as the link text, oldest first.
+    html = """
+    <a href="https://app.smore.com/n/dz5ck">August 26, 2026</a>
+    <a href="https://app.smore.com/n/uqfmj">September 4, 2026</a>
+    <a href="https://app.smore.com/n/0mhat">September 10, 2026</a>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/0mhat"
+
+
+def test_picks_latest_even_when_archive_lists_newest_first():
+    html = """
+    <a href="https://app.smore.com/n/0mhat">September 10, 2026</a>
+    <a href="https://app.smore.com/n/uqfmj">September 4, 2026</a>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/0mhat"
+
+
+def test_falls_back_to_last_link_in_document_order_when_no_date_parses():
+    html = """
+    <a href="https://app.smore.com/n/dz5ck">Read now</a>
+    <a href="https://app.smore.com/n/0mhat">Read now</a>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/0mhat"
+
+
+def test_ignores_a_smore_author_profile_link_not_an_issue_link():
+    # Confirmed real: a site nav can link smore.com/u/<username> (an author
+    # profile listing every newsletter that author has ever published, not
+    # any one issue) alongside the real per-issue links.
+    html = """
+    <a href="https://www.smore.com/u/someauthor">All Newsletters</a>
+    <a href="https://app.smore.com/n/0mhat">September 10, 2026</a>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/0mhat"
+
+
+def test_no_smore_links_returns_none():
+    assert _pick_current_issue_link("<a href='/about'>About</a>") is None
+
+
+def test_picks_latest_from_last_edited_text_near_a_dateless_thumbnail_link():
+    # Confirmed real shape: a Smore author profile's newsletter card has no
+    # date in the link text itself - only nearby sibling text.
+    html = """
+    <div class="newsletter-container">
+      <a href="https://app.smore.com/n/older-issue" aria-label="Edit">
+        <img src="thumb1.jpg">
+      </a>
+      <div>Last edited September 1, 2025</div>
+    </div>
+    <div class="newsletter-container">
+      <a href="https://app.smore.com/n/hny2pw-the-barton-scoop" aria-label="Edit">
+        <img src="thumb2.jpg">
+      </a>
+      <div>Last edited October 3, 2025</div>
+    </div>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/hny2pw-the-barton-scoop"
+
+
+def test_finds_author_profile_link_ignoring_issue_links():
+    html = """
+    <a href="https://app.smore.com/n/not-an-author-page">Some Issue</a>
+    <a href="https://secure.smore.com/u/idalis.kizee">Principal's Updates</a>
+    """
+    assert _find_author_profile_link(html) == "https://secure.smore.com/u/idalis.kizee"
+
+
+def test_find_author_profile_link_returns_none_when_absent():
+    assert _find_author_profile_link('<a href="https://app.smore.com/n/x">X</a>') is None

@@ -7,6 +7,7 @@ across every block type, image-only ones included - rather than waiting on
 
 import hashlib
 import re
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 
@@ -15,6 +16,18 @@ from scheduler.errors import record_parse_issue
 from services.links import unwrap_redirect
 
 _WAIT_SELECTOR = ".block-wrapper"
+_SMORE_ISSUE_HREF_RE = re.compile(r"^https?://(?:app|secure)\.smore\.com/n/", re.IGNORECASE)
+# A site-nav link to a Smore AUTHOR's profile - every newsletter that
+# person has ever published, not any one issue (confirmed real: Clara
+# Barton Elementary's own archive page links only this, not per-issue
+# links directly - contrast Cooper Elementary's archive page, which lists
+# per-issue links itself with no author-profile hop needed).
+_SMORE_AUTHOR_HREF_RE = re.compile(r"^https?://(?:www\.|app\.|secure\.)?smore\.com/u/", re.IGNORECASE)
+_ARCHIVE_DATE_FORMATS = ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y", "%m/%d/%y")
+# Confirmed real: a Smore author profile shows each newsletter as a
+# thumbnail card with no date in the link text itself - the date only
+# appears as sibling text a few DOM levels up, e.g. "Last edited October 3, 2025".
+_LAST_EDITED_RE = re.compile(r"Last edited\s+([A-Za-z]+ \d{1,2},\s*\d{4})")
 # Fallback for links that aren't real <a href> tags - Smore renders some
 # links as plain auto-detected text (confirmed: a handbook link on a real
 # newsletter was plain text inside an image block, no anchor at all).
@@ -123,3 +136,94 @@ async def fetch_and_parse(url: str) -> list[dict]:
         else:
             record_parse_issue("smore.scan", "unclassified_block", url=url, position=position)
     return blocks
+
+
+def _parse_archive_date(text: str) -> datetime | None:
+    text = text.strip()
+    for fmt in _ARCHIVE_DATE_FORMATS:
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _nearby_last_edited_date(anchor) -> datetime | None:
+    """Walks a few ancestors up from an issue link looking for a "Last
+    edited <date>" string - the date lives as sibling text near the card,
+    not inside the anchor itself, on a Smore author-profile page."""
+    node = anchor
+    for _ in range(5):
+        if node.parent is None:
+            break
+        node = node.parent
+        match = _LAST_EDITED_RE.search(node.get_text(" ", strip=True))
+        if match:
+            return _parse_archive_date(match.group(1))
+    return None
+
+
+def _pick_current_issue_link(html: str) -> str | None:
+    """Confirmed real (Cherry Hill's James F. Cooper Elementary and Clara
+    Barton Elementary, both of which publish from a page like this rather
+    than emailing the new link out each week): the school's OWN website
+    keeps a "Newsletter Archive" page that lists every past issue, e.g.
+    "September 10, 2026" -> app.smore.com/n/0mhat. The *page* is the
+    stable thing to track, not any one issue's link - a fixed issue URL
+    goes dead the moment a newer one is published.
+
+    Tries, in order: a parseable date in the link's own text (Cooper's
+    style); a "Last edited <date>" string near the link (a Smore author
+    profile's style); falling back to the *last* smore.com/n/ link in
+    document order (a real archive lists oldest-to-newest) when neither
+    yields a date, since a page that link-texts its issues some other way
+    (an icon, "Read now") still reliably lists them chronologically."""
+    soup = BeautifulSoup(html, "lxml")
+    candidates = []
+    for anchor in soup.select("a[href]"):
+        href = anchor["href"]
+        if _SMORE_ISSUE_HREF_RE.match(href):
+            candidates.append((href, anchor))
+    if not candidates:
+        return None
+
+    dated = []
+    for href, anchor in candidates:
+        found = _parse_archive_date(anchor.get_text(strip=True)) or _nearby_last_edited_date(anchor)
+        if found:
+            dated.append((href, found))
+    if dated:
+        return max(dated, key=lambda pair: pair[1])[0]
+    return candidates[-1][0]
+
+
+def _find_author_profile_link(html: str) -> str | None:
+    soup = BeautifulSoup(html, "lxml")
+    for anchor in soup.select("a[href]"):
+        if _SMORE_AUTHOR_HREF_RE.match(anchor["href"]):
+            return anchor["href"]
+    return None
+
+
+async def discover_current_issue_url(archive_page_url: str) -> str | None:
+    """Fetches a school's own "newsletter archive" page and resolves it to
+    its current issue's URL. That page is itself a normal server-rendered
+    page (Finalsite, in every case seen so far) - no Smore-specific wait
+    selector needed for *this* fetch.
+
+    Some schools' archive pages don't list per-issue links themselves,
+    only a single link to the publishing staff member's Smore AUTHOR
+    profile (confirmed real: Clara Barton Elementary) - a second,
+    client-rendered Smore page listing every issue that person has ever
+    published. When the first fetch finds no direct issue link, this
+    follows that one extra hop."""
+    result = await scraper_client.fetch_html(archive_page_url, wait_for_selector="a")
+    link = _pick_current_issue_link(result["html"])
+    if link:
+        return link
+
+    author_url = _find_author_profile_link(result["html"])
+    if not author_url:
+        return None
+    author_result = await scraper_client.fetch_html(author_url, wait_for_selector='a[href*="smore.com/n/"]', timeout_ms=25_000)
+    return _pick_current_issue_link(author_result["html"])
