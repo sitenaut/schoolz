@@ -31,6 +31,7 @@ from scheduler import progress
 
 from .deduper import find_duplicate, merge_into
 from .normalizer import normalize
+from .school_sync import group_by_school, sync_school_content
 from .sources.base import RawEvent, Source
 from .sources.deyra_schedule import DeyraScheduleSource
 from .sources.ccls import CCLSSource
@@ -39,6 +40,7 @@ from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
+from .sources.ludus import LudusSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
@@ -240,6 +242,20 @@ def _build_sources(params: dict) -> list[Source]:
                 venue_name=entry.get("venue_name"),
                 venue_address=entry.get("venue_address"),
                 default_categories=list(entry.get("default_categories") or []) or None,
+                school_slug=entry.get("school_slug"),
+            )
+        )
+    for entry in params.get("ludus_sources") or []:
+        if not entry.get("name") or not entry.get("url"):
+            continue
+        sources.append(
+            LudusSource(
+                name=entry["name"],
+                url=entry["url"],
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []) or None,
+                school_labels=entry.get("school_labels"),
             )
         )
     return sources
@@ -256,6 +272,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     skipped = 0
     per_source: dict[str, int] = {}
     partial_failures: dict[str, list[str]] = {}
+    school_tagged_raws: list[RawEvent] = []
     # Why each -1 source failed. It used to live only in the logs, so the run
     # summary in Scans said "failed" with no way to tell a one-off timeout
     # from a site that changed.
@@ -273,6 +290,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         per_source[source.name] = len(raws)
         if getattr(source, "partial_failures", None):
             partial_failures[source.name] = list(source.partial_failures)
+        school_tagged_raws.extend(raw for raw in raws if raw.school_slug)
 
         for raw in raws:
             try:
@@ -338,5 +356,13 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         summary["partial_failures"] = partial_failures
     if source_errors:
         summary["errors"] = source_errors
+
+    if school_tagged_raws:
+        # Grouped across the whole run (not per-source) so pruning a vanished
+        # show is correct even if a school were ever tagged from two sources.
+        school_sync = await sync_school_content(db, group_by_school(school_tagged_raws))
+        await db.commit()
+        summary["school_content"] = school_sync
+
     logger.info("events_pipeline_complete", extra=summary)
     return summary

@@ -30,6 +30,14 @@ class RawEvent(BaseModel):
     is_free: bool | None = None
     default_categories: list[str] = []
     raw: dict[str, Any] = {}
+    # Set when a source knows this event belongs to a specific tracked school
+    # (e.g. a school's own theatre program, tagged by category on a shared
+    # ticketing page - see sources/ludus.py). The pipeline uses this to also
+    # publish the event as a public SchoolContentItem on that school's page
+    # (school_sync.py), in addition to the normal local_events row - a
+    # school's own show is genuinely both a community event and school
+    # content, not one or the other.
+    school_slug: str | None = None
 
 
 class Source(ABC):

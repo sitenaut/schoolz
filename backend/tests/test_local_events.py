@@ -110,8 +110,13 @@ async def test_refresh_upserts_dedupes_across_sources_and_warns_on_failure():
 
 
 async def test_seeded_refresh_job_exists():
+    # Filtered by name, not just kind: the community-theatre job (0063) is a
+    # second row of the same "local_events.refresh" kind, so an unordered
+    # .first() on kind alone isn't guaranteed to land on the default job.
     async with database.SessionLocal() as db:
-        job = (await db.execute(select(ScheduledJob).where(ScheduledJob.kind == "local_events.refresh"))).scalars().first()
+        job = (
+            await db.execute(select(ScheduledJob).where(ScheduledJob.name == "Local events refresh"))
+        ).scalars().first()
     assert job is not None and "evvnt_sources" in job.params and job.params["gcal_sources"] == []
 
 

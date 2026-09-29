@@ -852,7 +852,10 @@ class SchoolContentItem(Base):
     # district view" case a per-class page exists to absorb instead) |
     # "hs_announcements" (from services/hs_announcements.py) |
     # "hs_activities_site" (from services/hs_activities_site.py) |
-    # "school_events_doc" (from services/school_events_doc.py).
+    # "school_events_doc" (from services/school_events_doc.py) |
+    # "local_events" (a local_events source tagged with RawEvent.school_slug -
+    # e.g. a school's own Ludus theatre page - dual-written by
+    # local_events/school_sync.py alongside the normal local_events row).
     # external_uid is the iCal UID for ics_feed/school_ics rows - lets a
     # re-scan update an existing row in place instead of creating a
     # duplicate, and also lets the ics scan claim an already-newsletter-
