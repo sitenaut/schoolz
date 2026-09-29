@@ -2,6 +2,36 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import { IconX } from "../icons";
 import { useTranslation } from "react-i18next";
 
+// One lock shared by every open dialog. Each dialog used to save and restore
+// the body's style on its own, so two overlapping dialogs closing out of order
+// restored the *other's* locked style and left the page pinned for good:
+// unscrollable, no pull-to-refresh, bottom bars floating mid-page on iOS.
+let lockCount = 0;
+let lockedScrollY = 0;
+const UNLOCKED = { position: "", top: "", left: "", right: "", overflow: "" };
+
+function lockBody(): number {
+  if (lockCount++ === 0) {
+    lockedScrollY = window.scrollY;
+    const body = document.body.style;
+    body.position = "fixed";
+    body.top = `-${lockedScrollY}px`;
+    body.left = "0";
+    body.right = "0";
+    body.overflow = "hidden";
+  }
+  return lockedScrollY;
+}
+
+function unlockBody() {
+  if (--lockCount > 0) return;
+  lockCount = 0;
+  Object.assign(document.body.style, UNLOCKED);
+  const y = lockedScrollY;
+  window.scrollTo(0, y);
+  window.setTimeout(() => window.scrollTo(0, y), 150);
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -42,14 +72,7 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
     // from scrolling the page behind the dialog (a swipe in the chat panel
     // dragged the page along and opened a gap above the keyboard), so pin
     // the body in place at its current offset and restore it on close.
-    const body = document.body.style;
-    const prevBody = { position: body.position, top: body.top, left: body.left, right: body.right, overflow: body.overflow };
-    const scrollY = window.scrollY;
-    body.position = "fixed";
-    body.top = `-${scrollY}px`;
-    body.left = "0";
-    body.right = "0";
-    body.overflow = "hidden";
+    lockBody();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCloseRef.current();
     };
@@ -85,8 +108,7 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
       document.removeEventListener("keydown", onKey);
       vv?.removeEventListener("resize", fitToKeyboard);
       vv?.removeEventListener("scroll", fitToKeyboard);
-      Object.assign(body, prevBody);
-      window.scrollTo(0, scrollY);
+      unlockBody();
       (opener.current as HTMLElement | null)?.focus?.();
     };
     // Only re-run when the modal opens/closes, not on every re-render that
