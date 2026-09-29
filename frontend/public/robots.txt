@@ -20,5 +20,15 @@ Disallow: /es/children
 Disallow: /es/gmail
 Disallow: /es/start
 Disallow: /es/invites/
+Disallow: /zh/account
+Disallow: /zh/admin
+Disallow: /zh/login
+Disallow: /zh/register
+Disallow: /zh/forgot-password
+Disallow: /zh/reset-password
+Disallow: /zh/children
+Disallow: /zh/gmail
+Disallow: /zh/start
+Disallow: /zh/invites/
 
 Sitemap: https://schoolz.sitenaut.com/sitemap.xml

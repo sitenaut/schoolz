@@ -38,6 +38,12 @@ logger = logging.getLogger(__name__)
 # extra round, not just a slow response.
 MAX_TOOL_ROUNDS = 4
 
+# lang -> (name of the site version, how to answer)
+_LANG_REPLY = {
+    "es": ("Spanish", "natural US Spanish"),
+    "zh": ("Chinese", "natural Simplified Chinese, addressing the visitor respectfully as 您"),
+}
+
 SYSTEM_PROMPT = (
     "You are schoolz's assistant for Cherry Hill Public Schools. Answer using only the "
     "tools available to you - school info, today's status, bell schedules, lunch menus, "
@@ -157,10 +163,11 @@ async def run_chat_turn(
     # searched against a guessed date (January/April 2025) and came back
     # "no events" while the real week had a dozen.
     dynamic_system = f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."
-    if lang == "es":
+    if lang in _LANG_REPLY:
+        site, reply = _LANG_REPLY[lang]
         # Also after the cache breakpoint, so the shared prefix is untouched.
         dynamic_system += (
-            " The visitor is using the Spanish version of the site: answer in natural US Spanish "
+            f" The visitor is using the {site} version of the site: answer in {reply} "
             "(switch only if they write in another language). Tool results are in English - translate "
             "as you answer, but keep school names, people's names, room numbers, times and product "
             "names (schoolz, Gradez, Genesis, Google Classroom) exactly as given."

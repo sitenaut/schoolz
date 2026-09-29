@@ -11,16 +11,17 @@ import { initReactI18next } from "react-i18next";
  * English. Only the non-English JSON is shipped, and only to those visitors.
  * Plurals: pick the key yourself (`n === 1 ? "1 child" : "{{count}} children"`)
  * - i18next's own count suffixes would need an English resource too. */
-export type Lang = "en" | "es";
+export type Lang = "en" | "es" | "zh";
 
 export const DEFAULT_LANG: Lang = "en";
 
 export const LANGUAGES: { code: Lang; native: string; locale: string }[] = [
   { code: "en", native: "English", locale: "en-US" },
   { code: "es", native: "Español", locale: "es-US" },
+  { code: "zh", native: "中文", locale: "zh-CN" },
 ];
 
-const PREFIXED: Lang[] = ["es"];
+const PREFIXED: Lang[] = ["es", "zh"];
 export const LANG_STORAGE_KEY = "schoolz_lang";
 
 export function langFromPath(pathname: string): Lang {
@@ -94,7 +95,11 @@ export function switchLanguage(lang: Lang): void {
 export function browserPrefersOtherLang(): Lang | null {
   if (typeof navigator === "undefined") return null;
   for (const tag of navigator.languages ?? [navigator.language]) {
-    const base = (tag || "").toLowerCase().split("-")[0];
+    const lower = (tag || "").toLowerCase();
+    // Only Simplified is offered: a Traditional-script browser (zh-TW/HK/MO,
+    // zh-Hant) would be handed the wrong script.
+    if (/^zh-(tw|hk|mo|hant)/.test(lower)) continue;
+    const base = lower.split("-")[0];
     const match = LANGUAGES.find((l) => l.code === base);
     if (match) return match.code === CURRENT_LANG ? null : match.code;
   }

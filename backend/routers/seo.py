@@ -17,12 +17,12 @@ router = APIRouter(tags=["seo"])
 # robots.txt (frontend/public/robots.txt).
 _STATIC_PATHS = ["/", "/schools", "/directory", "/calendar", "/lunch", "/privacy", "/contact", "/contact/submit", "/chcomms", "/survey"]
 
-# Only pages with a real Spanish version get an /es entry (and hreflang
+# Only pages with a real translation get a /es or /zh entry (and hreflang
 # pairing) - listing an English page under /es would invite duplicate-content
 # treatment. Mirror frontend/src/lib/i18n.ts:isTranslatedPath.
 _TRANSLATED_STATIC = {"/", "/schools", "/directory", "/lunch", "/calendar"}
 _TRANSLATED_PREFIX = "/schools/"
-_ALT_LANGS = ("es",)
+_ALT_LANGS = ("es", "zh")
 
 
 def _lang_path(path: str, lang: str) -> str:

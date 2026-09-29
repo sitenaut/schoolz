@@ -355,3 +355,32 @@ async def test_search_ignores_accents_in_both_directions():
         token = await _register(client, f"fold_{uuid.uuid4().hex[:8]}@example.com")
         res = await client.get("/local-events", params={"q": "nino", "source": src}, headers=_auth(token))
         assert [e["title"] for e in res.json()["items"]] == ["Festival del Niño"]
+
+
+def test_condition_phrases_translate_to_chinese_or_fall_back_whole():
+    zh = i18n_strings.condition_zh
+    assert zh("Partly Sunny") == "晴间多云"
+    assert zh("Slight Chance Rain Showers") == "小概率有阵雨"
+    assert zh("Rain Likely") == "很可能有雨"
+    assert zh("Scattered Showers") == "零星阵雨"
+    assert zh("Chance Snow then Mostly Cloudy") == "可能有雪，随后大部分多云"
+    assert zh("Frogs") == "Frogs"
+    assert zh("Mostly Sunny then Frogs") == "Mostly Sunny then Frogs"
+
+
+def test_chinese_labels_and_rotation():
+    assert i18n_strings.rotation_title("Day 3 (3, 4, 1)", "zh") == "第3天 (3, 4, 1)"
+    assert i18n_strings.rotation_label("2", "zh") == "第2天"
+    assert i18n_strings.day_label("Tomorrow", 0, "zh") == "明天"
+    assert i18n_strings.day_label("Mon", 0, "zh") == "周一"
+    assert i18n_strings.contact_label("Nurse", "zh") == "校医"
+    assert i18n_strings.hours_phrase("out", "12:30", "zh") == "12:30 放学"
+    assert i18n_strings.localize_weather({"condition": "Rain Likely"}, "zh")["condition"] == "很可能有雨"
+
+
+def test_closed_prefix_stripping_in_chinese():
+    strip = i18n_strings.strip_closed_prefix
+    assert strip("学校关闭 - 劳动节", "zh") == "劳动节"
+    assert strip("学区停课：秋季休假", "zh") == "秋季休假"
+    assert strip("学校关闭", "zh") is None
+    assert strip("秋季休假", "zh") == "秋季休假"

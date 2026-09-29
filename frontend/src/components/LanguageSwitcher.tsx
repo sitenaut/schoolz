@@ -37,6 +37,11 @@ export function LanguageSwitcher() {
   );
 }
 
+const OFFER_TEXT: Record<Exclude<Lang, "en">, { ask: string; label: string; no: string }> = {
+  es: { ask: "¿Prefiere ver schoolz en español?", label: "Español", no: "No, gracias" },
+  zh: { ask: "您想用中文查看 schoolz 吗？", label: "中文", no: "不用了" },
+};
+
 const DISMISS_KEY = "schoolz_lang_offer_dismissed";
 
 /** A first-time visitor whose browser is set to Spanish is offered the Spanish
@@ -54,6 +59,8 @@ export function LanguageOffer() {
   });
   const other = browserPrefersOtherLang();
   if (dismissed || !other || getStoredLang() || navigator.webdriver) return null;
+  if (other === "en") return null;
+  const text = OFFER_TEXT[other];
   const close = () => {
     try {
       localStorage.setItem(DISMISS_KEY, "1");
@@ -63,13 +70,13 @@ export function LanguageOffer() {
     setDismissed(true);
   };
   return (
-    <div className="lang-offer" role="region" aria-label="Idioma / Language" lang={other}>
-      <span>¿Prefiere ver schoolz en español?</span>
+    <div className="lang-offer" role="region" aria-label="Language / 语言 / Idioma" lang={other}>
+      <span>{text.ask}</span>
       <a className="btn" href={hrefFor(other)} onClick={() => storeLang(other)}>
-        Español
+        {text.label}
       </a>
-      <button className="ghost" onClick={close} aria-label="No, gracias">
-        No, gracias
+      <button className="ghost" onClick={close} aria-label={text.no}>
+        {text.no}
       </button>
     </div>
   );

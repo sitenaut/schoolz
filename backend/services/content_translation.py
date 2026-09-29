@@ -47,14 +47,20 @@ _TIMEOUT_S = 40.0
 # a doomed round trip to every page load.
 _COOLDOWN_S = 60.0
 
-LANGUAGE_NAMES = {"es": "US Spanish"}
+LANGUAGE_NAMES = {"es": "US Spanish", "zh": "Simplified Chinese (as written in mainland China)"}
+
+# The formal register in each language.
+_REGISTER = {
+    "es": 'Address families formally: "usted", never "tú" or "vosotros" (e.g. "Únase", not "Únete").',
+    "zh": 'Address families respectfully with "您", never "你". Use Simplified characters and full-width Chinese punctuation.',
+}
 
 _SYSTEM = """You translate short school-community notices from English into {language} for parents of school-age children.
 
 Rules:
-- Natural, warm, plain {language}, the way a school in the US would write to families. Same meaning and level of formality as the English. Address families formally in Spanish: "usted", never "tú" or "vosotros" (e.g. "Únase", not "Únete"). Do not add, explain or omit anything.
+- Natural, warm, plain {language}, the way a school in the US would write to families. Same meaning and level of formality as the English. {register} Do not add, explain or omit anything.
 - Do NOT translate proper nouns or names: people, schools, districts, programs, clubs, teams, businesses, product/app names, room names.
-- Leave unchanged: room numbers, URLs, email addresses, phone numbers, dates and times (write "9:00 AM" as is), dollar amounts, grade numbers like "5th", and codes such as "Day 3".
+- Leave unchanged: room numbers, URLs, email addresses, phone numbers, dates and times (write "9:00 AM" as is), dollar amounts, grade numbers like "5th" (in Chinese write "5年级"), and codes such as "Day 3".
 - Keep the line breaks, bullets and punctuation structure of the description.
 - Translate every item you are given, keyed by its `n`. A description that is absent stays absent."""
 
@@ -116,7 +122,7 @@ async def _call_model(payload: list[dict], lang: str) -> dict[int, tuple[str, st
         model=MODEL,
         max_tokens=8192,
         temperature=0,
-        system=_SYSTEM.format(language=LANGUAGE_NAMES[lang]),
+        system=_SYSTEM.format(language=LANGUAGE_NAMES[lang], register=_REGISTER[lang]),
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_translations"},
         messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],

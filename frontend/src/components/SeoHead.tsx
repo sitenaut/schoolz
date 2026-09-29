@@ -36,7 +36,7 @@ export function SeoHead({ title, description, path, image, jsonLd }: Props) {
       {translated &&
         LANGUAGES.map((l) => <link key={l.code} rel="alternate" hrefLang={l.code} href={`${SITE_URL}${localizedPath(path, l.code)}`} />)}
       {translated && <link rel="alternate" hrefLang="x-default" href={`${SITE_URL}${localizedPath(path, DEFAULT_LANG)}`} />}
-      <meta property="og:locale" content={CURRENT_LANG === "es" ? "es_US" : "en_US"} />
+      <meta property="og:locale" content={LANGUAGES.find((l) => l.code === CURRENT_LANG)!.locale.replace("-", "_")} />
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
