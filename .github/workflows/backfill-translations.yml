@@ -1,0 +1,39 @@
+name: Backfill translations
+
+# Runs backend/scripts/backfill_translations.py on the always-on `scheduler`
+# machine (it has the prod DB and Anthropic secrets; nothing is copied into
+# GitHub). The script ships in the backend image, so deploy the backend first
+# if the script itself changed. Safe to re-run: only missing/stale rows are
+# generated.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: "Language(s) to backfill"
+        required: true
+        default: "both"
+        type: choice
+        options: ["both", "es", "zh"]
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 60
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Run on the scheduler machine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          LANG_INPUT: ${{ github.event.inputs.lang }}
+        run: |
+          langs="$LANG_INPUT"; [ "$langs" = "both" ] && langs="es zh"
+          machine=$(flyctl machines list -a schoolz-api --json \
+            | jq -r '[.[] | select(.config.metadata.fly_process_group == "scheduler" and .state == "started")][0].id')
+          if [ -z "$machine" ] || [ "$machine" = "null" ]; then
+            echo "no started scheduler machine found" >&2
+            exit 1
+          fi
+          echo "scheduler machine: $machine"
+          flyctl machine exec -a schoolz-api --timeout 3300 "$machine" "python scripts/backfill_translations.py $langs"
