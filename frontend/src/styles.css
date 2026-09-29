@@ -344,7 +344,10 @@ h3 {
   border-top: 1px solid var(--line);
   font-size: 0.85rem;
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  /* Keep the language switch clear of the fixed chat button in the corner. */
+  padding-right: 88px;
 }
 .shell-footer a {
   color: var(--ink-2);
@@ -847,11 +850,18 @@ h3 {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+/* The clothing chips sit to the right of the description ("Partly sunny")
+   and only drop underneath when the card is too narrow for both. */
+.fact .weatherLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
 .fact .wear {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 6px;
 }
 .fact .wear span {
   font-size: 12px;
