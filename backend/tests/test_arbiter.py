@@ -25,6 +25,13 @@ def test_entity_id_from_teams_query_url():
     assert entity_id_from_athletics_url("https://www.arbiterlive.com/Teams?school=1&entityId=4058") == "4058"
 
 
+def test_entity_id_from_school_calendar_url():
+    # Confirmed real: Audubon HS's white-labeled audubonathletics.com site
+    # links this shape ("/School/Calendar/<id>") to its own real
+    # arbiterlive.com entity.
+    assert entity_id_from_athletics_url("https://arbiterlive.com/School/Calendar/975") == "975"
+
+
 def _month_payload(year, month, events):
     return {"year": year, "month": month, "days": [e["day"] for e in events], "events": events}
 

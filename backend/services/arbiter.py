@@ -27,17 +27,28 @@ _TEAM_URL_RE = re.compile(r"arbiterlive\.com/m/team/(\d+)")
 # `athletics_url` looked valid but never actually got a scan job created
 # (_ensure_athletics_calendar_job only fires when this resolves).
 _ENTITY_ID_QUERY_RE = re.compile(r"arbiterlive\.com/.*[?&]entityId=(\d+)")
+# Confirmed real (Audubon HS, found via its white-labeled audubonathletics.com
+# site's own "Calendar" link): a third real shape, "/School/Calendar/<id>" -
+# same entity id the calendar API takes, just yet another page the
+# ArbiterLive site itself generates depending on the current UI/entry point.
+_SCHOOL_CALENDAR_URL_RE = re.compile(r"arbiterlive\.com/School/Calendar/(\d+)")
 
 
 def entity_id_from_athletics_url(athletics_url: str | None) -> str | None:
     """A school's athletics_url is a plain outbound link and isn't always
     ArbiterLive (some schools still link a generic athletics site, or a
     white-labeled ArbiterLive domain like easternvikings.arbiterwebsites.com
-    this doesn't resolve) - only a real ArbiterLive team/entity URL has
-    anything this module can fetch."""
+    or audubonathletics.com this doesn't resolve directly - the real
+    arbiterlive.com entity link has to be found on *that* site instead) -
+    only a real ArbiterLive team/entity URL has anything this module can
+    fetch."""
     if not athletics_url:
         return None
-    m = _TEAM_URL_RE.search(athletics_url) or _ENTITY_ID_QUERY_RE.search(athletics_url)
+    m = (
+        _TEAM_URL_RE.search(athletics_url)
+        or _ENTITY_ID_QUERY_RE.search(athletics_url)
+        or _SCHOOL_CALENDAR_URL_RE.search(athletics_url)
+    )
     return m.group(1) if m else None
 
 
