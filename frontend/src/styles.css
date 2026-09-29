@@ -296,6 +296,8 @@ h3 {
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
+  /* Sideways only: a vertical drag that starts on the bar must not move it. */
+  touch-action: pan-x;
   padding-bottom: env(safe-area-inset-bottom);
 }
 .shell-nav::-webkit-scrollbar {
@@ -497,6 +499,7 @@ h3 {
     grid-template-columns: 1fr;
     align-content: start;
     overflow: visible;
+    touch-action: auto;
     border-top: 0;
     border-right: 1px solid var(--line);
     padding: 12px 8px;

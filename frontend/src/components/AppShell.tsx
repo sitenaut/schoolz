@@ -17,6 +17,7 @@ import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
 import { invitePath, loadPendingInvite } from "../lib/pendingInvite";
+import { useKeyboardViewportReset } from "../lib/keyboardReset";
 
 // Route templates for the routes registered in App.tsx - used to keep
 // page_view's `route` attribute low-cardinality (a school slug or invite
@@ -63,6 +64,7 @@ const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 export function AppShell() {
   const { t } = useTranslation();
   useAccountLanguageSync();
+  useKeyboardViewportReset();
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
   const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
