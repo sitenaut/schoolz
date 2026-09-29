@@ -6,7 +6,17 @@
       "name": "Audubon Public School District",
       "website_url": "https://www.audubonschools.org",
       "food_services_menu_url": "https://www.audubonschools.org/departments/food-services",
-      "ics_feeds": [],
+      "ics_feeds": [
+        {
+          "name": "Audubon District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/audubonschools.org_srhau7tq6voe9u2f8jjpjmlli4%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "Audubon HS Calendar",
+          "url": "https://calendar.google.com/calendar/ical/audubonschools.org_of071m7strlvirrk4es5g5o0eg%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "ahs"
+        }
+      ],
       "marking_period_url": null,
       "preschool_locations_url": null,
       "preschool_team_url": null,
