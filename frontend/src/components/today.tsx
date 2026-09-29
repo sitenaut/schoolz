@@ -340,8 +340,16 @@ export function WeatherFact({ w, children }: { w: TodayWeather; children?: React
           {w.dropoff_label === "Now" ? t("now") : w.dropoff_label.toLowerCase().startsWith("morning") ? t("in the morning") : t("at {{label}}", { label: w.dropoff_label })} → {temp(w.pickup_temp)}{" "}
           {w.pickup_label.toLowerCase().startsWith("afternoon") ? t("in the afternoon") : t("at {{label}}", { label: w.pickup_label })}
         </div>
-        <div className="sub">{details.join(" · ")}</div>
-        <div className="wear">{items.length ? items.map((i) => <span key={i}>{i}</span>) : <span>{t("Nothing extra needed")}</span>}</div>
+        <div className="weatherLine">
+          <div className="sub">{details.join(" · ")}</div>
+          {items.length > 0 && (
+            <div className="wear">
+              {items.map((i) => (
+                <span key={i}>{i}</span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {children}
     </div>
