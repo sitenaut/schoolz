@@ -13,6 +13,7 @@ import base64
 import logging
 import re
 import time
+from urllib.parse import urljoin
 
 import httpx
 from anthropic import AsyncAnthropic
@@ -27,6 +28,20 @@ _GRADE_BAND_TO_SCHOOL_TYPE = {"ES": "elementary", "MS": "middle", "HS": "high"}
 _PDF_FILENAME_RE = re.compile(
     r"([A-Za-z]+)0?(\d{4})-([A-Z]{2})-(Breakfast|Lunch)", re.IGNORECASE
 )
+
+# Confirmed real (Audubon Public Schools): no hyphens at all, band spelled
+# out ("Elementary"/"JH-HS"/"PreK") rather than a two-letter code, and the
+# meal type is glued to a trailing "Menu" - e.g. "September2026JH-HSLunchMenu.pdf".
+_BAND_WORD_TO_SCHOOL_TYPE = {"ELEMENTARY": "elementary", "MS": "middle", "HS": "high", "JHHS": "high", "PREK": "other"}
+_PDF_FILENAME_RE2 = re.compile(
+    r"([A-Za-z]+)0?(\d{4})([A-Za-z-]+?)(Breakfast|Lunch)Menu", re.IGNORECASE
+)
+
+# Confirmed real (Audubon Public Schools): the food-services page links a
+# Finalsite "/fs/resource-manager/view/<uuid>" wrapper, not the PDF itself -
+# the actual resources.finalsite.net PDF only appears after following that
+# page's redirect, so a plain href=".pdf" scan finds nothing at all.
+_RESOURCE_MANAGER_RE = re.compile(r'href="(/fs/resource-manager/view/[0-9a-fA-F-]+)"', re.IGNORECASE)
 
 
 _MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december")
@@ -50,19 +65,52 @@ def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
 
 
 def _classify_pdf_link(url: str) -> dict | None:
-    match = _PDF_FILENAME_RE.search(url)
-    if not match:
-        return None
-    month, year, grade_band, meal = match.groups()
-    school_type = _GRADE_BAND_TO_SCHOOL_TYPE.get(grade_band.upper())
-    if not school_type:
-        return None
-    return {
-        "school_type": school_type,
-        "meal_type": meal.lower(),
-        "period_label": f"{month.title()} {year}",
-        "pdf_url": url,
-    }
+    filename = url.rsplit("/", 1)[-1]
+    match = _PDF_FILENAME_RE.search(filename)
+    if match:
+        month, year, grade_band, meal = match.groups()
+        school_type = _GRADE_BAND_TO_SCHOOL_TYPE.get(grade_band.upper())
+        if school_type:
+            return {
+                "school_type": school_type,
+                "meal_type": meal.lower(),
+                "period_label": f"{month.title()} {year}",
+                "pdf_url": url,
+            }
+
+    match2 = _PDF_FILENAME_RE2.search(filename)
+    if match2:
+        month, year, band, meal = match2.groups()
+        school_type = _BAND_WORD_TO_SCHOOL_TYPE.get(re.sub(r"[^A-Za-z]", "", band).upper())
+        if school_type:
+            return {
+                "school_type": school_type,
+                "meal_type": meal.lower(),
+                "period_label": f"{month.title()} {year}",
+                "pdf_url": url,
+            }
+
+    return None
+
+
+async def _resolve_resource_manager_links(page_url: str, html: str) -> set[str]:
+    """Follows each Finalsite resource-manager wrapper link to its real
+    PDF URL. Non-PDF resources (a handbook, a USDA notice) resolve fine but
+    are simply filtered out by _classify_pdf_link downstream."""
+    wrappers = {urljoin(page_url, path) for path in _RESOURCE_MANAGER_RE.findall(html)}
+    if not wrappers:
+        return set()
+    resolved: set[str] = set()
+    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+        for wrapper_url in wrappers:
+            try:
+                resp = await client.head(wrapper_url)
+            except httpx.HTTPError:
+                continue
+            final_url = str(resp.url)
+            if final_url.lower().endswith(".pdf"):
+                resolved.add(final_url)
+    return resolved
 
 
 async def discover_current_menus(menu_page_url: str, single_school_type: str | None = None) -> list[dict]:
@@ -75,6 +123,7 @@ async def discover_current_menus(menu_page_url: str, single_school_type: str | N
     taken as that type's lunch menu, latest month winning."""
     result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a")
     urls = set(re.findall(r'href="([^"]+\.pdf)"', result["html"], re.IGNORECASE))
+    urls |= await _resolve_resource_manager_links(menu_page_url, result["html"])
 
     by_key: dict[tuple, dict] = {}
     for url in urls:
