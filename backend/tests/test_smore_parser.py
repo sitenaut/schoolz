@@ -162,6 +162,32 @@ def test_no_smore_links_returns_none():
     assert _pick_current_issue_link("<a href='/about'>About</a>") is None
 
 
+def test_picks_link_with_explicit_current_issue_label():
+    # Confirmed real: Audubon HS's "Counselor's Corner" link text.
+    html = """
+    <a href="https://app.smore.com/n/older">Past Issue</a>
+    <a href="https://app.smore.com/n/current">CURRENT ISSUE OF THE COUNSELOR'S CORNER</a>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/current"
+
+
+def test_finds_smore_link_embedded_as_an_iframe_src():
+    # Confirmed real: Jennings Elementary's newsletter page has no <a
+    # href> at all, just an <iframe src="...?embedded">.
+    html = '<iframe src="https://app.smore.com/n/rxme5?embedded"></iframe>'
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/rxme5?embedded"
+
+
+def test_picks_latest_from_leading_text_date_before_the_link():
+    # Confirmed real shape: Audubon HS's /newsletters page - bare "Month
+    # Year" text immediately before a link whose own text is just the URL.
+    html = """
+    <p>March 2026 <a href="https://app.smore.com/n/m8wrz">https://app.smore.com/n/m8wrz</a></p>
+    <p>Winter 2026 <a href="https://app.smore.com/n/tz6a3">https://app.smore.com/n/tz6a3</a></p>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/m8wrz"
+
+
 def test_picks_latest_from_last_edited_text_near_a_dateless_thumbnail_link():
     # Confirmed real shape: a Smore author profile's newsletter card has no
     # date in the link text itself - only nearby sibling text.

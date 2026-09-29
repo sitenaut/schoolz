@@ -99,6 +99,14 @@ Elsewhere it may be embedded on a general "Our School" or "Parents" page
 instead — search for "bell schedule" or "dismissal" text if the dedicated
 path 404s.
 
+**Also sometimes genuinely not published anywhere** — same finding as
+Absence/attendance reporting below: a thorough per-school pass across all
+11 Collingswood/Oaklyn/Woodlynne schools (Apptegy platform) found no
+"Bell Schedule," "Hours," or "Dismissal" page or nav item anywhere. Don't
+keep digging past a real nav-based search on this platform; a printed
+handbook PDF not linked from the nav is the likely real source, out of
+scope for a plain crawl.
+
 **Shapes confirmed real:**
 
 - **Single flat schedule** (most elementary schools): one arrival/dismissal
@@ -273,10 +281,52 @@ shape below through `SmoreNewsletter.source_type`.
      bare month/day — the safe fallback (last matching link in document
      order, since a real archive lists oldest-to-newest) already resolves
      this correctly; don't over-engineer year-inference here.
-   All three route through `services/smore_parser.py:discover_current_issue_url`,
-   which tries direct links first, then the author-profile hop, then falls
-   back to document order — no per-school code needed, just point the URL at
-   whichever page you found and let it resolve.
+   - **A single always-current embed, no listing at all** (confirmed real:
+     Rohrer Middle's own homepage, Jennings's `/our-school/newsletter` page)
+     — the page just embeds `secure.smore.com/n/<code>?embed=1` directly and
+     the school replaces that one embed in place each issue, no archive of
+     past issues visible anywhere. Trivial for the resolver (exactly one
+     `smore.com/n/` candidate on the page, picked automatically with no
+     date logic needed) — point `smore_archive` straight at that page.
+   - **Newest-first with the date as plain text *before* the link, not
+     inside it** (confirmed real: Audubon HS's shared `/newsletters` page
+     for multiple newsletters) — e.g. `March 2026 <a href=".../m8wrz">
+     https://app.smore.com/n/m8wrz</a>`, then `Winter 2026` below it. The
+     link text is just the bare URL. **This one is dangerous, not just
+     unsupported**: the existing document-order fallback assumes
+     oldest-first (true for Cooper, false here), so pointing `smore_archive`
+     at a newest-first, no-date-signal page like this *silently resolves to
+     a stale, older issue* instead of failing loudly. Needs a fourth
+     date-detection strategy (a date in text immediately preceding the
+     link) added to `_pick_current_issue_link` before wiring a page like
+     this in — don't just point the URL at it and assume the existing
+     three strategies are enough. Some pages instead mark the current one
+     with an explicit label (`"CURRENT ISSUE OF THE COUNSELOR'S CORNER"`)
+     — worth also recognizing that literal marker text, since it's an even
+     more direct signal than a date once you're building this strategy.
+   - **A single always-current `<iframe src=...>` embed, no `<a href>` at
+     all** (confirmed real: Jennings Elementary's `/our-school/newsletter`
+     page) — same trivial case as the plain-embed-page shape above, just
+     rendered as an iframe instead of a link. `_pick_current_issue_link`
+     checks both `a[href]` and `iframe[src]`.
+   Every shape above routes through `services/smore_parser.py:
+   discover_current_issue_url` once its detection strategy exists - no
+   per-school code, just point the URL at whichever page you found. **But
+   verify which shape you actually found before wiring it in** - the
+   newest-first case above shows why assuming "found *a* listing page" is
+   safe to wire in unread.
+
+   **Migrating an already-tracked literal issue link to `smore_archive`
+   changes that row's `url`.** The seed importer matches an existing
+   `SmoreNewsletter` by exact URL - change the URL in the seed file and
+   re-import, and it creates a **second**, duplicate row (with its own
+   duplicate scan job) instead of updating the first, leaving the old
+   literal-link row orphaned rather than replaced. Confirmed real, caught
+   only by re-checking the DB after import rather than trusting the
+   import summary's counts. After a migration like this, always verify
+   there's exactly one `SmoreNewsletter` per school afterward and delete
+   the orphaned old one (`DELETE /smore-newsletters/{id}`, which also
+   removes its scan job) if a duplicate appears.
 3. **A running bulletin-board/"virtual backpack" page** (`source_type=
    "virtual_backpack"`, confirmed real: Audubon, ~180 flyer/event links that
    only ever accumulate, never a single "current issue"). Each link is a
@@ -335,6 +385,33 @@ found — mark it as such rather than presenting it with the same confidence
 as a verified dedicated line (confirmed real gap: Audubon's three schools
 only had a Genesis-portal mention and main office numbers, no explicit
 dedicated attendance phone confirmed on any of their pages).
+
+**Sometimes this information genuinely isn't published anywhere on the
+public site at all** — confirmed real: a thorough per-school pass across
+all 11 Collingswood/Oaklyn/Woodlynne schools (Apptegy platform) found zero
+dedicated attendance page, phone, or email on any of them; the only related
+pages were board-policy legal text with no actionable contact info. Every
+school links a Genesis portal, which is *plausibly* the real reporting
+channel by analogy with other Genesis districts in this system, but that's
+an inference, not a confirmed instruction on the page — don't write it in
+as `"portal"` with confidence it doesn't have. Leaving `absence_method`
+null and noting the gap honestly is correct here, not a research failure to
+push harder on. (A handbook PDF linked from a "Documents" page might still
+have it — worth a follow-up pass specifically through those PDFs if this
+data is ever prioritized, since the nav-only crawl this guide describes
+doesn't open documents.)
+
+**`absence_method`/`absence_phone`/`absence_emails`/`absence_portal_name`/
+`absence_portal_url`/`absence_instructions` are not settable through the
+normal admin `PATCH /schools/{id}` endpoint** — `SchoolUpdate` doesn't
+expose them, unlike the four bell-schedule time fields (`start_time` etc.),
+which *are* PATCH-able. Absence fields can only be written by the
+seed-file import path (`POST /admin/config/import`, `admin_config.py`),
+which writes the model directly. Confirmed real: a PATCH with
+`absence_phone` set in the request body silently drops that field with no
+error - the response comes back with it still null. When filling in
+absence data discovered this way, edit the seed file and re-import; don't
+expect a plain PATCH to do it.
 
 ---
 
@@ -429,6 +506,27 @@ of page. Check that section before assuming a new district's version needs
 a novel approach — the parsing *pattern* usually transfers even when the
 exact page layout doesn't.
 
+**HS day rotation has two genuinely different real pathways — check both
+before concluding a district needs the PDF one:**
+
+1. **A district-published PDF** (`District.hs_rotation_url`,
+   `services/hs_rotation.py`, `hs_rotation.scan`) — confirmed real: Cherry
+   Hill's shared East/West "Day Schedule" PDF, parsed with pdfplumber word
+   coordinates. This is the pathway to reach for when rotation days *aren't*
+   already showing up any other way.
+2. **Rotation days as regular calendar events**, already flowing in through
+   the district's normal `ics_feeds` / `district_calendar.scan` — confirmed
+   real: Eastern Regional's calendar publishes titles like `"Day 3 ( 3, 4,
+   1, LL, 7, 8, 5)"` directly as event summaries on one of its calendar_ids
+   (`school_today.py:_ROTATION_RE` reads these from `SchoolContentItem.title`
+   the same way it reads any other calendar event - no separate scan or
+   `hs_rotation_url` needed at all). **`District.hs_rotation_url` being
+   null does NOT by itself mean rotation data is missing** - check for
+   `SchoolContentItem` rows matching `^Day \d` before assuming a gap and
+   going to build PDF-parsing support that isn't needed. (This tripped up
+   an earlier pass of this exact guide - don't repeat it: verify against
+   the database, not against which URL field happens to be null.)
+
 ---
 
 ## Known-unsupported platforms (don't rebuild these from scratch without checking first)
@@ -440,3 +538,19 @@ on this list** - it's ArbiterLive branding, already supported.
 - **`<id>.digitalsports.com`** (athletics) — seen alongside a working
   Arbiter link for the same school (Haddon Township HS), never needed on
   its own so far. No code in this repo reads it.
+- **MemberHub** (`<school>.memberhub.com`) — a PTA platform, confirmed real
+  (Thomas Edison Elementary, Haddon Township). No code in this repo reads
+  it.
+- **Padlet** (`padlet.com/<board>`) — a general-purpose board tool some
+  small PTAs use in place of a dedicated platform, confirmed real (Stoy
+  Elementary's PTA, Haddon Township). No code in this repo reads it - and
+  since Padlet is a generic tool (not school-specific), a scanner for it
+  would need to handle arbitrary board layouts, not one consistent shape
+  the way Givebacks/PTBoard/Smore do.
+- **A login-walled Google Site** (confirmed real: Van Sciver Elementary's
+  PTA, `sites.google.com/view/van-sciver-pta` — redirects to a Google
+  account login when fetched anonymously). Not a code gap, a genuine
+  access gap: there is no public content to scan regardless of platform
+  support. Don't spend time trying alternate fetch methods on a page like
+  this; confirm it's actually login-gated (redirects to `accounts.google.
+  com`) and move on.

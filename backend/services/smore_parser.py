@@ -23,11 +23,23 @@ _SMORE_ISSUE_HREF_RE = re.compile(r"^https?://(?:app|secure)\.smore\.com/n/", re
 # links directly - contrast Cooper Elementary's archive page, which lists
 # per-issue links itself with no author-profile hop needed).
 _SMORE_AUTHOR_HREF_RE = re.compile(r"^https?://(?:www\.|app\.|secure\.)?smore\.com/u/", re.IGNORECASE)
-_ARCHIVE_DATE_FORMATS = ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y", "%m/%d/%y")
+_ARCHIVE_DATE_FORMATS = ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y", "%m/%d/%y", "%B %Y", "%b %Y")
 # Confirmed real: a Smore author profile shows each newsletter as a
 # thumbnail card with no date in the link text itself - the date only
 # appears as sibling text a few DOM levels up, e.g. "Last edited October 3, 2025".
 _LAST_EDITED_RE = re.compile(r"Last edited\s+([A-Za-z]+ \d{1,2},\s*\d{4})")
+# Confirmed real (Audubon HS's shared /newsletters page): the date sits as
+# plain text immediately BEFORE the link in the same paragraph, with no
+# "Last edited" label and no date in the link's own text (the link text is
+# just the bare URL) - e.g. "March 2026 <a href=...>https://...</a>".
+# Deliberately permissive on day-of-month since this page uses a bare
+# "Month Year" for most entries.
+_LEADING_DATE_RE = re.compile(r"([A-Za-z]+ \d{1,2},?\s*\d{4}|[A-Za-z]+\s+\d{4})")
+# An explicit, unambiguous marker some pages use instead of a date at all
+# (confirmed real: Audubon HS's "Counselor's Corner" link text literally
+# reads "CURRENT ISSUE OF THE COUNSELOR'S CORNER") - checked first, since
+# it's a stronger signal than any date comparison.
+_CURRENT_ISSUE_RE = re.compile(r"current\s+issue", re.IGNORECASE)
 # Fallback for links that aren't real <a href> tags - Smore renders some
 # links as plain auto-detected text (confirmed: a handbook link on a real
 # newsletter was plain text inside an image block, no anchor at all).
@@ -163,6 +175,29 @@ def _nearby_last_edited_date(anchor) -> datetime | None:
     return None
 
 
+def _leading_text_date(anchor) -> datetime | None:
+    """A date sitting as plain text immediately before the link, in the
+    same block, with no label and no date in the link's own text
+    (confirmed real: Audubon HS's shared /newsletters page, "March 2026
+    <a href=...>https://...</a>"). Only looks at the anchor's immediate
+    parent, not several levels up like the author-profile case - going
+    further risks picking up an unrelated date from unrelated content
+    sharing a more distant ancestor."""
+    if anchor.parent is None:
+        return None
+    text = anchor.parent.get_text(" ", strip=True)
+    match = _LEADING_DATE_RE.search(text)
+    return _parse_archive_date(match.group(1)) if match else None
+
+
+def _is_marked_current(anchor) -> bool:
+    """An explicit, unambiguous label instead of a date (confirmed real:
+    Audubon HS's "Counselor's Corner" link text literally reads "CURRENT
+    ISSUE OF THE COUNSELOR'S CORNER") - a stronger signal than any date
+    comparison, checked first."""
+    return bool(_CURRENT_ISSUE_RE.search(anchor.get_text(" ", strip=True)))
+
+
 def _pick_current_issue_link(html: str) -> str | None:
     """Confirmed real (Cherry Hill's James F. Cooper Elementary and Clara
     Barton Elementary, both of which publish from a page like this rather
@@ -172,24 +207,46 @@ def _pick_current_issue_link(html: str) -> str | None:
     stable thing to track, not any one issue's link - a fixed issue URL
     goes dead the moment a newer one is published.
 
-    Tries, in order: a parseable date in the link's own text (Cooper's
-    style); a "Last edited <date>" string near the link (a Smore author
-    profile's style); falling back to the *last* smore.com/n/ link in
-    document order (a real archive lists oldest-to-newest) when neither
-    yields a date, since a page that link-texts its issues some other way
-    (an icon, "Read now") still reliably lists them chronologically."""
+    Tries, in order: an explicit "current issue" label on the link itself;
+    a parseable date in the link's own text (Cooper's style); a "Last
+    edited <date>" string near the link (a Smore author profile's style);
+    a date sitting as plain text immediately before the link (Audubon HS's
+    style); falling back to the *last* smore.com/n/ link in document order
+    (a real archive lists oldest-to-newest) when nothing else yields a
+    signal, since a page that link-texts its issues some other way (an
+    icon, "Read now") still reliably lists them chronologically.
+
+    Assumes every candidate link on the page belongs to the *same*
+    newsletter series - a page that mixes several series' issues together
+    (confirmed real: Audubon HS's shared /newsletters page lists "The
+    Wave" and "Counselor's Corner" issues, among others, interleaved with
+    no reliable way to tell them apart) isn't safe to point this at
+    directly; it would resolve to whichever series' issue looks "most
+    current" by the metric that happens to fire, not necessarily the one
+    you meant to track. Don't wire a page like that in without adding a
+    series filter first."""
     soup = BeautifulSoup(html, "lxml")
     candidates = []
-    for anchor in soup.select("a[href]"):
-        href = anchor["href"]
-        if _SMORE_ISSUE_HREF_RE.match(href):
+    # Confirmed real (Jennings Elementary): a page can embed the current
+    # issue directly as an <iframe src="...">, no <a href> anywhere at all.
+    for anchor in soup.select("a[href], iframe[src]"):
+        href = anchor.get("href") or anchor.get("src")
+        if href and _SMORE_ISSUE_HREF_RE.match(href):
             candidates.append((href, anchor))
     if not candidates:
         return None
 
+    marked = [href for href, anchor in candidates if _is_marked_current(anchor)]
+    if marked:
+        return marked[0]
+
     dated = []
     for href, anchor in candidates:
-        found = _parse_archive_date(anchor.get_text(strip=True)) or _nearby_last_edited_date(anchor)
+        found = (
+            _parse_archive_date(anchor.get_text(strip=True))
+            or _nearby_last_edited_date(anchor)
+            or _leading_text_date(anchor)
+        )
         if found:
             dated.append((href, found))
     if dated:

@@ -68,16 +68,18 @@
       "address": null,
       "main_phone": null,
       "website_url": "https://hths.htsd.us",
-      "absence_method": null,
-      "absence_emails": [],
-      "absence_phone": null,
+      "absence_method": "phone",
+      "absence_emails": [
+        "hths-attendance@htsd.us"
+      ],
+      "absence_phone": "(856) 869-7750 x7188",
       "absence_portal_name": null,
       "absence_portal_url": null,
-      "absence_instructions": null,
-      "start_time": null,
-      "end_time": null,
-      "early_dismissal_time": null,
-      "delayed_opening_time": null,
+      "absence_instructions": "Notify the attendance office as soon as possible. Written documentation is required for all absences (email or a paper note on return); an absence with no documentation becomes truancy after two days.",
+      "start_time": "7:40 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:40 AM",
       "athletics_url": "https://arbiterlive.com/School/Calendar/9259",
       "logo_url": null,
       "bell_periods": null,
@@ -251,23 +253,26 @@
       "school_slug": "edison",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
-      "enabled": true
+      "enabled": true,
+      "source_type": "smore"
     },
     {
-      "url": "https://www.smore.com/n/rxme5",
+      "url": "https://jennings.htsd.us/our-school/newsletter",
       "label": "Jennings Newsletter",
       "school_slug": "jennings",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
-      "enabled": true
+      "enabled": true,
+      "source_type": "smore_archive"
     },
     {
-      "url": "https://www.smore.com/n/ugyha",
+      "url": "https://rms.htsd.us/",
       "label": "Rohrer Middle Newsletter",
       "school_slug": "rms",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
-      "enabled": true
+      "enabled": true,
+      "source_type": "smore_archive"
     },
     {
       "url": "https://www.smore.com/n/tufrnd",
@@ -275,7 +280,8 @@
       "school_slug": "stoy",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
-      "enabled": true
+      "enabled": true,
+      "source_type": "smore"
     },
     {
       "url": "https://www.smore.com/n/p21cr0",
@@ -283,7 +289,8 @@
       "school_slug": "strawbridge",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
-      "enabled": true
+      "enabled": true,
+      "source_type": "smore"
     }
   ]
 }
