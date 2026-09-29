@@ -19,15 +19,25 @@ import httpx
 _BASE = "https://www.arbiterlive.com/m/calendarmonth"
 _ET = ZoneInfo("America/New_York")
 _TEAM_URL_RE = re.compile(r"arbiterlive\.com/m/team/(\d+)")
+# Confirmed real (Cherry Hill East/West): the site's own "School Details"
+# page links as "/Teams?entityId=<id>", not "/m/team/<id>" - both are real,
+# fetchable ArbiterLive pages for the same entity id the calendar API
+# takes, just two different URL shapes the site itself generates depending
+# on which page you land on. Missing this silently meant East and West's
+# `athletics_url` looked valid but never actually got a scan job created
+# (_ensure_athletics_calendar_job only fires when this resolves).
+_ENTITY_ID_QUERY_RE = re.compile(r"arbiterlive\.com/.*[?&]entityId=(\d+)")
 
 
 def entity_id_from_athletics_url(athletics_url: str | None) -> str | None:
     """A school's athletics_url is a plain outbound link and isn't always
-    ArbiterLive (some schools still link a generic athletics site) -
-    only a real `/m/team/<id>` URL has anything this module can fetch."""
+    ArbiterLive (some schools still link a generic athletics site, or a
+    white-labeled ArbiterLive domain like easternvikings.arbiterwebsites.com
+    this doesn't resolve) - only a real ArbiterLive team/entity URL has
+    anything this module can fetch."""
     if not athletics_url:
         return None
-    m = _TEAM_URL_RE.search(athletics_url)
+    m = _TEAM_URL_RE.search(athletics_url) or _ENTITY_ID_QUERY_RE.search(athletics_url)
     return m.group(1) if m else None
 
 
