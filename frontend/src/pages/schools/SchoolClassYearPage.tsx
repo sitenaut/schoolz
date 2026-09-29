@@ -7,12 +7,13 @@ import { SeoHead } from "../../components/SeoHead";
 import { useAuth } from "../../context/AuthContext";
 import { monthDay, todayKey, localDateKey } from "../../lib/calendar";
 import type { ClassPayment, School, SchoolClassYear, SchoolContentItem } from "../../types";
+import { LOCALE } from "../../lib/i18n";
 
 type StudentMini = { id: string; school_id: string | null; grad_year: number | null };
 
 function formatCents(cents: number | null): string {
   if (cents === null) return "TBD";
-  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${(cents / 100).toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatWindow(opensAt: string | null, closesAt: string | null): string | null {

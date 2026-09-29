@@ -13,12 +13,15 @@ import { itemDateKeys } from "../lib/calendar";
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
 import type { School, SchoolContentItem } from "../types";
 import styles from "./CalendarPage.module.css";
+import { LOCALE } from "../lib/i18n";
+import { Trans, useTranslation } from "react-i18next";
 
 type ViewMode = "month" | "year";
 
 const TODAY_KEY = dateKey(new Date());
 
 export function CalendarPage() {
+  const { t } = useTranslation();
   const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict, districtsById, myTowns } = useMySchools();
   const [params, setParams] = useSearchParams();
   const deepSchool = params.get("school");
@@ -115,8 +118,8 @@ export function CalendarPage() {
 
   // Debounced so typing doesn't fire a request per keystroke.
   useEffect(() => {
-    const t = setTimeout(() => setSearchTerm(search), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSearchTerm(search), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   // Re-syncs the view when a second deep link (a different day or event
@@ -270,7 +273,7 @@ export function CalendarPage() {
   }, [scrollToToday, selectedDay, rows, viewDate, loadedKey, schoolIdsKey]);
 
   const selectedLabel = selectedDay
-    ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(undefined, {
+    ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(LOCALE, {
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -311,18 +314,18 @@ export function CalendarPage() {
   return (
     <div>
       <SeoHead
-        title={`School calendar · ${townsLabel(myTowns)} · schoolz`}
-        description={`District-wide and per-school calendar for ${townsLabel(myTowns)} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.`}
+        title={t("School calendar · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
+        description={t("District-wide and per-school calendar for {{towns}} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.", { towns: townsLabel(myTowns) })}
         path="/calendar"
       />
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>Calendar</h2>
+        <h2>{t("Calendar")}</h2>
         <div className="tabs" style={{ margin: 0 }}>
           <button className={`tab ${viewMode === "month" ? "active" : ""}`} onClick={() => setViewMode("month")}>
-            Month
+            {t("Month")}
           </button>
           <button className={`tab ${viewMode === "year" ? "active" : ""}`} onClick={() => setViewMode("year")}>
-            Year
+            {t("Year")}
           </button>
         </div>
       </div>
@@ -330,24 +333,24 @@ export function CalendarPage() {
       {deepSchool && (
         <div className="scopeBar">
           <span>
-            Only <b>{deepSchoolObj ? deepSchoolObj.short_name || deepSchoolObj.name : deepSchool}</b>
+            <Trans i18nKey="Only <1>{{school}}</1>" values={{ school: deepSchoolObj ? deepSchoolObj.short_name || deepSchoolObj.name : deepSchool }} components={{ 1: <b /> }} />
           </span>
           <button type="button" className="ghost" onClick={showAllMySchools}>
-            Show all my schools
+            {t("Show all my schools")}
           </button>
         </div>
       )}
 
-      {!deepSchool && showEmptySelectionNote && !isSearching && <p className="note">Every school in the district. Pick schools on "My schools" to narrow it down.</p>}
+      {!deepSchool && showEmptySelectionNote && !isSearching && <p className="note">{t("Every school in the district. Pick schools on \"My schools\" to narrow it down.")}</p>}
 
       {!isSearching && viewMode === "month" && (
         <>
           <div className={styles.monthNav}>
-            <button className={styles.navButton} onClick={() => changeMonth(-1)} aria-label="Previous month">
+            <button className={styles.navButton} onClick={() => changeMonth(-1)} aria-label={t("Previous month")}>
               <IconChevronLeft className={styles.navIcon} />
             </button>
-            <h2>{viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</h2>
-            <button className={styles.navButton} onClick={() => changeMonth(1)} aria-label="Next month">
+            <h2>{viewDate.toLocaleDateString(LOCALE, { month: "long", year: "numeric" })}</h2>
+            <button className={styles.navButton} onClick={() => changeMonth(1)} aria-label={t("Next month")}>
               <IconChevronRight className={styles.navIcon} />
             </button>
           </div>
@@ -367,7 +370,7 @@ export function CalendarPage() {
                   type="button"
                   className={dayButtonClasses(d)}
                   aria-pressed={selectedDay === key}
-                  aria-label={d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) + (key === TODAY_KEY ? " (today)" : "")}
+                  aria-label={d.toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric" }) + (key === TODAY_KEY ? ` (${t("today")})` : "")}
                   onClick={() => tapDay(key, d)}
                 >
                   {d.getDate()}
@@ -378,11 +381,11 @@ export function CalendarPage() {
 
           <div className={styles.dayFilterRow}>
             <span className="note" style={{ margin: 0 }}>
-              {selectedDay ? (selectedDay === TODAY_KEY ? `Today, ${selectedLabel}` : selectedLabel) : "Showing the whole month"}
+              {selectedDay ? (selectedDay === TODAY_KEY ? t("Today, {{date}}", { date: selectedLabel }) : selectedLabel) : t("Showing the whole month")}
             </span>
             {selectedDay && (
               <button className="ghost" onClick={showMonth}>
-                Show month
+                {t("Show month")}
               </button>
             )}
           </div>
@@ -392,17 +395,17 @@ export function CalendarPage() {
       {!isSearching && viewMode === "year" && (
         <>
           <div className={styles.monthNav}>
-            <button className={styles.navButton} onClick={() => changeYear(-1)} aria-label="Previous year">
+            <button className={styles.navButton} onClick={() => changeYear(-1)} aria-label={t("Previous year")}>
               <IconChevronLeft className={styles.navIcon} />
             </button>
             <h2>{viewDate.getFullYear()}</h2>
-            <button className={styles.navButton} onClick={() => changeYear(1)} aria-label="Next year">
+            <button className={styles.navButton} onClick={() => changeYear(1)} aria-label={t("Next year")}>
               <IconChevronRight className={styles.navIcon} />
             </button>
           </div>
 
           <p className="note" style={{ marginTop: 0 }}>
-            Tap any day to jump to that month.
+            {t("Tap any day to jump to that month.")}
           </p>
 
           <div className={styles.yearGrid}>
@@ -426,7 +429,7 @@ export function CalendarPage() {
                           key={idx}
                           type="button"
                           className={dayButtonClasses(d, true)}
-                          aria-label={d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                          aria-label={d.toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric" })}
                           onClick={() => tapDay(key, d)}
                         >
                           {d.getDate()}
@@ -442,56 +445,56 @@ export function CalendarPage() {
       )}
 
       <div className="filterChecks" style={{ margin: "14px 0" }}>
-        <label className="filterCheck" title="Rotation markers: Day 1, Day 2, …">
+        <label className="filterCheck" title={t("Rotation markers: Day 1, Day 2, …")}>
           <input type="checkbox" checked={showDayRotation} onChange={(e) => setShowDayRotation(e.target.checked)} />
-          Show day rotation
+          {t("Show day rotation")}
         </label>
-        <label className="filterCheck" title="Hides board meetings and other district items - never closures, half days, or grading dates">
+        <label className="filterCheck" title={t("Hides board meetings and other district items - never closures, half days, or grading dates")}>
           <input type="checkbox" checked={excludeDistrict} onChange={(e) => setExcludeDistrict(e.target.checked)} />
-          Exclude district
+          {t("Exclude district")}
         </label>
-        <label className="filterCheck" title="A high school's own activities calendar and club/interest meetings - off by default, since it runs to dozens a week. Always visible on that school's own class pages.">
+        <label className="filterCheck" title={t("A high school's own activities calendar and club/interest meetings - off by default, since it runs to dozens a week. Always visible on that school's own class pages.")}>
           <input type="checkbox" checked={includeClassSources} onChange={(e) => setIncludeClassSources(e.target.checked)} />
-          Show club &amp; interest meetings
+          {t("Show club & interest meetings")}
         </label>
-        <label className="filterCheck" title="A school's full ArbiterLive game schedule, every sport and level combined - off by default, since it runs to dozens of games a week.">
+        <label className="filterCheck" title={t("A school's full ArbiterLive game schedule, every sport and level combined - off by default, since it runs to dozens of games a week.")}>
           <input type="checkbox" checked={includeAthletics} onChange={(e) => setIncludeAthletics(e.target.checked)} />
-          <span aria-hidden="true">🏀🎺</span> Show sports &amp; band
+          <span aria-hidden="true">🏀🎺</span> {t("Show sports & band")}
         </label>
       </div>
 
       <div className={styles.toolbar}>
         <div className={styles.searchBox}>
-          <input placeholder="Search all events…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input placeholder={t("Search all events…")} value={search} onChange={(e) => setSearch(e.target.value)} />
           {search && (
-            <button className={styles.searchClear} aria-label="Clear search" onClick={() => setSearch("")}>
+            <button className={styles.searchClear} aria-label={t("Clear search")} onClick={() => setSearch("")}>
               ×
             </button>
           )}
         </div>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="">Events, deadlines, grading & initiatives</option>
-          <option value="event">Events only</option>
-          <option value="deadline">Deadlines only</option>
-          <option value="initiative">Initiatives only</option>
-          <option value="marking_period">Grading dates only</option>
+          <option value="">{t("Events, deadlines, grading & initiatives")}</option>
+          <option value="event">{t("Events only")}</option>
+          <option value="deadline">{t("Deadlines only")}</option>
+          <option value="initiative">{t("Initiatives only")}</option>
+          <option value="marking_period">{t("Grading dates only")}</option>
         </select>
       </div>
 
       {isSearching && (
         <div className={styles.dayFilterRow}>
           <span className="note" style={{ margin: 0 }}>
-            Search results for &ldquo;{searchTerm.trim()}&rdquo;
+            {t("Search results for “{{term}}”", { term: searchTerm.trim() })}
           </span>
           <button className="ghost" onClick={() => setSearch("")}>
-            Back to calendar
+            {t("Back to calendar")}
           </button>
         </div>
       )}
 
       {(viewMode !== "year" || isSearching) &&
         (rows.length === 0 ? (
-          <div className="empty">{isSearching ? `No events match "${searchTerm.trim()}".` : `Nothing found${selectedDay ? " for this day" : " this month"}.`}</div>
+          <div className="empty">{isSearching ? t("No events match \"{{term}}\".", { term: searchTerm.trim() }) : selectedDay ? t("Nothing found for this day.") : t("Nothing found this month.")}</div>
         ) : (
           <div className="list">
             {rows.map(({ key, item, label }) => (

@@ -1,13 +1,15 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_optional_user
 from database import get_db
-from models import GuardianStudentLink, School, SchoolContentItem, Student, User
+from models import ContentTranslation, GuardianStudentLink, School, SchoolContentItem, Student, User
 from schemas import SchoolContentItemOut
+from services.content_translation import localize_outs
+from services.i18n import fold, folded, request_lang
 from services.class_years import CLASS_PAGE_SOURCES
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
@@ -82,6 +84,7 @@ async def list_calendar_items(
     include_athletics: bool = False,
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
+    lang: str = Depends(request_lang),
 ):
     """Everything here is public data. A logged-in guardian with linked
     kids gets it narrowed to their own schools + district-wide items by
@@ -150,8 +153,18 @@ async def list_calendar_items(
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:
-        like = f"%{q}%"
-        query = query.where(or_(SchoolContentItem.title.ilike(like), SchoolContentItem.description.ilike(like)))
+        like = f"%{fold(q)}%"
+        matches = [folded(SchoolContentItem.title).like(like), folded(SchoolContentItem.description).like(like)]
+        if lang != "en":
+            # Spanish visitors search in Spanish: match the stored translation too.
+            matches.append(
+                exists().where(
+                    ContentTranslation.item_id == SchoolContentItem.id,
+                    ContentTranslation.lang == lang,
+                    or_(folded(ContentTranslation.title).like(like), folded(ContentTranslation.description).like(like)),
+                )
+            )
+        query = query.where(or_(*matches))
     if start:
         # Overlaps the range. An all-day item's end_date is the ICS-style
         # exclusive day after its last day, so one ending exactly at the range
@@ -179,7 +192,7 @@ async def list_calendar_items(
         schools = (await db.execute(select(School).where(School.id.in_(school_ids_in_results)))).scalars().all()
         school_names = {s.id: s.short_name or s.name for s in schools}
 
-    return [
+    outs = [
         SchoolContentItemOut.model_validate(i, from_attributes=True).model_copy(
             update={
                 "school_name": school_names.get(i.school_id) if i.scope == "school" else None,
@@ -188,3 +201,4 @@ async def list_calendar_items(
         )
         for i in items
     ]
+    return await localize_outs(db, items, outs, lang)

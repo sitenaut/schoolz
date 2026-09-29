@@ -1,5 +1,6 @@
 import { GA_MEASUREMENT_ID } from "../authConfig";
 import { SITE_URL } from "./site";
+import { CURRENT_LANG, ROUTER_BASENAME } from "./i18n";
 
 const INTERNAL_KEY = "schoolz_internal";
 const OPTOUT_KEY = "schoolz_ga_optout";
@@ -154,7 +155,8 @@ export function gaPageView(pathname: string, search: string, extra?: GtagParams)
   if (!ready) return;
   const path = analyticsPath(pathname, search);
   gtag("event", "page_view", {
-    page_location: `${SITE_URL || window.location.origin}${path}`,
+    page_location: `${SITE_URL || window.location.origin}${ROUTER_BASENAME}${path}`,
+    language: CURRENT_LANG,
     page_title: document.title,
     ...extra,
   });

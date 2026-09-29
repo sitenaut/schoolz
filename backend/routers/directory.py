@@ -39,6 +39,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models import School, StaffMember
 from schemas import DirectoryFacetOut, DirectoryPageOut, DirectorySchoolOut, DirectoryStaffOut
+from services.i18n import fold
 from services.staff_roles import DIRECTORY_CATEGORIES, classify_directory_category
 
 router = APIRouter(prefix="/directory", tags=["directory"])
@@ -149,7 +150,7 @@ async def search_directory(
         department = _first(*(m.department for m in members))
         affiliation, is_district_wide = _affiliation(schools, type_totals)
         haystack = " ".join(
-            part.lower()
+            fold(part)
             for part in (
                 members[0].full_name,
                 title,
@@ -182,7 +183,7 @@ async def search_directory(
         )
     collapsed.sort(key=lambda p: p["full_name"])
 
-    tokens = [t for t in (q or "").lower().split() if t]
+    tokens = [t for t in fold(q or "").split() if t]
     if tokens:
         collapsed = [p for p in collapsed if _matches(p, tokens)]
     if school_id:

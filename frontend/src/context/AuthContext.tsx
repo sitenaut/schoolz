@@ -3,6 +3,7 @@ import { trackEvent, trackMeasurement } from "../lib/track";
 import { API_URL, IS_SUPABASE_AUTH } from "../authConfig";
 import { supabase } from "../supabase";
 import { apiFetch, setLocalToken, clearLocalToken, getLocalToken, setCachedAccessToken } from "../api";
+import { ROUTER_BASENAME } from "../lib/i18n";
 
 // How long the app will sit on "Loading…" before offering the visitor a
 // way out. Only reachable if the auth check never resolves at all.
@@ -16,6 +17,7 @@ type CurrentUser = {
   is_admin: boolean;
   permissions: string[];
   auth_mode: string;
+  preferred_language?: string | null;
   sign_in_method: "password" | "google";
   created_at: string | null;
   // Set when this login belongs to a student (not a guardian) - see
@@ -176,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // or an email-confirmation link unless told otherwise - which is how an
   // invite's ?next= used to get lost. `returnTo` is an app path to land on
   // instead (it must be under the project's allowed redirect URLs).
-  const absoluteReturnTo = (returnTo?: string) => (returnTo ? `${window.location.origin}${returnTo}` : undefined);
+  const absoluteReturnTo = (returnTo?: string) => (returnTo ? `${window.location.origin}${ROUTER_BASENAME}${returnTo}` : undefined);
 
   const loginWithGoogle = async (returnTo?: string) => {
     if (!supabase) return;

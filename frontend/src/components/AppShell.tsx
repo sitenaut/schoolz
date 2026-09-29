@@ -1,7 +1,9 @@
 import { can, isStaff } from "../lib/permissions";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthPopover } from "./AuthPopover";
+import { LanguageOffer, LanguageSwitcher, useAccountLanguageSync } from "./LanguageSwitcher";
 import { ChatWidget } from "./ChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +11,7 @@ import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
+import { CURRENT_LANG } from "../lib/i18n";
 import { gaPageView, gaSetUserProperties, setInternalTraffic } from "../lib/analytics";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
@@ -58,6 +61,8 @@ const WIDE_PATH_PREFIXES = ["/admin", "/account"];
  * filter. This is the quick cross-page switcher; the "My schools" link
  * still goes to /start to add or remove schools from the list itself. */
 export function AppShell() {
+  const { t } = useTranslation();
+  useAccountLanguageSync();
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
   const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
@@ -179,6 +184,7 @@ export function AppShell() {
       district: first?.district_id ? districtsById.get(first.district_id)?.name : undefined,
       school_type: first?.school_type ?? undefined,
       auth_state: user ? "authenticated" : "anonymous",
+      language: CURRENT_LANG,
       schools_picked: mySchools.length ? String(Math.min(mySchools.length, 5)) : "0",
     });
   }, [user, authLoading, authTimedOut, schoolsLoading, mySchools, myTowns, districtsById]);
@@ -208,8 +214,12 @@ export function AppShell() {
     });
   }, [user, authLoading, authTimedOut, mySchools.length]);
 
+  const notificationsLabel = unreadNotifications === 1 ? t("1 new notification") : t("{{count}} new notifications", { count: unreadNotifications });
+  const inboxLabel = unreadInbox === 1 ? t("1 new message in the inbox") : t("{{count}} new messages in the inbox", { count: unreadInbox });
+
   return (
     <div className="shell">
+      <LanguageOffer />
       <header className="shell-top" ref={headerRef}>
         <Link to="/" className="brand">
           schoolz
@@ -219,8 +229,8 @@ export function AppShell() {
           <Link
             to="/account/notifications"
             className="btn icon bell"
-            title={`${unreadNotifications} new notification${unreadNotifications === 1 ? "" : "s"}`}
-            aria-label={`${unreadNotifications} new notification${unreadNotifications === 1 ? "" : "s"}`}
+            title={notificationsLabel}
+            aria-label={notificationsLabel}
           >
             <IconBell />
             <span className="bell-count">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>
@@ -230,21 +240,21 @@ export function AppShell() {
           <Link
             to="/admin/inbox"
             className="btn icon bell"
-            title={`${unreadInbox} new message${unreadInbox === 1 ? "" : "s"} in the inbox`}
-            aria-label={`${unreadInbox} new message${unreadInbox === 1 ? "" : "s"} in the inbox`}
+            title={inboxLabel}
+            aria-label={inboxLabel}
           >
             <IconInbox />
             <span className="bell-count">{unreadInbox > 9 ? "9+" : unreadInbox}</span>
           </Link>
         )}
         {isStaff(user) && (
-          <Link to="/admin" className="btn icon" title="Admin" aria-label="Admin">
+          <Link to="/admin" className="btn icon" title={t("Admin")} aria-label={t("Admin")}>
             <IconWrench />
           </Link>
         )}
         <ThemeToggle />
         <Link to="/start" className="ghost">
-          My schools
+          {t("My schools")}
         </Link>
         {user ? (
           <Link to="/account" className="ghost">
@@ -256,7 +266,7 @@ export function AppShell() {
       </header>
 
       {mySchools.length > 0 && !hideSchoolFilter && (
-        <div className={`ribbon${stickyRibbon ? " ribbon-stacked" : ""}`} role="group" aria-label="Switch schools" ref={ribbonRef}>
+        <div className={`ribbon${stickyRibbon ? " ribbon-stacked" : ""}`} role="group" aria-label={t("Switch schools")} ref={ribbonRef}>
           {mySchools.length > 1 && (
             <button
               className="ribbon-chip all"
@@ -267,7 +277,7 @@ export function AppShell() {
                 trackEvent("school_filter_toggle", { active_count: mySchools.length });
               }}
             >
-              All
+              {t("All")}
             </button>
           )}
           {mySchools.map((s) => (
@@ -291,32 +301,32 @@ export function AppShell() {
               {s.short_name || s.name}
             </button>
           ))}
-          <Link to="/start" className="ribbon-manage" aria-label="Add or remove schools" title="Add or remove schools">
+          <Link to="/start" className="ribbon-manage" aria-label={t("Add or remove schools")} title={t("Add or remove schools")}>
             +
           </Link>
         </div>
       )}
 
-      <nav className="shell-nav" aria-label="Sections">
+      <nav className="shell-nav" aria-label={t("Sections")}>
         <NavLink to="/" end>
           <IconHome />
-          Today
+          {t("Today")}
         </NavLink>
         <NavLink to="/calendar">
           <IconCalendar />
-          Calendar
+          {t("Calendar")}
         </NavLink>
         <NavLink to="/lunch">
           <IconLunch />
-          Lunch
+          {t("Lunch")}
         </NavLink>
         <NavLink to="/schools">
           <IconSchool />
-          Schools
+          {t("Schools")}
         </NavLink>
         <NavLink to="/directory">
           <IconDirectory />
-          Directory
+          {t("Directory")}
         </NavLink>
         {user && (
           // /focus is a separate app (its own Vite build, served from
@@ -332,17 +342,18 @@ export function AppShell() {
         {user && (
           <NavLink to="/local">
             <IconPin />
-            Local
+            {t("Local")}
           </NavLink>
         )}
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
         <footer className="shell-footer">
-          <Link to="/chcomms">About</Link>
-          <Link to="/survey">Survey</Link>
-          <Link to="/contact">Contact</Link>
-          <Link to="/privacy">Privacy &amp; cookies</Link>
+          <Link to="/chcomms">{t("About")}</Link>
+          <Link to="/survey">{t("Survey")}</Link>
+          <Link to="/contact">{t("Contact")}</Link>
+          <Link to="/privacy">{t("Privacy & cookies")}</Link>
+          <LanguageSwitcher />
         </footer>
       </main>
       <ChatWidget />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { IconSearch } from "../components/icons";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
@@ -14,6 +15,7 @@ import type { School } from "../types";
  * school are two different districts, and a family shouldn't need to know
  * that to find both. */
 export function PickSchoolsPage() {
+  const { t } = useTranslation();
   const { allSchools, districtsById, slugs, setSlugs, fromAccount, loading } = useMySchools();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ export function PickSchoolsPage() {
     return town ? schoolsInTown(town, allSchools, districtsById) : [];
   }, [searching, q, town, allSchools, districtsById]);
 
-  const pickedCountIn = (t: string) => schoolsInTown(t, allSchools, districtsById).filter((s) => picked.includes(s.slug)).length;
+  const pickedCountIn = (tw: string) => schoolsInTown(tw, allSchools, districtsById).filter((s) => picked.includes(s.slug)).length;
 
   // Within a town, name the district only for a school outside the town's
   // own one (Eastern, under Voorhees) - that's the surprise worth a label.
@@ -67,24 +69,24 @@ export function PickSchoolsPage() {
   return (
     <>
       <div className="hero">
-        <h1>Choose your schools</h1>
+        <h1>{t("Choose your schools")}</h1>
         <p>
-          Pick one or more. We'll remember them on this device, no account needed. Bookmark the page and you're done.
-          {fromAccount && " Your linked children's schools are already included."}
+          {t("Pick one or more. We'll remember them on this device, no account needed. Bookmark the page and you're done.")}
+          {fromAccount && ` ${t("Your linked children's schools are already included.")}`}
         </p>
       </div>
       <label className="search">
         <IconSearch />
-        <input placeholder="Search schools or towns…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input placeholder={t("Search schools or towns…")} value={q} onChange={(e) => setQ(e.target.value)} />
       </label>
 
       {towns.length > 1 && !searching && (
-        <div className="chips town-chips" role="group" aria-label="Town">
-          {towns.map((t) => {
-            const n = pickedCountIn(t);
+        <div className="chips town-chips" role="group" aria-label={t("Town")}>
+          {towns.map((tw) => {
+            const n = pickedCountIn(tw);
             return (
-              <button key={t} className="chip town-chip" aria-pressed={town === t} onClick={() => setTown(t)}>
-                {t}
+              <button key={tw} className="chip town-chip" aria-pressed={town === tw} onClick={() => setTown(tw)}>
+                {tw}
                 {n > 0 && <span className="chip-count">{n}</span>}
               </button>
             );
@@ -92,15 +94,15 @@ export function PickSchoolsPage() {
         </div>
       )}
 
-      {!searching && !town && <p className="fine">Pick your town to see its schools, or search for one by name.</p>}
-      {searching && visible.length === 0 && <p className="fine">No schools match “{q.trim()}”.</p>}
+      {!searching && !town && <p className="fine">{t("Pick your town to see its schools, or search for one by name.")}</p>}
+      {searching && visible.length === 0 && <p className="fine">{t("No schools match “{{q}}”.", { q: q.trim() })}</p>}
 
-      {SCHOOL_TYPE_TIERS.map((t) => {
-        const group = visible.filter((s) => (s.school_type ?? "other") === t.key);
+      {SCHOOL_TYPE_TIERS.map((tier) => {
+        const group = visible.filter((s) => (s.school_type ?? "other") === tier.key);
         if (group.length === 0) return null;
         return (
-          <div key={t.key}>
-            <div className="tier">{t.label}</div>
+          <div key={tier.key}>
+            <div className="tier">{t(tier.label)}</div>
             <div className="sgrid">
               {group.map((s) => {
                 const district = s.district_id ? districtsById.get(s.district_id) : undefined;
@@ -122,11 +124,11 @@ export function PickSchoolsPage() {
       })}
 
       <button className="cta" onClick={save} disabled={picked.length === 0}>
-        {picked.length === 0 ? "Pick at least one school" : `Show me today (${picked.length})`}
+        {picked.length === 0 ? t("Pick at least one school") : t("Show me today ({{n}})", { n: picked.length })}
       </button>
       {!user && (
         <p className="fine">
-          Want the same list on your phone and laptop, or to link your children? <Link to="/login">Sign in</Link>. Optional.
+          {t("Want the same list on your phone and laptop, or to link your children?")} <Link to="/login">{t("Sign in")}</Link>. {t("Optional.")}
         </p>
       )}
     </>

@@ -1,5 +1,6 @@
 import { API_URL, IS_SUPABASE_AUTH } from "./authConfig";
 import { supabase } from "./supabase";
+import { CURRENT_LANG, DEFAULT_LANG } from "./lib/i18n";
 
 const LOCAL_TOKEN_KEY = "schoolz_token";
 
@@ -86,6 +87,9 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const headers = {
     "Content-Type": "application/json",
     ...auth,
+    // Explicit, not Accept-Language: the browser sends its own, and a
+    // Spanish browser on an English URL must still get English content.
+    ...(CURRENT_LANG !== DEFAULT_LANG ? { "X-Schoolz-Lang": CURRENT_LANG } : {}),
     ...(init.headers ?? {}),
   };
   const method = (init.method ?? "GET").toUpperCase();

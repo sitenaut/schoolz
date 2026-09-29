@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { initI18n } from "./i18n";
 import { expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem } from "./districtItems";
 import type { School, SchoolContentItem } from "../types";
+
+beforeAll(() => initI18n());
 
 function item(overrides: Partial<SchoolContentItem>): SchoolContentItem {
   return {

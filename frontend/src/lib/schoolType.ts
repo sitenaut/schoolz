@@ -1,3 +1,5 @@
+import { i18n } from "./i18n";
+
 /** Display label for School.school_type. "other" is a real backend value
  * (services/preschool_locations.py writes every private preschool/
  * daycare provider as school_type="other", matching Malberg's existing
@@ -18,9 +20,10 @@ export const SCHOOL_TYPE_TIERS: { key: string; label: string }[] = [
 
 export function schoolTypeLabel(type: string | null): string | null {
   if (!type) return null;
-  if (type === "other") return "Preschool";
-  if (type === "elementary" || type === "middle" || type === "high") {
-    return `${type[0].toUpperCase()}${type.slice(1)} school`;
-  }
+  if (type === "other") return i18n.t("Preschool");
+  if (type === "elementary") return i18n.t("Elementary school");
+  if (type === "middle") return i18n.t("Middle school");
+  if (type === "high") return i18n.t("High school");
+  if (type === "alternative") return i18n.t("Alternative");
   return type[0].toUpperCase() + type.slice(1);
 }

@@ -6,6 +6,7 @@ import { Modal } from "./ui/Modal";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatText } from "../lib/chatFormat";
 import { IconSend } from "./icons";
+import { useTranslation } from "react-i18next";
 
 type DisplayMessage = { role: "user" | "assistant"; text: string };
 // Opaque role/content blocks exactly as the backend sent them back - never
@@ -13,17 +14,17 @@ type DisplayMessage = { role: "user" | "assistant"; text: string };
 // it), only replayed to /chat on the next turn so the model keeps context.
 type ApiMessage = { role: string; content: unknown };
 
-const GREETING = "Hi! Ask me about bell times, lunch menus, buses, or a school's calendar - anything on schoolz.";
-const SIGNED_IN_GREETING =
-  "Hi! Ask me about your kids - what's due or missing, grades, today's schedule - what's on this weekend, or anything else on schoolz.";
-
 /** The floating chat trigger + panel, mounted once in AppShell so it
  * persists across every route. A plain fixed-position button rather than
  * part of the page layout - see the placement writeup: a static bar (top
  * or bottom) would compete with the header and the mobile tab bar for
  * already-tight vertical space, where a FAB costs nothing until tapped. */
 export function ChatWidget() {
+  const { t } = useTranslation();
   const { user } = useAuth();
+  const greeting = user
+    ? t("Hi! Ask me about your kids - what's due or missing, grades, today's schedule - what's on this weekend, or anything else on schoolz.")
+    : t("Hi! Ask me about bell times, lunch menus, buses, or a school's calendar - anything on schoolz.");
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [apiHistory, setApiHistory] = useState<ApiMessage[]>([]);
@@ -63,15 +64,15 @@ export function ChatWidget() {
       });
       if (r.status === 429) {
         const body = await r.json().catch(() => null);
-        throw new Error(body?.detail || "Too many messages - please wait a few minutes and try again.");
+        throw new Error(body?.detail || t("Too many messages - please wait a few minutes and try again."));
       }
-      if (!r.ok) throw new Error("Something went wrong - please try again.");
+      if (!r.ok) throw new Error(t("Something went wrong - please try again."));
       const data = await r.json();
       setApiHistory(data.history);
       setEscalated(data.escalated);
       setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong - please try again.");
+      setError(err instanceof Error ? err.message : t("Something went wrong - please try again."));
     } finally {
       setSending(false);
     }
@@ -85,22 +86,22 @@ export function ChatWidget() {
           setOpen(true);
           trackEvent("chat_opened");
         }}
-        aria-label="Ask schoolz"
+        aria-label={t("Ask schoolz")}
       >
         <ChatAvatar size={56} />
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Ask schoolz" subtitle="Answers pulled live from schoolz - never invented">
+      <Modal open={open} onClose={() => setOpen(false)} title={t("Ask schoolz")} subtitle={t("Answers pulled live from schoolz - never invented")}>
         <div className="chat-body">
           <div className="chat-scroll" ref={scrollRef}>
-            <div className="chat-bubble assistant">{user ? SIGNED_IN_GREETING : GREETING}</div>
+            <div className="chat-bubble assistant">{greeting}</div>
             {messages.map((m, i) => (
               <div className={`chat-bubble ${m.role}`} key={i}>
                 {m.role === "assistant" ? <ChatText text={m.text} /> : m.text}
               </div>
             ))}
             {sending && (
-              <div className="chat-bubble assistant chat-typing" aria-label="Thinking">
+              <div className="chat-bubble assistant chat-typing" aria-label={t("Thinking")}>
                 <span />
                 <span />
                 <span />
@@ -119,12 +120,12 @@ export function ChatWidget() {
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={user ? "What's due tomorrow? Any missing work?" : "Ask about a school, bell times, lunch..."}
+              placeholder={user ? t("What's due tomorrow? Any missing work?") : t("Ask about a school, bell times, lunch...")}
               maxLength={2000}
               disabled={sending}
               autoFocus
             />
-            <button className="btn btn-primary chat-send" type="submit" disabled={sending || !input.trim()} aria-label="Send">
+            <button className="btn btn-primary chat-send" type="submit" disabled={sending || !input.trim()} aria-label={t("Send")}>
               <IconSend />
             </button>
           </form>

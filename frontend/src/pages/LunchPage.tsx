@@ -9,8 +9,11 @@ import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
 import type { LunchMenu } from "../types";
+import { useTranslation } from "react-i18next";
+import { LOCALE } from "../lib/i18n";
 
 export function LunchPage() {
+  const { t } = useTranslation();
   const { mySchools, activeSchools, loading, colorFor, myTowns } = useMySchools();
   const [params] = useSearchParams();
   // "Lunch schedule" links from a specific school's Today card / school
@@ -84,7 +87,7 @@ export function LunchPage() {
       items.map((i) => {
         const key = localDateKey(i.menu_date);
         const md = monthDay(key);
-        const wd = new Date(key + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" });
+        const wd = new Date(key + "T12:00:00Z").toLocaleDateString(LOCALE, { weekday: "short", timeZone: "UTC" });
         return { item: i, key, md, wd, isToday: key === tk, isTarget: key === targetDate, isPast: key < tk };
       }),
     [items, tk, targetDate],
@@ -92,21 +95,21 @@ export function LunchPage() {
 
   usePrerenderReady(!loading && (menu !== undefined || mySchools.length === 0));
 
-  if (loading) return <p className="note">Loading…</p>;
+  if (loading) return <p className="note">{t("Loading…")}</p>;
   if (mySchools.length === 0) return <Navigate to="/start" replace />;
 
   return (
     <>
       <SeoHead
-        title={`Lunch menus · ${townsLabel(myTowns)} · schoolz`}
-        description={`Daily lunch menus for ${townsLabel(myTowns)} public schools, by school - synced from district and school-published menus.`}
+        title={t("Lunch menus · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
+        description={t("Daily lunch menus for {{towns}} public schools, by school - synced from district and school-published menus.", { towns: townsLabel(myTowns) })}
         path="/lunch"
       />
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>Lunch</h2>
+        <h2>{t("Lunch")}</h2>
         {menu && !menu.source_pdf_url.startsWith("newsletter:") && (
           <a href={menu.source_pdf_url} target="_blank" rel="noreferrer">
-            {menu.period_label} PDF
+            {t("{{period}} PDF", { period: menu.period_label })}
           </a>
         )}
       </div>
@@ -121,11 +124,11 @@ export function LunchPage() {
         </div>
       )}
       {menu === undefined ? (
-        <p className="note">Loading…</p>
+        <p className="note">{t("Loading…")}</p>
       ) : menu === null ? (
-        <div className="empty">No lunch menu on file for {school?.short_name || school?.name} yet.</div>
+        <div className="empty">{t("No lunch menu on file for {{school}} yet.", { school: school?.short_name || school?.name })}</div>
       ) : rows.length === 0 ? (
-        <div className="empty">No days listed for {menu.period_label} yet.</div>
+        <div className="empty">{t("No days listed for {{period}} yet.", { period: menu.period_label })}</div>
       ) : (
         <>
           <div className="list scrollList" ref={scrollRef}>
@@ -142,7 +145,7 @@ export function LunchPage() {
                 <div className="when">
                   {wd}
                   <b>{md.day}</b>
-                  {isToday && <span className="todayBadge">Today</span>}
+                  {isToday && <span className="todayBadge">{t("Today")}</span>}
                 </div>
                 <div className="what">
                   <div className="ttl">{item.description}</div>
@@ -152,12 +155,12 @@ export function LunchPage() {
             ))}
           </div>
           <p className="note" style={{ marginTop: 8 }}>
-            {menu.period_label} · {schoolTypeLabel(school?.school_type ?? null) ? `${schoolTypeLabel(school?.school_type ?? null)} menu` : "school menu"} · every day of the month, scrolled to today.
+            {menu.period_label} · {schoolTypeLabel(school?.school_type ?? null) ? t("{{type}} menu", { type: schoolTypeLabel(school?.school_type ?? null) }) : t("school menu")} · {t("every day of the month, scrolled to today.")}
           </p>
         </>
       )}
       <p className="fine">
-        Something look off? <Link to={`/schools/${active}`}>Open the school page</Link>.
+        {t("Something look off?")} <Link to={`/schools/${active}`}>{t("Open the school page")}</Link>.
       </p>
     </>
   );

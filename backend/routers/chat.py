@@ -26,6 +26,7 @@ from database import get_db
 from models import User
 from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
+from services.i18n import request_lang
 from services.chatbot_personal import PersonalTools
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -70,6 +71,7 @@ async def send_chat_message(
     user: User | None = Depends(get_optional_user),
     token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
+    lang: str = Depends(request_lang),
 ) -> ChatResponse:
     ip = request.client.host if request.client else "unknown"
     _check_rate_limit(ip)
@@ -86,6 +88,7 @@ async def send_chat_message(
             already_escalated=body.escalated,
             personal=personal,
             config=settings.signed_in if personal else settings.anonymous,
+            lang=lang,
         )
     finally:
         if personal:

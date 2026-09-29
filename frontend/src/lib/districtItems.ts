@@ -1,4 +1,5 @@
 import type { School, SchoolContentItem } from "../types";
+import { i18n } from "./i18n";
 
 // Same convention as the backend's own closure/half-day/delay detection
 // (backend/services/school_today.py:_CLOSED_RE/_EARLY_RE/_DELAY_RE,
@@ -59,7 +60,7 @@ export function expandItemRows(
   if (!item.applies_to_school_types?.length) {
     const spansDistricts = new Set(activeSchools.map((s) => s.district_id)).size > 1;
     const name = spansDistricts && item.district_id ? districtName?.(item.district_id) : undefined;
-    return [{ key: item.id, item, label: name ? `All ${name}` : "All schools" }];
+    return [{ key: item.id, item, label: name ? i18n.t("All {{name}}", { name }) : i18n.t("All schools") }];
   }
   const types = new Set(item.applies_to_school_types);
   const matching = ownSchools.filter((s) => s.school_type && types.has(s.school_type));

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models import LocalEvent, User
+from services.i18n import fold, folded
 
 router = APIRouter(prefix="/local-events", tags=["local-events"])
 
@@ -62,9 +63,9 @@ def _filters(start, end, q, categories, source, is_free) -> list:
     if q:
         # Whitespace tokens AND together, each matching any text field.
         for token in q.split():
-            like = f"%{token}%"
+            like = f"%{fold(token)}%"
             conds.append(
-                or_(LocalEvent.title.ilike(like), LocalEvent.description.ilike(like), LocalEvent.venue_name.ilike(like), LocalEvent.venue_address.ilike(like))
+                or_(folded(LocalEvent.title).like(like), folded(LocalEvent.description).like(like), folded(LocalEvent.venue_name).like(like), folded(LocalEvent.venue_address).like(like))
             )
     if categories:
         cats = [c.strip() for c in categories.split(",") if c.strip()]

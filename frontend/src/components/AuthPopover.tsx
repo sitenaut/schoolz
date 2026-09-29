@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { AuthPanel } from "./AuthPanel";
+import { useTranslation } from "react-i18next";
 
 /** The "Sign in" button in the top bar opens this instead of navigating
  * to a full page - a small anchored panel, not a page transition, since
  * signing in is meant to be a quick aside, not something that takes you
  * away from whatever you were looking at. */
 export function AuthPopover() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const ref = useRef<HTMLDivElement>(null);
@@ -29,10 +31,10 @@ export function AuthPopover() {
   return (
     <div className="authPopoverWrap" ref={ref}>
       <button className="ghost" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        Sign in
+        {t("Sign in")}
       </button>
       {open && (
-        <div className="authPopover" role="dialog" aria-label={mode === "login" ? "Sign in" : "Register"}>
+        <div className="authPopover" role="dialog" aria-label={mode === "login" ? t("Sign in") : t("Register")}>
           <AuthPanel
             mode={mode}
             onModeChange={setMode}

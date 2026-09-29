@@ -57,6 +57,7 @@ def _user_out(user: User, student_profile_id: str | None = None, permissions: se
         username=user.username,
         is_admin=user.is_admin,
         auth_mode=auth_module.AUTH_MODE,
+        preferred_language=user.preferred_language,
         sign_in_method=method,
         created_at=user.created_at,
         student_profile_id=student_profile_id,
@@ -119,6 +120,8 @@ async def update_me(payload: UserUpdate, user: User = Depends(get_current_user),
         if taken.scalar_one_or_none():
             raise HTTPException(status.HTTP_409_CONFLICT, "That username is already taken")
         user.username = payload.username
+    if payload.preferred_language is not None:
+        user.preferred_language = payload.preferred_language
     await db.commit()
     await db.refresh(user)
     return _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))

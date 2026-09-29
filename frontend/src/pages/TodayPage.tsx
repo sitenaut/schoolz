@@ -9,18 +9,20 @@ import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
 import type { SchoolContentItem, SchoolToday } from "../types";
+import { useTranslation } from "react-i18next";
+import { LOCALE } from "../lib/i18n";
 
 function HomeSeo() {
+  const { t } = useTranslation();
   const where = townsLabel(useMySchools().myTowns);
   return (
     <SeoHead
-      title={`schoolz · ${where} — Today at your kids' schools`}
-      description={`Live school-day status, bell schedules, lunch menus, bus info, and calendar dates for ${where} public schools - free, public, no account needed.`}
+      title={t("schoolz · {{where}} — Today at your kids' schools", { where })}
+      description={t("Live school-day status, bell schedules, lunch menus, bus info, and calendar dates for {{where}} public schools - free, public, no account needed.", { where })}
       path="/"
     />
   );
 }
-const HOME_SEO = <HomeSeo />;
 
 /** The home page: one day-card per active school, with any district-wide
  * closure/early-dismissal in the next week pulled up into a banner so
@@ -28,6 +30,7 @@ const HOME_SEO = <HomeSeo />;
  * is fetched (so toggling one on/off in the top ribbon is instant, no
  * refetch), but only the active ones render. */
 export function TodayPage() {
+  const { t } = useTranslation();
   const { mySchools, activeSchools, loading, colorFor, isFiltered, districtsById } = useMySchools();
   const [cards, setCards] = useState<Record<string, SchoolToday>>({});
   const readyStart = useRef(performance.now());
@@ -38,8 +41,8 @@ export function TodayPage() {
     mySchools.forEach((s) => {
       apiFetch(`/schools/${s.slug}/today`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((t: SchoolToday | null) => {
-          if (t && !cancelled) setCards((c) => ({ ...c, [s.id]: t }));
+        .then((today: SchoolToday | null) => {
+          if (today && !cancelled) setCards((c) => ({ ...c, [s.id]: today }));
         })
         .catch(() => {
           /* one school's fetch failing shouldn't take the others down */
@@ -62,23 +65,23 @@ export function TodayPage() {
   if (loading)
     return (
       <>
-        {HOME_SEO}
-        <h1 className="sr-only">Today at your kids' schools</h1>
-        <p className="note">Loading…</p>
+        <HomeSeo />
+        <h1 className="sr-only">{t("Today at your kids' schools")}</h1>
+        <p className="note">{t("Loading…")}</p>
       </>
     );
   if (mySchools.length === 0)
     return (
       <>
-        {HOME_SEO}
-        <h1 className="sr-only">Today at your kids' schools</h1>
+        <HomeSeo />
+        <h1 className="sr-only">{t("Today at your kids' schools")}</h1>
         <div className="empty">
           <p>
-            <strong>Pick your kids' schools</strong> to see today's status, bell schedules, lunch, and bus info here.
+            <strong>{t("Pick your kids' schools")}</strong> {t("to see today's status, bell schedules, lunch, and bus info here.")}
           </p>
           <p>
             <Link to="/start" className="btn btn-primary">
-              Pick your schools
+              {t("Pick your schools")}
             </Link>
           </p>
         </div>
@@ -87,7 +90,7 @@ export function TodayPage() {
 
   const first = cards[activeSchools[0]?.id] ?? cards[mySchools[0].id];
   const heading = first
-    ? new Date(first.date + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
+    ? new Date(first.date + "T12:00:00Z").toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
     : "";
 
   // District-wide alerts appear on every card - show each once, only for
@@ -102,10 +105,10 @@ export function TodayPage() {
 
   return (
     <>
-      {HOME_SEO}
+      <HomeSeo />
       <h1 className="eyebrow" style={{ margin: 0 }}>
         {heading}
-        {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· showing {activeSchools.length} of {mySchools.length}</span>}
+        {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· {t("showing {{a}} of {{b}}", { a: activeSchools.length, b: mySchools.length })}</span>}
       </h1>
 
       {[...alerts.values()].map((a) => {
@@ -119,7 +122,7 @@ export function TodayPage() {
                 {md.month} {md.day}
               </b>{" "}
               · {a.title}
-              {a.scope === "district" && a.district_id ? ` (all ${districtsById.get(a.district_id)?.name ?? "district"} schools)` : ""}
+              {a.scope === "district" && a.district_id ? t("(all {{district}} schools)", { district: districtsById.get(a.district_id)?.name ?? t("district") }) : ""}
             </span>
           </div>
         );
@@ -134,14 +137,14 @@ export function TodayPage() {
               <h2>{s.short_name || s.name}</h2>
             </header>
             <p className="note" style={{ padding: "0 14px 12px" }}>
-              Loading…
+              {t("Loading…")}
             </p>
           </section>
         ),
       )}
 
       <p className="fine">
-        Pulled from each school's newsletter and website, the district calendar, and the district lunch menu. <Link to="/schools">All schools</Link>
+        {t("Pulled from each school's newsletter and website, the district calendar, and the district lunch menu.")} <Link to="/schools">{t("All schools")}</Link>
       </p>
     </>
   );

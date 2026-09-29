@@ -9,44 +9,49 @@ import type { CurrentPeriod, DayBlock, NextRotation, SchoolContentItem, SchoolTo
 import { AbsenceButton } from "./AbsenceButton";
 import { Modal } from "./ui/Modal";
 import { IconChevronRight, IconPhone } from "./icons";
+import { useTranslation } from "react-i18next";
+import { LOCALE, i18n } from "../lib/i18n";
+import { TranslatedNote } from "./TranslatedNote";
 
 /* ---------- small shared bits ---------- */
 
 export function StatusPill({ status, label, hours }: { status: TodayDay["status"]; label: string | null; hours: string | null }) {
-  if (status === "closed") return <span className="status bad">Closed{label ? ` · ${label}` : ""}</span>;
-  if (status === "early_dismissal") return <span className="status warn">Early dismissal{hours ? ` · ${hours}` : ""}</span>;
-  if (status === "delayed") return <span className="status warn">Delayed opening{hours ? ` · ${hours}` : ""}</span>;
-  if (status === "weekend") return <span className="status muted">No school</span>;
-  return <span className="status ok">Open{hours ? ` · ${hours}` : ""}</span>;
+  const { t } = useTranslation();
+  if (status === "closed") return <span className="status bad">{t("Closed")}{label ? ` · ${label}` : ""}</span>;
+  if (status === "early_dismissal") return <span className="status warn">{t("Early dismissal")}{hours ? ` · ${hours}` : ""}</span>;
+  if (status === "delayed") return <span className="status warn">{t("Delayed opening")}{hours ? ` · ${hours}` : ""}</span>;
+  if (status === "weekend") return <span className="status muted">{t("No school")}</span>;
+  return <span className="status ok">{t("Open")}{hours ? ` · ${hours}` : ""}</span>;
 }
 
 /** A high school slot is named by its block letter ("A block"), the lunch
  * band by its own label ("L2"); every other school's slots are numbers. */
 export function periodLabel(name: string): string {
-  if (/^[A-H]$/.test(name)) return `${name} block`;
+  if (/^[A-H]$/.test(name)) return i18n.t("{{name}} block", { name });
   if (/^L\d$/.test(name)) return name;
-  return `Period ${name}`;
+  return i18n.t("Period {{name}}", { name });
 }
 
 /** "Day 5 · A B E F · long blocks" - how students and parents at the high
  * schools actually refer to a day: its letter configuration. */
 export function rotationLine(day: string | null | undefined, blocks: string[] | null | undefined, long: boolean | undefined): string | null {
   if (!day) return null;
-  return [day, blocks?.join(" "), long && "long blocks"].filter(Boolean).join(" · ");
+  return [day, blocks?.join(" "), long && i18n.t("long blocks")].filter(Boolean).join(" · ");
 }
 
 /** Today's lettered timeline - school-wide, identical for every student. */
 export function DayBlocks({ blocks, current, next }: { blocks: DayBlock[] | null | undefined; current: CurrentPeriod | null; next: NextRotation | null | undefined }) {
+  const { t } = useTranslation();
   if (!blocks?.length && !next) return null;
   return (
     <div className="dayBlocks">
       {!!blocks?.length && (
-        <ol className="dayBlocksRow" aria-label="Today's blocks">
+        <ol className="dayBlocksRow" aria-label={t("Today's blocks")}>
           {blocks.map((b) => {
             const lunchBand = /^L\d$/.test(b.name);
             const cls = ["blk", lunchBand && "blkBand", current?.name === b.name && "blkNow"].filter(Boolean).join(" ");
             return (
-              <li className={cls} key={b.name} title={`${periodLabel(b.name)} ${b.start_label}–${b.end_label}`}>
+              <li className={cls} key={b.name} title={t("{{period}} {{start}}–{{end}}", { period: periodLabel(b.name), start: b.start_label, end: b.end_label })}>
                 <span className="blkL">{b.name}</span>
                 <span className="blkT tab-num">{b.start_label}</span>
               </li>
@@ -68,24 +73,44 @@ export function DayBlocks({ blocks, current, next }: { blocks: DayBlock[] | null
  * backend already returns null for gaps the table doesn't cover, before
  * the first period, after the last one, or on a non-school day). */
 export function CurrentPeriodChip({ period }: { period: CurrentPeriod | null }) {
+  const { t } = useTranslation();
   if (!period) return null;
   const soon = period.minutes_left <= 5;
   return (
-    <span className={`periodChip ${soon ? "periodChipSoon" : ""}`} title={`${period.minutes_in} min in, ${period.minutes_left} min left`}>
-      {periodLabel(period.name)} · {soon ? `ends in ${period.minutes_left} min` : `ends ${period.end_label}`}
+    <span className={`periodChip ${soon ? "periodChipSoon" : ""}`} title={t("{{in}} min in, {{left}} min left", { in: period.minutes_in, left: period.minutes_left })}>
+      {periodLabel(period.name)} · {soon ? t("ends in {{n}} min", { n: period.minutes_left }) : t("ends {{label}}", { label: period.end_label })}
     </span>
   );
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  event: "event",
+  deadline: "deadline",
+  initiative: "initiative",
+  reminder: "reminder",
+  policy_change: "policy change",
+  procedure: "procedure",
+  program: "program",
+  busing: "busing",
+  funding: "funding",
+  volunteer: "volunteer",
+  org_club: "club",
+  merch_ad: "merchandise",
+  pta: "PTA",
+  person: "person",
+  lunch_menu: "lunch menu",
+};
+
 export function ItemTag({ item }: { item: SchoolContentItem }) {
-  if (item.category === "deadline") return <span className="tag deadline">due</span>;
+  const { t } = useTranslation();
+  if (item.category === "deadline") return <span className="tag deadline">{t("due")}</span>;
   // Report card/interim/marking-period-end dates aren't something a
   // parent has to act on (no form to submit, nothing due) - "due" would
   // be misleading, so these get their own label instead.
-  if (item.category === "marking_period") return <span className="tag grading">grading</span>;
-  if (item.scope === "district") return <span className="tag district">district</span>;
-  if (item.category === "policy_change" || item.category === "procedure") return <span className="tag new">updated</span>;
-  return <span className="tag">{item.category.replace("_", " ")}</span>;
+  if (item.category === "marking_period") return <span className="tag grading">{t("grading")}</span>;
+  if (item.scope === "district") return <span className="tag district">{t("district")}</span>;
+  if (item.category === "policy_change" || item.category === "procedure") return <span className="tag new">{t("updated")}</span>;
+  return <span className="tag">{CATEGORY_LABELS[item.category] ? t(CATEGORY_LABELS[item.category]) : item.category.replace("_", " ")}</span>;
 }
 
 /** One dated item as a list row: big day number on the left, title +
@@ -106,6 +131,7 @@ export function ItemRow({
   highlighted?: boolean;
   onOpen?: () => void;
 }) {
+  const { t } = useTranslation();
   const key = item.start_date ? localDateKey(item.start_date) : null;
   const md = key ? monthDay(key) : null;
   // A multi-day item (a closure spanning several days, most often) only
@@ -167,12 +193,12 @@ export function ItemRow({
           <div className="links">
             {item.link_url && (
               <a href={item.link_url} target="_blank" rel="noreferrer">
-                Open link
+                {t("Open link")}
               </a>
             )}
             {cal && (
               <a href={cal} target="_blank" rel="noreferrer" onClick={() => trackEvent("action", { action: "add_to_calendar", method: "link" })}>
-                Add to calendar
+                {t("Add to calendar")}
               </a>
             )}
           </div>
@@ -199,13 +225,14 @@ export function contactHref(c: TodayContact): { href: string; label: string } | 
 }
 
 export function ContactGrid({ contacts, mainPhone }: { contacts: TodayContact[]; mainPhone: string | null }) {
+  const { t } = useTranslation();
   const hasOffice = contacts.some((c) => c.role === "secretary");
   return (
     <div className="contacts">
       {!hasOffice && mainPhone && (
         <div className="contact">
-          <span className="role">Main office</span>
-          <span className="name">Front desk</span>
+          <span className="role">{t("Main office")}</span>
+          <span className="name">{t("Front desk")}</span>
           <a className="how" href={telHref(mainPhone)}>
             {mainPhone}
           </a>
@@ -222,7 +249,7 @@ export function ContactGrid({ contacts, mainPhone }: { contacts: TodayContact[];
                 {h.label}
               </a>
             ) : (
-              <span className="how muted">no contact listed</span>
+              <span className="how muted">{t("no contact listed")}</span>
             )}
           </div>
         );
@@ -236,7 +263,7 @@ function eventWhen(item: SchoolContentItem): string {
   if (!item.start_date) return "";
   const keys = itemDateKeys(item);
   const fmt = (key: string, withWeekday: boolean) =>
-    new Date(key + "T12:00:00Z").toLocaleDateString(undefined, { ...(withWeekday ? { weekday: "long" } : {}), month: "long", day: "numeric", timeZone: "UTC" });
+    new Date(key + "T12:00:00Z").toLocaleDateString(LOCALE, { ...(withWeekday ? { weekday: "long" } : {}), month: "long", day: "numeric", timeZone: "UTC" });
   const dates = keys.length > 1 ? `${fmt(keys[0], false)} – ${fmt(keys[keys.length - 1], false)}` : fmt(keys[0], true);
   return item.is_all_day ? dates : `${dates} · ${timeOfDay(item.start_date)}`;
 }
@@ -245,29 +272,31 @@ function eventWhen(item: SchoolContentItem): string {
  * row gets the description, link and add-to-calendar without leaving the
  * page. No `schoolSlug` (the Calendar itself) drops "See on calendar". */
 export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentItem | null; schoolSlug?: string; onClose: () => void }) {
+  const { t } = useTranslation();
   if (!item) return null;
   const cal = googleCalendarQuickAddUrl(item);
   const dayKey = item.start_date ? localDateKey(item.start_date) : null;
   return (
     <Modal open onClose={onClose} title={item.title} subtitle={eventWhen(item)}>
       {item.description && <p className="eventSheet-desc">{item.description}</p>}
+      <TranslatedNote item={item} />
       <div className="tagrow" style={{ marginBottom: 14 }}>
         <ItemTag item={item} />
       </div>
       <div className="eventSheet-actions">
         {cal && (
           <a className="btn btn-primary" href={cal} target="_blank" rel="noreferrer" onClick={() => trackEvent("action", { action: "add_to_calendar", method: "today_sheet" })}>
-            Add to calendar
+            {t("Add to calendar")}
           </a>
         )}
         {item.link_url && (
           <a className="btn" href={item.link_url} target="_blank" rel="noreferrer">
-            Open link
+            {t("Open link")}
           </a>
         )}
         {dayKey && schoolSlug && (
           <Link className="btn" to={`/calendar?school=${schoolSlug}&date=${dayKey}&event=${item.id}`}>
-            See on calendar
+            {t("See on calendar")}
           </Link>
         )}
       </div>
@@ -277,41 +306,42 @@ export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentI
 
 /* ---------- the Today-feed card ---------- */
 
-const WEAR: Record<string, string> = {
-  heavy_coat: "🧥 Heavy coat",
-  coat: "🧥 Coat",
-  jacket: "🧥 Light jacket",
-  layers: "👕 Layers",
-  hat_gloves: "🧤 Hat & gloves",
-  umbrella: "☂️ Umbrella",
-  boots: "🥾 Boots",
-  sunscreen: "🧴 Sunscreen",
-  sun_hat: "🧢 Sun hat",
-  water: "💧 Water bottle",
+const WEAR: Record<string, { icon: string; label: string }> = {
+  heavy_coat: { icon: "🧥", label: "Heavy coat" },
+  coat: { icon: "🧥", label: "Coat" },
+  jacket: { icon: "🧥", label: "Light jacket" },
+  layers: { icon: "👕", label: "Layers" },
+  hat_gloves: { icon: "🧤", label: "Hat & gloves" },
+  umbrella: { icon: "☂️", label: "Umbrella" },
+  boots: { icon: "🥾", label: "Boots" },
+  sunscreen: { icon: "🧴", label: "Sunscreen" },
+  sun_hat: { icon: "🧢", label: "Sun hat" },
+  water: { icon: "💧", label: "Water bottle" },
 };
 
 /** Drop-off through just after pickup (backend/services/weather.py) - what
  * to wear or pack, not a daily high/low: a cold bus stop and a warm pickup
  * need a jacket that comes home in the backpack. */
 export function WeatherFact({ w, children }: { w: TodayWeather; children?: React.ReactNode }) {
+  const { t } = useTranslation();
   const temp = (t: number | null) => (t === null ? "–" : `${t}°`);
   const details = [
     w.condition,
-    w.rain_chance >= 20 && (w.rain_from ? `${w.rain_chance}% rain from ${w.rain_from}` : `${w.rain_chance}% rain`),
-    w.uv_max !== null && w.uv_max >= 6 && `UV ${w.uv_max}`,
+    w.rain_chance >= 20 && (w.rain_from ? t("{{n}}% rain from {{time}}", { n: w.rain_chance, time: w.rain_from }) : t("{{n}}% rain", { n: w.rain_chance })),
+    w.uv_max !== null && w.uv_max >= 6 && t("UV {{n}}", { n: w.uv_max }),
   ].filter(Boolean);
-  const items = w.items.map((i) => WEAR[i]).filter(Boolean);
+  const items = w.items.map((i) => WEAR[i]).filter(Boolean).map((i) => `${i.icon} ${t(i.label)}`);
   return (
     <div className={`facts${children ? " weatherRow" : ""}`}>
       <div className="fact weather">
-        <div className="k">{!w.day_label || w.day_label === "Today" ? "Weather at school" : `${w.day_label}'s weather at school`}</div>
+        <div className="k">{!w.day_label || w.day_label === "Today" ? t("Weather at school") : t("{{day}}'s weather at school", { day: w.day_label })}</div>
         <div className="v">
           {temp(w.dropoff_temp)}{" "}
-          {w.dropoff_label === "Now" ? "now" : w.dropoff_label.toLowerCase().startsWith("morning") ? "in the morning" : `at ${w.dropoff_label}`} → {temp(w.pickup_temp)}{" "}
-          {w.pickup_label.toLowerCase().startsWith("afternoon") ? "in the afternoon" : `at ${w.pickup_label}`}
+          {w.dropoff_label === "Now" ? t("now") : w.dropoff_label.toLowerCase().startsWith("morning") ? t("in the morning") : t("at {{label}}", { label: w.dropoff_label })} → {temp(w.pickup_temp)}{" "}
+          {w.pickup_label.toLowerCase().startsWith("afternoon") ? t("in the afternoon") : t("at {{label}}", { label: w.pickup_label })}
         </div>
         <div className="sub">{details.join(" · ")}</div>
-        <div className="wear">{items.length ? items.map((i) => <span key={i}>{i}</span>) : <span>Nothing extra needed</span>}</div>
+        <div className="wear">{items.length ? items.map((i) => <span key={i}>{i}</span>) : <span>{t("Nothing extra needed")}</span>}</div>
       </div>
       {children}
     </div>
@@ -321,6 +351,7 @@ export function WeatherFact({ w, children }: { w: TodayWeather; children?: React
 /** Caps long content (some districts' lunch lines run to a paragraph) at a
  * few lines with a fade; "See more" appears only when it actually overflows. */
 function Clamp({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -340,7 +371,7 @@ function Clamp({ children }: { children: React.ReactNode }) {
       </div>
       {(overflows || open) && (
         <button type="button" className="clampToggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? "See less" : "See more"}
+          {open ? t("See less") : t("See more")}
         </button>
       )}
     </>
@@ -348,13 +379,14 @@ function Clamp({ children }: { children: React.ReactNode }) {
 }
 
 function SaccFact({ sacc }: { sacc: NonNullable<SchoolToday["sacc"]> }) {
+  const { t } = useTranslation();
   return (
     <div className="fact">
-      <div className="k">After school</div>
-      <div className="v">{sacc.pm_hours ? `SACC ${sacc.pm_hours.replace(/\s*-\s*/, "–")}` : "SACC"}</div>
+      <div className="k">{t("After school")}</div>
+      <div className="v">{sacc.pm_hours ? `${t("SACC")} ${sacc.pm_hours.replace(/\s*-\s*/, "–")}` : t("SACC")}</div>
       {sacc.site_phone && (
         <div className="sub">
-          Site: <a href={telHref(sacc.site_phone)}>{sacc.site_phone}</a>
+          {t("Site:")} <a href={telHref(sacc.site_phone)}>{sacc.site_phone}</a>
         </div>
       )}
     </div>
@@ -362,6 +394,7 @@ function SaccFact({ sacc }: { sacc: NonNullable<SchoolToday["sacc"]> }) {
 }
 
 export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
+  const { t } = useTranslation();
   const { excludeDistrict } = useMySchools();
   const s = data.school;
   const kind = schoolTypeLabel(s.school_type);
@@ -409,25 +442,25 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             const passing = c.status === "passing_period";
             return (
               <div className="fact" key={`class-${c.student_id}`}>
-                <div className="k">{many ? `${c.first_name}'s class now` : "In class now"}</div>
-                <div className="v">{passing ? "Passing period" : c.course_name}</div>
+                <div className="k">{many ? t("{{name}}'s class now", { name: c.first_name }) : t("In class now")}</div>
+                <div className="v">{passing ? t("Passing period") : c.course_name}</div>
                 <div className="sub">
                   {passing
                     ? [
-                        c.next_course_name && `next: ${c.next_course_name}`,
-                        c.minutes_until_next !== null && c.minutes_until_next <= 5 ? `starts in ${c.minutes_until_next} min` : c.next_start_label && `starts ${c.next_start_label}`,
+                        c.next_course_name && t("next: {{course}}", { course: c.next_course_name }),
+                        c.minutes_until_next !== null && c.minutes_until_next <= 5 ? t("starts in {{n}} min", { n: c.minutes_until_next }) : c.next_start_label && t("starts {{label}}", { label: c.next_start_label }),
                       ]
                         .filter(Boolean)
                         .join(" · ")
-                    : [c.room, c.minutes_left !== null && c.minutes_left <= 5 ? `ends in ${c.minutes_left} min` : c.end_label && `ends ${c.end_label}`].filter(Boolean).join(" · ")}
+                    : [c.room, c.minutes_left !== null && c.minutes_left <= 5 ? t("ends in {{n}} min", { n: c.minutes_left }) : c.end_label && t("ends {{label}}", { label: c.end_label })].filter(Boolean).join(" · ")}
                 </div>
               </div>
             );
           })}
           {data.my_specials?.map((k) => (
             <div className="fact" key={k.student_id}>
-              <div className="k">{data.my_specials!.length > 1 ? `${k.first_name}'s special` : "Special today"}</div>
-              <div className="v">{data.is_school_day ? (k.today ?? "Not on file") : "No school"}</div>
+              <div className="k">{data.my_specials!.length > 1 ? t("{{name}}'s special", { name: k.first_name }) : t("Special today")}</div>
+              <div className="v">{data.is_school_day ? (k.today ?? t("Not on file")) : t("No school")}</div>
               {k.next && (
                 <div className="sub">
                   {k.next_label}: {k.next}
@@ -438,9 +471,9 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
           {(data.lunch.today || data.lunch.next) && (
             <div className="fact">
               <div className="fact-head">
-                <div className="k">{data.lunch.today ? "Lunch today" : "Next lunch"}</div>
+                <div className="k">{data.lunch.today ? t("Lunch today") : t("Next lunch")}</div>
                 <Link className="fact-more" to={`/lunch?school=${s.slug}`}>
-                  Lunch schedule <IconChevronRight className="trailing-chevron" />
+                  {t("Lunch schedule")} <IconChevronRight className="trailing-chevron" />
                 </Link>
               </div>
               <Clamp>
@@ -483,7 +516,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
                 dates come along automatically, the backend always includes
                 a selected school's district. */}
             <Link to={`/calendar?school=${s.slug}`}>
-              All dates for {s.short_name || s.name} <IconChevronRight className="trailing-chevron" />
+              {t("All dates for {{name}}", { name: s.short_name || s.name })} <IconChevronRight className="trailing-chevron" />
             </Link>
           </li>
         </ul>
@@ -494,52 +527,52 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         {s.main_phone && (
           <a className="action" href={telHref(s.main_phone)} onClick={() => track("main_office", "tel")}>
             <IconPhone />
-            Main office
+            {t("Main office")}
           </a>
         )}
         {nurseHref && (
           <a className="action" href={nurseHref.href} onClick={() => track("nurse", "tel")}>
-            Nurse
+            {t("Nurse")}
           </a>
         )}
         {counselorHref && (
           <a className="action" href={counselorHref.href} onClick={() => track("counselor", "tel")}>
-            Counselor
+            {t("Counselor")}
           </a>
         )}
         {sacc?.site_phone && (
           <a className="action" href={telHref(sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
-            Running late (SACC)
+            {t("Running late (SACC)")}
           </a>
         )}
         {data.transportation?.office_phone && (
           <a
             className="action"
             href={telHref(data.transportation.office_phone)}
-            title="District transportation office"
+            title={t("District transportation office")}
             onClick={() => track("bus_office", "tel")}
           >
             <IconPhone />
-            Bus office
+            {t("Bus office")}
           </a>
         )}
         {data.transportation?.late_bus_phone && (
           <a
             className="action"
             href={telHref(data.transportation.late_bus_phone)}
-            title={`Late bus: ${data.transportation.late_bus_contractor}`}
+            title={t("Late bus: {{contractor}}", { contractor: data.transportation.late_bus_contractor })}
             onClick={() => track("late_bus", "tel")}
           >
-            Late bus
+            {t("Late bus")}
           </a>
         )}
         {s.athletics_url && (
           <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
-            <span aria-hidden="true">🏀🎺</span> Sports &amp; band
+            <span aria-hidden="true">🏀🎺</span> {t("Sports & band")}
           </a>
         )}
         <Link className="action" to={`/schools/${s.slug}`}>
-          Everything <IconChevronRight className="trailing-chevron" />
+          {t("Everything")} <IconChevronRight className="trailing-chevron" />
         </Link>
       </div>
       <EventSheet item={openItem} schoolSlug={s.slug} onClose={() => setOpenItem(null)} />
@@ -550,6 +583,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 /* ---------- week strip on the school page ---------- */
 
 export function WeekStrip({ week, schoolSlug, specials }: { week: TodayDay[]; schoolSlug: string; specials?: SchoolToday["my_specials"] }) {
+  const { t } = useTranslation();
   const { excludeDistrict } = useMySchools();
   const today = todayKey();
   return (
@@ -569,7 +603,7 @@ export function WeekStrip({ week, schoolSlug, specials }: { week: TodayDay[]; sc
               <div className="rot">
                 {d.rotation_day}
                 {d.rotation_blocks && <span className="rotBlocks">{d.rotation_blocks.join("")}</span>}
-                {d.long_blocks && <span className="rotBlocks">long</span>}
+                {d.long_blocks && <span className="rotBlocks">{t("long")}</span>}
               </div>
             )}
             {d.status !== "closed" &&
@@ -581,8 +615,8 @@ export function WeekStrip({ week, schoolSlug, specials }: { week: TodayDay[]; sc
                   </div>
                 ) : null,
               )}
-            {d.status === "closed" && <span className="pill bad">{d.status_label || "Closed"}</span>}
-            {d.status === "early_dismissal" && <span className="pill warn">Early dismissal</span>}
+            {d.status === "closed" && <span className="pill bad">{d.status_label || t("Closed")}</span>}
+            {d.status === "early_dismissal" && <span className="pill warn">{t("Early dismissal")}</span>}
             {d.status === "delayed" && <span className="pill warn">{d.status_label}</span>}
             {items.slice(0, 2).map((i) => (
               <Link className={`pill ${i.category === "deadline" ? "bad" : "ev"}`} to={`${dayHref}&event=${i.id}`} key={i.id} title={i.title}>

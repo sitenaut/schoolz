@@ -69,6 +69,8 @@ class User(Base):
     # Set when this row was provisioned from a Supabase-authenticated login (prod).
     supabase_user_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # "es" etc., or null if never chosen. See services/i18n.py.
+    preferred_language: Mapped[str | None] = mapped_column(String(8), nullable=True)
     # Local auth mode only (prod's Supabase handles its own reset emails):
     # a one-shot token from POST /auth/forgot-password, cleared on use.
     password_reset_token: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
@@ -922,6 +924,27 @@ class SchoolContentItem(Base):
     # (not deleted) but excluded from default calendar/summary views.
     is_current: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     superseded_by_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("school_content_items.id"), nullable=True)
+
+
+class ContentTranslation(Base):
+    """A machine translation of one SchoolContentItem's title/description
+    (services/content_translation.py). Made once, on first demand in that
+    language, and shared by every visitor - the same "extract once, share
+    with all" rule as the items themselves. `source_hash` is the hash of the
+    English title+description it was made from: an item whose text was later
+    edited (or superseded in place) no longer matches and is retranslated."""
+
+    __tablename__ = "content_translations"
+    __table_args__ = (UniqueConstraint("item_id", "lang", name="uq_content_translations_item_lang"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    item_id: Mapped[str] = mapped_column(String(36), ForeignKey("school_content_items.id", ondelete="CASCADE"), nullable=False)
+    lang: Mapped[str] = mapped_column(String(8), nullable=False)
+    title: Mapped[str] = mapped_column(String(600), nullable=False)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(60), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 class SmoreNewsletter(Base):

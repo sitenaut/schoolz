@@ -1,8 +1,10 @@
-/** Month/year calendar grid helpers shared by /calendar and /local. */
+import { LOCALE } from "./i18n";
 
-export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-export const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
-export const MONTH_NAMES = Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleDateString(undefined, { month: "short" }));
+/** Month/year calendar grid helpers shared by /calendar and /local. */
+// 2000-01-02 was a Sunday.
+export const WEEKDAYS = Array.from({ length: 7 }, (_, i) => new Date(2000, 0, 2 + i).toLocaleDateString(LOCALE, { weekday: "short" }).replace(/\.$/, ""));
+export const WEEKDAY_INITIALS = WEEKDAYS.map((w) => w.charAt(0).toUpperCase());
+export const MONTH_NAMES = Array.from({ length: 12 }, (_, m) => new Date(2000, m, 1).toLocaleDateString(LOCALE, { month: "short" }));
 
 export function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

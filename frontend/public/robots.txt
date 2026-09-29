@@ -10,5 +10,15 @@ Disallow: /children
 Disallow: /gmail
 Disallow: /start
 Disallow: /invites/
+Disallow: /es/account
+Disallow: /es/admin
+Disallow: /es/login
+Disallow: /es/register
+Disallow: /es/forgot-password
+Disallow: /es/reset-password
+Disallow: /es/children
+Disallow: /es/gmail
+Disallow: /es/start
+Disallow: /es/invites/
 
 Sitemap: https://schoolz.sitenaut.com/sitemap.xml

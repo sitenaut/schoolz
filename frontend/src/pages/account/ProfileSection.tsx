@@ -8,6 +8,7 @@ import { SectionCard } from "../../components/ui/SectionCard";
 import { useToast } from "../../components/ui/Toast";
 import { useAuth } from "../../context/AuthContext";
 import { updateProfile } from "../../lib/account";
+import { LOCALE } from "../../lib/i18n";
 
 function initials(name: string): string {
   const parts = name.replace(/[._-]+/g, " ").trim().split(/\s+/);
@@ -26,7 +27,7 @@ export function ProfileSection() {
 
   const dirty = username.trim() !== user.username;
   const method = user.sign_in_method === "google" ? "Google" : user.auth_mode === "supabase" ? "Email & password" : "Local password";
-  const since = user.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }) : null;
+  const since = user.created_at ? new Date(user.created_at).toLocaleDateString(LOCALE, { month: "long", year: "numeric" }) : null;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

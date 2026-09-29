@@ -46,3 +46,27 @@ async def test_prerender_rejects_unlisted_path():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         res = await client.get("/prerender", params={"path": "/admin"})
     assert res.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_sitemap_pairs_translated_pages_with_hreflang():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+    assert f"<loc>{_WEB_URL}/es</loc>" in res.text
+    assert f"<loc>{_WEB_URL}/es/lunch</loc>" in res.text
+    assert f'hreflang="es" href="{_WEB_URL}/es/lunch"' in res.text
+    assert f'hreflang="x-default" href="{_WEB_URL}/lunch"' in res.text
+    # No Spanish version exists for these yet, so they must not be listed.
+    assert f"{_WEB_URL}/es/privacy" not in res.text
+    assert f"{_WEB_URL}/es/contact" not in res.text
+
+
+def test_prerender_allows_language_prefixed_paths():
+    import services.prerender as prerender
+
+    assert prerender._is_allowed("/es")
+    assert prerender._is_allowed("/es/schools/some-school")
+    assert prerender._is_allowed("/es/lunch")
+    assert not prerender._is_allowed("/es/admin")
+    assert not prerender._is_allowed("/essex")

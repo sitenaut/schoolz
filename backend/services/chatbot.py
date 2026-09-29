@@ -115,6 +115,7 @@ async def run_chat_turn(
     personal: PersonalTools | None = None,
     config: AudienceConfig | None = None,
     providers: dict[str, Any] | None = None,
+    lang: str = "en",
 ) -> dict[str, Any]:
     """One user turn. `history` is exactly the plain role/content list the
     client sent back from the previous turn's response - this endpoint
@@ -156,6 +157,14 @@ async def run_chat_turn(
     # searched against a guessed date (January/April 2025) and came back
     # "no events" while the real week had a dozen.
     dynamic_system = f"Today is {datetime.now(ZoneInfo('America/New_York')):%A, %B %-d, %Y}."
+    if lang == "es":
+        # Also after the cache breakpoint, so the shared prefix is untouched.
+        dynamic_system += (
+            " The visitor is using the Spanish version of the site: answer in natural US Spanish "
+            "(switch only if they write in another language). Tool results are in English - translate "
+            "as you answer, but keep school names, people's names, room numbers, times and product "
+            "names (schoolz, Gradez, Genesis, Google Classroom) exactly as given."
+        )
 
     escalated = already_escalated and bool(config.escalation_model)
     model = config.escalation_model if escalated else config.model
