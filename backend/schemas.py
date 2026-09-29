@@ -1035,7 +1035,12 @@ class ExportDistrictOut(BaseModel):
 class ExportSmoreOut(BaseModel):
     url: str
     label: str | None
-    school_slug: str | None  # null for an unlinked/newly-discovered newsletter
+    school_slug: str | None  # null for an unlinked/newly-discovered newsletter, or a district-wide one
+    # For a district-wide newsletter (no single school - e.g. Audubon's
+    # "virtual backpack" bulletin board) - matched by name like
+    # ExportSchoolOut.district_name, since District has no slug of its own.
+    # Ordinarily exactly one of school_slug/district_name is set.
+    district_name: str | None = None
     cron_expr: str
     timezone: str
     enabled: bool

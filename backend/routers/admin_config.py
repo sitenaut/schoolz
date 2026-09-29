@@ -112,6 +112,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 url=n.url,
                 label=n.label,
                 school_slug=school_by_id[n.school_id].slug if n.school_id in school_by_id else None,
+                district_name=district_by_id[n.district_id].name if n.district_id in district_by_id else None,
                 cron_expr="0 8 * * 1",
                 timezone="America/New_York",
                 enabled=True,
@@ -276,14 +277,20 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
     newsletter_by_url: dict[str, SmoreNewsletter] = {n.url: n for n in (await db.execute(select(SmoreNewsletter))).scalars().all()}
     for n in payload.smore_newsletters:
         school = school_by_slug.get(n.school_slug) if n.school_slug else None
-        if n.school_slug and not school:
+        district = district_by_name.get(n.district_name) if n.district_name else None
+        if (n.school_slug and not school) or (n.district_name and not district):
             result["smore_skipped"].append(n.url)
             continue
         _validate_cron(n.cron_expr)
         newsletter = newsletter_by_url.get(n.url)
         if newsletter is None:
             newsletter = SmoreNewsletter(
-                url=n.url, label=n.label, school_id=school.id if school else None, source_type=n.source_type, created_by_user_id=user.id
+                url=n.url,
+                label=n.label,
+                school_id=school.id if school else None,
+                district_id=district.id if district else None,
+                source_type=n.source_type,
+                created_by_user_id=user.id,
             )
             db.add(newsletter)
             await db.flush()
@@ -306,6 +313,8 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             newsletter.label = n.label or newsletter.label
             if school:
                 newsletter.school_id = school.id
+            if district:
+                newsletter.district_id = district.id
             result["smore_updated"] += 1
 
     await db.commit()

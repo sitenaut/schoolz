@@ -644,6 +644,7 @@
       "url": "https://app.smore.com/n/m8wrz",
       "label": "The Wave (Audubon HS)",
       "school_slug": "ahs",
+      "source_type": "smore",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
       "enabled": true
@@ -652,6 +653,7 @@
       "url": "https://app.smore.com/n/jwued",
       "label": "Counselor's Corner (Audubon HS)",
       "school_slug": "ahs",
+      "source_type": "smore",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
       "enabled": true
@@ -660,6 +662,7 @@
       "url": "https://secure.smore.com/cjk7g-avon-school-newsletter",
       "label": "Avon Elementary Newsletter",
       "school_slug": "avon",
+      "source_type": "smore",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
       "enabled": true
@@ -668,6 +671,35 @@
       "url": "https://secure.smore.com/n/s4mst-woodland-middle-school-newsletter",
       "label": "Woodland Middle School Newsletter",
       "school_slug": "woodland-ms",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://www.audubonschools.org/virtual-backpack",
+      "label": "Audubon Virtual Backpack",
+      "school_slug": null,
+      "district_name": "Audubon Public School District",
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://has.audubonschools.org/has-parents/haviland-newsletters",
+      "label": "Haviland Avenue Newsletter",
+      "school_slug": "has",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://haspta.ptboard.com/home",
+      "label": "Haviland Avenue PTA",
+      "school_slug": "has",
+      "source_type": "ptboard",
       "cron_expr": "0 8 * * 1",
       "timezone": "America/New_York",
       "enabled": true
