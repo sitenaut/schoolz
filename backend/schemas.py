@@ -417,7 +417,30 @@ class BellPeriodEntry(BaseModel):
     end: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
-_BELL_PERIOD_VARIANTS = ("regular", "long_block", "delayed_opening", "early_dismissal")
+_BELL_PERIOD_VARIANTS = (
+    "regular",
+    "long_block",
+    "delayed_opening",
+    "early_dismissal",
+    # Grade-banded variants: a combined jr/sr high (grades 7-12 in one
+    # building) can have several periods land at genuinely different clock
+    # times per grade band, not just a different lunch slot (confirmed
+    # real: Audubon Jr/Sr High's own bell-schedule page - periods 4-6 shift
+    # between 7-8/9-10/11-12 on both the regular and 90-min-delay days).
+    # The un-suffixed key (e.g. "regular") still holds one representative
+    # band for a caller with no student-specific context (the public
+    # school-wide Today card); these hold every band so a signed-in
+    # student's own captured schedule (services/kids_view.py) can be
+    # matched against the band that actually applies to them, same
+    # precedent as long_block_delayed_opening/long_block_early_dismissal
+    # (migration 0055) holding a schedule the base variants can't.
+    "regular_grades_7_8",
+    "regular_grades_9_10",
+    "regular_grades_11_12",
+    "delayed_opening_grades_7_8",
+    "delayed_opening_grades_9_10",
+    "delayed_opening_grades_11_12",
+)
 
 
 class SchoolUpdate(BaseModel):

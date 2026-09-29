@@ -97,6 +97,23 @@ def lettered_day(bell_periods: dict | None, status: str, letters: list[str] | No
     return None
 
 
+def period_name_by_start_time(bell_periods: dict | None, base_variant: str = "regular") -> dict[str, str]:
+    """{"HH:MM": period_name}, merged across `base_variant` and every one
+    of its grade-banded variants (e.g. "regular_grades_9_10" - see
+    schemas.py's _BELL_PERIOD_VARIANTS). Built for matching a specific
+    student's own captured start time back to its period label without
+    needing to know which grade band they're in: the bands' clock times
+    for the periods that actually differ don't collide with each other in
+    practice (confirmed real: Audubon HS's three bands never share a
+    period-4/5/6 start time), so one merged lookup serves any band."""
+    merged: dict[str, str] = {}
+    for key, periods in (bell_periods or {}).items():
+        if key == base_variant or key.startswith(f"{base_variant}_grades_"):
+            for p in periods:
+                merged[p["start"]] = p["name"]
+    return merged
+
+
 def is_long_block_day(bell_periods: dict | None, letters: list[str] | None) -> bool:
     """Fewer blocks meet than the regular day has slots, so each runs long -
     true of the rotation itself, whether or not this school's long-block

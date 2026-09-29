@@ -13,7 +13,7 @@ from datetime import datetime, time, timedelta
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
-from services.bell_schedule import current_period
+from services.bell_schedule import current_period, period_name_by_start_time
 from services.bucket3_extract import course_codes_from_name, normalize_title
 
 LOCAL_TZ = ZoneInfo("America/New_York")
@@ -67,7 +67,13 @@ def right_now(blocks: list, bell_periods: dict | None, now: datetime) -> dict:
         shown = [b for b in blocks if b.schedule_date == latest.schedule_date]
         stale = True
 
-    period_numbers = {p["start"]: p["name"] for p in (bell_periods or {}).get("regular") or []}
+    # Merged across every grade-banded "regular" variant, not just the
+    # single representative one - a jr/sr high whose periods shift by band
+    # (confirmed real: Audubon HS) would otherwise mislabel a period for
+    # any student not in the one band the base table happens to store,
+    # even though *this* student's own captured start time already tells
+    # us exactly which band they're in without having to ask.
+    period_numbers = period_name_by_start_time(bell_periods)
 
     rows = []
     for b in shown:
