@@ -7,7 +7,7 @@ from models import SmoreBlock, SmoreNewsletter
 from scheduler.errors import parse_warning
 from scheduler.registry import register_job
 from services.content_extractor import extract_from_newsletter
-from services.smore_parser import fetch_and_parse
+from services.smore_parser import discover_current_issue_url, fetch_and_parse
 
 
 def select_unseen_blocks(blocks: list[dict], existing_hashes: set[str]) -> list[dict]:
@@ -57,7 +57,17 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not newsletter:
         return f"newsletter {newsletter_id} no longer exists"
 
-    blocks = await fetch_and_parse(newsletter.url)
+    scan_url = newsletter.url
+    if newsletter.source_type == "smore_archive":
+        # newsletter.url is the school's own "newsletter archive" page,
+        # not an issue - resolve it to whichever issue is current *this*
+        # scan, since that's exactly the part that changes week to week.
+        scan_url = await discover_current_issue_url(newsletter.url)
+        if not scan_url:
+            newsletter.last_scanned_at = datetime.now(timezone.utc)
+            return f"WARNING[smore_archive_no_issues]: no dated Smore issue links found on {newsletter.url}"
+
+    blocks = await fetch_and_parse(scan_url)
 
     if not blocks:
         # A real newsletter always has at least one block - a Smore link
@@ -70,7 +80,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # blocks total (not just zero new ones) is the honest signal that
         # the URL itself needs attention, not the newsletter's content.
         newsletter.last_scanned_at = datetime.now(timezone.utc)
-        return f"WARNING[smore_no_blocks]: fetched 0 blocks from {newsletter.url} - link may be dead or expired"
+        return f"WARNING[smore_no_blocks]: fetched 0 blocks from {scan_url} - link may be dead or expired"
 
     existing_hashes = {
         row[0]

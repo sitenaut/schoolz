@@ -273,6 +273,9 @@ class SmoreNewsletterCreate(BaseModel):
     # For a district-wide newsletter with no single school (e.g. "CHPS
     # Weekly") - ordinarily exactly one of school_id/district_id is set.
     district_id: str | None = None
+    # "smore" (default) or "virtual_backpack" - picks which scan job kind
+    # gets created (smore.scan vs virtual_backpack.scan).
+    source_type: str = "smore"
     cron_expr: str = "0 8 * * 1"
     timezone: str = "America/New_York"
     enabled: bool = True
@@ -290,6 +293,7 @@ class SmoreNewsletterOut(BaseModel):
     label: str | None
     school_id: str | None
     district_id: str | None = None
+    source_type: str = "smore"
     # Resolved display names - only populated by GET (list/create/update),
     # so the table can say "Bret Harte Elementary" without a client-side join.
     school_name: str | None = None
@@ -413,7 +417,30 @@ class BellPeriodEntry(BaseModel):
     end: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
-_BELL_PERIOD_VARIANTS = ("regular", "long_block", "delayed_opening", "early_dismissal")
+_BELL_PERIOD_VARIANTS = (
+    "regular",
+    "long_block",
+    "delayed_opening",
+    "early_dismissal",
+    # Grade-banded variants: a combined jr/sr high (grades 7-12 in one
+    # building) can have several periods land at genuinely different clock
+    # times per grade band, not just a different lunch slot (confirmed
+    # real: Audubon Jr/Sr High's own bell-schedule page - periods 4-6 shift
+    # between 7-8/9-10/11-12 on both the regular and 90-min-delay days).
+    # The un-suffixed key (e.g. "regular") still holds one representative
+    # band for a caller with no student-specific context (the public
+    # school-wide Today card); these hold every band so a signed-in
+    # student's own captured schedule (services/kids_view.py) can be
+    # matched against the band that actually applies to them, same
+    # precedent as long_block_delayed_opening/long_block_early_dismissal
+    # (migration 0055) holding a schedule the base variants can't.
+    "regular_grades_7_8",
+    "regular_grades_9_10",
+    "regular_grades_11_12",
+    "delayed_opening_grades_7_8",
+    "delayed_opening_grades_9_10",
+    "delayed_opening_grades_11_12",
+)
 
 
 class SchoolUpdate(BaseModel):
@@ -1008,10 +1035,16 @@ class ExportDistrictOut(BaseModel):
 class ExportSmoreOut(BaseModel):
     url: str
     label: str | None
-    school_slug: str | None  # null for an unlinked/newly-discovered newsletter
+    school_slug: str | None  # null for an unlinked/newly-discovered newsletter, or a district-wide one
+    # For a district-wide newsletter (no single school - e.g. Audubon's
+    # "virtual backpack" bulletin board) - matched by name like
+    # ExportSchoolOut.district_name, since District has no slug of its own.
+    # Ordinarily exactly one of school_slug/district_name is set.
+    district_name: str | None = None
     cron_expr: str
     timezone: str
     enabled: bool
+    source_type: str = "smore"  # defaulted so an export file from before this existed still imports
 
 
 class ConfigExport(BaseModel):

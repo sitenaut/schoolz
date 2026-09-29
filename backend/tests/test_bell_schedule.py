@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from services.bell_schedule import current_period
+from services.bell_schedule import current_period, period_name_by_start_time
 
 TZ = ZoneInfo("America/New_York")
 
@@ -176,3 +176,38 @@ def test_a_long_block_delayed_opening_uses_its_own_table():
     variant, slots = lettered_day(periods, "delayed", ["A", "B", "E", "F"])
     assert variant == "long_block_delayed_opening"
     assert (slots[0]["name"], slots[0]["start"]) == ("A", "09:30")
+
+
+def test_period_name_by_start_time_merges_grade_banded_variants():
+    # Confirmed real shape: Audubon HS's periods 4-6 land at different
+    # clock times per grade band, but never collide with each other.
+    bell_periods = {
+        "regular": [
+            {"name": "1", "start": "08:24", "end": "09:09"},
+            {"name": "5", "start": "11:40", "end": "12:05"},  # grades 9-10
+        ],
+        "regular_grades_7_8": [
+            {"name": "5", "start": "11:20", "end": "12:05"},
+        ],
+        "regular_grades_11_12": [
+            {"name": "5", "start": "11:20", "end": "12:25"},
+            {"name": "6", "start": "12:39", "end": "12:54"},
+        ],
+        "delayed_opening": [{"name": "1", "start": "09:41", "end": "10:16"}],
+    }
+    merged = period_name_by_start_time(bell_periods)
+    assert merged["08:24"] == "1"
+    assert merged["11:40"] == "5"  # base "regular" (9-10 band)
+    assert merged["11:20"] == "5"  # shared by both 7-8's and 11-12's period 5, same label
+    assert merged["12:39"] == "6"  # 11-12-only period
+    assert "09:41" not in merged  # a different base variant (delayed_opening) is excluded
+
+
+def test_period_name_by_start_time_handles_no_banded_variants():
+    bell_periods = {"regular": [{"name": "1", "start": "07:30", "end": "08:27"}]}
+    assert period_name_by_start_time(bell_periods) == {"07:30": "1"}
+
+
+def test_period_name_by_start_time_handles_missing_table():
+    assert period_name_by_start_time(None) == {}
+    assert period_name_by_start_time({}) == {}

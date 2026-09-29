@@ -1,0 +1,708 @@
+{
+  "exported_at": "2026-09-28T12:00:00Z",
+  "source": "onboarding: Audubon + Barrington",
+  "districts": [
+    {
+      "name": "Audubon Public School District",
+      "website_url": "https://www.audubonschools.org",
+      "food_services_menu_url": "https://www.audubonschools.org/departments/food-services",
+      "ics_feeds": [
+        {
+          "name": "Audubon District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/audubonschools.org_srhau7tq6voe9u2f8jjpjmlli4%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "Audubon HS Calendar",
+          "url": "https://calendar.google.com/calendar/ical/audubonschools.org_of071m7strlvirrk4es5g5o0eg%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "ahs"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Audubon"
+      ],
+      "schoolcafe_shortname": null
+    },
+    {
+      "name": "Barrington School District",
+      "website_url": "https://www.barringtonschools.net",
+      "food_services_menu_url": null,
+      "ics_feeds": [],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Barrington"
+      ],
+      "schoolcafe_shortname": "BARRINGTONSDNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "ahs",
+      "name": "Audubon Jr/Sr High School",
+      "short_name": "Audubon HS",
+      "district_name": "Audubon Public School District",
+      "school_type": "high",
+      "address": "350 Edgewood Ave, Audubon, NJ 08106",
+      "main_phone": "(856) 547-7695",
+      "website_url": "https://ahs.audubonschools.org",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis",
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:20 AM",
+      "end_time": "2:32 PM",
+      "early_dismissal_time": "12:15 PM",
+      "delayed_opening_time": "9:35 AM",
+      "athletics_url": "https://arbiterlive.com/School/Calendar/975",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "0",
+            "start": "07:20",
+            "end": "08:05"
+          },
+          {
+            "name": "HR",
+            "start": "08:10",
+            "end": "08:20"
+          },
+          {
+            "name": "1",
+            "start": "08:24",
+            "end": "09:09"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:58"
+          },
+          {
+            "name": "3",
+            "start": "10:02",
+            "end": "10:47"
+          },
+          {
+            "name": "4",
+            "start": "10:51",
+            "end": "11:36"
+          },
+          {
+            "name": "5",
+            "start": "11:40",
+            "end": "12:05"
+          },
+          {
+            "name": "6",
+            "start": "12:09",
+            "end": "12:54"
+          },
+          {
+            "name": "7",
+            "start": "12:58",
+            "end": "13:43"
+          },
+          {
+            "name": "8",
+            "start": "13:47",
+            "end": "14:32"
+          }
+        ],
+        "regular_grades_7_8": [
+          {
+            "name": "0",
+            "start": "07:20",
+            "end": "08:05"
+          },
+          {
+            "name": "HR",
+            "start": "08:10",
+            "end": "08:20"
+          },
+          {
+            "name": "1",
+            "start": "08:24",
+            "end": "09:09"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:58"
+          },
+          {
+            "name": "3",
+            "start": "10:02",
+            "end": "10:47"
+          },
+          {
+            "name": "4",
+            "start": "10:51",
+            "end": "11:16"
+          },
+          {
+            "name": "5",
+            "start": "11:20",
+            "end": "12:05"
+          },
+          {
+            "name": "6",
+            "start": "12:09",
+            "end": "12:54"
+          },
+          {
+            "name": "7",
+            "start": "12:58",
+            "end": "13:43"
+          },
+          {
+            "name": "8",
+            "start": "13:47",
+            "end": "14:32"
+          }
+        ],
+        "regular_grades_9_10": [
+          {
+            "name": "0",
+            "start": "07:20",
+            "end": "08:05"
+          },
+          {
+            "name": "HR",
+            "start": "08:10",
+            "end": "08:20"
+          },
+          {
+            "name": "1",
+            "start": "08:24",
+            "end": "09:09"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:58"
+          },
+          {
+            "name": "3",
+            "start": "10:02",
+            "end": "10:47"
+          },
+          {
+            "name": "4",
+            "start": "10:51",
+            "end": "11:36"
+          },
+          {
+            "name": "5",
+            "start": "11:40",
+            "end": "12:05"
+          },
+          {
+            "name": "6",
+            "start": "12:09",
+            "end": "12:54"
+          },
+          {
+            "name": "7",
+            "start": "12:58",
+            "end": "13:43"
+          },
+          {
+            "name": "8",
+            "start": "13:47",
+            "end": "14:32"
+          }
+        ],
+        "regular_grades_11_12": [
+          {
+            "name": "0",
+            "start": "07:20",
+            "end": "08:05"
+          },
+          {
+            "name": "HR",
+            "start": "08:10",
+            "end": "08:20"
+          },
+          {
+            "name": "1",
+            "start": "08:24",
+            "end": "09:09"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:58"
+          },
+          {
+            "name": "3",
+            "start": "10:02",
+            "end": "10:47"
+          },
+          {
+            "name": "4",
+            "start": "10:51",
+            "end": "11:36"
+          },
+          {
+            "name": "5",
+            "start": "11:20",
+            "end": "12:25"
+          },
+          {
+            "name": "6",
+            "start": "12:39",
+            "end": "12:54"
+          },
+          {
+            "name": "7",
+            "start": "12:58",
+            "end": "13:43"
+          },
+          {
+            "name": "8",
+            "start": "13:47",
+            "end": "14:32"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "0",
+            "start": "07:35",
+            "end": "08:05"
+          },
+          {
+            "name": "HR",
+            "start": "08:10",
+            "end": "08:17"
+          },
+          {
+            "name": "1",
+            "start": "08:21",
+            "end": "08:51"
+          },
+          {
+            "name": "2",
+            "start": "08:55",
+            "end": "09:25"
+          },
+          {
+            "name": "3",
+            "start": "09:29",
+            "end": "09:59"
+          },
+          {
+            "name": "4/5",
+            "start": "10:03",
+            "end": "10:33"
+          },
+          {
+            "name": "5/6",
+            "start": "10:37",
+            "end": "11:07"
+          },
+          {
+            "name": "7",
+            "start": "11:11",
+            "end": "11:41"
+          },
+          {
+            "name": "8",
+            "start": "11:45",
+            "end": "12:15"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Entrance",
+            "start": "09:35",
+            "end": "09:40"
+          },
+          {
+            "name": "1",
+            "start": "09:41",
+            "end": "10:16"
+          },
+          {
+            "name": "2",
+            "start": "10:19",
+            "end": "10:54"
+          },
+          {
+            "name": "3",
+            "start": "10:57",
+            "end": "11:32"
+          },
+          {
+            "name": "4",
+            "start": "11:35",
+            "end": "12:10"
+          },
+          {
+            "name": "5",
+            "start": "12:13",
+            "end": "12:38"
+          },
+          {
+            "name": "6",
+            "start": "12:41",
+            "end": "13:16"
+          },
+          {
+            "name": "7",
+            "start": "13:19",
+            "end": "13:54"
+          },
+          {
+            "name": "8",
+            "start": "13:57",
+            "end": "14:32"
+          }
+        ],
+        "delayed_opening_grades_7_8": [
+          {
+            "name": "Entrance",
+            "start": "09:35",
+            "end": "09:40"
+          },
+          {
+            "name": "1",
+            "start": "09:41",
+            "end": "10:16"
+          },
+          {
+            "name": "2",
+            "start": "10:19",
+            "end": "10:54"
+          },
+          {
+            "name": "3",
+            "start": "10:57",
+            "end": "11:32"
+          },
+          {
+            "name": "4",
+            "start": "11:35",
+            "end": "12:00"
+          },
+          {
+            "name": "5",
+            "start": "12:03",
+            "end": "12:38"
+          },
+          {
+            "name": "6",
+            "start": "12:41",
+            "end": "13:16"
+          },
+          {
+            "name": "7",
+            "start": "13:19",
+            "end": "13:54"
+          },
+          {
+            "name": "8",
+            "start": "13:57",
+            "end": "14:32"
+          }
+        ],
+        "delayed_opening_grades_9_10": [
+          {
+            "name": "Entrance",
+            "start": "09:35",
+            "end": "09:40"
+          },
+          {
+            "name": "1",
+            "start": "09:41",
+            "end": "10:16"
+          },
+          {
+            "name": "2",
+            "start": "10:19",
+            "end": "10:54"
+          },
+          {
+            "name": "3",
+            "start": "10:57",
+            "end": "11:32"
+          },
+          {
+            "name": "4",
+            "start": "11:35",
+            "end": "12:10"
+          },
+          {
+            "name": "5",
+            "start": "12:13",
+            "end": "12:38"
+          },
+          {
+            "name": "6",
+            "start": "12:41",
+            "end": "13:16"
+          },
+          {
+            "name": "7",
+            "start": "13:19",
+            "end": "13:54"
+          },
+          {
+            "name": "8",
+            "start": "13:57",
+            "end": "14:32"
+          }
+        ],
+        "delayed_opening_grades_11_12": [
+          {
+            "name": "Entrance",
+            "start": "09:35",
+            "end": "09:40"
+          },
+          {
+            "name": "1",
+            "start": "09:41",
+            "end": "10:16"
+          },
+          {
+            "name": "2",
+            "start": "10:19",
+            "end": "10:54"
+          },
+          {
+            "name": "3",
+            "start": "10:57",
+            "end": "11:32"
+          },
+          {
+            "name": "4",
+            "start": "11:35",
+            "end": "12:10"
+          },
+          {
+            "name": "5",
+            "start": "12:13",
+            "end": "12:48"
+          },
+          {
+            "name": "6",
+            "start": "12:51",
+            "end": "13:16"
+          },
+          {
+            "name": "7",
+            "start": "13:19",
+            "end": "13:54"
+          },
+          {
+            "name": "8",
+            "start": "13:57",
+            "end": "14:32"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "has",
+      "name": "Haviland Avenue Elementary School",
+      "short_name": "Haviland Avenue",
+      "district_name": "Audubon Public School District",
+      "school_type": "elementary",
+      "address": "240 S. Haviland Ave, Audubon, NJ 08106",
+      "main_phone": "(856) 546-4922",
+      "website_url": "https://has.audubonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 546-4922",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:55 AM",
+      "end_time": "2:25 PM",
+      "early_dismissal_time": "12:10 PM",
+      "delayed_opening_time": "9:25 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "mas",
+      "name": "Mansion Avenue Elementary School",
+      "short_name": "Mansion Avenue",
+      "district_name": "Audubon Public School District",
+      "school_type": "elementary",
+      "address": "300 Mansion Ave, Audubon, NJ 08106",
+      "main_phone": "(856) 546-4926",
+      "website_url": "https://mas.audubonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 546-4926",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "9:55 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "aps",
+      "name": "Audubon Preschool",
+      "short_name": "Audubon Preschool",
+      "district_name": "Audubon Public School District",
+      "school_type": "other",
+      "address": null,
+      "main_phone": null,
+      "website_url": "https://aps.audubonschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "avon",
+      "name": "Avon Elementary School",
+      "short_name": "Avon",
+      "district_name": "Barrington School District",
+      "school_type": "elementary",
+      "address": "862 Mercer Dr, Haddonfield, NJ 08033",
+      "main_phone": "(856) 547-6632",
+      "website_url": "https://www.barringtonschools.net/apps/pages/index.jsp?uREC_ID=529232&type=d",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "ParentSquare",
+      "absence_portal_url": "https://www.parentsquare.com/schools/45769/parent_absence_reporting",
+      "absence_instructions": null,
+      "start_time": "8:30 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "woodland-ms",
+      "name": "Woodland Middle School",
+      "short_name": "Woodland",
+      "district_name": "Barrington School District",
+      "school_type": "middle",
+      "address": "1 School Lane, Barrington, NJ 08007",
+      "main_phone": "(856) 547-8402",
+      "website_url": "https://www.barringtonschools.net/apps/pages/index.jsp?uREC_ID=529233&type=d",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "ParentSquare",
+      "absence_portal_url": "https://www.parentsquare.com/schools/45770/parent_absence_reporting",
+      "absence_instructions": null,
+      "start_time": "8:30 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://app.smore.com/n/m8wrz",
+      "label": "The Wave (Audubon HS)",
+      "school_slug": "ahs",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://app.smore.com/n/jwued",
+      "label": "Counselor's Corner (Audubon HS)",
+      "school_slug": "ahs",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://secure.smore.com/cjk7g-avon-school-newsletter",
+      "label": "Avon Elementary Newsletter",
+      "school_slug": "avon",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://secure.smore.com/n/s4mst-woodland-middle-school-newsletter",
+      "label": "Woodland Middle School Newsletter",
+      "school_slug": "woodland-ms",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://www.audubonschools.org/virtual-backpack",
+      "label": "Audubon Virtual Backpack",
+      "school_slug": null,
+      "district_name": "Audubon Public School District",
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://has.audubonschools.org/has-parents/haviland-newsletters",
+      "label": "Haviland Avenue Newsletter",
+      "school_slug": "has",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://haspta.ptboard.com/home",
+      "label": "Haviland Avenue PTA",
+      "school_slug": "has",
+      "source_type": "ptboard",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}
