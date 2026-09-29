@@ -36,4 +36,19 @@ jobs:
             exit 1
           fi
           echo "scheduler machine: $machine"
-          flyctl machine exec -a schoolz-api --timeout 3300 "$machine" "python scripts/backfill_translations.py $langs"
+          # machine exec caps at 600s, so start the job detached and poll its log.
+          run() { flyctl machine exec -a schoolz-api --timeout 120 "$machine" "$1"; }
+          run "sh -c 'rm -f /tmp/backfill.done; nohup sh -c \"cd /app && python scripts/backfill_translations.py $langs > /tmp/backfill.log 2>&1; echo \\\$? > /tmp/backfill.done\" > /dev/null 2>&1 &'"
+          seen=0
+          while true; do
+            sleep 45
+            out=$(run "sh -c 'cat /tmp/backfill.log; echo ---; cat /tmp/backfill.done 2>/dev/null'") || { echo "poll failed, retrying"; continue; }
+            log=${out%%---*}
+            echo "$log" | tail -n +$((seen + 1))
+            seen=$(echo "$log" | wc -l)
+            rc=$(echo "${out##*---}" | tr -d '[:space:]')
+            if [ -n "$rc" ]; then
+              echo "script exit code: $rc"
+              [ "$rc" = "0" ] && exit 0 || exit 1
+            fi
+          done
