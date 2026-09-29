@@ -69,7 +69,7 @@ class User(Base):
     # Set when this row was provisioned from a Supabase-authenticated login (prod).
     supabase_user_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # "es" etc., or null if never chosen. See services/i18n.py.
+    # "es", "zh" etc., or null if never chosen. See services/i18n.py.
     preferred_language: Mapped[str | None] = mapped_column(String(8), nullable=True)
     # Local auth mode only (prod's Supabase handles its own reset emails):
     # a one-shot token from POST /auth/forgot-password, cleared on use.

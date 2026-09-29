@@ -1,0 +1,22 @@
+{
+  "1 new notification": "1 条新通知",
+  "{{count}} new notifications": "{{count}} 条新通知",
+  "1 new message in the inbox": "收件箱中有 1 封新邮件",
+  "{{count}} new messages in the inbox": "收件箱中有 {{count}} 封新邮件",
+  "Admin": "管理",
+  "My schools": "我的学校",
+  "Switch schools": "切换学校",
+  "All": "全部",
+  "Add or remove schools": "添加或移除学校",
+  "Sections": "栏目",
+  "Today": "今天",
+  "Calendar": "日历",
+  "Lunch": "午餐",
+  "Schools": "学校",
+  "Directory": "通讯录",
+  "Local": "本地",
+  "About": "关于",
+  "Survey": "问卷调查",
+  "Contact": "联系我们",
+  "Privacy & cookies": "隐私与 Cookie"
+}

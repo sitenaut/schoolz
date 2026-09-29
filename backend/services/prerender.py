@@ -59,7 +59,7 @@ class PathNotAllowed(ValueError):
     pass
 
 
-_LANG_PREFIX = re.compile(r"^/(?:es)(?=/|$)")
+_LANG_PREFIX = re.compile(r"^/(?:es|zh)(?=/|$)")
 
 
 def _is_allowed(path: str) -> bool:

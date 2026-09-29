@@ -373,7 +373,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         loc = localized.get(src.id) if src else None
         if not loc or not loc.translated:
             return st, lbl
-        return st, (i18n_strings.strip_closed_prefix(loc.title) if st == "closed" else loc.title)
+        return st, (i18n_strings.strip_closed_prefix(loc.title, lang) if st == "closed" else loc.title)
 
     upcoming = [out(i) for i in upcoming_items]
     alerts = [out(i) for i in alert_items]

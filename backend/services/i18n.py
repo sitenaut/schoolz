@@ -1,16 +1,16 @@
 """Request language for API responses.
 
 English is the source language and the default. The frontend sends
-`X-Schoolz-Lang: es` only when the visitor is on a Spanish page - never the
+`X-Schoolz-Lang: es` (or `zh`) only when the visitor is on that language's page - never the
 browser's Accept-Language, which would translate an English page for anyone
-whose browser happens to be set to Spanish.
+whose browser happens to be set to another language.
 """
 
 from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.sql.elements import ColumnElement
 
-SUPPORTED_LANGS = ("en", "es")
+SUPPORTED_LANGS = ("en", "es", "zh")
 DEFAULT_LANG = "en"
 LANG_HEADER = "X-Schoolz-Lang"
 
