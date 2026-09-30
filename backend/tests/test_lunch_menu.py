@@ -1,7 +1,7 @@
 import asyncio
 
 from services import lunch_menu
-from services.lunch_menu import _classify_pdf_link, _classify_unbanded_pdf_link
+from services.lunch_menu import _classify_abbreviated_pdf_link, _classify_pdf_link, _classify_unbanded_pdf_link
 
 
 def test_classifies_elementary_lunch():
@@ -56,6 +56,43 @@ def test_unbanded_skips_spreadsheet_siblings():
     assert _classify_unbanded_pdf_link(".../September2026_lunch_spreadsheet.pdf", "elementary") is None
     assert _classify_unbanded_pdf_link(".../September_2026_Breakfast.pdf", "elementary") is None
     assert _classify_unbanded_pdf_link(".../September_2026.pdf", "elementary")["period_label"] == "September 2026"
+
+
+def test_classifies_merchantville_abbreviated_month_and_year():
+    # Confirmed real filenames from merchantvilleschool.org's /cafeteria page.
+    lunch = _classify_abbreviated_pdf_link(".../MERSept26LunchMenu_1.pdf", "elementary")
+    assert (lunch["meal_type"], lunch["period_label"], lunch["_sort"]) == ("lunch", "September 2026", (2026, 8))
+    breakfast = _classify_abbreviated_pdf_link(".../MERSept2026BreakfastMenu.pdf", "elementary")
+    assert (breakfast["meal_type"], breakfast["period_label"]) == ("breakfast", "September 2026")
+
+
+def test_abbreviated_menu_skips_spanish_twin_and_unrelated():
+    assert _classify_abbreviated_pdf_link(".../MERSept26LunchMenuSPA_1.pdf", "elementary") is None
+    assert _classify_abbreviated_pdf_link(".../MERSept2026BreakfastMenuSPA.pdf", "elementary") is None
+    assert _classify_abbreviated_pdf_link(".../26-27Calendar.pdf", "elementary") is None
+
+
+def test_abbreviated_menus_keep_both_meals_and_latest_month(monkeypatch):
+    html = (
+        '<a href="/f/MERSept2099BreakfastMenu.pdf"></a><a href="/f/MERSept99LunchMenu_1.pdf"></a>'
+        '<a href="/f/MEROct99LunchMenu.pdf"></a><a href="/f/MERSept99LunchMenuSPA_1.pdf"></a>'
+        '<a href="/f/MERJan20LunchMenu.pdf"></a>'
+    )
+
+    async def fake_fetch(url, **kw):
+        return {"html": html}
+
+    async def fake_rm(url, html):
+        return set()
+
+    monkeypatch.setattr(lunch_menu.scraper_client, "fetch_html", fake_fetch)
+    monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x", school_types=["elementary"]))
+    assert {(e["meal_type"], e["pdf_url"]) for e in found} == {
+        ("breakfast", "/f/MERSept2099BreakfastMenu.pdf"),
+        ("lunch", "/f/MERSept99LunchMenu_1.pdf"),
+        ("lunch", "/f/MEROct99LunchMenu.pdf"),
+    }
 
 
 def test_unbanded_menu_serves_every_school_type(monkeypatch):

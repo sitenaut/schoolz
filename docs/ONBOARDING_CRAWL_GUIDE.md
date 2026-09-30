@@ -195,6 +195,13 @@ meal_type) or `District.schoolcafe_shortname`.
    types). Siblings such as `..._lunch_spreadsheet.pdf` /
    `..._breakfast_spreadsheet.pdf` are nutrition tables, not menus, and are
    skipped by `_NOT_A_MENU_RE`.
+6. **Abbreviated month, two meals, Spanish twins** (Merchantville:
+   `MERSept26LunchMenu_1.pdf`, `MERSept2026BreakfastMenu.pdf`, each with a
+   `...SPA` twin) on `/cafeteria`. A school-code prefix is glued to a 3-letter
+   month and a 2- or 4-digit year, so `_classify_abbreviated_pdf_link` finds the
+   month by its first three letters and skips the `SPA` twin. Breakfast and
+   lunch are kept separately (current month and later per meal) and fanned out
+   to every school type, as in shape 5.
 
 **SchoolCafé quirks:** the shortname can be misspelled by the vendor
 (Lenape: `LenapeRegionlHighSDNutriServe`, no "a" in "Regional") — verify with
@@ -627,3 +634,12 @@ on this list** - it's ArbiterLive branding, already supported.
 - **Lunch PDFs are kept for the current month and later** — an unbanded menu
   page lists one PDF per month, and only the latest used to be stored, which
   dropped the rest of the current month as soon as next month's appeared.
+- **Merchantville (single PreK-8 school, Finalsite, Friday Parent Portal)**
+  — `backend/seed/merchantville.json`. Finalsite calendar ids: 4 district, 9
+  sports, 7 clubs (3 and 11 not wired; 9/7 are per-school via `school_slug`).
+  The footer phone is plain text ("P: (856) 663-1091") with no `tel:` link, so
+  `school_info._parse_location` falls back to the `.fsLocationPhone` text. The
+  head of school is titled "Chief School Administrator", which `classify_role`
+  maps to principal (exact title only). Bell start/end and absence method are not published, so left null rather than
+  guessed. PTA is Facebook-only;
+  no Smore/newsletter feed.

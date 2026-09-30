@@ -1,0 +1,62 @@
+{
+  "exported_at": "2026-09-30T12:00:00Z",
+  "source": "onboarding: Merchantville School District",
+  "districts": [
+    {
+      "name": "Merchantville School District",
+      "website_url": "https://www.merchantvilleschool.org",
+      "food_services_menu_url": "https://www.merchantvilleschool.org/cafeteria",
+      "ics_feeds": [
+        {
+          "name": "Merchantville District Calendar",
+          "url": "https://www.merchantvilleschool.org/fs/calendar-manager/events.ics?calendar_ids[]=4"
+        },
+        {
+          "name": "Merchantville Sports",
+          "url": "https://www.merchantvilleschool.org/fs/calendar-manager/events.ics?calendar_ids[]=9",
+          "school_slug": "merchantville"
+        },
+        {
+          "name": "Merchantville Clubs/Activities",
+          "url": "https://www.merchantvilleschool.org/fs/calendar-manager/events.ics?calendar_ids[]=7",
+          "school_slug": "merchantville"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": ["Merchantville"],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "merchantville",
+      "name": "Merchantville School",
+      "short_name": "Merchantville",
+      "district_name": "Merchantville School District",
+      "school_type": "elementary",
+      "address": "130 S. Centre Street, Merchantville, NJ 08109",
+      "main_phone": "(856) 663-1091",
+      "website_url": "https://www.merchantvilleschool.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}
