@@ -58,7 +58,12 @@ async def get_chatbot_admin(_: User = Depends(require_permission("chatbot.view")
 # provider outage doesn't block saving - loose, but it still catches the
 # real mistake: a Claude model saved under Gemini (every escalated question
 # 500'd on prod until the escalation model was changed).
-_MODEL_PREFIXES = {"anthropic": ("claude-",), "gemini": ("gemini-",)}
+_MODEL_PREFIXES = {
+    "anthropic": ("claude-",),
+    "gemini": ("gemini-",),
+    "deepseek": ("deepseek-",),
+    "qwen": ("qwen-",),
+}
 
 
 async def _check_models_belong(audiences: list[tuple[str, AudienceConfig]], configured: dict[str, Any]) -> None:

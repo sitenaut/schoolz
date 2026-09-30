@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { itemDateKeys } from "./calendar";
+import { itemDateKeys, telHref } from "./calendar";
+
+describe("telHref", () => {
+  it("keeps the comma dial-pause before an extension", () => {
+    // Real case: Cherry Hill East's staff directory stores this as
+    // "(856)424-2222,2554" - the comma is what dials the extension instead
+    // of appending its digits straight onto the main number.
+    expect(telHref("(856)424-2222,2554")).toBe("tel:8564242222,2554");
+  });
+
+  it("strips other punctuation from a plain number", () => {
+    expect(telHref("(856) 424-2222")).toBe("tel:8564242222");
+  });
+});
 
 describe("itemDateKeys", () => {
   it("real case: a multi-day all-day closure covers every day, not just start_date", () => {
