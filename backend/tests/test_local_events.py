@@ -167,6 +167,54 @@ def test_dpcalendar_source_adds_a_date_window_unless_the_url_has_one():
     assert JsonApiSource(name="e", url=base).request_url() == base
 
 
+async def test_revize_source_reads_a_bare_root_array_and_decodes_the_description():
+    from local_events.sources.json_api import JsonApiSource
+
+    payload = [
+        {
+            "title": "Easter Egg Hunt",
+            "start": "2031-04-13T11:00:00",
+            "end": "2031-04-13T12:00:00",
+            "url": "https://www.facebook.com/share/1KJSsjLU5J/",
+            "location": "Merchantville Community Center",
+            "desc": "%3Cdiv%3EHop%20on%20over%3C%2Fdiv%3E",
+            "id": "9",
+        }
+    ]
+
+    class _FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return payload
+
+    class _FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, *a, **kw):
+            return _FakeResponse()
+
+    with patch("local_events.sources.json_api.httpx.AsyncClient", return_value=_FakeClient()):
+        src = JsonApiSource(
+            name="merchantville",
+            url="https://merchantvillenj.gov/_assets_/plugins/revizeCalendar/calendar_data_handler.php",
+            data_path="",
+            description_field="desc",
+            location_field="location",
+            parser="revize",
+        )
+        events = await src.fetch()
+
+    assert len(events) == 1
+    assert events[0].venue_name == "Merchantville Community Center"
+    assert events[0].description == "Hop on over"
+
+
 async def test_removing_a_source_or_job_removes_its_events_unless_another_job_lists_it():
     run = uuid.uuid4().hex[:8]
     only_a, shared, only_b = f"only_a_{run}", f"shared_{run}", f"only_b_{run}"

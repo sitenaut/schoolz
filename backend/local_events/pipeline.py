@@ -120,6 +120,7 @@ def _build_sources(params: dict) -> list[Source]:
                 url_field=entry.get("url_field", "url"),
                 description_field=entry.get("description_field", "description"),
                 image_field=entry.get("image_field"),
+                location_field=entry.get("location_field"),
                 parser=entry.get("parser"),
                 default_categories=list(entry.get("default_categories") or []),
             )
