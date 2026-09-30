@@ -60,6 +60,8 @@ async def test_sitemap_pairs_translated_pages_with_hreflang():
     # No Spanish version exists for these yet, so they must not be listed.
     assert f"<loc>{_WEB_URL}/zh/lunch</loc>" in res.text
     assert f'hreflang="zh" href="{_WEB_URL}/zh/lunch"' in res.text
+    assert f'hreflang="ko" href="{_WEB_URL}/ko/lunch"' in res.text
+    assert f'hreflang="hi" href="{_WEB_URL}/hi/lunch"' in res.text
     assert f"{_WEB_URL}/zh/privacy" not in res.text
     assert f"{_WEB_URL}/es/privacy" not in res.text
     assert f"{_WEB_URL}/es/contact" not in res.text
@@ -72,5 +74,8 @@ def test_prerender_allows_language_prefixed_paths():
     assert prerender._is_allowed("/es/schools/some-school")
     assert prerender._is_allowed("/es/lunch")
     assert prerender._is_allowed("/zh/schools/some-school")
+    assert prerender._is_allowed("/ko/lunch")
+    assert prerender._is_allowed("/hi")
+    assert not prerender._is_allowed("/history")
     assert not prerender._is_allowed("/es/admin")
     assert not prerender._is_allowed("/essex")

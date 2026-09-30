@@ -12,9 +12,9 @@ on:
       lang:
         description: "Language(s) to backfill"
         required: true
-        default: "both"
+        default: "all"
         type: choice
-        options: ["both", "es", "zh"]
+        options: ["all", "es", "zh", "ko", "hi"]
 
 jobs:
   backfill:
@@ -28,7 +28,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           LANG_INPUT: ${{ github.event.inputs.lang }}
         run: |
-          langs="$LANG_INPUT"; [ "$langs" = "both" ] && langs="es zh"
+          langs="$LANG_INPUT"; [ "$langs" = "all" ] && langs="es zh ko hi"
           machine=$(flyctl machines list -a schoolz-api --json \
             | jq -r '[.[] | select(.config.metadata.fly_process_group == "scheduler" and .state == "started")][0].id')
           if [ -z "$machine" ] || [ "$machine" = "null" ]; then

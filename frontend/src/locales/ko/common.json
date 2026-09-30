@@ -1,0 +1,22 @@
+{
+  "1 new notification": "새 알림 1건",
+  "{{count}} new notifications": "새 알림 {{count}}건",
+  "1 new message in the inbox": "받은편지함에 새 메시지 1건",
+  "{{count}} new messages in the inbox": "받은편지함에 새 메시지 {{count}}건",
+  "Admin": "관리",
+  "My schools": "내 학교",
+  "Switch schools": "학교 전환",
+  "All": "전체",
+  "Add or remove schools": "학교 추가 또는 삭제",
+  "Sections": "메뉴",
+  "Today": "오늘",
+  "Calendar": "캘린더",
+  "Lunch": "급식",
+  "Schools": "학교",
+  "Directory": "교직원",
+  "Local": "지역",
+  "About": "소개",
+  "Survey": "설문조사",
+  "Contact": "문의",
+  "Privacy & cookies": "개인정보 및 쿠키"
+}

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { localizedPath, stripLangPrefix, langFromPath, foldAccents } from "./i18n";
 import es from "../locales/es";
 import zh from "../locales/zh";
+import ko from "../locales/ko";
+import hi from "../locales/hi";
 
 describe("language paths", () => {
   it("leaves English URLs untouched", () => {
@@ -22,10 +24,13 @@ describe("language paths", () => {
     expect(stripLangPrefix("/zh/schools/x")).toBe("/schools/x");
     expect(langFromPath("/zh")).toBe("zh");
     expect(langFromPath("/zhang")).toBe("en");
+    expect(localizedPath("/lunch", "ko")).toBe("/ko/lunch");
+    expect(langFromPath("/hi/schools/x")).toBe("hi");
+    expect(langFromPath("/history")).toBe("en");
   });
 });
 
-describe.each([["es", es], ["zh", zh]] as const)("%s translations", (_lang, dict) => {
+describe.each([["es", es], ["zh", zh], ["ko", ko], ["hi", hi]] as const)("%s translations", (_lang, dict) => {
   const placeholders = (s: string) => [...s.matchAll(/{{\s*\w+\s*}}/g)].map((m) => m[0].replace(/\s/g, "")).sort();
   it("has no empty values and keeps every {{placeholder}}", () => {
     for (const [k, v] of Object.entries(dict)) {
@@ -35,9 +40,9 @@ describe.each([["es", es], ["zh", zh]] as const)("%s translations", (_lang, dict
   });
 });
 
-describe("zh covers every key es does", () => {
+describe.each([["zh", zh], ["ko", ko], ["hi", hi]] as const)("%s covers every key es does", (_lang, dict) => {
   it("has the same keys", () => {
-    expect(Object.keys(zh).sort()).toEqual(Object.keys(es).sort());
+    expect(Object.keys(dict).sort()).toEqual(Object.keys(es).sort());
   });
 });
 

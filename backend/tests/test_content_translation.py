@@ -384,3 +384,34 @@ def test_closed_prefix_stripping_in_chinese():
     assert strip("学区停课：秋季休假", "zh") == "秋季休假"
     assert strip("学校关闭", "zh") is None
     assert strip("秋季休假", "zh") == "秋季休假"
+
+
+def test_korean_and_hindi_weather_and_labels():
+    ko = lambda s: i18n_strings.condition_table(s, "ko")
+    hi = lambda s: i18n_strings.condition_table(s, "hi")
+    assert ko("Partly Sunny") == "구름 조금"
+    assert ko("Slight Chance Rain Showers") == "소나기 가능성 낮음"
+    assert ko("Rain Likely") == "비 가능성 높음"
+    assert ko("Chance Snow then Mostly Cloudy") == "눈 가능성, 이후 구름 많음"
+    assert ko("Frogs") == "Frogs"
+    assert hi("Rain Likely") == "बारिश की प्रबल संभावना"
+    assert hi("Scattered Showers") == "छिटपुट बौछारें"
+    assert hi("Mostly Sunny then Frogs") == "Mostly Sunny then Frogs"
+    assert i18n_strings.localize_weather({"condition": "Rain Likely"}, "ko")["condition"] == "비 가능성 높음"
+    assert i18n_strings.rotation_title("Day 3 (3, 4, 1)", "ko") == "3일차 (3, 4, 1)"
+    assert i18n_strings.rotation_label("2", "hi") == "दिन 2"
+    assert i18n_strings.day_label("Tomorrow", 0, "ko") == "내일"
+    assert i18n_strings.day_label("Mon", 0, "hi") == "सोम"
+    assert i18n_strings.contact_label("Nurse", "ko") == "보건실"
+    assert i18n_strings.hours_phrase("out", "12:30", "ko") == "12:30 하교"
+    assert i18n_strings.hours_phrase("opens", "10:00", "hi") == "10:00 पर खुलेगा"
+
+
+def test_closed_prefix_stripping_in_korean_and_hindi():
+    strip = i18n_strings.strip_closed_prefix
+    assert strip("학교 휴교 - 노동절", "ko") == "노동절"
+    assert strip("전 학교 휴교: 가을 방학", "ko") == "가을 방학"
+    assert strip("학교 휴교", "ko") is None
+    assert strip("स्कूल बंद - श्रम दिवस", "hi") == "श्रम दिवस"
+    assert strip("सभी स्कूल बंद: शरद अवकाश", "hi") == "शरद अवकाश"
+    assert strip("शरद अवकाश", "hi") == "शरद अवकाश"
