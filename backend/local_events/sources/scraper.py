@@ -7,6 +7,11 @@ Scraper routing, most capable first:
     LOCAL_EVENTS_SCRAPER_URL  default: https://scraper-droplet.profitnaut.com
     LOCAL_EVENTS_SCRAPER_KEY  its X-API-Key (billz's RECIPE_SCRAPER_KEY)
     SCRAPER_URL / SCRAPER_API_KEY  schoolz's own scraper, as the fallback
+    RESIDENTIAL_SCRAPER_URL   default: https://scraper.profitnaut.com (the Pi,
+                              a home IP); key RESIDENTIAL_SCRAPER_KEY, else the
+                              droplet's. Opt-in per call (prefer_residential)
+                              for sites whose Cloudflare blocks datacenter IPs,
+                              so it doesn't absorb everyone else's load.
 
 The droplet is primary because it supports stealth and extra waits, and it
 keeps these scans off schoolz's one small Chromium, which already absorbs
@@ -43,6 +48,7 @@ from .base import RawEvent, Source
 logger = logging.getLogger(__name__)
 
 DEFAULT_PRIMARY_URL = "https://scraper-droplet.profitnaut.com"
+DEFAULT_RESIDENTIAL_URL = "https://scraper.profitnaut.com"
 
 _CHALLENGE_MARKERS = (
     "just a moment",
@@ -76,7 +82,7 @@ def _describe_failure(exc: Exception) -> str:
     return f"{type(exc).__name__}: {exc}"
 
 
-def _services() -> list[tuple[str, str]]:
+def _services(prefer_residential: bool = False) -> list[tuple[str, str]]:
     """(base_url, api_key) pairs to try in order, skipping any without a key."""
     # `or`, not env.get(..., default): an env var set to "" (compose's
     # `${VAR:-}` when the host has it unset) must still fall back.
@@ -84,6 +90,9 @@ def _services() -> list[tuple[str, str]]:
         ((os.environ.get("LOCAL_EVENTS_SCRAPER_URL") or DEFAULT_PRIMARY_URL).rstrip("/"), os.environ.get("LOCAL_EVENTS_SCRAPER_KEY", "")),
         ((os.environ.get("SCRAPER_URL") or "").rstrip("/"), os.environ.get("SCRAPER_API_KEY", "")),
     ]
+    if prefer_residential:
+        residential_key = os.environ.get("RESIDENTIAL_SCRAPER_KEY") or os.environ.get("LOCAL_EVENTS_SCRAPER_KEY", "")
+        candidates.insert(0, ((os.environ.get("RESIDENTIAL_SCRAPER_URL") or DEFAULT_RESIDENTIAL_URL).rstrip("/"), residential_key))
     services = [(u, k) for u, k in candidates if u and k]
     if not services:
         raise RuntimeError("no scraper service configured (set LOCAL_EVENTS_SCRAPER_KEY, or SCRAPER_URL + SCRAPER_API_KEY)")
@@ -98,6 +107,7 @@ async def fetch_rendered_html(
     stealth: bool = True,
     include_shadow_dom: bool = False,
     timeout_ms: int | None = None,
+    prefer_residential: bool = False,
 ) -> tuple[str, str]:
     """Fetch rendered HTML via the scraper service.
 
@@ -119,6 +129,8 @@ async def fetch_rendered_html(
     `timeout_ms` is the scraper's own per-step limit (page load and the
     selector wait each get it; its default is 15s, max 60s) - raise it for
     heavy pages on prod's 1GB scraper.
+    `prefer_residential` tries the home-IP scraper first, for sites whose
+    Cloudflare blocks every datacenter IP (Yodel).
     """
     payload: dict = {"url": url, "stealth": stealth}
     if wait_for_selector:
@@ -134,7 +146,7 @@ async def fetch_rendered_html(
         timeout = max(timeout, 2 * timeout_ms / 1000 + 20)
 
     errors: list[str] = []
-    for service_url, key in _services():
+    for service_url, key in _services(prefer_residential):
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0)) as client:
                 resp = await client.post(

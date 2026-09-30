@@ -12,6 +12,14 @@ widget's own "load more" button does: a POST to the widget URL with a
 `Next-Action` header and a cursor. The action id is re-read from the page
 on every run, since it changes whenever Yodel redeploys.
 
+Yodel sits behind Cloudflare, which blocks non-browser clients: confirmed
+2026-09-30, a plain request gets "Attention Required" (403) from Fly, from
+the droplet's Chromium, and even from a home Verizon connection - only a
+real browser on a home IP (the Pi, via prefer_residential) gets the page.
+When the direct request is blocked, page 1 comes through the Pi and paging
+stops there: "load more" is a POST server action the scraper can't send.
+Page 1 is ~24 events, about two weeks ahead, refreshed every run.
+
 Example job-params entry:
 
     {
@@ -31,6 +39,7 @@ from typing import Any
 import httpx
 
 from .base import RawEvent, Source
+from .scraper import fetch_rendered_html
 
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
 _PUSH_RE = re.compile(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)', re.S)
@@ -143,9 +152,8 @@ class YodelSource(Source):
 
     async def fetch(self) -> list[RawEvent]:
         async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, headers={"User-Agent": _UA}) as client:
-            resp = await client.get(self.widget_url)
-            resp.raise_for_status()
-            rows = parse_flight(_page_flight(resp.text))
+            page_html, via_scraper = await self._first_page(client)
+            rows = parse_flight(_page_flight(page_html))
             props = next((p for p in (_find_key(r, "initialEvents") for r in rows.values()) if p), None)
             if props is None:
                 raise RuntimeError("Yodel widget page had no initialEvents - the page format changed")
@@ -160,7 +168,7 @@ class YodelSource(Source):
 
             page = 1
             self.partial_failures = []
-            while has_more and cursor and page < self.max_pages:
+            while has_more and cursor and page < self.max_pages and not via_scraper:
                 if not action_id:
                     self.partial_failures.append("no fetchEvents action id - only the first page was read")
                     break
@@ -182,6 +190,23 @@ class YodelSource(Source):
                 seen.add(ev.source_event_id)
                 unique.append(ev)
         return unique
+
+    async def _first_page(self, client: httpx.AsyncClient) -> tuple[str, bool]:
+        """(widget page HTML, whether it came through the scraper)."""
+        try:
+            resp = await client.get(self.widget_url)
+            resp.raise_for_status()
+            return resp.text, False
+        except httpx.HTTPStatusError as direct_exc:
+            if direct_exc.response.status_code != 403:
+                raise
+            try:
+                html, _ = await fetch_rendered_html(self.widget_url, prefer_residential=True, timeout_ms=45_000)
+            except Exception as scraper_exc:  # noqa: BLE001
+                raise RuntimeError(
+                    f"direct fetch: 403 (Cloudflare); scraper fallback: {type(scraper_exc).__name__}: {scraper_exc}"
+                ) from scraper_exc
+            return html, True
 
     async def _fetch_page(self, client: httpx.AsyncClient, action_id: str, page: int, cursor: str) -> dict[str, Any]:
         widget_id = self.widget_url.rstrip("/").rsplit("/", 1)[-1]
