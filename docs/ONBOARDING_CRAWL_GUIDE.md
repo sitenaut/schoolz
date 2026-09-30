@@ -643,3 +643,30 @@ on this list** - it's ArbiterLive branding, already supported.
   maps to principal (exact title only). Bell start/end and absence method are not published, so left null rather than
   guessed. PTA is Facebook-only;
   no Smore/newsletter feed.
+- **Educational Networks / SchoolSitePro (Haddon Heights; Barrington is the same
+  CMS)** — `backend/seed/haddon_heights.json`. Recognizable by the generator
+  meta "Educational Networks / SchoolSitePro" and `/apps/...` URLs (`/apps/staff/`,
+  `/apps/events/`, `/apps/bell_schedules/`, `/apps/news/`). Not Finalsite, so
+  `school_info.scan` finds no `.fsLocationAddress` and warns
+  `school_info_missing_fields` — type address/phone/hours into the seed (the
+  footer `.enf-address`/`.enf-phone` has them). Per-school sites are
+  subdomains of the district domain. **Staff**: `/apps/staff/` is one
+  `.staff-category` per department, each card a name (`dt`) and optional title
+  (`dd`); profile pages are email *forms*, so the roster
+  (`staff_roster._parse_ednet_page`, plain httpx, tried before the Finalsite
+  paths) has no emails or phones. Published emails live only on hand-typed
+  pages (Haddon Heights's "Nurse Information"). **Calendars**: the public
+  `/servlet/ICalServlet?id=N` feeds (ids are enumerable, ~0-12) return 0 events
+  without a browser User-Agent on per-school subdomains — use the `www` host.
+  An empty school feed (the high school's) is real, not broken. **Bell
+  schedules** at `/apps/bell_schedules/` list Full day / Half day / Two-hour
+  delay per audience. Haddon Heights's Jr/Sr High varies by weekday (Wed/Thu
+  are 4-block days) and `bell_periods` holds only one `regular`, so only
+  Mon/Tue/Fri is stored. **Newsletters**: each school's `/apps/news/` page
+  posts issue links; Glenview's are Smore (tracked as `smore_archive` on that
+  page), Atlantic's are Canva links (nothing to scan). **Lunch** is SchoolCafé
+  (Nutri-Serve; ISD shortname via `GetISDByShortName`), but Glenview and
+  Seventh publish breakfast only there — no lunch entrées, so no lunch card.
+  Parent absence reporting is only "call, or email the school's administrative
+  assistant" (Family Handbook), so the seed sets `absence_method: phone`
+  with that instruction rather than a guessed address.

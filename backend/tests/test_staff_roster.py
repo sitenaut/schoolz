@@ -1,4 +1,4 @@
-from services.staff_roster import _parse_page
+from services.staff_roster import _parse_ednet_page, _parse_page
 
 _CARD_WITH_TITLE = """
 <div class="fsConstituentItem" data-constituent-id="4990">
@@ -39,3 +39,39 @@ def test_multiple_cards_on_one_page():
     items = _parse_page(_CARD_WITH_TITLE + _CARD_WITHOUT_TITLE)
     assert len(items) == 2
     assert {i["constituent_id"] for i in items} == {"4990", "3001"}
+
+
+_EDNET_PAGE = """
+<div id="staff"><div class="staff-category"><div class="staff-header"><h1>Administration</h1></div>
+<ul class="staff-categoryStaffMembers">
+<li class="staff-categoryStaffMember"><a href="/apps/pages/index.jsp?uREC_ID=1566560&type=u" title="Administration">
+<script>StaffPhotoCom.writeTemplate({who: " Warren Danenza"});</script>
+<dl class="staffPhotoWrapperRound"><dt> Warren Danenza </dt><dd> Principal </dd></dl></a></li>
+<li class="staff-categoryStaffMember"><a href="/apps/pages/index.jsp?uREC_ID=1553487&type=u">
+<dl class="staffPhotoWrapperRound"><dt> Lauren  Orfe </dt></dl></a></li>
+</ul></div>
+<div class="staff-category"><div class="staff-header"><h1>School Nurses</h1></div>
+<ul class="staff-categoryStaffMembers">
+<li class="staff-categoryStaffMember"><a href="/apps/pages/index.jsp?uREC_ID=77&type=u">
+<dl><dt>Pat Nurse</dt><dd>School Nurse</dd></dl></a></li>
+</ul></div></div>
+"""
+
+
+def test_ednet_cards_take_department_from_category_header():
+    items = _parse_ednet_page(_EDNET_PAGE)
+    assert [i["full_name"] for i in items] == ["Warren Danenza", "Lauren Orfe", "Pat Nurse"]
+    assert items[0]["constituent_id"] == "ednet:1566560"
+    assert items[0]["title"] == "Principal"
+    assert items[0]["department"] == "Administration"
+    assert items[2]["department"] == "School Nurses"
+
+
+def test_ednet_missing_title_is_none_and_no_contact_fields():
+    item = _parse_ednet_page(_EDNET_PAGE)[1]
+    assert item["title"] is None
+    assert item["email"] is None and item["phone"] is None
+
+
+def test_ednet_ignores_finalsite_pages():
+    assert _parse_ednet_page(_CARD_WITH_TITLE) == []
