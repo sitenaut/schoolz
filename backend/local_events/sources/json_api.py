@@ -60,7 +60,13 @@ def _parse_dt(value: str | None, all_day: bool) -> datetime | None:
 
 
 def _dig(obj: Any, path: str) -> Any:
-    """Navigate a nested dict using dot-notation (e.g. 'data.events')."""
+    """Navigate a nested dict using dot-notation (e.g. 'data.events').
+
+    An empty path means the response body IS the events array (e.g. Revize's
+    calendar_data_handler.php, which returns a bare JSON list at the root).
+    """
+    if not path:
+        return obj
     for key in path.split("."):
         if not isinstance(obj, dict):
             return None
@@ -131,8 +137,30 @@ def _parse_dpcalendar(event: dict, raw_event: RawEvent) -> RawEvent:
 
 DPCALENDAR_WINDOW_DAYS = 90
 
+
+def _parse_revize(event: dict, raw_event: RawEvent) -> RawEvent:
+    """Post-process a Revize calendar_data_handler.php event (many small NJ
+    municipal sites, incl. merchantvillenj.gov, run this CMS).
+
+    `desc` is URL-encoded HTML (e.g. "%3Cdiv%3EHop%20on%20over..."), and
+    `image` is a whole `<img>` tag, not a bare URL - only the description is
+    worth extracting. Recurring events (an `rrule` key) come back as a
+    single occurrence, same known gap as ical.py's RRULE handling.
+    """
+    from urllib.parse import unquote
+
+    desc_html = event.get("desc") or ""
+    desc_text = None
+    if desc_html:
+        soup = BeautifulSoup(unquote(desc_html), "html.parser")
+        desc_text = soup.get_text(" ", strip=True) or None
+
+    return raw_event.model_copy(update={"description": desc_text})
+
+
 _PARSERS: dict[str, Any] = {
     "dpcalendar": _parse_dpcalendar,
+    "revize": _parse_revize,
 }
 
 
@@ -176,6 +204,7 @@ class JsonApiSource(Source):
         url_field: str = "url",
         description_field: str = "description",
         image_field: str | None = None,
+        location_field: str | None = None,
         parser: str | None = None,
         default_categories: list[str] | None = None,
         timeout: float = 30.0,
@@ -192,6 +221,7 @@ class JsonApiSource(Source):
         self.url_field = url_field
         self.description_field = description_field
         self.image_field = image_field
+        self.location_field = location_field
         self.parser = parser
         self.parser_fn = _PARSERS.get(parser) if parser else None
         if parser and self.parser_fn is None:
@@ -248,6 +278,7 @@ class JsonApiSource(Source):
                     event_url = None
 
                 image_url = entry.get(self.image_field) if self.image_field else None
+                venue_name = entry.get(self.location_field) if self.location_field else None
 
                 raw_event = RawEvent(
                     source=self.name,
@@ -257,6 +288,7 @@ class JsonApiSource(Source):
                     start_time=start,
                     end_time=end,
                     all_day=all_day,
+                    venue_name=str(venue_name).strip() or None if venue_name else None,
                     url=event_url,
                     image_url=str(image_url) if image_url else None,
                     default_categories=list(self.default_categories),

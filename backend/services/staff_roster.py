@@ -3,6 +3,10 @@
 via `?const_page=N`, with a stable `data-constituent-id` per person that
 survives re-scans even if name formatting changes slightly)."""
 
+import re
+from urllib.parse import parse_qs, urlparse
+
+import httpx
 from bs4 import BeautifulSoup
 
 import scraper_client
@@ -46,6 +50,54 @@ def _parse_page(html: str) -> list[dict]:
     return items
 
 
+_EDNET_HEADERS = {"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}
+_EDNET_PATH = "/apps/staff/"
+
+
+def _parse_ednet_page(html: str) -> list[dict]:
+    """Educational Networks / SchoolSitePro `/apps/staff/` (Haddon Heights,
+    Barrington): one `.staff-category` per department, each card a name
+    (`dt`) and optional title (`dd`). Profile links are `uREC_ID=<id>` and
+    open an email *form*, so there is never an address or phone to keep."""
+    soup = BeautifulSoup(html, "lxml")
+    items = []
+    for category in soup.select(".staff-category"):
+        header = category.select_one(".staff-header h1")
+        department = header.get_text(" ", strip=True) if header else None
+        for card in category.select(".staff-categoryStaffMember"):
+            link = card.select_one("a[href]")
+            name_el = card.select_one("dt")
+            if not link or not name_el:
+                continue
+            ids = parse_qs(urlparse(link["href"]).query).get("uREC_ID")
+            name = re.sub(r"\s+", " ", name_el.get_text(" ", strip=True))
+            if not ids or not name:
+                continue
+            title_el = card.select_one("dd")
+            title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True)) if title_el else ""
+            items.append(
+                {
+                    "constituent_id": f"ednet:{ids[0]}",
+                    "full_name": name,
+                    "title": title or None,
+                    "department": department or None,
+                    "email": None,
+                    "phone": None,
+                }
+            )
+    return items
+
+
+async def _fetch_ednet_roster(base: str) -> list[dict]:
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
+            resp = await client.get(base + _EDNET_PATH)
+            resp.raise_for_status()
+    except httpx.HTTPError:
+        return []
+    return _parse_ednet_page(resp.text)
+
+
 # The rest are Voorhees Township's per-school subsites (Voorhees Middle's
 # is the odd one out) and Eastern Regional - same Finalsite constituent
 # cards, different page path.
@@ -79,6 +131,9 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
     smart_home = await smart_sites.fetch_home(base)
     if smart_home:
         return await smart_sites.fetch_roster(base, smart_home)
+    ednet = await _fetch_ednet_roster(base)
+    if ednet:
+        return list({item["constituent_id"]: item for item in ednet}.values())
     for path in _DIRECTORY_PATHS:
         pages_html = await scraper_client.fetch_paginated(base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20)
         by_constituent_id: dict[str, dict] = {}
