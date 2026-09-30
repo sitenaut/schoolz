@@ -237,6 +237,24 @@ async def _ensure_events_doc_job(db: AsyncSession, school: School, user: User) -
     school.events_doc_job_id = job.id
 
 
+async def _ensure_bulletin_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring read of a school's weekly student bulletin
+    Google Doc the first time it gets bulletin_doc_url."""
+    if school.bulletin_doc_job_id or not school.bulletin_doc_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="student_bulletin.scan",
+        name=f"Student bulletin scan: {school.name}",
+        cron_expr=public_scan_cron("student_bulletin.scan", school.id),
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.bulletin_doc_job_id = job.id
+
+
 async def _unique_slug(db: AsyncSession, base_text: str) -> str:
     base = slugify(base_text)
     slug = base
@@ -329,7 +347,7 @@ async def update_school(
     for field in (
         "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
         "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
-        "events_doc_url", "apptegy_org_id", "givebacks_shortname", "fdmealplanner_location",
+        "events_doc_url", "bulletin_doc_url", "apptegy_org_id", "givebacks_shortname", "fdmealplanner_location",
     ):
         value = getattr(payload, field)
         if value is not None:
@@ -347,6 +365,7 @@ async def update_school(
     await _ensure_announcements_job(db, school, user)
     await _ensure_activities_site_job(db, school, user)
     await _ensure_events_doc_job(db, school, user)
+    await _ensure_bulletin_job(db, school, user)
     await _ensure_athletics_calendar_job(db, school, user)
     await _ensure_givebacks_job(db, school, user)
     await _ensure_fdmealplanner_job(db, school, user)
@@ -447,6 +466,17 @@ async def run_events_doc_scan_now(school: School = Depends(resolve_school), _: U
     from scheduler.runner import run_job_now
 
     run_job_now(school.events_doc_job_id)
+    return {"status": "started"}
+
+
+@router.post("/{school_id}/bulletin/run-now")
+async def run_bulletin_scan_now(school: School = Depends(resolve_school), _: User = Depends(require_permission("schools.manage"))):
+    if not school.bulletin_doc_job_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "School has no linked student-bulletin job")
+
+    from scheduler.runner import run_job_now
+
+    run_job_now(school.bulletin_doc_job_id)
     return {"status": "started"}
 
 

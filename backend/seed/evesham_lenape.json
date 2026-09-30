@@ -1,0 +1,985 @@
+{
+  "exported_at": "2026-09-29T12:00:00Z",
+  "source": "onboarding: Evesham Township + Lenape Regional (Cherokee HS)",
+  "districts": [
+    {
+      "name": "Evesham Township School District",
+      "website_url": "https://www.evesham.k12.nj.us",
+      "food_services_menu_url": "https://www.evesham.k12.nj.us/lunch-menu",
+      "calendar_pdf_url": "https://www.evesham.k12.nj.us/244176_3",
+      "ics_feeds": [],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Evesham"
+      ],
+      "schoolcafe_shortname": null
+    },
+    {
+      "name": "Lenape Regional High School District",
+      "website_url": "https://www.lrhsd.org",
+      "food_services_menu_url": "https://www.lrhsd.org/our-district/cafeteria-information/month-at-a-glance-lunch-menu",
+      "ics_feeds": [
+        {
+          "name": "LRHSD District",
+          "url": "https://www.lrhsd.org/fs/calendar-manager/events.ics?calendar_ids[]=5"
+        },
+        {
+          "name": "LRHSD Day Number",
+          "url": "https://www.lrhsd.org/fs/calendar-manager/events.ics?calendar_ids[]=27"
+        },
+        {
+          "name": "Cherokee",
+          "url": "https://www.lrhsd.org/fs/calendar-manager/events.ics?calendar_ids[]=9",
+          "school_slug": "cherokee"
+        },
+        {
+          "name": "Lenape",
+          "url": "https://www.lrhsd.org/fs/calendar-manager/events.ics?calendar_ids[]=7",
+          "school_slug": "lenape"
+        },
+        {
+          "name": "Seneca",
+          "url": "https://www.lrhsd.org/fs/calendar-manager/events.ics?calendar_ids[]=10",
+          "school_slug": "seneca"
+        },
+        {
+          "name": "Shawnee",
+          "url": "https://www.lrhsd.org/fs/calendar-manager/events.ics?calendar_ids[]=8",
+          "school_slug": "shawnee"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Evesham"
+      ],
+      "schoolcafe_shortname": "LenapeRegionlHighSDNutriServe"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "beeler",
+      "name": "Beeler Elementary School",
+      "short_name": "Beeler",
+      "district_name": "Evesham Township School District",
+      "school_type": "elementary",
+      "address": "60 Caldwell Avenue, Marlton, NJ 08053",
+      "main_phone": "856-988-0619",
+      "website_url": "https://beeler.evesham.k12.nj.us",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Beeler Attendance Google Form",
+      "absence_portal_url": "http://www.tinyurl.com/beelerattendance",
+      "absence_instructions": "Use the attendance form to report absences, late arrivals and early dismissals; the office and your student's teacher are notified automatically. No dismissals between 2:45 and 3:15 PM.",
+      "start_time": "8:51 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "demasi-elementary",
+      "name": "DeMasi Elementary School",
+      "short_name": "DeMasi Elementary",
+      "district_name": "Evesham Township School District",
+      "school_type": "elementary",
+      "address": "199 Evesboro-Medford Road, Marlton, NJ 08053",
+      "main_phone": "856-988-0777",
+      "website_url": "https://demasielementary.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:36 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "demasi-middle",
+      "name": "DeMasi Middle School",
+      "short_name": "DeMasi Middle",
+      "district_name": "Evesham Township School District",
+      "school_type": "middle",
+      "address": "199 Evesboro-Medford Road, Marlton, NJ 08053",
+      "main_phone": "856-988-0777",
+      "website_url": "https://demasimiddle.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:15 AM",
+      "end_time": "2:05 PM",
+      "early_dismissal_time": "11:35 AM",
+      "delayed_opening_time": "9:15 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "evans-preschool",
+      "name": "Evans Preschool Center",
+      "short_name": "Evans Preschool",
+      "district_name": "Evesham Township School District",
+      "school_type": "other",
+      "address": "400 Route 73 S, Marlton, NJ 08053",
+      "main_phone": "856-988-0675",
+      "website_url": "https://evanspreschoolcenter.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "jaggard",
+      "name": "Jaggard Elementary School",
+      "short_name": "Jaggard",
+      "district_name": "Evesham Township School District",
+      "school_type": "elementary",
+      "address": "2 Wescott Road, Marlton, NJ 08053",
+      "main_phone": "856-988-0679",
+      "website_url": "https://jaggard.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:06 AM",
+      "end_time": "2:35 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "marlton-elementary",
+      "name": "Marlton Elementary School",
+      "short_name": "Marlton Elementary",
+      "district_name": "Evesham Township School District",
+      "school_type": "elementary",
+      "address": "190 Tomlinson Mill Road, Marlton, NJ 08053",
+      "main_phone": "856-988-9811",
+      "website_url": "https://marltonelementary.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:26 AM",
+      "end_time": "2:55 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "marlton-middle",
+      "name": "Marlton Middle School",
+      "short_name": "Marlton Middle",
+      "district_name": "Evesham Township School District",
+      "school_type": "middle",
+      "address": "150 Tomlinson Mill Road, Marlton, NJ 08053",
+      "main_phone": "856-988-0684",
+      "website_url": "https://marltonmiddle.evesham.k12.nj.us",
+      "bulletin_doc_url": "https://docs.google.com/document/d/1e6iKCk9SIXp2YbEbTTiSQV1ZQHUI_CkPn_srgQvm2fc/edit",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:15 AM",
+      "end_time": "2:05 PM",
+      "early_dismissal_time": "11:35 AM",
+      "delayed_opening_time": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/13916",
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "marlton-preschool",
+      "name": "Marlton Preschool Center",
+      "short_name": "Marlton Preschool",
+      "district_name": "Evesham Township School District",
+      "school_type": "other",
+      "address": "150 Tomlinson Mill Road, Marlton, NJ 08053",
+      "main_phone": "856-983-1800",
+      "website_url": "https://marltonpreschoolcenter.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "rice",
+      "name": "Rice Elementary School",
+      "short_name": "Rice",
+      "district_name": "Evesham Township School District",
+      "school_type": "elementary",
+      "address": "50 Crown Royal Parkway, Marlton, NJ 08053",
+      "main_phone": "856-988-0685",
+      "website_url": "https://rice.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "9:01 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "van-zant",
+      "name": "Van Zant Elementary School",
+      "short_name": "Van Zant",
+      "district_name": "Evesham Township School District",
+      "school_type": "elementary",
+      "address": "270 Conestoga Drive, Marlton, NJ 08053",
+      "main_phone": "856-988-0687",
+      "website_url": "https://vanzant.evesham.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:06 AM",
+      "end_time": "2:35 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "cherokee",
+      "name": "Cherokee High School",
+      "short_name": "Cherokee",
+      "district_name": "Lenape Regional High School District",
+      "school_type": "high",
+      "address": "120 Tomlinson Mill Road, Marlton, NJ 08053",
+      "main_phone": "(856) 983-5140",
+      "website_url": "https://cherokee.lrhsd.org",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Cherokee attendance form",
+      "absence_portal_url": "https://docs.google.com/forms/d/e/1FAIpQLScKW3ax7I-pv8UV0BWAPS20PRDWpDImDPSRwGyvq_8-bnazPg/viewform?usp=dialog",
+      "absence_instructions": null,
+      "start_time": "7:30 AM",
+      "end_time": "2:27 PM",
+      "early_dismissal_time": "11:55 AM",
+      "delayed_opening_time": "9:30 AM",
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=4049",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:32"
+          },
+          {
+            "name": "2",
+            "start": "08:37",
+            "end": "09:34"
+          },
+          {
+            "name": "3",
+            "start": "09:39",
+            "end": "10:36"
+          },
+          {
+            "name": "L&L",
+            "start": "10:36",
+            "end": "11:26"
+          },
+          {
+            "name": "4",
+            "start": "11:26",
+            "end": "12:23"
+          },
+          {
+            "name": "5",
+            "start": "12:28",
+            "end": "13:25"
+          },
+          {
+            "name": "6",
+            "start": "13:30",
+            "end": "14:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "2",
+            "start": "10:18",
+            "end": "10:57"
+          },
+          {
+            "name": "3",
+            "start": "11:00",
+            "end": "11:39"
+          },
+          {
+            "name": "L&L",
+            "start": "11:39",
+            "end": "12:24"
+          },
+          {
+            "name": "4",
+            "start": "12:24",
+            "end": "13:03"
+          },
+          {
+            "name": "5",
+            "start": "13:06",
+            "end": "13:45"
+          },
+          {
+            "name": "6",
+            "start": "13:48",
+            "end": "14:27"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "2",
+            "start": "08:20",
+            "end": "08:59"
+          },
+          {
+            "name": "3",
+            "start": "09:04",
+            "end": "09:43"
+          },
+          {
+            "name": "4",
+            "start": "09:48",
+            "end": "10:27"
+          },
+          {
+            "name": "5",
+            "start": "10:32",
+            "end": "11:11"
+          },
+          {
+            "name": "6",
+            "start": "11:16",
+            "end": "11:55"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "lenape",
+      "name": "Lenape High School",
+      "short_name": "Lenape",
+      "district_name": "Lenape Regional High School District",
+      "school_type": "high",
+      "address": "235 Hartford Road, Medford, NJ 08055",
+      "main_phone": "(609) 654-5111",
+      "website_url": "https://lenape.lrhsd.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:30 AM",
+      "end_time": "2:27 PM",
+      "early_dismissal_time": "11:55 AM",
+      "delayed_opening_time": "9:30 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/12655",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:32"
+          },
+          {
+            "name": "2",
+            "start": "08:37",
+            "end": "09:34"
+          },
+          {
+            "name": "3",
+            "start": "09:39",
+            "end": "10:36"
+          },
+          {
+            "name": "L&L",
+            "start": "10:36",
+            "end": "11:26"
+          },
+          {
+            "name": "4",
+            "start": "11:26",
+            "end": "12:23"
+          },
+          {
+            "name": "5",
+            "start": "12:28",
+            "end": "13:25"
+          },
+          {
+            "name": "6",
+            "start": "13:30",
+            "end": "14:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "2",
+            "start": "10:18",
+            "end": "10:57"
+          },
+          {
+            "name": "3",
+            "start": "11:00",
+            "end": "11:39"
+          },
+          {
+            "name": "L&L",
+            "start": "11:39",
+            "end": "12:24"
+          },
+          {
+            "name": "4",
+            "start": "12:24",
+            "end": "13:03"
+          },
+          {
+            "name": "5",
+            "start": "13:06",
+            "end": "13:45"
+          },
+          {
+            "name": "6",
+            "start": "13:48",
+            "end": "14:27"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "2",
+            "start": "08:20",
+            "end": "08:59"
+          },
+          {
+            "name": "3",
+            "start": "09:04",
+            "end": "09:43"
+          },
+          {
+            "name": "4",
+            "start": "09:48",
+            "end": "10:27"
+          },
+          {
+            "name": "5",
+            "start": "10:32",
+            "end": "11:11"
+          },
+          {
+            "name": "6",
+            "start": "11:16",
+            "end": "11:55"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "seneca",
+      "name": "Seneca High School",
+      "short_name": "Seneca",
+      "district_name": "Lenape Regional High School District",
+      "school_type": "high",
+      "address": "110 Carranza Road, Tabernacle, NJ 08088",
+      "main_phone": "(609) 268-4600",
+      "website_url": "https://seneca.lrhsd.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 268-4600 ext. 661700",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Attendance clerk: Suzanne Keubler",
+      "start_time": "7:30 AM",
+      "end_time": "2:27 PM",
+      "early_dismissal_time": "11:55 AM",
+      "delayed_opening_time": "9:30 AM",
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=20672",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:32"
+          },
+          {
+            "name": "2",
+            "start": "08:37",
+            "end": "09:34"
+          },
+          {
+            "name": "3",
+            "start": "09:39",
+            "end": "10:36"
+          },
+          {
+            "name": "L&L",
+            "start": "10:36",
+            "end": "11:26"
+          },
+          {
+            "name": "4",
+            "start": "11:26",
+            "end": "12:23"
+          },
+          {
+            "name": "5",
+            "start": "12:28",
+            "end": "13:25"
+          },
+          {
+            "name": "6",
+            "start": "13:30",
+            "end": "14:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "2",
+            "start": "10:18",
+            "end": "10:57"
+          },
+          {
+            "name": "3",
+            "start": "11:00",
+            "end": "11:39"
+          },
+          {
+            "name": "L&L",
+            "start": "11:39",
+            "end": "12:24"
+          },
+          {
+            "name": "4",
+            "start": "12:24",
+            "end": "13:03"
+          },
+          {
+            "name": "5",
+            "start": "13:06",
+            "end": "13:45"
+          },
+          {
+            "name": "6",
+            "start": "13:48",
+            "end": "14:27"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "2",
+            "start": "08:20",
+            "end": "08:59"
+          },
+          {
+            "name": "3",
+            "start": "09:04",
+            "end": "09:43"
+          },
+          {
+            "name": "4",
+            "start": "09:48",
+            "end": "10:27"
+          },
+          {
+            "name": "5",
+            "start": "10:32",
+            "end": "11:11"
+          },
+          {
+            "name": "6",
+            "start": "11:16",
+            "end": "11:55"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "shawnee",
+      "name": "Shawnee High School",
+      "short_name": "Shawnee",
+      "district_name": "Lenape Regional High School District",
+      "school_type": "high",
+      "address": "600 Tabernacle Road, Medford, NJ 08055",
+      "main_phone": "(609) 654-7544",
+      "website_url": "https://shawnee.lrhsd.org",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Shawnee attendance note form",
+      "absence_portal_url": "https://docs.google.com/forms/d/e/1FAIpQLSc4WPY-ilyN0f4qFBySyZb8gOeo4q3jz1aMB7e1ygJ3A7-xuQ/viewform?usp=header",
+      "absence_instructions": "Notes are not accepted in person, by email or voicemail. Questions: Michelle Getz, (609) 654-7544 ext. 442200",
+      "start_time": "7:30 AM",
+      "end_time": "2:27 PM",
+      "early_dismissal_time": "11:55 AM",
+      "delayed_opening_time": "9:30 AM",
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/20811",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:32"
+          },
+          {
+            "name": "2",
+            "start": "08:37",
+            "end": "09:34"
+          },
+          {
+            "name": "3",
+            "start": "09:39",
+            "end": "10:36"
+          },
+          {
+            "name": "L&L",
+            "start": "10:36",
+            "end": "11:26"
+          },
+          {
+            "name": "4",
+            "start": "11:26",
+            "end": "12:23"
+          },
+          {
+            "name": "5",
+            "start": "12:28",
+            "end": "13:25"
+          },
+          {
+            "name": "6",
+            "start": "13:30",
+            "end": "14:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "2",
+            "start": "10:18",
+            "end": "10:57"
+          },
+          {
+            "name": "3",
+            "start": "11:00",
+            "end": "11:39"
+          },
+          {
+            "name": "L&L",
+            "start": "11:39",
+            "end": "12:24"
+          },
+          {
+            "name": "4",
+            "start": "12:24",
+            "end": "13:03"
+          },
+          {
+            "name": "5",
+            "start": "13:06",
+            "end": "13:45"
+          },
+          {
+            "name": "6",
+            "start": "13:48",
+            "end": "14:27"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "2",
+            "start": "08:20",
+            "end": "08:59"
+          },
+          {
+            "name": "3",
+            "start": "09:04",
+            "end": "09:43"
+          },
+          {
+            "name": "4",
+            "start": "09:48",
+            "end": "10:27"
+          },
+          {
+            "name": "5",
+            "start": "10:32",
+            "end": "11:11"
+          },
+          {
+            "name": "6",
+            "start": "11:16",
+            "end": "11:55"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "sequoia",
+      "name": "Sequoia Alternative Program",
+      "short_name": "Sequoia",
+      "district_name": "Lenape Regional High School District",
+      "school_type": "high",
+      "address": "120 Tomlinson Mill Road, Marlton, NJ 08053",
+      "main_phone": "(609) 268-3700",
+      "website_url": "https://sequoia.lrhsd.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:15 AM",
+      "end_time": "1:21 PM",
+      "early_dismissal_time": "12:35 PM",
+      "delayed_opening_time": "9:30 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "First/Homeroom",
+            "start": "08:15",
+            "end": "09:00"
+          },
+          {
+            "name": "Second",
+            "start": "09:03",
+            "end": "09:45"
+          },
+          {
+            "name": "Third",
+            "start": "09:48",
+            "end": "10:30"
+          },
+          {
+            "name": "Fourth",
+            "start": "10:33",
+            "end": "11:15"
+          },
+          {
+            "name": "Fifth (Lunch A)",
+            "start": "11:18",
+            "end": "11:48"
+          },
+          {
+            "name": "Sixth",
+            "start": "11:51",
+            "end": "12:00"
+          },
+          {
+            "name": "Seventh (Lunch B)",
+            "start": "12:03",
+            "end": "12:33"
+          },
+          {
+            "name": "Eighth",
+            "start": "12:36",
+            "end": "13:21"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "First",
+            "start": "09:30",
+            "end": "10:10"
+          },
+          {
+            "name": "Second",
+            "start": "10:11",
+            "end": "10:51"
+          },
+          {
+            "name": "Third",
+            "start": "10:52",
+            "end": "11:32"
+          },
+          {
+            "name": "Fourth",
+            "start": "11:33",
+            "end": "12:13"
+          },
+          {
+            "name": "Lunch",
+            "start": "12:13",
+            "end": "12:30"
+          },
+          {
+            "name": "Fifth",
+            "start": "12:30",
+            "end": "13:10"
+          },
+          {
+            "name": "Sixth",
+            "start": "13:11",
+            "end": "13:51"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "First",
+            "start": "08:30",
+            "end": "09:10"
+          },
+          {
+            "name": "Second",
+            "start": "09:11",
+            "end": "09:51"
+          },
+          {
+            "name": "Third",
+            "start": "09:52",
+            "end": "10:32"
+          },
+          {
+            "name": "Fourth",
+            "start": "10:33",
+            "end": "11:13"
+          },
+          {
+            "name": "Fifth",
+            "start": "11:14",
+            "end": "11:54"
+          },
+          {
+            "name": "Sixth",
+            "start": "11:55",
+            "end": "12:35"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

@@ -47,7 +47,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         cafe_schools = await cafe.schools(cafe_district)
 
         for school in schools:
-            cafe_school = match_school(school.name, cafe_schools)
+            # A district that lists one site under its own name (Lenape) publishes a single district-wide menu.
+            cafe_school = match_school(school.name, cafe_schools) or (cafe_schools[0] if len(cafe_schools) == 1 else None)
             if not cafe_school:
                 unmatched.append(school.name)
                 record_parse_issue("schoolcafe_menu.scan", "school_not_matched", school=school.name)

@@ -7,6 +7,7 @@ from . import givebacks_scan  # noqa: F401
 from . import hs_activities_site_scan  # noqa: F401
 from . import hs_announcements_scan  # noqa: F401
 from . import hs_class_calendar_scan  # noqa: F401
+from . import district_calendar_pdf_scan  # noqa: F401
 from . import hs_rotation_scan  # noqa: F401
 from . import local_events_refresh  # noqa: F401
 from . import lunch_menu_scan  # noqa: F401
@@ -15,6 +16,7 @@ from . import preschool_locations_scan  # noqa: F401
 from . import preschool_team_scan  # noqa: F401
 from . import ptboard_scan  # noqa: F401
 from . import school_events_doc_scan  # noqa: F401
+from . import student_bulletin_scan  # noqa: F401
 from . import school_info_scan  # noqa: F401
 from . import schoolcafe_menu_scan  # noqa: F401
 from . import smore_scan  # noqa: F401

@@ -6,6 +6,7 @@ survives re-scans even if name formatting changes slightly)."""
 from bs4 import BeautifulSoup
 
 import scraper_client
+from services import smart_sites
 
 
 def _text_after_label(el, label: str) -> str | None:
@@ -73,6 +74,11 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
     again - try each, in order, and use
     the first one that actually yields results."""
     base = school_website_url.rstrip("/")
+    # ParentSquare Smart Sites (Evesham) answers plain HTTP; the Finalsite
+    # click-through below would spend up to 100 browser page loads finding nothing.
+    smart_home = await smart_sites.fetch_home(base)
+    if smart_home:
+        return await smart_sites.fetch_roster(base, smart_home)
     for path in _DIRECTORY_PATHS:
         pages_html = await scraper_client.fetch_paginated(base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20)
         by_constituent_id: dict[str, dict] = {}

@@ -188,6 +188,20 @@ meal_type) or `District.schoolcafe_shortname`.
    client-side-encrypted token, a one-time thing at onboarding.
 4. **School-scoped, no district pipeline** — `LunchMenu.school_id` set
    directly, for a school with none of the above (rare).
+5. **One unbanded, all-grades PDF** (Evesham: `.../September_2026.pdf` on
+   `/lunch-menu`). No grade band in the filename, so a bare month+year is
+   taken as the menu for **every** school type the district has
+   (`discover_current_menus(school_types=...)`, one parse shared across the
+   types). Siblings such as `..._lunch_spreadsheet.pdf` /
+   `..._breakfast_spreadsheet.pdf` are nutrition tables, not menus, and are
+   skipped by `_NOT_A_MENU_RE`.
+
+**SchoolCafé quirks:** the shortname can be misspelled by the vendor
+(Lenape: `LenapeRegionlHighSDNutriServe`, no "a" in "Regional") — verify with
+`GetISDByShortName`, don't correct it. A regional district may list one
+site named after the district itself rather than one per school; when
+`GetSchoolsList` returns exactly one site the scan applies it to all the
+district's schools.
 
 ---
 
@@ -554,3 +568,62 @@ on this list** - it's ArbiterLive branding, already supported.
   support. Don't spend time trying alternate fetch methods on a page like
   this; confirm it's actually login-gated (redirects to `accounts.google.
   com`) and move on.
+- **ParentSquare Smart Sites (formerly SharpSchool)** — Evesham Township's
+  platform, not Finalsite (page content is `#page-content-wrapper`;
+  `/index.php?pageID=smartSiteFeed...` feeds). Not bot-protected: plain HTTP
+  works, so no Playwright or residential proxy. `services/smart_sites.py` handles
+  it: `school_info.scan` reads the footer's `aria-label`s (address, phone), and
+  `staff_roster.scan` POSTs `/includes/ajax/load_stack_staff_directory.php`
+  with the item id from the directory page's `getOnDemandDirectoryContent('<id>')`
+  call (emails are base64 in `data-staff-email`). Both sniff the homepage for
+  `smartsites.parentsquare.com` first, so no per-school flag. Only 2 of 10
+  Evesham schools use the directory widget (DeMasi Middle 72 staff, Marlton
+  Elementary 9). Beeler and Rice hand-type the list into the page body (no
+  emails), parsed by `services/handtyped_directory.py` (role-first or
+  name-first decided per page; a bare name under a pasted-table heading gets no
+  title rather than a guessed one). Marlton Middle's legacy directory is empty,
+  and Jaggard/Van Zant have per-role pages (/principal, /nurse-2) that
+  `services/role_pages.py` reads as a fallback (a name counts only when placed
+  like one: before an email, after a "Warmly," sign-off, or before its own
+  job title); the preschools use a document viewer and report `no_staff_found`. `documents.scan`
+  works on some. Calendars are not ICS: the district calendar is a PDF and each
+  school page has a JSON API at `/api/calendars/<calID>/events?start_date=..&end_date=..`
+  (`calID` in the page's `page_calendar?calID=` link) — no scanner reads it yet.
+- **Lenape Regional (Finalsite)** - all five schools (Cherokee, Lenape, Seneca,
+  Shawnee, Sequoia) are tracked. `/fs/calendar-manager/events.ics?calendar_ids[]=N`
+  works though `calendars.json` 401s: 5 = days off, 27 = 4-day rotation
+  ("Day 1 (AM: 1,2,3 - PM: 5,6,7)"), and one activities calendar per school
+  (7 Lenape, 8 Shawnee, 9 Cherokee, 10 Seneca). Each school's `?feed_id=` link is
+  just the union of 5 + 27 + its own, so the `calendar_ids` feeds cover them.
+  Seneca/Shawnee share Cherokee/Lenape's bell schedule; Sequoia (and the TAP
+  program at Seneca, not tracked) have their own on `/students/period-schedules`.
+  Arbiter ids sit on the school site (Seneca `Teams?entityId=`; Shawnee's link is
+  `/School/<id>`, which `entity_id_from_athletics_url` doesn't read - use
+  `/School/Calendar/<id>`); Sequoia has no sports. The staff directory on every
+  lrhsd.org school returns the same ~400 district-wide people.
+- **A menu KeyError is the model dropping a "required" field**: `parse_menu_pdf`
+  now skips a day with no description instead of failing the whole PDF.
+- **A weekly student bulletin as a Google Doc** (`School.bulletin_doc_url`,
+  `student_bulletin.scan`, `services/student_bulletin.py`) - Marlton Middle
+  rewrites one doc in place. Track the *doc*, found from the school page. The
+  doc holds events, club/fee/procedure notes, sports games and house-office
+  contacts; sports lines and contacts are regex-parsed, the rest is one Claude
+  call, skipped when the text+year hash is unchanged. Vanished rows are deleted,
+  an empty parse never prunes.
+- **Evesham/Lenape sports and band** need only `athletics_url` set to the
+  school's ArbiterLive `/m/team/<id>` (Cherokee 4049, Lenape 12655, Marlton
+  Middle 13916) - the existing `athletics_calendar.scan` job is auto-created and
+  its calendar feed already includes band.
+- **NJ DOE directory CSV** (`services/njdoe_directory.py`, `scripts/import_njdoe_contacts.py`): principal + anti-bullying specialist + homeless liaison per public school, downloaded by hand (the site is Incapsula-walled). Fills the who-to-contact gap for schools with no parseable roster; its emails are often the previous principal's, so one is kept only if it contains the person's surname.
+- **A district calendar that is only a PDF** (`District.calendar_pdf_url`,
+  `district_calendar_pdf.scan`, `services/district_calendar_pdf.py`) — Evesham
+  publishes no ICS feed, just a one-page "2026-27 District Calendar" PDF linked
+  from a page (`/244176_3`). Track the *page*; each run re-finds the PDF link
+  (Smart Sites embeds it JSON-escaped in inline script) and reads the file with
+  Claude's native PDF support. The scan skips the model call while the file's
+  content hash is unchanged. Titles are composed in code from a model-chosen
+  kind because `classify_day` lets "in-service"/"conference" beat a delay or
+  early dismissal. A revised PDF replaces the old rows wholesale.
+- **Lunch PDFs are kept for the current month and later** — an unbanded menu
+  page lists one PDF per month, and only the latest used to be stored, which
+  dropped the rest of the current month as soon as next month's appeared.

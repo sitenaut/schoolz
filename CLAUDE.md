@@ -102,7 +102,7 @@ Domain-agnostic scheduler (`backend/scheduler/`) ported from billz: `registry.py
 - **Deleting a job is safe by schema** — every `*_job_id` FK is `ON DELETE SET NULL`.
 - **`ScheduledJob.next_run_at` is display-only.** APScheduler triggers purely from `cron_expr`; bumping it in the DB does nothing. Force runs via the `run-now` endpoints.
 
-Job kinds: `smore.scan`, `schoolcafe_menu.scan`, `email.scan`, `lunch_menu.scan`, `staff_roster.scan`, `documents.scan`, `school_info.scan`, `district_calendar.scan`, `marking_period.scan`, `preschool_locations.scan`, `preschool_team.scan`, `transportation.scan`, `hs_rotation.scan`, `hs_class_calendar.scan`, `hs_announcements.scan`, `hs_activities_site.scan`, `school_events_doc.scan`, `givebacks.scan`, `fdmealplanner_menu.scan`.
+Job kinds: `smore.scan`, `schoolcafe_menu.scan`, `email.scan`, `lunch_menu.scan`, `staff_roster.scan`, `documents.scan`, `school_info.scan`, `district_calendar.scan`, `marking_period.scan`, `preschool_locations.scan`, `preschool_team.scan`, `transportation.scan`, `hs_rotation.scan`, `hs_class_calendar.scan`, `hs_announcements.scan`, `hs_activities_site.scan`, `school_events_doc.scan`, `student_bulletin.scan`, `givebacks.scan`, `fdmealplanner_menu.scan`.
 
 **`smore.scan`** is the preferred newsletter path — no Gmail/OAuth, just the scraper, since newsletter URLs are public. **`email.scan`** needs a connected Gmail account (read-only scope) and exists to *discover* newsletter links; `EmailScanner.school_id`, when set, attributes a discovered link to that school and auto-creates its `smore.scan` job immediately (the scanner's own `school_id` is already the deliberate choice that justifies skipping a second opt-in).
 
