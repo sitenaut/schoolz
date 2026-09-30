@@ -353,6 +353,7 @@ class DistrictCreate(BaseModel):
     preschool_locations_url: str | None = None
     preschool_team_url: str | None = None
     hs_rotation_url: str | None = None
+    calendar_pdf_url: str | None = None
     transportation_url: str | None = None
 
 
@@ -366,6 +367,7 @@ class DistrictUpdate(BaseModel):
     preschool_locations_url: str | None = None
     preschool_team_url: str | None = None
     hs_rotation_url: str | None = None
+    calendar_pdf_url: str | None = None
     transportation_url: str | None = None
 
 
@@ -391,6 +393,7 @@ class DistrictOut(BaseModel):
     preschool_locations_url: str | None
     preschool_team_url: str | None
     hs_rotation_url: str | None
+    calendar_pdf_url: str | None = None
     transportation_url: str | None
     created_at: datetime
     scheduled_job: ScheduledJobOut | None = None
@@ -464,6 +467,7 @@ class SchoolUpdate(BaseModel):
     announcements_doc_url: str | None = Field(default=None, max_length=500)
     activities_site_url: str | None = Field(default=None, max_length=500)
     events_doc_url: str | None = Field(default=None, max_length=500)
+    bulletin_doc_url: str | None = Field(default=None, max_length=500)
     # Apptegy (Thrillshare) org id for this building - Collingswood/Oaklyn/
     # Woodlynne, a different CMS from every Finalsite-assuming scraper
     # elsewhere. Set only for schools on that platform.
@@ -522,6 +526,7 @@ class SchoolOut(BaseModel):
     announcements_doc_url: str | None
     activities_site_url: str | None
     events_doc_url: str | None
+    bulletin_doc_url: str | None = None
     apptegy_org_id: str | None
     givebacks_shortname: str | None
     fdmealplanner_location: str | None = None
@@ -1019,6 +1024,7 @@ class ExportSchoolOut(BaseModel):
     apptegy_org_id: str | None = None
     givebacks_shortname: str | None = None
     fdmealplanner_location: str | None = None
+    bulletin_doc_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -1032,6 +1038,7 @@ class ExportDistrictOut(BaseModel):
     preschool_locations_url: str | None
     preschool_team_url: str | None
     hs_rotation_url: str | None
+    calendar_pdf_url: str | None = None
     transportation_url: str | None
     # Defaulted so an export file from before these existed still imports.
     towns: list[str] = []

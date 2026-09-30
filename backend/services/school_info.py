@@ -21,6 +21,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 import scraper_client
+from services import smart_sites
 
 # Finalsite pages embed a Google Translate widget badge inside <header>
 # ahead of the real school logo on some sites (confirmed: Bret Harte,
@@ -116,6 +117,9 @@ async def discover_school_info(school_website_url: str) -> dict:
     normal "nothing found" case by the caller, since those schools'
     address/phone come from `preschool_locations.scan` instead)."""
     base = school_website_url.rstrip("/")
+    smart_home = await smart_sites.fetch_home(base)
+    if smart_home:
+        return {**smart_sites.parse_footer(smart_home), "logo_url": _find_logo_url(smart_home, base)}
     try:
         # Confirmed real: plain "footer" resolves to 2 elements on these
         # pages (one hidden), so Playwright's visibility wait times out -

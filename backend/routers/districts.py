@@ -96,6 +96,22 @@ async def _ensure_hs_rotation_job(db: AsyncSession, district: District, user: Us
     district.hs_rotation_job_id = job.id
 
 
+async def _ensure_calendar_pdf_job(db: AsyncSession, district: District, user: User) -> None:
+    if district.calendar_pdf_job_id or not district.calendar_pdf_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="district_calendar_pdf.scan",
+        name=f"District calendar PDF scan: {district.name}",
+        cron_expr=public_scan_cron("district_calendar_pdf.scan", district.id),
+        params={"district_id": district.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    district.calendar_pdf_job_id = job.id
+
+
 async def _ensure_transportation_job(db: AsyncSession, district: District, user: User) -> None:
     if district.transportation_job_id or not district.transportation_url:
         return
@@ -159,6 +175,7 @@ async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
         preschool_locations_url=district.preschool_locations_url,
         preschool_team_url=district.preschool_team_url,
         hs_rotation_url=district.hs_rotation_url,
+        calendar_pdf_url=district.calendar_pdf_url,
         transportation_url=district.transportation_url,
         created_at=district.created_at,
         scheduled_job=job,
@@ -195,6 +212,7 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
         preschool_locations_url=payload.preschool_locations_url,
         preschool_team_url=payload.preschool_team_url,
         hs_rotation_url=payload.hs_rotation_url,
+        calendar_pdf_url=payload.calendar_pdf_url,
         transportation_url=payload.transportation_url,
     )
     db.add(district)
@@ -218,6 +236,7 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
     await _ensure_preschool_locations_job(db, district, user)
     await _ensure_preschool_team_job(db, district, user)
     await _ensure_hs_rotation_job(db, district, user)
+    await _ensure_calendar_pdf_job(db, district, user)
     await _ensure_transportation_job(db, district, user)
     await _ensure_schoolcafe_job(db, district, user)
 
@@ -251,6 +270,8 @@ async def update_district(
         district.preschool_team_url = payload.preschool_team_url
     if payload.hs_rotation_url is not None:
         district.hs_rotation_url = payload.hs_rotation_url
+    if payload.calendar_pdf_url is not None:
+        district.calendar_pdf_url = payload.calendar_pdf_url
     if payload.transportation_url is not None:
         district.transportation_url = payload.transportation_url
     await _ensure_calendar_scan_job(db, district, user)
@@ -258,6 +279,7 @@ async def update_district(
     await _ensure_preschool_locations_job(db, district, user)
     await _ensure_preschool_team_job(db, district, user)
     await _ensure_hs_rotation_job(db, district, user)
+    await _ensure_calendar_pdf_job(db, district, user)
     await _ensure_transportation_job(db, district, user)
     await _ensure_schoolcafe_job(db, district, user)
     await db.commit()
@@ -340,6 +362,19 @@ async def run_hs_rotation_scan_now(district_id: str, user: User = Depends(requir
     from scheduler.runner import run_job_now
 
     run_job_now(district.hs_rotation_job_id)
+    return {"status": "started"}
+
+
+@router.post("/{district_id}/calendar-pdf/run-now")
+async def run_calendar_pdf_scan_now(district_id: str, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(District).where(District.id == district_id))
+    district = result.scalar_one_or_none()
+    if not district or not district.calendar_pdf_job_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "District has no linked calendar-pdf-scan job")
+
+    from scheduler.runner import run_job_now
+
+    run_job_now(district.calendar_pdf_job_id)
     return {"status": "started"}
 
 

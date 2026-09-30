@@ -41,6 +41,7 @@ from schemas import (
 )
 from routers.districts import (
     _ensure_calendar_scan_job,
+    _ensure_calendar_pdf_job,
     _ensure_hs_rotation_job,
     _ensure_marking_period_job,
     _ensure_preschool_locations_job,
@@ -50,6 +51,7 @@ from routers.districts import (
 )
 from routers.schools import (
     _ensure_activities_calendar_job,
+    _ensure_bulletin_job,
     _ensure_athletics_calendar_job,
     _ensure_documents_scan_job,
     _ensure_fdmealplanner_job,
@@ -104,6 +106,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 apptegy_org_id=s.apptegy_org_id,
                 givebacks_shortname=s.givebacks_shortname,
                 fdmealplanner_location=s.fdmealplanner_location,
+                bulletin_doc_url=s.bulletin_doc_url,
             )
             for s in schools
         ],
@@ -151,6 +154,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         district.preschool_locations_url = d.preschool_locations_url
         district.preschool_team_url = d.preschool_team_url
         district.hs_rotation_url = d.hs_rotation_url
+        district.calendar_pdf_url = d.calendar_pdf_url
         district.transportation_url = d.transportation_url
         if d.towns:
             district.towns = d.towns
@@ -161,14 +165,11 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         await _ensure_preschool_locations_job(db, district, user)
         await _ensure_preschool_team_job(db, district, user)
         await _ensure_hs_rotation_job(db, district, user)
+        await _ensure_calendar_pdf_job(db, district, user)
         await _ensure_transportation_job(db, district, user)
         await _ensure_schoolcafe_job(db, district, user)
-        # food_services_menu_url's lunch_menu.scan job is created only at
-        # district *creation* time in the normal POST /districts flow
-        # (see routers/districts.py) - mirror that here for a newly-created
-        # district only, so re-importing an already-existing district
-        # doesn't need its own separate "_ensure" helper that doesn't exist.
-        if result["districts_created"] and d.food_services_menu_url and not district.scheduled_job_id:
+        # A district that gains a menu URL on re-import needs its scan job too.
+        if d.food_services_menu_url and not district.scheduled_job_id:
             from models import ScheduledJob
 
             job = ScheduledJob(
@@ -256,6 +257,9 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         if s.fdmealplanner_location:
             school.fdmealplanner_location = s.fdmealplanner_location
             await _ensure_fdmealplanner_job(db, school, user)
+        if s.bulletin_doc_url:
+            school.bulletin_doc_url = s.bulletin_doc_url
+            await _ensure_bulletin_job(db, school, user)
 
         if s.sacc:
             existing_sacc = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()

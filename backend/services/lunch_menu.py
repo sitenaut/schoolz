@@ -13,6 +13,8 @@ import base64
 import logging
 import re
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from urllib.parse import urljoin
 
 import httpx
@@ -50,8 +52,17 @@ _MONTHS = ("january", "february", "march", "april", "may", "june", "july", "augu
 _MONTH_YEAR_RE = re.compile(r"(" + "|".join(_MONTHS) + r")_?(\d{4})", re.IGNORECASE)
 
 
+# Evesham publishes the menu PDF beside per-band "..._lunch_spreadsheet.pdf" /
+# "..._breakfast_spreadsheet.pdf" nutrition tables with the same month prefix;
+# those aren't menus.
+_NOT_A_MENU_RE = re.compile(r"spreadsheet|nutrition|breakfast|allergen", re.IGNORECASE)
+
+
 def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
-    match = _MONTH_YEAR_RE.search(url.rsplit("/", 1)[-1])
+    filename = url.rsplit("/", 1)[-1]
+    if _NOT_A_MENU_RE.search(filename):
+        return None
+    match = _MONTH_YEAR_RE.search(filename)
     if not match:
         return None
     month, year = match.groups()
@@ -113,14 +124,15 @@ async def _resolve_resource_manager_links(page_url: str, html: str) -> set[str]:
     return resolved
 
 
-async def discover_current_menus(menu_page_url: str, single_school_type: str | None = None) -> list[dict]:
+async def discover_current_menus(menu_page_url: str, school_types: list[str] | None = None) -> list[dict]:
     """Returns one entry per (school_type, meal_type) found on the page,
     e.g. {"school_type": "elementary", "meal_type": "lunch",
     "period_label": "September 2026", "pdf_url": "..."}.
 
-    `single_school_type` is for a district whose schools are all one type:
-    its menu PDFs carry no grade band, so a bare month+year filename is
-    taken as that type's lunch menu, latest month winning."""
+    `school_types` is the district's school types, for a district whose menu
+    PDFs carry no grade band (Eastern: one high school; Evesham: one
+    all-grades PDF): a bare month+year filename is taken as every listed
+    type's lunch menu, latest month winning."""
     result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a")
     urls = set(re.findall(r'href="([^"]+\.pdf)"', result["html"], re.IGNORECASE))
     urls |= await _resolve_resource_manager_links(menu_page_url, result["html"])
@@ -130,12 +142,16 @@ async def discover_current_menus(menu_page_url: str, single_school_type: str | N
         classified = _classify_pdf_link(url)
         if classified:
             by_key[(classified["school_type"], classified["meal_type"])] = classified
-    if not by_key and single_school_type:
-        unbanded = [c for c in (_classify_unbanded_pdf_link(u, single_school_type) for u in urls) if c]
+    if not by_key and school_types:
+        unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
         if unbanded:
-            latest = max(unbanded, key=lambda c: c["_sort"])
-            latest.pop("_sort")
-            return [latest]
+            # This month and any later one: the next month's PDF is usually up
+            # before the current month ends, and the current month's last days
+            # still matter. Nothing current → the latest, as before.
+            now = datetime.now(ZoneInfo("America/New_York"))
+            current = [c for c in unbanded if c["_sort"] >= (now.year, now.month - 1)]
+            picked = sorted(current or [max(unbanded, key=lambda c: c["_sort"])], key=lambda c: c["_sort"])
+            return [{**{k: v for k, v in c.items() if k != "_sort"}, "school_type": t} for c in picked for t in school_types]
     return list(by_key.values())
 
 
@@ -205,7 +221,8 @@ async def parse_menu_pdf(pdf_url: str, period_label: str) -> list[dict]:
     items = []
     for day in tool_use.input.get("days", []):
         parsed_date = _parse_date(day.get("date"))
-        if not parsed_date:
+        description = day.get("description")
+        if not parsed_date or not description:
             continue
-        items.append({"date": parsed_date, "description": day["description"][:500], "notes": day.get("notes")})
+        items.append({"date": parsed_date, "description": description[:500], "notes": day.get("notes")})
     return items

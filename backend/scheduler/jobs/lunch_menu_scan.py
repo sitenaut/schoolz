@@ -27,11 +27,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     school_types = set(
         (await db.execute(select(School.school_type).where(School.district_id == district.id).distinct())).scalars().all()
     )
-    single_type = next(iter(school_types)) if len(school_types) == 1 else None
-    discovered = await discover_current_menus(district.food_services_menu_url, single_school_type=single_type)
+    discovered = await discover_current_menus(district.food_services_menu_url, school_types=sorted(t for t in school_types if t))
     if not discovered:
         return "WARNING[no_menu_pdfs]: no menu PDFs found on the food-services page"
     new_menus = 0
+    parsed_days: dict[str, list[dict]] = {}  # one PDF can serve several school types
     for entry in discovered:
         existing = await db.execute(
             select(LunchMenu).where(
@@ -44,7 +44,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         if existing.scalar_one_or_none():
             continue  # already parsed this exact PDF
 
-        days = await parse_menu_pdf(entry["pdf_url"], entry["period_label"])
+        if entry["pdf_url"] not in parsed_days:
+            parsed_days[entry["pdf_url"]] = await parse_menu_pdf(entry["pdf_url"], entry["period_label"])
+        days = parsed_days[entry["pdf_url"]]
         if not days:
             continue
 

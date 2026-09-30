@@ -79,6 +79,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             )
             created += 1
 
+    # The NJ DOE principal (scripts/import_njdoe_contacts.py) is only a stand-in for a school
+    # with no roster of its own; once the school's own site names a principal, drop it.
+    if any(classify_role(e["title"]) == "principal" for e in roster):
+        for row in existing:
+            if row.source_constituent_id == "njdoe:principal":
+                await db.delete(row)
+
     if not roster:
         return (
             f"WARNING[no_staff_found]: no staff found at {checked} - site may use a directory "
