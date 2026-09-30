@@ -11,7 +11,7 @@ export function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const next = safeNext(searchParams.get("next"));
 
   useEffect(() => {
     if (user) navigate(next, { replace: true });
@@ -20,7 +20,13 @@ export function LoginPage() {
   return (
     <div className="page page-narrow">
       <h1>{mode === "login" ? "Sign in" : "Register"}</h1>
-      <AuthPanel mode={mode} onModeChange={setMode} />
+      <AuthPanel mode={mode} onModeChange={setMode} returnTo={next === "/" ? undefined : next} />
     </div>
   );
+}
+
+/** Only a same-site app path: it's concatenated after the origin for
+ * Supabase's redirect, where "@evil.com" or "//evil.com" would leave the site. */
+export function safeNext(raw: string | null): string {
+  return raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") ? raw : "/";
 }

@@ -26,6 +26,8 @@ SOURCE_KEYS = (
     "tribe_sources",
     "ccls_sources",
     "theatre_sources",
+    "ludus_sources",
+    "placewise_sources",
 )
 
 

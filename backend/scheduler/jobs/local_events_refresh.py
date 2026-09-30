@@ -441,6 +441,20 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "placewise_sources": {
+            "type": "array",
+            "description": "Placewise mall sites (e.g. thepromenadenj.com) - the events page server-renders its whole list into __NEXT_DATA__, so plain HTTP, no scraper. Open-ended store promotions (a date range with no end) are skipped; store events are labelled '<store> at <venue_name>'.",
+            "items": {
+                "type": "object",
+                "required": ["name", "url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "url": {"type": "string", "description": "The site's /events page."},
+                    "venue_name": {"type": "string", "description": "The mall's name."},
+                    "venue_address": {"type": "string"},
+                },
+            },
+        },
         "ccls_sources": {
             "type": "array",
             "description": "Camden County Library System branches (events.camdencountylibrary.org) - its own Drupal JSON:API, no scraper. One entry per branch; branch_name is matched case-insensitively against whatever GET /jsonapi/node/location currently returns, so a renamed/added/closed branch needs no code change.",

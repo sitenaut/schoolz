@@ -41,6 +41,7 @@ from .sources.ical import ICalSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
 from .sources.ludus import LudusSource
+from .sources.placewise import PlacewiseSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
@@ -244,6 +245,18 @@ def _build_sources(params: dict) -> list[Source]:
                 venue_address=entry.get("venue_address"),
                 default_categories=list(entry.get("default_categories") or []) or None,
                 school_slug=entry.get("school_slug"),
+            )
+        )
+    for entry in params.get("placewise_sources") or []:
+        if not entry.get("name") or not entry.get("url"):
+            continue
+        sources.append(
+            PlacewiseSource(
+                name=entry["name"],
+                url=entry["url"],
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []),
             )
         )
     for entry in params.get("ludus_sources") or []:

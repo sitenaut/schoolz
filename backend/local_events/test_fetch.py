@@ -17,6 +17,7 @@ from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
+from .sources.placewise import PlacewiseSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
@@ -88,6 +89,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     tribe_sources = body.params.get("tribe_sources") or []
     ccls_sources = body.params.get("ccls_sources") or []
     theatre_sources = body.params.get("theatre_sources") or []
+    placewise_sources = body.params.get("placewise_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -114,6 +116,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.ccls_sources must be a list")
     if not isinstance(theatre_sources, list):
         raise HTTPException(status_code=400, detail="params.theatre_sources must be a list")
+    if not isinstance(placewise_sources, list):
+        raise HTTPException(status_code=400, detail="params.placewise_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -399,6 +403,24 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             venue_address=entry.get("venue_address"),
             # Cap to 1 day for a fast dry-run; full pipeline uses the configured days_ahead.
             days_ahead=1,
+        )))
+
+    for entry in placewise_sources:
+        name = (entry or {}).get("name") or "(unnamed placewise site)"
+        url = (entry or {}).get("url")
+        if not url:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'url' field", source_type="placewise",
+            ))
+            continue
+        results.append(await _probe("placewise", PlacewiseSource(
+            name=name,
+            url=url,
+            venue_name=entry.get("venue_name"),
+            venue_address=entry.get("venue_address"),
+            default_categories=list(entry.get("default_categories") or []),
         )))
 
     for entry in yodel_sources:
