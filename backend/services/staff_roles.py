@@ -15,7 +15,7 @@ import re
 # (role, compiled pattern) - first match wins.
 _ROLE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("assistant_principal", re.compile(r"\b(assistant|vice)\s+principal\b", re.I)),
-    ("principal", re.compile(r"\bprincipal\b", re.I)),
+    ("principal", re.compile(r"\b(principal|chief school administrator)\b", re.I)),
     ("nurse", re.compile(r"\bnurse\b", re.I)),
     ("counselor", re.compile(r"\b(counselor|counsellor|guidance)\b", re.I)),
     ("sacc", re.compile(r"\bsacc\b", re.I)),

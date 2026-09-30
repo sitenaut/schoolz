@@ -75,6 +75,32 @@ def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
     }
 
 
+# Merchantville: one school, no grade band, abbreviated month, 2- or 4-digit
+# year, and a Spanish twin of every PDF - "MERSept26LunchMenu_1.pdf" beside
+# "MERSept26LunchMenuSPA_1.pdf". The prefix is glued onto the month, so the
+# month is found by its first three letters rather than anchored at the start.
+_ABBREV_MENU_RE = re.compile(
+    r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*?(\d{4}|\d{2})(Breakfast|Lunch)Menu(?!_?SPA)",
+    re.IGNORECASE,
+)
+
+
+def _classify_abbreviated_pdf_link(url: str, school_type: str) -> dict | None:
+    match = _ABBREV_MENU_RE.search(url.rsplit("/", 1)[-1])
+    if not match:
+        return None
+    month_abbr, year, meal = match.groups()
+    month_idx = next(i for i, m in enumerate(_MONTHS) if m.startswith(month_abbr.lower()))
+    year_num = int(year) + 2000 if len(year) == 2 else int(year)
+    return {
+        "school_type": school_type,
+        "meal_type": meal.lower(),
+        "period_label": f"{_MONTHS[month_idx].title()} {year_num}",
+        "pdf_url": url,
+        "_sort": (year_num, month_idx),
+    }
+
+
 def _classify_pdf_link(url: str) -> dict | None:
     filename = url.rsplit("/", 1)[-1]
     match = _PDF_FILENAME_RE.search(filename)
@@ -143,15 +169,28 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         if classified:
             by_key[(classified["school_type"], classified["meal_type"])] = classified
     if not by_key and school_types:
-        unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
-        if unbanded:
+        now = datetime.now(ZoneInfo("America/New_York"))
+
+        def current_or_latest(entries: list[dict]) -> list[dict]:
             # This month and any later one: the next month's PDF is usually up
             # before the current month ends, and the current month's last days
             # still matter. Nothing current → the latest, as before.
-            now = datetime.now(ZoneInfo("America/New_York"))
-            current = [c for c in unbanded if c["_sort"] >= (now.year, now.month - 1)]
-            picked = sorted(current or [max(unbanded, key=lambda c: c["_sort"])], key=lambda c: c["_sort"])
+            current = [c for c in entries if c["_sort"] >= (now.year, now.month - 1)]
+            return sorted(current or [max(entries, key=lambda c: c["_sort"])], key=lambda c: c["_sort"])
+
+        def fan_out(picked: list[dict]) -> list[dict]:
             return [{**{k: v for k, v in c.items() if k != "_sort"}, "school_type": t} for c in picked for t in school_types]
+
+        by_meal: dict[str, list[dict]] = {}
+        for c in (_classify_abbreviated_pdf_link(u, school_types[0]) for u in urls):
+            if c:
+                by_meal.setdefault(c["meal_type"], []).append(c)
+        if by_meal:
+            return fan_out([c for entries in by_meal.values() for c in current_or_latest(entries)])
+
+        unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
+        if unbanded:
+            return fan_out(current_or_latest(unbanded))
     return list(by_key.values())
 
 

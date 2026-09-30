@@ -16,12 +16,15 @@ contact page. `website_url` itself isn't discovered here (there's no way
 to find a school's site without already knowing it, and every tracked
 school already has one) - this just verifies it resolves."""
 
+import re
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
 import scraper_client
 from services import smart_sites
+
+_PLAIN_PHONE_RE = re.compile(r"\(?\d{3}\)?[-. ]?\d{3}[-. ]\d{4}")
 
 # Finalsite pages embed a Google Translate widget badge inside <header>
 # ahead of the real school logo on some sites (confirmed: Bret Harte,
@@ -100,6 +103,13 @@ def _parse_location(html: str, base_url: str) -> dict:
     phone_link = soup.select_one(".fsLocationPhone a[href^='tel:']")
     if phone_link:
         result["main_phone"] = phone_link.get_text(strip=True)
+    else:
+        # Some Finalsite footers (Merchantville) print "P: (856) 663-1091" as
+        # plain text with no tel: link.
+        phone_box = soup.select_one(".fsLocationPhone")
+        match = _PLAIN_PHONE_RE.search(phone_box.get_text(" ", strip=True)) if phone_box else None
+        if match:
+            result["main_phone"] = match.group(0)
 
     return result
 
