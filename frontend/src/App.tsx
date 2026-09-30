@@ -30,6 +30,7 @@ import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
 import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
 import { UsersRolesPage } from "./pages/UsersRolesPage";
+import { ApiKeysPage } from "./pages/ApiKeysPage";
 import { can, isStaff } from "./lib/permissions";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
@@ -217,6 +218,7 @@ function Routed() {
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
+          <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
         </Route>
       </Route>
     </FaroRoutes>

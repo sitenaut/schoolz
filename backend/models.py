@@ -104,6 +104,26 @@ class UserRole(Base):
     role_id: Mapped[str] = mapped_column(String(36), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
 
 
+class ApiKey(Base):
+    """A bearer credential for scripts and agents, created by a super admin in
+    /admin → API keys. Acts as its creator, narrowed to `permissions` (and to
+    whatever the creator still holds at request time), and never reaches
+    super-admin endpoints. Only the SHA-256 of the key is stored; the
+    plaintext is shown once, at creation."""
+
+    __tablename__ = "api_keys"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    permissions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    created_by_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class Student(Base):
     """Canonical record for a real child. Shared across every guardian who
     matches or is invited onto it - never owned by a single guardian.

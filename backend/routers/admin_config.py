@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from auth import require_permission
-from models import District, SaccProgram, School, SmoreNewsletter, User
+from models import District, SaccProgram, ScheduledJob, School, SmoreNewsletter, User
 from schemas import (
     ConfigExport,
     ConfigImportResult,
@@ -63,6 +63,26 @@ from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SO
 from scheduler.cron import public_scan_cron
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
+
+
+def merge_local_event_sources(params: dict, lists: dict[str, list[dict]]) -> tuple[dict, int, int]:
+    """Upsert each source into its list by `name`. Returns (new params, added, updated)."""
+    merged = dict(params or {})
+    added = updated = 0
+    for list_key, entries in lists.items():
+        current = [dict(e) for e in (merged.get(list_key) or [])]
+        index = {e.get("name"): i for i, e in enumerate(current)}
+        for entry in entries:
+            name = entry["name"]
+            if name not in index:
+                index[name] = len(current)
+                current.append(dict(entry))
+                added += 1
+            elif current[index[name]] != entry:
+                current[index[name]] = dict(entry)
+                updated += 1
+        merged[list_key] = current
+    return merged, added, updated
 
 
 @router.get("/export", response_model=ConfigExport, dependencies=[Depends(require_permission("config.view"))])
@@ -170,8 +190,6 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         await _ensure_schoolcafe_job(db, district, user)
         # A district that gains a menu URL on re-import needs its scan job too.
         if d.food_services_menu_url and not district.scheduled_job_id:
-            from models import ScheduledJob
-
             job = ScheduledJob(
                 owner_user_id=user.id,
                 kind="lunch_menu.scan",
@@ -298,7 +316,6 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             )
             db.add(newsletter)
             await db.flush()
-            from models import ScheduledJob
 
             job = ScheduledJob(
                 owner_user_id=user.id,
@@ -320,6 +337,24 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             if district:
                 newsletter.district_id = district.id
             result["smore_updated"] += 1
+
+    # --- Local events sources, merged by name into existing jobs ---
+    result["local_event_sources_added"] = 0
+    result["local_event_sources_updated"] = 0
+    result["local_event_jobs_missing"] = []
+    if payload.local_events:
+        jobs = {
+            j.name: j
+            for j in (await db.execute(select(ScheduledJob).where(ScheduledJob.kind == "local_events.refresh"))).scalars().all()
+        }
+        for job_name, lists in payload.local_events.items():
+            job = jobs.get(job_name)
+            if job is None:
+                result["local_event_jobs_missing"].append(job_name)
+                continue
+            job.params, added, updated = merge_local_event_sources(job.params, lists)
+            result["local_event_sources_added"] += added
+            result["local_event_sources_updated"] += updated
 
     await db.commit()
     return ConfigImportResult(**result)

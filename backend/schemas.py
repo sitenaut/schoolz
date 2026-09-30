@@ -1068,6 +1068,23 @@ class ConfigExport(BaseModel):
     districts: list[ExportDistrictOut]
     schools: list[ExportSchoolOut]
     smore_newsletters: list[ExportSmoreOut]
+    # Import-only: local_events.refresh job name -> {"rss_sources": [...], ...}.
+    # Merged into that existing job by each source's `name`; never removes a
+    # source, since removing one deletes its events (local_events/prune.py).
+    # Not exported: prod deliberately runs a different source list than local.
+    local_events: dict[str, dict[str, list[dict]]] = {}
+
+    @field_validator("local_events")
+    @classmethod
+    def _local_event_sources(cls, v: dict[str, dict[str, list[dict]]]) -> dict[str, dict[str, list[dict]]]:
+        for job_name, lists in v.items():
+            for list_key, entries in lists.items():
+                if not list_key.endswith("_sources"):
+                    raise ValueError(f"{job_name}: {list_key!r} is not a *_sources list")
+                for entry in entries:
+                    if not str(entry.get("name") or "").strip():
+                        raise ValueError(f"{job_name}: every {list_key} entry needs a name")
+        return v
 
 
 class ConfigImportResult(BaseModel):
@@ -1080,6 +1097,9 @@ class ConfigImportResult(BaseModel):
     smore_skipped: list[str]  # urls that couldn't be linked to a school slug in this environment
     sacc_created: int
     sacc_updated: int
+    local_event_sources_added: int = 0
+    local_event_sources_updated: int = 0
+    local_event_jobs_missing: list[str] = []
 
 
 class CommunitySubmissionOut(BaseModel):

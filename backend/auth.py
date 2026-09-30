@@ -1,5 +1,7 @@
 import functools
+import hashlib
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import logging
@@ -14,7 +16,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import SessionLocal, get_db
-from models import RolePermission, User, UserRole
+from models import ApiKey, RolePermission, User, UserRole
 from permissions import PERMISSION_KEYS, expand
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,11 @@ SUPABASE_JWT_AUDIENCE = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
 BOOTSTRAP_ADMIN_EMAIL = os.getenv("BOOTSTRAP_ADMIN_EMAIL", "")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+# Admin-issued API keys (models.ApiKey). The prefix is what tells a key apart
+# from a JWT before any verification runs.
+API_KEY_PREFIX = "szk_"
+_API_KEY_TOUCH_INTERVAL = timedelta(minutes=5)
 
 _jwks_client: PyJWKClient | None = None
 
@@ -157,6 +164,37 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
     return user
 
 
+def generate_api_key() -> tuple[str, str, str]:
+    """(plaintext, display prefix, sha256 hex). 32 random bytes, so a plain
+    hash is enough - there's nothing to brute-force the way a password has."""
+    plaintext = API_KEY_PREFIX + secrets.token_urlsafe(32)
+    return plaintext, plaintext[:12], hash_api_key(plaintext)
+
+
+def hash_api_key(plaintext: str) -> str:
+    return hashlib.sha256(plaintext.encode("utf-8")).hexdigest()
+
+
+async def _authenticate_api_key(request: Request, db: AsyncSession, token: str) -> User:
+    key = (await db.execute(select(ApiKey).where(ApiKey.key_hash == hash_api_key(token)))).scalar_one_or_none()
+    now = datetime.now(timezone.utc)
+    if key is None or (key.expires_at is not None and key.expires_at <= now):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired API key")
+    user = (await db.execute(select(User).where(User.id == key.created_by_user_id))).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired API key")
+    if key.last_used_at is None or now - key.last_used_at > _API_KEY_TOUCH_INTERVAL:
+        key.last_used_at = now
+        await db.commit()
+    request.state.api_key_id = key.id
+    request.state.api_key_scope = frozenset(key.permissions or ())
+    return user
+
+
+def is_api_key_request(request: Request) -> bool:
+    return getattr(request.state, "api_key_scope", None) is not None
+
+
 async def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
@@ -165,7 +203,9 @@ async def get_current_user(
     if not token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
 
-    if AUTH_MODE == "supabase":
+    if token.startswith(API_KEY_PREFIX):
+        user = await _authenticate_api_key(request, db, token)
+    elif AUTH_MODE == "supabase":
         claims = await _verify_supabase_token(token)
         user = await _get_or_create_supabase_user(db, claims)
     else:
@@ -201,9 +241,12 @@ async def get_optional_user(
         return None
 
 
-async def require_super_admin(user: User = Depends(get_current_user)) -> User:
+async def require_super_admin(request: Request, user: User = Depends(get_current_user)) -> User:
     """Super admin = `User.is_admin`. Holds every permission and is the only
-    tier that can manage users and roles."""
+    tier that can manage users, roles and API keys. An API key never counts,
+    even one a super admin created, so no key can mint admins or more keys."""
+    if is_api_key_request(request):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "API keys can't manage users, roles or keys")
     if not user.is_admin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Super admin access required")
     return user
@@ -220,6 +263,17 @@ async def get_user_permissions(db: AsyncSession, user: User) -> set[str]:
     return expand(set(rows.scalars().all()))
 
 
+async def get_effective_permissions(request: Request, db: AsyncSession, user: User) -> set[str]:
+    """What this request may do: the user's permissions, narrowed to the API
+    key's scope when it came in on a key. Intersected at request time, so
+    demoting a key's creator shrinks the key with them."""
+    perms = await get_user_permissions(db, user)
+    scope = getattr(request.state, "api_key_scope", None)
+    if scope is not None:
+        perms &= expand(set(scope))
+    return perms
+
+
 @functools.cache
 def require_permission(permission: str):
     """Dependency factory: the centrally-managed-data-sources gate. Creating
@@ -229,10 +283,10 @@ def require_permission(permission: str):
     if permission not in PERMISSION_KEYS:
         raise ValueError(f"Unknown permission {permission!r}")
 
-    async def _dep(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
-        if user.is_admin:
+    async def _dep(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
+        if user.is_admin and not is_api_key_request(request):
             return user
-        if permission not in await get_user_permissions(db, user):
+        if permission not in await get_effective_permissions(request, db, user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
         return user
 

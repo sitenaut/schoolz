@@ -20,6 +20,7 @@ export const ADMIN_TABS: { to: string; label: string; permission: string | null 
   { to: "/admin/config", label: "Import/export", permission: "config.view" },
   { to: "/admin/kids", label: "Kids", permission: "kids.view" },
   { to: "/admin/users", label: "Users & roles", permission: null },
+  { to: "/admin/api-keys", label: "API keys", permission: null },
 ];
 
 /** null permission = super admin only. */
