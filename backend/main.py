@@ -21,6 +21,7 @@ import telemetry  # noqa: E402
 from auth import prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
 from routers import admin_users as admin_users_router  # noqa: E402
+from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
 from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
@@ -154,6 +155,7 @@ async def log_requests(request: Request, call_next):
             "duration_ms": round(duration * 1000, 1),
             "user_id": user_id,
             "authed": user_id is not None,
+            "api_key_id": getattr(request.state, "api_key_id", None),
         },
     )
     return response
@@ -162,6 +164,8 @@ async def log_requests(request: Request, call_next):
 app.include_router(health_router.router)
 app.include_router(admin_config_router.router)
 app.include_router(admin_users_router.router)
+app.include_router(admin_api_keys_router.router)
+app.include_router(admin_api_keys_router.device_router)
 app.include_router(auth_router.router)
 app.include_router(scraper_router.router)
 app.include_router(students_router.router)

@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,7 +45,12 @@ _RESET_TOKEN_TTL = timedelta(hours=1)
 _DELETE_CONFIRMATION = "DELETE"
 
 
-def _user_out(user: User, student_profile_id: str | None = None, permissions: set[str] | None = None) -> UserOut:
+def _user_out(
+    user: User,
+    student_profile_id: str | None = None,
+    permissions: set[str] | None = None,
+    via_api_key: bool = False,
+) -> UserOut:
     # A Supabase user with no local password and a Google identity has
     # nothing to "change" password-wise - the settings page hides the form.
     method = "password"
@@ -55,7 +60,7 @@ def _user_out(user: User, student_profile_id: str | None = None, permissions: se
         id=user.id,
         email=user.email,
         username=user.username,
-        is_admin=user.is_admin,
+        is_admin=user.is_admin and not via_api_key,
         auth_mode=auth_module.AUTH_MODE,
         preferred_language=user.preferred_language,
         sign_in_method=method,
@@ -109,8 +114,13 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))
+async def me(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return _user_out(
+        user,
+        await _student_profile_id(db, user),
+        await auth_module.get_effective_permissions(request, db, user),
+        via_api_key=auth_module.is_api_key_request(request),
+    )
 
 
 @router.patch("/me", response_model=UserOut)

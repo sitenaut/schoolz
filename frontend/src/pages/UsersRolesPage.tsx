@@ -10,11 +10,8 @@ import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionCard } from "../components/ui/SectionCard";
 import { useToast } from "../components/ui/Toast";
+import { PermissionPicker, permissionLabel, type Permission } from "../components/PermissionPicker";
 
-type Permission = { key: string; label: string; description: string; sensitive: boolean; access: "read" | "write" };
-
-/** Mirrors the backend: a `.manage` permission implies its `.view`. */
-const impliedView = (key: string) => (key.endsWith(".manage") ? key.replace(/\.manage$/, ".view") : null);
 type Role = { id: string; name: string; description: string | null; permissions: string[]; user_count: number };
 type Sort = { id: string; dir: "asc" | "desc" };
 const PAGE_SIZES = [25, 50, 100];
@@ -230,7 +227,7 @@ export function UsersRolesPage() {
                     ) : (
                       r.permissions.map((p) => (
                         <Badge key={p} tone={permissions.find((x) => x.key === p)?.sensitive ? "warn" : "info"} dot={false}>
-                          {(permissions.find((x) => x.key === p)?.label ?? p) + (p.endsWith(".manage") ? " (change)" : p.endsWith(".view") ? " (view)" : "")}
+                          {permissionLabel(permissions, p)}
                         </Badge>
                       ))
                     )}
@@ -474,36 +471,7 @@ function RoleModal({
         <Field label="Description" hint="Optional - a note for future you.">
           <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={255} />
         </Field>
-        {(["read", "write"] as const).map((access) => (
-          <div key={access} style={{ marginBottom: 12 }}>
-            <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--ink-2)", letterSpacing: "0.02em" }}>
-              {access === "read" ? "Can view" : "Can change"}
-            </span>
-            <span className="note" style={{ display: "block", marginTop: 2 }}>
-              {access === "read" ? "See the data; change nothing." : "Create, edit and delete. Also lets them view the same area."}
-            </span>
-            <div className="checks" style={{ marginTop: 6 }}>
-              {permissions
-                .filter((p) => p.access === access)
-                .map((p) => {
-                  const implied = access === "read" && [...picked].some((k) => impliedView(k) === p.key);
-                  const on = picked.has(p.key) || implied;
-                  return (
-                    <label key={p.key} className={`check ${on ? "on" : ""}`} style={{ marginBottom: 0, opacity: implied ? 0.7 : 1 }}>
-                      <input type="checkbox" checked={on} disabled={implied} onChange={() => toggle(p.key)} />
-                      <span>
-                        <strong>{p.label}</strong> {p.sensitive && <Badge tone="warn" dot={false}>Powerful</Badge>}
-                        <span className="note" style={{ display: "block" }}>
-                          {p.description}
-                          {implied && " (included with change access)"}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })}
-            </div>
-          </div>
-        ))}
+        <PermissionPicker permissions={permissions} picked={picked} onToggle={toggle} />
       </form>
     </Modal>
   );

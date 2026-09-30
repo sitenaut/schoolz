@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Navigate, useLocation } from "react-router-dom";
 import { FaroRoutes } from "./lib/telemetry";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppShell } from "./components/AppShell";
@@ -30,6 +30,8 @@ import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
 import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
 import { UsersRolesPage } from "./pages/UsersRolesPage";
+import { ApiKeysPage } from "./pages/ApiKeysPage";
+import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
 import { can, isStaff } from "./lib/permissions";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
@@ -91,8 +93,9 @@ function RequireAdmin({
   superOnly?: boolean;
 }) {
   const { user, loading, authTimedOut } = useAuth();
+  const location = useLocation();
   if (loading) return <AuthGateFallback timedOut={authTimedOut} />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   const allowed = superOnly ? user.is_admin : permission ? can(user, permission) : isStaff(user);
   if (!allowed) return <Navigate to="/" replace />;
   return children;
@@ -217,6 +220,8 @@ function Routed() {
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
+          <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
+          <Route path="api-keys/approve" element={<RequireAdmin superOnly><ApproveApiKeyPage /></RequireAdmin>} />
         </Route>
       </Route>
     </FaroRoutes>

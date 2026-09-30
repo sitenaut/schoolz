@@ -1,0 +1,40 @@
+{
+  "exported_at": "2026-09-30T12:00:00Z",
+  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County)",
+  "districts": [],
+  "schools": [],
+  "smore_newsletters": [],
+  "local_events": {
+    "Local events refresh": {
+      "json_sources": [
+        {
+          "name": "merchantville",
+          "url": "https://merchantvillenj.gov/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=merchantvillenj&relative_revize_url=//webgen1.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "default_categories": ["merchantville", "municipal"]
+        }
+      ],
+      "rss_sources": [
+        {
+          "name": "haddon_heights",
+          "url": "https://www.haddonhts.com/RSSFeed.aspx?ModID=58&CID=Events-27",
+          "default_categories": ["haddon-heights", "municipal"],
+          "treat_pubdate_as_start": false
+        }
+      ],
+      "tribe_sources": [
+        {
+          "name": "camden_county_parks",
+          "base_url": "https://www.camdencounty.com",
+          "days_ahead": 90,
+          "max_miles": 15,
+          "center": [39.8862, -75.0713],
+          "default_categories": ["camden-county"]
+        }
+      ]
+    }
+  }
+}
