@@ -99,3 +99,59 @@ async def test_yodel_keeps_first_page_when_load_more_fails(monkeypatch):
     events = await src.fetch()
     assert [e.title for e in events] == ["Harvest Week"]
     assert len(src.partial_failures) == 1 and "page 2" in src.partial_failures[0]
+
+
+@pytest.mark.anyio
+async def test_a_cloudflare_403_falls_back_to_the_residential_scraper_for_page_one(monkeypatch):
+    posts = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            posts.append(request)
+        return httpx.Response(403, text="<title>Attention Required! | Cloudflare</title>")
+
+    calls = []
+
+    async def fake_rendered(url, **kwargs):
+        calls.append((url, kwargs))
+        return _page_html(), url
+
+    monkeypatch.setattr(yodel.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
+    monkeypatch.setattr(yodel, "fetch_rendered_html", fake_rendered)
+    src = YodelSource("mk", WIDGET)
+    events = await src.fetch()
+
+    assert [e.title for e in events] == ["Harvest Week"]
+    assert calls and calls[0][0] == WIDGET and calls[0][1]["prefer_residential"] is True
+    # "Load more" is a POST the scraper can't send, so paging stops at page 1 without a warning.
+    assert posts == [] and src.partial_failures == []
+
+
+@pytest.mark.anyio
+async def test_other_http_errors_do_not_go_to_the_scraper(monkeypatch):
+    async def fake_rendered(url, **kwargs):
+        raise AssertionError("scraper should not be called")
+
+    monkeypatch.setattr(
+        yodel.httpx, "AsyncClient",
+        partial(httpx.AsyncClient, transport=httpx.MockTransport(lambda r: httpx.Response(500, text="boom"))),
+    )
+    monkeypatch.setattr(yodel, "fetch_rendered_html", fake_rendered)
+    with pytest.raises(httpx.HTTPStatusError):
+        await YodelSource("mk", WIDGET).fetch()
+
+
+def test_residential_scraper_is_opt_in_and_goes_first(monkeypatch):
+    from local_events.sources import scraper
+
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_KEY", "droplet-key")
+    monkeypatch.delenv("LOCAL_EVENTS_SCRAPER_URL", raising=False)
+    monkeypatch.delenv("RESIDENTIAL_SCRAPER_URL", raising=False)
+    monkeypatch.delenv("RESIDENTIAL_SCRAPER_KEY", raising=False)
+    monkeypatch.setenv("SCRAPER_URL", "http://scraper:8765")
+    monkeypatch.setenv("SCRAPER_API_KEY", "fly-key")
+
+    assert [u for u, _ in scraper._services()] == ["https://scraper-droplet.profitnaut.com", "http://scraper:8765"]
+    assert scraper._services(prefer_residential=True)[0] == ("https://scraper.profitnaut.com", "droplet-key")
+    monkeypatch.setenv("RESIDENTIAL_SCRAPER_KEY", "pi-key")
+    assert scraper._services(prefer_residential=True)[0] == ("https://scraper.profitnaut.com", "pi-key")
