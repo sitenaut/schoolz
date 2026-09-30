@@ -12,7 +12,7 @@ from sqlalchemy import select, update
 
 import database
 from main import app
-from models import ApiKey, ScheduledJob, User
+from models import ApiKey, ApiKeyRequest, ScheduledJob, User
 from routers.admin_config import merge_local_event_sources
 from tests.test_admin_users import _register
 
@@ -139,3 +139,86 @@ async def test_config_import_seeds_local_event_sources_with_a_key():
     async with database.SessionLocal() as db:
         job = (await db.execute(select(ScheduledJob).where(ScheduledJob.name == job_name))).scalar_one()
         assert [s["name"] for s in job.params["rss_sources"]] == ["old", "new"]
+
+
+# ---- Device flow --------------------------------------------------------------
+
+
+async def _start(client: AsyncClient, name: str = "Claude Code on test") -> dict:
+    res = await client.post("/auth/device/start", json={"client_name": name})
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
+async def _poll(client: AsyncClient, device_code: str) -> dict:
+    res = await client.post("/auth/device/token", json={"device_code": device_code})
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
+async def test_device_flow_issues_a_scoped_key_exactly_once_after_approval():
+    async with _client() as client:
+        boss, boss_id = await _register(client, "devboss", super_admin=True)
+        started = await _start(client)
+        code = started["user_code"]
+        assert len(code) == 9 and code[4] == "-"
+        assert await _poll(client, started["device_code"]) == {"status": "pending", "key": None, "key_prefix": None, "permissions": None}
+
+        # Codes are matched case- and dash-insensitively, as typed on a phone.
+        seen = await client.get(f"/admin/api-keys/requests/{code.replace('-', '').lower()}", headers=boss)
+        assert seen.status_code == 200 and seen.json()["client_name"] == "Claude Code on test" and seen.json()["status"] == "pending"
+
+        approved = await client.post(
+            f"/admin/api-keys/requests/{code}/approve", headers=boss, json={"permissions": ["scans.view"], "expires_in_days": 30}
+        )
+        assert approved.status_code == 200 and approved.json()["status"] == "approved"
+
+        got = await _poll(client, started["device_code"])
+        assert got["status"] == "approved" and got["key"].startswith("szk_") and got["permissions"] == ["scans.view"]
+        # Collected once; the device code is spent.
+        assert (await _poll(client, started["device_code"]))["status"] == "expired"
+        assert (await client.get(f"/admin/api-keys/requests/{code}", headers=boss)).json()["status"] == "issued"
+
+        headers = {"authorization": f"Bearer {got['key']}"}
+        me = (await client.get("/auth/me", headers=headers)).json()
+        assert me["id"] == boss_id and me["permissions"] == ["scans.view"] and me["is_admin"] is False
+        listed = next(k for k in (await client.get("/admin/api-keys", headers=boss)).json() if k["key_prefix"] == got["key_prefix"])
+        assert listed["name"] == "Claude Code on test" and listed["expires_at"] is not None
+
+        # Already answered: can't be approved again.
+        again = await client.post(f"/admin/api-keys/requests/{code}/approve", headers=boss, json={"permissions": ["scans.manage"]})
+        assert again.status_code == 410
+
+
+async def test_device_flow_denied_expired_and_unauthorized_approvals():
+    async with _client() as client:
+        boss, _ = await _register(client, "devdeny", super_admin=True)
+        helper, _ = await _register(client, "devhelper")
+
+        denied = await _start(client)
+        assert (await client.post(f"/admin/api-keys/requests/{denied['user_code']}/approve", headers=helper, json={"permissions": ["scans.view"]})).status_code == 403
+        assert (await client.post(f"/admin/api-keys/requests/{denied['user_code']}/deny", headers=boss)).status_code == 200
+        assert (await _poll(client, denied["device_code"]))["status"] == "denied"
+
+        stale = await _start(client)
+        async with database.SessionLocal() as db:
+            await db.execute(
+                update(ApiKeyRequest)
+                .where(ApiKeyRequest.user_code == stale["user_code"])
+                .values(expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
+            )
+            await db.commit()
+        assert (await client.post(f"/admin/api-keys/requests/{stale['user_code']}/approve", headers=boss, json={"permissions": ["scans.view"]})).status_code == 410
+        assert (await client.get(f"/admin/api-keys/requests/{stale['user_code']}", headers=boss)).json()["status"] == "expired"
+        assert (await _poll(client, stale["device_code"]))["status"] == "expired"
+        assert (await _poll(client, "not-a-real-device-code"))["status"] == "expired"
+
+        # A key can't approve a login request, even one its creator could.
+        key = await _create_key(client, boss, ["config.manage"])
+        pending = await _start(client)
+        res = await client.post(f"/admin/api-keys/requests/{pending['user_code']}/approve", headers=_bearer(key), json={"permissions": ["config.manage"]})
+        assert res.status_code == 403
+
+        async with database.SessionLocal() as db:
+            row = (await db.execute(select(ApiKeyRequest).where(ApiKeyRequest.user_code == pending["user_code"]))).scalar_one()
+            assert pending["device_code"] not in row.device_code_hash

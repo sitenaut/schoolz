@@ -22,7 +22,7 @@ type ApiKey = {
 };
 type CreatedKey = ApiKey & { key: string };
 
-const EXPIRY_OPTIONS = [
+export const EXPIRY_OPTIONS = [
   { value: "30", label: "30 days" },
   { value: "90", label: "90 days" },
   { value: "365", label: "1 year" },
@@ -31,7 +31,7 @@ const EXPIRY_OPTIONS = [
 
 /** What seeding a district or local-events sources needs: config import plus
  * editing and running the scans it creates. */
-const ONBOARDING_PRESET = ["config.manage", "scans.manage", "schools.manage", "newsletters.manage"];
+export const ONBOARDING_PRESET = ["config.manage", "scans.manage", "schools.manage", "newsletters.manage"];
 
 const envVarName = () =>
   ["localhost", "127.0.0.1"].includes(window.location.hostname) ? "SCHOOLZ_API_KEY_LOCAL" : "SCHOOLZ_API_KEY_PROD";
