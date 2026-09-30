@@ -91,14 +91,20 @@ ANTHROPIC_API_KEY=
 
 # Chatbot (services/chat_providers.py). Its own Anthropic key keeps the
 # public chatbot's spend separate from newsletter extraction; falls back to
-# ANTHROPIC_API_KEY. The Gemini key enables Gemini in /admin -> Chatbot
-# (provider switch + side-by-side compare); unset, Gemini shows as
-# "no API key on server". Use a paid-tier Gemini key: signed-in chats carry
-# children's grades/schedules, and free-tier prompts may be used by Google.
-# In prod both are Fly secrets on schoolz-api:
+# ANTHROPIC_API_KEY. The Gemini/DeepSeek/Qwen keys each enable that provider
+# in /admin -> Chatbot (provider switch + side-by-side compare); unset, a
+# provider shows as "no API key on server". Use paid-tier keys: signed-in
+# chats carry children's grades/schedules, and free tiers may retain prompts.
+# DeepSeek and Qwen both speak the same OpenAI-compatible wire format Gemini
+# does (services/chat_providers.py:OpenAICompatibleProvider) - DeepSeek's key
+# is from platform.deepseek.com, Qwen's from Alibaba Cloud's DashScope
+# console (international region - the mainland endpoint 403s these keys).
+# In prod these are Fly secrets on schoolz-api:
 #   fly secrets set CHATBOT_GEMINI_API_KEY=... -a schoolz-api
 CHATBOT_ANTHROPIC_API_KEY=
 CHATBOT_GEMINI_API_KEY=
+CHATBOT_DEEPSEEK_API_KEY=
+CHATBOT_QWEN_API_KEY=
 ```
 
 ## env/secrets.prod.env

@@ -221,6 +221,17 @@ def test_gemini_list_keeps_only_chat_models():
     assert [i for i in ids if chat_providers.gemini_chat_model(i)] == ["gemini-3.8-flash", "gemini-pro-latest"]
 
 
+def test_configured_providers_reads_deepseek_and_qwen_keys(monkeypatch):
+    for key in ("CHATBOT_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY", "CHATBOT_GEMINI_API_KEY", "GEMINI_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("CHATBOT_DEEPSEEK_API_KEY", "ds-key")
+    monkeypatch.setenv("CHATBOT_QWEN_API_KEY", "qwen-key")
+    providers = chat_providers.configured_providers()
+    assert set(providers) == {"deepseek", "qwen"}
+    assert providers["deepseek"].base_url == chat_providers.DEEPSEEK_BASE_URL
+    assert providers["qwen"].base_url == chat_providers.QWEN_BASE_URL
+
+
 @pytest.mark.anyio
 async def test_anonymous_turns_are_told_todays_date():
     seen = {}

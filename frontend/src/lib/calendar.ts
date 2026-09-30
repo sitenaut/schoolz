@@ -107,5 +107,9 @@ export function timeOfDay(iso: string): string {
 }
 
 export function telHref(phone: string): string {
-  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+  // Keep commas - the tel: scheme treats them as a dial pause, which is how
+  // an extension after the main number ("(856)424-2222,2554") gets dialed.
+  // Stripping them collapsed the number and extension into one run of
+  // digits that dialed nothing real.
+  return `tel:${phone.replace(/[^\d+,]/g, "")}`;
 }

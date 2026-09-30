@@ -36,7 +36,12 @@ type CompareResult = {
   latency_ms: number;
 };
 
-const PROVIDER_LABEL: Record<string, string> = { anthropic: "Anthropic (Claude)", gemini: "Google (Gemini)" };
+const PROVIDER_LABEL: Record<string, string> = {
+  anthropic: "Anthropic (Claude)",
+  gemini: "Google (Gemini)",
+  deepseek: "DeepSeek",
+  qwen: "Alibaba (Qwen)",
+};
 const EFFORTS = ["", "minimal", "low", "medium", "high"];
 
 async function errorText(res: Response): Promise<string> {

@@ -29,6 +29,10 @@ from anthropic import AsyncAnthropic
 logger = logging.getLogger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+# Alibaba's international DashScope endpoint - the mainland one
+# (dashscope.aliyuncs.com) 403s keys issued outside China.
+QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models"
 
 # Gemini's /models lists ~60 ids, most of which can't hold a tool-using chat
@@ -293,7 +297,17 @@ def configured_providers() -> dict[str, Any]:
         providers["gemini"] = OpenAICompatibleProvider(
             "gemini", GEMINI_BASE_URL, gemini_key, schema_fixer=_gemini_schema, model_filter=gemini_chat_model
         )
+    deepseek_key = os.getenv("CHATBOT_DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+    if deepseek_key:
+        providers["deepseek"] = OpenAICompatibleProvider(
+            "deepseek", DEEPSEEK_BASE_URL, deepseek_key, schema_fixer=_gemini_schema
+        )
+    qwen_key = os.getenv("CHATBOT_QWEN_API_KEY") or os.getenv("DASHSCOPE_API_KEY")
+    if qwen_key:
+        providers["qwen"] = OpenAICompatibleProvider(
+            "qwen", QWEN_BASE_URL, qwen_key, schema_fixer=_gemini_schema
+        )
     return providers
 
 
-KNOWN_PROVIDERS = ("anthropic", "gemini")
+KNOWN_PROVIDERS = ("anthropic", "gemini", "deepseek", "qwen")
