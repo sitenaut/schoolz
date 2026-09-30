@@ -1,6 +1,6 @@
 {
   "exported_at": "2026-09-30T12:00:00Z",
-  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County)",
+  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County, The Promenade at Sagemore)",
   "districts": [],
   "schools": [],
   "smore_newsletters": [],
@@ -14,14 +14,20 @@
           "description_field": "desc",
           "location_field": "location",
           "parser": "revize",
-          "default_categories": ["merchantville", "municipal"]
+          "default_categories": [
+            "merchantville",
+            "municipal"
+          ]
         }
       ],
       "rss_sources": [
         {
           "name": "haddon_heights",
           "url": "https://www.haddonhts.com/RSSFeed.aspx?ModID=58&CID=Events-27",
-          "default_categories": ["haddon-heights", "municipal"],
+          "default_categories": [
+            "haddon-heights",
+            "municipal"
+          ],
           "treat_pubdate_as_start": false
         }
       ],
@@ -31,8 +37,24 @@
           "base_url": "https://www.camdencounty.com",
           "days_ahead": 90,
           "max_miles": 15,
-          "center": [39.8862, -75.0713],
-          "default_categories": ["camden-county"]
+          "center": [
+            39.8862,
+            -75.0713
+          ],
+          "default_categories": [
+            "camden-county"
+          ]
+        }
+      ],
+      "placewise_sources": [
+        {
+          "name": "promenade_sagemore",
+          "url": "https://thepromenadenj.com/events",
+          "venue_name": "The Promenade at Sagemore",
+          "venue_address": "500 Route 73 S, Marlton, NJ 08053",
+          "default_categories": [
+            "marlton"
+          ]
         }
       ]
     }
