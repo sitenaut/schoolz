@@ -11,7 +11,7 @@ import { initReactI18next } from "react-i18next";
  * English. Only the non-English JSON is shipped, and only to those visitors.
  * Plurals: pick the key yourself (`n === 1 ? "1 child" : "{{count}} children"`)
  * - i18next's own count suffixes would need an English resource too. */
-export type Lang = "en" | "es" | "zh";
+export type Lang = "en" | "es" | "zh" | "ko" | "hi";
 
 export const DEFAULT_LANG: Lang = "en";
 
@@ -19,9 +19,11 @@ export const LANGUAGES: { code: Lang; native: string; locale: string }[] = [
   { code: "en", native: "English", locale: "en-US" },
   { code: "es", native: "Español", locale: "es-US" },
   { code: "zh", native: "中文", locale: "zh-CN" },
+  { code: "ko", native: "한국어", locale: "ko-KR" },
+  { code: "hi", native: "हिन्दी", locale: "hi-IN" },
 ];
 
-const PREFIXED: Lang[] = ["es", "zh"];
+const PREFIXED: Lang[] = ["es", "zh", "ko", "hi"];
 export const LANG_STORAGE_KEY = "schoolz_lang";
 
 export function langFromPath(pathname: string): Lang {

@@ -42,6 +42,8 @@ MAX_TOOL_ROUNDS = 4
 _LANG_REPLY = {
     "es": ("Spanish", "natural US Spanish"),
     "zh": ("Chinese", "natural Simplified Chinese, addressing the visitor respectfully as 您"),
+    "ko": ("Korean", "natural Korean in a polite, formal register (합니다/하세요체)"),
+    "hi": ("Hindi", "natural Hindi in Devanagari, addressing the visitor respectfully as आप"),
 }
 
 SYSTEM_PROMPT = (

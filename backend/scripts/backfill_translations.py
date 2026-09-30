@@ -49,4 +49,4 @@ async def main(langs: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main(sys.argv[1:] or ["es", "zh"]))
+    asyncio.run(main(sys.argv[1:] or ["es", "zh", "ko", "hi"]))

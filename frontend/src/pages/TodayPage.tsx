@@ -5,7 +5,7 @@ import { DayCard } from "../components/today";
 import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
-import { townsLabel } from "../lib/towns";
+import { SITE_URL } from "../lib/site";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
 import type { SchoolContentItem, SchoolToday } from "../types";
@@ -14,12 +14,12 @@ import { LOCALE } from "../lib/i18n";
 
 function HomeSeo() {
   const { t } = useTranslation();
-  const where = townsLabel(useMySchools().myTowns);
   return (
     <SeoHead
-      title={t("schoolz · {{where}} — Today at your kids' schools", { where })}
-      description={t("Live school-day status, bell schedules, lunch menus, bus info, and calendar dates for {{where}} public schools - free, public, no account needed.", { where })}
+      title={t("schoolz · What's happening at your kids' school today?")}
+      description={t("Snow day? Early dismissal? What's for lunch? See your kids' school day at a glance: status, bell times, lunch, buses and who to call. Free, no account.")}
       path="/"
+      image={`${SITE_URL}/icon-512.png`}
     />
   );
 }

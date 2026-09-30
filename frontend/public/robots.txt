@@ -30,5 +30,25 @@ Disallow: /zh/children
 Disallow: /zh/gmail
 Disallow: /zh/start
 Disallow: /zh/invites/
+Disallow: /ko/account
+Disallow: /ko/admin
+Disallow: /ko/login
+Disallow: /ko/register
+Disallow: /ko/forgot-password
+Disallow: /ko/reset-password
+Disallow: /ko/children
+Disallow: /ko/gmail
+Disallow: /ko/start
+Disallow: /ko/invites/
+Disallow: /hi/account
+Disallow: /hi/admin
+Disallow: /hi/login
+Disallow: /hi/register
+Disallow: /hi/forgot-password
+Disallow: /hi/reset-password
+Disallow: /hi/children
+Disallow: /hi/gmail
+Disallow: /hi/start
+Disallow: /hi/invites/
 
 Sitemap: https://schoolz.sitenaut.com/sitemap.xml

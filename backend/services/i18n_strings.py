@@ -1,4 +1,4 @@
-"""Deterministic Spanish and Chinese for the text the backend itself authors (day labels,
+"""Deterministic Spanish, Chinese, Korean and Hindi for the text the backend itself authors (day labels,
 weather, contact roles). English is the source and stays in the code as-is;
 every function here is English in, `lang`-appropriate out, and returns its
 input untouched for "en" or for anything it doesn't recognise - an English
@@ -13,6 +13,8 @@ import re
 _WEEKDAYS = {
     "es": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
     "zh": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    "ko": ["월", "화", "수", "목", "금", "토", "일"],
+    "hi": ["सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि", "रवि"],
 }
 
 _CONTACT_ROLE_LABELS = {
@@ -34,9 +36,27 @@ _CONTACT_ROLE_LABELS = {
         "SACC": "课后托管（SACC）",
         "Social worker": "社工",
     },
+    "ko": {
+        "Main office": "학교 행정실",
+        "Nurse": "보건실",
+        "Counselor": "상담교사",
+        "Principal": "교장",
+        "Assistant principal": "교감",
+        "SACC": "방과후 돌봄(SACC)",
+        "Social worker": "사회복지사",
+    },
+    "hi": {
+        "Main office": "मुख्य कार्यालय",
+        "Nurse": "नर्स",
+        "Counselor": "काउंसलर",
+        "Principal": "प्रधानाचार्य",
+        "Assistant principal": "उप-प्रधानाचार्य",
+        "SACC": "स्कूल के बाद की देखभाल (SACC)",
+        "Social worker": "सामाजिक कार्यकर्ता",
+    },
 }
 
-_DAY_LABELS = {"es": {"Tomorrow": "Mañana"}, "zh": {"Tomorrow": "明天"}}
+_DAY_LABELS = {"es": {"Tomorrow": "Mañana"}, "zh": {"Tomorrow": "明天"}, "ko": {"Tomorrow": "내일"}, "hi": {"Tomorrow": "कल"}}
 
 # The closure boilerplate a Spanish rendering of "SCHOOLS CLOSED - Labor Day"
 # starts with; stripped the same way school_today.classify_day strips the
@@ -51,6 +71,10 @@ _ZH_CLOSED_PREFIX_RE = re.compile(
     r"^\s*(全?(学校|学区))\s*(全部)?\s*(关闭|停课|放假|休息)\s*[-:：–—]?\s*"
     r"|^\s*(停课|不上课|无课)\s*[-:：–—]?\s*"
 )
+
+_KO_CLOSED_PREFIX_RE = re.compile(r"^\s*(전\s*)?(학교|학군)\s*(전체\s*)?(휴교|폐쇄|휴업)\s*[-:：–—]?\s*")
+
+_HI_CLOSED_PREFIX_RE = re.compile(r"^\s*(सभी\s+)?(स्कूल|विद्यालय)\s*(बंद|बन्द)\s*[-:：–—]?\s*")
 
 _ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(\([^)]*\))?\s*$", re.I)
 
@@ -75,7 +99,7 @@ def contact_label(label: str, lang: str) -> str:
 
 
 def rotation_label(number: str, lang: str) -> str:
-    return {"es": f"Día {number}", "zh": f"第{number}天"}.get(lang, f"Day {number}")
+    return {"es": f"Día {number}", "zh": f"第{number}天", "ko": f"{number}일차", "hi": f"दिन {number}"}.get(lang, f"Day {number}")
 
 
 def rotation_title(title: str, lang: str) -> str | None:
@@ -91,7 +115,7 @@ def rotation_title(title: str, lang: str) -> str | None:
 
 
 def early_dismissal_label(lang: str) -> str:
-    return {"es": "Salida temprana", "zh": "提前放学"}.get(lang, "Early dismissal")
+    return {"es": "Salida temprana", "zh": "提前放学", "ko": "조기 하교", "hi": "जल्दी छुट्टी"}.get(lang, "Early dismissal")
 
 
 def hours_phrase(kind: str, time_text: str, lang: str) -> str:
@@ -101,13 +125,17 @@ def hours_phrase(kind: str, time_text: str, lang: str) -> str:
         return f"Abre {time_text}" if kind == "opens" else f"Salida {time_text}"
     if lang == "zh":
         return f"{time_text} 开门" if kind == "opens" else f"{time_text} 放学"
+    if lang == "ko":
+        return f"{time_text} 시작" if kind == "opens" else f"{time_text} 하교"
+    if lang == "hi":
+        return f"{time_text} पर खुलेगा" if kind == "opens" else f"{time_text} पर छुट्टी"
     return f"Opens {time_text}" if kind == "opens" else f"Out {time_text}"
 
 
 def strip_closed_prefix(translated_title: str, lang: str = "es") -> str | None:
     """The reason part of a translated "SCHOOLS CLOSED - X" title, or the
     whole title when it isn't shaped that way (never empty)."""
-    pattern = _ZH_CLOSED_PREFIX_RE if lang == "zh" else _ES_CLOSED_PREFIX_RE
+    pattern = {"zh": _ZH_CLOSED_PREFIX_RE, "ko": _KO_CLOSED_PREFIX_RE, "hi": _HI_CLOSED_PREFIX_RE}.get(lang, _ES_CLOSED_PREFIX_RE)
     stripped = pattern.sub("", translated_title).strip()
     return stripped or None
 
@@ -275,6 +303,80 @@ def condition_zh(english: str) -> str:
     return "，随后".join(out)
 
 
+# --- Korean and Hindi: no agreement to track, so one table-driven path -----
+
+_WX = {
+    "ko": {
+        "sky": {
+            "sunny": "맑음", "mostly sunny": "대체로 맑음", "partly sunny": "구름 조금", "clear": "맑음",
+            "mostly clear": "대체로 맑음", "partly cloudy": "구름 조금", "mostly cloudy": "구름 많음",
+            "cloudy": "흐림", "overcast": "흐림", "fog": "안개", "patchy fog": "곳에 따라 안개",
+            "haze": "연무", "windy": "바람 강함", "breezy": "산들바람", "hot": "무더움",
+        },
+        "precip": {
+            "rain": "비", "rain showers": "소나기", "showers": "소나기", "thunderstorms": "뇌우",
+            "drizzle": "이슬비", "snow": "눈", "snow showers": "소낙눈", "snow flurries": "눈발",
+            "flurries": "눈발", "sleet": "진눈깨비", "freezing rain": "어는 비", "wintry mix": "눈·비 혼합",
+        },
+        "and": " 및 ", "then": ", 이후 ",
+        "slight chance": "{n} 가능성 낮음", "chance": "{n} 가능성", "likely": "{n} 가능성 높음",
+        "scattered": "산발적 {n}", "isolated": "국지적 {n}",
+    },
+    "hi": {
+        "sky": {
+            "sunny": "धूप", "mostly sunny": "अधिकतर धूप", "partly sunny": "आंशिक धूप", "clear": "साफ़ मौसम",
+            "mostly clear": "अधिकतर साफ़", "partly cloudy": "आंशिक बादल", "mostly cloudy": "अधिकतर बादल",
+            "cloudy": "बादल छाए", "overcast": "घने बादल", "fog": "कोहरा", "patchy fog": "कहीं-कहीं कोहरा",
+            "haze": "धुंध", "windy": "तेज़ हवा", "breezy": "हल्की हवा", "hot": "गर्मी",
+        },
+        "precip": {
+            "rain": "बारिश", "rain showers": "बारिश की बौछारें", "showers": "बौछारें",
+            "thunderstorms": "आंधी-तूफ़ान", "drizzle": "फुहार", "snow": "बर्फ़बारी",
+            "snow showers": "बर्फ़ की बौछारें", "snow flurries": "हल्की बर्फ़बारी",
+            "flurries": "हल्की बर्फ़बारी", "sleet": "बर्फ़ीली बारिश", "freezing rain": "जमाने वाली बारिश",
+            "wintry mix": "बर्फ़-बारिश का मिश्रण",
+        },
+        "and": " और ", "then": ", फिर ",
+        "slight chance": "{n} की हल्की संभावना", "chance": "{n} की संभावना", "likely": "{n} की प्रबल संभावना",
+        "scattered": "छिटपुट {n}", "isolated": "इक्का-दुक्का {n}",
+    },
+}
+
+
+def _wx_precip(text: str, t: dict) -> str | None:
+    low = text.strip().lower()
+
+    def nouns(s: str) -> str | None:
+        parts = [p.strip() for p in s.split(" and ")]
+        return t["and"].join(t["precip"][p] for p in parts) if all(p in t["precip"] for p in parts) else None
+
+    for qual in ("slight chance", "chance"):
+        if low.startswith(qual + " "):
+            n = nouns(low[len(qual) + 1 :])
+            return t[qual].format(n=n) if n else None
+    if low.endswith(" likely"):
+        n = nouns(low[: -len(" likely")])
+        return t["likely"].format(n=n) if n else None
+    first, _, rest = low.partition(" ")
+    if first in ("scattered", "isolated") and rest:
+        n = nouns(rest)
+        return t[first].format(n=n) if n else None
+    return nouns(low)
+
+
+def condition_table(english: str, lang: str) -> str:
+    """As condition_es for the table-driven languages: every piece recognised,
+    or the English comes back whole."""
+    t = _WX[lang]
+    out = []
+    for piece in re.split(r"\s+then\s+", english.strip(), flags=re.I):
+        phrase = t["sky"].get(piece.strip().lower()) or _wx_precip(piece, t)
+        if not phrase:
+            return english
+        out.append(phrase)
+    return t["then"].join(out)
+
+
 def localize_weather(weather: dict, lang: str) -> dict:
     """The weather dict from services/weather.summarize, in `lang`. Only the
     free-text `condition` is translated. The day/drop-off/pickup labels
@@ -285,4 +387,6 @@ def localize_weather(weather: dict, lang: str) -> dict:
         return {**weather, "condition": condition_es(weather["condition"])}
     if lang == "zh":
         return {**weather, "condition": condition_zh(weather["condition"])}
+    if lang in _WX:
+        return {**weather, "condition": condition_table(weather["condition"], lang)}
     return weather

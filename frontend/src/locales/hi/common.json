@@ -1,0 +1,22 @@
+{
+  "1 new notification": "1 नई सूचना",
+  "{{count}} new notifications": "{{count}} नई सूचनाएँ",
+  "1 new message in the inbox": "इनबॉक्स में 1 नया संदेश",
+  "{{count}} new messages in the inbox": "इनबॉक्स में {{count}} नए संदेश",
+  "Admin": "एडमिन",
+  "My schools": "मेरे स्कूल",
+  "Switch schools": "स्कूल बदलें",
+  "All": "सभी",
+  "Add or remove schools": "स्कूल जोड़ें या हटाएँ",
+  "Sections": "अनुभाग",
+  "Today": "आज",
+  "Calendar": "कैलेंडर",
+  "Lunch": "लंच",
+  "Schools": "स्कूल",
+  "Directory": "निर्देशिका",
+  "Local": "स्थानीय",
+  "About": "परिचय",
+  "Survey": "सर्वेक्षण",
+  "Contact": "संपर्क",
+  "Privacy & cookies": "गोपनीयता और कुकीज़"
+}

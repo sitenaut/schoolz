@@ -40,6 +40,8 @@ export function LanguageSwitcher() {
 const OFFER_TEXT: Record<Exclude<Lang, "en">, { ask: string; label: string; no: string }> = {
   es: { ask: "¿Prefiere ver schoolz en español?", label: "Español", no: "No, gracias" },
   zh: { ask: "您想用中文查看 schoolz 吗？", label: "中文", no: "不用了" },
+  ko: { ask: "schoolz를 한국어로 보시겠습니까?", label: "한국어", no: "아니요" },
+  hi: { ask: "क्या आप schoolz हिन्दी में देखना चाहेंगे?", label: "हिन्दी", no: "नहीं, धन्यवाद" },
 };
 
 const DISMISS_KEY = "schoolz_lang_offer_dismissed";
@@ -70,7 +72,7 @@ export function LanguageOffer() {
     setDismissed(true);
   };
   return (
-    <div className="lang-offer" role="region" aria-label="Language / 语言 / Idioma" lang={other}>
+    <div className="lang-offer" role="region" aria-label="Language / 语言 / Idioma / 언어 / भाषा" lang={other}>
       <span>{text.ask}</span>
       <a className="btn" href={hrefFor(other)} onClick={() => storeLang(other)}>
         {text.label}

@@ -45,7 +45,7 @@ class UserOut(BaseModel):
 
 class UserUpdate(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=64)
-    preferred_language: str | None = Field(default=None, pattern="^(en|es|zh)$")
+    preferred_language: str | None = Field(default=None, pattern="^(en|es|zh|ko|hi)$")
 
 
 class ChangePasswordRequest(BaseModel):

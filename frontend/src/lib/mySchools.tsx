@@ -207,7 +207,10 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
   );
 
   const myTowns = useMemo(() => {
-    const source = mySchools.length ? mySchools : allSchools;
+    // Nothing picked: no town, so copy says "South Jersey" instead of naming
+    // whichever two towns happen to have the most schools.
+    if (!mySchools.length) return [];
+    const source = mySchools;
     // Only towns with their own schools here - Eastern also serves Berlin,
     // but a Voorhees family's header shouldn't read "Voorhees & Berlin".
     const known = new Set(pickerTowns(allSchools, districtsById));

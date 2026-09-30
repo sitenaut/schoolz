@@ -47,12 +47,19 @@ _TIMEOUT_S = 40.0
 # a doomed round trip to every page load.
 _COOLDOWN_S = 60.0
 
-LANGUAGE_NAMES = {"es": "US Spanish", "zh": "Simplified Chinese (as written in mainland China)"}
+LANGUAGE_NAMES = {
+    "es": "US Spanish",
+    "zh": "Simplified Chinese (as written in mainland China)",
+    "ko": "Korean",
+    "hi": "Hindi (Devanagari script)",
+}
 
 # The formal register in each language.
 _REGISTER = {
     "es": 'Address families formally: "usted", never "tú" or "vosotros" (e.g. "Únase", not "Únete").',
     "zh": 'Address families respectfully with "您", never "你". Use Simplified characters and full-width Chinese punctuation.',
+    "ko": 'Use the polite formal register of a school notice (합니다/하세요체, 존댓말), never 반말. Write grade numbers like "5th" as "5학년".',
+    "hi": 'Address families respectfully with "आप", never "तुम" or "तू". Write in Devanagari; keep Western digits. Write grade numbers like "5th" as "5वीं कक्षा".',
 }
 
 _SYSTEM = """You translate short school-community notices from English into {language} for parents of school-age children.
