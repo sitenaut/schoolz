@@ -106,7 +106,7 @@ export function TodayPage() {
   return (
     <>
       <HomeSeo />
-      <h1 className="eyebrow" style={{ margin: 0 }}>
+      <h1 className="eyebrow" style={{ margin: "0 0 10px" }}>
         {heading}
         {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· {t("showing {{a}} of {{b}}", { a: activeSchools.length, b: mySchools.length })}</span>}
       </h1>

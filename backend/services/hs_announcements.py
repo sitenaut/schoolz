@@ -273,7 +273,9 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
             row.title = title[:300]
             row.description = description
             row.start_date = start_date
-            row.is_all_day = start_date is None
+            # Announcements carry a day and a lunch block but never a clock time; a midnight
+            # timestamp that isn't flagged all-day renders as "12:00 AM".
+            row.is_all_day = True
             row.applies_to_grad_years = _grades_to_grad_years(item.get("audience_grades"))
 
     if max_date_seen:
