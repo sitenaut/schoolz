@@ -267,6 +267,7 @@ def _build_sources(params: dict) -> list[Source]:
             PatchSource(
                 name=entry["name"],
                 regions=list(entry["regions"]),
+                fetch_via=entry.get("fetch_via", "direct"),
                 center=entry.get("center"),
                 max_miles=entry.get("max_miles"),
                 default_categories=list(entry.get("default_categories") or []),

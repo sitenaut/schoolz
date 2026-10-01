@@ -61,3 +61,28 @@ def test_prune_knows_patch_sources():
     assert "patch_sources" in SOURCE_KEYS
     pipeline = (Path(__file__).parent.parent / "local_events" / "pipeline.py").read_text()
     assert set(re.findall(r'params\.get\("(\w+_sources)"\)', pipeline)) <= set(SOURCE_KEYS)
+
+
+def test_scraper_mode_goes_through_the_residential_first_chain(monkeypatch):
+    import asyncio
+
+    from local_events.sources import patch
+
+    calls = []
+
+    async def fake(url, **kw):
+        calls.append((url, kw))
+        return FIXTURE.read_text(), url
+
+    monkeypatch.setattr(patch, "fetch_rendered_html", fake)
+    monkeypatch.setattr(patch, "_PAUSE_SECONDS", 0)
+    src = patch.PatchSource("patch", ["cherryhill", "haddon"], fetch_via="scraper")
+    events = asyncio.run(src.fetch())
+    assert len(events) == 16 and not src.partial_failures
+    assert [c[0] for c in calls] == [
+        "https://patch.com/new-jersey/cherryhill/calendar",
+        "https://patch.com/new-jersey/haddon/calendar",
+    ]
+    assert all(c[1]["prefer_residential"] is True for c in calls)
+    with pytest.raises(ValueError):
+        patch.PatchSource("patch", ["x"], fetch_via="carrier-pigeon")
