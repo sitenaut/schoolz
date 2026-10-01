@@ -55,9 +55,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         if stored and stored.parsed_at >= _REPARSE_BEFORE:
             continue  # already parsed this exact PDF
 
-        if entry["pdf_url"] not in parsed_days:
-            parsed_days[entry["pdf_url"]] = await parse_menu_pdf(entry["pdf_url"], entry["period_label"])
-        days = parsed_days[entry["pdf_url"]]
+        parse_key = f"{entry['pdf_url']}|{entry['meal_type']}"
+        if parse_key not in parsed_days:
+            parsed_days[parse_key] = await parse_menu_pdf(entry["pdf_url"], entry["period_label"], entry["meal_type"])
+        days = parsed_days[parse_key]
         if not days:
             record_parse_issue("lunch_menu.scan", "menu_parse_empty", url=entry["pdf_url"][:200], school_type=entry["school_type"])
             empty.append(f"{entry['school_type']} {entry['meal_type']} {entry['period_label']}")

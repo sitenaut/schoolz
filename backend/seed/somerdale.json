@@ -1,0 +1,179 @@
+{
+  "exported_at": "2026-10-01T12:00:00Z",
+  "source": "onboarding: Somerdale School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Somerdale School District",
+      "website_url": "https://www.somerdale-park.org",
+      "ics_feeds": [
+        {
+          "name": "Somerdale District Calendar",
+          "url": "https://www.somerdale-park.org/ICalendarHandler?calendarId=30867916"
+        }
+      ],
+      "towns": [
+        "Somerdale"
+      ],
+      "schoolcafe_shortname": null,
+      "food_services_menu_url": null,
+      "marking_period_url": "https://www.somerdale-park.org/parents/school_calendars",
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "somerdale-park-school",
+      "name": "Somerdale Park School",
+      "short_name": "Somerdale Park",
+      "district_name": "Somerdale School District",
+      "school_type": "elementary",
+      "address": "301 Grace Street, Somerdale, NJ 08083",
+      "main_phone": "856-783-6261",
+      "website_url": "https://www.somerdale-park.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "856-783-6261",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office at 856-783-6261 to report an absence. The handbook gives no separate attendance line.",
+      "start_time": "8:12 AM",
+      "end_time": "3:01 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "9:12 AM",
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss16.sharpschool.com/UserFiles/Servers/Server_30867713/Image/SPS Logo.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:12",
+            "end": "08:22"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:23",
+            "end": "09:08"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:09",
+            "end": "09:54"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:55",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:44",
+            "end": "13:29"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:16",
+            "end": "15:01"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:12",
+            "end": "08:22"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:23",
+            "end": "08:53"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:54",
+            "end": "09:24"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:25",
+            "end": "09:55"
+          },
+          {
+            "name": "Access",
+            "start": "09:56",
+            "end": "10:26"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:27",
+            "end": "10:57"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:58",
+            "end": "11:28"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:29",
+            "end": "11:59"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:00",
+            "end": "12:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:12",
+            "end": "09:22"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:23",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:01",
+            "end": "10:38"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:39",
+            "end": "11:16"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:08",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:46",
+            "end": "14:23"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:24",
+            "end": "15:01"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null,
+      "presence_menu_page_url": "https://www.somerdale-park.org/departments/cafeteria"
+    }
+  ]
+}

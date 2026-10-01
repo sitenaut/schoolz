@@ -163,13 +163,49 @@ def _parse_edlio_footer(html: str, base_url: str) -> dict | None:
     link to `/apps/maps` and the phone as a `tel:` link. None for any other
     platform (no such link), so the Finalsite path still runs."""
     soup = BeautifulSoup(html, "lxml")
+    address = None
     maps = soup.select_one(".footer-info-block a[href$='/apps/maps']")
-    if not maps:
-        return None
-    phone = soup.select_one(".footer-info-block a[href^='tel:']")
+    if maps:
+        phone = soup.select_one(".footer-info-block a[href^='tel:']")
+        phone_text = phone.get_text(strip=True) if phone else None
+    else:
+        # Stratford's Edlio sites use `.enf-address`: the phone is plain
+        # "P: (856) ..." text inside a `/apps/contact` link, not a tel: link.
+        maps = soup.select_one(".enf-address a[href$='/apps/maps']")
+        if not maps:
+            return None
+        address = ", ".join(maps.stripped_strings)
+        contact = soup.select_one(".enf-address a[href$='/apps/contact']")
+        match = _PLAIN_PHONE_RE.search(contact.get_text(" ", strip=True)) if contact else None
+        phone_text = match.group(0) if match else None
     return {
-        "address": re.sub(r"\s+", " ", maps.get_text(" ", strip=True)),
-        "main_phone": phone.get_text(strip=True) if phone else None,
+        "address": address if address else re.sub(r"\s+", " ", maps.get_text(" ", strip=True)),
+        "main_phone": phone_text,
+        "logo_url": _find_logo_url(html, base_url),
+    }
+
+
+_PRESENCE_PHONE_RE = re.compile(r"Phone[:\s]{0,20}(\(?\d{3}\)?[-. ]?\d{3}[-. ]\d{4})")
+
+
+def _parse_presence_footer(html: str, base_url: str) -> dict | None:
+    """SchoolMessenger Presence (ex-SharpSchool; Sterling, Somerdale): the
+    footer's address is a text node in `.address` or `#footer-address`, the
+    phone a "Phone 856-..." run beside it (Somerdale nests it inside the
+    address box). Sterling spells the state out ("New Jersey"). None for any
+    other platform."""
+    soup = BeautifulSoup(html, "lxml")
+    box = soup.select_one("#footer .address") or soup.select_one("#footer-address")
+    if not box:
+        return None
+    address = " ".join(" ".join(box.find_all(string=True, recursive=False)).split())
+    if not address:
+        return None
+    address = re.sub(r"\bNew Jersey\b", "NJ", address)
+    phone = _PRESENCE_PHONE_RE.search(" ".join((box.parent or box).get_text(" ", strip=True).split()))
+    return {
+        "address": address,
+        "main_phone": phone.group(1) if phone else None,
         "logo_url": _find_logo_url(html, base_url),
     }
 
@@ -203,7 +239,7 @@ async def discover_school_info(school_website_url: str) -> dict:
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
                 resp = await client.get(base + "/")
-            edlio = _parse_edlio_footer(resp.text, base) if resp.status_code == 200 else None
+            edlio = (_parse_edlio_footer(resp.text, base) or _parse_presence_footer(resp.text, base)) if resp.status_code == 200 else None
         except httpx.HTTPError:
             edlio = None
         if edlio:

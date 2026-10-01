@@ -31,8 +31,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import scraper_client
 from models import SmoreBlock, SmoreNewsletter
+from services.presence_documents import list_page_documents
 
 _HANDBOOK_RE = re.compile(r"handbook", re.IGNORECASE)
+_PRESENCE_RE = re.compile(r"sharpschool\.com|SchoolMessenger Presence", re.IGNORECASE)
 # Nav-link keyword -> SchoolDocument.doc_type. Handbooks were the first
 # case; bell schedules were added after confirming both high schools
 # publish theirs the same way (a nav page whose only content is a PDF link:
@@ -96,6 +98,9 @@ def _find_doc_anchors(html: str, base_url: str) -> list[dict]:
         )
         # A "Policy, Procedure and Handbook" nav page is a folder of board policies, not the handbook.
         if doc_type == "handbook" and _POLICY_NAV_RE.search(text) and not _FAMILY_NAV_RE.search(text):
+            continue
+        # Magnolia nests every policy page under /policieshibhandbook/..., so each child nav link matched on its href alone.
+        if doc_type == "handbook" and not _HANDBOOK_RE.search(text) and _POLICY_NAV_RE.search(href):
             continue
         if doc_type:
             if href.startswith("/"):
@@ -219,7 +224,26 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
     # scheduler/errors.py), not a silent empty list that reads identically
     # to "loaded fine, no handbook link" - that ambiguity was the actual
     # bug a real user hit (a warning with no way to tell what was checked).
-    home = await scraper_client.fetch_html(base + "/", wait_for_selector="a")
+    fetch = scraper_client.fetch_html
+    presence = False
+    # SchoolMessenger Presence (ex-SharpSchool: Sterling, Somerdale) answers plain HTTP, and
+    # headless Chromium gets 502s from it (hung nav / ERR_ABORTED), so the scraper never loads.
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as probe:
+        try:
+            plain_home = await probe.get(base + "/")
+        except httpx.HTTPError:
+            plain_home = None
+    if plain_home is not None and plain_home.status_code == 200 and _PRESENCE_RE.search(plain_home.text):
+        presence = True
+
+        async def fetch(url, wait_for_selector=None):
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                title = BeautifulSoup(resp.text, "lxml").title
+                return {"html": resp.text, "title": title.get_text(strip=True) if title else None}
+
+    home = await fetch(base + "/", wait_for_selector="a")
 
     results = []
     seen_urls: set[str] = set()
@@ -238,7 +262,7 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
             continue
 
         try:
-            page = await scraper_client.fetch_html(url, wait_for_selector="a")
+            page = await fetch(url, wait_for_selector="a")
         except Exception:
             continue
 
@@ -253,6 +277,19 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
             continue
         doc_links = _find_doc_file_links(page_html, base)
         year = _extract_year(page_title) or _extract_year(page_html[:5000])
+        if presence and not doc_links:
+            # A Presence page's files live in a documents widget the static HTML
+            # never contains; use the ones whose own title says what we're after.
+            try:
+                widget_docs = [d for d in await list_page_documents(url) if classify_doc_type(d["title"]) == doc_type]
+            except httpx.HTTPError:
+                widget_docs = []
+            for d in widget_docs[:1]:
+                if d["url"] not in seen_urls:
+                    seen_urls.add(d["url"])
+                    results.append({"title": d["title"], "url": d["url"], "academic_year": _extract_year(d["title"]) or year, "doc_type": doc_type})
+            if widget_docs:
+                continue
         if doc_links:
             for doc_url in doc_links:
                 if doc_url not in seen_urls:

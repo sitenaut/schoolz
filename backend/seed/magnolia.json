@@ -1,0 +1,55 @@
+{
+  "exported_at": "2026-10-01T12:00:00Z",
+  "source": "onboarding: Magnolia School District",
+  "districts": [
+    {
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "schoolcafe_shortname": null,
+      "calendar_pdf_url": null,
+      "name": "Magnolia School District",
+      "website_url": "https://www.magnoliaschools.org",
+      "food_services_menu_url": "https://www.magnoliaschools.org/school-lunchbreakfast/lunch-menu",
+      "ics_feeds": [
+        {
+          "name": "Magnolia Public School Calendar",
+          "url": "https://www.magnoliaschools.org/fs/calendar-manager/events.ics?calendar_ids[]=3"
+        }
+      ],
+      "towns": [
+        "Magnolia"
+      ]
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "delayed_opening_time": "10:35 AM",
+      "early_dismissal_time": "12:35 PM",
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "slug": "magnolia",
+      "name": "Magnolia Public School",
+      "short_name": "Magnolia",
+      "district_name": "Magnolia School District",
+      "school_type": "elementary",
+      "address": "420 N. Warwick Road, Magnolia, NJ 08049",
+      "main_phone": "(856) 783-4763",
+      "website_url": "https://www.magnoliaschools.org",
+      "absence_method": "phone",
+      "absence_phone": "(856) 783-4763",
+      "absence_instructions": "Call the main office on the day your child is absent and give the reason; an automated call goes home around 10 AM if a child is marked absent. A child not in class by 8:40 AM is marked late. To request homework, email the teacher or call the office before 9:00 AM (Family Handbook)."
+    }
+  ],
+  "smore_newsletters": []
+}

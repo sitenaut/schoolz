@@ -1,0 +1,170 @@
+{
+  "exported_at": "2026-10-01T00:00:00Z",
+  "source": "Stratford crawl 2026-10-01 (Edlio/Educational Networks sites, district handbook, Yellin bell schedule PDF)",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Stratford School District",
+      "website_url": "https://www.stratford.k12.nj.us",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Stratford District Calendar",
+          "url": "https://www.stratford.k12.nj.us/servlet/ICalServlet?id=0"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Stratford",
+        "Hi-Nella"
+      ],
+      "schoolcafe_shortname": "StratfordSDNutriServeMETZ"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "parkview",
+      "name": "Parkview Elementary School",
+      "short_name": "Parkview",
+      "district_name": "Stratford School District",
+      "school_type": "elementary",
+      "address": "123 Parkview Road, Stratford, NJ 08084",
+      "main_phone": "(856) 783-2876",
+      "website_url": "https://parkview.stratford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 783-1094",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, (856) 783-1094 option 2 (24-hour voicemail), or the nurse or main office by 9:00 a.m. on the day of the absence, and send a signed note on return (District Handbook).",
+      "start_time": "8:40 AM",
+      "end_time": "3:15 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://parkview.stratford.k12.nj.us/pics/pes/header_logo-new.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "yellin",
+      "name": "Samuel S. Yellin School",
+      "short_name": "Yellin",
+      "district_name": "Stratford School District",
+      "school_type": "middle",
+      "address": "111 Warwick Road, Stratford, NJ 08084",
+      "main_phone": "(856) 783-1094",
+      "website_url": "https://yellin.stratford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 783-1094",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, (856) 783-1094 option 2 (24-hour voicemail), or the nurse or main office by 9:00 a.m. on the day of the absence, and send a signed note on return (District Handbook).",
+      "start_time": "8:20 AM",
+      "end_time": "3:08 PM",
+      "early_dismissal_time": "12:19 PM",
+      "delayed_opening_time": "10:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Admit/Homeroom",
+            "start": "08:20",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:32",
+            "end": "09:32"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:34",
+            "end": "10:34"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:36",
+            "end": "11:36"
+          },
+          {
+            "name": "Period 4 (Lunch A)",
+            "start": "11:38",
+            "end": "11:58"
+          },
+          {
+            "name": "Period 4 (Lunch B)",
+            "start": "12:00",
+            "end": "12:20"
+          },
+          {
+            "name": "Period 5 (Lunch C)",
+            "start": "12:22",
+            "end": "12:42"
+          },
+          {
+            "name": "Period 5 (Lunch D)",
+            "start": "12:44",
+            "end": "13:04"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:06",
+            "end": "14:06"
+          },
+          {
+            "name": "Period 7",
+            "start": "14:08",
+            "end": "15:08"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Admit/Homeroom",
+            "start": "08:20",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:32",
+            "end": "09:07"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:09",
+            "end": "09:44"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:46",
+            "end": "10:21"
+          },
+          {
+            "name": "Period 4/5",
+            "start": "10:23",
+            "end": "10:58"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:00",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:37",
+            "end": "12:19"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://yellin.stratford.k12.nj.us/pics/ys/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ]
+}
