@@ -253,6 +253,12 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         item = rotation_item(d)
         return i18n_strings.rotation_label(_ROTATION_RE.match(item.title).group(1), lang) if item else None
 
+    def rotation_en(d: date) -> str | None:
+        # What specials.rotation_number parses ("Day N"); `rotation` is
+        # localized for display ("Día N") and never matches it.
+        item = rotation_item(d)
+        return i18n_strings.rotation_label(_ROTATION_RE.match(item.title).group(1), "en") if item else None
+
     def rotation_blocks(d: date) -> list[str] | None:
         item = rotation_item(d)
         return blocks_from_description(item.description) if item else None
@@ -424,7 +430,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
             long_blocks=is_long_block(next_day),
         )
 
-    my_specials = await _my_specials(db, school, user_id, rotation, today, next_day, next_label, week) if user_id else []
+    my_specials = await _my_specials(db, school, user_id, rotation_en, today, next_day, next_label, week) if user_id else []
     my_current_classes = await _my_current_classes(db, school, user_id) if user_id else []
 
     period = None
