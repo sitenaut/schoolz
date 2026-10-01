@@ -15,6 +15,10 @@ Why this is a *list of regions* in one source, not one source per town:
     that carry a different, thinner event shape ("patchAmFreeEvent": no link,
     no real start instant). Those rows have no `displayDate` and are skipped.
 
+`fetch_via` is "direct" (plain httpx, the default) or "scraper" (the shared
+scraper chain with the residential Pi first, then the droplet, then
+schoolz's own scraper).
+
 Promoted placements come from anywhere in the state (a Paramus webinar, a
 Wildwood car show), so `center` + `max_miles` on the event's coordinates
 drop them. Plenty of genuinely local events carry a city but 0,0 coordinates,
@@ -28,6 +32,7 @@ Example job-params entry:
       "regions": ["cherryhill", "collingswood", "haddon", "moorestown"],
       "center": [39.85, -74.98],
       "max_miles": 15,
+      "fetch_via": "scraper",
       "default_categories": ["patch"]
     }
 """
@@ -44,6 +49,7 @@ from typing import Any
 import httpx
 
 from .base import RawEvent, Source
+from .scraper import fetch_rendered_html
 
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
 _NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
@@ -165,8 +171,12 @@ class PatchSource(Source):
         center: list[float] | None = None,
         max_miles: float | None = None,
         default_categories: list[str] | None = None,
+        fetch_via: str = "direct",
         timeout: float = 30.0,
     ) -> None:
+        if fetch_via not in ("direct", "scraper"):
+            raise ValueError("fetch_via must be 'direct' or 'scraper'")
+        self.fetch_via = fetch_via
         self.name = name
         self.regions = regions
         self.center = (float(center[0]), float(center[1])) if center and len(center) == 2 else None
@@ -174,6 +184,15 @@ class PatchSource(Source):
         self.default_categories = default_categories or []
         self.timeout = timeout
         self.partial_failures: list[str] = []
+
+    async def _get(self, client: httpx.AsyncClient, url: str) -> str:
+        if self.fetch_via == "scraper":
+            # Residential Pi first, then the droplet, then schoolz's own scraper.
+            html, _ = await fetch_rendered_html(url, prefer_residential=True, timeout_ms=30_000)
+            return html
+        resp = await client.get(url)
+        resp.raise_for_status()
+        return resp.text
 
     async def fetch(self) -> list[RawEvent]:
         self.partial_failures = []
@@ -183,16 +202,14 @@ class PatchSource(Source):
                 if i:
                     await asyncio.sleep(_PAUSE_SECONDS)
                 try:
-                    resp = await client.get(f"{_ORIGIN}/new-jersey/{region}/calendar")
-                    resp.raise_for_status()
                     parsed = parse_region(
-                        resp.text,
+                        await self._get(client, f"{_ORIGIN}/new-jersey/{region}/calendar"),
                         self.name,
                         center=self.center,
                         max_miles=self.max_miles,
                         default_categories=self.default_categories,
                     )
-                except (httpx.HTTPError, ValueError) as exc:
+                except (httpx.HTTPError, ValueError, RuntimeError) as exc:
                     self.partial_failures.append(f"{region}: {exc}")
                     continue
                 for ev in parsed:

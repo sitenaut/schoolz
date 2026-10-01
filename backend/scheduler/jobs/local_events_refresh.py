@@ -466,6 +466,7 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "regions": {"type": "array", "items": {"type": "string"}, "description": "Patch region slugs, e.g. 'cherryhill', 'collingswood', 'marlton-nj'."},
                     "center": {"type": "array", "items": {"type": "number"}, "description": "[lat, lng]"},
                     "max_miles": {"type": "number"},
+                    "fetch_via": {"type": "string", "enum": ["direct", "scraper"], "default": "direct", "description": "'scraper' fetches through the shared scraper chain: residential Pi first, then the droplet, then schoolz's own scraper."},
                 },
             },
         },

@@ -441,6 +441,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             name=name,
             # Two regions for a fast dry-run; the full list runs in the pipeline.
             regions=list(regions)[:2],
+            fetch_via=entry.get("fetch_via", "direct"),
             center=entry.get("center"),
             max_miles=entry.get("max_miles"),
             default_categories=list(entry.get("default_categories") or []),
