@@ -36,6 +36,20 @@ def email_matches_person(email: str | None, last_name: str) -> bool:
     return bool(last) and last in email.split("@")[0].lower()
 
 
+_HONORIFICS = {"dr", "mr", "mrs", "ms", "miss", "mx"}
+
+
+def same_person(a: str, b: str) -> bool:
+    """Same last name and first initial, honorifics ignored ("Dr. Anthony
+    Dent" / "Anthony Dent"). Deliberately loose on first names (Tony/Anthony
+    would miss, which only costs an email) but strict on the surname."""
+    def parts(name: str) -> list[str]:
+        return [w for w in re.findall(r"[a-z]+", name.lower()) if w not in _HONORIFICS]
+
+    pa, pb = parts(a), parts(b)
+    return bool(pa and pb and len(pa) > 1 and len(pb) > 1 and pa[-1] == pb[-1] and pa[0][0] == pb[0][0])
+
+
 def read_rows(path: str) -> list[dict]:
     raw = open(path, "rb").read()
     try:
