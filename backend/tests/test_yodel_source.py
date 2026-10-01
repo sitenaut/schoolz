@@ -116,45 +116,15 @@ async def test_a_cloudflare_403_falls_back_to_the_residential_scraper_for_page_o
         calls.append((url, kwargs))
         return _page_html(), url
 
-    page_requests = []
-
-    async def fake_page_request(url, request, **kwargs):
-        page_requests.append((url, request, kwargs))
-        return {"status": 200, "body": _page2().decode("utf-8"), "content_type": "text/x-component"}
-
     monkeypatch.setattr(yodel.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
     monkeypatch.setattr(yodel, "fetch_rendered_html", fake_rendered)
-    monkeypatch.setattr(yodel, "fetch_page_request", fake_page_request)
     src = YodelSource("mk", WIDGET)
     events = await src.fetch()
 
-    assert [e.title for e in events] == ["Harvest Week", "Pottery Class"]
+    assert [e.title for e in events] == ["Harvest Week"]
     assert calls and calls[0][0] == WIDGET and calls[0][1]["prefer_residential"] is True
-    # "Load more" goes through the scraper as a same-origin page_request, never a direct POST.
+    # "Load more" is a POST the scraper can't send, so paging stops at page 1 without a warning.
     assert posts == [] and src.partial_failures == []
-    (url, request, kwargs), = page_requests
-    assert url == WIDGET and kwargs["prefer_residential"] is True
-    assert request["method"] == "POST" and request["headers"]["Next-Action"] == ACTION_ID
-    assert json.loads(request["body"]) == [2, False, {"widget_id": "abc123"}, {}, None, 0, False, "CURSOR1"]
-
-
-@pytest.mark.anyio
-async def test_a_failed_page_request_keeps_page_one_and_warns(monkeypatch):
-    async def fake_rendered(url, **kwargs):
-        return _page_html(), url
-
-    async def fake_page_request(url, request, **kwargs):
-        return {"status": 403, "body": "blocked", "content_type": "text/html"}
-
-    monkeypatch.setattr(
-        yodel.httpx, "AsyncClient",
-        partial(httpx.AsyncClient, transport=httpx.MockTransport(lambda r: httpx.Response(403, text="cf"))),
-    )
-    monkeypatch.setattr(yodel, "fetch_rendered_html", fake_rendered)
-    monkeypatch.setattr(yodel, "fetch_page_request", fake_page_request)
-    src = YodelSource("mk", WIDGET)
-    assert [e.title for e in await src.fetch()] == ["Harvest Week"]
-    assert len(src.partial_failures) == 1 and "HTTP 403" in src.partial_failures[0]
 
 
 @pytest.mark.anyio
@@ -185,23 +155,3 @@ def test_residential_scraper_is_opt_in_and_goes_first(monkeypatch):
     assert scraper._services(prefer_residential=True)[0] == ("https://scraper.profitnaut.com", "droplet-key")
     monkeypatch.setenv("RESIDENTIAL_SCRAPER_KEY", "pi-key")
     assert scraper._services(prefer_residential=True)[0] == ("https://scraper.profitnaut.com", "pi-key")
-
-
-@pytest.mark.anyio
-async def test_fetch_page_request_skips_services_without_page_request(monkeypatch):
-    from local_events.sources import scraper
-
-    monkeypatch.setattr(scraper, "_services", lambda prefer_residential=False: [("https://old", "k1"), ("https://pi", "k2")])
-    seen = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen.append((str(request.url), json.loads(request.content)["page_request"]["method"]))
-        if request.url.host == "old":
-            return httpx.Response(200, json={"html": "<html>" + "x" * 900 + "</html>", "fetched_url": WIDGET})
-        return httpx.Response(200, json={"html": "<html>" + "x" * 900 + "</html>", "fetched_url": WIDGET,
-                                         "page_response": {"status": 200, "body": "rows", "content_type": "text/x-component"}})
-
-    monkeypatch.setattr(scraper.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
-    result = await scraper.fetch_page_request(WIDGET, {"method": "POST", "body": "[]"}, prefer_residential=True)
-    assert result["body"] == "rows"
-    assert seen == [("https://old/fetch-html", "POST"), ("https://pi/fetch-html", "POST")]

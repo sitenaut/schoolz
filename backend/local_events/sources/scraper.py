@@ -178,44 +178,6 @@ async def fetch_rendered_html(
     raise RuntimeError("all scraper services failed:\n  " + "\n  ".join(errors))
 
 
-async def fetch_page_request(
-    page_url: str,
-    page_request: dict,
-    *,
-    prefer_residential: bool = False,
-    timeout_ms: int = 45_000,
-    timeout: float = 150.0,
-) -> dict:
-    """Load `page_url` in the scraper's browser, then send one same-origin
-    request from inside it (playwright-scraper's `page_request`: url, method,
-    headers, body - data, never code). Returns `{status, body, content_type}`.
-
-    For endpoints that only answer a real browser session on a home IP, like
-    Yodel's "load more" server action behind Cloudflare. schoolz's own
-    scraper doesn't implement page_request, so a service whose answer has no
-    `page_response` counts as a failure and the next one is tried."""
-    payload = {"url": page_url, "stealth": True, "timeout_ms": int(timeout_ms), "page_request": page_request}
-    errors: list[str] = []
-    for service_url, key in _services(prefer_residential):
-        try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0)) as client:
-                resp = await client.post(f"{service_url}/fetch-html", json=payload, headers={"X-API-Key": key})
-                resp.raise_for_status()
-            data = resp.json()
-            if _looks_like_challenge(data.get("html") or ""):
-                errors.append(f"{service_url}: bot challenge")
-                continue
-            page_response = data.get("page_response")
-            if not isinstance(page_response, dict):
-                errors.append(f"{service_url}: no page_response (page_request unsupported)")
-                continue
-            return page_response
-        except Exception as exc:  # noqa: BLE001
-            errors.append(f"{service_url}: {_describe_failure(exc)}")
-            logger.warning("scraper_page_request_failed", extra={"service": service_url, "url": page_url, "error": _describe_failure(exc)})
-    raise RuntimeError("all scraper services failed:\n  " + "\n  ".join(errors))
-
-
 async def fetch_raw_via_scraper(url: str, timeout: float = 90.0) -> str:
     """Fetch a raw response body (e.g. an ICS file download) via the scraper service.
 
