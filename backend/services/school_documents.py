@@ -20,7 +20,11 @@ labeled 2023-2024 while its current newsletter links a 2026-2027 version.
 """
 
 import re
+import time
+from datetime import date
+from urllib.parse import urljoin
 
+import httpx
 from bs4 import BeautifulSoup
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +39,8 @@ _HANDBOOK_RE = re.compile(r"handbook", re.IGNORECASE)
 # west.chclc.org/our-school/chw-bell-schedule, east.chclc.org/our-school/
 # bell-schedule). First match wins, so keep the more specific ones first.
 _DOC_TYPE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    # Medford's home page links its A-D rotation calendar as "What Day is It?".
+    ("letter_day_schedule", re.compile(r"what\s+day\s+is\s+it", re.IGNORECASE)),
     ("bell_schedule", re.compile(r"bell[\s-]*schedule", re.IGNORECASE)),
     ("handbook", _HANDBOOK_RE),
 ]
@@ -98,12 +104,77 @@ def _find_doc_file_links(html: str, base_url: str) -> list[str]:
     return links
 
 
+_NOT_A_SCHOOL_HANDBOOK_RE = re.compile(r"dyslexia", re.IGNORECASE)
+
+
+def _find_eschoolview_handbooks(html: str) -> list[dict]:
+    """eSchoolView/LINQ (Mount Laurel): every page carries the whole mega-menu,
+    and the menu has no content container to scope to - following each
+    "handbook" landing page produced 18 unrelated PDFs/forms for one school.
+    The school's own handbook is a direct Google Doc/PDF link in its nav, so
+    take only those and never crawl further."""
+    seen: set[str] = set()
+    results = []
+    for a in BeautifulSoup(html, "lxml").find_all("a", href=True):
+        text = a.get_text(" ", strip=True)
+        href = a["href"]
+        if not _HANDBOOK_RE.search(text) or _NOT_A_SCHOOL_HANDBOOK_RE.search(text) or not _DOC_FILE_RE.search(href) or href in seen:
+            continue
+        seen.add(href)
+        results.append({"title": text, "url": href, "academic_year": _extract_year(text + " " + href), "doc_type": "handbook"})
+    return results
+
+
+_LETTER_DAY_RE = re.compile(r"letter[\s-]*day", re.IGNORECASE)
+
+
+def _find_letter_day_page(html: str, page_url: str) -> str | None:
+    for a in BeautifulSoup(html, "lxml").find_all("a", href=True):
+        if _LETTER_DAY_RE.search(a.get_text(" ", strip=True)) and not _DOC_FILE_RE.search(a["href"]):
+            return urljoin(page_url, a["href"])
+    return None
+
+
+def _find_letter_day_pdfs(html: str, page_url: str, today: date | None = None) -> list[dict]:
+    """A letter-day article (Mount Laurel's Hillside: a 4-day A-D cycle) holds
+    one calendar PDF per month, replaced as the year goes on. The article's
+    own URL is what stays put, so it's found from the school's home page and
+    only its "...Letter Day Schedule" files are kept. The letters are drawn
+    into the image, so the PDF is linked, not parsed. A month has no year of
+    its own, so the academic year comes from the title or today's date."""
+    today = today or date.today()
+    results, seen = [], set()
+    for a in BeautifulSoup(html, "lxml").find_all("a", href=True):
+        text = re.sub(r"\.pdf$", "", a.get_text(" ", strip=True), flags=re.I).strip()
+        href = urljoin(page_url, a["href"])
+        if not _LETTER_DAY_RE.search(text) or not _DOC_FILE_RE.search(href) or href in seen:
+            continue
+        seen.add(href)
+        explicit = re.search(r"(20\d{2})", text)
+        start = int(explicit.group(1)) if explicit else today.year
+        if not explicit and today.month < 7:
+            start -= 1
+        results.append({"title": text, "url": href, "academic_year": f"{start}-{start + 1}", "doc_type": "letter_day_schedule"})
+    return results
+
+
 async def discover_from_website(school_website_url: str) -> list[dict]:
     """Follows any nav link mentioning "handbook" from the homepage, then
     looks one level deeper for the actual PDF/Google Doc link on that page
     - some schools' handbook nav item goes straight to a file, others go to
     a landing page that itself links out to the real document."""
     base = school_website_url.rstrip("/")
+    if base.lower().endswith(".aspx"):
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+            resp = await client.get(base)
+            resp.raise_for_status()
+            found = _find_eschoolview_handbooks(resp.text)
+            letter_page = _find_letter_day_page(resp.text, str(resp.url))
+            if letter_page:
+                article = await client.get(letter_page)
+                if article.status_code == 200:
+                    found += _find_letter_day_pdfs(article.text, str(article.url))
+        return found
     # Deliberately NOT caught here (unlike the per-candidate follow-up fetch
     # below): if the homepage itself won't load, that's a real fetch
     # failure worth a classified error_code and traceback (see
@@ -146,6 +217,27 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
             results.append({"title": page_title, "url": url, "academic_year": year, "doc_type": doc_type})
 
     return results
+
+
+_DISTRICT_HOME_CACHE: dict[str, tuple[float, list[dict]]] = {}
+_DISTRICT_HOME_TTL_S = 6 * 3600
+
+
+async def discover_district_letter_days(district_website_url: str, today: date | None = None) -> list[dict]:
+    """A district-wide rotation calendar linked only from the district home page
+    (Medford's "What Day is It?" Drive file; the file id changes when the sheet
+    is replaced, so the link text is what's tracked). The doc has no year of
+    its own, so it gets the academic year `today` falls in."""
+    today = today or date.today()
+    start = today.year if today.month >= 7 else today.year - 1
+    # Every elementary school of a district asks for the same page; render it once per window.
+    cached = _DISTRICT_HOME_CACHE.get(district_website_url)
+    if cached and time.monotonic() - cached[0] < _DISTRICT_HOME_TTL_S:
+        docs = cached[1]
+    else:
+        docs = [d for d in await discover_from_website(district_website_url) if d["doc_type"] == "letter_day_schedule"]
+        _DISTRICT_HOME_CACHE[district_website_url] = (time.monotonic(), docs)
+    return [{**d, "academic_year": d["academic_year"] or f"{start}-{start + 1}"} for d in docs]
 
 
 async def discover_from_smore(db: AsyncSession, school_id: str) -> list[dict]:

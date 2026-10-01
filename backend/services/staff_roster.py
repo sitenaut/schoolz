@@ -4,7 +4,7 @@ via `?const_page=N`, with a stable `data-constituent-id` per person that
 survives re-scans even if name formatting changes slightly)."""
 
 import re
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -88,6 +88,34 @@ def _parse_ednet_page(html: str) -> list[dict]:
     return items
 
 
+def _parse_edlio_page(html: str) -> list[dict]:
+    """Edlio's newer `/apps/staff/` template (Medford): one `li.staff` per
+    person with `a.name` (`uREC_ID=<id>`) and an optional `.user-position`.
+    The email link is a form and the phone is just "Ext. 6222", so neither is
+    kept."""
+    soup = BeautifulSoup(html, "lxml")
+    items = {}
+    for card in soup.select("li.staff"):
+        link = card.select_one("a.name[href]")
+        if not link:
+            continue
+        ids = parse_qs(urlparse(link["href"]).query).get("uREC_ID")
+        name = re.sub(r"\s+", " ", link.get_text(" ", strip=True))
+        if not ids or not name:
+            continue
+        title_el = card.select_one(".user-position")
+        title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True)) if title_el else ""
+        items[f"edlio:{ids[0]}"] = {
+            "constituent_id": f"edlio:{ids[0]}",
+            "full_name": name,
+            "title": title or None,
+            "department": None,
+            "email": None,
+            "phone": None,
+        }
+    return list(items.values())
+
+
 async def _fetch_ednet_roster(base: str) -> list[dict]:
     try:
         async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
@@ -95,7 +123,55 @@ async def _fetch_ednet_roster(base: str) -> list[dict]:
             resp.raise_for_status()
     except httpx.HTTPError:
         return []
-    return _parse_ednet_page(resp.text)
+    return _parse_ednet_page(resp.text) or _parse_edlio_page(resp.text)
+
+
+def _parse_eschoolview_page(html: str) -> list[dict]:
+    """eSchoolView/LINQ staff page (Mount Laurel; the home page has no reliable
+    platform marker, so the fetcher just follows its "Staff Directory" link and
+    lets this return [] on any other markup): `span.scName` ("Last, First")
+    beside `span.scTitle`, no stable id, address or phone - the profile link
+    opens a contact form. Identity is name + title, so a person listed under
+    two titles stays two rows and a repeated card collapses to one."""
+    soup = BeautifulSoup(html, "lxml")
+    items = {}
+    for name_el in soup.select(".scName"):
+        raw = re.sub(r"\s+", " ", name_el.get_text(" ", strip=True))
+        if not raw:
+            continue
+        last, sep, first = raw.partition(",")
+        name = f"{first.strip()} {last.strip()}" if sep and first.strip() else raw
+        card = name_el.find_parent(class_=re.compile(r"col-")) or name_el.parent
+        title_el = card.select_one(".scTitle") if card else None
+        title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True)) if title_el else ""
+        key = f"eschoolview:{name.lower()}|{title.lower()}"
+        items[key] = {
+            "constituent_id": key,
+            "full_name": name,
+            "title": title or None,
+            "department": None,
+            "email": None,
+            "phone": None,
+        }
+    return list(items.values())
+
+
+async def _fetch_eschoolview_roster(base: str) -> list[dict]:
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
+            home = await client.get(base)
+            home.raise_for_status()
+            link = next(
+                (a for a in BeautifulSoup(home.text, "lxml").find_all("a", href=True) if re.search(r"staff\s+directory", a.get_text(" ", strip=True), re.I)),
+                None,
+            )
+            if not link:
+                return []
+            page = await client.get(urljoin(str(home.url), link["href"]))
+            page.raise_for_status()
+    except httpx.HTTPError:
+        return []
+    return _parse_eschoolview_page(page.text)
 
 
 # The rest are Voorhees Township's per-school subsites (Voorhees Middle's
@@ -134,6 +210,9 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
     ednet = await _fetch_ednet_roster(base)
     if ednet:
         return list({item["constituent_id"]: item for item in ednet}.values())
+    eschoolview = await _fetch_eschoolview_roster(base)
+    if eschoolview:
+        return eschoolview
     for path in _DIRECTORY_PATHS:
         pages_html = await scraper_client.fetch_paginated(base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20)
         by_constituent_id: dict[str, dict] = {}

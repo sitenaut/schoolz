@@ -670,3 +670,107 @@ on this list** - it's ArbiterLive branding, already supported.
   Parent absence reporting is only "call, or email the school's administrative
   assistant" (Family Handbook), so the seed sets `absence_method: phone`
   with that instruction rather than a guessed address.
+
+- **Mount Laurel Township (eSchoolView / LINQ, ASP.NET `.aspx`)** — 8 schools,
+  `backend/seed/mount_laurel.json`. Not Finalsite, so none of the Finalsite
+  selectors apply. What to know:
+  - Every page repeats the whole **mega-menu**, and `#maincontent` is empty in
+    the static HTML (client-filled), so any unscoped anchor/text scan reads the
+    entire district's menu. School home pages are `/<slug>_home.aspx`; assets
+    live under `/sysimages/Logos/<Name>.png` (page-relative in the header).
+  - **Calendars**: each school (and the district, Harrington events/sports)
+    exposes a public Google Calendar ICS, so the generic `district_calendar`
+    scan works with no code. Find the feed id on the school's calendar page.
+  - **Staff**: the home page links "Staff Directory"; `staff_roster.
+    _fetch_eschoolview_roster` follows it and `_parse_eschoolview_page` reads
+    `.scName` ("Last, First") beside `.scTitle`. No emails/phones/ids (the
+    profile link opens a contact form), identity is name+title. Principals,
+    nurses and counselors classify fine.
+  - **School info**: footer is three plain lines (street / "City, NJ zip" /
+    "Phone: ..."), parsed by `school_info._parse_eschoolview_footer`; taken
+    only when the site URL ends in `.aspx`.
+  - **Lunch**: SchoolCafé, but the school names there are hand-typed
+    ("Mt Laurel", "Elem"). `schoolcafe.match_school` normalizes `mt`→`mount`
+    and falls back to a unique whitespace-squashed match with `elem`→
+    `elementary`; 8/8 matched.
+  - **Documents**: `documents.scan`'s landing-page crawl drowned in the
+    mega-menu (18 unrelated PDFs per school). For `.aspx` sites
+    `school_documents._find_eschoolview_handbooks` takes only direct
+    Google Doc/PDF links whose own text says "handbook" and never crawls.
+    Some schools (Hartford) simply publish none.
+  - **Transportation**: one server-rendered page (`/Transportation.aspx`),
+    set as `District.transportation_url`; `transportation.parse_eschoolview_page`
+    (selected by the `.aspx` suffix, plain httpx) reads office phone/fax/
+    address/hours, staff ("Name - Title"; emails are Cloudflare `data-cfemail`
+    on a span, decoded), and the policy sections by their all-caps headings.
+    No late-bus contractor table exists, so the scan does not warn on that.
+  - **Rotation**: Harrington Middle runs A/B/C days (`A-DAY`/`B-DAY`/`C-DAY`
+    in its Google Calendar feed, already imported, but as plain events: the
+    rotation regexes only know `Day N`). Hillside's "Letter Day Schedule" is a
+    4-day A-D cycle published as one image-calendar PDF per month on an
+    article page linked from its home page; `documents.scan` follows that
+    link (`school_documents._find_letter_day_page`) and stores the PDFs as
+    `letter_day_schedule` documents. The letters are drawn into the image, so
+    nothing is parsed. Other elementaries may do the same (not checked).
+  - **Gaps**: no newsletters found (each school has an ArticleArchive news
+    page, not wired), letter days are not parsed into Today, athletics only via the ICS,
+    no before/after care, absence is phone-only everywhere
+    (unverified for Hartford/Larchmont/Springville), the PTO/district ICS
+    feed was skipped.
+- **Maple Shade (Apptegy, `mapleshade.org`)** — 3 elementaries + HS,
+  `backend/seed/maple_shade.json`, on Apptegy org ids 14327 (district) /
+  14403–14406 (schools; read from each school's calendar page). The site
+  answers plain HTTP with a JS challenge, so use the scraper to read it.
+  Apptegy staff emails that are hidden come back as the literal `hidden`
+  (`apptegy._real_email` drops them rather than storing it). The handbook is a
+  Google Doc whose `export?format=txt` link gives the text. Gaps: the
+  district calendar is a Drive PDF only; Wilkins and
+  Steinhauer have no start/end times; no newsletters or athletics url; the HS
+  uses EduRooms; `school_info.scan` can overwrite the HS address with a bare
+  "Maple Shade, NJ 08052" (real: 180 Frederick Ave) — recheck after a scan.
+  - **Lunch (Health-e Pro)**: `School.healthepro_location` = `org/site`
+    (`2984/16222`...; site ids from `/api/organizations/2984/sites/list`),
+    `healthepro_menu.scan`, `services/healthepro.py`. A public JSON API with
+    no token; the per-day layout is `.../menus/{id}/year/{y}/month/{m}/
+    date_overwrites`, and entrées are the recipes under a category ending
+    "Entree". Preschool menus are skipped, and standing options are dropped
+    with `fdmealplanner.day_descriptions`. The `/recipes/` endpoint has no days.
+
+- **Medford Township (Edlio CMS, `*.medford.k12.nj.us`)** — 5 elementaries,
+  Haines 6th Grade Center, Memorial Middle; `backend/seed/medford.json`. Its
+  high school is Shawnee (Lenape Regional), so the Lenape district's `towns`
+  now lists all its sending towns (Evesham, Medford, Medford Lakes, Mount
+  Laurel, Shamong, Southampton, Tabernacle, Woodland) in
+  `evesham_lenape.json`; towns are per district, so a Medford family sees all
+  four Lenape schools, not just Shawnee. Medford Lakes is a separate K-8
+  district, not yet onboarded.
+  - **Platform tell**: generator meta "Edlio CMS", `/apps/pages|staff|events|news/`,
+    files on `*.files.edl.io`, emails as Cloudflare `data-cfemail`.
+  - **Calendar**: `/apps/events/ical/?id=N` on the district host (0 = district,
+    1-7 = schools; school feeds repeat the district events, which
+    `district_calendar_scan` subtracts). The `/apps/events/` HTML 403s and
+    `/servlet/ICalServlet` is the older ednet pattern, not this one.
+  - **Staff**: `staff_roster._parse_edlio_page` (`li.staff`, names + titles only;
+    the email link is a form). Chained after the ednet parser.
+  - **School info**: `school_info._parse_edlio_footer` (`.footer-info-block`
+    address/phone). Headers are text-only, so there is no logo to find.
+  - **Transportation**: `transportation_url` is any page of the department;
+    `parse_edlio_transportation` finds Staff and Guidelines from its menu by
+    link text. The guidelines page's sections are collapsible blocks, not
+    headings. No late-bus or delay pages exist, so the scan only requires a phone.
+  - **Rotation ("What Day is It?")**: the district home page links a Drive PDF of
+    monthly A-D grids for the elementary schools. The link is injected
+    client-side (invisible to plain GET) and its file id changes when the sheet
+    is replaced, so `documents.scan` renders the district home page, matches the
+    link text (`letter_day_schedule`), and attaches it to every elementary
+    school (`discover_district_letter_days`, cached 6h; only what a run found
+    stays current). Linked, not parsed: the rotation machinery is digit-only
+    ("Day N"; `StudentSpecial.rotation_day` is an integer), same gap as
+    Hillside and Harrington.
+  - **Lunch**: SchoolCafé `MedfordTownshipSDNutriServeMETZ`; "6th" now
+    normalizes to "sixth" so Haines matches (7/7).
+  - **Hours** come from one District "School Hours" page in three groups
+    (Haines+Memorial, Cranberry Pines+Taunton Forge, Allen+Kirby's Mill+
+    Chairville), typed into the seed. **Absence** is a per-school phone line
+    plus an email for four schools; the Haines address resolved to
+    `memorialattendance@`, which may be shared.

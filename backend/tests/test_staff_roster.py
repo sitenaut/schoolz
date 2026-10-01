@@ -1,4 +1,4 @@
-from services.staff_roster import _parse_ednet_page, _parse_page
+from services.staff_roster import _parse_ednet_page, _parse_edlio_page, _parse_eschoolview_page, _parse_page
 
 _CARD_WITH_TITLE = """
 <div class="fsConstituentItem" data-constituent-id="4990">
@@ -75,3 +75,46 @@ def test_ednet_missing_title_is_none_and_no_contact_fields():
 
 def test_ednet_ignores_finalsite_pages():
     assert _parse_ednet_page(_CARD_WITH_TITLE) == []
+
+
+_ESCHOOLVIEW_PAGE = """
+<div class="col-md-3 col-xs-12"><div><span class="scName">Zataveski, Lori</span></div>
+<div><span class="scTitle">Principal</span></div></div>
+<div class="col-md-3 col-xs-12"><div><span class="scName">Zataveski, Lori</span></div>
+<div><span class="scTitle">Principal</span></div></div>
+<div class="col-md-3 col-xs-12"><div><span class="scName">Brown, Ashley</span></div>
+<div><span class="scTitle"></span></div></div>
+"""
+
+
+def test_eschoolview_flips_last_first_and_collapses_repeated_cards():
+    items = _parse_eschoolview_page(_ESCHOOLVIEW_PAGE)
+    assert [i["full_name"] for i in items] == ["Lori Zataveski", "Ashley Brown"]
+    assert items[0]["title"] == "Principal"
+    assert items[0]["email"] is None and items[0]["phone"] is None
+
+
+def test_eschoolview_blank_title_is_none_and_other_markup_is_empty():
+    assert _parse_eschoolview_page(_ESCHOOLVIEW_PAGE)[1]["title"] is None
+    assert _parse_eschoolview_page(_CARD_WITH_TITLE) == []
+
+
+_EDLIO_CARDS = """
+<ul><li class="staff" id="staff_1_0"><div class="user-info"><div class="name-position">
+  <a class="name" href="/apps/pages/index.jsp?uREC_ID=1547201&amp;type=u">Katie  Bash</a>
+  <span class="user-position user-data">1st Grade</span></div>
+  <div class="email-phone"><span class="user-email"><a class="email" href="/apps/email/index.jsp?uREC_ID=1547201">Email Katie Bash</a></span>
+  <a class="user-phone" href="tel:Ext. 6217">Ext. 6217</a></div></div></li>
+<li class="staff" id="staff_2_0"><div class="user-info"><div class="name-position">
+  <a class="name" href="/apps/pages/index.jsp?uREC_ID=1568196&amp;type=u">Jill Brown</a></div></div></li>
+<li class="staff"><div class="user-info">no link</div></li></ul>
+"""
+
+
+def test_edlio_cards_have_stable_ids_titles_and_no_contact_fields():
+    items = _parse_edlio_page(_EDLIO_CARDS)
+    assert [i["constituent_id"] for i in items] == ["edlio:1547201", "edlio:1568196"]
+    assert items[0]["full_name"] == "Katie Bash" and items[0]["title"] == "1st Grade"
+    assert items[1]["title"] is None
+    assert all(i["email"] is None and i["phone"] is None for i in items)
+    assert _parse_edlio_page(_CARD_WITH_TITLE) == []

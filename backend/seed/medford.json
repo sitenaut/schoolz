@@ -1,0 +1,261 @@
+{
+  "exported_at": "2026-09-30T12:00:00Z",
+  "source": "onboarding: Medford Township Public Schools",
+  "districts": [
+    {
+      "name": "Medford Township Public Schools",
+      "website_url": "https://www.medford.k12.nj.us",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Medford District Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=0"
+        },
+        {
+          "name": "Medford Chairville Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=1",
+          "school_slug": "chairville"
+        },
+        {
+          "name": "Medford Cranberry Pines Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=2",
+          "school_slug": "cranberry-pines"
+        },
+        {
+          "name": "Medford Haines Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=3",
+          "school_slug": "haines"
+        },
+        {
+          "name": "Medford Kirby's Mill Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=4",
+          "school_slug": "kirbys-mill"
+        },
+        {
+          "name": "Medford Memorial Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=5",
+          "school_slug": "medford-memorial"
+        },
+        {
+          "name": "Medford Allen Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=6",
+          "school_slug": "milton-h-allen"
+        },
+        {
+          "name": "Medford Taunton Forge Calendar",
+          "url": "https://www.medford.k12.nj.us/apps/events/ical/?id=7",
+          "school_slug": "taunton-forge"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.medford.k12.nj.us/apps/pages/index.jsp?uREC_ID=1754393&type=d&pREC_ID=1940553",
+      "towns": [
+        "Medford"
+      ],
+      "schoolcafe_shortname": "MedfordTownshipSDNutriServeMETZ"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "chairville",
+      "name": "Chairville Elementary School",
+      "short_name": "Chairville",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "elementary",
+      "address": "36 Chairville Road, Medford, NJ 08055",
+      "main_phone": "(609) 654-9610",
+      "website_url": "https://chairville.medford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-654-9610",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 609-654-9610, option #4.",
+      "start_time": "8:50 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "10:50 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "cranberry-pines",
+      "name": "Cranberry Pines Elementary School",
+      "short_name": "Cranberry Pines",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "elementary",
+      "address": "400 Fairview Road, Medford, NJ 08055",
+      "main_phone": "(856) 983-2861",
+      "website_url": "https://cranberrypines.medford.k12.nj.us",
+      "absence_method": "email",
+      "absence_emails": [
+        "cpattendance@medfordschools.net"
+      ],
+      "absence_phone": "856-983-2861",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 856-983-2861, option #2. Or email cpattendance@medfordschools.net.",
+      "start_time": "8:15 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "10:15 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "haines",
+      "name": "Haines 6th Grade Center",
+      "short_name": "Haines",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "middle",
+      "address": "162 Stokes Road, Medford, NJ 08055",
+      "main_phone": "(609) 654-4056",
+      "website_url": "https://haines.medford.k12.nj.us",
+      "absence_method": "email",
+      "absence_emails": [
+        "memorialattendance@medfordschools.net"
+      ],
+      "absence_phone": "609-654-4056",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 609-654-4056, option #2. Or email memorialattendance@medfordschools.net.",
+      "start_time": "7:40 AM",
+      "end_time": "2:15 PM",
+      "early_dismissal_time": "11:50 AM",
+      "delayed_opening_time": "9:40 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "kirbys-mill",
+      "name": "Kirby's Mill Elementary School",
+      "short_name": "Kirby's Mill",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "elementary",
+      "address": "151 Hartford Road, Medford, NJ 08055",
+      "main_phone": "(609) 953-7014",
+      "website_url": "https://kirbysmill.medford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-953-7014",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 609-953-7014, option #4.",
+      "start_time": "8:50 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "10:50 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "medford-memorial",
+      "name": "Medford Memorial Middle School",
+      "short_name": "Memorial",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "middle",
+      "address": "55 Mill Street, Medford, NJ 08055",
+      "main_phone": "(609) 654-7707",
+      "website_url": "https://memorial.medford.k12.nj.us",
+      "absence_method": "email",
+      "absence_emails": [
+        "memorialattendance@medfordschools.net"
+      ],
+      "absence_phone": "609-654-7707",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 609-654-7707, option #3. Or email memorialattendance@medfordschools.net.",
+      "start_time": "7:40 AM",
+      "end_time": "2:15 PM",
+      "early_dismissal_time": "11:50 AM",
+      "delayed_opening_time": "9:40 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "milton-h-allen",
+      "name": "Milton H. Allen Elementary School",
+      "short_name": "Allen",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "elementary",
+      "address": "24 Allen Avenue, Medford, NJ 08055",
+      "main_phone": "(609) 654-4203",
+      "website_url": "https://allen.medford.k12.nj.us",
+      "absence_method": "email",
+      "absence_emails": [
+        "allenattendance@medfordschools.net"
+      ],
+      "absence_phone": "609-654-4203",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 609-654-4203, option #2. Or email allenattendance@medfordschools.net.",
+      "start_time": "8:50 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "10:50 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "taunton-forge",
+      "name": "Taunton Forge Elementary School",
+      "short_name": "Taunton Forge",
+      "district_name": "Medford Township Public Schools",
+      "school_type": "elementary",
+      "address": "32 Evergreen Trail, Medford, NJ 08055",
+      "main_phone": "(609) 654-6723",
+      "website_url": "https://tauntonforge.medford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-654-6723",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, 609-654-6723, option #2.",
+      "start_time": "8:15 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "10:15 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ],
+  "smore_newsletters": []
+}

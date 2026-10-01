@@ -1,10 +1,10 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import School, SchoolDocument, SmoreNewsletter
+from models import District, School, SchoolDocument, SmoreNewsletter
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
-from services.school_documents import discover_from_smore, discover_from_website
+from services.school_documents import discover_district_letter_days, discover_from_smore, discover_from_website
 
 
 @register_job(
@@ -33,6 +33,15 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             # Don't let a site fetch failure override a Smore-side find
             # below - only fatal if nothing else turns up anything either.
             site_error = exc
+    # Elementary rotation calendars are district-wide and live on the district home page.
+    if school.school_type == "elementary" and school.district_id and not any(e["doc_type"] == "letter_day_schedule" for e in found):
+        district = (await db.execute(select(District).where(District.id == school.district_id))).scalar_one_or_none()
+        if district and district.website_url and district.website_url.rstrip("/") != (school.website_url or "").rstrip("/"):
+            try:
+                for entry in await discover_district_letter_days(district.website_url):
+                    found.append({**entry, "source": "district_website"})
+            except Exception:
+                pass  # the school's own site result still stands
     for entry in await discover_from_smore(db, school_id):
         found.append({**entry, "source": "newsletter"})
 
@@ -94,8 +103,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         ).scalars().all()
         years = [d.academic_year for d in docs if d.academic_year]
         max_year = max(years) if years else None
+        found_urls = {e["url"] for e in found if e["doc_type"] == doc_type}
         for d in docs:
-            d.is_current = d.academic_year == max_year if max_year else True
+            if doc_type == "letter_day_schedule":
+                # A replaced rotation sheet gets a new URL; only what this run found is live.
+                d.is_current = d.url in found_urls
+            else:
+                d.is_current = d.academic_year == max_year if max_year else True
 
     summary = ", ".join(f"{t}: {sum(1 for e in found if e['doc_type'] == t)}" for t in sorted(doc_types))
     return f"documents: {created} new, {updated} updated ({summary})"

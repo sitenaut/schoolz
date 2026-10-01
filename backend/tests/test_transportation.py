@@ -91,3 +91,49 @@ def test_parsers_ignore_page_chrome_outside_fspagecontent():
     text = parse_delay_policy(html)
     assert "20 minutes" in text
     assert "Mission Statement" not in text and "Copyright" not in text
+
+
+def test_eschoolview_page_parses_office_staff_with_decoded_emails_and_sections():
+    from services.transportation import _decode_cfemail, parse_eschoolview_page
+
+    key = 0x42
+    encoded = bytes([key]) + bytes(ord(c) ^ key for c in "a@b.org")
+    assert _decode_cfemail(encoded.hex()) == "a@b.org"
+    html = f"""<nav><a>Transportation</a></nav>
+    <p>District Transportation Office</p><p>&nbsp;354 Mount Laurel Road &middot; Mount Laurel, NJ 08054</p>
+    <p>&nbsp;Phone: (856) 778-6905 &middot; Fax: (856) 235-1440</p>
+    <p>Our office hours are 6:00 am - 5:00 pm daily.</p>
+    <p>Jo Doe&nbsp;-&nbsp;Transportation Supervisor<br><a><span data-cfemail="{encoded.hex()}">[email protected]</span></a></p>
+    <p>CHANGE OF BUS STOP LOCATION</p><p>Only for safety reasons.</p>
+    <p>AUTOMATED TEXT MESSAGES</p><p>Delays of 20 minutes or more get a text.</p>
+    <p>BUS SAFETY</p><p>Drivers keep items for 3 days. The driver hands them in.</p>"""
+    r = parse_eschoolview_page(html, "https://x.test/Transportation.aspx")
+    assert (r["office_phone"], r["office_fax"], r["office_hours"]) == ("(856) 778-6905", "(856) 235-1440", "6:00 am - 5:00 pm daily")
+    assert r["office_address"] == "354 Mount Laurel Road, Mount Laurel, NJ 08054"
+    assert r["contacts"] == [{"name": "Jo Doe", "title": "Transportation Supervisor", "email": "a@b.org"}]
+    assert r["delay_policy"] == "Delays of 20 minutes or more get a text."
+    assert r["bus_stop_change_procedure"] == "Only for safety reasons."
+    assert "3 days" in r["lost_items_policy"]
+
+
+def test_edlio_pages_parse_phone_hours_staff_and_stop_change_rule():
+    from services.transportation import parse_edlio_transportation
+
+    def page(body):
+        return f'<nav><a>Staff</a></nav><main id="content_main"><h1>x</h1>{body}</main>'
+
+    info = page("<p>Hours of operation are 6:30 am to 4:30 pm, Monday through Friday.</p><p>Call the Transportation office at (609) 953-5841 ext 2.</p>")
+    staff = page("<p>Staff</p><p>Staff</p><p>Ann Lee</p><p>Transportation Supervisor</p><p>ext. 1566</p><p>Bo Kim</p><p>ext. 1565</p><p>Guidelines</p>")
+    guide = page(
+        '<h3>Bus Stop Times</h3><p>Wait 10 minutes.</p><h3>Alternate Bus Stop Location</h3>'
+        '<p>Complete the form by the first week of August.</p><p><a href="/files/alt.pdf">Childcare - Alternate Transportation Request</a></p><h3>Other</h3><p>x</p>'
+    )
+    r = parse_edlio_transportation(info, staff, guide, {"main": "https://x.test/i", "guidelines": "https://x.test/g"})
+    assert (r["office_phone"], r["office_hours"]) == ("(609) 953-5841 ext. 2", "6:30 am to 4:30 pm, Monday through Friday")
+    assert r["contacts"] == [
+        {"name": "Ann Lee", "title": "Transportation Supervisor - ext. 1566", "email": None},
+        {"name": "Bo Kim", "title": "ext. 1565", "email": None},
+    ]
+    assert r["bus_stop_change_procedure"].startswith("Complete the form")
+    assert r["bus_stop_change_deadline"] == "first week of August"
+    assert r["bus_stop_change_form_url"] == "https://x.test/files/alt.pdf"

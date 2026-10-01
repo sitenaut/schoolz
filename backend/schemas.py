@@ -479,6 +479,8 @@ class SchoolUpdate(BaseModel):
     givebacks_shortname: str | None = Field(default=None, max_length=100)
     # FD MealPlanner menu location, "tenant/account/location" (services/fdmealplanner.py).
     fdmealplanner_location: str | None = Field(default=None, max_length=40, pattern=r"^\d+/\d+/\d+$")
+    # Health-e Pro menu site, "org/site" (services/healthepro.py).
+    healthepro_location: str | None = Field(default=None, max_length=40, pattern=r"^\d+/\d+$")
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
     # a one-off half day or delayed start with different period times than
@@ -530,6 +532,7 @@ class SchoolOut(BaseModel):
     apptegy_org_id: str | None
     givebacks_shortname: str | None
     fdmealplanner_location: str | None = None
+    healthepro_location: str | None = None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
 
@@ -1024,6 +1027,7 @@ class ExportSchoolOut(BaseModel):
     apptegy_org_id: str | None = None
     givebacks_shortname: str | None = None
     fdmealplanner_location: str | None = None
+    healthepro_location: str | None = None
     bulletin_doc_url: str | None = None
 
     model_config = {"from_attributes": True}
