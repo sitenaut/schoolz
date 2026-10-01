@@ -56,3 +56,17 @@ def test_day_description_lists_entrees_only():
         "MILK": [{"MenuItemDescription": "1% Milk"}],
     }
     assert day_description(categories) == "Cheese Pizza, Chicken Tenders"
+
+
+def test_hand_typed_cafe_names_match_by_squashed_form():
+    names = ["Country Side Elem School", "Mt. Laurel Hartford School", "SpringvilleElem School", "Fleetwood Elem School"]
+    cafe = [{"SchoolName": n} for n in names]
+    assert match_school("Countryside Elementary School", cafe)["SchoolName"] == names[0]
+    assert match_school("Mount Laurel Hartford School", cafe)["SchoolName"] == names[1]
+    assert match_school("Springville Elementary School", cafe)["SchoolName"] == names[2]
+    assert match_school("Parkway Elementary School", cafe) is None
+
+
+def test_numeric_ordinal_grade_names_match_spelled_out_ones():
+    school = match_school("Haines 6th Grade Center", _cafe("Haines Sixth Grade Center"))
+    assert school and school["SchoolName"] == "Haines Sixth Grade Center"

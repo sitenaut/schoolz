@@ -28,12 +28,23 @@ _ENTREE_CATEGORIES = ("ENTREE", "ENTREES", "MAIN", "MAIN DISH", "ENTRÉES")
 # word present on only one side (Kresson vs Kresson Elementary School), so
 # there's no need to strip it as noise - only strip words that are never
 # part of a real school's name.
+_ORDINALS = {"1": "first", "2": "second", "3": "third", "4": "fourth", "5": "fifth", "6": "sixth", "7": "seventh", "8": "eighth", "9": "ninth"}
 _NAME_NOISE = re.compile(r"\b(school|the|of|and)\b")
 
 
 def _norm(name: str) -> str:
     cleaned = re.sub(r"[^a-z0-9 ]", " ", name.lower())
+    cleaned = re.sub(r"\bmt\b", "mount", cleaned)
+    # "Haines 6th Grade Center" is "Haines Sixth Grade Center" on SchoolCafé.
+    for digit, word in _ORDINALS.items():
+        cleaned = re.sub(rf"\b{digit}(?:st|nd|rd|th)\b", word, cleaned)
     return " ".join(_NAME_NOISE.sub(" ", cleaned).split())
+
+
+def _squash(name: str) -> str:
+    # Mount Laurel's SchoolCafé names are hand-typed: "Country Side Elem
+    # School", "SpringvilleElem School". Spaces and "Elem" carry no identity.
+    return re.sub(r"elem(?!entary)", "elementary", _norm(name).replace(" ", ""))
 
 
 def _either_contains(a: set[str], b: set[str]) -> bool:
@@ -57,7 +68,10 @@ def match_school(our_name: str, cafe_schools: list[dict]) -> dict | None:
     # (no middle initial) failed a ours-must-be-subset-of-theirs check even
     # though every other token lines up exactly.
     contained = [s for s in cafe_schools if _either_contains(ours_tokens, set(_norm(s["SchoolName"]).split()))]
-    return contained[0] if len(contained) == 1 else None
+    if len(contained) == 1:
+        return contained[0]
+    squashed = [s for s in cafe_schools if _squash(s["SchoolName"]) == _squash(our_name)]
+    return squashed[0] if len(squashed) == 1 else None
 
 
 def day_description(categories: dict[str, list[dict]]) -> str | None:

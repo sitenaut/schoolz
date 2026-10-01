@@ -55,6 +55,7 @@ from routers.schools import (
     _ensure_athletics_calendar_job,
     _ensure_documents_scan_job,
     _ensure_fdmealplanner_job,
+    _ensure_healthepro_job,
     _ensure_givebacks_job,
     _ensure_school_info_job,
     _ensure_staff_roster_job,
@@ -126,6 +127,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 apptegy_org_id=s.apptegy_org_id,
                 givebacks_shortname=s.givebacks_shortname,
                 fdmealplanner_location=s.fdmealplanner_location,
+                healthepro_location=s.healthepro_location,
                 bulletin_doc_url=s.bulletin_doc_url,
             )
             for s in schools
@@ -275,6 +277,9 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         if s.fdmealplanner_location:
             school.fdmealplanner_location = s.fdmealplanner_location
             await _ensure_fdmealplanner_job(db, school, user)
+        if s.healthepro_location:
+            school.healthepro_location = s.healthepro_location
+            await _ensure_healthepro_job(db, school, user)
         if s.bulletin_doc_url:
             school.bulletin_doc_url = s.bulletin_doc_url
             await _ensure_bulletin_job(db, school, user)

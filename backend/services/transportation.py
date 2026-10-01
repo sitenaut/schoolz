@@ -33,8 +33,11 @@ a clean, stable shape):
 """
 
 import asyncio
+import html as html_lib
 import re
+from urllib.parse import urljoin
 
+import httpx
 from bs4 import BeautifulSoup
 
 import scraper_client
@@ -191,10 +194,192 @@ async def _fetch_page(url: str, attempts: int = 3, backoff_s: float = 2.0) -> st
     raise last
 
 
+def _decode_cfemail(hexed: str) -> str | None:
+    try:
+        raw = bytes.fromhex(hexed)
+        return "".join(chr(b ^ raw[0]) for b in raw[1:])
+    except (ValueError, IndexError):
+        return None
+
+
+_ESV_CONTACT_RE = re.compile(r"^(?:(?:Mr|Mrs|Ms|Dr)\.?\s+)?(.+?)\s+[-\u2013]\s+(.*Transportation.*)$")
+_ESV_HEADING_RE = re.compile(r"^[A-Z][A-Z &/,'\-]{5,}$")
+
+
+def parse_eschoolview_page(html: str, page_url: str) -> dict:
+    """eSchoolView/LINQ (Mount Laurel): one server-rendered page holds the
+    whole department - office block ("354 Mount Laurel Road . Mount Laurel, NJ"
+    then "Phone: ... . Fax: ..."), hours, staff as "Name - Title" followed by
+    a Cloudflare-obfuscated email (`data-cfemail`, decoded here), then policy
+    sections under all-caps headings. No late-bus contractor table exists, so
+    that stays empty. Everything is scoped from the "District Transportation
+    Office" line on, because the page's mega-menu repeats before it."""
+    soup = BeautifulSoup(html, "lxml")
+    for el in soup.select("[data-cfemail]"):
+        el.replace_with(" " + (_decode_cfemail(el["data-cfemail"]) or "") + " ")
+    lines = [re.sub(r"\s+", " ", html_lib.unescape(l)).strip() for l in soup.get_text("\n").split("\n")]
+    lines = [l for l in lines if l]
+    start = next((i for i, l in enumerate(lines) if l.lower() == "district transportation office"), None)
+    result: dict = {
+        "office_phone": None, "office_fax": None, "office_hours": None, "office_address": None, "contacts": [],
+        "delay_policy": None, "late_bus_policy": None, "late_bus_contractors": [], "bus_stop_change_procedure": None,
+        "bus_stop_change_deadline": None, "bus_stop_change_form_url": None, "lost_items_policy": None,
+        "main_url": page_url, "late_bus_url": page_url, "guidelines_url": page_url, "lost_items_url": page_url, "closing_info_url": None,
+    }
+    if start is None:
+        return result
+    body = lines[start:]
+
+    for i, l in enumerate(body[:6]):
+        if "Phone:" in l:
+            phone = re.search(r"Phone:\s*(" + _PHONE_RE.pattern + ")", l)
+            fax = re.search(r"Fax:\s*(" + _PHONE_RE.pattern + ")", l)
+            result["office_phone"] = phone.group(1) if phone else None
+            result["office_fax"] = fax.group(1) if fax else None
+            if i > 1:
+                result["office_address"] = re.sub(r"\s*[\u00b7\u2022]\s*", ", ", body[i - 1]).strip(" ,")
+            break
+
+    sections: dict[str, list[str]] = {}
+    current = None
+    for l in body[1:]:
+        if _ESV_HEADING_RE.match(l):
+            current = l
+            sections[current] = []
+        elif current is not None:
+            sections[current].append(l)
+        else:
+            hours = re.search(r"office hours (?:are|:)?\s*(.+?)\.?$", l, re.I)
+            if hours:
+                result["office_hours"] = hours.group(1)
+            m = _ESV_CONTACT_RE.match(l)
+            if m:
+                result["contacts"].append({"name": m.group(1).strip(), "title": m.group(2).strip(), "email": None})
+            elif result["contacts"] and result["contacts"][-1]["email"] is None and _EMAIL_RE.fullmatch(l):
+                result["contacts"][-1]["email"] = l
+
+    def section(prefix: str) -> str | None:
+        for key, vals in sections.items():
+            if key.startswith(prefix):
+                return " ".join(vals).replace(" .", ".").replace(" ,", ",") or None
+        return None
+
+    result["delay_policy"] = section("AUTOMATED TEXT")
+    result["late_bus_policy"] = section("LATE & CLUB")
+    stop = section("CHANGE OF BUS STOP")
+    result["bus_stop_change_procedure"] = stop
+    for sentence in re.split(r"(?<=[.!?])\s+", " ".join(sum(sections.values(), []))):
+        if re.search(r"\b\d+ days\b", sentence) and re.search(r"driver", sentence, re.I):
+            result["lost_items_policy"] = sentence.replace(" ,", ",")
+            break
+    return result
+
+
+_EDLIO_EXT_RE = re.compile(r"^ext\.?\s*\d+", re.I)
+
+
+def _edlio_lines(html: str) -> list[str]:
+    main = BeautifulSoup(html, "lxml").find(id="content_main")
+    text = main.get_text("\n") if main else ""
+    return [l for l in (re.sub(r"\s+", " ", html_lib.unescape(l)).strip() for l in text.split("\n")) if l]
+
+
+def parse_edlio_transportation(info_html: str, staff_html: str, guidelines_html: str, page_urls: dict[str, str]) -> dict:
+    """Edlio (Medford): three small pages under one Transportation department.
+    Info prose carries the phone and hours; the staff page is name / title /
+    "ext. N" line triples (no email - those are contact forms); the guidelines
+    page's "Alternate Bus Stop Location" section is the stop-change rule, with
+    its form linked as a PDF. No delay or late-bus pages exist on the site."""
+    result: dict = {
+        "office_phone": None, "office_fax": None, "office_hours": None, "office_address": None, "contacts": [],
+        "delay_policy": None, "late_bus_policy": None, "late_bus_contractors": [], "bus_stop_change_procedure": None,
+        "bus_stop_change_deadline": None, "bus_stop_change_form_url": None, "lost_items_policy": None,
+        "main_url": page_urls.get("main"), "late_bus_url": None, "guidelines_url": page_urls.get("guidelines"),
+        "lost_items_url": None, "closing_info_url": None,
+    }
+    info = " ".join(_edlio_lines(info_html))
+    phone = re.search(r"(" + _PHONE_RE.pattern + r")\s*(?:ext\.?\s*(\d+))?", info[info.lower().find("transportation office"):] if "transportation office" in info.lower() else info, re.I)
+    if phone:
+        result["office_phone"] = phone.group(1) + (f" ext. {phone.group(2)}" if phone.group(2) else "")
+    hours = re.search(r"hours of operation (?:are|is)\s+(.+?)\.", info, re.I)
+    if hours:
+        result["office_hours"] = hours.group(1)
+
+    lines = _edlio_lines(staff_html)
+    start = next((i for i, l in enumerate(lines) if l.lower() == "staff" and i + 1 < len(lines) and lines[i + 1].lower() == "staff"), None)
+    body = lines[start + 2:] if start is not None else []
+    people: list[dict] = []
+    for l in body:
+        if l.lower() in {"staff", "transportation information", "guidelines"}:
+            break
+        if _EDLIO_EXT_RE.match(l):
+            if people:
+                people[-1]["ext"] = l
+        elif people and people[-1]["title"] is None and people[-1].get("ext") is None:
+            people[-1]["title"] = l
+        else:
+            people.append({"name": l, "title": None})
+    result["contacts"] = [{"name": p["name"], "title": " - ".join(filter(None, [p["title"], p.get("ext")])) or None, "email": None} for p in people]
+
+    soup = BeautifulSoup(guidelines_html, "lxml")
+    main = soup.find(id="content_main") or soup
+    procedure = ""
+    for block in main.select(".collapsible-block"):
+        header = block.select_one(".collapsible-header")
+        content = block.select_one(".collapsible-content")
+        if header and content and header.get_text(" ", strip=True).lower().startswith("alternate bus stop"):
+            procedure = re.sub(r"\s+", " ", content.get_text(" ", strip=True))
+            break
+    else:
+        for heading in main.find_all(["h2", "h3", "h4"]):
+            if heading.get_text(" ", strip=True).lower().startswith("alternate bus stop"):
+                parts = []
+                for sib in heading.find_next_siblings():
+                    if sib.name in {"h2", "h3", "h4"}:
+                        break
+                    parts.append(re.sub(r"\s+", " ", sib.get_text(" ", strip=True)))
+                procedure = " ".join(p for p in parts if p)
+                break
+    if procedure:
+        result["bus_stop_change_procedure"] = procedure
+        deadline = re.search(r"\bby (?:the )?([^.]*?(?:week of \w+|\w+ \d{1,2}))", procedure)
+        result["bus_stop_change_deadline"] = deadline.group(1) if deadline else None
+    for a in main.find_all("a", href=True):
+        if re.search(r"alternat", a.get_text(" ", strip=True), re.I) and re.search(r"\.pdf|files\.edl\.io", a["href"], re.I):
+            result["bus_stop_change_form_url"] = urljoin(page_urls.get("guidelines") or "", a["href"])
+            break
+    return result
+
+
+async def _fetch_edlio_page(url: str) -> str:
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+        resp = await client.get(url)
+        resp.raise_for_status()
+        return resp.text
+
+
+async def _discover_edlio_transportation(main_url: str) -> dict:
+    """`transportation_url` is any page of the department; the Staff and
+    Guidelines pages are found from its left-hand menu by link text."""
+    info_html = await _fetch_edlio_page(main_url)
+    menu = {a.get_text(" ", strip=True).lower(): urljoin(main_url, a["href"]) for a in BeautifulSoup(info_html, "lxml").find_all("a", href=True)}
+    staff_url, guidelines_url = menu.get("staff"), menu.get("guidelines")
+    staff_html = await _fetch_edlio_page(staff_url) if staff_url else ""
+    guidelines_html = await _fetch_edlio_page(guidelines_url) if guidelines_url else ""
+    return parse_edlio_transportation(info_html, staff_html, guidelines_html, {"main": menu.get("transportation information", main_url), "guidelines": guidelines_url or main_url})
+
+
 async def discover_transportation(transportation_url: str, base_url: str) -> dict:
     """Fetches the department page tree and returns every parsed field
     plus the page URLs themselves (for "read the full policy" links)."""
     main_url = transportation_url.rstrip("/")
+    if main_url.lower().endswith(".aspx"):
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+            resp = await client.get(main_url)
+            resp.raise_for_status()
+        return parse_eschoolview_page(resp.text, main_url)
+    if "/apps/pages/" in main_url:
+        return await _discover_edlio_transportation(main_url)
     pages: dict[str, str] = {}
     pages["main"] = await _fetch_page(main_url)
     for key, slug in _SUBPAGES.items():

@@ -1,0 +1,170 @@
+{
+  "exported_at": "2026-09-30T12:00:00Z",
+  "source": "onboarding: Maple Shade School District",
+  "districts": [
+    {
+      "name": "Maple Shade School District",
+      "website_url": "https://www.mapleshade.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Maple Shade District",
+          "platform": "apptegy",
+          "org_id": "14327"
+        },
+        {
+          "name": "Maple Shade Yocum",
+          "platform": "apptegy",
+          "org_id": "14403",
+          "school_slug": "howard-yocum-elementary"
+        },
+        {
+          "name": "Maple Shade Wilkins",
+          "platform": "apptegy",
+          "org_id": "14405",
+          "school_slug": "maude-wilkins-elementary"
+        },
+        {
+          "name": "Maple Shade Steinhauer",
+          "platform": "apptegy",
+          "org_id": "14406",
+          "school_slug": "ralph-steinhauer-elementary"
+        },
+        {
+          "name": "Maple Shade Maple Shade High",
+          "platform": "apptegy",
+          "org_id": "14404",
+          "school_slug": "maple-shade-high"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Maple Shade"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "howard-yocum-elementary",
+      "name": "Howard Yocum Elementary School",
+      "short_name": "Yocum",
+      "district_name": "Maple Shade School District",
+      "school_type": "elementary",
+      "address": "748 N. Forklanding Rd., Maple Shade, NJ 08052",
+      "main_phone": "856-779-7423",
+      "website_url": "https://www.mapleshade.org/o/howardyocum",
+      "absence_method": "email",
+      "absence_emails": [
+        "mpokusa@msemail.org"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school nurse with your child's name and the reason for the absence. All absences are unexcused unless a doctor's note is sent in when your child returns. Yocum also has an online absence form: https://docs.google.com/forms/d/e/1FAIpQLSe5j5YBFg42d-a51Qsc6dSlUmwM4nW7w2dr1QwM2nGj4tcNXQ/viewform",
+      "start_time": "8:53 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": "10:53 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/14403/file/1839108/8a0da226-9e1b-4aaa-8193-5f6c8bb344d5.png",
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "14403",
+      "healthepro_location": "2984/16222"
+    },
+    {
+      "slug": "maude-wilkins-elementary",
+      "name": "Maude Wilkins Elementary School",
+      "short_name": "Wilkins",
+      "district_name": "Maple Shade School District",
+      "school_type": "elementary",
+      "address": "34 West Mill Rd., Maple Shade, NJ 08052",
+      "main_phone": "856-779-1129",
+      "website_url": "https://www.mapleshade.org/o/maudewilkins",
+      "absence_method": "email",
+      "absence_emails": [
+        "lmanera@msemail.org"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school nurse with your child's name and the reason for the absence. All absences are unexcused unless a doctor's note is sent in when your child returns.",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:18 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/14405/file/1839085/a7c15379-b477-4573-9a60-026ed30fff2d.png",
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "14405",
+      "healthepro_location": "2984/16223"
+    },
+    {
+      "slug": "ralph-steinhauer-elementary",
+      "name": "Ralph J. Steinhauer Elementary School",
+      "short_name": "Steinhauer",
+      "district_name": "Maple Shade School District",
+      "school_type": "elementary",
+      "address": "25 N. Fellowship Rd., Maple Shade, NJ 08052",
+      "main_phone": "856-779-7323",
+      "website_url": "https://www.mapleshade.org/o/ralphjsteinhauer",
+      "absence_method": "email",
+      "absence_emails": [
+        "lmacartney@msemail.org"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school nurse with your child's name and the reason for the absence. All absences are unexcused unless a doctor's note is sent in when your child returns.",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": "9:48 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/14406/file/1839070/33bd5b73-ef54-408d-8cef-cc3f84c07edb.png",
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "14406",
+      "healthepro_location": "2984/16224"
+    },
+    {
+      "slug": "maple-shade-high",
+      "name": "Maple Shade High School",
+      "short_name": "Maple Shade High",
+      "district_name": "Maple Shade School District",
+      "school_type": "high",
+      "address": "180 Frederick Ave, Maple Shade, NJ 08052",
+      "main_phone": "856-779-2880",
+      "website_url": "https://www.mapleshade.org/o/mapleshadehs",
+      "absence_method": "email",
+      "absence_emails": [
+        "vmanlove@msemail.org"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school nurse with your child's name and the reason for the absence. All absences are unexcused unless a doctor's note is sent in when your child returns.",
+      "start_time": "7:28 AM",
+      "end_time": "2:14 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": "9:28 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/14404/file/1839059/2eeafd75-fb01-4b0a-8da1-3f7fc502ffa1.png",
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "14404",
+      "healthepro_location": "2984/16225"
+    }
+  ],
+  "smore_newsletters": []
+}

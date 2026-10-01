@@ -58,7 +58,14 @@
       "hs_rotation_url": null,
       "transportation_url": null,
       "towns": [
-        "Evesham"
+        "Evesham",
+        "Medford",
+        "Medford Lakes",
+        "Mount Laurel",
+        "Shamong",
+        "Southampton",
+        "Tabernacle",
+        "Woodland"
       ],
       "schoolcafe_shortname": "LenapeRegionlHighSDNutriServe"
     }

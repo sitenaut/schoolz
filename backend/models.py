@@ -673,6 +673,10 @@ class School(Base):
     # through the site's own org search (which needs its anonymous token);
     # the recurring menu fetch doesn't (services/fdmealplanner.py).
     fdmealplanner_location: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Health-e Pro (menus.healthepro.com) menu site as "org/site" - Maple
+    # Shade's lunch vendor, read from the vendor's public JSON API
+    # (services/healthepro.py).
+    healthepro_location: Mapped[str | None] = mapped_column(String(40), nullable=True)
     # A school's weekly student bulletin published as one Google Doc that is
     # rewritten in place (Marlton Middle). bulletin_content_hash lets a scan
     # skip the model call when the doc hasn't changed. services/student_bulletin.py.
@@ -680,6 +684,7 @@ class School(Base):
     bulletin_doc_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     bulletin_content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     fdmealplanner_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    healthepro_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

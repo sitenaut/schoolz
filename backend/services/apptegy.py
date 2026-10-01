@@ -69,6 +69,12 @@ async def fetch_events(org_id: str, start: date, end: date, timeout: float = 30.
     return out
 
 
+def _real_email(raw: str | None) -> str | None:
+    # Apptegy's directory API sends the literal "hidden" when a site conceals addresses behind a contact form.
+    value = (raw or "").strip()
+    return value if "@" in value else None
+
+
 async def fetch_staff(org_id: str, timeout: float = 30.0) -> list[dict]:
     """Returns a list of {constituent_id, full_name, title, department,
     email, phone} dicts - same shape as
@@ -93,7 +99,7 @@ async def fetch_staff(org_id: str, timeout: float = 30.0) -> list[dict]:
                         "full_name": (person.get("full_name") or "").strip(),
                         "title": (person.get("title") or "").strip() or None,
                         "department": (person.get("department") or "").strip() or None,
-                        "email": (person.get("email") or "").strip() or None,
+                        "email": _real_email(person.get("email")),
                         "phone": (person.get("phone_number") or "").strip() or None,
                     }
                 )

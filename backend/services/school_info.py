@@ -19,6 +19,7 @@ school already has one) - this just verifies it resolves."""
 import re
 from urllib.parse import urljoin, urlparse
 
+import httpx
 from bs4 import BeautifulSoup
 
 import scraper_client
@@ -114,6 +115,43 @@ def _parse_location(html: str, base_url: str) -> dict:
     return result
 
 
+_ESV_ADDRESS_RE = re.compile(r"^(.+?)\s*\n\s*([^\n]+,\s*NJ\s+\d{5})\s*\n\s*Phone:\s*([^\n]+)", re.M)
+
+
+def _parse_eschoolview_footer(html: str, page_url: str) -> dict | None:
+    """eSchoolView/LINQ (Mount Laurel): no `fsLocation*` widget - the menu
+    ends with three plain lines, street / "City, NJ zip" / "Phone: ...". None
+    when the page doesn't have them, so any other platform falls through."""
+    soup = BeautifulSoup(html, "lxml")
+    match = _ESV_ADDRESS_RE.search("\n".join(soup.get_text("\n", strip=True).split("\n")))
+    if not match:
+        return None
+    phone = _PLAIN_PHONE_RE.search(match.group(3))
+    return {
+        "address": f"{match.group(1).strip()}, {match.group(2).strip()}",
+        "main_phone": phone.group(0) if phone else None,
+        # The header's src is page-relative ("sysimages/Logos/X.png"), so join
+        # against the page's directory, not the page itself.
+        "logo_url": _find_logo_url(html, page_url.rsplit("/", 1)[0]),
+    }
+
+
+def _parse_edlio_footer(html: str, base_url: str) -> dict | None:
+    """Edlio (Medford): the footer's "Contact Us" block holds the address as a
+    link to `/apps/maps` and the phone as a `tel:` link. None for any other
+    platform (no such link), so the Finalsite path still runs."""
+    soup = BeautifulSoup(html, "lxml")
+    maps = soup.select_one(".footer-info-block a[href$='/apps/maps']")
+    if not maps:
+        return None
+    phone = soup.select_one(".footer-info-block a[href^='tel:']")
+    return {
+        "address": re.sub(r"\s+", " ", maps.get_text(" ", strip=True)),
+        "main_phone": phone.get_text(strip=True) if phone else None,
+        "logo_url": _find_logo_url(html, base_url),
+    }
+
+
 async def discover_school_info(school_website_url: str) -> dict:
     """Returns {"address": str|None, "main_phone": str|None, "logo_url": str|None}.
 
@@ -130,6 +168,24 @@ async def discover_school_info(school_website_url: str) -> dict:
     smart_home = await smart_sites.fetch_home(base)
     if smart_home:
         return {**smart_sites.parse_footer(smart_home), "logo_url": _find_logo_url(smart_home, base)}
+    if base.lower().endswith(".aspx"):
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+                resp = await client.get(base)
+            esv = _parse_eschoolview_footer(resp.text, str(resp.url)) if resp.status_code == 200 else None
+        except httpx.HTTPError:
+            esv = None
+        if esv:
+            return esv
+    if not base.lower().endswith(".aspx"):
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+                resp = await client.get(base + "/")
+            edlio = _parse_edlio_footer(resp.text, base) if resp.status_code == 200 else None
+        except httpx.HTTPError:
+            edlio = None
+        if edlio:
+            return edlio
     try:
         # Confirmed real: plain "footer" resolves to 2 elements on these
         # pages (one hidden), so Playwright's visibility wait times out -
