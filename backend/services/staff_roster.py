@@ -291,7 +291,14 @@ async def _fetch_plain_page_roster(base: str) -> list[dict]:
     return []
 
 
-_PRESENCE_PATHS = ("/staff_directory", "/School/staff_directory")
+# Moorestown: "/for_staff/staff_directory", except Upper Elementary, whose
+# own page is "/for_staff/ues_staff_directory".
+_PRESENCE_PATHS = (
+    "/staff_directory",
+    "/School/staff_directory",
+    "/for_staff/staff_directory",
+    "/for_staff/ues_staff_directory",
+)
 _PRESENCE_WS = "/Common/controls/StaffDirectory/ws/StaffDirectoryWS.asmx/"
 _PRESENCE_PORTLET_RE = re.compile(r'staffDirectoryComponent[^>]*data-portlet-instance-id="(\d+)"')
 

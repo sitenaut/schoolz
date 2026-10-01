@@ -1,0 +1,463 @@
+{
+  "exported_at": "2026-10-01T12:00:00Z",
+  "source": "onboarding: Moorestown Township Public Schools",
+  "districts": [
+    {
+      "name": "Moorestown Township Public Schools",
+      "website_url": "https://www.mtps.com",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Moorestown District Calendar",
+          "url": "https://www.mtps.com/ICalendarHandler?calendarId=27195401"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Moorestown"
+      ],
+      "schoolcafe_shortname": "MOORESTOWNTWPPSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "moorestown-high-school",
+      "name": "Moorestown High School",
+      "short_name": "Moorestown HS",
+      "district_name": "Moorestown Township Public Schools",
+      "school_type": "high",
+      "address": "350 Bridgeboro Rd, Moorestown, NJ 08057",
+      "main_phone": "856-778-6610",
+      "website_url": "https://mhs.mtps.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:35 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "11:56 AM",
+      "delayed_opening_time": "9:35 AM",
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=15130",
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "william-allen-middle-school",
+      "name": "William Allen Middle School",
+      "short_name": "WAMS",
+      "district_name": "Moorestown Township Public Schools",
+      "school_type": "middle",
+      "address": "801 N Stanwick Rd, Moorestown, NJ 08057",
+      "main_phone": "856-778-6620",
+      "website_url": "https://wams.mtps.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:35 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:08 PM",
+      "delayed_opening_time": "9:35 AM",
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=25854",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Quaker/HR",
+            "start": "07:35",
+            "end": "07:58"
+          },
+          {
+            "name": "1st",
+            "start": "08:01",
+            "end": "08:47"
+          },
+          {
+            "name": "2nd",
+            "start": "08:50",
+            "end": "09:36"
+          },
+          {
+            "name": "3rd",
+            "start": "09:39",
+            "end": "10:25"
+          },
+          {
+            "name": "4th",
+            "start": "10:28",
+            "end": "11:14"
+          },
+          {
+            "name": "5th (7th Lunch)",
+            "start": "11:17",
+            "end": "12:03"
+          },
+          {
+            "name": "6th (8th Lunch)",
+            "start": "12:06",
+            "end": "12:52"
+          },
+          {
+            "name": "7th",
+            "start": "12:55",
+            "end": "13:41"
+          },
+          {
+            "name": "8th",
+            "start": "13:44",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Quaker/HR",
+            "start": "07:35",
+            "end": "07:44"
+          },
+          {
+            "name": "1st",
+            "start": "07:47",
+            "end": "08:17"
+          },
+          {
+            "name": "2nd",
+            "start": "08:20",
+            "end": "08:50"
+          },
+          {
+            "name": "3rd",
+            "start": "08:53",
+            "end": "09:23"
+          },
+          {
+            "name": "4th",
+            "start": "09:26",
+            "end": "09:56"
+          },
+          {
+            "name": "5th (7th Lunch)",
+            "start": "09:59",
+            "end": "10:29"
+          },
+          {
+            "name": "6th (8th Lunch)",
+            "start": "10:32",
+            "end": "11:02"
+          },
+          {
+            "name": "7th",
+            "start": "11:05",
+            "end": "11:35"
+          },
+          {
+            "name": "8th",
+            "start": "11:38",
+            "end": "12:08"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Quaker/HR",
+            "start": "09:35",
+            "end": "09:46"
+          },
+          {
+            "name": "1st",
+            "start": "09:49",
+            "end": "10:19"
+          },
+          {
+            "name": "2nd",
+            "start": "10:22",
+            "end": "10:52"
+          },
+          {
+            "name": "3rd",
+            "start": "10:55",
+            "end": "11:25"
+          },
+          {
+            "name": "4th",
+            "start": "11:28",
+            "end": "11:58"
+          },
+          {
+            "name": "5th (7th Lunch)",
+            "start": "12:01",
+            "end": "12:41"
+          },
+          {
+            "name": "6th (8th Lunch)",
+            "start": "12:44",
+            "end": "13:24"
+          },
+          {
+            "name": "7th",
+            "start": "13:27",
+            "end": "13:57"
+          },
+          {
+            "name": "8th",
+            "start": "14:00",
+            "end": "14:30"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "moorestown-upper-elementary-school",
+      "name": "Upper Elementary School",
+      "short_name": "Upper Elementary",
+      "district_name": "Moorestown Township Public Schools",
+      "school_type": "elementary",
+      "address": "325 Borton Landing Rd, Moorestown, NJ 08057",
+      "main_phone": "856-793-0333",
+      "website_url": "https://ues.mtps.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:00 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:35 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:20"
+          },
+          {
+            "name": "1",
+            "start": "08:22",
+            "end": "09:15"
+          },
+          {
+            "name": "2",
+            "start": "09:17",
+            "end": "10:10"
+          },
+          {
+            "name": "3",
+            "start": "10:12",
+            "end": "11:05"
+          },
+          {
+            "name": "4 (5th grade lunch)",
+            "start": "11:07",
+            "end": "12:00"
+          },
+          {
+            "name": "5 (6th grade lunch)",
+            "start": "12:02",
+            "end": "12:55"
+          },
+          {
+            "name": "6 (4th grade lunch)",
+            "start": "12:57",
+            "end": "13:50"
+          },
+          {
+            "name": "7",
+            "start": "13:52",
+            "end": "14:45"
+          },
+          {
+            "name": "HR (dismissal)",
+            "start": "14:47",
+            "end": "15:00"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:10"
+          },
+          {
+            "name": "1",
+            "start": "08:12",
+            "end": "08:46"
+          },
+          {
+            "name": "2",
+            "start": "08:48",
+            "end": "09:22"
+          },
+          {
+            "name": "3",
+            "start": "09:24",
+            "end": "09:58"
+          },
+          {
+            "name": "4 (5th grade lunch)",
+            "start": "10:00",
+            "end": "10:34"
+          },
+          {
+            "name": "5 (6th grade lunch)",
+            "start": "10:36",
+            "end": "11:10"
+          },
+          {
+            "name": "6 (4th grade lunch)",
+            "start": "11:12",
+            "end": "11:46"
+          },
+          {
+            "name": "7",
+            "start": "11:48",
+            "end": "12:22"
+          },
+          {
+            "name": "HR (dismissal)",
+            "start": "12:24",
+            "end": "12:35"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "10:00",
+            "end": "10:15"
+          },
+          {
+            "name": "1",
+            "start": "10:17",
+            "end": "10:54"
+          },
+          {
+            "name": "2",
+            "start": "10:56",
+            "end": "11:33"
+          },
+          {
+            "name": "3",
+            "start": "11:35",
+            "end": "12:12"
+          },
+          {
+            "name": "4 (5th grade lunch)",
+            "start": "12:14",
+            "end": "12:51"
+          },
+          {
+            "name": "5 (6th grade lunch)",
+            "start": "12:53",
+            "end": "13:30"
+          },
+          {
+            "name": "6 (4th grade lunch)",
+            "start": "13:32",
+            "end": "14:09"
+          },
+          {
+            "name": "7",
+            "start": "14:11",
+            "end": "14:48"
+          },
+          {
+            "name": "HR (dismissal)",
+            "start": "14:50",
+            "end": "15:00"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "george-c-baker-elementary-school",
+      "name": "George C. Baker Elementary School",
+      "short_name": "Baker",
+      "district_name": "Moorestown Township Public Schools",
+      "school_type": "elementary",
+      "address": "139 W Maple Ave, Moorestown, NJ 08057",
+      "main_phone": "856-778-6630",
+      "website_url": "https://baker.mtps.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:40 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": "10:40 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "mary-e-roberts-elementary-school",
+      "name": "Mary E. Roberts Elementary School",
+      "short_name": "Roberts",
+      "district_name": "Moorestown Township Public Schools",
+      "school_type": "elementary",
+      "address": "290 Crescent Ave, Moorestown, NJ 08057",
+      "main_phone": "856-778-6635",
+      "website_url": "https://roberts.mtps.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:40 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": "10:40 AM",
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss10.sharpschool.com/UserFiles/Servers/Server_255656/Image/LogoClear.jpg",
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "south-valley-elementary-school",
+      "name": "South Valley Elementary School",
+      "short_name": "South Valley",
+      "district_name": "Moorestown Township Public Schools",
+      "school_type": "elementary",
+      "address": "210 S. Stanwick Rd, Moorestown, NJ 08057",
+      "main_phone": "856-778-6640",
+      "website_url": "https://sv.mtps.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:40 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": "10:40 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}
