@@ -84,5 +84,12 @@ async def test_specials_shared_across_guardians_and_shown_on_today_and_schedule(
         assert (kid.first_name, kid.today, kid.next_label, kid.next) == ("Zoe", "Art", "Tomorrow", "PE")
         assert kid.by_date == {"2026-10-05": "Art", "2026-10-06": "PE"}
 
+        # Regression: the rotation is localized for display ("Día 1"), which the
+        # specials lookup couldn't parse, so every kid read "Not on file" in Spanish.
+        for lang in ("es", "zh", "ko", "hi"):
+            [kid_l] = (await build_today(db, school, date(2026, 10, 5), user_id=mom_id, lang=lang)).my_specials
+            assert (kid_l.today, kid_l.next) == ("Art", "PE"), lang
+            assert kid_l.by_date == {"2026-10-05": "Art", "2026-10-06": "PE"}, lang
+
         days = await upcoming_days(db, school, student_id, date(2026, 10, 5), 3)
         assert [(d["rotation_day"], [b["course_name"] for b in d["blocks"]]) for d in days] == [("Day 1", ["Art"]), ("Day 2", ["PE"]), ("Day 3", [])]
