@@ -101,6 +101,12 @@ def _classify_abbreviated_pdf_link(url: str, school_type: str) -> dict | None:
     }
 
 
+def _month_sort(month: str, year: str) -> tuple[int, int]:
+    # A typo'd month ("Setember") sorts first rather than raising.
+    idx = next((i for i, m in enumerate(_MONTHS) if m.startswith(month.lower()[:3])), -1)
+    return (int(year), idx)
+
+
 def _classify_pdf_link(url: str) -> dict | None:
     filename = url.rsplit("/", 1)[-1]
     match = _PDF_FILENAME_RE.search(filename)
@@ -113,6 +119,7 @@ def _classify_pdf_link(url: str) -> dict | None:
                 "meal_type": meal.lower(),
                 "period_label": f"{month.title()} {year}",
                 "pdf_url": url,
+                "_sort": _month_sort(month, year),
             }
 
     match2 = _PDF_FILENAME_RE2.search(filename)
@@ -125,6 +132,7 @@ def _classify_pdf_link(url: str) -> dict | None:
                 "meal_type": meal.lower(),
                 "period_label": f"{month.title()} {year}",
                 "pdf_url": url,
+                "_sort": _month_sort(month, year),
             }
 
     return None
@@ -167,7 +175,13 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     for url in urls:
         classified = _classify_pdf_link(url)
         if classified:
-            by_key[(classified["school_type"], classified["meal_type"])] = classified
+            key = (classified["school_type"], classified["meal_type"])
+            # The page can list more than one month at once, and `urls` is a
+            # set: without this the winner was whichever came last in a
+            # per-process-random order, so one scheduler process kept
+            # re-picking an already-stored month and never saw the next one.
+            if key not in by_key or classified["_sort"] > by_key[key]["_sort"]:
+                by_key[key] = classified
     if not by_key and school_types:
         now = datetime.now(ZoneInfo("America/New_York"))
 
@@ -191,7 +205,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
         if unbanded:
             return fan_out(current_or_latest(unbanded))
-    return list(by_key.values())
+    return [{k: v for k, v in c.items() if k != "_sort"} for c in by_key.values()]
 
 
 _MENU_TOOL = {
@@ -246,7 +260,11 @@ async def parse_menu_pdf(pdf_url: str, period_label: str) -> list[dict]:
                         "type": "text",
                         "text": f"This is the {period_label} school menu calendar. Extract every day that has "
                         "an entry (a meal offered, or a note like 'School Closed'), resolving each into a full "
-                        "ISO date for that month/year.",
+                        "ISO date for that month/year. Go cell by cell through EVERY week row including the "
+                        "first and last, which are often partial (the month may start on a Thursday): a day "
+                        "number in the top-right corner of a cell with a meal in it is an entry even when "
+                        "other cells in the same row hold only a notice or are blank. Ignore sidebar legends "
+                        "and notice boxes that carry no day number.",
                     },
                 ],
             }

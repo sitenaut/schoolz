@@ -11,6 +11,7 @@ def test_classifies_elementary_lunch():
         "meal_type": "lunch",
         "period_label": "September 2026",
         "pdf_url": ".../September2026-ES-Lunch.pdf",
+        "_sort": (2026, 8),
     }
 
 
@@ -38,6 +39,7 @@ def test_classifies_audubon_elementary_lunch_no_hyphens():
         "meal_type": "lunch",
         "period_label": "September 2026",
         "pdf_url": ".../September2026ElementaryLunchMenu.pdf",
+        "_sort": (2026, 8),
     }
 
 
@@ -112,3 +114,23 @@ def test_unbanded_menu_serves_every_school_type(monkeypatch):
     found = asyncio.run(lunch_menu.discover_current_menus("http://x", school_types=["elementary", "middle", "other"]))
     assert sorted(e["school_type"] for e in found) == ["elementary", "elementary", "middle", "middle", "other", "other"]
     assert {e["pdf_url"] for e in found} == {"/f/September_2099.pdf", "/f/October_2099.pdf"}
+
+
+def test_banded_discovery_picks_latest_month_whatever_the_link_order(monkeypatch):
+    # The page can list two months at once; the set of links has no order, so
+    # the winner used to be arbitrary per process.
+    async def fake_rm(url, html):
+        return set()
+
+    monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
+    names = ["September2026-ES-Lunch.pdf", "October2026-ES-Lunch.pdf", "September2026-HS-Lunch.pdf"]
+    for order in (names, list(reversed(names))):
+        html = "".join(f'<a href="/f/{n}"></a>' for n in order)
+
+        async def fake_fetch(url, html=html, **kw):
+            return {"html": html}
+
+        monkeypatch.setattr(lunch_menu.scraper_client, "fetch_html", fake_fetch)
+        found = asyncio.run(lunch_menu.discover_current_menus("http://x"))
+        assert {(e["school_type"], e["period_label"]) for e in found} == {("elementary", "October 2026"), ("high", "September 2026")}
+        assert all("_sort" not in e for e in found)
