@@ -801,9 +801,11 @@ on this list** - it's ArbiterLive branding, already supported.
   - **The 6-day cycle is parsed** by `services/cycle_calendar.py` (pdfplumber
     word coordinates; see its docstring for the grid geometry) through the
     existing `hs_rotation.scan` job: when `District.hs_rotation_url` ends in
-    `.pdf` it parses the cycle sheet instead of the HS rotation PDF, and a 404
-    falls back to the newest `letter_day_schedule` PDF found on the district
-    site. Items are `Day N` rows (source `rotation_pdf`) for every school type
+    `.pdf` it parses a cycle sheet instead. The sheet is *discovered* on every run
+    (the district site's "District Calendars" hub, newest academic year wins,
+    `pick_cycle_pdf`); the configured PDF is only the fallback if the site can't
+    be read, because last year's PDF stays online and never 404s. Items are
+    `Day N` rows (source `rotation_pdf`) for every school type
     in the district; X cells are closed days. A broken 1..N sequence records a
     `cycle_sequence_break` parse issue.
   - **Both schools share one roster page**, each listing the other's staff
