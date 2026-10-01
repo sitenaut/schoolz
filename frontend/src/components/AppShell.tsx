@@ -154,6 +154,8 @@ export function AppShell() {
   // page view. After GA_HOLD_MS the hit goes out, and town is attached by the
   // user-properties effect below once schools do arrive.
   const [gaHoldExpired, setGaHoldExpired] = useState(false);
+  // A logo URL that doesn't load (a scan once stored a page URL) shows the color dot instead of a broken-image icon.
+  const [brokenLogos, setBrokenLogos] = useState<Set<string>>(new Set());
   useEffect(() => {
     const t = window.setTimeout(() => setGaHoldExpired(true), GA_HOLD_MS);
     return () => window.clearTimeout(t);
@@ -295,8 +297,13 @@ export function AppShell() {
               title={s.name}
               key={s.id}
             >
-              {s.logo_url ? (
-                <img className={logoClass("avatar", s.slug)} src={s.logo_url} alt="" />
+              {s.logo_url && !brokenLogos.has(s.logo_url) ? (
+                <img
+                  className={logoClass("avatar", s.slug)}
+                  src={s.logo_url}
+                  alt=""
+                  onError={() => setBrokenLogos((prev) => new Set(prev).add(s.logo_url!))}
+                />
               ) : (
                 <span className="dot" style={{ marginLeft: 0, width: 22, height: 22 }} />
               )}

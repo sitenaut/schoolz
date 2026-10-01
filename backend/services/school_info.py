@@ -16,6 +16,7 @@ contact page. `website_url` itself isn't discovered here (there's no way
 to find a school's site without already knowing it, and every tracked
 school already has one) - this just verifies it resolves."""
 
+import json
 import re
 from urllib.parse import urljoin, urlparse
 
@@ -52,6 +53,25 @@ _KNOWN_LOGO_OVERRIDES: dict[str, str | None] = {
 }
 
 
+def _img_url(img) -> str | None:
+    """The URL an <img> will actually show. Finalsite server-renders its
+    header logo as `<img src="" data-image-sizes='[{"url": ..., "width": N}]'>`
+    and fills `src` with JavaScript, so a page fetched without that script
+    finishing has an empty src; urljoin(base, "") is the page itself, which
+    once got stored as the school's logo and rendered as a broken image."""
+    src = (img.get("src") or "").strip()
+    if src and not src.startswith("data:"):
+        return src
+    if (lazy := (img.get("data-src") or "").strip()) and not lazy.startswith("data:"):
+        return lazy
+    try:
+        sizes = json.loads(img.get("data-image-sizes") or "[]")
+    except ValueError:
+        return None
+    candidates = [x for x in sizes if isinstance(x, dict) and x.get("url")] if isinstance(sizes, list) else []
+    return max(candidates, key=lambda x: x.get("width") or 0)["url"] if candidates else None
+
+
 def _find_logo_url(html: str, base_url: str) -> str | None:
     """First image inside <header> that isn't a known widget/icon badge -
     confirmed real across 4 Cherry Hill Finalsite schools (elementary,
@@ -66,12 +86,14 @@ def _find_logo_url(html: str, base_url: str) -> str | None:
 
     soup = BeautifulSoup(html, "lxml")
     header = soup.find("header") or soup
-    images = [img for img in header.find_all("img", src=True) if not any(bad in img["src"].lower() for bad in _LOGO_SRC_EXCLUDE)]
+    # (img, effective url): an <img> with no real URL anywhere is skipped,
+    # never turned into the page's own URL by urljoin(base, "").
+    images = [(img, url) for img in header.find_all("img") if (url := _img_url(img)) and not any(bad in url.lower() for bad in _LOGO_SRC_EXCLUDE)]
     # Prefer one that actually says "logo" (catches a case like Mosaic's
     # own markup, where the real logo's alt text is "Home" but a
     # shopping-cart icon happens to come first in the header) before
     # falling back to whichever comes first.
-    logo_like = next((img for img in images if "logo" in img["src"].lower() or "logo" in (img.get("alt") or "").lower()), None)
+    logo_like = next((c for c in images if "logo" in c[1].lower() or "logo" in (c[0].get("alt") or "").lower()), None)
     chosen = logo_like or (images[0] if images else None)
     if not chosen:
         return None
@@ -81,7 +103,7 @@ def _find_logo_url(html: str, base_url: str) -> str | None:
     # includes its own path (e.g. goddardschool.com/schools/nj/...,
     # unlike the Finalsite sites' bare-domain URLs) turned an
     # absolute-path src into a broken concatenated URL.
-    return urljoin(base_url + "/", chosen["src"])
+    return urljoin(base_url + "/", chosen[1])
 
 
 def _parse_location(html: str, base_url: str) -> dict:
