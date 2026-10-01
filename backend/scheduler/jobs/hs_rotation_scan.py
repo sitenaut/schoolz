@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, time
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import scraper_client
 from models import District, School, SchoolContentItem
+from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
 from services import school_documents
 from services.cycle_calendar import parse_cycle_pdf
@@ -18,21 +20,30 @@ _SOURCE = "rotation_pdf"
 _TYPES = ["high"]
 
 
+def pick_cycle_pdf(docs: list[dict]) -> str | None:
+    """Newest-year `N day cycle` PDF among discovered documents."""
+    found = [
+        d for d in docs
+        if d["doc_type"] == "letter_day_schedule"
+        and urlparse(d["url"]).path.lower().endswith(".pdf")
+        and re.search(r"cycle", d["title"] + " " + d["url"], re.I)
+    ]
+    found.sort(key=lambda d: d.get("academic_year") or "", reverse=True)
+    return found[0]["url"] if found else None
+
+
 async def _fetch_cycle_pdf(district: District) -> tuple[str, dict]:
-    """The configured URL first; a new school year's PDF has a new path, so on
-    a 404 fall back to the newest cycle calendar the district site links."""
+    """What the district site links right now wins, so next year's PDF is picked
+    up even though last year's stays online and would never 404. The configured
+    URL is only the fallback for when the site can't be read."""
     url = district.hs_rotation_url
+    if district.website_url:
+        try:
+            url = pick_cycle_pdf(await school_documents.discover_from_website(district.website_url)) or url
+        except Exception:
+            record_parse_issue("hs_rotation.scan", "unexpected_format", sample="district site discovery failed; using configured PDF")
     async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
         resp = await client.get(url)
-        if resp.status_code == 404 and district.website_url:
-            found = [
-                d for d in await school_documents.discover_from_website(district.website_url)
-                if d["doc_type"] == "letter_day_schedule" and urlparse(d["url"]).path.lower().endswith(".pdf")
-            ]
-            found.sort(key=lambda d: d.get("academic_year") or "", reverse=True)
-            if found:
-                url = found[0]["url"]
-                resp = await client.get(url)
         resp.raise_for_status()
     return url, parse_cycle_pdf(resp.content)
 

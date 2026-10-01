@@ -38,3 +38,16 @@ def test_every_school_day_is_a_weekday_and_the_cycle_never_breaks():
     assert all(datetime.date.fromisoformat(d["date"]).weekday() < 5 for d in parsed["days"])
     for prev, cur in zip(school, school[1:]):
         assert cur["day_number"] == prev["day_number"] % 6 + 1
+
+
+def test_pick_cycle_pdf_prefers_newest_year_and_ignores_other_documents():
+    from scheduler.jobs.hs_rotation_scan import pick_cycle_pdf
+
+    docs = [
+        {"doc_type": "letter_day_schedule", "title": "2026-2027 6 Day Cycle Calendar", "url": "https://x/a-2026.pdf", "academic_year": "2026-2027"},
+        {"doc_type": "letter_day_schedule", "title": "2027-2028 6 Day Cycle Calendar", "url": "https://x/a-2027.pdf", "academic_year": "2027-2028"},
+        {"doc_type": "letter_day_schedule", "title": "What Day is It?", "url": "https://drive.google.com/file/d/1/view", "academic_year": None},
+        {"doc_type": "bell_schedule", "title": "Bell cycle", "url": "https://x/bell.pdf", "academic_year": "2030-2031"},
+    ]
+    assert pick_cycle_pdf(docs) == "https://x/a-2027.pdf"
+    assert pick_cycle_pdf([]) is None
