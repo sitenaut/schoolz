@@ -28,6 +28,7 @@ SOURCE_KEYS = (
     "theatre_sources",
     "ludus_sources",
     "placewise_sources",
+    "patch_sources",
 )
 
 
