@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School
+from scheduler import progress
 from scheduler.registry import register_job
 from services import content_translation
 from services.content_translation import LANGUAGE_NAMES, translate_school_content
@@ -53,14 +54,32 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     stored_by_lang: dict[str, int] = {}
     for lang in langs:
         total = 0
-        for _ in range(MAX_PASSES):
+        for sweep in range(MAX_PASSES):
             stored = 0
-            for school_id in school_ids:
+            for idx, school_id in enumerate(school_ids):
                 content_translation._cooldown_until = 0.0
                 stored += await translate_school_content(db, school_id, lang)
+                # Items/translations touched by that call stay in the
+                # session's identity map otherwise, which is how a run across
+                # every school in one process accumulates enough to get
+                # OOM-killed on the scheduler machine's 512mb - confirmed on
+                # a real run (CLAUDE.md: "256mb got OOM-killed running three
+                # scans at once").
+                db.expire_all()
+                if idx % 10 == 9:
+                    await progress.checkpoint(
+                        {
+                            "lang": lang,
+                            "pass": sweep + 1,
+                            "schools_done": idx + 1,
+                            "schools_total": len(school_ids),
+                            "stored_so_far": {**stored_by_lang, lang: total + stored},
+                        }
+                    )
             total += stored
             if stored == 0:
                 break
         stored_by_lang[lang] = total
+        await progress.checkpoint({"lang_done": lang, "stored_by_lang": stored_by_lang})
 
     return f"stored translations: {stored_by_lang}"
