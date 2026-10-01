@@ -41,6 +41,7 @@ from .sources.ical import ICalSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
 from .sources.ludus import LudusSource
+from .sources.patch import PatchSource
 from .sources.placewise import PlacewiseSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
@@ -256,6 +257,18 @@ def _build_sources(params: dict) -> list[Source]:
                 url=entry["url"],
                 venue_name=entry.get("venue_name"),
                 venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []),
+            )
+        )
+    for entry in params.get("patch_sources") or []:
+        if not entry.get("name") or not entry.get("regions"):
+            continue
+        sources.append(
+            PatchSource(
+                name=entry["name"],
+                regions=list(entry["regions"]),
+                center=entry.get("center"),
+                max_miles=entry.get("max_miles"),
                 default_categories=list(entry.get("default_categories") or []),
             )
         )

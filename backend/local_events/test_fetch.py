@@ -17,6 +17,7 @@ from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
+from .sources.patch import PatchSource
 from .sources.placewise import PlacewiseSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
@@ -90,6 +91,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     ccls_sources = body.params.get("ccls_sources") or []
     theatre_sources = body.params.get("theatre_sources") or []
     placewise_sources = body.params.get("placewise_sources") or []
+    patch_sources = body.params.get("patch_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -118,6 +120,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.theatre_sources must be a list")
     if not isinstance(placewise_sources, list):
         raise HTTPException(status_code=400, detail="params.placewise_sources must be a list")
+    if not isinstance(patch_sources, list):
+        raise HTTPException(status_code=400, detail="params.patch_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -420,6 +424,25 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             url=url,
             venue_name=entry.get("venue_name"),
             venue_address=entry.get("venue_address"),
+            default_categories=list(entry.get("default_categories") or []),
+        )))
+
+    for entry in patch_sources:
+        name = (entry or {}).get("name") or "(unnamed patch source)"
+        regions = (entry or {}).get("regions")
+        if not regions:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'regions' field", source_type="patch",
+            ))
+            continue
+        results.append(await _probe("patch", PatchSource(
+            name=name,
+            # Two regions for a fast dry-run; the full list runs in the pipeline.
+            regions=list(regions)[:2],
+            center=entry.get("center"),
+            max_miles=entry.get("max_miles"),
             default_categories=list(entry.get("default_categories") or []),
         )))
 

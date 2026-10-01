@@ -56,6 +56,31 @@
             "marlton"
           ]
         }
+      ],
+      "patch_sources": [
+        {
+          "name": "patch",
+          "regions": [
+            "cherryhill",
+            "collingswood",
+            "haddon",
+            "moorestown",
+            "gloucestertownship",
+            "marlton-nj",
+            "medford-nj",
+            "voorhees-nj",
+            "shamong-nj",
+            "maple-shade-nj"
+          ],
+          "center": [
+            39.85,
+            -74.98
+          ],
+          "max_miles": 15,
+          "default_categories": [
+            "patch"
+          ]
+        }
       ]
     }
   }

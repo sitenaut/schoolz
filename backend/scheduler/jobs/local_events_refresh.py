@@ -455,6 +455,20 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "patch_sources": {
+            "type": "array",
+            "description": "Patch.com town calendars (patch.com/new-jersey/<region>/calendar) - the page server-renders its calendar into __NEXT_DATA__, so plain HTTP. List every region in ONE entry: regions repeat each other's events under the same id and are deduped within the entry. center + max_miles drop statewide promoted placements and online webinars (events with no coordinates).",
+            "items": {
+                "type": "object",
+                "required": ["name", "regions"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "regions": {"type": "array", "items": {"type": "string"}, "description": "Patch region slugs, e.g. 'cherryhill', 'collingswood', 'marlton-nj'."},
+                    "center": {"type": "array", "items": {"type": "number"}, "description": "[lat, lng]"},
+                    "max_miles": {"type": "number"},
+                },
+            },
+        },
         "ccls_sources": {
             "type": "array",
             "description": "Camden County Library System branches (events.camdencountylibrary.org) - its own Drupal JSON:API, no scraper. One entry per branch; branch_name is matched case-insensitively against whatever GET /jsonapi/node/location currently returns, so a renamed/added/closed branch needs no code change.",
