@@ -35,3 +35,13 @@ def test_matches_person_named_school_and_refuses_ambiguity():
     assert nj.match_row(rows, d, "Jaggard Elementary School")["School Name"] == "Robert B Jaggard School"
     assert nj.match_row(rows, d, "Beeler Elementary School")["School Name"] == "Helen L Beeler"
     assert nj.match_row(rows, d, "Marlton Preschool Center") is None
+
+
+def test_same_person_ignores_honorifics_and_needs_the_surname():
+    from services.njdoe_directory import same_person
+
+    assert same_person("Dr. Anthony Dent", "Anthony Dent")
+    assert same_person("Mrs. Amy Collins", "Amy Collins")
+    assert not same_person("Anthony Dent", "Anthony Denton")
+    assert not same_person("Anthony Dent", "Brianna Dent")
+    assert not same_person("Dent", "Anthony Dent")

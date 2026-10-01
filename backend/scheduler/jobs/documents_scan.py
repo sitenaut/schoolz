@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import District, School, SchoolDocument, SmoreNewsletter
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
-from services.school_documents import discover_district_letter_days, discover_from_smore, discover_from_website
+from services.school_documents import discover_district_letter_days, discover_from_smore, discover_from_website, keep_own_school_bell_schedules
 
 
 @register_job(
@@ -44,6 +44,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 pass  # the school's own site result still stands
     for entry in await discover_from_smore(db, school_id):
         found.append({**entry, "source": "newsletter"})
+    found, bells_narrowed = keep_own_school_bell_schedules(found, [school.short_name, school.name.split()[0]])
 
     if not found:
         if site_error is not None:
@@ -105,7 +106,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         max_year = max(years) if years else None
         found_urls = {e["url"] for e in found if e["doc_type"] == doc_type}
         for d in docs:
-            if doc_type == "letter_day_schedule":
+            if doc_type == "letter_day_schedule" or (doc_type == "bell_schedule" and bells_narrowed):
                 # A replaced rotation sheet gets a new URL; only what this run found is live.
                 d.is_current = d.url in found_urls
             else:

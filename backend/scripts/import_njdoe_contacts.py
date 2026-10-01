@@ -3,8 +3,15 @@ homeless liaison) into StaffMember for every tracked school.
 
     python scripts/import_njdoe_contacts.py /path/NJPubSchool.csv [--apply]
 
+The CSV is kept at backend/seed/njdoe/NJPubSchool.csv (the state's site is behind
+a bot wall, so it is re-downloaded by hand each year). For prod, copy it onto the
+scheduler machine and run this there as a one-off - never from a laptop against
+the prod DB.
+
 Dry run unless --apply. A school that already has a principal from its own
-roster keeps that one; the state's principal row is skipped for it."""
+roster keeps that one and the state's principal row is skipped for it - except
+that, when it is the same person and the roster row has no email, the state's
+email (kept only if it contains the person's surname) is copied onto it."""
 
 import asyncio
 import sys
@@ -29,10 +36,14 @@ async def main(path: str, apply: bool) -> None:
                 continue
             existing = (await db.execute(select(StaffMember).where(StaffMember.school_id == school.id))).scalars().all()
             by_id = {s.source_constituent_id: s for s in existing}
-            has_own_principal = any(s.role == "principal" and not s.source_constituent_id.startswith("njdoe:") for s in existing)
-            added = 0
+            own_principals = [s for s in existing if s.role == "principal" and not s.source_constituent_id.startswith("njdoe:")]
+            added = patched = 0
             for cid, p in nj.contacts(row).items():
-                if cid == "njdoe:principal" and has_own_principal:
+                if cid == "njdoe:principal" and own_principals:
+                    for own in own_principals:
+                        if p["email"] and not own.email and nj.same_person(own.full_name, p["full_name"]):
+                            own.email = p["email"]
+                            patched += 1
                     continue
                 cur = by_id.get(cid)
                 if cur:
@@ -41,7 +52,7 @@ async def main(path: str, apply: bool) -> None:
                     db.add(StaffMember(school_id=school.id, source_constituent_id=cid, full_name=p["full_name"],
                                        title=p["title"], email=p["email"], role=classify_role(p["title"])))
                     added += 1
-            print(f"ok        {school.name} <- {row['School Name']}: {list(nj.contacts(row))} (+{added})")
+            print(f"ok        {school.name} <- {row['School Name']}: {list(nj.contacts(row))} (+{added}, {patched} email(s) added to roster rows)")
         if apply:
             await db.commit()
         else:

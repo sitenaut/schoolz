@@ -14,6 +14,8 @@ import re
 
 # (role, compiled pattern) - first match wins.
 _ROLE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    # "Secretary to the Dir. of Curr./Nokomis Principal" is the secretary, not the principal.
+    ("secretary", re.compile(r"\b(secretary|administrative assistant)\s+to\b", re.I)),
     ("assistant_principal", re.compile(r"\b(assistant|vice)\s+principal\b", re.I)),
     ("principal", re.compile(r"\b(principal|chief school administrator)\b", re.I)),
     ("nurse", re.compile(r"\bnurse\b", re.I)),

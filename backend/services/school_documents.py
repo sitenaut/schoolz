@@ -22,7 +22,7 @@ labeled 2023-2024 while its current newsletter links a 2026-2027 version.
 import re
 import time
 from datetime import date
-from urllib.parse import urljoin
+from urllib.parse import unquote, urljoin
 
 import httpx
 from bs4 import BeautifulSoup
@@ -40,10 +40,22 @@ _HANDBOOK_RE = re.compile(r"handbook", re.IGNORECASE)
 # bell-schedule). First match wins, so keep the more specific ones first.
 _DOC_TYPE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     # Medford's home page links its A-D rotation calendar as "What Day is It?".
-    ("letter_day_schedule", re.compile(r"what\s+day\s+is\s+it", re.IGNORECASE)),
+    ("letter_day_schedule", re.compile(r"what\s+day\s+is\s+it|\d\s*-?\s*day\s+cycle", re.IGNORECASE)),
     ("bell_schedule", re.compile(r"bell[\s-]*schedule", re.IGNORECASE)),
     ("handbook", _HANDBOOK_RE),
 ]
+
+
+# A "District Calendars" page (Medford Lakes) is a hub: its district-calendar and
+# trimester PDFs aren't documents we keep, but its "6 Day Cycle Calendar" is.
+_POLICY_NAV_RE = re.compile(r"polic(?:y|ies)", re.IGNORECASE)
+_FAMILY_NAV_RE = re.compile(r"parent|student|family", re.IGNORECASE)
+_CALENDAR_HUB_RE = re.compile(r"^district\s+calendars?$", re.IGNORECASE)
+
+
+# A school-lunch ordering portal linked from the home page. FoodDays is a
+# login-only app with no public menu, so all there is to keep is the link.
+_ORDERING_PORTAL_RE = re.compile(r"^https?://(?:[\w-]+\.)*myfooddays\.com(?:/|$)", re.IGNORECASE)
 
 
 def classify_doc_type(text: str) -> str | None:
@@ -78,7 +90,13 @@ def _find_doc_anchors(html: str, base_url: str) -> list[dict]:
     for a in soup.find_all("a", href=True):
         text = a.get_text(" ", strip=True)
         href = a["href"]
-        doc_type = classify_doc_type(text) or classify_doc_type(href)
+        doc_type = (
+            "lunch_ordering" if _ORDERING_PORTAL_RE.match(href)
+            else classify_doc_type(text) or classify_doc_type(href) or ("calendar_hub" if _CALENDAR_HUB_RE.match(text) else None)
+        )
+        # A "Policy, Procedure and Handbook" nav page is a folder of board policies, not the handbook.
+        if doc_type == "handbook" and _POLICY_NAV_RE.search(text) and not _FAMILY_NAV_RE.search(text):
+            continue
         if doc_type:
             if href.startswith("/"):
                 href = base_url.rstrip("/") + href
@@ -86,22 +104,28 @@ def _find_doc_anchors(html: str, base_url: str) -> list[dict]:
     return results
 
 
-def _find_doc_file_links(html: str, base_url: str) -> list[str]:
+def _find_doc_file_anchors(html: str, base_url: str) -> list[tuple[str, str]]:
     # Confirmed real: Finalsite wraps each page's actual content in
     # <main id="fsPageContent"> - restricting to it (falling back to the
     # whole page if that container isn't found) avoids picking up shared
     # nav/footer links repeated on every page (e.g. one district-wide drive
     # link that has nothing to do with this school's handbook).
+    # Edlio's equivalent is #pageContentWrapper: unscoped, the "Handbook"
+    # page picked up three unrelated /pdfs/ links from the site footer.
     soup = BeautifulSoup(html, "lxml")
-    container = soup.find(id="fsPageContent") or soup
+    container = soup.find(id="fsPageContent") or soup.find(id="pageContentWrapper") or soup
     links = []
     for a in container.find_all("a", href=True):
         href = a["href"]
         if _DOC_FILE_RE.search(href):
             if href.startswith("/"):
                 href = base_url.rstrip("/") + href
-            links.append(href)
+            links.append((href, a.get_text(" ", strip=True)))
     return links
+
+
+def _find_doc_file_links(html: str, base_url: str) -> list[str]:
+    return [href for href, _ in _find_doc_file_anchors(html, base_url)]
 
 
 _NOT_A_SCHOOL_HANDBOOK_RE = re.compile(r"dyslexia", re.IGNORECASE)
@@ -158,6 +182,20 @@ def _find_letter_day_pdfs(html: str, page_url: str, today: date | None = None) -
     return results
 
 
+def keep_own_school_bell_schedules(entries: list[dict], school_tokens: list[str]) -> tuple[list[dict], bool]:
+    """Sister schools on one shared site (Medford Lakes) each get their own
+    bell-schedule PDF, and the nav lists all of them. When some of the
+    bell schedules name this school in their file name or title, keep only
+    those; when none do (one schedule for everyone), keep them all. Returns
+    (entries, filtered)."""
+    tokens = [t.lower() for t in school_tokens if t]
+    bells = [e for e in entries if e["doc_type"] == "bell_schedule"]
+    own = [e for e in bells if any(t in unquote(e["url"] + " " + e["title"]).lower() for t in tokens)]
+    if not own or len(own) == len(bells):
+        return entries, False
+    return [e for e in entries if e["doc_type"] != "bell_schedule" or e in own], True
+
+
 async def discover_from_website(school_website_url: str) -> list[dict]:
     """Follows any nav link mentioning "handbook" from the homepage, then
     looks one level deeper for the actual PDF/Google Doc link on that page
@@ -188,6 +226,11 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
     for candidate in _find_doc_anchors(home["html"], base):
         url = candidate["url"]
         doc_type = candidate["doc_type"]
+        if doc_type == "lunch_ordering":
+            if url not in seen_urls:
+                seen_urls.add(url)
+                results.append({"title": candidate["title"], "url": url, "academic_year": None, "doc_type": doc_type})
+            continue
         if _DOC_FILE_RE.search(url):
             if url not in seen_urls:
                 seen_urls.add(url)
@@ -201,6 +244,13 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
 
         page_html = page["html"]
         page_title = page.get("title") or candidate["title"]
+        if doc_type == "calendar_hub":
+            for doc_url, text in _find_doc_file_anchors(page_html, base):
+                if classify_doc_type(text) == "letter_day_schedule" and doc_url not in seen_urls:
+                    seen_urls.add(doc_url)
+                    clean = re.sub(r"\.pdf$", "", re.sub(r"\s+", " ", text), flags=re.I).strip(" -")
+                    results.append({"title": clean, "url": doc_url, "academic_year": _extract_year(text + " " + doc_url), "doc_type": "letter_day_schedule"})
+            continue
         doc_links = _find_doc_file_links(page_html, base)
         year = _extract_year(page_title) or _extract_year(page_html[:5000])
         if doc_links:

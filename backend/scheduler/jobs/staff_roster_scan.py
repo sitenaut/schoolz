@@ -8,7 +8,7 @@ from scheduler.registry import register_job
 from services.apptegy import fetch_staff as fetch_apptegy_staff
 from services.staff_roles import classify_role
 from services.contact_page import fetch_contacts
-from services.staff_roster import fetch_roster
+from services.staff_roster import drop_sibling_school_staff, fetch_roster
 
 
 @register_job(
@@ -48,7 +48,21 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     else:
         return "school has no website_url or apptegy_org_id configured"
 
+    dropped_ids: set[str] = set()
+    if school.website_url and not school.apptegy_org_id:
+        siblings = (
+            await db.execute(select(School).where(School.website_url == school.website_url, School.id != school.id))
+        ).scalars().all()
+        roster, dropped = drop_sibling_school_staff(
+            roster, [school.short_name, school.name], [[s.short_name, s.name] for s in siblings]
+        )
+        dropped_ids = {e["constituent_id"] for e in dropped}
+
     existing = (await db.execute(select(StaffMember).where(StaffMember.school_id == school.id))).scalars().all()
+    for row in existing:
+        if row.source_constituent_id in dropped_ids:
+            await db.delete(row)
+    existing = [row for row in existing if row.source_constituent_id not in dropped_ids]
     existing_by_constituent = {s.source_constituent_id: s for s in existing}
 
     created = updated = 0
@@ -60,7 +74,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.title = entry["title"]
             row.role = classify_role(entry["title"])
             row.department = entry["department"]
-            row.email = entry["email"]
+            # A directory with no addresses (Edlio) mustn't wipe one filled in from the NJ DOE directory.
+            row.email = entry["email"] or row.email
             row.phone = entry["phone"]
             row.last_synced_at = now
             updated += 1

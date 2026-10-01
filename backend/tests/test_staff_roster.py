@@ -118,3 +118,26 @@ def test_edlio_cards_have_stable_ids_titles_and_no_contact_fields():
     assert items[1]["title"] is None
     assert all(i["email"] is None and i["phone"] is None for i in items)
     assert _parse_edlio_page(_CARD_WITH_TITLE) == []
+
+
+def test_sibling_school_titles_are_dropped_from_a_shared_roster():
+    from services.staff_roster import drop_sibling_school_staff
+
+    def p(name, title):
+        return {"constituent_id": name, "full_name": name, "title": title}
+
+    roster = [
+        p("a", "Director of Curriculum/Nokomis School Principal"),
+        p("b", "Superintendent/Neeta Principal"),
+        p("c", "Neeta Nurse"),
+        p("d", "School Counselor"),
+        p("e", None),
+    ]
+    kept, dropped = drop_sibling_school_staff(roster, ["Neeta", "Neeta School"], [["Nokomis", "Nokomis School"]])
+    assert [e["constituent_id"] for e in kept] == ["b", "c", "d", "e"]
+    assert [e["constituent_id"] for e in dropped] == ["a"]
+    # No sibling on the site (or none with a distinctive name): nothing is dropped.
+    assert drop_sibling_school_staff(roster, ["Neeta"], []) == (roster, [])
+    # A title naming both schools is shared staff and stays.
+    both = [p("f", "Nurse, Neeta and Nokomis")]
+    assert drop_sibling_school_staff(both, ["Neeta"], [["Nokomis"]]) == (both, [])

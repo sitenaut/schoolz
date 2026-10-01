@@ -223,3 +223,29 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
             return list(by_constituent_id.values())
 
     return []
+
+
+_SCHOOL_NAME_NOISE = {"the", "school", "schools", "elementary", "middle", "high", "junior", "senior", "jr", "sr", "memorial", "township", "public", "center", "primary", "intermediate"}
+
+
+def _school_tokens(*names: str | None) -> set[str]:
+    words: set[str] = set()
+    for n in names:
+        words |= set(re.findall(r"[a-z]+", (n or "").lower()))
+    return words - _SCHOOL_NAME_NOISE
+
+
+def drop_sibling_school_staff(roster: list[dict], own_names: list[str | None], sibling_names: list[list[str | None]]) -> tuple[list[dict], list[dict]]:
+    """Sister schools on one shared site (Medford Lakes) all list the same
+    staff, titled "Nokomis Nurse" / "Neeta Principal". A title that names a
+    sibling school and not this one belongs to the sibling; returns
+    (kept, dropped)."""
+    own = _school_tokens(*own_names)
+    sibling = set().union(*(_school_tokens(*n) for n in sibling_names)) - own if sibling_names else set()
+    if not sibling:
+        return roster, []
+    kept, dropped = [], []
+    for e in roster:
+        words = set(re.findall(r"[a-z]+", (e["title"] or "").lower()))
+        (dropped if words & sibling and not words & own else kept).append(e)
+    return kept, dropped

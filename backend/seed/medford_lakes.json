@@ -1,0 +1,392 @@
+{
+  "exported_at": "2026-10-01T12:00:00Z",
+  "source": "onboarding: Medford Lakes School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Medford Lakes School District",
+      "website_url": "https://www.medford-lakes.k12.nj.us",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Medford Lakes District Calendar",
+          "url": "https://www.medford-lakes.k12.nj.us/servlet/ICalServlet?id=0"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": "https://www.medford-lakes.k12.nj.us/ourpages/auto/2026/7/9/43666439/2026-2027%206%20Day%20Cycle%20Calendar%20%20%20-%20Sheet1-3.pdf",
+      "transportation_url": null,
+      "towns": [
+        "Medford Lakes"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "nokomis",
+      "name": "Nokomis School",
+      "short_name": "Nokomis",
+      "district_name": "Medford Lakes School District",
+      "school_type": "elementary",
+      "address": "135 Mudjekeewis Trail, Medford Lakes, NJ 08055",
+      "main_phone": "609-654-0991",
+      "website_url": "https://www.medford-lakes.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-654-0991",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call 609-654-0991 and choose prompt #2 to leave an attendance voicemail (from 4:00 PM the evening before until 8:40 AM). Give your child's name, homeroom teacher and the reason for the absence.",
+      "start_time": "8:23 AM",
+      "end_time": "3:16 PM",
+      "early_dismissal_time": "12:23 PM",
+      "delayed_opening_time": "10:23 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:23",
+            "end": "08:29"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:39",
+            "end": "09:11"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:13",
+            "end": "09:53"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:55",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:37",
+            "end": "11:17"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:19",
+            "end": "11:59"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:01",
+            "end": "13:10"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:12",
+            "end": "13:52"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:54",
+            "end": "14:34"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:36",
+            "end": "15:16"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:23",
+            "end": "08:31"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:33",
+            "end": "09:00"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:02",
+            "end": "09:29"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:31",
+            "end": "09:58"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:00",
+            "end": "10:27"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:29",
+            "end": "10:56"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:58",
+            "end": "11:25"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:27",
+            "end": "11:54"
+          },
+          {
+            "name": "Period 9",
+            "start": "11:56",
+            "end": "12:23"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:23",
+            "end": "10:29"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:31",
+            "end": "10:56"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:58",
+            "end": "11:23"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:25",
+            "end": "11:50"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:52",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:19",
+            "end": "12:44"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:46",
+            "end": "13:55"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:57",
+            "end": "14:22"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:24",
+            "end": "14:49"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:51",
+            "end": "15:16"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "neeta",
+      "name": "Neeta School",
+      "short_name": "Neeta",
+      "district_name": "Medford Lakes School District",
+      "school_type": "middle",
+      "address": "44 Neeta Trail, Medford Lakes, NJ 08055",
+      "main_phone": "609-654-5155",
+      "website_url": "https://www.medford-lakes.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-654-5155",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call 609-654-5155 and choose prompt #2 to leave an attendance voicemail (from 4:00 PM the evening before until 8:30 AM). Give your child's name, homeroom teacher and the reason for the absence.",
+      "start_time": "8:09 AM",
+      "end_time": "3:02 PM",
+      "early_dismissal_time": "12:09 PM",
+      "delayed_opening_time": "10:09 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:09",
+            "end": "08:14"
+          },
+          {
+            "name": "RTI/Enrichment",
+            "start": "08:15",
+            "end": "08:47"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:48",
+            "end": "09:28"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:29",
+            "end": "10:09"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:10",
+            "end": "10:50"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:51",
+            "end": "11:31"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:32",
+            "end": "12:12"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:13",
+            "end": "12:59"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:00",
+            "end": "13:40"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:41",
+            "end": "14:21"
+          },
+          {
+            "name": "Period 10",
+            "start": "14:22",
+            "end": "15:02"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:09",
+            "end": "08:17"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:18",
+            "end": "08:46"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:47",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:16",
+            "end": "09:44"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:45",
+            "end": "10:13"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:14",
+            "end": "10:42"
+          },
+          {
+            "name": "Period 8",
+            "start": "10:43",
+            "end": "11:11"
+          },
+          {
+            "name": "Period 9",
+            "start": "11:12",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 10",
+            "start": "11:41",
+            "end": "12:09"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:09",
+            "end": "10:20"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:21",
+            "end": "10:49"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:50",
+            "end": "11:18"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:19",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:48",
+            "end": "12:16"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:17",
+            "end": "12:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:46",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:36",
+            "end": "14:04"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:05",
+            "end": "14:33"
+          },
+          {
+            "name": "Period 10",
+            "start": "14:34",
+            "end": "15:02"
+          }
+        ]
+      },
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ]
+}

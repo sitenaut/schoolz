@@ -774,3 +774,49 @@ on this list** - it's ArbiterLive branding, already supported.
     Chairville), typed into the seed. **Absence** is a per-school phone line
     plus an email for four schools; the Haines address resolved to
     `memorialattendance@`, which may be shared.
+- **Medford Lakes (Edlio CMS, one shared site `www.medford-lakes.k12.nj.us`)** —
+  Nokomis (PreK-2) and Neeta (3-8), seed `backend/seed/medford_lakes.json`.
+  - **One website for both schools**: both School rows carry the district URL,
+    so every per-school scan reads the same pages. `school_info.scan` can't
+    parse that footer (it lists both schools' addresses, `_parse_edlio_footer`
+    wants one) and warns every run; address, phone and hours are typed into
+    the seed, and `ensure_location` still geocodes them for weather. Disable
+    those two jobs if the warning is noise. No logo is found either.
+  - **Calendar**: Edlio's iCal servlet, `/servlet/ICalServlet?id=0` (not
+    `/apps/events/ical/` like Medford Township). One district feed, ~80 items.
+  - **Pages are client-rendered**: `/apps/pages/...` content only exists after
+    JS runs, so fetch with `wait_for_selector="#pageContentWrapper"`.
+    `school_documents._find_doc_file_anchors` scopes to that container the
+    way it does Finalsite's `#fsPageContent`.
+  - **Documents**: the nav's "Policy, Procedure and Handbook" is a folder of
+    board policies, so a "polic*" nav label without parent/student/family is
+    not treated as a handbook. "District Calendars" is a *hub*: its district
+    calendar and trimester PDFs are skipped and only the "2026-2027 6 Day
+    Cycle Calendar" is kept, as a `letter_day_schedule` (the `N day cycle`
+    pattern). The bell-schedule page lists both schools' PDFs; the scan keeps
+    only each school's own (`keep_own_school_bell_schedules`) and they are
+    still 2025-26, the latest published. Their periods are typed into the
+    seed as `bell_periods`, with `delayed_opening_time` from the same PDFs.
+    "My Food Days" is kept as a `lunch_ordering` document (see Gaps).
+  - **The 6-day cycle is parsed** by `services/cycle_calendar.py` (pdfplumber
+    word coordinates; see its docstring for the grid geometry) through the
+    existing `hs_rotation.scan` job: when `District.hs_rotation_url` ends in
+    `.pdf` it parses the cycle sheet instead of the HS rotation PDF, and a 404
+    falls back to the newest `letter_day_schedule` PDF found on the district
+    site. Items are `Day N` rows (source `rotation_pdf`) for every school type
+    in the district; X cells are closed days. A broken 1..N sequence records a
+    `cycle_sequence_break` parse issue.
+  - **Both schools share one roster page**, each listing the other's staff
+    with the sibling school in the title. `staff_roster_scan` drops those
+    (`drop_sibling_school_staff`) for schools sharing a `website_url`.
+  - **NJ DOE contacts**: the state CSV is kept at `backend/seed/njdoe/` and
+    `scripts/import_njdoe_contacts.py` copies a state principal email onto the
+    matching roster principal only when it contains the person's surname. Only
+    one real email (the principal's) was obtainable this way.
+  - **Absence** is prompt #2 on each school's main number, voicemail from
+    4:00 PM the evening before until 8:30 (Neeta) / 8:40 (Nokomis).
+  - **Gaps**: lunch is My Food Days (Blazor app behind a parent login, no public
+    menu API, so only the link is kept; no SchoolCafé); newsletters are Constant Contact (`conta.cc`) links with no
+    archive page; staff directory has names and titles only (no emails but the
+    principal's); no transportation page; Lenape's
+    seed already lists Medford Lakes as a sending town.
