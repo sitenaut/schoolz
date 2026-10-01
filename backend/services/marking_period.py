@@ -13,6 +13,7 @@ import asyncio
 import io
 import re
 from datetime import datetime
+from urllib.parse import quote, urljoin, urlparse
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -109,12 +110,69 @@ _PDF_GRADES_RE = re.compile(r"Final Q(\d)\s+Grades Posted\s*-\s*(\d{1,2})/(\d{1,
 _PDF_INTERIM_RE = re.compile(r"INTERIM REPORTS.{0,300}?Dates:\s*((?:\d{1,2}/\d{1,2}(?:,\s*)?)+)", re.IGNORECASE | re.DOTALL)
 
 
+_FULL = r"(\d{1,2})/(\d{1,2})/(\d{2})"
+_PDF_RANGE_RE = re.compile(r"(\d)(?:st|nd|rd|th):\s*" + _FULL + r"\s*-\s*" + _FULL)
+_PDF_PAIR_RE = re.compile(_FULL + r"\s+" + _FULL)
+_LONG_DATE_RE = re.compile(r"(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s*(\d{4})")
+_MONTHS = {m: i for i, m in enumerate(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], 1)}
+
+
+def _entry(title: str, start: datetime) -> dict:
+    return {"school_type": None, "title": title, "start_date": start, "external_uid": f"marking_period:pdf:{title}:{start.date().isoformat()}"}
+
+
+def _full_date(mo: str, d: str, yy: str) -> datetime | None:
+    try:
+        return datetime(2000 + int(yy), int(mo), int(d), tzinfo=_ET)
+    except ValueError:
+        return None
+
+
+def parse_calendar_pdf_dated(text: str) -> list[dict]:
+    """Calendar PDFs that print full dates: a "1st: 9/2/26-11/11/26" list of
+    marking periods (Stratford, four; Laurel Springs, three trimesters), plus
+    Stratford's INTERIMS / REPORT CARDS columns ("10/7/26 11/18/26" per row)
+    and Laurel Springs' REPORT CARDS list ("December 11, 2026", ...)."""
+    out: list[dict] = []
+    unit = "Trimester" if re.search(r"TRIMESTER\s+MARKING\s+PERIODS", text, re.I) else "Marking Period"
+    for m in _PDF_RANGE_RE.findall(text):
+        when = _full_date(*m[4:7])
+        if when:
+            out.append(_entry(f"{unit} {m[0]} Ends", when))
+
+    cols = re.search(r"INTERIMS\s+REPORT CARDS", text)
+    if cols:
+        stop = re.search(r"MARKING\s+PERIODS", text[cols.end():])
+        segment = text[cols.end(): cols.end() + (stop.start() if stop else 600)]
+        for m in _PDF_PAIR_RE.findall(segment):
+            for title, parts in (("Interim Reports Issued", m[:3]), ("Report Cards Issued", m[3:])):
+                when = _full_date(*parts)
+                if when:
+                    out.append(_entry(title, when))
+    else:
+        head = re.search(r"REPORT CARDS", text)
+        if head:
+            stop = re.search(r"TRIMESTER\s+MARKING\s+PERIODS|MARKING\s+PERIODS", text[head.end():])
+            segment = text[head.end(): head.end() + (stop.start() if stop else 400)]
+            for mon, d, y in _LONG_DATE_RE.findall(segment):
+                try:
+                    out.append(_entry("Report Cards Issued", datetime(int(y), _MONTHS[mon], int(d), tzinfo=_ET)))
+                except ValueError:
+                    continue
+    return out
+
+
 def parse_calendar_pdf_text(text: str) -> list[dict]:
     """Marking-period dates printed in a school-year calendar PDF's sidebar
     ("1st Marking Period Ends - 11/4 (44 days)", "Final Q1 Grades Posted -
     11/11", "INTERIM REPORTS Dates: 10/2, 12/11, ..."). Dates carry no year, so
     it comes from the "2026-2027 School Calendar" title: July-December is the
-    first year, January-June the second. School-wide (no school_type)."""
+    first year, January-June the second. School-wide (no school_type). Falls
+    through to the full-date layouts (`parse_calendar_pdf_dated`)."""
+    return _parse_sidebar_pdf(text) or parse_calendar_pdf_dated(text)
+
+
+def _parse_sidebar_pdf(text: str) -> list[dict]:
     year_m = _YEAR_RE.search(text)
     if not year_m:
         return []
@@ -169,9 +227,43 @@ async def _presence_calendar_dates(url: str) -> list[dict] | None:
     return parse_calendar_pdf_text(await asyncio.to_thread(_pdf_text, resp.content))
 
 
+def find_calendar_pdf(html: str, page_url: str) -> str | None:
+    """The school-year calendar PDF linked from a page (Stratford's home page,
+    Laurel Springs' calendar page): a .pdf whose link text or name says calendar."""
+    soup = BeautifulSoup(html, "lxml")
+    for a in soup.find_all("a", href=True):
+        href = urljoin(page_url, a["href"].strip())
+        if urlparse(href).path.lower().endswith(".pdf") and "calendar" in (a.get_text(" ", strip=True) + href).lower():
+            return quote(href, safe=":/%?=&")
+    return None
+
+
+async def _pdf_calendar_dates(url: str) -> list[dict]:
+    """Dates from a calendar PDF that is the URL itself or is linked from it.
+    Empty when there is no such PDF or it has none of the known layouts, so the
+    HTML table path still runs."""
+    headers = {"User-Agent": "Mozilla/5.0 (schoolz calendar sync)"}
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=headers) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            if resp.content[:5] != b"%PDF-":
+                pdf_url = find_calendar_pdf(resp.text, str(resp.url))
+                if not pdf_url:
+                    return []
+                resp = await client.get(pdf_url)
+                resp.raise_for_status()
+    except httpx.HTTPError:
+        return []
+    return parse_calendar_pdf_text(await asyncio.to_thread(_pdf_text, resp.content))
+
+
 async def fetch_marking_period_page(url: str) -> list[dict]:
     from_pdf = await _presence_calendar_dates(url)
     if from_pdf is not None:
+        return from_pdf
+    from_pdf = await _pdf_calendar_dates(url)
+    if from_pdf:
         return from_pdf
     result = await scraper_client.fetch_html(url, wait_for_selector="table")
     return parse_marking_period_page(result["html"])

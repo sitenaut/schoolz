@@ -873,11 +873,16 @@ on this list** - it's ArbiterLive branding, already supported.
   - **Cross-cutting**: the NJ DOE CSV is stale for Somerdale (still lists the
     new superintendent as principal). `staff_roster`/`documents` scans never
     prune, so changing an id scheme leaves stale rows.
-  - **Gaps**: no transportation on any of the five, marking periods only wired
-    for Somerdale (parsed from its calendar PDF). Sterling, Stratford,
-    Magnolia and Laurel Springs were NOT checked for marking-period/interim/
-    report-card dates (the first pass just recorded "none found"); look in
-    their calendar PDFs, handbooks and grading pages; newsletters
+  - **Marking periods** (checked by crawling each site, not just the first
+    pass): Sterling's are already in its ICS feed (Progress Reports, Report
+    Cards, semester end) so no scan. Stratford and Laurel Springs print them in
+    the school-year calendar PDF (`marking_period_url` = the site / calendar
+    page; `find_calendar_pdf` follows the linked PDF, `parse_calendar_pdf_dated`
+    reads "1st: 9/2/26-11/11/26" ranges plus INTERIMS / REPORT CARDS columns
+    for Stratford, and trimester ends + a REPORT CARDS date list for Laurel
+    Springs). Magnolia is on trimesters but publishes no dates anywhere (calendar
+    PDF, handbook, ~120 crawled pages), so there is nothing to scan.
+  - **Gaps**: no transportation on any of the five; newsletters
     are one-off PDFs (Sterling) or Smore links inside news posts (Stratford,
     no stable archive); PTAs are Facebook groups or empty PTBoard sites;
     Stratford has no athletics link and no staff emails (profile pages are a

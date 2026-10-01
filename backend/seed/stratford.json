@@ -13,7 +13,7 @@
           "url": "https://www.stratford.k12.nj.us/servlet/ICalServlet?id=0"
         }
       ],
-      "marking_period_url": null,
+      "marking_period_url": "https://www.stratford.k12.nj.us/",
       "preschool_locations_url": null,
       "preschool_team_url": null,
       "hs_rotation_url": null,
