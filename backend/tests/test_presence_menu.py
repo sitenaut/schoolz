@@ -98,3 +98,40 @@ def test_marking_periods_come_from_the_calendar_pdf_sidebar():
         ]
     )
     assert all(r["school_type"] is None for r in rows)
+
+
+def _dated(name: str) -> list[tuple[str, str]]:
+    from pathlib import Path
+
+    from services.marking_period import parse_calendar_pdf_text
+
+    text = (Path(__file__).parent / "fixtures" / name).read_text()
+    return sorted((r["start_date"].date().isoformat(), r["title"]) for r in parse_calendar_pdf_text(text))
+
+
+def test_stratford_calendar_pdf_interims_report_cards_and_quarters():
+    assert _dated("stratford_calendar_2026_27.txt") == sorted(
+        [
+            ("2026-11-11", "Marking Period 1 Ends"), ("2027-01-29", "Marking Period 2 Ends"),
+            ("2027-04-15", "Marking Period 3 Ends"), ("2027-06-18", "Marking Period 4 Ends"),
+            ("2026-10-07", "Interim Reports Issued"), ("2026-12-14", "Interim Reports Issued"), ("2027-03-05", "Interim Reports Issued"),
+            ("2026-11-18", "Report Cards Issued"), ("2027-02-05", "Report Cards Issued"), ("2027-04-20", "Report Cards Issued"),
+        ]
+    )
+
+
+def test_laurel_springs_calendar_pdf_trimesters_and_report_cards():
+    assert _dated("laurel_springs_calendar_2026_27.txt") == sorted(
+        [
+            ("2026-12-04", "Trimester 1 Ends"), ("2027-03-16", "Trimester 2 Ends"), ("2027-06-17", "Trimester 3 Ends"),
+            ("2026-12-11", "Report Cards Issued"), ("2027-03-24", "Report Cards Issued"), ("2027-06-17", "Report Cards Issued"),
+        ]
+    )
+
+
+def test_calendar_pdf_link_is_found_on_a_page_and_spaces_are_encoded():
+    from services.marking_period import find_calendar_pdf
+
+    html = '<a href="/other.pdf">Lunch</a><a href="https://www.x.org/26-27 New Calendar.pdf">26-27 District Calendar</a>'
+    assert find_calendar_pdf(html, "https://www.x.org/") == "https://www.x.org/26-27%20New%20Calendar.pdf"
+    assert find_calendar_pdf("<a href='/menu.pdf'>Menu</a>", "https://www.x.org/") is None

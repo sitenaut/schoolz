@@ -3,7 +3,7 @@
   "source": "onboarding: Laurel Springs School District",
   "districts": [
     {
-      "marking_period_url": null,
+      "marking_period_url": "https://www.laurelspringschool.org/school-calendar/",
       "preschool_locations_url": null,
       "preschool_team_url": null,
       "hs_rotation_url": null,
