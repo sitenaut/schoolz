@@ -822,3 +822,63 @@ on this list** - it's ArbiterLive branding, already supported.
     archive page; staff directory has names and titles only (no emails but the
     principal's); no transportation page; Lenape's
     seed already lists Medford Lakes as a sending town.
+- **Sterling Regional HS district + its four sending districts** (Somerdale,
+  Magnolia, Stratford incl. Hi-Nella's students, Laurel Springs) —
+  `backend/seed/{sterling,somerdale,stratford,magnolia,laurel_springs}.json`.
+  Five districts, four platforms:
+  - **Presence (ex-SharpSchool / "Smart Sites")** — Sterling and Somerdale
+    Park. Answers plain HTTP but **headless Playwright gets 502s or
+    `ERR_ABORTED`, so every scraper-based scan hangs: use httpx.**
+    `staff_roster` has Presence parsers (table pages for Sterling with
+    emails, a search JSON for Somerdale without), `school_info` reads the
+    footer, `discover_from_website` in `school_documents` fetches over httpx.
+    Sterling's SchoolCafé shortname is `SterlingHighSchoolNutriServe`,
+    athletics is Arbiter 22533. Somerdale's SchoolCafé district exists with
+    zero sites, so the shortname is null.
+  - **Presence "Documents" widgets are invisible to a crawl.** A page's file
+    list is not in its HTML: an inline `new ContentItemListUI('<folderId>',
+    null, '[]', {"ContextId":...})` makes the browser POST the folder id and
+    that settings dict (as a JSON *string*, `searchVal: ""`) to the anonymous
+    `/portal/svc/ContentItemSvc.asmx/GetItemList`. A "page has no links" result
+    on a Presence site means nothing until you've listed its widgets
+    (`services/presence_documents.py`). Somerdale's menus (`/departments/
+    cafeteria`: Sept PDFs, Oct JPGs; regular lunch, Pre-K lunch, Pre-K
+    breakfast), 2026-27 calendar PDF (`/parents/school_calendars`, whose
+    sidebar is the only source of marking periods and interim dates), bell
+    schedule and Pre-K handbook all live only there. Wired as
+    `School.presence_menu_page_url` -> `presence_menu.scan` (school-scoped
+    `LunchMenu`; Pre-K lunch is skipped as a near-copy of the plain menu,
+    Pre-K breakfast is kept and labelled because it's the school's only
+    breakfast; menu *pictures* go to Claude as image blocks), and the marking-
+    period scan reads the calendar PDF when the tracked page is Presence.
+    Their file host 403s a default httpx User-Agent. Sterling's widgets hold
+    only board notices/bids/policies, so nothing was missed there.
+  - **Edlio/Educational Networks** — Stratford (`stratford.k12.nj.us`).
+    `_parse_ednet_page` now also reads table-style staff lists; the footer is
+    `.enf-address` (`school_info._parse_edlio_footer`). Calendar is
+    `ICalServlet?id=0`; Yellin's bell PDF is stored (regular + early
+    dismissal; the delayed-opening table is too irregular, flat time only).
+  - **Finalsite** — Magnolia. Plain-page staff tables with Cloudflare-
+    obfuscated emails (decoded in `staff_roster`). Finalsite ICS ids 2 and 3
+    are duplicates, and the feed carries staff-only "Faculty Meeting" rows.
+    Policy-folder child links are not handbooks (`school_documents` skips
+    them). Lunch PDFs have yearless names (`OCTLUNCHMENU.pdf`) — year is
+    inferred in `lunch_menu.py`.
+  - **WordPress** — Laurel Springs: faculty cards parsed from the page,
+    calendar from a PDF (its public Google Calendar only holds 2020/2023
+    events — don't wire it), lunch PDF holds breakfast and lunch on separate
+    pages. `school_info.scan` warns here, so address/phone live in the seed.
+    The faculty page and the principal's-message page name different
+    principals.
+  - **Cross-cutting**: the NJ DOE CSV is stale for Somerdale (still lists the
+    new superintendent as principal). `staff_roster`/`documents` scans never
+    prune, so changing an id scheme leaves stale rows.
+  - **Gaps**: no transportation on any of the five, marking periods only wired
+    for Somerdale (parsed from its calendar PDF). Sterling, Stratford,
+    Magnolia and Laurel Springs were NOT checked for marking-period/interim/
+    report-card dates (the first pass just recorded "none found"); look in
+    their calendar PDFs, handbooks and grading pages; newsletters
+    are one-off PDFs (Sterling) or Smore links inside news posts (Stratford,
+    no stable archive); PTAs are Facebook groups or empty PTBoard sites;
+    Stratford has no athletics link and no staff emails (profile pages are a
+    contact form); no Hi-Nella school exists (it only appears in `towns`).

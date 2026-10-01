@@ -66,7 +66,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 is_all_day=True,
                 source="marking_period",
                 external_uid=entry["external_uid"],
-                applies_to_school_types=[entry["school_type"]],
+                applies_to_school_types=[entry["school_type"]] if entry["school_type"] else None,
             )
         )
         created += 1

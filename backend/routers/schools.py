@@ -180,6 +180,24 @@ async def _ensure_fdmealplanner_job(db: AsyncSession, school: School, user: User
     school.fdmealplanner_job_id = job.id
 
 
+async def _ensure_presence_menu_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring Presence menu scan the first time a school
+    gets presence_menu_page_url."""
+    if school.presence_menu_job_id or not school.presence_menu_page_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="presence_menu.scan",
+        name=f"Presence menu scan: {school.name}",
+        cron_expr=public_scan_cron("presence_menu.scan", school.id),
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.presence_menu_job_id = job.id
+
+
 async def _ensure_healthepro_job(db: AsyncSession, school: School, user: User) -> None:
     """Auto-creates the recurring Health-e Pro menu scan the first time a
     school gets healthepro_location."""
@@ -366,7 +384,7 @@ async def update_school(
         "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
         "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
         "events_doc_url", "bulletin_doc_url", "apptegy_org_id", "givebacks_shortname", "fdmealplanner_location",
-        "healthepro_location",
+        "healthepro_location", "presence_menu_page_url",
     ):
         value = getattr(payload, field)
         if value is not None:
@@ -389,6 +407,7 @@ async def update_school(
     await _ensure_givebacks_job(db, school, user)
     await _ensure_fdmealplanner_job(db, school, user)
     await _ensure_healthepro_job(db, school, user)
+    await _ensure_presence_menu_job(db, school, user)
     await db.commit()
     await db.refresh(school)
     return school

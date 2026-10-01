@@ -86,3 +86,43 @@ def test_shared_site_bell_schedules_narrow_to_the_schools_own():
     # Nothing names the school (one schedule for all), or every one does: leave them alone.
     assert keep_own_school_bell_schedules([neeta, nokomis], ["Other"]) == ([neeta, nokomis], False)
     assert keep_own_school_bell_schedules([neeta], ["Neeta"]) == ([neeta], False)
+
+
+def test_presence_site_is_read_over_plain_http_never_the_scraper(monkeypatch):
+    import asyncio
+
+    import httpx
+
+    import scraper_client
+    from services import school_documents
+
+    home = (
+        '<html><head><title>Home</title></head><body><a href="/students/student_handbook">Student Handbook</a>'
+        '<a href="/x"><img alt="SchoolMessenger Presence"></a></body></html>'
+    )
+    handbook_page = (
+        "<html><head><title>Student Handbook 2026-2027</title></head><body>"
+        '<a href="/cms/lib/NJ/Centricity/Domain/1/Sterling%20High%20School%20Handbook%202026-2027.pdf">Download</a>'
+        "</body></html>"
+    )
+    pages = {"/": home, "/students/student_handbook": handbook_page}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=pages[request.url.path])
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        school_documents.httpx,
+        "AsyncClient",
+        lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
+    )
+
+    async def boom(*a, **kw):
+        raise AssertionError("scraper must not be used for a Presence site")
+
+    monkeypatch.setattr(scraper_client, "fetch_html", boom)
+
+    docs = asyncio.run(school_documents.discover_from_website("https://www.sterling.k12.nj.us"))
+    assert [d["doc_type"] for d in docs] == ["handbook"]
+    assert docs[0]["url"].endswith("Sterling%20High%20School%20Handbook%202026-2027.pdf")
+    assert docs[0]["academic_year"] == "2026-2027"

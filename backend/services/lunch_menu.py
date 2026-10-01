@@ -13,7 +13,7 @@ import base64
 import logging
 import re
 import time
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from urllib.parse import urljoin
 
@@ -58,6 +58,25 @@ _MONTH_YEAR_RE = re.compile(r"(" + "|".join(_MONTHS) + r")_?(\d{4})", re.IGNOREC
 _NOT_A_MENU_RE = re.compile(r"spreadsheet|nutrition|breakfast|allergen", re.IGNORECASE)
 
 
+# Laurel Springs: "2026-09-Lunch-Menu-LSS.pdf" - numeric month, and one PDF
+# holding a breakfast page and a lunch page.
+_NUMERIC_MENU_RE = re.compile(r"(\d{4})-(\d{2})-(Breakfast|Lunch)-Menu", re.IGNORECASE)
+
+
+def _classify_numeric_pdf_link(url: str, school_type: str) -> dict | None:
+    match = _NUMERIC_MENU_RE.search(url.rsplit("/", 1)[-1])
+    if not match or not 1 <= int(match.group(2)) <= 12:
+        return None
+    year, month, meal = int(match.group(1)), int(match.group(2)), match.group(3)
+    return {
+        "school_type": school_type,
+        "meal_type": meal.lower(),
+        "period_label": f"{_MONTHS[month - 1].title()} {year}",
+        "pdf_url": url,
+        "_sort": (year, month - 1),
+    }
+
+
 def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
     filename = url.rsplit("/", 1)[-1]
     if _NOT_A_MENU_RE.search(filename):
@@ -79,19 +98,30 @@ def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
 # year, and a Spanish twin of every PDF - "MERSept26LunchMenu_1.pdf" beside
 # "MERSept26LunchMenuSPA_1.pdf". The prefix is glued onto the month, so the
 # month is found by its first three letters rather than anchored at the start.
+#
+# The year is optional: Magnolia's files are "SEPTLUNCHMENU.pdf" / "OCTLUNCHMENU.pdf",
+# the same name every year, so the year is inferred as the one putting that
+# month closest to today.
 _ABBREV_MENU_RE = re.compile(
-    r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*?(\d{4}|\d{2})(Breakfast|Lunch)Menu(?!_?SPA)",
+    r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*?(\d{4}|\d{2})?(Breakfast|Lunch)Menu(?!_?SPA)",
     re.IGNORECASE,
 )
 
 
-def _classify_abbreviated_pdf_link(url: str, school_type: str) -> dict | None:
+def _infer_year(month_idx: int, today: date) -> int:
+    return min((today.year - 1, today.year, today.year + 1), key=lambda y: abs((date(y, month_idx + 1, 15) - today).days))
+
+
+def _classify_abbreviated_pdf_link(url: str, school_type: str, today: date | None = None) -> dict | None:
     match = _ABBREV_MENU_RE.search(url.rsplit("/", 1)[-1])
     if not match:
         return None
     month_abbr, year, meal = match.groups()
     month_idx = next(i for i, m in enumerate(_MONTHS) if m.startswith(month_abbr.lower()))
-    year_num = int(year) + 2000 if len(year) == 2 else int(year)
+    if year is None:
+        year_num = _infer_year(month_idx, today or datetime.now(ZoneInfo("America/New_York")).date())
+    else:
+        year_num = int(year) + 2000 if len(year) == 2 else int(year)
     return {
         "school_type": school_type,
         "meal_type": meal.lower(),
@@ -196,7 +226,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
             return [{**{k: v for k, v in c.items() if k != "_sort"}, "school_type": t} for c in picked for t in school_types]
 
         by_meal: dict[str, list[dict]] = {}
-        for c in (_classify_abbreviated_pdf_link(u, school_types[0]) for u in urls):
+        for c in (_classify_abbreviated_pdf_link(u, school_types[0]) or _classify_numeric_pdf_link(u, school_types[0]) for u in urls):
             if c:
                 by_meal.setdefault(c["meal_type"], []).append(c)
         if by_meal:
@@ -232,17 +262,83 @@ _MENU_TOOL = {
 }
 
 
-async def parse_menu_pdf(pdf_url: str, period_label: str) -> list[dict]:
+def _sniff_image_type(data: bytes) -> str | None:
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+_PRESENCE_MENU_EXTS = {"pdf", "jpg", "jpeg", "png"}
+_MONTH_WORD_RE = re.compile(r"\b(" + "|".join(m[:3] for m in _MONTHS) + r")[a-z]*(?=[\s_.\-\d])", re.IGNORECASE)
+_PREK_RE = re.compile(r"pre[\s-]?k", re.IGNORECASE)
+
+
+def classify_presence_menu(item: dict) -> dict | None:
+    """A Presence documents-widget item -> {meal_type, prek, month, year, url, period_label},
+    or None when it isn't a monthly menu. Titles are hand-typed ('October Menu
+    2026', 'October Pre K Menu 2026 -Breakfast', 'September 2026 PreK Lunch'),
+    so month and year are found anywhere in them; an item with no meal word is
+    lunch, the way a school's plain 'Menu' is."""
+    title = item["title"]
+    if item.get("extension") not in _PRESENCE_MENU_EXTS or not re.search(r"menu|lunch|breakfast", title, re.IGNORECASE):
+        return None
+    month_m = _MONTH_WORD_RE.search(title)
+    year_m = re.search(r"\b(20\d{2})\b", title)
+    if not month_m or not year_m:
+        return None
+    month = next(i for i, name in enumerate(_MONTHS, 1) if name.startswith(month_m.group(1).lower()))
+    year = int(year_m.group(1))
+    prek = bool(_PREK_RE.search(title))
+    label = f"{_MONTHS[month - 1].title()} {year}" + (" (Pre-K)" if prek else "")
+    return {
+        "meal_type": "breakfast" if re.search(r"breakfast", title, re.IGNORECASE) else "lunch",
+        "prek": prek,
+        "month": month,
+        "year": year,
+        "url": item["url"],
+        "period_label": label,
+    }
+
+
+def pick_presence_menus(items: list[dict], today: date) -> list[dict]:
+    """Current-or-future months only, one menu per (month, meal). The plain
+    menu wins over its Pre-K twin, which on a single-building school is the
+    same lunch with a line or two swapped; Pre-K is kept only where nothing
+    else covers that meal (Somerdale's breakfast is Pre-K only), and labelled."""
+    best: dict[tuple[int, int, str], dict] = {}
+    for item in items:
+        c = classify_presence_menu(item)
+        if not c or (c["year"], c["month"]) < (today.year, today.month):
+            continue
+        key = (c["year"], c["month"], c["meal_type"])
+        if key not in best or (best[key]["prek"] and not c["prek"]):
+            best[key] = c
+    return [best[k] for k in sorted(best)]
+
+
+async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None = None) -> list[dict]:
     """Returns [{date: datetime, description: str, notes: str|None}, ...].
     Days marked only 'School Closed' with no meal are still included (with
     that as the description) so the calendar reads correctly."""
     if not ANTHROPIC_API_KEY:
         return []
 
-    async with httpx.AsyncClient(timeout=20.0) as http_client:
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as http_client:  # Presence hosts 403 the default UA
         resp = await http_client.get(pdf_url)
         resp.raise_for_status()
         pdf_b64 = base64.b64encode(resp.content).decode("ascii")
+    # Some schools post a month's menu as a picture rather than a PDF
+    # (Somerdale Park's October JPGs); sniffed from bytes, never the URL.
+    image_type = _sniff_image_type(resp.content)
+    file_block = (
+        {"type": "image", "source": {"type": "base64", "media_type": image_type, "data": pdf_b64}}
+        if image_type
+        else {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_b64}}
+    )
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     _llm_started = time.perf_counter()
@@ -255,7 +351,7 @@ async def parse_menu_pdf(pdf_url: str, period_label: str) -> list[dict]:
             {
                 "role": "user",
                 "content": [
-                    {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_b64}},
+                    file_block,
                     {
                         "type": "text",
                         "text": f"This is the {period_label} school menu calendar. Extract every day that has "
@@ -264,7 +360,13 @@ async def parse_menu_pdf(pdf_url: str, period_label: str) -> list[dict]:
                         "first and last, which are often partial (the month may start on a Thursday): a day "
                         "number in the top-right corner of a cell with a meal in it is an entry even when "
                         "other cells in the same row hold only a notice or are blank. Ignore sidebar legends "
-                        "and notice boxes that carry no day number.",
+                        "and notice boxes that carry no day number."
+                        + (
+                            f" If the file holds more than one meal's calendar (a breakfast page and a lunch "
+                            f"page), record only the {meal_type} calendar."
+                            if meal_type
+                            else ""
+                        ),
                     },
                 ],
             }

@@ -9,13 +9,19 @@ deterministically rather than risk an LLM mis-zipping which date belongs
 to which column.
 """
 
+import asyncio
+import io
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import httpx
+import pdfplumber
 from bs4 import BeautifulSoup
 
 import scraper_client
 from scheduler.errors import record_parse_issue
+from services.presence_documents import list_page_documents
 
 _ET = ZoneInfo("America/New_York")
 
@@ -97,6 +103,75 @@ def parse_marking_period_page(html: str) -> list[dict]:
     return results
 
 
+_YEAR_RE = re.compile(r"(\d{4})\s*-\s*(\d{4})\s+School Calendar", re.IGNORECASE)
+_PDF_ENDS_RE = re.compile(r"(\d)(?:st|nd|rd|th)\s+Marking Period Ends\s*-\s*(\d{1,2})/(\d{1,2})", re.IGNORECASE)
+_PDF_GRADES_RE = re.compile(r"Final Q(\d)\s+Grades Posted\s*-\s*(\d{1,2})/(\d{1,2})", re.IGNORECASE)
+_PDF_INTERIM_RE = re.compile(r"INTERIM REPORTS.{0,300}?Dates:\s*((?:\d{1,2}/\d{1,2}(?:,\s*)?)+)", re.IGNORECASE | re.DOTALL)
+
+
+def parse_calendar_pdf_text(text: str) -> list[dict]:
+    """Marking-period dates printed in a school-year calendar PDF's sidebar
+    ("1st Marking Period Ends - 11/4 (44 days)", "Final Q1 Grades Posted -
+    11/11", "INTERIM REPORTS Dates: 10/2, 12/11, ..."). Dates carry no year, so
+    it comes from the "2026-2027 School Calendar" title: July-December is the
+    first year, January-June the second. School-wide (no school_type)."""
+    year_m = _YEAR_RE.search(text)
+    if not year_m:
+        return []
+    first, second = int(year_m.group(1)), int(year_m.group(2))
+
+    def when(month: str, day: str) -> datetime | None:
+        m, d = int(month), int(day)
+        try:
+            return datetime(first if m >= 7 else second, m, d, tzinfo=_ET)
+        except ValueError:
+            return None
+
+    out: list[dict] = []
+
+    def add(title: str, month: str, day: str) -> None:
+        start = when(month, day)
+        if start:
+            out.append({"school_type": None, "title": title, "start_date": start, "external_uid": f"marking_period:pdf:{title}:{start.date().isoformat()}"})
+
+    for n, mo, d in _PDF_ENDS_RE.findall(text):
+        add(f"Marking Period {n} Ends", mo, d)
+    for n, mo, d in _PDF_GRADES_RE.findall(text):
+        add(f"Quarter {n} Report Card Grades Posted", mo, d)
+    interim = _PDF_INTERIM_RE.search(text)
+    for pair in re.findall(r"\d{1,2}/\d{1,2}", interim.group(1)) if interim else []:
+        mo, d = pair.split("/")
+        add("Interim Reports Issued", mo, d)
+    return out
+
+
+def _pdf_text(data: bytes) -> str:
+    with pdfplumber.open(io.BytesIO(data)) as pdf:
+        return "\n".join(page.extract_text() or "" for page in pdf.pages)
+
+
+async def _presence_calendar_dates(url: str) -> list[dict] | None:
+    """For a Presence site (documents load client-side, so the scraper's HTML
+    holds none): read the calendar PDF out of the page's documents widget.
+    None when the page isn't Presence, so the table path runs."""
+    try:
+        docs = await list_page_documents(url)
+    except httpx.HTTPError:
+        return None
+    if not docs:
+        return None
+    pdfs = [d for d in docs if d["extension"] == "pdf" and "calendar" in d["title"].lower()]
+    if not pdfs:
+        return []
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz calendar sync)"}) as client:
+        resp = await client.get(pdfs[0]["url"])
+        resp.raise_for_status()
+    return parse_calendar_pdf_text(await asyncio.to_thread(_pdf_text, resp.content))
+
+
 async def fetch_marking_period_page(url: str) -> list[dict]:
+    from_pdf = await _presence_calendar_dates(url)
+    if from_pdf is not None:
+        return from_pdf
     result = await scraper_client.fetch_html(url, wait_for_selector="table")
     return parse_marking_period_page(result["html"])

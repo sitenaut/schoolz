@@ -1,0 +1,194 @@
+{
+ "exported_at": "2026-10-01T12:00:00Z",
+ "source": "onboarding: Sterling High School District",
+ "smore_newsletters": [],
+ "districts": [
+  {
+   "name": "Sterling High School District",
+   "website_url": "https://www.sterling.k12.nj.us",
+   "ics_feeds": [
+    {
+     "name": "Sterling District Calendar",
+     "url": "https://www.sterling.k12.nj.us/ICalendarHandler?calendarId=136850"
+    }
+   ],
+   "towns": [
+    "Somerdale",
+    "Magnolia",
+    "Stratford",
+    "Laurel Springs",
+    "Hi-Nella"
+   ],
+   "schoolcafe_shortname": "SterlingHighSchoolNutriServe",
+   "food_services_menu_url": null,
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "sterling-high-school",
+   "name": "Sterling High School",
+   "short_name": "Sterling",
+   "district_name": "Sterling High School District",
+   "school_type": "high",
+   "address": "501 S. Warwick Road, Somerdale, NJ 08083",
+   "main_phone": "856-784-1333",
+   "website_url": "https://www.sterling.k12.nj.us",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "856-784-1333",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the main office at 856-784-1333 to report an absence. The school does not publish a separate attendance line; the handbook only gives the main office number.",
+   "start_time": "7:40 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:00 PM",
+   "delayed_opening_time": "9:00 AM",
+   "athletics_url": "https://www.arbiterlive.com/Teams?entityId=22533",
+   "logo_url": "https://cdnsm5-ss12.sharpschool.com/UserFiles/Servers/Server_136696/Image/logo/logo.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Bell 1",
+      "start": "07:40",
+      "end": "08:34"
+     },
+     {
+      "name": "Bell 2",
+      "start": "08:37",
+      "end": "09:31"
+     },
+     {
+      "name": "Bell 3",
+      "start": "09:34",
+      "end": "10:28"
+     },
+     {
+      "name": "Knightime Blue",
+      "start": "10:31",
+      "end": "11:01"
+     },
+     {
+      "name": "Knightime Silver",
+      "start": "11:04",
+      "end": "11:34"
+     },
+     {
+      "name": "Bell 5",
+      "start": "11:37",
+      "end": "12:36"
+     },
+     {
+      "name": "Bell 6",
+      "start": "12:39",
+      "end": "13:33"
+     },
+     {
+      "name": "Bell 7",
+      "start": "13:36",
+      "end": "14:30"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Bell 1",
+      "start": "07:40",
+      "end": "08:20"
+     },
+     {
+      "name": "Bell 2",
+      "start": "08:23",
+      "end": "09:03"
+     },
+     {
+      "name": "Bell 3",
+      "start": "09:06",
+      "end": "09:46"
+     },
+     {
+      "name": "Bell 5",
+      "start": "09:49",
+      "end": "10:34"
+     },
+     {
+      "name": "Bell 6",
+      "start": "10:37",
+      "end": "11:17"
+     },
+     {
+      "name": "Bell 7",
+      "start": "11:20",
+      "end": "12:00"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Bell 1",
+      "start": "09:05",
+      "end": "09:45"
+     },
+     {
+      "name": "Bell 2",
+      "start": "09:48",
+      "end": "10:28"
+     },
+     {
+      "name": "Bell 3",
+      "start": "10:31",
+      "end": "11:11"
+     },
+     {
+      "name": "Knightime Blue",
+      "start": "11:14",
+      "end": "11:44"
+     },
+     {
+      "name": "Knightime Silver",
+      "start": "11:47",
+      "end": "12:17"
+     },
+     {
+      "name": "Bell 5",
+      "start": "12:20",
+      "end": "13:04"
+     },
+     {
+      "name": "Bell 6",
+      "start": "13:07",
+      "end": "13:47"
+     },
+     {
+      "name": "Bell 7",
+      "start": "13:50",
+      "end": "14:30"
+     }
+    ],
+    "long_block": [
+     {
+      "name": "Bell 1",
+      "start": "07:40",
+      "end": "08:22"
+     },
+     {
+      "name": "Bell 2",
+      "start": "08:25",
+      "end": "09:07"
+     },
+     {
+      "name": "Bell 3",
+      "start": "09:10",
+      "end": "11:09"
+     }
+    ]
+   },
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "apptegy_org_id": null,
+   "healthepro_location": null
+  }
+ ]
+}

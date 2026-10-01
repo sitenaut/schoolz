@@ -1,0 +1,49 @@
+{
+ "d": {
+  "__type": "ModernStaffDirectorySearchResults",
+  "error": "",
+  "results": [
+   {
+    "email": "private",
+    "firstName": "Bruno",
+    "imageURL": "",
+    "jobTitle": "Business Administrator",
+    "lastName": "Berenato",
+    "phone": "",
+    "userID": 37806054,
+    "website": ""
+   },
+   {
+    "email": "private",
+    "firstName": "Greg",
+    "imageURL": "",
+    "jobTitle": "Director of Special Education",
+    "lastName": "Cesare",
+    "phone": "",
+    "userID": 31494089,
+    "website": ""
+   },
+   {
+    "email": "private",
+    "firstName": "Robert",
+    "imageURL": "",
+    "jobTitle": "Superintendent",
+    "lastName": "Ford",
+    "phone": "",
+    "userID": 31494137,
+    "website": ""
+   },
+   {
+    "email": "jdoe@example.org",
+    "firstName": "Pat",
+    "imageURL": "",
+    "jobTitle": "",
+    "lastName": "Example",
+    "phone": "856-555-0100",
+    "userID": 1,
+    "website": ""
+   }
+  ],
+  "totalNumberOfResults": 5
+ }
+}

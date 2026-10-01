@@ -1,0 +1,50 @@
+{
+  "exported_at": "2026-10-01T12:00:00Z",
+  "source": "onboarding: Laurel Springs School District",
+  "districts": [
+    {
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "schoolcafe_shortname": null,
+      "calendar_pdf_url": "https://www.laurelspringschool.org/school-calendar/",
+      "name": "Laurel Springs School District",
+      "website_url": "https://www.laurelspringschool.org",
+      "food_services_menu_url": "https://www.laurelspringschool.org/parents/lunch-programs-policies/",
+      "ics_feeds": [],
+      "towns": [
+        "Laurel Springs"
+      ]
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "delayed_opening_time": null,
+      "early_dismissal_time": "12:30 PM",
+      "start_time": null,
+      "end_time": null,
+      "slug": "laurel-springs",
+      "name": "Laurel Springs School",
+      "short_name": "Laurel Springs",
+      "district_name": "Laurel Springs School District",
+      "school_type": "elementary",
+      "address": "623 Grand Ave., Laurel Springs, NJ 08021",
+      "main_phone": "(856) 783-1086",
+      "website_url": "https://www.laurelspringschool.org",
+      "absence_method": "phone",
+      "absence_phone": "(856) 783-1086",
+      "absence_instructions": "Call the school before 8:30 AM and leave a message for the nurse (the district's 'Reporting Your Child Absent or Late' notice gives extension 1) so the school doesn't have to phone you."
+    }
+  ],
+  "smore_newsletters": []
+}
