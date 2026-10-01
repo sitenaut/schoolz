@@ -1,4 +1,4 @@
-from services.school_info import _parse_location
+from services.school_info import _find_logo_url, _parse_location
 
 _ADDRESS = '<div class="fsLocationAddress">130 S. Centre Street</div><span class="fsLocationCity">Merchantville</span><span class="fsLocationState">NJ</span><span class="fsLocationZip">08109</span>'
 
@@ -47,3 +47,20 @@ def test_edlio_footer_gives_address_and_phone_and_other_platforms_fall_through()
     r = _parse_edlio_footer(html, "https://x.test")
     assert (r["address"], r["main_phone"]) == ("162 Stokes Road, Medford, NJ 08055", "(609) 654-4056")
     assert _parse_edlio_footer("<footer>nothing</footer>", "https://x.test") is None
+
+
+_FINALSITE_LOGO = (
+    '<header><img alt="Bret Harte Elementary" src="" data-image-sizes=\'[{"url": "https://resources.finalsite.net/images/s.png", "width": 69}, '
+    '{"url": "https://resources.finalsite.net/images/Harte-transparent.png", "width": 137}]\' /></header>'
+)
+
+
+def test_finalsite_lazy_logo_resolves_from_data_image_sizes_not_the_page_url():
+    # Regression: src="" became urljoin(base, "") == the site root, stored as the logo and shown broken.
+    assert _find_logo_url(_FINALSITE_LOGO, "https://harte.chclc.org") == "https://resources.finalsite.net/images/Harte-transparent.png"
+
+
+def test_an_image_with_no_url_anywhere_is_skipped_never_the_page_itself():
+    html = '<header><img src=""><img src="data:image/gif;base64,AAAA"><img src="/a/logo.png"></header>'
+    assert _find_logo_url(html, "https://x.org") == "https://x.org/a/logo.png"
+    assert _find_logo_url('<header><img src=""></header>', "https://x.org") is None
