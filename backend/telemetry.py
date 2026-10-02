@@ -21,6 +21,11 @@ from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.metrics.view import (
+    DropAggregation,
+    ExplicitBucketHistogramAggregation,
+    View,
+)
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -35,6 +40,7 @@ def telemetry_enabled() -> bool:
 
 
 def _resource(service_name: str) -> Resource:
+    """Resource for traces and logs - keeps service.version for Tempo/Loki analysis."""
     return Resource.create(
         {
             "service.name": service_name,
@@ -45,6 +51,49 @@ def _resource(service_name: str) -> Resource:
             "cloud.region": os.getenv("FLY_REGION", "local"),
         }
     )
+
+
+def _metric_resource(service_name: str) -> Resource:
+    """Resource for metrics - excludes service.version so Fly image deploys
+    do not multiply active time series before previous versions expire.
+    """
+    return Resource.create(
+        {
+            "service.name": service_name,
+            "service.namespace": "schoolz",
+            "service.instance.id": os.getenv("FLY_MACHINE_ID") or socket.gethostname(),
+            "deployment.environment": os.getenv("APP_ENV", "local"),
+            "cloud.region": os.getenv("FLY_REGION", "local"),
+        }
+    )
+
+
+_metric_views = [
+    # Drop unused request/response body size histograms emitted by FastAPIInstrumentor
+    View(instrument_name="http.server.request.body.size", aggregation=DropAggregation()),
+    View(instrument_name="http.server.response.body.size", aggregation=DropAggregation()),
+    View(instrument_name="http.server.request.size", aggregation=DropAggregation()),
+    View(instrument_name="http.server.response.size", aggregation=DropAggregation()),
+    # Drop client-side outbound HTTP duration metrics (HTTPXClientInstrumentor)
+    View(instrument_name="http.client.request.duration", aggregation=DropAggregation()),
+    View(instrument_name="http.client.duration", aggregation=DropAggregation()),
+    # Compact API request duration buckets and prune high-cardinality/unused attributes
+    View(
+        instrument_name="http.server.request.duration",
+        attribute_keys={"http.route", "http.response.status_code", "http.request.method"},
+        aggregation=ExplicitBucketHistogramAggregation(
+            boundaries=[0.05, 0.1, 0.25, 0.5, 1.0, 1.5, 2.5, 5.0]
+        ),
+    ),
+    # Also support older semconv metric name if emitted
+    View(
+        instrument_name="http.server.duration",
+        attribute_keys={"http.route", "http.response.status_code", "http.request.method"},
+        aggregation=ExplicitBucketHistogramAggregation(
+            boundaries=[50.0, 100.0, 250.0, 500.0, 1000.0, 1500.0, 2500.0, 5000.0]
+        ),
+    ),
+]
 
 
 def setup_telemetry(service_name: str) -> None:
@@ -61,8 +110,9 @@ def setup_telemetry(service_name: str) -> None:
         trace.set_tracer_provider(_tracer_provider)
 
     _meter_provider = MeterProvider(
-        resource=resource,
+        resource=_metric_resource(service_name),
         metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(), export_interval_millis=30000)],
+        views=_metric_views,
     )
     set_meter_provider(_meter_provider)
 
