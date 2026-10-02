@@ -144,13 +144,16 @@ export function SmoreNewslettersPage() {
     }
   };
 
+  const isStale = (n: SmoreNewsletter, days: number | null) =>
+    days !== null && days > STALE_DAYS && !n.scheduled_job?.run_once;
+
   const counts = useMemo(() => {
     const c = { total: newsletters.length, stale: 0, never: 0, unscheduled: 0 };
     for (const n of newsletters) {
       if (!n.scheduled_job) c.unscheduled += 1;
       const days = daysSince(n.last_scanned_at);
       if (days === null) c.never += 1;
-      else if (days > STALE_DAYS) c.stale += 1;
+      else if (isStale(n, days)) c.stale += 1;
     }
     return c;
   }, [newsletters]);
@@ -161,7 +164,7 @@ export function SmoreNewslettersPage() {
       const days = daysSince(n.last_scanned_at);
       if (statusFilter === "unscheduled" && n.scheduled_job) return false;
       if (statusFilter === "never" && days !== null) return false;
-      if (statusFilter === "stale" && !(days !== null && days > STALE_DAYS)) return false;
+      if (statusFilter === "stale" && !isStale(n, days)) return false;
       if (needle) {
         const hay = `${n.label ?? ""} ${n.url} ${n.school_name ?? ""} ${n.district_name ?? ""}`.toLowerCase();
         if (!hay.includes(needle)) return false;
@@ -242,7 +245,7 @@ export function SmoreNewslettersPage() {
               ) : (
                 <Badge tone="muted">never run</Badge>
               )}
-              {days !== null && days > STALE_DAYS && !isRunning && (
+              {isStale(n, days) && !isRunning && (
                 <Badge tone="warn" dot={false}>
                   stale
                 </Badge>
