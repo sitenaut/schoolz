@@ -1,61 +1,53 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { IconLogout } from "./icons";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 
-/** The top bar's signed-in username used to be a plain link to /account,
- * with sign-out buried inside Account > Security > Sessions - a real
- * findability gap (reported: "i can't find a log out button"). This gives
- * every page a one-click sign-out next to the account link, same anchored-
- * popover pattern as AuthPopover for the signed-out state. */
+/** Sign-out used to live only at Account > Security > Sessions, with no
+ * entry in the main nav - a findability gap reported directly ("i can't
+ * find a log out button"). The username keeps its old behavior (a plain
+ * link to /account); a separate icon button confirms before signing out,
+ * since it's one tap away from every page now rather than buried in a
+ * settings tab. */
 export function UserMenu() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   if (!user) return null;
 
+  const doLogout = async () => {
+    setBusy(true);
+    await logout();
+    navigate("/", { replace: true });
+  };
+
   return (
-    <div className="authPopoverWrap" ref={ref}>
-      <button className="ghost" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+    <>
+      <Link to="/account" className="ghost">
         {user.username}
+      </Link>
+      <button
+        className="btn icon"
+        title={t("Sign out")}
+        aria-label={t("Sign out")}
+        onClick={() => setConfirming(true)}
+      >
+        <IconLogout />
       </button>
-      {open && (
-        <div className="authPopover userMenu" role="menu" aria-label={user.username}>
-          <Link to="/account" role="menuitem" onClick={() => setOpen(false)}>
-            {t("Account")}
-          </Link>
-          <button
-            role="menuitem"
-            onClick={async () => {
-              setOpen(false);
-              await logout();
-              navigate("/", { replace: true });
-            }}
-          >
-            <IconLogout /> {t("Sign out")}
-          </button>
-        </div>
-      )}
-    </div>
+      <ConfirmDialog
+        open={confirming}
+        title={t("Sign out?")}
+        description={t("You'll need to sign in again to see your account and children.")}
+        confirmLabel={t("Sign out")}
+        busy={busy}
+        onConfirm={doLogout}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
   );
 }
