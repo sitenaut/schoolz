@@ -887,3 +887,45 @@ on this list** - it's ArbiterLive branding, already supported.
     no stable archive); PTAs are Facebook groups or empty PTBoard sites;
     Stratford has no athletics link and no staff emails (profile pages are a
     contact form); no Hi-Nella school exists (it only appears in `towns`).
+
+- **Camden City (WordPress multisite, `camdencityschools.org`)** — 15
+  traditional district schools (5 HS at/near the Camden High campus, 2
+  early-childhood centers, 8 PreK/K-8 family schools); `backend/seed/
+  camden_city.json`. Deliberately excludes Camden's separate Renaissance
+  schools (KIPP Cooper Norcross, Mastery, Uncommon/Camden Prep) — those are
+  independently-operated charter-like schools under a different district
+  code, not this site.
+  - **Platform tell**: WordPress (Beaver Builder/Genesis theme, Yoast SEO,
+    "Modern Events Calendar", "ABCFolio Staff List" plugins) run as a
+    multisite, each school at its own subpath on the same domain
+    (`/chs/`, `/eastsidehs/`, `/cooperspoynt/`, ...) rather than a separate
+    host per school.
+  - **Cloudflare JS/Turnstile challenge on every page** — plain curl/httpx
+    get a 403 "Just a moment..." interstitial even with a real browser
+    User-Agent string; only a real browser (the Playwright scraper) gets
+    past it. Go straight to the scraper here, don't burn a round-trip on
+    plain HTTP first the way the crawl procedure otherwise recommends.
+  - **SchoolCafé**: shortname `CAMDENCITYPS`, verified live.
+  - **Calendar**: tracked as the `/calendar/` page itself
+    (`District.calendar_pdf_url`), not a dated PDF filename — no ICS feed
+    found.
+  - **Athletics**: Camden High and Eastside High resolve real ArbiterLive
+    entity ids (3073, 26231) via the district's own "District Athletics"
+    page; the three smaller campus HS (Brimm, Creative Arts, Big Picture)
+    may share Camden High's athletics program in practice but that's not
+    confirmed per-school, so left null.
+  - **Address conflicts, kept as each school's own stated text rather than
+    guessed**: Eastside's own subsite says 3100 Federal Street while the
+    district's school-directory widget says 2800 Mickle Street (there's a
+    live "Eastside High Construction Plans" page, so this plausibly reflects
+    an old-vs-new building rather than a crawl error — worth a human check
+    before trusting either). The shared Camden High campus building itself
+    is given as zip 08103 by some of its five schools' own pages and 08104
+    by others.
+  - **Gaps**: no absence method/phone/portal beyond a generic "contact your
+    school" plus an unconfirmed Genesis portal link (same ambiguity as
+    Audubon/Collingswood — not written in with confidence); no
+    early-dismissal/delayed-opening times or bell-period detail (only
+    regular start/end times published); no marking periods, transportation,
+    or HS rotation; no newsletter platform found at all (no `smore`,
+    `resource-manager`, PTBoard, or Givebacks signal anywhere on the site).
