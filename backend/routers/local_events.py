@@ -1,6 +1,6 @@
-"""Read API for the local events feed (/local). Signed-in users only - this
-is community data pulled from third-party feeds, not school data, so it
-isn't part of the public-by-default surface."""
+"""Read API for the local events feed (/local). Public, no login required -
+same access model as schools/districts/calendar: community data pulled from
+third-party feeds is still worth bookmarking with no account."""
 
 from datetime import datetime
 
@@ -9,9 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user
 from database import get_db
-from models import LocalEvent, User
+from models import LocalEvent
 from services.i18n import fold, folded
 
 router = APIRouter(prefix="/local-events", tags=["local-events"])
@@ -80,7 +79,6 @@ def _filters(start, end, q, categories, source, is_free) -> list:
 
 @router.get("", response_model=LocalEventListOut)
 async def list_local_events(
-    _: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     start: datetime | None = None,
     end: datetime | None = None,
@@ -100,7 +98,6 @@ async def list_local_events(
 
 @router.get("/facets", response_model=LocalEventFacetsOut)
 async def local_event_facets(
-    _: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     start: datetime | None = None,
     end: datetime | None = None,

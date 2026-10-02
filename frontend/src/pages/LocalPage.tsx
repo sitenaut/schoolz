@@ -14,7 +14,7 @@ import { LOCALE } from "../lib/i18n";
 
 /** Community events near Cherry Hill (libraries, townships, the Y, concerts),
  * from the local_events.refresh job - billz's events feed, ported. Same
- * month/year grid + list shape as /calendar; signed-in users only. */
+ * month/year grid + list shape as /calendar; public like every other read. */
 
 type ViewMode = "month" | "year";
 const TODAY_KEY = dateKey(new Date());
@@ -62,7 +62,6 @@ export function LocalPage() {
   const queryKey = [range.start.toISOString(), searchTerm, category, source, freeOnly].join("|");
 
   useEffect(() => {
-    if (!user) return;
     const q = new URLSearchParams({ start: range.start.toISOString(), end: range.end.toISOString(), limit: "3000" });
     if (searchTerm) q.set("q", searchTerm);
     if (category) q.set("categories", category);
@@ -83,15 +82,14 @@ export function LocalPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, queryKey]);
+  }, [queryKey]);
 
   useEffect(() => {
-    if (!user) return;
     const q = new URLSearchParams({ start: range.start.toISOString(), end: range.end.toISOString() });
     apiFetch(`/local-events/facets?${q}`)
       .then((r) => (r.ok ? r.json() : { categories: [], sources: [] }))
       .then(setFacets);
-  }, [user, range]);
+  }, [range]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, number>();

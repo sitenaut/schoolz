@@ -1,8 +1,10 @@
 """The on-site chatbot's HTTP surface. Public, no auth required - same
 access model as every other MCP-backed tool (see mcp_server.py's module
-docstring). A signed-in caller additionally gets personal tools over their
-own children's data (services/chatbot_personal.py); an invalid or expired
-token degrades to the public tools rather than 401ing, like GET /calendar.
+docstring). Every caller, signed in or not, gets find_local_events
+(LocalEventTools); a signed-in caller additionally gets personal tools over
+their own children's data (services/chatbot_personal.py). An invalid or
+expired token degrades to the public tools rather than 401ing, like GET
+/calendar.
 
 Rate-limited per client IP with a simple in-memory sliding window: good
 enough for a single Fly machine (min_machines_running=1 - see fly.toml),
@@ -27,7 +29,7 @@ from models import User
 from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
 from services.i18n import request_lang
-from services.chatbot_personal import PersonalTools
+from services.chatbot_personal import LocalEventTools, PersonalTools
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -79,6 +81,8 @@ async def send_chat_message(
     # Only a token get_optional_user actually accepted is forwarded - the
     # personal tools then re-present it to each route, which re-checks it.
     personal = PersonalTools(request.app, token) if user and token else None
+    # Offered to every caller, signed in or not - /local-events needs no login.
+    local_events = LocalEventTools(request.app)
     settings = await get_settings(db)
     try:
         result = await run_chat_turn(
@@ -86,11 +90,13 @@ async def send_chat_message(
             history=[m.model_dump() for m in body.history],
             message=body.message,
             already_escalated=body.escalated,
+            local_events=local_events,
             personal=personal,
             config=settings.signed_in if personal else settings.anonymous,
             lang=lang,
         )
     finally:
+        await local_events.aclose()
         if personal:
             await personal.aclose()
     return ChatResponse(reply=result["reply"], model=result["model"], history=result["history"], escalated=result["escalated"])

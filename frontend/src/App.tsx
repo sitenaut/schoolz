@@ -196,14 +196,7 @@ function Routed() {
           }
         />
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route
-          path="/local"
-          element={
-            <RequireAuth>
-              <LocalPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="/local" element={<LocalPage />} />
         <Route
           path="/admin"
           element={

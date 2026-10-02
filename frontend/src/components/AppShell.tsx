@@ -348,12 +348,10 @@ export function AppShell() {
             Gradez
           </a>
         )}
-        {user && (
-          <NavLink to="/local">
-            <IconPin />
-            {t("Local")}
-          </NavLink>
-        )}
+        <NavLink to="/local">
+          <IconPin />
+          {t("Local")}
+        </NavLink>
       </nav>
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
