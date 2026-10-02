@@ -140,7 +140,7 @@ async def fetch_html(req: FetchHtmlRequest):
     host = _host(req.url)
     browser = _state["browser"]
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
-    observability.pages_open.add(1, {"host": host})
+    observability.pages_open.add(1)
     start = time.perf_counter()
     outcome = "error"
     try:
@@ -166,8 +166,8 @@ async def fetch_html(req: FetchHtmlRequest):
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to fetch {req.url}: {exc}") from exc
     finally:
         await context.close()
-        observability.pages_open.add(-1, {"host": host})
-        observability.page_load_seconds.record(time.perf_counter() - start, {"host": host, "outcome": outcome})
+        observability.pages_open.add(-1)
+        observability.page_load_seconds.record(time.perf_counter() - start, {"outcome": outcome})
 
 
 @app.post("/fetch-paginated", response_model=FetchPaginatedResponse, dependencies=[Depends(require_api_key)])
@@ -180,7 +180,7 @@ async def fetch_paginated(req: FetchPaginatedRequest):
     host = _host(req.url)
     browser = _state["browser"]
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
-    observability.pages_open.add(1, {"host": host})
+    observability.pages_open.add(1)
     start = time.perf_counter()
     outcome = "error"
     pages: list[str] = []
@@ -212,8 +212,8 @@ async def fetch_paginated(req: FetchPaginatedRequest):
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to paginate {req.url}: {exc}") from exc
     finally:
         await context.close()
-        observability.pages_open.add(-1, {"host": host})
-        observability.page_load_seconds.record(time.perf_counter() - start, {"host": host, "outcome": outcome})
+        observability.pages_open.add(-1)
+        observability.page_load_seconds.record(time.perf_counter() - start, {"outcome": outcome})
 
 
 @app.post("/fetch-raw", response_model=FetchRawResponse, dependencies=[Depends(require_api_key)])
@@ -243,4 +243,4 @@ async def fetch_raw(req: FetchRawRequest):
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to fetch {req.url}: {exc}") from exc
     finally:
         await context.close()
-        observability.page_load_seconds.record(time.perf_counter() - start, {"host": host, "outcome": outcome})
+        observability.page_load_seconds.record(time.perf_counter() - start, {"outcome": outcome})
