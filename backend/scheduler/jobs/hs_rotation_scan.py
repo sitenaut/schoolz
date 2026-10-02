@@ -85,7 +85,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 "link_url": pdf_url,
             }
     else:
-        page = await scraper_client.fetch_html(district.hs_rotation_url, wait_for_selector="#fsPageContent")
+
+        page = await scraper_client.fetch_html(
+            district.hs_rotation_url, wait_for_selector="#fsPageContent", block_assets=True
+        )
+
         pdf_url = find_pdf_link(page["html"], district.hs_rotation_url)
         if not pdf_url:
             return "WARNING[no_rotation_pdf_link]: no PDF link found on the day-schedule page"

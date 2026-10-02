@@ -197,7 +197,8 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     PDFs carry no grade band (Eastern: one high school; Evesham: one
     all-grades PDF): a bare month+year filename is taken as every listed
     type's lunch menu, latest month winning."""
-    result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a")
+    result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a", block_assets=True)
+
     urls = set(re.findall(r'href="([^"]+\.pdf)"', result["html"], re.IGNORECASE))
     urls |= await _resolve_resource_manager_links(menu_page_url, result["html"])
 

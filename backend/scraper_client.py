@@ -125,20 +125,35 @@ async def _post_with_fallback(path: str, payload: dict, timeout_s: float) -> dic
         raise last
 
 
-async def fetch_html(url: str, wait_for_selector: str | None = None, timeout_ms: int = 15_000) -> dict:
+async def fetch_html(
+    url: str,
+    wait_for_selector: str | None = None,
+    timeout_ms: int = 15_000,
+    block_assets: bool = False,
+) -> dict:
     # The scraper applies timeout_ms to page.goto AND again to
     # wait_for_selector, so it can legitimately take ~2x that before it
     # answers - a client budget of timeout_ms + 5s (the old value) gave up
     # on slow-but-fine pages and reported ReadTimeout.
     return await _post_with_fallback(
         "/fetch-html",
-        {"url": url, "wait_for_selector": wait_for_selector, "timeout_ms": timeout_ms},
+        {
+            "url": url,
+            "wait_for_selector": wait_for_selector,
+            "timeout_ms": timeout_ms,
+            "block_assets": block_assets,
+        },
         timeout_s=timeout_ms / 1000 * 2 + 10,
     )
 
 
 async def fetch_paginated(
-    url: str, next_page_selector: str, max_pages: int = 20, wait_after_click_ms: int = 1200, timeout_ms: int = 15_000
+    url: str,
+    next_page_selector: str,
+    max_pages: int = 20,
+    wait_after_click_ms: int = 1200,
+    timeout_ms: int = 15_000,
+    block_assets: bool = False,
 ) -> list[str]:
     """Returns one HTML string per page, clicked through in one live
     browser session - for pagination controls that don't respond to a URL
@@ -152,7 +167,9 @@ async def fetch_paginated(
             "max_pages": max_pages,
             "wait_after_click_ms": wait_after_click_ms,
             "timeout_ms": timeout_ms,
+            "block_assets": block_assets,
         },
         timeout_s=timeout_budget,
     )
     return result["pages"]
+

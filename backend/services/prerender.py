@@ -113,7 +113,9 @@ async def _render(path: str) -> str:
         # (e.g. any child of #root) would still capture "Loading…".
         wait_for_selector='body[data-prerender-ready="true"]',
         timeout_ms=_RENDER_TIMEOUT_MS,
+        block_assets=True,
     )
+
     html = result["html"]
     _CACHE[path] = (time.monotonic() + _TTL_SECONDS, html)
     return html

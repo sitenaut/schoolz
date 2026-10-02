@@ -105,11 +105,12 @@ async def fetch_contacts(school_website_url: str) -> list[dict]:
     if not os.getenv("ANTHROPIC_API_KEY"):
         return []
     home_url = school_website_url.rstrip("/") + "/"
-    home = await scraper_client.fetch_html(home_url, wait_for_selector="a")
+    home = await scraper_client.fetch_html(home_url, wait_for_selector="a", block_assets=True)
     url = find_contact_page(home["html"], home_url)
     if not url:
         return []
-    page = await scraper_client.fetch_html(url, wait_for_selector="#fsPageContent")
+    page = await scraper_client.fetch_html(url, wait_for_selector="#fsPageContent", block_assets=True)
+
     text = page_text(page["html"])[:_MAX_CHARS]
 
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])

@@ -35,7 +35,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not district.preschool_locations_url:
         return "district has no preschool_locations_url configured"
 
-    result = await scraper_client.fetch_html(district.preschool_locations_url, wait_for_selector="a")
+    result = await scraper_client.fetch_html(
+        district.preschool_locations_url, wait_for_selector="a", block_assets=True
+    )
     entries = parse_preschool_locations(result["html"])
     if not entries:
         return "WARNING[no_preschool_locations]: no preschool locations found - the page's structure may have changed"

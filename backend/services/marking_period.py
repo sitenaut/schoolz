@@ -265,5 +265,7 @@ async def fetch_marking_period_page(url: str) -> list[dict]:
     from_pdf = await _pdf_calendar_dates(url)
     if from_pdf:
         return from_pdf
-    result = await scraper_client.fetch_html(url, wait_for_selector="table")
+    result = await scraper_client.fetch_html(url, wait_for_selector="table", block_assets=True)
+
     return parse_marking_period_page(result["html"])
+
