@@ -17,4 +17,4 @@ USER pwuser
 
 EXPOSE 8765
 
-CMD ["uvicorn", "main:app", "--host", "::", "--port", "8765"]
+CMD ["python", "main.py"]
