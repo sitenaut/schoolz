@@ -9,6 +9,7 @@ from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth as auth_module
+import observability
 from auth import create_local_token, get_current_user, hash_password, verify_password
 from database import get_db
 from models import (
@@ -82,9 +83,11 @@ def _local_only() -> None:
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
     _local_only()
+    logger.info("register_attempt", extra={"email": payload.email, "username": payload.username})
 
     existing = await db.execute(select(User).where(or_(User.email == payload.email, User.username == payload.username)))
     if existing.scalar_one_or_none():
+        logger.info("register_rejected_duplicate", extra={"email": payload.email, "username": payload.username})
         raise HTTPException(status.HTTP_409_CONFLICT, "Email or username already registered")
 
     user = User(
@@ -95,8 +98,12 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    logger.info("user_created", extra={"user_id": user.id, "source": "local_register"})
+    observability.user_created_total.add(1, {"source": "local_register"})
 
-    return TokenResponse(access_token=create_local_token(user.id))
+    token = create_local_token(user.id)
+    logger.info("register_success", extra={"user_id": user.id})
+    return TokenResponse(access_token=token)
 
 
 @router.post("/login", response_model=TokenResponse)

@@ -15,6 +15,7 @@ from jwt import PyJWKClient
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import observability
 from database import SessionLocal, get_db
 from models import ApiKey, RolePermission, User, UserRole
 from permissions import PERMISSION_KEYS, expand
@@ -150,6 +151,7 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
             user.supabase_user_id = supabase_user_id
             await db.commit()
             await db.refresh(user)
+            logger.info("supabase_identity_linked_existing_user", extra={"user_id": user.id})
             return user
 
     user = User(
@@ -161,6 +163,8 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    logger.info("user_created", extra={"user_id": user.id, "source": "supabase_autoprovision"})
+    observability.user_created_total.add(1, {"source": "supabase_autoprovision"})
     return user
 
 

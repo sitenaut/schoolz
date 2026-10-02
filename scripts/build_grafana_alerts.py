@@ -29,7 +29,7 @@ def sel(*extra: str) -> str:
     return "{" + ", ".join([NS, *extra]) + "}"
 
 
-def rule(uid, title, expr, threshold, summary, *, op="gt", for_="10m", no_data="OK") -> dict:
+def rule(uid, title, expr, threshold, summary, *, op="gt", for_="10m", no_data="OK", severity="warning", range_s=3600) -> dict:
     """One threshold rule: query -> reduce(last) -> threshold.
 
     `no_data` is per-rule on purpose. Most rules should stay quiet when a
@@ -42,7 +42,7 @@ def rule(uid, title, expr, threshold, summary, *, op="gt", for_="10m", no_data="
         "title": title,
         "condition": "C",
         "for": for_,
-        "labels": {"app": "schoolz", "severity": "warning"},
+        "labels": {"app": "schoolz", "severity": severity},
         "annotations": {"summary": summary},
         "noDataState": no_data,
         "execErrState": "Error",
@@ -52,9 +52,52 @@ def rule(uid, title, expr, threshold, summary, *, op="gt", for_="10m", no_data="
         "data": [
             {
                 "refId": "A",
-                "relativeTimeRange": {"from": 3600, "to": 0},
+                "relativeTimeRange": {"from": range_s, "to": 0},
                 "datasourceUid": "${DS_METRICS}",
                 "model": {"refId": "A", "expr": expr, "instant": True, "editorMode": "code"},
+            },
+            {
+                "refId": "B",
+                "datasourceUid": "__expr__",
+                "model": {"refId": "B", "type": "reduce", "reducer": "last", "expression": "A"},
+            },
+            {
+                "refId": "C",
+                "datasourceUid": "__expr__",
+                "model": {
+                    "refId": "C",
+                    "type": "threshold",
+                    "expression": "B",
+                    "conditions": [{"evaluator": {"type": op, "params": [threshold]}}],
+                },
+            },
+        ],
+    }
+
+
+def log_rule(uid, title, expr, threshold, summary, *, op="gt", for_="10m", no_data="OK", severity="warning", range_s=3600, window="30m") -> dict:
+    """Like `rule`, but queries Faro RUM logs in Loki instead of an OTel
+    metric - same query -> reduce(last) -> threshold shape, different
+    datasource/queryType on the first stage. `expr` should embed its own
+    `[window]` range selector."""
+    return {
+        "uid": uid,
+        "title": title,
+        "condition": "C",
+        "for": for_,
+        "labels": {"app": "schoolz", "severity": severity},
+        "annotations": {"summary": summary},
+        "noDataState": no_data,
+        "execErrState": "Error",
+        "orgId": 1,
+        "folderUID": FOLDER,
+        "ruleGroup": GROUP,
+        "data": [
+            {
+                "refId": "A",
+                "relativeTimeRange": {"from": range_s, "to": 0},
+                "datasourceUid": "${DS_LOGS}",
+                "model": {"refId": "A", "expr": expr, "queryType": "instant", "editorMode": "code"},
             },
             {
                 "refId": "B",
@@ -143,6 +186,39 @@ def rules() -> list:
             "Scans are succeeding but dropping an unusual amount of content. This is the failure mode that "
             "doesn't turn anything red - coverage degrades quietly.",
             for_="1h",
+        ),
+        log_rule(
+            "schoolz-auth-stalled",
+            "schoolz: a visitor's auth check never resolved",
+            'sum(count_over_time({app_name="schoolz-faro"} | logfmt | kind="event" | event_name="auth_timeout" [30m]))',
+            0,
+            "AuthContext gave up waiting on the auth check and showed the reload fallback. This is the failure "
+            "that left logged-in mobile visitors stuck on 'Loading...' until they reloaded by hand - see the "
+            "onAuthStateChange comment in frontend/src/context/AuthContext.tsx. Any occurrence is worth looking "
+            "at; it should be zero.",
+            for_="0m",
+            severity="critical",
+        ),
+        log_rule(
+            "schoolz-auth-slow",
+            "schoolz: auth check p95 above 5s",
+            'quantile_over_time(0.95, {app_name="schoolz-faro"} | logfmt | kind="measurement" | type="auth_ready" | unwrap value_ms [30m])',
+            5000,
+            "The client-side auth check is taking over 5s at p95. Short of the outright stall schoolz-auth-stalled "
+            "catches, but the same failure mode degrading: every API call waits behind the Supabase auth lock, so "
+            "this shows up to visitors as a slow or blank logged-in page.",
+            for_="15m",
+        ),
+        rule(
+            "schoolz-user-created",
+            "schoolz: new user registered",
+            f"sum(increase(schoolz_user_created_total{sel()}[5m]))",
+            0,
+            "A new user account was just created (local register or Supabase first-sign-in). "
+            "Informational - check the Loki `user_created` log line for the source and user_id.",
+            for_="0m",
+            range_s=300,
+            severity="info",
         ),
     ]
 
