@@ -361,3 +361,28 @@ async def fetch_raw(req: FetchRawRequest):
         await context.close()
         observability.page_load_seconds.record(time.perf_counter() - start, {"outcome": outcome})
 
+
+def run_server():
+    """Start uvicorn with a dual-stack socket binding both IPv4 (0.0.0.0 / 127.0.0.1)
+    and IPv6 (:: / ::1 / Fly 6PN). This satisfies both Fly's private network
+    (IPv6-only 6PN) and Fly machine health checks / local compose (IPv4 loopback)."""
+    import socket
+    import uvicorn
+
+    port = int(os.getenv("PORT", "8765"))
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    except (AttributeError, OSError):
+        pass
+    sock.bind(("::", port))
+    sock.listen(128)
+    config = uvicorn.Config("main:app", fd=sock.fileno(), log_level="info")
+    server = uvicorn.Server(config)
+    server.run()
+
+
+if __name__ == "__main__":
+    run_server()
+
