@@ -1,5 +1,6 @@
-"""The chatbot's personal tools (services/chatbot_personal.py) and the
-/chat endpoint's decision to offer them only to a signed-in caller."""
+"""The chatbot's personal tools (services/chatbot_personal.py), the public
+find_local_events tool (LocalEventTools), and the /chat endpoint's decision
+to offer the personal ones only to a signed-in caller."""
 import json
 import os
 import uuid
@@ -12,7 +13,7 @@ from httpx import ASGITransport, AsyncClient
 
 from main import app
 from routers import chat as chat_router
-from services.chatbot_personal import PersonalTools
+from services.chatbot_personal import LocalEventTools, PersonalTools
 from tests.test_kids_api import _auth, _family, _register
 
 
@@ -66,7 +67,7 @@ async def test_student_account_sees_itself():
 async def test_chat_offers_personal_tools_only_when_signed_in(monkeypatch):
     seen = []
 
-    async def fake_turn(mcp, history, message, already_escalated, personal=None, config=None, lang="en"):
+    async def fake_turn(mcp, history, message, already_escalated, local_events=None, personal=None, config=None, lang="en"):
         seen.append(personal)
         return {"reply": "ok", "model": None, "history": [], "escalated": False}
 
@@ -113,10 +114,7 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
         db.add(LocalEvent(source=src, source_event_id="late", title="Sunday evening story time", start_time=utc(9, 1), categories=["library", "kids"]))
         await db.commit()
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        token = await _register(client, f"chatlocal_{uuid.uuid4().hex[:8]}@example.com")
-
-    tools = PersonalTools(app, token)
+    tools = LocalEventTools(app)
     try:
         res = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-07", "end_date": "2031-06-08"}))
         titles = [e["title"] for e in res["items"]]
@@ -155,10 +153,7 @@ async def test_category_list_is_live_sorted_and_cached(monkeypatch):
         db.add(LocalEvent(source=src, source_event_id="once", title="once", start_time=soon, categories=["one-off-tag"]))
         await db.commit()
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        token = await _register(client, f"chatcat_{uuid.uuid4().hex[:8]}@example.com")
-
-    tools = PersonalTools(app, token)
+    tools = LocalEventTools(app)
     try:
         first = {t["name"]: t["description"] for t in await tools.tool_defs()}["find_local_events"]
         listed = first.split("Categories in use: ")[1].split(". ")[0].split(", ")
@@ -192,9 +187,7 @@ async def test_routine_class_tags_stay_out_of_the_category_list(monkeypatch):
         for i in range(5):
             db.add(LocalEvent(source=src, source_event_id=f"y{i}", title="Aqua Fit", start_time=soon, categories=["ymca", "pool"]))
         await db.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        token = await _register(client, f"chaty_{uuid.uuid4().hex[:8]}@example.com")
-    tools = PersonalTools(app, token)
+    tools = LocalEventTools(app)
     try:
         listed = (await tools._category_list()).split(", ")
         assert "ymca" not in listed and "pool" not in listed
@@ -214,9 +207,7 @@ async def test_naming_a_place_includes_its_paid_classes():
         db.add(LocalEvent(source=src, source_event_id="swim", title="Lap Swimming", start_time=datetime(2031, 6, 7, 12, tzinfo=timezone.utc),
                           venue_name="Mt. Laurel YMCA", categories=["pool", "swim", "ymca"]))
         await db.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        token = await _register(client, f"chatplace_{uuid.uuid4().hex[:8]}@example.com")
-    tools = PersonalTools(app, token)
+    tools = LocalEventTools(app)
     try:
         browse = json.loads(await tools.run("find_local_events", {"start_date": "2031-06-07", "end_date": "2031-06-07"}))
         assert "Lap Swimming" not in [e["title"] for e in browse["items"]]  # open-ended: paid class hidden

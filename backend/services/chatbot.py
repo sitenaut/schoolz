@@ -28,7 +28,7 @@ from mcp.server.fastmcp import FastMCP
 
 from services.chat_providers import Usage, configured_providers
 from services.chat_settings import AudienceConfig
-from services.chatbot_personal import PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, PersonalTools
+from services.chatbot_personal import LOCAL_EVENTS_TOOL_NAME, PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, LocalEventTools, PersonalTools
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,9 @@ _LANG_REPLY = {
 SYSTEM_PROMPT = (
     "You are schoolz's assistant for Cherry Hill Public Schools. Answer using only the "
     "tools available to you - school info, today's status, bell schedules, lunch menus, "
-    "transportation, calendar items, tracked newsletters, and high-school class-year "
-    "pages (their content and payment schedules). Never invent a fact a tool didn't "
+    "transportation, calendar items, tracked newsletters, high-school class-year "
+    "pages (their content and payment schedules), and local community events "
+    "(find_local_events). Never invent a fact a tool didn't "
     "return. If a lookup comes back with a 'note' about missing data, relay that note's "
     "suggestion (ask the school to publish it, or submit a link with "
     "submit_community_content) instead of just saying there's no data. Keep answers "
@@ -120,6 +121,7 @@ async def run_chat_turn(
     history: list[dict[str, Any]],
     message: str,
     already_escalated: bool,
+    local_events: LocalEventTools | None = None,
     personal: PersonalTools | None = None,
     config: AudienceConfig | None = None,
     providers: dict[str, Any] | None = None,
@@ -133,10 +135,12 @@ async def run_chat_turn(
     stays sticky for the rest of a conversation without needing a session
     store.
 
-    `personal` is set only for a signed-in caller (routers/chat.py) and adds
-    the tools in services/chatbot_personal.py on top of the public ones.
-    `config` picks the provider and models (admin-editable, see
-    services/chat_settings.py); the default is Haiku escalating to Sonnet.
+    `local_events` (find_local_events) is offered to every caller, signed in
+    or not - /local-events needs no login. `personal` is set only for a
+    signed-in caller (routers/chat.py) and adds the rest of the tools in
+    services/chatbot_personal.py on top. `config` picks the provider and
+    models (admin-editable, see services/chat_settings.py); the default is
+    Haiku escalating to Sonnet.
     """
     config = config or AudienceConfig()
     providers = providers if providers is not None else configured_providers()
@@ -155,6 +159,8 @@ async def run_chat_turn(
         )
 
     tools = await _anthropic_tools(mcp)
+    if local_events:
+        tools += await local_events.tool_defs()
     stable_system = SYSTEM_PROMPT
     if personal:
         tools += await personal.tool_defs()
@@ -231,7 +237,9 @@ async def run_chat_turn(
         results = []
         for use in tool_uses:
             tools_called.append(use["name"])
-            if use["name"] in PERSONAL_TOOL_NAMES:
+            if use["name"] == LOCAL_EVENTS_TOOL_NAME and local_events:
+                result_text = await local_events.run(use["name"], use.get("input") or {})
+            elif use["name"] in PERSONAL_TOOL_NAMES:
                 result_text = (
                     await personal.run(use["name"], use.get("input") or {})
                     if personal

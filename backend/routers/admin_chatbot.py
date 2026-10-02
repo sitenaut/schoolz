@@ -22,7 +22,7 @@ from models import User
 from services.chat_providers import KNOWN_PROVIDERS, configured_providers
 from services.chat_settings import AudienceConfig, ChatbotSettings, estimate_cost, get_settings, save_settings
 from services.chatbot import run_chat_turn
-from services.chatbot_personal import PersonalTools
+from services.chatbot_personal import LocalEventTools, PersonalTools
 
 router = APIRouter(prefix="/admin/chatbot", tags=["admin-chatbot"])
 
@@ -147,18 +147,30 @@ async def compare(
     settings = await get_settings(db)
     providers = configured_providers()
 
+    # Warm the (module-level, shared) category cache once before the configs
+    # race each other below - each builds its own LocalEventTools, and three
+    # concurrent cache misses would mean three concurrent /local-events/facets
+    # calls instead of one.
+    warmup = LocalEventTools(request.app)
+    try:
+        await warmup.tool_defs()
+    finally:
+        await warmup.aclose()
+
     async def run_one(config: AudienceConfig) -> CompareResult:
         personal = PersonalTools(request.app, token) if body.signed_in and token else None
+        local_events = LocalEventTools(request.app)
         started = time.monotonic()
         try:
             result: dict[str, Any] = await run_chat_turn(
                 request.app.state.mcp, history=[], message=body.message, already_escalated=False,
-                personal=personal, config=config, providers=providers,
+                local_events=local_events, personal=personal, config=config, providers=providers,
             )
         except Exception as exc:  # noqa: BLE001 - one side failing shouldn't sink the comparison
             return CompareResult(provider=config.provider, requested_model=config.model, model=None,
                                  error=f"{type(exc).__name__}: {exc}"[:800], latency_ms=int((time.monotonic() - started) * 1000))
         finally:
+            await local_events.aclose()
             if personal:
                 await personal.aclose()
         out = CompareResult(

@@ -123,7 +123,7 @@ async def test_seeded_refresh_job_exists():
 # ---- read API ------------------------------------------------------------------
 
 
-async def test_local_events_api_requires_login_and_filters():
+async def test_local_events_api_is_public_and_filters():
     run = uuid.uuid4().hex[:8]
     async with database.SessionLocal() as db:
         db.add_all(
@@ -136,11 +136,10 @@ async def test_local_events_api_requires_login_and_filters():
         await db.commit()
     rng = {"start": "2031-06-01T04:00:00Z", "end": "2031-07-01T03:59:59Z"}
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        assert (await client.get("/local-events", params=rng)).status_code == 401
-        token = await _register(client, f"le_{run}@example.com", f"le_{run}")
 
         async def titles(**extra):
-            res = await client.get("/local-events", params={**rng, "q": run, **extra}, headers=auth(token))
+            # No auth header - anonymous access, same as every other public read.
+            res = await client.get("/local-events", params={**rng, "q": run, **extra})
             assert res.status_code == 200, res.text
             return {i["title"] for i in res.json()["items"]}
 
@@ -150,7 +149,7 @@ async def test_local_events_api_requires_login_and_filters():
         assert await titles(q=f"{run} croft") == {f"Free concert {run}"}
         assert await titles(source=f"s2_{run}") == set()
 
-        facets = (await client.get("/local-events/facets", params=rng, headers=auth(token))).json()
+        facets = (await client.get("/local-events/facets", params=rng)).json()
         assert {"value": f"s1_{run}", "count": 2} in facets["sources"]
         assert any(c["value"] == "music" for c in facets["categories"])
 

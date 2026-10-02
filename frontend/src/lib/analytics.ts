@@ -17,7 +17,7 @@ declare global {
 // real path, so an invite token or anything about a child can't reach Google.
 // Everything else is a public page whose real path (a school's slug) is
 // exactly what landing-page reporting needs.
-const PRIVATE_PREFIXES = ["/account", "/admin", "/children", "/kids", "/gmail", "/login", "/register", "/forgot-password", "/reset-password", "/start", "/local"];
+const PRIVATE_PREFIXES = ["/account", "/admin", "/children", "/kids", "/gmail", "/login", "/register", "/forgot-password", "/reset-password", "/start"];
 const TOKEN_ROUTES: [RegExp, string][] = [
   [/^\/invites\/[^/]+$/, "/invites/:token"],
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],

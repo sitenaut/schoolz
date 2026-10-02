@@ -1,18 +1,23 @@
-"""The chatbot's personal tools - offered only when the /chat request itself
-carries a valid login, and never registered on the public MCP server at
-/mcp (that server holds no credentials and stays public-data-only by
-design; see mcp_server.py).
+"""Chatbot tools that live outside the public MCP server at /mcp
+(mcp_server.py), for two different reasons:
 
-Every tool calls this app's own authenticated route in-process with the
-caller's *own* bearer token forwarded, the same way the frontend would.
-That's the whole security model, on purpose: no new access code exists
-here. Whether this user may see a given student is decided by exactly the
-check the Kids view already uses (`_get_own_student` - guardian or the
-student themselves), so the chatbot can never see more than the person
-could by clicking around the site. A student_id the model invents or picks
-up from a spoofed history just comes back as that route's 404.
+- PersonalTools (most of this module) are offered only when the /chat
+  request itself carries a valid login. Every tool calls this app's own
+  authenticated route in-process with the caller's *own* bearer token
+  forwarded, the same way the frontend would. That's the whole security
+  model, on purpose: no new access code exists here. Whether this user may
+  see a given student is decided by exactly the check the Kids view already
+  uses (`_get_own_student` - guardian or the student themselves), so the
+  chatbot can never see more than the person could by clicking around the
+  site. A student_id the model invents or picks up from a spoofed history
+  just comes back as that route's 404.
+- LocalEventTools is public like mcp_server.py's tools (/local-events needs
+  no login), but lives here rather than there because of the dynamic,
+  hourly-refreshed category list baked into its description - every tool on
+  the MCP server has a static docstring, and this one's description would
+  go stale otherwise (see the comment above _LOCAL_EVENTS_TOOL).
 
-Only GETs - the assistant can read the personal layer, never change it.
+Only GETs - the assistant can read, never change, anything through either.
 """
 
 import json
@@ -114,10 +119,13 @@ _TOOLS: dict[str, tuple[str, dict[str, Any], str]] = {
     ),
 }
 
-# Local events (/local) - signed-in only, same as the page. Special-cased in
-# run(): the raw list is far too big to hand the model as-is (~335 events a
-# week, ~440 of them recurring YMCA classes), so the tool trims it first.
-_TOOLS["find_local_events"] = (
+# Local events (/local) - public, same as the page: offered to every chat
+# caller, signed in or not, via LocalEventTools below rather than _TOOLS, so
+# it isn't gated by PERSONAL_TOOL_NAMES. Special-cased in LocalEventTools.run():
+# the raw list is far too big to hand the model as-is (~335 events a week,
+# ~440 of them recurring YMCA classes), so the tool trims it first.
+LOCAL_EVENTS_TOOL_NAME = "find_local_events"
+_LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
     "Community events near Cherry Hill (township calendars, libraries, the Y, concerts, festivals) between two "
     "dates. For 'what can I take the kids to', don't rely on categories alone - the family/kids tags are "
     "keyword-inferred and miss plenty; search the whole range and judge from each title and description. "
@@ -162,7 +170,7 @@ PERSONAL_TOOL_NAMES = frozenset(_TOOLS)
 PERSONAL_PROMPT = (
     " The person you're talking with is signed in, so you also have personal tools for their own children "
     "(or, for a student, themselves): to-dos, grades, schedule, announcements, teacher emails, late policies, "
-    "specials, and notifications - plus local community events (find_local_events). Start with list_my_children to get student ids; if they have more than one "
+    "specials, and notifications. Start with list_my_children to get student ids; if they have more than one "
     "child and the question doesn't say which, ask. This data came from their own school accounts - answer "
     "about it plainly, and never mention one child's data when asked about another."
 )
@@ -184,11 +192,8 @@ _MAX_CATEGORIES = 30
 _category_cache: dict[str, Any] = {"text": None, "at": 0.0}
 
 
-def anthropic_tool_defs(categories: str = _FALLBACK_CATEGORIES) -> list[dict[str, Any]]:
-    return [
-        {"name": name, "description": desc.replace("{categories}", categories), "input_schema": schema}
-        for name, (desc, schema, _) in _TOOLS.items()
-    ]
+def anthropic_tool_defs() -> list[dict[str, Any]]:
+    return [{"name": name, "description": desc, "input_schema": schema} for name, (desc, schema, _) in _TOOLS.items()]
 
 
 class PersonalTools:
@@ -206,7 +211,64 @@ class PersonalTools:
         await self._client.aclose()
 
     async def tool_defs(self) -> list[dict[str, Any]]:
-        return anthropic_tool_defs(await self._category_list())
+        return anthropic_tool_defs()
+
+    async def _get(self, path: str) -> Any:
+        response = await self._client.get(path)
+        if response.status_code >= 400:
+            return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
+        return response.json()
+
+    async def run(self, name: str, arguments: dict[str, Any]) -> str:
+        _desc, _schema, template = _TOOLS[name]
+        student_id = str(arguments.get("student_id", ""))
+        if "{student_id}" in template and not _ID_RE.match(student_id):
+            return json.dumps({"error": "student_id must be an id from list_my_children"})
+        try:
+            if name == "list_my_children":
+                data = await self._list_my_children()
+            else:
+                data = await self._get(template.format(student_id=student_id))
+        except Exception as exc:  # noqa: BLE001 - same as chatbot._run_tool: one bad call shouldn't 500 the turn
+            logger.exception("chatbot_personal_tool_failed", extra={"tool": name})
+            return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
+        text = json.dumps(data, default=str)
+        if len(text) > _MAX_RESULT_CHARS:
+            text = text[:_MAX_RESULT_CHARS] + '..."[truncated - ask about one class or a narrower question]"'
+        return text
+
+    async def _list_my_children(self) -> Any:
+        children = await self._get("/students")
+        if isinstance(children, dict):  # an error
+            return children
+        me = await self._get("/auth/me")
+        own_id = me.get("student_profile_id") if isinstance(me, dict) else None
+        if own_id and all(c.get("id") != own_id for c in children):
+            children.append({"id": own_id, "note": "This is the signed-in student's own record."})
+        return {"count": len(children), "items": children}
+
+
+class LocalEventTools:
+    """find_local_events, offered to every chat caller - signed in or not -
+    since /local-events is a public, no-auth route. Built per /chat request
+    like PersonalTools, but with a plain unauthenticated in-process client:
+    no bearer token to forward, because there's no personalization here to
+    gate (see the module-level comment above _LOCAL_EVENTS_TOOL)."""
+
+    def __init__(self, app: FastAPI):
+        self._client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://schoolz-internal",
+            timeout=30.0,
+        )
+
+    async def aclose(self) -> None:
+        await self._client.aclose()
+
+    async def tool_defs(self) -> list[dict[str, Any]]:
+        desc, schema, _ = _LOCAL_EVENTS_TOOL
+        categories = await self._category_list()
+        return [{"name": LOCAL_EVENTS_TOOL_NAME, "description": desc.replace("{categories}", categories), "input_schema": schema}]
 
     async def _category_list(self) -> str:
         now = time.monotonic()
@@ -233,41 +295,16 @@ class PersonalTools:
         _category_cache.update(text=text, at=now)
         return text
 
-    async def _get(self, path: str) -> Any:
-        response = await self._client.get(path)
-        if response.status_code >= 400:
-            return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
-        return response.json()
-
     async def run(self, name: str, arguments: dict[str, Any]) -> str:
-        _desc, _schema, template = _TOOLS[name]
-        student_id = str(arguments.get("student_id", ""))
-        if "{student_id}" in template and not _ID_RE.match(student_id):
-            return json.dumps({"error": "student_id must be an id from list_my_children"})
         try:
-            if name == "list_my_children":
-                data = await self._list_my_children()
-            elif name == "find_local_events":
-                data = await self._find_local_events(arguments)
-            else:
-                data = await self._get(template.format(student_id=student_id))
+            data = await self._find_local_events(arguments)
         except Exception as exc:  # noqa: BLE001 - same as chatbot._run_tool: one bad call shouldn't 500 the turn
-            logger.exception("chatbot_personal_tool_failed", extra={"tool": name})
+            logger.exception("chatbot_local_events_tool_failed", extra={"tool": name})
             return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
         text = json.dumps(data, default=str)
         if len(text) > _MAX_RESULT_CHARS:
             text = text[:_MAX_RESULT_CHARS] + '..."[truncated - ask about one class or a narrower question]"'
         return text
-
-    async def _list_my_children(self) -> Any:
-        children = await self._get("/students")
-        if isinstance(children, dict):  # an error
-            return children
-        me = await self._get("/auth/me")
-        own_id = me.get("student_profile_id") if isinstance(me, dict) else None
-        if own_id and all(c.get("id") != own_id for c in children):
-            children.append({"id": own_id, "note": "This is the signed-in student's own record."})
-        return {"count": len(children), "items": children}
 
     async def _find_local_events(self, args: dict[str, Any]) -> Any:
         try:
