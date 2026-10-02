@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
+import { safeNext } from "./LoginPage";
 
 /** Full-page version, reached the same way LoginPage is - see its note. */
 export function RegisterPage() {
@@ -9,7 +10,8 @@ export function RegisterPage() {
   const [mode, setMode] = useState<"login" | "register">("register");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const next = safeNext(searchParams.get("next"));
+  const presetEmail = searchParams.get("email") ?? undefined;
 
   useEffect(() => {
     if (user) navigate(next, { replace: true });
@@ -18,7 +20,12 @@ export function RegisterPage() {
   return (
     <div className="page page-narrow">
       <h1>{mode === "login" ? "Sign in" : "Register"}</h1>
-      <AuthPanel mode={mode} onModeChange={setMode} />
+      <AuthPanel
+        mode={mode}
+        onModeChange={setMode}
+        returnTo={next === "/" ? undefined : next}
+        presetEmail={presetEmail}
+      />
     </div>
   );
 }

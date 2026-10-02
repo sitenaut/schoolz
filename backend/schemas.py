@@ -122,6 +122,7 @@ class InvitePreviewOut(BaseModel):
     inviter_username: str
     status: str
     expires_at: datetime
+    invitee_email_hint: str | None = None
 
 
 class NotificationOut(BaseModel):

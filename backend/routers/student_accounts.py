@@ -17,7 +17,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user
+from auth import get_current_user, mask_email
 from database import get_db
 from models import GuardianStudentLink, Student, StudentAccountInvite, User
 
@@ -45,6 +45,7 @@ class StudentAccountInvitePreviewOut(BaseModel):
     inviter_username: str
     status: str
     expires_at: datetime
+    invitee_email_hint: str | None = None
 
 
 class StudentAccountStatusOut(BaseModel):
@@ -191,6 +192,7 @@ async def preview_student_account_invite(token: str, db: AsyncSession = Depends(
         inviter_username=inviter.username if inviter else "A guardian",
         status=invite.status,
         expires_at=invite.expires_at,
+        invitee_email_hint=mask_email(invite.invitee_email) if invite.invitee_email else None,
     )
 
 

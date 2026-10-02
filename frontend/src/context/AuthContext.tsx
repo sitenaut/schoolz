@@ -36,7 +36,8 @@ type AuthContextValue = {
   loginLocal: (usernameOrEmail: string, password: string) => Promise<void>;
   loginWithGoogle: (returnTo?: string) => Promise<void>;
   loginWithPasswordSupabase: (email: string, password: string) => Promise<void>;
-  registerWithPasswordSupabase: (email: string, password: string, returnTo?: string) => Promise<void>;
+  registerWithPasswordSupabase: (email: string, password: string, returnTo?: string) => Promise<boolean>;
+  resendConfirmationEmailSupabase: (email: string, returnTo?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -201,16 +202,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const registerWithPasswordSupabase = async (email: string, password: string, returnTo?: string) => {
-    if (!supabase) return;
+  const registerWithPasswordSupabase = async (email: string, password: string, returnTo?: string): Promise<boolean> => {
+    if (!supabase) return false;
     setError(null);
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: absoluteReturnTo(returnTo) },
     });
-    if (err) setError(err.message);
-    else trackEvent("sign_up", { method: "password" });
+    if (err) {
+      setError(err.message);
+      return false;
+    }
+    trackEvent("sign_up", { method: "password" });
+    return true;
+  };
+
+  const resendConfirmationEmailSupabase = async (email: string, returnTo?: string): Promise<boolean> => {
+    if (!supabase) return false;
+    setError(null);
+    const { error: err } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: absoluteReturnTo(returnTo) },
+    });
+    if (err) {
+      setError(err.message);
+      return false;
+    }
+    return true;
   };
 
   const logout = async () => {
@@ -234,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithGoogle,
         loginWithPasswordSupabase,
         registerWithPasswordSupabase,
+        resendConfirmationEmailSupabase,
         logout,
         refresh,
       }}
