@@ -34,7 +34,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not preschools:
         return "WARNING[no_preschools_tracked]: no preschool-type (school_type='other') schools tracked yet to attach staff to"
 
-    result = await scraper_client.fetch_html(district.preschool_team_url, wait_for_selector="a")
+    result = await scraper_client.fetch_html(
+        district.preschool_team_url, wait_for_selector="a", block_assets=True
+    )
     team = parse_preschool_team(result["html"])
     if not team:
         return "WARNING[no_preschool_team]: no preschool team members found - the page's structure may have changed"

@@ -224,7 +224,8 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
     # scheduler/errors.py), not a silent empty list that reads identically
     # to "loaded fine, no handbook link" - that ambiguity was the actual
     # bug a real user hit (a warning with no way to tell what was checked).
-    fetch = scraper_client.fetch_html
+    async def fetch(url, wait_for_selector=None):
+        return await scraper_client.fetch_html(url, wait_for_selector=wait_for_selector, block_assets=True)
     presence = False
     # SchoolMessenger Presence (ex-SharpSchool: Sterling, Somerdale) answers plain HTTP, and
     # headless Chromium gets 502s from it (hung nav / ERR_ABORTED), so the scraper never loads.

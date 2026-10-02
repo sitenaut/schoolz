@@ -457,8 +457,11 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
     if presence:
         return presence
     for path in _DIRECTORY_PATHS:
-        pages_html = await scraper_client.fetch_paginated(base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20)
+        pages_html = await scraper_client.fetch_paginated(
+            base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True
+        )
         by_constituent_id: dict[str, dict] = {}
+
         for html in pages_html:
             for item in _parse_page(html):
                 by_constituent_id[item["constituent_id"]] = item

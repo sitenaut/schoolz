@@ -185,7 +185,8 @@ async def _fetch_page(url: str, attempts: int = 3, backoff_s: float = 2.0) -> st
     last: Exception | None = None
     for attempt in range(attempts):
         try:
-            return (await scraper_client.fetch_html(url, wait_for_selector="#fsPageContent"))["html"]
+            return (await scraper_client.fetch_html(url, wait_for_selector="#fsPageContent", block_assets=True))["html"]
+
         except Exception as exc:  # httpx.HTTPStatusError / timeouts
             last = exc
             if attempt < attempts - 1:

@@ -12,13 +12,13 @@ on:
         required: true
         default: "both"
         type: choice
-        options: ["both", "backend", "frontend"]
+        options: ["all", "both", "backend", "frontend", "scraper"]
 
 jobs:
   deploy-backend:
     if: >
       github.event_name == 'workflow_dispatch' &&
-      (github.event.inputs.target == 'backend' || github.event.inputs.target == 'both') ||
+      (github.event.inputs.target == 'backend' || github.event.inputs.target == 'both' || github.event.inputs.target == 'all') ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     environment: prod
@@ -42,7 +42,7 @@ jobs:
       always() &&
       (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
       (github.event_name != 'workflow_dispatch' ||
-       github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both')
+       github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' || github.event.inputs.target == 'all')
     runs-on: ubuntu-latest
     environment: prod
     steps:
@@ -50,5 +50,19 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --remote-only --build-arg VITE_APP_VERSION=${GITHUB_SHA::7}
         working-directory: frontend
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-scraper:
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.target == 'scraper' || github.event.inputs.target == 'all')
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        working-directory: scraper
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

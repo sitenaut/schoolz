@@ -119,3 +119,36 @@ async def test_fetch_paginated_only_ever_uses_the_primary_scraper(monkeypatch):
     pages = await scraper_client.fetch_paginated("https://school.example/roster", ".next")
     assert pages == ["<p>1</p>"]
     assert calls == ["https://primary"]
+
+
+async def test_fetch_html_passes_block_assets(monkeypatch):
+    _set_services(monkeypatch, primary=("https://primary", "pkey"))
+    received_payloads = []
+
+    async def fake_post_to(service_url, api_key, path, payload, timeout_s):
+        received_payloads.append(payload)
+        return {"html": "<p>ok</p>"}
+
+    monkeypatch.setattr(scraper_client, "_post_to", fake_post_to)
+    await scraper_client.fetch_html("https://school.example/page", block_assets=True)
+    assert received_payloads[0]["block_assets"] is True
+
+    await scraper_client.fetch_html("https://school.example/page")
+    assert received_payloads[1]["block_assets"] is False
+
+
+async def test_fetch_paginated_passes_block_assets(monkeypatch):
+    _set_services(monkeypatch, primary=("https://primary", "pkey"))
+    received_payloads = []
+
+    async def fake_post_to(service_url, api_key, path, payload, timeout_s):
+        received_payloads.append(payload)
+        return {"pages": ["<p>1</p>"]}
+
+    monkeypatch.setattr(scraper_client, "_post_to", fake_post_to)
+    await scraper_client.fetch_paginated("https://school.example/roster", ".next", block_assets=True)
+    assert received_payloads[0]["block_assets"] is True
+
+    await scraper_client.fetch_paginated("https://school.example/roster", ".next")
+    assert received_payloads[1]["block_assets"] is False
+

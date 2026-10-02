@@ -22,3 +22,13 @@ primary_region = "ewr"
 
   [[services.ports]]
     port = 8765
+
+[checks]
+  [checks.browser_health]
+    port = 8765
+    type = "http"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "get"
+    path = "/health"

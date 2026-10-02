@@ -274,7 +274,7 @@ async def discover_current_issue_url(archive_page_url: str) -> str | None:
     client-rendered Smore page listing every issue that person has ever
     published. When the first fetch finds no direct issue link, this
     follows that one extra hop."""
-    result = await scraper_client.fetch_html(archive_page_url, wait_for_selector="a")
+    result = await scraper_client.fetch_html(archive_page_url, wait_for_selector="a", block_assets=True)
     link = _pick_current_issue_link(result["html"])
     if link:
         return link
@@ -282,5 +282,8 @@ async def discover_current_issue_url(archive_page_url: str) -> str | None:
     author_url = _find_author_profile_link(result["html"])
     if not author_url:
         return None
-    author_result = await scraper_client.fetch_html(author_url, wait_for_selector='a[href*="smore.com/n/"]', timeout_ms=25_000)
+    author_result = await scraper_client.fetch_html(
+        author_url, wait_for_selector='a[href*="smore.com/n/"]', timeout_ms=25_000, block_assets=True
+    )
     return _pick_current_issue_link(author_result["html"])
+
