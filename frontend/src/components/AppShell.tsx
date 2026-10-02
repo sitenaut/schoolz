@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AuthPopover } from "./AuthPopover";
+import { UserMenu } from "./UserMenu";
 import { LanguageOffer, LanguageSwitcher, useAccountLanguageSync } from "./LanguageSwitcher";
 import { ChatWidget } from "./ChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
@@ -260,13 +261,7 @@ export function AppShell() {
         <Link to="/start" className="ghost">
           {t("My schools")}
         </Link>
-        {user ? (
-          <Link to="/account" className="ghost">
-            {user.username}
-          </Link>
-        ) : (
-          <AuthPopover />
-        )}
+        {user ? <UserMenu /> : <AuthPopover />}
       </header>
 
       {mySchools.length > 0 && !hideSchoolFilter && (
