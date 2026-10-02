@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user
+from auth import get_current_user, mask_email
 from database import get_db
 from models import GuardianInvite, GuardianStudentLink, Notification, Student, User
 from schemas import InvitePreviewOut, StudentOut
@@ -41,6 +41,7 @@ async def preview_invite(token: str, db: AsyncSession = Depends(get_db)):
         inviter_username=inviter.username,
         status=invite.status,
         expires_at=invite.expires_at,
+        invitee_email_hint=mask_email(invite.invitee_email) if invite.invitee_email else None,
     )
 
 

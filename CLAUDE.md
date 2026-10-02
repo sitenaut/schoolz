@@ -27,7 +27,9 @@ OBSERVABILITY=1 ./scripts/compose-local.sh up --build    # + Grafana/Mimir/Loki/
 SCHEDULER=1 ./scripts/compose-local.sh up --build        # + the cron scheduler (off by default)
 ./scripts/alembic_env.sh local revision --autogenerate -m "..."
 ./scripts/alembic_env.sh prod upgrade head
-cd backend && pytest -q
+./scripts/verify-local.sh                               # full stack health, live auth, and test suite check
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-local.ps1 # Windows/PowerShell equivalent
+cd backend && pytest -q                                  # in container: docker exec schoolz-api-local pytest -q
 cd frontend && npm run build && npm run test
 ```
 

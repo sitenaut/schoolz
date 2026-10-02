@@ -61,6 +61,7 @@ async def test_student_account_invite_accept_and_shared_access():
         assert preview.status_code == 200
         assert preview.json()["student_first_name"] == "Alex"
         assert preview.json()["student_last_initial"] == "R"
+        assert preview.json()["invitee_email_hint"] == "k*****@example.com"
 
         kid = await _register(client, kid_email)
         before = await client.get(f"/students/{student_id}/bucket3/schedule", headers=_auth(kid))

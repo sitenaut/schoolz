@@ -28,12 +28,22 @@ export function AuthPanel({
   presetEmail?: string;
 }) {
   const { t } = useTranslation();
-  const { loginLocal, registerLocal, loginWithPasswordSupabase, registerWithPasswordSupabase, loginWithGoogle, error } = useAuth();
+  const {
+    loginLocal,
+    registerLocal,
+    loginWithPasswordSupabase,
+    registerWithPasswordSupabase,
+    resendConfirmationEmailSupabase,
+    loginWithGoogle,
+    error,
+  } = useAuth();
   const [identifier, setIdentifier] = useState(presetEmail ?? "");
   const [email, setEmail] = useState(presetEmail ?? "");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,8 +52,8 @@ export function AuthPanel({
       else await loginLocal(identifier, password);
     } else {
       if (IS_SUPABASE_AUTH) {
-        await registerWithPasswordSupabase(email, password, returnTo);
-        setDone(true);
+        const ok = await registerWithPasswordSupabase(email, password, returnTo);
+        if (ok) setDone(true);
         return;
       }
       await registerLocal(email, username, password);
@@ -54,10 +64,38 @@ export function AuthPanel({
   if (done) {
     return (
       <div className="card" style={{ marginBottom: 0 }}>
-        <p style={{ margin: 0 }}>
+        <p style={{ margin: "0 0 10px" }}>
           <strong>{t("Check your email.")}</strong>{" "}
-          <Trans i18nKey={returnTo ? "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here to finish." : "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here."} values={{ email }} components={{ 1: <strong /> }} />
+          <Trans
+            i18nKey={
+              returnTo
+                ? "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here to finish."
+                : "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here."
+            }
+            values={{ email }}
+            components={{ 1: <strong /> }}
+          />
         </p>
+        {resent ? (
+          <p className="note" style={{ color: "var(--good, #10b981)", margin: "8px 0 0" }}>
+            {t("Confirmation email resent!")}
+          </p>
+        ) : (
+          <button
+            type="button"
+            className="ghost sm"
+            style={{ padding: 0, textDecoration: "underline" }}
+            disabled={resending}
+            onClick={async () => {
+              setResending(true);
+              const ok = await resendConfirmationEmailSupabase(email, returnTo);
+              setResending(false);
+              if (ok) setResent(true);
+            }}
+          >
+            {resending ? t("Resending…") : t("Resend confirmation email")}
+          </button>
+        )}
       </div>
     );
   }
@@ -113,9 +151,36 @@ export function AuthPanel({
           </div>
         )}
         {error && (
-          <p className="note" style={{ color: "var(--bad)" }}>
-            {error}
-          </p>
+          <div style={{ margin: "10px 0" }}>
+            <p className="note" style={{ color: "var(--bad)", margin: 0 }}>
+              {error}
+            </p>
+            {IS_SUPABASE_AUTH && /email not confirmed/i.test(error) && (
+              <div style={{ marginTop: 6 }}>
+                {resent ? (
+                  <p className="note" style={{ color: "var(--good, #10b981)", margin: 0 }}>
+                    {t("Confirmation email resent!")}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    className="ghost sm"
+                    style={{ padding: 0, textDecoration: "underline" }}
+                    disabled={resending}
+                    onClick={async () => {
+                      setResending(true);
+                      const targetEmail = identifier || email;
+                      const ok = await resendConfirmationEmailSupabase(targetEmail, returnTo);
+                      setResending(false);
+                      if (ok) setResent(true);
+                    }}
+                  >
+                    {resending ? t("Resending…") : t("Resend confirmation email")}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
         <button type="submit" className={`btn ${IS_SUPABASE_AUTH ? "" : "btn-primary"}`} style={{ width: "100%", justifyContent: "center" }}>
           {mode === "login" ? t("Sign in") : t("Create account")}

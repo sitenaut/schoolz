@@ -12,6 +12,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const next = safeNext(searchParams.get("next"));
+  const presetEmail = searchParams.get("email") ?? undefined;
 
   useEffect(() => {
     if (user) navigate(next, { replace: true });
@@ -20,7 +21,12 @@ export function LoginPage() {
   return (
     <div className="page page-narrow">
       <h1>{mode === "login" ? "Sign in" : "Register"}</h1>
-      <AuthPanel mode={mode} onModeChange={setMode} returnTo={next === "/" ? undefined : next} />
+      <AuthPanel
+        mode={mode}
+        onModeChange={setMode}
+        returnTo={next === "/" ? undefined : next}
+        presetEmail={presetEmail}
+      />
     </div>
   );
 }

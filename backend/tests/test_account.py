@@ -93,3 +93,35 @@ async def test_delete_account_requires_confirmation_and_password():
         assert gone.status_code == 204
         assert await _login(client, email, "password123") == 401
         assert (await client.get("/auth/me", headers=headers)).status_code == 401
+
+
+@pytest.mark.anyio
+async def test_supabase_autoprovision_username_collision():
+    from auth import _get_or_create_supabase_user
+    from database import SessionLocal
+
+    async with SessionLocal() as db:
+        tag = uuid.uuid4().hex[:6]
+        claims1 = {"sub": f"sub_1_{tag}", "email": f"collision_{tag}@example.com"}
+        claims2 = {"sub": f"sub_2_{tag}", "email": f"collision_{tag}@otherdomain.com"}
+
+        user1 = await _get_or_create_supabase_user(db, claims1)
+        assert user1.username == f"collision_{tag}"
+
+        user2 = await _get_or_create_supabase_user(db, claims2)
+        assert user2.username == f"collision_{tag}_2"
+        assert user2.id != user1.id
+
+
+def test_mask_email():
+    from auth import mask_email
+
+    assert mask_email("student@chclc.org") == "s*****@chclc.org"
+    assert mask_email("m@example.com") == "m*****@example.com"
+    assert mask_email("ALEX.RIVERA@SCHOOL.EDU") == "a*****@school.edu"
+    assert mask_email(None) is None
+    assert mask_email("") == ""
+    assert mask_email("plain-string") == "plain-string"
+    assert mask_email("@domain.com") == "*****@domain.com"
+
+

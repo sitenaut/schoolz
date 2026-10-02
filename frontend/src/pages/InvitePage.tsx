@@ -11,6 +11,7 @@ type Preview = {
   inviter_username: string;
   status: string;
   expires_at: string;
+  invitee_email_hint?: string;
 };
 
 type Phase =
@@ -147,6 +148,14 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
       {phase.kind === "needs_account" && !user && (
         <div className="card">
           <h2 style={{ marginTop: 0 }}>First, a schoolz account</h2>
+          {preview?.invitee_email_hint && (
+            <div className="banner" style={{ marginBottom: "14px" }}>
+              <span>
+                Invite sent to: <b>{preview.invitee_email_hint}</b>
+                {kind === "student" ? " — make sure to sign in or register with this address." : ""}
+              </span>
+            </div>
+          )}
           <p className="note">
             {kind === "student"
               ? "Use the email address this invite was sent to. Google is quickest if that's a Google address."
@@ -162,6 +171,11 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
         <div className="card">
           <h2 style={{ marginTop: 0 }}>Wrong account for this invite</h2>
           <p>{phase.message}</p>
+          {preview?.invitee_email_hint && (
+            <p className="note">
+              Expected address: <b>{preview.invitee_email_hint}</b>
+            </p>
+          )}
           <p className="note">You're signed in as {user?.email}.</p>
           <button className="btn btn-primary" onClick={switchAccount}>
             Sign out and use a different account

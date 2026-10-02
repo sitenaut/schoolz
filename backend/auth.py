@@ -52,6 +52,21 @@ def prewarm_supabase_jwks() -> None:
         pass  # best-effort warmup; verification will retry lazily per-request
 
 
+def mask_email(email: str | None) -> str | None:
+    """Mask email for unauthenticated preview, revealing the domain and first character.
+
+    Examples:
+      'student@chclc.org' -> 's*****@chclc.org'
+      'a@school.edu' -> 'a*****@school.edu'
+    """
+    if not email or "@" not in email:
+        return email
+    local, _, domain = email.strip().lower().partition("@")
+    if not local:
+        return f"*****@{domain}"
+    return f"{local[0]}*****@{domain}"
+
+
 async def seed_admin() -> None:
     """Create a default admin user from env vars if one doesn't exist yet.
 
@@ -154,14 +169,34 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
             logger.info("supabase_identity_linked_existing_user", extra={"user_id": user.id})
             return user
 
+    base_username = (email.split("@")[0] if email else supabase_user_id)[:56] or "user"
+    candidate = base_username
+    counter = 1
+    while (await db.execute(select(User.id).where(User.username == candidate))).scalar_one_or_none():
+        counter += 1
+        candidate = f"{base_username}_{counter}"
+
     user = User(
         email=email or f"{supabase_user_id}@unknown.local",
-        username=(email.split("@")[0] if email else supabase_user_id)[:64],
+        username=candidate,
         supabase_user_id=supabase_user_id,
         is_admin=bool(BOOTSTRAP_ADMIN_EMAIL and email == BOOTSTRAP_ADMIN_EMAIL),
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        candidate = f"{base_username[:50]}_{secrets.token_hex(4)}"
+        user = User(
+            email=email or f"{supabase_user_id}@unknown.local",
+            username=candidate,
+            supabase_user_id=supabase_user_id,
+            is_admin=bool(BOOTSTRAP_ADMIN_EMAIL and email == BOOTSTRAP_ADMIN_EMAIL),
+        )
+        db.add(user)
+        await db.commit()
+
     await db.refresh(user)
     logger.info("user_created", extra={"user_id": user.id, "source": "supabase_autoprovision"})
     observability.user_created_total.add(1, {"source": "supabase_autoprovision"})
