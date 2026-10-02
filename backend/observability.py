@@ -62,6 +62,11 @@ cold_start_requests_total = _meter.create_counter(
     description="First request handled after a Fly machine start.",
 )
 
+user_created_total = _meter.create_counter(
+    "schoolz.user.created",
+    description="New user rows created, by source (local_register / supabase_autoprovision).",
+)
+
 
 def record_llm_call(purpose: str, model: str, response, duration_s: float) -> None:
     """Records one Anthropic call's outcome, latency and token usage.
