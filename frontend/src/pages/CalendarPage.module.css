@@ -12,6 +12,35 @@
   margin-top: 0;
 }
 
+/* The Local page's filter row. A bare `width: auto` select sizes to its longest
+ * option ("Classes & Lessons (123)"), so on a phone the category select ran off
+ * the screen and the source select came out a different width. A grid gives the
+ * search box its own row and the two selects equal halves that can shrink. */
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.filters .searchBox {
+  grid-column: 1 / -1;
+}
+
+.filters select {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 700px) {
+  .filters {
+    grid-template-columns: minmax(220px, 2fr) 1fr 1fr;
+  }
+
+  .filters .searchBox {
+    grid-column: auto;
+  }
+}
+
 .searchBox {
   position: relative;
   flex: 1;

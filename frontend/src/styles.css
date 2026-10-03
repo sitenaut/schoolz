@@ -1048,6 +1048,16 @@ h3 {
   accent-color: var(--primary);
   flex: none;
 }
+@media (prefers-color-scheme: dark) {
+  /* No page-level color-scheme is declared, so a native checkbox stays light
+   * on the dark theme; scope the dark control to just these. */
+  :root:not([data-theme="light"]) .filterCheck input[type="checkbox"] {
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] .filterCheck input[type="checkbox"] {
+  color-scheme: dark;
+}
 .pickerRow {
   display: flex;
   align-items: center;
