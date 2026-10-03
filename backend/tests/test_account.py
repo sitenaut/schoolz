@@ -116,9 +116,9 @@ async def test_supabase_autoprovision_username_collision():
 def test_mask_email():
     from auth import mask_email
 
-    assert mask_email("student@chclc.org") == "s*****@chclc.org"
-    assert mask_email("m@example.com") == "m*****@example.com"
-    assert mask_email("ALEX.RIVERA@SCHOOL.EDU") == "a*****@school.edu"
+    assert mask_email("student@chclc.org") == "*****@chclc.org"
+    assert mask_email("m@example.com") == "*****@example.com"
+    assert mask_email("ALEX.RIVERA@SCHOOL.EDU") == "*****@school.edu"
     assert mask_email(None) is None
     assert mask_email("") == ""
     assert mask_email("plain-string") == "plain-string"
