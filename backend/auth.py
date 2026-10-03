@@ -53,18 +53,21 @@ def prewarm_supabase_jwks() -> None:
 
 
 def mask_email(email: str | None) -> str | None:
-    """Mask email for unauthenticated preview, revealing the domain and first character.
+    """Mask email for an unauthenticated preview, revealing only the domain.
+
+    This feeds invite previews that require no auth at all - anyone holding
+    the token sees this, not just the invitee - so the local part is never
+    partially revealed: a single leaked character would let someone who
+    already has a guessed address confirm it's an exact match.
 
     Examples:
-      'student@chclc.org' -> 's*****@chclc.org'
-      'a@school.edu' -> 'a*****@school.edu'
+      'student@chclc.org' -> '*****@chclc.org'
+      'a@school.edu' -> '*****@school.edu'
     """
     if not email or "@" not in email:
         return email
-    local, _, domain = email.strip().lower().partition("@")
-    if not local:
-        return f"*****@{domain}"
-    return f"{local[0]}*****@{domain}"
+    _, _, domain = email.strip().lower().partition("@")
+    return f"*****@{domain}"
 
 
 async def seed_admin() -> None:
