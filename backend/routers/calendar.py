@@ -1,9 +1,13 @@
+import os
 from datetime import datetime
+from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
+from pydantic import TypeAdapter
 from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
 from auth import get_optional_user
 from database import get_db
 from models import ContentTranslation, GuardianStudentLink, School, SchoolContentItem, Student, User
@@ -11,6 +15,7 @@ from schemas import SchoolContentItemOut
 from services.content_translation import localize_outs
 from services.i18n import fold, folded, request_lang
 from services.class_years import CLASS_PAGE_SOURCES
+from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
@@ -72,8 +77,23 @@ def _applies_to_types(item: SchoolContentItem, relevant_types: set[str]) -> bool
     return bool(set(item.applies_to_school_types) & relevant_types)
 
 
+# Anonymous requests for the same window are identical - every new visitor
+# from a shared link and every crawler's prerender sends the same month - and
+# each used to recompute it from the database (0.5-1.3s idle, 5-17s while a
+# scan burst held the pool, 2026-10-03). 0 disables the cache; the test
+# suite sets it to 0 because its tests change data between calls.
+_CACHE = SingleFlightTTLCache(ttl_s=float(os.getenv("CALENDAR_CACHE_TTL_S", "120")))
+_ITEMS_ADAPTER = TypeAdapter(list[SchoolContentItemOut])
+
+
+def _cache_key(request: Request, lang: str) -> tuple:
+    # Order-insensitive, so ?a=1&b=2 and ?b=2&a=1 share one entry.
+    return (lang, tuple(sorted(parse_qsl(request.url.query, keep_blank_values=True))))
+
+
 @router.get("", response_model=list[SchoolContentItemOut])
 async def list_calendar_items(
+    request: Request,
     start: datetime | None = None,
     end: datetime | None = None,
     school_id: str | None = None,
@@ -85,6 +105,47 @@ async def list_calendar_items(
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
     lang: str = Depends(request_lang),
+):
+    args = dict(
+        start=start,
+        end=end,
+        school_id=school_id,
+        school_ids=school_ids,
+        category=category,
+        q=q,
+        include_class_sources=include_class_sources,
+        include_athletics=include_athletics,
+        lang=lang,
+    )
+    # Only the anonymous, non-search view is shared: a signed-in guardian's
+    # result is narrowed to their own schools and grad years, and free-text
+    # searches are too varied to be worth holding.
+    if not _CACHE.enabled or user is not None or q:
+        return await _list_calendar_items(user=user, db=db, **args)
+
+    async def compute() -> bytes:
+        # Its own session, not the first caller's: other waiters share this
+        # computation, and that caller's session closes when it disconnects.
+        async with database.SessionLocal() as own_db:
+            items = await _list_calendar_items(user=None, db=own_db, **args)
+        return _ITEMS_ADAPTER.dump_json(items)
+
+    body = await _CACHE.get_or_compute(_cache_key(request, lang), compute)
+    return Response(content=body, media_type="application/json")
+
+
+async def _list_calendar_items(
+    start: datetime | None,
+    end: datetime | None,
+    school_id: str | None,
+    school_ids: str | None,
+    category: str | None,
+    q: str | None,
+    include_class_sources: bool,
+    include_athletics: bool,
+    user: User | None,
+    db: AsyncSession,
+    lang: str,
 ):
     """Everything here is public data. A logged-in guardian with linked
     kids gets it narrowed to their own schools + district-wide items by
