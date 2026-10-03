@@ -240,7 +240,7 @@ export function LocalPage() {
         </div>
       )}
 
-      <div className={styles.toolbar} style={{ marginTop: 14 }}>
+      <div className={`${styles.toolbar} ${styles.filters}`} style={{ marginTop: 14 }}>
         <div className={styles.searchBox}>
           <input placeholder="Search events, venues…" value={search} onChange={(e) => setSearch(e.target.value)} />
           {search && (
