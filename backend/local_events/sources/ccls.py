@@ -33,6 +33,12 @@ logger = logging.getLogger(__name__)
 _BASE = "https://events.camdencountylibrary.org"
 _NON_BRANCH_LOCATIONS = {"virtual", "off site", "system wide"}
 _PAGE_SIZE = 50
+# Every attribute _to_event reads, and nothing else. Without a sparse fieldset
+# Drupal returns each full node (body, metadata, ...): a Voorhees page was
+# ~630 KB and took 17-43 s, so three pages blew through even a 90 s read
+# timeout on prod. The same 126 events with just these fields: 3 s in total.
+# Add a field here whenever _to_event starts reading another one.
+_EVENT_FIELDS = "title,field_date_time,field_text_teaser,path,event_thumbnail,drupal_internal__nid"
 
 
 async def list_branches(client: httpx.AsyncClient) -> dict[str, str]:
@@ -95,6 +101,7 @@ class CCLSSource(Source):
                 "filter[before][condition][value]": window_end.isoformat() + "T23:59:59",
                 "sort": "field_date_time.value",
                 "page[limit]": _PAGE_SIZE,
+                "fields[node--event]": _EVENT_FIELDS,
             }
 
             out: list[RawEvent] = []
