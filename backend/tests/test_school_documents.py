@@ -126,3 +126,59 @@ def test_presence_site_is_read_over_plain_http_never_the_scraper(monkeypatch):
     assert [d["doc_type"] for d in docs] == ["handbook"]
     assert docs[0]["url"].endswith("Sterling%20High%20School%20Handbook%202026-2027.pdf")
     assert docs[0]["academic_year"] == "2026-2027"
+
+
+def test_file_download_detected_from_headers_not_url():
+    import httpx
+
+    from services.school_documents import looks_like_file_download
+
+    assert looks_like_file_download(httpx.Headers({"content-type": "application/pdf"}))
+    assert looks_like_file_download(httpx.Headers({"content-type": "text/html", "content-disposition": 'attachment; filename="h.pdf"'}))
+    assert not looks_like_file_download(httpx.Headers({"content-type": "text/html; charset=utf-8"}))
+    assert not looks_like_file_download(httpx.Headers({}))
+
+
+def test_extensionless_link_that_serves_a_file_is_kept_without_rendering_it(monkeypatch):
+    # Lenape Regional: /students/student-handbook answers with the PDF itself,
+    # which Chromium can only report as "Download is starting".
+    import asyncio
+
+    import httpx
+
+    import scraper_client
+    from services import school_documents
+
+    home = '<html><body><a href="/students/student-handbook">Student Handbook 2026-2027</a></body></html>'
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/students/student-handbook":
+            return httpx.Response(200, content=b"%PDF-1.7", headers={"content-type": "application/pdf"})
+        return httpx.Response(200, html=home)
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        school_documents.httpx,
+        "AsyncClient",
+        lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
+    )
+    rendered = []
+
+    async def fake_fetch_html(url, **kw):
+        rendered.append(url)
+        if url.rstrip("/") == "https://www.lrhsd.org":
+            return {"html": home, "title": "Home"}
+        raise AssertionError(f"a file download must not be rendered: {url}")
+
+    monkeypatch.setattr(scraper_client, "fetch_html", fake_fetch_html)
+
+    docs = asyncio.run(school_documents.discover_from_website("https://www.lrhsd.org"))
+    assert docs == [
+        {
+            "title": "Student Handbook 2026-2027",
+            "url": "https://www.lrhsd.org/students/student-handbook",
+            "academic_year": "2026-2027",
+            "doc_type": "handbook",
+        }
+    ]
+    assert rendered == ["https://www.lrhsd.org/"]
