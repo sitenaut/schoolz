@@ -281,7 +281,7 @@ export function LocalPage() {
           <>
             <div className="list">
               {listed.slice(0, shown).map((e) => (
-                <LocalRow key={e.id} event={e} onOpen={() => setOpen(e)} />
+                <LocalRow key={e.id} event={e} onOpen={() => setOpen(e)} rangeStart={dateKey(range.start)} rangeEnd={dateKey(range.end)} />
               ))}
             </div>
             {listed.length > shown && (
@@ -297,10 +297,16 @@ export function LocalPage() {
   );
 }
 
-function LocalRow({ event: e, onOpen }: { event: LocalEvent; onOpen: () => void }) {
-  const keys = itemDateKeys(asItem(e));
-  const md = monthDay(keys[0] ?? localDateKey(e.start_time));
-  const last = keys.length > 1 ? monthDay(keys[keys.length - 1]) : null;
+function LocalRow({ event: e, onOpen, rangeStart, rangeEnd }: { event: LocalEvent; onOpen: () => void; rangeStart?: string; rangeEnd?: string }) {
+  const allKeys = itemDateKeys(asItem(e));
+  // A multi-day event (e.g. a theatre run spanning two months) still passes the
+  // backend's overlap filter for whichever month is in view; clip the label to
+  // that month's own days so a run that started last month doesn't show its
+  // original, out-of-view start date on this list.
+  const keys = rangeStart && rangeEnd ? allKeys.filter((k) => k >= rangeStart && k <= rangeEnd) : allKeys;
+  const visible = keys.length > 0 ? keys : allKeys;
+  const md = monthDay(visible[0] ?? localDateKey(e.start_time));
+  const last = visible.length > 1 ? monthDay(visible[visible.length - 1]) : null;
   const p = price(e);
   return (
     <button type="button" className="row localRow" id={`local-${e.id}`} onClick={onOpen}>
