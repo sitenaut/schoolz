@@ -1,3 +1,4 @@
+import { GENERIC_AUTH_FALLBACK, RESEND_FALLBACK, SIGN_UP_FALLBACK, friendlyAuthError } from "../lib/authErrors";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import { API_URL, IS_SUPABASE_AUTH } from "../authConfig";
@@ -195,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     setError(null);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-    if (err) setError(err.message);
+    if (err) setError(friendlyAuthError(err, GENERIC_AUTH_FALLBACK));
     else {
       trackEvent("login", { method: "password" });
       await refresh();
@@ -211,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { emailRedirectTo: absoluteReturnTo(returnTo) },
     });
     if (err) {
-      setError(err.message);
+      setError(friendlyAuthError(err, SIGN_UP_FALLBACK));
       return false;
     }
     trackEvent("sign_up", { method: "password" });
@@ -227,7 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { emailRedirectTo: absoluteReturnTo(returnTo) },
     });
     if (err) {
-      setError(err.message);
+      setError(friendlyAuthError(err, RESEND_FALLBACK));
       return false;
     }
     return true;

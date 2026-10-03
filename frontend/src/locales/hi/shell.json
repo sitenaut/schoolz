@@ -4,6 +4,7 @@
   "Check your email.": "अपना ईमेल देखें।",
   "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here to finish.": "हमने <1>{{email}}</1> पर एक पुष्टिकरण लिंक भेजा है। उस पर टैप करें और आप सीधे यहीं लौटकर प्रक्रिया पूरी कर सकेंगे।",
   "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here.": "हमने <1>{{email}}</1> पर एक पुष्टिकरण लिंक भेजा है। उस पर टैप करें और आप सीधे यहीं लौट आएँगे।",
+  "Don't see it? Check your spam or junk folder.": "नहीं मिला? अपना स्पैम या जंक फ़ोल्डर देखें।",
   "Continue with Google": "Google से जारी रखें",
   "or with an email and password": "या ईमेल और पासवर्ड से",
   "Create account": "खाता बनाएँ",
