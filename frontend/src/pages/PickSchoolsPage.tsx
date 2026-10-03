@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { IconSearch } from "../components/icons";
 import { logoClass } from "../lib/logos";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { useMySchools } from "../lib/mySchools";
 import { useAuth } from "../context/AuthContext";
 import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
@@ -24,6 +25,12 @@ export function PickSchoolsPage() {
   const [town, setTown] = useState<string | null>(null);
 
   const towns = useMemo(() => pickerTowns(allSchools, districtsById), [allSchools, districtsById]);
+
+  // A crawler has no picked schools, so /lunch (and anything else needing
+  // them) redirects it here - and the redirecting page's own ready flag is
+  // cleared as it unmounts. Without this, every prerender of /lunch waited
+  // out its full timeout, retried on all three scrapers.
+  usePrerenderReady(!loading);
 
   // `slugs` (account-linked schools especially) loads asynchronously, so
   // seeding `picked` once at mount (before that data arrives) leaves the

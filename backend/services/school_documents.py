@@ -201,6 +201,31 @@ def keep_own_school_bell_schedules(entries: list[dict], school_tokens: list[str]
     return [e for e in entries if e["doc_type"] != "bell_schedule" or e in own], True
 
 
+def looks_like_file_download(headers: httpx.Headers) -> bool:
+    """A nav link whose URL has no file extension can still serve the file
+    itself - Lenape Regional's /students/student-handbook answers with the
+    PDF. Rendered in Chromium, that's "Page.goto: Download is starting": the
+    candidate was silently dropped, after nine failed renders across all
+    three scrapers (enough to fire the residential scraper's failure-rate
+    alert, 2026-10-03)."""
+    if "attachment" in headers.get("content-disposition", "").lower():
+        return True
+    content_type = headers.get("content-type", "").split(";")[0].strip().lower()
+    return bool(content_type) and content_type not in ("text/html", "application/xhtml+xml", "text/plain")
+
+
+async def _is_file_download(url: str) -> bool:
+    # Headers only (the body is never read), over plain HTTP - no browser.
+    # Any failure means "not known to be a file", so the page render below
+    # still gets its chance.
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
+            async with client.stream("GET", url) as resp:
+                return resp.status_code == 200 and looks_like_file_download(resp.headers)
+    except httpx.HTTPError:
+        return False
+
+
 async def discover_from_website(school_website_url: str) -> list[dict]:
     """Follows any nav link mentioning "handbook" from the homepage, then
     looks one level deeper for the actual PDF/Google Doc link on that page
@@ -257,6 +282,12 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
                 results.append({"title": candidate["title"], "url": url, "academic_year": None, "doc_type": doc_type})
             continue
         if _DOC_FILE_RE.search(url):
+            if url not in seen_urls:
+                seen_urls.add(url)
+                results.append({"title": candidate["title"], "url": url, "academic_year": _extract_year(candidate["title"] + " " + url), "doc_type": doc_type})
+            continue
+
+        if await _is_file_download(url):
             if url not in seen_urls:
                 seen_urls.add(url)
                 results.append({"title": candidate["title"], "url": url, "academic_year": _extract_year(candidate["title"] + " " + url), "doc_type": doc_type})
