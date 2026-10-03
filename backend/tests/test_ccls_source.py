@@ -95,3 +95,24 @@ async def test_follows_pagination_via_links_next(monkeypatch):
     out = await source.fetch()
 
     assert [e.title for e in out] == ["Page 1 Event", "Page 2 Event"]
+
+
+@pytest.mark.anyio
+async def test_requests_only_the_fields_the_parser_reads(monkeypatch):
+    """Full Drupal nodes made a page ~630 KB / 17-43 s and timed the source out
+    on prod; the sparse fieldset must name every attribute _to_event uses."""
+    seen = []
+    inner = _handler([_event(1, "Story Time", "2026-09-28T13:00:00-04:00", None, "/event/1")])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/jsonapi/node/event":
+            seen.append(request.url.params.get("fields[node--event]"))
+        return inner(request)
+
+    monkeypatch.setattr(ccls.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
+    out = await CCLSSource(name="ccls_voorhees", branch_name="Voorhees").fetch()
+
+    assert len(seen) == 1 and seen[0]
+    requested = set(seen[0].split(","))
+    assert {"title", "field_date_time", "field_text_teaser", "path", "event_thumbnail", "drupal_internal__nid"} <= requested
+    assert out[0].title == "Story Time" and out[0].description == "Join us!" and out[0].url.endswith("/event/1")
