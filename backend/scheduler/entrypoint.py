@@ -11,7 +11,7 @@ import observability
 from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
-from scheduler.runner import build_apscheduler_job
+from scheduler.runner import build_apscheduler_job, queue_missed_runs
 
 setup_logging()
 telemetry.setup_telemetry("schoolz-scheduler")
@@ -89,6 +89,7 @@ async def _reconcile(aps_scheduler: AsyncIOScheduler) -> None:
 
 
 async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
+    caught_up = False
     while not _stop_event.is_set():
         try:
             await _reap_stuck_runs()
@@ -103,6 +104,15 @@ async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
             observability.scheduler_reconciles_total.add(1)
         except Exception:
             logger.exception("scheduler_reconcile_failed")
+        if not caught_up:
+            # Once per process, after the first reap so a run the previous
+            # process died in is already finalized. See missed_fire_time().
+            caught_up = True
+            try:
+                count = await queue_missed_runs()
+                logger.info("queued_catch_up_runs", extra={"count": count})
+            except Exception:
+                logger.exception("catch_up_failed")
         try:
             await asyncio.wait_for(_stop_event.wait(), timeout=RECONCILE_INTERVAL_SECONDS)
         except asyncio.TimeoutError:
