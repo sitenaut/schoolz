@@ -101,3 +101,20 @@ async def test_render_uses_the_reduced_timeout(monkeypatch):
     await prerender.get_prerendered_html("/contact")
 
     assert seen["timeout_ms"] == 10_000
+
+
+@pytest.mark.anyio
+async def test_render_is_flagged_as_internal_analytics_traffic(monkeypatch):
+    # The fallback scrapers' stealth Chromium hides navigator.webdriver, so
+    # without the flag every crawler-triggered render counted as a GA visitor.
+    seen: dict = {}
+
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+        seen["url"] = url
+        return {"html": "<html>ok</html>"}
+
+    monkeypatch.setattr(scraper_client, "fetch_html", fake_fetch_html)
+
+    await prerender.get_prerendered_html("/directory")
+
+    assert seen["url"].endswith("/directory?internal=1")

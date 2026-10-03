@@ -107,7 +107,13 @@ async def _render(path: str) -> str:
     # environment where the public and internal addresses are the same.
     base_url = os.getenv("FRONTEND_INTERNAL_URL", os.getenv("PUBLIC_WEB_URL", "http://localhost:5173")).rstrip("/")
     result = await scraper_client.fetch_html(
-        url=f"{base_url}{path}",
+        # ?internal=1 flags the render as internal traffic for GA. The
+        # webdriver guard in lib/analytics.ts isn't enough on its own: the
+        # droplet and residential fallbacks render the public hostname in
+        # stealth Chromium, which hides navigator.webdriver, so crawler
+        # visits were counting as real users. _is_allowed() takes bare
+        # paths only, so there's never an existing query to merge with.
+        url=f"{base_url}{path}?internal=1",
         # Set by frontend/src/lib/prerenderReady.ts once a page's initial
         # data fetch has resolved - waiting on React having merely mounted
         # (e.g. any child of #root) would still capture "Loading…".
