@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import secrets
@@ -80,14 +81,21 @@ def _local_only() -> None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
 
 
+def _correlation_hash(value: str) -> str:
+    """One-way fingerprint for log correlation - lets the same email's attempts
+    be grep-matched in Loki without the email itself ever reaching the logs."""
+    return hashlib.sha256(value.strip().lower().encode()).hexdigest()[:12]
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
     _local_only()
-    logger.info("register_attempt", extra={"email": payload.email, "username": payload.username})
+    email_hash = _correlation_hash(payload.email)
+    logger.info("register_attempt", extra={"email_hash": email_hash})
 
     existing = await db.execute(select(User).where(or_(User.email == payload.email, User.username == payload.username)))
     if existing.scalar_one_or_none():
-        logger.info("register_rejected_duplicate", extra={"email": payload.email, "username": payload.username})
+        logger.info("register_rejected_duplicate", extra={"email_hash": email_hash})
         raise HTTPException(status.HTTP_409_CONFLICT, "Email or username already registered")
 
     user = User(
