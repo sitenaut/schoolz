@@ -486,6 +486,47 @@ h3 {
     width: auto;
   }
 }
+.authPopover.userMenu {
+  width: auto;
+  min-width: 170px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+.authPopover.userMenu a,
+.authPopover.userMenu button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.authPopover.userMenu svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.authPopover.userMenu a:hover,
+.authPopover.userMenu button:hover {
+  background: var(--line-2);
+}
+@media (max-width: 480px) {
+  .authPopover.userMenu {
+    left: auto;
+  }
+}
 .shell-top {
     grid-column: 1 / -1;
   }
