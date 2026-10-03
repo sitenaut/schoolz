@@ -4,6 +4,7 @@
   "Check your email.": "이메일을 확인해 주세요.",
   "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here to finish.": "<1>{{email}}</1>(으)로 확인 링크를 보냈습니다. 링크를 누르시면 바로 이곳으로 돌아와 마무리하실 수 있습니다.",
   "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here.": "<1>{{email}}</1>(으)로 확인 링크를 보냈습니다. 링크를 누르시면 바로 이곳으로 돌아옵니다.",
+  "Don't see it? Check your spam or junk folder.": "받지 못하셨나요? 스팸 메일함도 확인해 주세요.",
   "Continue with Google": "Google로 계속하기",
   "or with an email and password": "또는 이메일과 비밀번호로",
   "Create account": "계정 만들기",

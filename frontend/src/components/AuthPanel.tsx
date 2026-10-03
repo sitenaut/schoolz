@@ -76,6 +76,9 @@ export function AuthPanel({
             components={{ 1: <strong /> }}
           />
         </p>
+        <p className="note" style={{ margin: "0 0 8px" }}>
+          {t("Don't see it? Check your spam or junk folder.")}
+        </p>
         {resent ? (
           <p className="note" style={{ color: "var(--good, #10b981)", margin: "8px 0 0" }}>
             {t("Confirmation email resent!")}

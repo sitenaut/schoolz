@@ -4,6 +4,7 @@
   "Check your email.": "请查收您的电子邮件。",
   "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here to finish.": "我们已向 <1>{{email}}</1> 发送了确认链接。点击该链接即可直接返回此处完成操作。",
   "We sent a confirmation link to <1>{{email}}</1>. Tap it and you'll come straight back here.": "我们已向 <1>{{email}}</1> 发送了确认链接。点击该链接即可直接返回此处。",
+  "Don't see it? Check your spam or junk folder.": "没收到？请检查您的垃圾邮件文件夹。",
   "Continue with Google": "使用 Google 继续",
   "or with an email and password": "或使用电子邮件和密码",
   "Create account": "创建账户",
