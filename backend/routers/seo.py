@@ -15,7 +15,7 @@ router = APIRouter(tags=["seo"])
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)
 # isn't indexable content and is kept out of the sitemap and out of
 # robots.txt (frontend/public/robots.txt).
-_STATIC_PATHS = ["/", "/schools", "/directory", "/calendar", "/lunch", "/privacy", "/contact", "/contact/submit", "/chcomms", "/survey"]
+_STATIC_PATHS = ["/", "/schools", "/directory", "/calendar", "/lunch", "/local", "/privacy", "/contact", "/contact/submit", "/chcomms", "/survey"]
 
 # Only pages with a real translation get a /<lang> entry (and hreflang
 # pairing) - listing an English page under /es would invite duplicate-content
