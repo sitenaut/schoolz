@@ -79,6 +79,7 @@ primary_region = "ewr"
   size = "shared-cpu-1x"
   # 256mb got OOM-killed running three scans at once; the Monday cron runs
   # all eight newsletter extractions (pdfplumber, Pillow re-encoding, the
-  # vision calls) concurrently in this one process.
-  memory = "512mb"
+  # vision calls) concurrently in this one process. 512mb then got
+  # OOM-killed mid 12h burst (2026-10-03), dropping every queued scan.
+  memory = "1024mb"
   processes = ["scheduler"]

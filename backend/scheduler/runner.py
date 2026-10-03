@@ -275,6 +275,59 @@ def run_job_now(job_id: str) -> None:
     task.add_done_callback(_background_tasks.discard)
 
 
+# A fire this close to now will happen on schedule anyway; catching it up
+# too would just run the job twice back to back.
+CATCH_UP_SKIP_IF_NEXT_WITHIN_S = 30 * 60
+
+
+def missed_fire_time(job: ScheduledJob, now: datetime) -> datetime | None:
+    """The most recent scheduled fire this job never started, or None.
+
+    A fire is lost whenever the scheduler process dies with jobs still
+    queued behind the concurrency limit (an OOM kill or a deploy mid-burst -
+    confirmed on prod 2026-10-03, where a 12h burst runs well past its hour
+    through three slots), and APScheduler never re-fires a past time on a
+    fresh start. Without this, every crash costs the jobs at the back of the
+    queue a whole cycle, and the same minutes lose out every time.
+
+    Pure, so it's unit-testable without a scheduler or a DB."""
+    if not job.enabled or job.run_once:
+        return None
+    try:
+        tz = ZoneInfo(job.timezone)
+        local_now = now.astimezone(tz)
+        prev_fire = croniter(job.cron_expr, local_now).get_prev(datetime)
+        next_fire = croniter(job.cron_expr, local_now).get_next(datetime)
+    except Exception:
+        return None
+    if (next_fire - local_now).total_seconds() < CATCH_UP_SKIP_IF_NEXT_WITHIN_S:
+        return None
+    if job.last_run_at is not None:
+        # A run that started late (queued) still started after its fire time.
+        return None if job.last_run_at >= prev_fire else prev_fire
+    # Never run: only missed if the job already existed when it was due.
+    if job.created_at is not None and job.created_at < prev_fire:
+        return prev_fire
+    return None
+
+
+async def queue_missed_runs() -> int:
+    """Queues one catch-up run for every job whose last scheduled fire never
+    started, oldest miss first. Called once when the scheduler starts. Runs
+    go through the same concurrency limit and advisory lock as cron runs, so
+    a job a run-now already holds is just recorded as skipped."""
+    now = datetime.now(timezone.utc)
+    async with SessionLocal() as db:
+        jobs = (await db.execute(select(ScheduledJob).where(ScheduledJob.enabled.is_(True)))).scalars().all()
+        missed = [(fire, job.id) for job in jobs if (fire := missed_fire_time(job, now)) is not None]
+    missed.sort()
+    for _fire, job_id in missed:
+        task = asyncio.create_task(_execute(job_id, triggered_by="catchup"))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
+    return len(missed)
+
+
 def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:
     from apscheduler.triggers.cron import CronTrigger
 
