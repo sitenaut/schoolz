@@ -24,18 +24,21 @@ def test_health_disconnected(monkeypatch):
 
 
 def test_validate_target_url():
+    import asyncio
     import pytest
     from fastapi import HTTPException
     from main import validate_target_url
 
-    # Allowed
-    validate_target_url("https://www.chclc.org/calendar")
-    validate_target_url("http://school.edu/events")
+    def run(url):
+        asyncio.run(validate_target_url(url))
+
+    # Allowed - a public IP literal, resolved with no network access needed
+    run("http://8.8.8.8/calendar")
 
     # Invalid schemes -> 400
     for bad_url in ("file:///etc/passwd", "ftp://example.com", "gopher://example.com", "javascript:void(0)"):
         with pytest.raises(HTTPException) as exc_info:
-            validate_target_url(bad_url)
+            run(bad_url)
         assert exc_info.value.status_code == 400
 
     # Forbidden internal/loopback hosts -> 403
@@ -47,10 +50,49 @@ def test_validate_target_url():
         "http://169.254.169.254/latest/meta-data",
         "http://10.0.0.1:8000",
         "http://192.168.1.1:80",
+        # Obfuscated IP-literal bypasses: not a literal dotted-quad string,
+        # so a hostname-string-only check waves these through, but the OS
+        # resolver (and Chromium's own URL parser) normalizes them straight
+        # to 127.0.0.1.
+        "http://2130706433/",
+        "http://0x7f000001/",
+        "http://017700000001/",
     ):
         with pytest.raises(HTTPException) as exc_info:
-            validate_target_url(blocked_url)
+            run(blocked_url)
         assert exc_info.value.status_code == 403
+
+
+def test_validate_target_url_blocks_dns_rebinding(monkeypatch):
+    import asyncio
+    import pytest
+    from fastapi import HTTPException
+    import main
+
+    async def fake_resolve(hostname):
+        return ["169.254.169.254"]
+
+    monkeypatch.setattr(main, "_resolve_hostname", fake_resolve)
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(main.validate_target_url("http://attacker-controlled.example/"))
+    assert exc_info.value.status_code == 403
+
+
+def test_resolve_hostname_wraps_gaierror_as_400(monkeypatch):
+    import asyncio
+    import socket
+    import pytest
+    from fastapi import HTTPException
+    import main
+
+    class FakeLoop:
+        async def getaddrinfo(self, hostname, port):
+            raise socket.gaierror("nope")
+
+    monkeypatch.setattr(asyncio, "get_running_loop", lambda: FakeLoop())
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(main._resolve_hostname("does-not-resolve.example"))
+    assert exc_info.value.status_code == 400
 
 
 def test_require_api_key_constant_time(monkeypatch):

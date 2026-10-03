@@ -4,6 +4,7 @@ import ipaddress
 import logging
 import os
 import secrets
+import socket
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -26,7 +27,39 @@ _tracer = trace.get_tracer("schoolz-scraper")
 BLOCKED_HOSTNAMES = {"localhost", "127.0.0.1", "::1"}
 
 
-def validate_target_url(url: str) -> None:
+def _is_blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+async def _resolve_hostname(hostname: str) -> list[str]:
+    """Resolves a hostname the same way the browser's own navigation will.
+
+    Checking only the literal hostname string (as the first cut of this
+    guard did) misses two real bypasses: a domain that simply resolves to
+    a private/internal address (DNS rebinding), and a numeric/hex/octal
+    IP-literal host like "2130706433" or "0x7f000001" for 127.0.0.1, which
+    `ipaddress.ip_address()` rejects as malformed but Chromium's own URL
+    parser normalizes into a real IP and connects to anyway. Resolving
+    here and checking every returned address closes both at once.
+    """
+    loop = asyncio.get_running_loop()
+    try:
+        addrinfo = await loop.getaddrinfo(hostname, None)
+    except socket.gaierror as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"Could not resolve host '{hostname}': {exc}"
+        ) from exc
+    return [sockaddr[0] for _, _, _, _, sockaddr in addrinfo]
+
+
+async def validate_target_url(url: str) -> None:
     try:
         parsed = urlparse(url)
     except Exception as exc:
@@ -49,22 +82,12 @@ def validate_target_url(url: str) -> None:
             "Target URL points to a forbidden internal or loopback host.",
         )
 
-    try:
-        ip = ipaddress.ip_address(hostname)
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-        ):
+    for ip_str in await _resolve_hostname(hostname):
+        if _is_blocked_ip(ipaddress.ip_address(ip_str)):
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
                 "Target URL points to a forbidden private or local IP address.",
             )
-    except ValueError:
-        pass  # Standard public domain name
 
 
 def _host(url: str) -> str:
@@ -235,7 +258,7 @@ async def fetch_html(req: FetchHtmlRequest):
     Use this for pages that need JavaScript to render their content -
     plain HTTP GETs won't see anything past the initial shell.
     """
-    validate_target_url(req.url)
+    await validate_target_url(req.url)
     host = _host(req.url)
     browser = await _get_browser()
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
@@ -280,7 +303,7 @@ async def fetch_paginated(req: FetchPaginatedRequest):
     with a page query param when that param doesn't actually change the
     server-rendered response (confirmed real case: a Finalsite staff
     directory whose pagination is entirely client-side)."""
-    validate_target_url(req.url)
+    await validate_target_url(req.url)
     host = _host(req.url)
     browser = await _get_browser()
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
@@ -336,7 +359,7 @@ async def fetch_raw(req: FetchRawRequest):
     Useful for downloads (ICS, PDF, CSV) served behind bot-detection/WAF
     that block plain HTTP clients but allow a real browser fingerprint.
     """
-    validate_target_url(req.url)
+    await validate_target_url(req.url)
     host = _host(req.url)
     browser = await _get_browser()
     context = await browser.new_context(user_agent=DEFAULT_USER_AGENT)
