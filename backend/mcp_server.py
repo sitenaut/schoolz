@@ -46,6 +46,8 @@ import httpx
 from fastapi import FastAPI
 from mcp.server.fastmcp import FastMCP
 
+from services.app_help import app_help
+
 
 def _is_empty(data: Any) -> bool:
     return data is None or data == []
@@ -538,6 +540,24 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
                 ),
             }
         return _finalize(data)
+
+    # -----------------------------------------------------------------
+    # How to use schoolz itself
+    # -----------------------------------------------------------------
+
+    @mcp.tool()
+    async def get_app_help(topic: str | None = None) -> Any:
+        """How to use the schoolz website/app itself - use this for any
+        "how do I...", "where is...", or "what does ... do" question about
+        schoolz (not about a school). Returns the written guide for one
+        topic; call with no topic to get the list of topics.
+
+        topic: one of getting_started, today, schools, absence, calendar,
+            lunch, directory, local, account, children, invites,
+            kids_schoolwork, student_help, notifications, language,
+            missing_info, privacy.
+        """
+        return app_help(topic)
 
     # -----------------------------------------------------------------
     # Community submissions (the "add it yourself" half of the advocacy loop)
