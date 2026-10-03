@@ -29,7 +29,7 @@ async def test_concurrent_requests_for_one_path_share_a_single_render(monkeypatc
     # render per caller starved the real scan jobs sharing that budget.
     calls = 0
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         nonlocal calls
         calls += 1
         await asyncio.sleep(0.05)
@@ -47,7 +47,7 @@ async def test_concurrent_requests_for_one_path_share_a_single_render(monkeypatc
 async def test_a_cached_page_is_not_rendered_again(monkeypatch):
     calls = 0
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         nonlocal calls
         calls += 1
         return {"html": "<html>fresh</html>"}
@@ -65,7 +65,7 @@ async def test_stale_content_is_served_when_a_re_render_fails(monkeypatch):
     # expired entry is kept rather than evicted.
     prerender._CACHE["/lunch"] = (time.monotonic() - 1, "<html>stale</html>")
 
-    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000):
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         raise RuntimeError("scraper unavailable")
 
     monkeypatch.setattr(scraper_client, "failing", None, raising=False)
@@ -76,7 +76,7 @@ async def test_stale_content_is_served_when_a_re_render_fails(monkeypatch):
 
 @pytest.mark.anyio
 async def test_a_render_failure_with_no_cache_still_raises(monkeypatch):
-    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000):
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         raise RuntimeError("scraper unavailable")
 
     monkeypatch.setattr(scraper_client, "fetch_html", failing_fetch_html)
@@ -92,7 +92,7 @@ async def test_render_uses_the_reduced_timeout(monkeypatch):
     # hold one of three slots for ~50s (48.6s max measured in prod).
     seen: dict = {}
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         seen["timeout_ms"] = timeout_ms
         return {"html": "<html>ok</html>"}
 

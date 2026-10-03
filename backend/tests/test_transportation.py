@@ -55,7 +55,7 @@ async def test_fetch_page_retries_transient_scraper_failure(monkeypatch):
 
     calls = {"n": 0}
 
-    async def flaky(url, wait_for_selector=None, timeout_ms=15_000):
+    async def flaky(url, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         calls["n"] += 1
         if calls["n"] == 1:
             raise RuntimeError("502 Bad Gateway")
@@ -71,7 +71,7 @@ async def test_fetch_page_retries_transient_scraper_failure(monkeypatch):
 async def test_fetch_page_gives_up_after_attempts(monkeypatch):
     import services.transportation as t
 
-    async def always_bad(url, wait_for_selector=None, timeout_ms=15_000):
+    async def always_bad(url, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         raise RuntimeError("502 Bad Gateway")
 
     monkeypatch.setattr(t.scraper_client, "fetch_html", always_bad)
