@@ -93,6 +93,29 @@ async def test_non_super_admins_cannot_create_keys():
         assert res.status_code == 403
 
 
+async def test_a_super_admin_can_edit_a_key_in_place_but_a_key_cannot_edit_anything():
+    async with _client() as client:
+        boss, _ = await _register(client, "keyedit", super_admin=True)
+        key = await _create_key(client, boss, ["scans.view"])
+        assert (await client.get("/page-views", headers=_bearer(key))).status_code == 403
+
+        res = await client.patch(f"/admin/api-keys/{key['id']}", headers=boss, json={"name": "renamed", "permissions": ["scans.view", "analytics.view"]})
+        assert res.status_code == 200, res.text
+        assert res.json()["name"] == "renamed" and res.json()["permissions"] == ["analytics.view", "scans.view"]
+        # Same secret, new reach - and it takes effect on the next request.
+        assert (await client.get("/page-views", headers=_bearer(key))).status_code == 200
+
+        # Only the grantable catalog; omitted fields are left alone.
+        assert (await client.patch(f"/admin/api-keys/{key['id']}", headers=boss, json={"permissions": ["users.manage"]})).status_code == 422
+        assert (await client.patch(f"/admin/api-keys/{key['id']}", headers=boss, json={"permissions": []})).status_code == 422
+        kept = (await client.patch(f"/admin/api-keys/{key['id']}", headers=boss, json={"name": "again"})).json()
+        assert kept["permissions"] == ["analytics.view", "scans.view"]
+        assert (await client.patch(f"/admin/api-keys/{uuid.uuid4()}", headers=boss, json={"name": "x"})).status_code == 404
+
+        # A key can't widen itself, even one made by a super admin.
+        assert (await client.patch(f"/admin/api-keys/{key['id']}", headers=_bearer(key), json={"permissions": ["scans.manage"]})).status_code == 403
+
+
 def test_merge_local_event_sources_upserts_by_name_and_never_removes():
     params = {
         "rss_sources": [{"name": "a", "url": "u1"}, {"name": "keep", "url": "k"}],

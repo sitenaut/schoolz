@@ -119,6 +119,48 @@ async def create_api_key(payload: ApiKeyIn, actor: User = Depends(require_super_
     return ApiKeyCreated(**_out(key, actor.email).model_dump(), key=plaintext)
 
 
+class ApiKeyPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    permissions: list[str] | None = Field(default=None, min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def _strip(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("Name is required")
+        return v
+
+    @field_validator("permissions")
+    @classmethod
+    def _known(cls, v: list[str] | None) -> list[str] | None:
+        return None if v is None else _known_permissions(v)
+
+
+@router.patch("/{key_id}", response_model=ApiKeyOut)
+async def update_api_key(key_id: str, payload: ApiKeyPatch, db: AsyncSession = Depends(get_db)):
+    """Rename a key or change what it may do, without minting a new secret.
+    Super-admin only like every route here, so a key can never widen itself,
+    and `_known_permissions` only accepts the grantable catalog, which never
+    includes users/roles/keys."""
+    row = (
+        await db.execute(
+            select(ApiKey, User.email).join(User, User.id == ApiKey.created_by_user_id).where(ApiKey.id == key_id)
+        )
+    ).one_or_none()
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "API key not found")
+    key, email = row
+    if payload.name is not None:
+        key.name = payload.name
+    if payload.permissions is not None:
+        key.permissions = payload.permissions
+    await db.commit()
+    return _out(key, email)
+
+
 @router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_api_key(key_id: str, db: AsyncSession = Depends(get_db)):
     key = (await db.execute(select(ApiKey).where(ApiKey.id == key_id))).scalar_one_or_none()

@@ -60,6 +60,7 @@ export function ApiKeysPage() {
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<CreatedKey | null>(null);
   const [revoking, setRevoking] = useState<ApiKey | null>(null);
+  const [editing, setEditing] = useState<ApiKey | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -78,6 +79,14 @@ export function ApiKeysPage() {
     setCreated(await res.json());
     setCreating(false);
     await load();
+  };
+
+  const save = async (id: string, body: { name: string; permissions: string[] }) => {
+    const res = await apiFetch(`/admin/api-keys/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(await errorText(res, "Could not update key"));
+    setEditing(null);
+    await load();
+    toast({ title: "Key updated", tone: "ok" });
   };
 
   const revoke = async () => {
@@ -176,14 +185,21 @@ export function ApiKeysPage() {
           defaultSort={{ id: "created_at", dir: "desc" }}
           empty="No API keys yet."
           rowActions={(k) => (
-            <button className="btn sm" onClick={() => setRevoking(k)}>
-              Revoke
-            </button>
+            <>
+              <button className="btn sm" onClick={() => setEditing(k)}>
+                Edit
+              </button>
+              <button className="btn sm" onClick={() => setRevoking(k)}>
+                Revoke
+              </button>
+            </>
           )}
         />
       </SectionCard>
 
       {creating && <NewKeyModal permissions={permissions} onClose={() => setCreating(false)} onCreate={create} />}
+
+      {editing && <EditKeyModal apiKey={editing} permissions={permissions} onClose={() => setEditing(null)} onSave={save} />}
 
       {created && <CreatedKeyModal created={created} onClose={() => setCreated(null)} />}
 
@@ -271,6 +287,73 @@ function NewKeyModal({
           <button type="button" className="btn sm" onClick={() => setPicked(new Set(ONBOARDING_PRESET))}>
             Reset to onboarding
           </button>
+        </p>
+        <PermissionPicker permissions={permissions} picked={picked} onToggle={toggle} />
+      </form>
+    </Modal>
+  );
+}
+
+function EditKeyModal({
+  apiKey,
+  permissions,
+  onClose,
+  onSave,
+}: {
+  apiKey: ApiKey;
+  permissions: Permission[];
+  onClose: () => void;
+  onSave: (id: string, body: { name: string; permissions: string[] }) => Promise<void>;
+}) {
+  const [name, setName] = useState(apiKey.name);
+  const [picked, setPicked] = useState<Set<string>>(new Set(apiKey.permissions));
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key: string) =>
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(apiKey.id, { name: name.trim(), permissions: [...picked] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update key");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Edit API key"
+      subtitle={`${apiKey.key_prefix}…`}
+      footer={
+        <>
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" form="api-key-edit-form" className="btn btn-primary" disabled={saving || !name.trim() || picked.size === 0}>
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        </>
+      }
+    >
+      <form id="api-key-edit-form" onSubmit={submit}>
+        {error && <div className="form-error">{error}</div>}
+        <Field label="Name">
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} required />
+        </Field>
+        <p className="note" style={{ marginTop: 0 }}>
+          The key itself doesn't change; new permissions apply on its next request.
         </p>
         <PermissionPicker permissions={permissions} picked={picked} onToggle={toggle} />
       </form>
