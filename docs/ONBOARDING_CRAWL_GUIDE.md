@@ -1062,8 +1062,9 @@ on this list** - it's ArbiterLive branding, already supported.
     (23874 also answers, with 647 unrelated events — not the district).
   - **Bellmawr lunch**: SchoolCafé `BellmawrPublicsdNutriServemetz` (found on the
     menu page's links; `GetISDByShortName` confirms). Hours are on the district
-    footer. **GT lunch** has no public menu link on its site (page is empty) and
-    no SchoolCafé match; the Preschool Program (org 25533) is not tracked.
+    footer. **GT lunch** is Health-e Pro, org 2546 (all 11 sites, ids from
+    `/api/organizations/2546/sites/list`; the district's menu page itself is empty,
+    so it was found by the owner). The Preschool Program (org 25533) is not tracked.
   - **Gaps**: no absence method, hours (GT, BHPRSD), logos for two Bellmawr schools,
     newsletters or PTAs anywhere; Bellmawr's EC Center shares Bellmawr Park's address
     and its phone is unverified.
