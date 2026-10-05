@@ -1,7 +1,8 @@
+import re
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import LunchMenu, LunchMenuItem, School, SchoolContentItem
@@ -16,6 +17,23 @@ from services.special_events import (
     parse_special_events_pdf,
     strip_portions,
 )
+
+# Menus stored before this kept the faded previous-month cells at the top of
+# the calendar grid (October's held Sept 28-30) and "No meal listed" days;
+# a menu stored before then is re-parsed in place on its next scan.
+_REPARSE_BEFORE = datetime(2026, 10, 5, 3, 47, tzinfo=timezone.utc)
+_NO_MEAL_RE = re.compile(r"^\s*(no (meal|lunch|menu)( listed| served)?|none|n/?a|tbd)\.?\s*$", re.IGNORECASE)
+
+
+def menu_days_for_month(days: list[dict], year: int, month: int) -> list[dict]:
+    """Only that month's days with a real meal: a calendar grid shows the
+    neighbouring months' dates in its first/last rows, which the model reads
+    as entries, and an empty cell can come back as 'No meal listed'."""
+    return [
+        d for d in days
+        if d["date"].astimezone(ZoneInfo("America/New_York")).date().replace(day=1) == datetime(year, month, 1).date()
+        and not _NO_MEAL_RE.match(d["description"] or "")
+    ]
 
 
 @register_job(
@@ -113,17 +131,21 @@ async def _scan_menus(db: AsyncSession, school: School, pages: list, today) -> t
     new_menus = 0
     for year, month, url in menus:
         stored = (
-            await db.execute(select(LunchMenu.id).where(LunchMenu.school_id == school.id, LunchMenu.meal_type == "lunch", LunchMenu.source_pdf_url == url))
-        ).first()
-        if stored:
+            await db.execute(select(LunchMenu).where(LunchMenu.school_id == school.id, LunchMenu.meal_type == "lunch", LunchMenu.source_pdf_url == url))
+        ).scalar_one_or_none()
+        if stored and stored.parsed_at >= _REPARSE_BEFORE:
             continue
         label = f"{_MONTH_NAMES[month - 1]} {year}"
-        days = await parse_menu_pdf(url, label, "lunch")
+        days = menu_days_for_month(await parse_menu_pdf(url, label, "lunch"), year, month)
         if not days:
             record_parse_issue("special_events.scan", "menu_parse_empty", url=url[:200])
             return f"nothing parsed from the {label} lunch menu", "menu_parse_empty"
-        menu = LunchMenu(school_id=school.id, meal_type="lunch", period_label=label, source_pdf_url=url)
-        db.add(menu)
+        if stored:
+            menu = stored
+            await db.execute(delete(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu.id))
+        else:
+            menu = LunchMenu(school_id=school.id, meal_type="lunch", period_label=label, source_pdf_url=url)
+            db.add(menu)
         await db.flush()
         menu.parsed_at = datetime.now(timezone.utc)
         for day in days:

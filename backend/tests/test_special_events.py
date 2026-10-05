@@ -136,3 +136,50 @@ def test_portions_are_stripped():
     raw = "Cheeseburger Meatloaf, 1ea; Wheat Dinner Roll, 1ea; Spinach, 4oz; Shredded Mozzarella, 1/2oz; Pizza Day! Cheese Pizza, 1sl"
     assert special_events.strip_portions(raw) == "Cheeseburger Meatloaf, Wheat Dinner Roll, Spinach, Shredded Mozzarella, Pizza Day! Cheese Pizza"
     assert special_events.strip_portions("Buffalo Cheese Pizza Sticks (LTO)") == "Buffalo Cheese Pizza Sticks (LTO)"
+
+
+def test_menu_days_keep_only_the_month_and_real_meals():
+    tz = ZoneInfo("America/New_York")
+    days = [
+        {"date": datetime(2026, 9, 30, tzinfo=tz), "description": "Pizza Day! Cheese Pizza"},
+        {"date": datetime(2026, 10, 1, tzinfo=tz), "description": "Cheeseburger Meatloaf"},
+        {"date": datetime(2026, 10, 16, tzinfo=tz), "description": "No meal listed"},
+        {"date": datetime(2026, 11, 2, tzinfo=tz), "description": "Tacos"},
+    ]
+    kept = special_events_scan.menu_days_for_month(days, 2026, 10)
+    assert [d["description"] for d in kept] == ["Cheeseburger Meatloaf"]
+
+
+@pytest.mark.anyio
+async def test_menu_stored_before_the_fix_is_reparsed(monkeypatch):
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        school = School(name=f"Preschool {tag}", slug=f"preschool-{tag}", special_events_calendar_url="https://x.test/calendars-menu/")
+        db.add(school)
+        await db.flush()
+        old = LunchMenu(school_id=school.id, meal_type="lunch", period_label="October 2026", source_pdf_url=_OCT_MENU)
+        db.add(old)
+        await db.flush()
+        old.parsed_at = datetime(2026, 10, 5, 3, 45, tzinfo=ZoneInfo("UTC"))
+        db.add(LunchMenuItem(lunch_menu_id=old.id, menu_date=datetime(2026, 9, 30, tzinfo=ZoneInfo("America/New_York")), description="Pizza Day!"))
+        await db.commit()
+        school_id, menu_id = school.id, old.id
+
+    async def fake_pages(url, today=None):
+        return []
+
+    async def fake_menus(pages, today=None):
+        return [(2026, 10, _OCT_MENU)]
+
+    async def fake_parse(url, label, meal_type=None):
+        return [{"date": datetime(2026, 10, 5, tzinfo=ZoneInfo("America/New_York")), "description": "Grilled Chicken Patty, 1ea", "notes": None}]
+
+    monkeypatch.setattr(special_events_scan, "fetch_month_pages", fake_pages)
+    monkeypatch.setattr(special_events_scan, "discover_menu_pdf_urls", fake_menus)
+    monkeypatch.setattr(special_events_scan, "parse_menu_pdf", fake_parse)
+
+    async with database.SessionLocal() as db:
+        result = await special_events_scan.run(db, {"school_id": school_id})
+        assert "1 newly parsed" in result
+        items = (await db.execute(select(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu_id))).scalars().all()
+        assert [i.description for i in items] == ["Grilled Chicken Patty"]
