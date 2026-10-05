@@ -6,8 +6,8 @@ import httpx
 SCRAPER_URL = os.getenv("SCRAPER_URL", "")
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY", "")
 
-# Fallbacks for fetch_html only (see _services below), tried in order
-# after schoolz's own scraper. Confirmed real, 2026-09-29: schoolz's own
+# Fallbacks for fetch_html and fetch_paginated (see _services below), tried
+# in order after schoolz's own scraper. Confirmed real, 2026-09-29: schoolz's own
 # Fly scraper wedged internally while its machines still showed "started"
 # (no health check catches this - a known gap), 502ing every request
 # including a plain restart; every general school-scan job (staff_roster,
@@ -64,9 +64,9 @@ def _is_retryable(exc: Exception) -> bool:
 
 def _services() -> list[tuple[str, str]]:
     """(base_url, api_key) pairs to try in order, skipping any without a
-    key configured. Only fetch_html uses more than one service -
-    fetch_paginated is schoolz-scraper-specific (the droplet doesn't
-    implement /fetch-paginated), so it always talks to SCRAPER_URL alone."""
+    key configured. playwright-scraper implements /fetch-paginated with the
+    same request body as schoolz's own scraper, so both fetch_html and
+    fetch_paginated fall through this list."""
     candidates = [
         (SCRAPER_URL.rstrip("/"), SCRAPER_API_KEY),
         (_FALLBACK_URL.rstrip("/"), _FALLBACK_API_KEY),
@@ -91,15 +91,6 @@ async def _post_to(service_url: str, api_key: str, path: str, payload: dict, tim
                 await asyncio.sleep(_BACKOFF_S * (attempt + 1))
     assert last is not None
     raise last
-
-
-async def _post(path: str, payload: dict, timeout_s: float) -> dict:
-    """Single-service: schoolz's own scraper only. Used by fetch_paginated,
-    which has no droplet equivalent."""
-    if not SCRAPER_URL or not SCRAPER_API_KEY:
-        raise ScraperNotConfigured("SCRAPER_URL / SCRAPER_API_KEY are not configured")
-    async with _get_semaphore():
-        return await _post_to(SCRAPER_URL, SCRAPER_API_KEY, path, payload, timeout_s)
 
 
 async def _post_with_fallback(path: str, payload: dict, timeout_s: float) -> dict:
@@ -157,9 +148,14 @@ async def fetch_paginated(
 ) -> list[str]:
     """Returns one HTML string per page, clicked through in one live
     browser session - for pagination controls that don't respond to a URL
-    query param (client-side/JS-driven pagination)."""
-    timeout_budget = (timeout_ms / 1000 * 2 + wait_after_click_ms / 1000 * max_pages) + 10
-    result = await _post(
+    query param (client-side/JS-driven pagination).
+
+    Falls back like fetch_html: staff_roster.scan used to have no fallback
+    and was the only kind failing when schoolz's own scraper was overloaded,
+    while the droplet and the Pi sat idle. The extra 30s over the old budget
+    covers playwright-scraper's wait for a Cloudflare challenge to clear."""
+    timeout_budget = (timeout_ms / 1000 * 2 + wait_after_click_ms / 1000 * max_pages) + 40
+    result = await _post_with_fallback(
         "/fetch-paginated",
         {
             "url": url,

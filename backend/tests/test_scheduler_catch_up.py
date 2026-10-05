@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from scheduler.runner import missed_fire_time
+from scheduler.runner import first_run_due, missed_fire_time
 
 # 2026-10-03 11:45 UTC = 07:45 America/New_York; "50 */12" last fired 00:50 ET (04:50 UTC).
 NOW = datetime(2026, 10, 3, 11, 45, tzinfo=timezone.utc)
@@ -50,3 +50,20 @@ def test_disabled_and_one_shot_jobs_are_never_caught_up():
 
 def test_a_bad_cron_expression_is_ignored():
     assert missed_fire_time(_job(cron_expr="not a cron"), NOW) is None
+    assert first_run_due(_job(cron_expr="not a cron"), NOW) is False
+
+
+def test_a_new_weekly_job_runs_now_instead_of_waiting_for_its_night():
+    # Next "15 3 * * 4" is Thursday 03:15 ET, days away.
+    assert first_run_due(_job(cron_expr="15 3 * * 4", created_at=NOW), NOW) is True
+
+
+def test_a_new_job_due_within_12h_just_waits():
+    assert first_run_due(_job(created_at=NOW), NOW) is False  # 12:50 ET today
+
+
+def test_first_run_only_for_enabled_never_run_jobs():
+    weekly = "15 3 * * 4"
+    assert first_run_due(_job(cron_expr=weekly, last_run_at=NOW - timedelta(days=1)), NOW) is False
+    assert first_run_due(_job(cron_expr=weekly, enabled=False), NOW) is False
+    assert first_run_due(_job(cron_expr=weekly, run_once=True), NOW) is False

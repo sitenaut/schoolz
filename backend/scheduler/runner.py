@@ -322,10 +322,55 @@ async def queue_missed_runs() -> int:
         missed = [(fire, job.id) for job in jobs if (fire := missed_fire_time(job, now)) is not None]
     missed.sort()
     for _fire, job_id in missed:
+        _first_runs_queued.add(job_id)
         task = asyncio.create_task(_execute(job_id, triggered_by="catchup"))
         _background_tasks.add(task)
         task.add_done_callback(_background_tasks.discard)
     return len(missed)
+
+
+# A brand-new job whose first fire is further off than this runs right away
+# instead. The heavy per-school scans are weekly, so without it a newly
+# onboarded school's contacts/documents/address could sit empty for 7 days.
+FIRST_RUN_IF_NEXT_BEYOND_S = 12 * 3600
+
+# Job ids this process already queued a first or catch-up run for. last_run_at
+# is only written when a run finishes, so a job waiting behind the
+# concurrency limit still looks never-run on the next reconcile tick.
+_first_runs_queued: set[str] = set()
+
+
+def first_run_due(job: ScheduledJob, now: datetime) -> bool:
+    """True for an enabled job that has never run and whose first scheduled
+    fire is more than FIRST_RUN_IF_NEXT_BEYOND_S away. Pure, like
+    missed_fire_time()."""
+    if not job.enabled or job.run_once or job.last_run_at is not None:
+        return False
+    try:
+        next_fire = croniter(job.cron_expr, now.astimezone(ZoneInfo(job.timezone))).get_next(datetime)
+    except Exception:
+        return False
+    return (next_fire - now).total_seconds() > FIRST_RUN_IF_NEXT_BEYOND_S
+
+
+async def queue_first_runs() -> int:
+    """Queues one run for every never-run job first_run_due() picks out.
+    Called on every reconcile tick, so a job created through the API or an
+    import gets its first run within ~30s."""
+    now = datetime.now(timezone.utc)
+    async with SessionLocal() as db:
+        jobs = (
+            await db.execute(
+                select(ScheduledJob).where(ScheduledJob.enabled.is_(True), ScheduledJob.last_run_at.is_(None))
+            )
+        ).scalars().all()
+        due = [job.id for job in jobs if job.id not in _first_runs_queued and first_run_due(job, now)]
+    for job_id in due:
+        _first_runs_queued.add(job_id)
+        task = asyncio.create_task(_execute(job_id, triggered_by="first_run"))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
+    return len(due)
 
 
 def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:

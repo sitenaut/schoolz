@@ -105,20 +105,24 @@ async def test_post_with_fallback_raises_not_configured_with_no_services(monkeyp
         await scraper_client._post_with_fallback("/fetch-html", {}, timeout_s=5)
 
 
-async def test_fetch_paginated_only_ever_uses_the_primary_scraper(monkeypatch):
-    # No droplet equivalent for /fetch-paginated - never falls through.
+async def test_fetch_paginated_falls_back_when_the_primary_scraper_fails(monkeypatch):
+    # Confirmed real, 2026-10: staff_roster.scan was the only kind failing
+    # during the 12h burst - schoolz's own scraper 502'd while the droplet
+    # (which now implements /fetch-paginated) sat idle.
     _set_services(monkeypatch, primary=("https://primary", "pkey"), fallback=("https://droplet", "dkey"))
 
     calls = []
 
     async def fake_post_to(service_url, api_key, path, payload, timeout_s):
-        calls.append(service_url)
+        calls.append((service_url, path))
+        if service_url == "https://primary":
+            raise _status_error(502)
         return {"pages": ["<p>1</p>"]}
 
     monkeypatch.setattr(scraper_client, "_post_to", fake_post_to)
     pages = await scraper_client.fetch_paginated("https://school.example/roster", ".next")
     assert pages == ["<p>1</p>"]
-    assert calls == ["https://primary"]
+    assert calls == [("https://primary", "/fetch-paginated"), ("https://droplet", "/fetch-paginated")]
 
 
 async def test_fetch_html_passes_block_assets(monkeypatch):
