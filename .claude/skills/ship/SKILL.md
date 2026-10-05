@@ -38,7 +38,7 @@ more than today's work, say so before merging.
 
 ## 4. Merge
 
-`gh pr merge <n> --merge` (this repo keeps `ecastillo-dev` alive; don't delete it).
+`gh pr merge <n> --merge` (this repo keeps its long-lived dev branch alive; don't delete it).
 
 ## 5. Deploy, and confirm what actually ran
 

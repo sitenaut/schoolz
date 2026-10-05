@@ -135,14 +135,21 @@ function Test-BackendPytest {
 
 function Test-FrontendVitest {
     Write-Step "Running Frontend Vitest (via WSL)"
-    $cmd = "cd /mnt/c/Users/ellio/OneDrive/Documents/claude/code/schoolz/frontend && npx vitest run"
+    # Resolve frontend/ relative to this script; wsl inherits the current directory.
+    $frontendDir = Join-Path $PSScriptRoot "..\frontend"
+    $cmd = "npx vitest run"
     if ($TestPath) {
         $cmd += " $TestPath"
     } else {
         $cmd += " src/pages/LoginPage.test.ts src/authConfig.test.ts src/lib/pendingInvite.test.ts"
     }
 
-    wsl -e bash -c "$cmd"
+    Push-Location $frontendDir
+    try {
+        wsl -e bash -c "$cmd"
+    } finally {
+        Pop-Location
+    }
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Frontend tests passed"
     } else {

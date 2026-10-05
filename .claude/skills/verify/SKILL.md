@@ -39,8 +39,8 @@ From bash/WSL:
 - **Frontend Vitest (WSL):**
   ```powershell
   powershell -ExecutionPolicy Bypass -File .\scripts\verify-local.ps1 -Target frontend
-  # Or directly:
-  wsl -e bash -c "cd /mnt/c/Users/ellio/OneDrive/Documents/claude/code/schoolz/frontend && npx vitest run"
+  # Or directly, from the repo root (wsl inherits the current directory):
+  wsl -e bash -c "cd frontend && npx vitest run"
   ```
 
 ## 3. Running Services Reference
