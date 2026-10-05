@@ -270,7 +270,50 @@ def _parse_wp_card_page(html: str) -> list[dict]:
     return list(items.values())
 
 
-_PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/")
+def _parse_tablepress_directory(html: str) -> list[dict]:
+    """Haddonfield's WordPress directories (`/staff-directory/` on every
+    school): one TablePress table, a "Name" / "Email" header, then rows whose
+    first cell is either a section header (`<div class="directory-letters">`:
+    a letter, or a department like "Kindergarten") or a person - name, a
+    `<br>`, and the title in `<i>`. The email column is a Cloudflare-obfuscated
+    envelope icon, and some people (Central) have none. A person with no
+    title takes the section header as their department."""
+    soup = BeautifulSoup(html, "lxml")
+    items = {}
+    for table in soup.select("table.tablepress"):
+        section = None
+        for row in table.select("tbody tr"):
+            cells = row.select("td")
+            if not cells:
+                continue
+            header = cells[0].select_one(".directory-letters")
+            if header:
+                label = re.sub(r"\s+", " ", header.get_text(" ", strip=True))
+                section = label if len(label) > 1 else None
+                continue
+            title_el = cells[0].find("i")
+            title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True)) if title_el else ""
+            if title_el:
+                title_el.extract()
+            name = re.sub(r"\s+", " ", cells[0].get_text(" ", strip=True))
+            if not name:
+                continue
+            link = row.select_one("a[href*='email-protection#']")
+            email = _decode_cf_email(link["href"]) if link else None
+            # source_constituent_id is String(64): 3-letter prefix + bounded slugs.
+            key = f"tp:{_slug(name)[:34]}|{_slug(title or section or '')[:22]}"
+            items[key] = {
+                "constituent_id": key,
+                "full_name": name,
+                "title": title or None,
+                "department": section,
+                "email": email.lower() if email else None,
+                "phone": None,
+            }
+    return list(items.values())
+
+
+_PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/", "/staff-directory/", "/staff-directory-2/")
 
 
 async def _fetch_plain_page_roster(base: str) -> list[dict]:
@@ -283,7 +326,7 @@ async def _fetch_plain_page_roster(base: str) -> list[dict]:
                 resp = await client.get(base + path)
                 if resp.status_code != 200:
                     continue
-                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text)
+                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text)
                 if items:
                     return items
     except httpx.HTTPError:

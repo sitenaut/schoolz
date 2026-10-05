@@ -559,9 +559,17 @@ on this list** - it's ArbiterLive branding, already supported.
 - **`<id>.digitalsports.com`** (athletics) — seen alongside a working
   Arbiter link for the same school (Haddon Township HS), never needed on
   its own so far. No code in this repo reads it.
-- **MemberHub** (`<school>.memberhub.com`) — a PTA platform, confirmed real
-  (Thomas Edison Elementary, Haddon Township). No code in this repo reads
-  it.
+- **MemberHub** (`<school>.memberhub.com`) — **not a separate platform to
+  build**: those hostnames (and `.memberhub.store`) 301 to
+  `<name>.givebacks.com`, so a MemberHub PTA link is a Givebacks site under
+  its old name. Take the shortname from the redirect target and verify with
+  `givebacks.resolve_org` (Thomas Edison -> `edison`; Haddonfield Central,
+  Tatem -> `centralschoolpta`, `jftatempta`). Only Givebacks sites that
+  actually carry content are worth a job: an org that resolves but has zero
+  blocks just warns `givebacks_no_blocks` every run.
+- **eBoard** (`<board>.<site>.eboard.com`, Haddonfield High/Middle PTAs) —
+  302s to a login servlet on a host with an expired TLS cert; no public
+  content. Same verdict as a login-walled Google Site: nothing to scan.
 - **Padlet** (`padlet.com/<board>`) — a general-purpose board tool some
   small PTAs use in place of a dedicated platform, confirmed real (Stoy
   Elementary's PTA, Haddon Township). No code in this repo reads it - and
@@ -929,3 +937,41 @@ on this list** - it's ArbiterLive branding, already supported.
     regular start/end times published); no marking periods, transportation,
     or HS rotation; no newsletter platform found at all (no `smore`,
     `resource-manager`, PTBoard, or Givebacks signal anywhere on the site).
+
+- **Haddonfield School District** (5 schools, WordPress multisite, one
+  subdomain per school; Genesis SIS) - `backend/seed/haddonfield.json`.
+  `haddonfield.k12.nj.us` has a cert for the wrong host; the real site is
+  `haddonfieldschools.org`.
+  - **Calendar**: one embedded Google Calendar on `/calendars/` (id in the
+    iframe `src`), fetched as public iCal - no code. A random second request
+    to a school subdomain can return a bare Sucuri-style 403 from a plain
+    client; retry rather than conclude the page is blocked.
+  - **Lunch**: SchoolCafé `HADDONFIELDPSNUTRISERVE`. Only four sites are
+    listed (the three elementaries + the HS); the middle school has none, so
+    it gets no lunch rows (`schoolcafe_school_unmatched` warning each run).
+  - **Staff**: every school's `/staff-directory/` (HS: `/staff-directory-2/`)
+    is one TablePress table - section header rows (`.directory-letters`: a
+    letter or a department), then name + `<i>title</i>` + a Cloudflare-
+    obfuscated email icon. `staff_roster._parse_tablepress_directory`.
+    `source_constituent_id` is 64 chars: a first cut keyed on the full
+    name+title+department overflowed it and failed 3 of 5 schools.
+  - **Newsletters**: the district page's Smore archive stops at June 2024
+    (not tracked). Elizabeth Haddon's homepage links "Current Newsletter" as
+    the bare short form `www.smore.com/<code>` (301 to
+    `secure.smore.com/<code>`), which the issue-link regex used to miss
+    (`smore_archive_no_issues`); other schools publish on ParentSquare or
+    Google Docs.
+  - **PTAs**: Central, Tatem, Middle, High resolve on Givebacks (found by
+    guessing shortnames against `resolve_org` with an address match - the
+    PTA's own link pointed at memberhub/an old domain). Middle's is
+    `haddonfieldmiddleschoolpta`. HS (`hmhs`) is empty. Elizabeth Haddon's
+    `ehspta.org` has no DNS and a stray `ehspta` shortname is a different
+    school in Washington state - Facebook-only, nothing to scan.
+  - **Athletics**: `haddonfieldathletics.org` is ArbiterLive white-label,
+    entity 9260 (Middle and High share it).
+  - **Gaps**: HS bell schedule is a login-gated Google Sheet (no times);
+    Middle's per-grade bell tables (6/7/8 differ) are only stored as the flat
+    start/end/early/delay times; absence is an email per school's attendance
+    office; shared district logo only; `school_info.scan` warns every run
+    (no address/phone in the WordPress footer, seed values are kept).
+
