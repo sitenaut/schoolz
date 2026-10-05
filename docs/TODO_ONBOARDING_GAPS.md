@@ -5,12 +5,10 @@ onboarding could not find. Each is a lookup for a person, not a code bug. Tick
 off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md`.
 
 ## Black Horse Pike Regional (Highland, Timber Creek, Triton)
-- [ ] Bell times: each school's `/our-school/bell-schedule` page links PDFs or images only. Read them and fill start, end, early dismissal and delayed opening.
-- [ ] Athletics: schools use GoBound (`gobound.com/nj/schools/...`). Decide whether to build a reader; until then `athletics_url` is null.
-- [ ] Timber Creek and Triton athletics calendar feeds (ids 6 and 8) were empty in October. Re-check in season.
+- [ ] Timber Creek half-day and 2-hour-delay schedules: its bell-schedule page publishes only the regular schedule (a PNG). Ask the school or look for a handbook.
 - [ ] Absence reporting method for each school.
 - [ ] Lunch: only a district-wide PDF exists. Confirm no SchoolCafé or other vendor shortname.
-- [ ] Triton staff roster scan ran very long and stored 0 staff. Re-run and check.
+- [ ] Triton staff roster scan ran very long and stored 0 staff locally. Re-run and check.
 - [ ] Newsletters and PTA/booster sites for all three.
 
 ## Bellmawr
