@@ -923,6 +923,9 @@ class TodayWeatherOut(BaseModel):
     # "Today", or the next school day's label ("Tomorrow", "Monday") once
     # today's school day is over - services/weather.py:pick_weather_day.
     day_label: str = "Today"
+    # The local date this forecast is for. Differs from the card's own date on
+    # a weekend or closed day, when it shows the next school day's.
+    date: str | None = None
 
 
 class SchoolTodayOut(BaseModel):

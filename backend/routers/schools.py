@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -536,13 +537,18 @@ async def get_school_today(
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
     lang: str = Depends(request_lang),
+    on: date | None = Query(None, description="Build the card for this local date instead of today (within two weeks either side)."),
 ):
     """Public. Everything one Today-feed card needs in a single request:
     day status (closed/early dismissal/open, from the district feed),
     hours, rotation day, today's + next lunch, SACC, role-based contacts,
     the next few dated items, this week's strip, and any closure/early
     dismissal alerts in the next 7 days."""
-    return await build_today(db, school, user_id=user.id if user else None, lang=lang)
+    if on is not None:
+        local_today = datetime.now(ZoneInfo("America/New_York")).date()
+        if abs((on - local_today).days) > 14:
+            raise HTTPException(status_code=422, detail="`on` must be within two weeks of today")
+    return await build_today(db, school, today=on, user_id=user.id if user else None, lang=lang)
 
 
 @router.get("/{school_id}/transportation", response_model=SchoolTransportationOut | None)

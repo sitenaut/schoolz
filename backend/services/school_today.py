@@ -301,6 +301,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         # Kept English in every language: the frontend compares these and
         # translates them itself (see i18n_strings.localize_weather).
         weather["day_label"] = "Today" if weather_is_today else next_label_en
+        weather["date"] = weather_day.isoformat()
 
     sacc_row = (await db.execute(select(SaccProgram).where(SaccProgram.school_id == school.id))).scalar_one_or_none()
     sacc = (
