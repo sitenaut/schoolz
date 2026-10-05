@@ -182,3 +182,19 @@ def test_extensionless_link_that_serves_a_file_is_kept_without_rendering_it(monk
         }
     ]
     assert rendered == ["https://www.lrhsd.org/"]
+
+
+def test_find_doc_anchors_skips_fragment_and_scheme_links():
+    from services.school_documents import _find_doc_anchors
+    html = ('<a href="#">Student Handbook</a><a href="javascript:void(0)">Handbook</a>'
+            '<a href="mailto:a@b.org">Handbook</a><a href="/handbook.pdf">Student Handbook</a>')
+    assert [r["url"] for r in _find_doc_anchors(html, "https://x.test")] == ["https://x.test/handbook.pdf"]
+
+
+def test_dead_url_is_not_retried_or_fallen_back():
+    import httpx
+    from scraper_client import _is_retryable
+    req = httpx.Request("POST", "http://s/fetch-html")
+    dead = httpx.HTTPStatusError("x", request=req, response=httpx.Response(502, request=req, text="net::ERR_NAME_NOT_RESOLVED at https://x/"))
+    flaky = httpx.HTTPStatusError("x", request=req, response=httpx.Response(502, request=req, text="Timeout 15000ms exceeded"))
+    assert not _is_retryable(dead) and _is_retryable(flaky)
