@@ -116,7 +116,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23875"
+      "apptegy_org_id": "23875",
+      "healthepro_location": "2546/17114"
     },
     {
       "slug": "blackwood-elementary",
@@ -142,7 +143,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23876"
+      "apptegy_org_id": "23876",
+      "healthepro_location": "2546/15474"
     },
     {
       "slug": "charles-w-lewis-middle",
@@ -168,7 +170,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23877"
+      "apptegy_org_id": "23877",
+      "healthepro_location": "2546/17112"
     },
     {
       "slug": "chews-elementary",
@@ -194,7 +197,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23878"
+      "apptegy_org_id": "23878",
+      "healthepro_location": "2546/16620"
     },
     {
       "slug": "erial-elementary",
@@ -220,7 +224,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23879"
+      "apptegy_org_id": "23879",
+      "healthepro_location": "2546/17106"
     },
     {
       "slug": "glendora-elementary",
@@ -246,7 +251,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23880"
+      "apptegy_org_id": "23880",
+      "healthepro_location": "2546/17107"
     },
     {
       "slug": "glen-landing-middle",
@@ -272,7 +278,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23881"
+      "apptegy_org_id": "23881",
+      "healthepro_location": "2546/17113"
     },
     {
       "slug": "gloucester-township-elementary",
@@ -298,7 +305,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23882"
+      "apptegy_org_id": "23882",
+      "healthepro_location": "2546/17108"
     },
     {
       "slug": "james-w-lilley-elementary",
@@ -324,7 +332,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23883"
+      "apptegy_org_id": "23883",
+      "healthepro_location": "2546/17109"
     },
     {
       "slug": "loring-flemming-elementary",
@@ -350,7 +359,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23884"
+      "apptegy_org_id": "23884",
+      "healthepro_location": "2546/17110"
     },
     {
       "slug": "union-valley-elementary",
@@ -376,7 +386,8 @@
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
-      "apptegy_org_id": "23885"
+      "apptegy_org_id": "23885",
+      "healthepro_location": "2546/17111"
     }
   ],
   "smore_newsletters": []

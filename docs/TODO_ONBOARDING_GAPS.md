@@ -21,7 +21,6 @@ off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md`.
 - [ ] Newsletters and PTAs. The only Smore link found was for new student registration.
 
 ## Gloucester Township
-- [ ] Lunch: no public menu link and no SchoolCafé match. Find the vendor.
 - [ ] School hours for all 10 schools (none found).
 - [ ] Absence reporting method for all schools.
 - [ ] Preschool Program (Apptegy org 25533) is not tracked. Decide whether to add it and find its address.
