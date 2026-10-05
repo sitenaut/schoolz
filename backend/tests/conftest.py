@@ -17,6 +17,18 @@ def anyio_backend():
 
 
 @pytest.fixture(autouse=True)
+def _no_real_scrapers(monkeypatch):
+    """The dev container carries real scraper keys, so any test that didn't
+    mock fetch_html sent live renders to the droplet and the residential Pi
+    (the Pi's "more than half of requests failing" alert fired on pytest's
+    example-school.chclc.org, 2026-10-05). Tests get no scraper configured."""
+    import scraper_client
+    for name in ("SCRAPER_URL", "SCRAPER_API_KEY", "_FALLBACK_URL", "_FALLBACK_API_KEY",
+                 "_RESIDENTIAL_URL", "_RESIDENTIAL_API_KEY"):
+        monkeypatch.setattr(scraper_client, name, "")
+
+
+@pytest.fixture(autouse=True)
 async def _isolated_db_transaction(monkeypatch):
     """Wraps every test in one database transaction that's rolled back at
     the end, so nothing a test does - registering a user, creating a

@@ -53,11 +53,21 @@ def _get_semaphore() -> asyncio.Semaphore:
     return _semaphore
 
 
+# A 502 whose body names one of these is the *URL* being bad, not the site or
+# the scraper being flaky: every scraper will say the same thing, so retrying
+# and falling through to the droplet and the residential Pi just multiplies
+# one dead link into 9 failed renders (what tripped the residential
+# "more than half of requests failing" alert, 2026-10-05).
+_PERMANENT_ERRORS = ("ERR_NAME_NOT_RESOLVED", "Cannot navigate to invalid URL")
+
+
 def _is_retryable(exc: Exception) -> bool:
     """A 502 from the scraper means the *school's* site failed to load in
     time (it wraps any Playwright failure that way); timeouts/connection
     drops are the same class of transient upstream flakiness."""
     if isinstance(exc, httpx.HTTPStatusError):
+        if any(m in exc.response.text for m in _PERMANENT_ERRORS):
+            return False
         return exc.response.status_code in _RETRY_STATUSES
     return isinstance(exc, httpx.TransportError)
 

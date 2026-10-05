@@ -91,7 +91,12 @@ def _find_doc_anchors(html: str, base_url: str) -> list[dict]:
     results = []
     for a in soup.find_all("a", href=True):
         text = a.get_text(" ", strip=True)
-        href = a["href"]
+        href = a["href"].strip()
+        # "#", javascript:, mailto: and tel: are not pages. "#" used to be sent
+        # to the scraper as a URL (9 failed renders per scan once retries and
+        # fallbacks multiplied it), which tripped the residential error-ratio alert.
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
+            continue
         doc_type = (
             "lunch_ordering" if _ORDERING_PORTAL_RE.match(href)
             else classify_doc_type(text) or classify_doc_type(href) or ("calendar_hub" if _CALENDAR_HUB_RE.match(text) else None)
