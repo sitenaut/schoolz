@@ -2,12 +2,12 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user, get_optional_user, require_permission
 from database import get_db
-from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
+from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreBlock, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
 from services.arbiter import entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
@@ -611,7 +611,19 @@ async def get_school_lunch_menu(
 
 @router.get("/{school_id}/newsletters", response_model=list[SmoreNewsletterOut])
 async def list_school_newsletters(school: School = Depends(resolve_school), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(SmoreNewsletter).where(SmoreNewsletter.school_id == school.id))
+    # Newest first, because the school page shows the first row as "the"
+    # newsletter. "Newest" is when a row last gained content, not when it was
+    # created or last scanned: a recurring job pinned to a stale issue URL is
+    # re-scanned every week (fresh last_scanned_at) but never sees a new
+    # block, so it must lose to a newer issue added as its own row.
+    freshest = func.greatest(SmoreNewsletter.created_at, func.coalesce(func.max(SmoreBlock.first_seen_at), SmoreNewsletter.created_at))
+    result = await db.execute(
+        select(SmoreNewsletter)
+        .outerjoin(SmoreBlock, SmoreBlock.newsletter_id == SmoreNewsletter.id)
+        .where(SmoreNewsletter.school_id == school.id)
+        .group_by(SmoreNewsletter.id)
+        .order_by(freshest.desc(), SmoreNewsletter.created_at.desc())
+    )
     return [await _newsletter_to_out(db, n) for n in result.scalars().all()]
 
 
