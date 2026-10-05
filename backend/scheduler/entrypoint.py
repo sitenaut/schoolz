@@ -11,7 +11,7 @@ import observability
 from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
-from scheduler.runner import build_apscheduler_job, queue_missed_runs
+from scheduler.runner import build_apscheduler_job, queue_first_runs, queue_missed_runs
 
 setup_logging()
 telemetry.setup_telemetry("schoolz-scheduler")
@@ -113,6 +113,12 @@ async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
                 logger.info("queued_catch_up_runs", extra={"count": count})
             except Exception:
                 logger.exception("catch_up_failed")
+        try:
+            count = await queue_first_runs()
+            if count:
+                logger.info("queued_first_runs", extra={"count": count})
+        except Exception:
+            logger.exception("first_runs_failed")
         try:
             await asyncio.wait_for(_stop_event.wait(), timeout=RECONCILE_INTERVAL_SECONDS)
         except asyncio.TimeoutError:
