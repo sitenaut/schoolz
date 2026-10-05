@@ -18,11 +18,6 @@
           "school_slug": "triton-regional-high"
         },
         {
-          "name": "Triton Athletics",
-          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=8",
-          "school_slug": "triton-regional-high"
-        },
-        {
           "name": "Timber Creek Calendar",
           "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=3",
           "school_slug": "timber-creek-regional-high"
@@ -118,7 +113,7 @@
       "early_dismissal_time": null,
       "delayed_opening_time": null,
       "bell_periods": null,
-      "athletics_url": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/23768",
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null
