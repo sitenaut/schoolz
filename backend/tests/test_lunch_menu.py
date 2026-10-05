@@ -91,9 +91,9 @@ def test_abbreviated_menus_keep_both_meals_and_latest_month(monkeypatch):
     monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
     found = asyncio.run(lunch_menu.discover_current_menus("http://x", school_types=["elementary"]))
     assert {(e["meal_type"], e["pdf_url"]) for e in found} == {
-        ("breakfast", "/f/MERSept2099BreakfastMenu.pdf"),
-        ("lunch", "/f/MERSept99LunchMenu_1.pdf"),
-        ("lunch", "/f/MEROct99LunchMenu.pdf"),
+        ("breakfast", "http://x/f/MERSept2099BreakfastMenu.pdf"),
+        ("lunch", "http://x/f/MERSept99LunchMenu_1.pdf"),
+        ("lunch", "http://x/f/MEROct99LunchMenu.pdf"),
     }
 
 
@@ -113,7 +113,7 @@ def test_unbanded_menu_serves_every_school_type(monkeypatch):
     monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
     found = asyncio.run(lunch_menu.discover_current_menus("http://x", school_types=["elementary", "middle", "other"]))
     assert sorted(e["school_type"] for e in found) == ["elementary", "elementary", "middle", "middle", "other", "other"]
-    assert {e["pdf_url"] for e in found} == {"/f/September_2099.pdf", "/f/October_2099.pdf"}
+    assert {e["pdf_url"] for e in found} == {"http://x/f/September_2099.pdf", "http://x/f/October_2099.pdf"}
 
 
 def test_banded_discovery_picks_latest_month_whatever_the_link_order(monkeypatch):
@@ -134,3 +134,11 @@ def test_banded_discovery_picks_latest_month_whatever_the_link_order(monkeypatch
         found = asyncio.run(lunch_menu.discover_current_menus("http://x"))
         assert {(e["school_type"], e["period_label"]) for e in found} == {("elementary", "October 2026"), ("high", "September 2026")}
         assert all("_sort" not in e for e in found)
+
+
+def test_unbanded_menu_with_spaces_and_cache_buster():
+    # Runnemede: "OCTOBER  2026  Menu.pdf", href-encoded, newer files carry ?rnd=.
+    c = _classify_unbanded_pdf_link("/ourpages/auto/2025/10/14/47945897/OCTOBER%20%202026%20%20Menu.pdf", "elementary")
+    assert c["period_label"] == "October 2026" and c["_sort"] == (2026, 9)
+    c = _classify_unbanded_pdf_link("/x/SEPTEMBER%20%202026%20%20Menu.pdf?rnd=1787590730626", "elementary")
+    assert c["period_label"] == "September 2026"

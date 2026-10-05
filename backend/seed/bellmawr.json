@@ -1,0 +1,159 @@
+{
+  "exported_at": "2026-10-05T18:00:00Z",
+  "source": "onboarding: Bellmawr Public School District",
+  "districts": [
+    {
+      "name": "Bellmawr Public School District",
+      "website_url": "https://www.bellmawrschools.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Bellmawr District",
+          "platform": "apptegy",
+          "org_id": "10774"
+        },
+        {
+          "name": "Bellmawr Early Childhood Center",
+          "platform": "apptegy",
+          "org_id": "11560",
+          "school_slug": "bellmawr-early-childhood-center"
+        },
+        {
+          "name": "Bellmawr Bellmawr Park",
+          "platform": "apptegy",
+          "org_id": "11561",
+          "school_slug": "bellmawr-park-elementary"
+        },
+        {
+          "name": "Bellmawr Burke",
+          "platform": "apptegy",
+          "org_id": "11562",
+          "school_slug": "ethel-m-burke-elementary"
+        },
+        {
+          "name": "Bellmawr Bell Oaks",
+          "platform": "apptegy",
+          "org_id": "11559",
+          "school_slug": "bell-oaks-middle"
+        }
+      ],
+      "calendar_pdf_url": null,
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Bellmawr"
+      ],
+      "schoolcafe_shortname": "BellmawrPublicsdNutriServemetz"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "bellmawr-early-childhood-center",
+      "name": "Bellmawr Early Childhood Center",
+      "short_name": "Early Childhood Center",
+      "district_name": "Bellmawr Public School District",
+      "school_type": "elementary",
+      "address": "29 Peach Road, Bellmawr, NJ 08031",
+      "main_phone": "856-931-1322",
+      "website_url": "https://www.bellmawrschools.org/o/becc",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "9:00 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "11560"
+    },
+    {
+      "slug": "bellmawr-park-elementary",
+      "name": "Bellmawr Park Elementary School",
+      "short_name": "Bellmawr Park",
+      "district_name": "Bellmawr Public School District",
+      "school_type": "elementary",
+      "address": "29 Peach Road, Bellmawr, NJ 08031",
+      "main_phone": "856-931-6272",
+      "website_url": "https://www.bellmawrschools.org/o/bpes",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "11561"
+    },
+    {
+      "slug": "ethel-m-burke-elementary",
+      "name": "Ethel M. Burke Elementary School",
+      "short_name": "Burke",
+      "district_name": "Bellmawr Public School District",
+      "school_type": "elementary",
+      "address": "112 S. Black Horse Pike, Bellmawr, NJ 08031",
+      "main_phone": "856-931-6362",
+      "website_url": "https://www.bellmawrschools.org/o/embe",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "11562"
+    },
+    {
+      "slug": "bell-oaks-middle",
+      "name": "Bell Oaks Middle School",
+      "short_name": "Bell Oaks",
+      "district_name": "Bellmawr Public School District",
+      "school_type": "middle",
+      "address": "256 Anderson Avenue, Bellmawr, NJ 08031",
+      "main_phone": "856-931-6273",
+      "website_url": "https://www.bellmawrschools.org/o/boms",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": "11559"
+    }
+  ],
+  "smore_newsletters": []
+}

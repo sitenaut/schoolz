@@ -22,7 +22,7 @@ labeled 2023-2024 while its current newsletter links a 2026-2027 version.
 import re
 import time
 from datetime import date
-from urllib.parse import unquote, urljoin
+from urllib.parse import unquote, urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -256,6 +256,14 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
     # bug a real user hit (a warning with no way to tell what was checked).
     async def fetch(url, wait_for_selector=None):
         return await scraper_client.fetch_html(url, wait_for_selector=wait_for_selector, block_assets=True)
+    # A school's website_url can be its own page on a shared host (Runnemede:
+    # /apps/pages/index.jsp?uREC_ID=...&type=d). Read that page, but resolve its
+    # root-relative links against the origin.
+    home_url = base + "/"
+    parts = urlparse(base)
+    if parts.query:
+        home_url = base
+        base = f"{parts.scheme}://{parts.netloc}"
     presence = False
     # SchoolMessenger Presence (ex-SharpSchool: Sterling, Somerdale) answers plain HTTP, and
     # headless Chromium gets 502s from it (hung nav / ERR_ABORTED), so the scraper never loads.
@@ -274,7 +282,7 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
                 title = BeautifulSoup(resp.text, "lxml").title
                 return {"html": resp.text, "title": title.get_text(strip=True) if title else None}
 
-    home = await fetch(base + "/", wait_for_selector="a")
+    home = await fetch(home_url, wait_for_selector="a")
 
     results = []
     seen_urls: set[str] = set()

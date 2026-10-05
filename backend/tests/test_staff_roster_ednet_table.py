@@ -27,3 +27,22 @@ def test_ednet_table_layout_reads_name_position_and_caption_department():
     assert items[0]["department"] == "Administration"
     assert items[1]["title"] is None and items[1]["department"] == "Teachers"
     assert items[0]["email"] is None
+
+
+def test_ednet_roster_is_fetched_from_the_origin_when_the_school_url_is_a_page(monkeypatch):
+    import asyncio
+
+    import httpx
+
+    from services import staff_roster
+
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return httpx.Response(200, text=_TABLE_PAGE)
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(staff_roster.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw))
+    items = asyncio.run(staff_roster._fetch_ednet_roster("https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619697&type=d"))
+    assert seen == ["https://www.runnemedeschools.org/apps/staff/"] and len(items) == 2
