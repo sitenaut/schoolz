@@ -1,0 +1,179 @@
+{
+  "exported_at": "2026-10-05T12:00:00Z",
+  "source": "onboarding: Haddonfield School District",
+  "smore_newsletters": [
+    {
+      "url": "https://elizabeth.haddonfieldschools.org/",
+      "label": "Elizabeth Haddon Newsletter",
+      "school_slug": "elizabeth-haddon",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ],
+  "districts": [
+    {
+      "name": "Haddonfield School District",
+      "website_url": "https://haddonfieldschools.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Haddonfield District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/haddonfield.k12.nj.us_31ndkt967dfklp9676brjfmtt0%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Haddonfield"
+      ],
+      "schoolcafe_shortname": "HADDONFIELDPSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "central",
+      "name": "Central Elementary School",
+      "short_name": "Central",
+      "district_name": "Haddonfield School District",
+      "school_type": "elementary",
+      "address": "3 Lincoln Avenue, Haddonfield, NJ 08033",
+      "main_phone": "(856) 429-5851",
+      "website_url": "https://central.haddonfieldschools.org",
+      "absence_method": "email",
+      "absence_emails": [
+        "csattendanceoffice@haddonfield.k12.nj.us"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school's attendance office with your child's name, grade and the reason for the absence.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:25 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "givebacks_shortname": "centralschoolpta"
+    },
+    {
+      "slug": "elizabeth-haddon",
+      "name": "Elizabeth Haddon Elementary School",
+      "short_name": "Elizabeth Haddon",
+      "district_name": "Haddonfield School District",
+      "school_type": "elementary",
+      "address": "501 West Redman Avenue, Haddonfield, NJ 08033",
+      "main_phone": "(856) 429-0811",
+      "website_url": "https://elizabeth.haddonfieldschools.org",
+      "absence_method": "email",
+      "absence_emails": [
+        "ehattendanceoffice@haddonfield.k12.nj.us"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school's attendance office with your child's name, grade and the reason for the absence.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:25 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "givebacks_shortname": null
+    },
+    {
+      "slug": "tatem",
+      "name": "J. Fithian Tatem Elementary School",
+      "short_name": "Tatem",
+      "district_name": "Haddonfield School District",
+      "school_type": "elementary",
+      "address": "1 Glover Avenue, Haddonfield, NJ 08033",
+      "main_phone": "(856) 429-0902",
+      "website_url": "https://tatem.haddonfieldschools.org",
+      "absence_method": "email",
+      "absence_emails": [
+        "jtattendanceoffice@haddonfield.k12.nj.us"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school's attendance office with your child's name, grade and the reason for the absence.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:25 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "givebacks_shortname": "jftatempta"
+    },
+    {
+      "slug": "haddonfield-middle",
+      "name": "Haddonfield Middle School",
+      "short_name": "Haddonfield Middle",
+      "district_name": "Haddonfield School District",
+      "school_type": "middle",
+      "address": "5 Lincoln Avenue, Haddonfield, NJ 08033",
+      "main_phone": "(856) 429-5851",
+      "website_url": "https://middle.haddonfieldschools.org",
+      "absence_method": "email",
+      "absence_emails": [
+        "msattendanceoffice@haddonfield.k12.nj.us"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school's attendance office with your child's name, grade and the reason for the absence.",
+      "start_time": "8:00 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:15 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": "https://arbiterlive.com/School/Calendar/9260",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "givebacks_shortname": "haddonfieldmiddleschoolpta"
+    },
+    {
+      "slug": "haddonfield-memorial-high",
+      "name": "Haddonfield Memorial High School",
+      "short_name": "Haddonfield HS",
+      "district_name": "Haddonfield School District",
+      "school_type": "high",
+      "address": "401 Kings Highway East, Haddonfield, NJ 08033",
+      "main_phone": "(856) 429-3960",
+      "website_url": "https://high.haddonfieldschools.org",
+      "absence_method": "email",
+      "absence_emails": [
+        "hsattendanceoffice@haddonfield.k12.nj.us"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school's attendance office with your child's name, grade and the reason for the absence.",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": "https://arbiterlive.com/School/Calendar/9260",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "givebacks_shortname": "hmhs"
+    }
+  ]
+}

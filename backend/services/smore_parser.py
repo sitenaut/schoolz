@@ -16,7 +16,13 @@ from scheduler.errors import record_parse_issue
 from services.links import unwrap_redirect
 
 _WAIT_SELECTOR = ".block-wrapper"
-_SMORE_ISSUE_HREF_RE = re.compile(r"^https?://(?:app|secure)\.smore\.com/n/", re.IGNORECASE)
+# `/n/<code>` on app./secure., or the bare short form `www.smore.com/<code>`
+# (Haddonfield's Elizabeth Haddon links "Current Newsletter" that way; it
+# 301s to secure.smore.com/<code>). `u/` is an author profile, never an issue.
+_SMORE_ISSUE_HREF_RE = re.compile(
+    r"^https?://(?:(?:app|secure)\.smore\.com/n/|(?:www\.)?smore\.com/(?!u/)[a-z0-9]{4,8}/?(?:[?#].*)?$)",
+    re.IGNORECASE,
+)
 # A site-nav link to a Smore AUTHOR's profile - every newsletter that
 # person has ever published, not any one issue (confirmed real: Clara
 # Barton Elementary's own archive page links only this, not per-issue
