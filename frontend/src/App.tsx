@@ -39,6 +39,7 @@ import { ContactPage } from "./pages/ContactPage";
 import { ChCommsPage } from "./pages/ChCommsPage";
 import { SurveyPage } from "./pages/SurveyPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
+import { SubmissionReviewPage } from "./pages/SubmissionReviewPage";
 import { SubmitSourcePage } from "./pages/SubmitSourcePage";
 import { InboxPage } from "./pages/InboxPage";
 import { AccountLayout } from "./pages/account/AccountLayout";
@@ -192,6 +193,14 @@ function Routed() {
           element={
             <RequireAdmin permission="submissions.view">
               <SubmissionsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/submissions/:submissionId"
+          element={
+            <RequireAdmin permission="submissions.view">
+              <SubmissionReviewPage />
             </RequireAdmin>
           }
         />

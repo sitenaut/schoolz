@@ -18,8 +18,47 @@ export type CommunitySubmission = {
   status: "pending" | "approved" | "rejected";
   admin_notes: string | null;
   reviewed_at: string | null;
+  extracted_at: string | null;
   created_at: string;
 };
+
+export type SubmissionFlag = { code: string; text: string; hold: boolean; item_id: string | null };
+
+/** A draft calendar item read off (or typed in beside) a submission. It is
+ * live on the public calendar exactly while content_item_id is set. */
+export type SubmissionItem = {
+  id: string;
+  origin: "model" | "manual";
+  title: string;
+  description: string | null;
+  category: string;
+  scope: "school" | "district";
+  // Local wall-clock, "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS" - never a UTC instant.
+  start_local: string | null;
+  end_local: string | null;
+  stated_weekday: string | null;
+  tentative: boolean;
+  source_excerpt: string | null;
+  replaces_item_id: string | null;
+  content_item_id: string | null;
+  flags: SubmissionFlag[];
+};
+
+export type SubmissionReview = {
+  submission: CommunitySubmission;
+  items: SubmissionItem[];
+  note_flags: string[];
+  categories: string[];
+};
+
+export type SubmissionItemInput = Partial<
+  Pick<SubmissionItem, "title" | "category" | "scope" | "tentative"> & {
+    description: string;
+    start_local: string;
+    end_local: string;
+    replaces_item_id: string;
+  }
+>;
 
 async function fail(res: Response, fallback: string): Promise<never> {
   let msg = fallback;
@@ -71,7 +110,7 @@ export async function listSubmissions(statusFilter?: string): Promise<CommunityS
 
 export async function updateSubmission(
   id: string,
-  patch: { status?: string; admin_notes?: string }
+  patch: { status?: string; admin_notes?: string; school_id?: string }
 ): Promise<CommunitySubmission> {
   const res = await apiFetch(`/submissions/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
   if (!res.ok) return fail(res, "Could not update this submission");
@@ -89,6 +128,32 @@ export async function deleteSubmission(id: string): Promise<void> {
 export async function downloadSubmissionFile(id: string, fileName?: string | null): Promise<void> {
   await downloadFile(`/submissions/${id}/file`, fileName || "submission");
 }
+
+async function review(path: string, init: RequestInit | undefined, fallback: string): Promise<SubmissionReview> {
+  const res = await apiFetch(path, init);
+  if (!res.ok) return fail(res, fallback);
+  return res.json();
+}
+
+export const getReview = (id: string) => review(`/submissions/${id}`, undefined, "Could not load this submission");
+
+export const readUpload = (id: string) =>
+  review(`/submissions/${id}/extract`, { method: "POST" }, "Could not read this upload");
+
+export const addItem = (id: string, input: SubmissionItemInput) =>
+  review(`/submissions/${id}/items`, { method: "POST", body: JSON.stringify(input) }, "Could not add this item");
+
+export const updateItem = (id: string, itemId: string, input: SubmissionItemInput) =>
+  review(`/submissions/${id}/items/${itemId}`, { method: "PATCH", body: JSON.stringify(input) }, "Could not save this item");
+
+export const deleteItem = (id: string, itemId: string) =>
+  review(`/submissions/${id}/items/${itemId}`, { method: "DELETE" }, "Could not remove this item");
+
+export const publishItems = (id: string, itemIds: string[]) =>
+  review(`/submissions/${id}/publish`, { method: "POST", body: JSON.stringify({ item_ids: itemIds }) }, "Could not publish");
+
+export const unpublishItem = (id: string, itemId: string) =>
+  review(`/submissions/${id}/items/${itemId}/unpublish`, { method: "POST" }, "Could not unpublish this item");
 
 export type TargetOption = { id: string; label: string };
 

@@ -1535,6 +1535,212 @@ button.link-card:disabled {
 /* Base .tabs (styles.css) now scrolls sideways on its own by default -
    this exists only in case admin-tabs needs its own tuning later. */
 
+/* ---------- submission review (pages/SubmissionReviewPage.tsx) ---------- */
+/* Phone first: the page stacks, upload on top. Side by side from 900px,
+   where the upload stays in view while the item list scrolls. */
+.sr-cols {
+  display: grid;
+  gap: 0 16px;
+}
+.sr-cols > div {
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .sr-cols {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: start;
+  }
+  .sr-source {
+    position: sticky;
+    top: 12px;
+  }
+}
+/* Two buttons beside a title leave the title a sliver on a phone. */
+.sr-items .sc-hd {
+  flex-wrap: wrap;
+}
+.sr-image {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: zoom-in;
+  overflow: hidden;
+}
+.sr-image img {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
+.sr-sender-note {
+  margin-top: 12px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sr-sender-note .lbl,
+.sr-group {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.sr-group {
+  margin-top: 16px;
+}
+.sr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sr-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.sr-list > .sr-item:first-child {
+  border-top: 0;
+}
+.sr-tick {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+}
+.sr-item-main {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sr-item-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-weight: 700;
+}
+.sr-item-when {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 2px 0 4px;
+}
+.sr-item-actions {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
+}
+.sr-flag {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 6px 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--warn-soft);
+  color: var(--ink);
+}
+.sr-flag.hold {
+  background: var(--bad-soft);
+}
+.sr-flag svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  color: var(--warn);
+}
+.sr-flag.hold svg {
+  color: var(--bad);
+}
+.sr-excerpt {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+  font-style: italic;
+}
+.sr-undated {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.sr-undated summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.sr-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0 12px;
+}
+.sr-switch {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+/* The decision stays reachable under a long item list. */
+.sr-bar {
+  position: sticky;
+  bottom: calc(var(--nav-h, 0px) + 8px);
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  /* Right gap clears the floating chat button, which sits over this corner. */
+  padding: 10px 76px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+@media (min-width: 900px) {
+  .sr-bar {
+    bottom: 12px;
+  }
+}
+.sr-bar .btn-primary {
+  flex: 1;
+  justify-content: center;
+}
+@media (min-width: 600px) {
+  .sr-bar .btn-primary {
+    flex: none;
+  }
+}
+/* Full-size upload, scrollable both ways so small print and handwriting
+   can be read at the photo's own resolution. */
+.sr-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.85);
+  cursor: zoom-out;
+}
+.sr-zoom img {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+}
+.sr-zoom-close {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+}
+
 /* iOS Safari zooms the whole page when a form field under 16px gets focus,
    and does not zoom back - on the chat panel that pushed the Send button
    off-screen. Every field is at least 16px on touch devices, everywhere.
