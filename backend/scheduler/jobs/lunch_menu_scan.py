@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, LunchMenu, LunchMenuItem, School
@@ -13,6 +14,30 @@ from services.lunch_menu import discover_current_menus, parse_menu_pdf
 # (Cherry Hill's October menu lost Oct 1-2); there is no admin path to delete a
 # stored menu, so one older than this is re-parsed in place on its next scan.
 _REPARSE_BEFORE = datetime(2026, 10, 1, 5, 30, tzinfo=timezone.utc)
+_TZ = ZoneInfo("America/New_York")
+_MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+
+def _today() -> date:
+    return datetime.now(_TZ).date()
+
+
+async def _has_current_month_lunch(db: AsyncSession, district_id: str, today: date) -> bool:
+    """Whether any stored lunch day for this district falls in this month.
+    Without this check a district that never posted the new month's PDF kept
+    re-finding last month's, "0 newly parsed", status success - Eastern and
+    Laurel Springs served September into October with nothing in Scans."""
+    start = datetime.combine(today.replace(day=1), time(0), _TZ)
+    end = datetime.combine((today.replace(day=28) + (date.resolution * 4)).replace(day=1), time(0), _TZ)
+    count = (
+        await db.execute(
+            select(func.count(LunchMenuItem.id))
+            .join(LunchMenu, LunchMenu.id == LunchMenuItem.lunch_menu_id)
+            .where(LunchMenu.district_id == district_id, LunchMenu.meal_type == "lunch",
+                   LunchMenuItem.menu_date >= start, LunchMenuItem.menu_date < end)
+        )
+    ).scalar_one()
+    return count > 0
 
 
 @register_job(
@@ -83,6 +108,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         new_menus += 1
 
     summary = f"found {len(discovered)} menu(s), {new_menus} newly parsed"
+    today = _today()
+    # July/August have no school lunch to publish, so no warning then.
+    if today.month not in (7, 8) and not await _has_current_month_lunch(db, district.id, today):
+        summary += f"; the newest lunch menu on the page isn't {_MONTHS[today.month - 1]}'s"
+        if not empty:
+            return f"WARNING[menu_out_of_date]: {summary}"
     if empty:
         # An empty parse used to be skipped silently, so a month that never got stored still read as success.
         return f"WARNING[menu_parse_empty]: {summary}; nothing parsed from: {', '.join(empty)}"
