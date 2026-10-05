@@ -229,3 +229,19 @@ def test_school_page_url_is_read_as_given_and_links_resolve_against_the_origin(m
     docs = asyncio.run(school_documents.discover_from_website(page))
     assert fetched == [page, handbooks]
     assert [d["url"] for d in docs] == ["https://docs.google.com/document/d/abc/edit"]
+
+
+def test_apptegy_menu_payload_yields_published_handbook_link_only():
+    from services.school_documents import _find_apptegy_nav_anchors, _find_doc_anchors
+
+    def item(name, status, url):
+        return (
+            f'{{\\"id\\":1,\\"name\\":\\"{name}\\",\\"slug\\":null,\\"type\\":\\"link\\",\\"position\\":1,'
+            f'\\"status\\":\\"{status}\\",\\"hidden\\":false,\\"children\\":[],\\"locked\\":null,\\"url\\":\\"{url}\\"}}'
+        )
+
+    html = "<script>" + item("Student Handbook and Code of Conduct", "published", "https://aptg.co/abc") + "," \
+        + item("2024-2025 Bell Oaks Handbook", "draft", "https://aptg.co/old") + "," \
+        + item("Youth Sports", "published", "https://example.com/sports") + "</script>"
+    found = _find_doc_anchors(_find_apptegy_nav_anchors(html), "https://x")
+    assert [(d["doc_type"], d["url"]) for d in found] == [("handbook", "https://aptg.co/abc")]
