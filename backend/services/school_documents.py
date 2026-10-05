@@ -114,6 +114,25 @@ def _find_doc_anchors(html: str, base_url: str) -> list[dict]:
     return results
 
 
+# Apptegy schools render their menu client-side, so the static HTML has no
+# anchors for it - the items sit in an escaped JSON payload instead: {"name":
+# "Student Handbook and Code of Conduct","slug":null,"type":"link",...,
+# "status":"published",...,"url":"https://aptg.co/..."}. Drafts stay in the
+# payload, hence the status check.
+_APPTEGY_NAV_RE = re.compile(
+    r'\\?"name\\?":\\?"(?P<name>[^"\\]+)\\?",\\?"slug\\?":(?:null|\\?"[^"\\]*\\?"),\\?"type\\?":\\?"link\\?",'
+    r'[^{}]{0,300}?\\?"status\\?":\\?"published\\?"[^{}]{0,400}?\\?"url\\?":\\?"(?P<url>https?:[^"\\]+)\\?"'
+)
+
+
+def _find_apptegy_nav_anchors(html: str) -> str:
+    """The Apptegy menu's published links as plain anchors, so they go through
+    the same filtering as any other nav link."""
+    return "".join(
+        f'<a href="{m.group("url")}">{m.group("name").strip()}</a>' for m in _APPTEGY_NAV_RE.finditer(html)
+    )
+
+
 def _find_doc_file_anchors(html: str, base_url: str) -> list[tuple[str, str]]:
     # Confirmed real: Finalsite wraps each page's actual content in
     # <main id="fsPageContent"> - restricting to it (falling back to the
@@ -286,7 +305,7 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
 
     results = []
     seen_urls: set[str] = set()
-    for candidate in _find_doc_anchors(home["html"], base):
+    for candidate in _find_doc_anchors(home["html"], base) + _find_doc_anchors(_find_apptegy_nav_anchors(home["html"]), base):
         url = candidate["url"]
         doc_type = candidate["doc_type"]
         if doc_type == "lunch_ordering":
