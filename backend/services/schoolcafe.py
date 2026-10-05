@@ -35,6 +35,9 @@ _NAME_NOISE = re.compile(r"\b(school|the|of|and)\b")
 def _norm(name: str) -> str:
     cleaned = re.sub(r"[^a-z0-9 ]", " ", name.lower())
     cleaned = re.sub(r"\bmt\b", "mount", cleaned)
+    # Bellmawr's Bell Oaks is "Middle School" on its own site and "Upper
+    # Elementary School" on SchoolCafé (and the state directory).
+    cleaned = re.sub(r"\bupper elementary\b", "middle", cleaned)
     # "Haines 6th Grade Center" is "Haines Sixth Grade Center" on SchoolCafé.
     for digit, word in _ORDINALS.items():
         cleaned = re.sub(rf"\b{digit}(?:st|nd|rd|th)\b", word, cleaned)

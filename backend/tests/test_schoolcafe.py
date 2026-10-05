@@ -70,3 +70,8 @@ def test_hand_typed_cafe_names_match_by_squashed_form():
 def test_numeric_ordinal_grade_names_match_spelled_out_ones():
     school = match_school("Haines 6th Grade Center", _cafe("Haines Sixth Grade Center"))
     assert school and school["SchoolName"] == "Haines Sixth Grade Center"
+
+
+def test_upper_elementary_matches_middle_school():
+    cafe = _cafe("Bell Oaks Upper Elementary School", "Bellmawr Park Elementary School")
+    assert match_school("Bell Oaks Middle School", cafe)["SchoolId"] == "id-0"
