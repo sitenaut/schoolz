@@ -28,18 +28,8 @@
           "school_slug": "timber-creek-regional-high"
         },
         {
-          "name": "Timber Creek Athletics",
-          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=6",
-          "school_slug": "timber-creek-regional-high"
-        },
-        {
           "name": "Highland Calendar",
           "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=4",
-          "school_slug": "highland-regional-high"
-        },
-        {
-          "name": "Highland Athletics",
-          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=10",
           "school_slug": "highland-regional-high"
         }
       ],
@@ -78,7 +68,7 @@
       "early_dismissal_time": null,
       "delayed_opening_time": null,
       "bell_periods": null,
-      "athletics_url": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/10054",
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null
@@ -103,7 +93,7 @@
       "early_dismissal_time": null,
       "delayed_opening_time": null,
       "bell_periods": null,
-      "athletics_url": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/23438",
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null
