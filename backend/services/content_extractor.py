@@ -153,7 +153,11 @@ lets them be shown once instead of once per school. \
 Extract EVERY distinct dated item you find, including EVERY separate bullet/line inside a "Mark Your \
 Calendar", "Upcoming Events", or similar list block - each one (each closure, each early dismissal, \
 each first-day-of-school date, etc) is its own item, never summarized into one combined item or \
-skipped. Every flyer/image block's content must be represented by at least one item - do not silently \
+skipped. The same goes for a multi-day event whose days each have their own theme or dress-up \
+(e.g. a "Week of Respect" with "Monday - Pajamas, Tuesday - Words to Live By"): the week itself is \
+one item, AND each themed day is its own single-day item with that day's date, its theme as the title, \
+and what to wear/bring in the description - even when the week is already one of the CURRENT ITEMS. \
+Every flyer/image block's content must be represented by at least one item - do not silently \
 omit an entire flyer (e.g. a "Back to School Night" flyer, a lunch menu) just because other blocks in \
 the same newsletter already produced items. Completeness matters more than brevity here."""
 
