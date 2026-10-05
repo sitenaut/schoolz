@@ -1,3 +1,4 @@
+import pytest
 from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
@@ -145,3 +146,47 @@ def test_an_early_dismissal_day_hands_off_earlier():
 def test_no_school_today_shows_the_next_school_day_all_day():
     assert _pick("weekend", 8) == (date(2026, 10, 15), "open", False)
     assert _pick("closed", 8, next_status="delayed") == (date(2026, 10, 15), "delayed", False)
+
+
+@pytest.mark.anyio
+async def test_today_endpoint_takes_a_date_and_says_which_day_the_forecast_is_for(monkeypatch):
+    import os
+    import uuid
+    from datetime import timedelta
+
+    os.environ.setdefault("JWT_SECRET", "test-secret")
+    os.environ.setdefault("AUTH_MODE", "local")
+    from httpx import ASGITransport, AsyncClient
+
+    import database
+    from main import app
+    from models import School
+    from services import school_today
+
+    async def fake_weather(school, status, day, lang="en"):
+        return {
+            "dropoff_label": "8:00 AM", "dropoff_temp": 55, "pickup_label": "3:00 PM", "pickup_temp": 70,
+            "low": 55, "high": 70, "rain_chance": 0, "rain_from": None, "condition": "Sunny", "uv_max": None, "items": ["jacket"],
+        }
+
+    monkeypatch.setattr(school_today, "today_weather", fake_weather)
+    run = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        db.add(School(name=f"Weather On {run}", slug=f"weather-on-{run}", school_type="elementary"))
+        await db.commit()
+
+    # Pick a weekday a few days out so it is a plain school day with no calendar items.
+    day = datetime.now(LOCAL_TZ).date() + timedelta(days=3)
+    while day.weekday() >= 5:
+        day += timedelta(days=1)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get(f"/schools/weather-on-{run}/today", params={"on": day.isoformat()})
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body["date"] == day.isoformat()
+        assert body["weather"]["date"] == day.isoformat()
+
+        far = day + timedelta(days=30)
+        assert (await client.get(f"/schools/weather-on-{run}/today", params={"on": far.isoformat()})).status_code == 422
+        assert (await client.get(f"/schools/weather-on-{run}/today", params={"on": "tomorrow"})).status_code == 422
