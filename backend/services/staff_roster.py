@@ -120,9 +120,13 @@ def _parse_edlio_page(html: str) -> list[dict]:
 
 
 async def _fetch_ednet_roster(base: str) -> list[dict]:
+    # A school's website_url can be its own page on the district host
+    # (Runnemede: /apps/pages/index.jsp?uREC_ID=...), so /apps/staff/ hangs off the origin.
+    parts = urlparse(base)
+    origin = f"{parts.scheme}://{parts.netloc}" if parts.scheme and parts.netloc else base
     try:
         async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
-            resp = await client.get(base + _EDNET_PATH)
+            resp = await client.get(origin + _EDNET_PATH)
             resp.raise_for_status()
     except httpx.HTTPError:
         return []

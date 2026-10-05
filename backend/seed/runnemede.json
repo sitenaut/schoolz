@@ -1,0 +1,290 @@
+{
+  "exported_at": "2026-10-05T12:00:00Z",
+  "source": "onboarding: Runnemede Public School District",
+  "districts": [
+    {
+      "name": "Runnemede Public School District",
+      "website_url": "https://www.runnemedeschools.org",
+      "food_services_menu_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619036&type=d",
+      "ics_feeds": [
+        {
+          "name": "Bingham & Downing Calendar",
+          "url": "https://calendar.google.com/calendar/ical/runnemedeschools.org_it0ddv20fn2sop2fov9buutdi0%40group.calendar.google.com/public/basic.ics",
+          "school_types": [
+            "elementary"
+          ]
+        },
+        {
+          "name": "Volz Calendar",
+          "url": "https://calendar.google.com/calendar/ical/runnemedeschools.org_bfbsvmoi88gccc7eo816btid2o%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "volz"
+        }
+      ],
+      "calendar_pdf_url": "https://drive.google.com/uc?export=download&id=1ldkWhLYXyq0HXGiK5zp0cEgkH3orsDl7",
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Runnemede"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "bingham",
+      "name": "Aline Bingham Elementary School",
+      "short_name": "Bingham",
+      "district_name": "Runnemede Public School District",
+      "school_type": "elementary",
+      "address": "100 Orchard Avenue, Runnemede, NJ 08078",
+      "main_phone": "(856) 939-3192",
+      "website_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619683&type=d",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 939-3192",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school and press 1 to leave an absence message.",
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://www.runnemedeschools.org/pics/header_logo.png",
+      "sacc": {
+        "am_hours": "6:45 AM - 8:30 AM",
+        "pm_hours": "3:00 PM - 6:00 PM (Pre-K 2:30 PM - 6:00 PM)",
+        "site_phone": null,
+        "absence_phone": "(856) 931-5365 ext. 212",
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM. After 6:00 PM: $15 for the first half hour and $15 for each further 30 minutes; three late pickups can mean removal from the program. If a child is not picked up by 6:00 PM, staff call every authorized contact, and if none is reached within 30 minutes the NJ Division of Child Protection and Permanency is notified.",
+        "pickup_change_procedure": "Parents escort children in and out to sign in and out. Only people listed in the student information system (RealTime) may pick up; call the program or the school office to change them. Drop-off and pick-up: side entrance on 1st Avenue (cafeteria).",
+        "closures_notes": "No before or after care on days with an inclement-weather delayed opening or early dismissal, or when school is closed. Fees: $35 one-time annual registration per family; monthly tuition is billed by the 1st (3 days/week: AM $80, PM $160, both $200; 5 days/week: AM $130, PM $250, both $320); late payment adds $20. Sibling discount 5%.",
+        "handbook_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619032&type=d"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "downing",
+      "name": "Grace Downing Elementary School",
+      "short_name": "Downing",
+      "district_name": "Runnemede Public School District",
+      "school_type": "elementary",
+      "address": "100 E. 3rd Avenue, Runnemede, NJ 08078",
+      "main_phone": "(856) 939-4036",
+      "website_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619683&type=d",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 939-4036",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school and press 1 to leave an absence message.",
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://www.runnemedeschools.org/pics/header_logo.png",
+      "sacc": {
+        "am_hours": "6:45 AM - 8:30 AM",
+        "pm_hours": "3:00 PM - 6:00 PM (Pre-K 2:30 PM - 6:00 PM)",
+        "site_phone": null,
+        "absence_phone": "(856) 931-5365 ext. 212",
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM. After 6:00 PM: $15 for the first half hour and $15 for each further 30 minutes; three late pickups can mean removal from the program. If a child is not picked up by 6:00 PM, staff call every authorized contact, and if none is reached within 30 minutes the NJ Division of Child Protection and Permanency is notified.",
+        "pickup_change_procedure": "Parents escort children in and out to sign in and out. Only people listed in the student information system (RealTime) may pick up; call the program or the school office to change them. Drop-off and pick-up: back entrance of the school.",
+        "closures_notes": "No before or after care on days with an inclement-weather delayed opening or early dismissal, or when school is closed. Fees: $35 one-time annual registration per family; monthly tuition is billed by the 1st (3 days/week: AM $80, PM $160, both $200; 5 days/week: AM $130, PM $250, both $320); late payment adds $20. Sibling discount 5%.",
+        "handbook_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619032&type=d"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "volz",
+      "name": "Mary E. Volz School",
+      "short_name": "Volz",
+      "district_name": "Runnemede Public School District",
+      "school_type": "middle",
+      "address": "505 W. 3rd Avenue, Runnemede, NJ 08078",
+      "main_phone": "(856) 931-5353",
+      "website_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619697&type=d",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 931-5353",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school and press 1 to leave an absence message.",
+      "start_time": "7:45 AM",
+      "end_time": "2:15 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:15 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "07:45",
+            "end": "07:53"
+          },
+          {
+            "name": "Advisory",
+            "start": "07:53",
+            "end": "08:15"
+          },
+          {
+            "name": "1",
+            "start": "08:15",
+            "end": "09:00"
+          },
+          {
+            "name": "2",
+            "start": "09:00",
+            "end": "09:45"
+          },
+          {
+            "name": "3",
+            "start": "09:45",
+            "end": "10:30"
+          },
+          {
+            "name": "4",
+            "start": "10:30",
+            "end": "11:15"
+          },
+          {
+            "name": "5",
+            "start": "11:15",
+            "end": "12:00"
+          },
+          {
+            "name": "6",
+            "start": "12:00",
+            "end": "12:45"
+          },
+          {
+            "name": "7",
+            "start": "12:45",
+            "end": "13:30"
+          },
+          {
+            "name": "8",
+            "start": "13:30",
+            "end": "14:15"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "07:45",
+            "end": "07:53"
+          },
+          {
+            "name": "1",
+            "start": "07:53",
+            "end": "08:24"
+          },
+          {
+            "name": "2",
+            "start": "08:24",
+            "end": "08:55"
+          },
+          {
+            "name": "3",
+            "start": "08:55",
+            "end": "09:26"
+          },
+          {
+            "name": "4",
+            "start": "09:26",
+            "end": "09:56"
+          },
+          {
+            "name": "5",
+            "start": "09:56",
+            "end": "10:27"
+          },
+          {
+            "name": "6",
+            "start": "10:27",
+            "end": "10:58"
+          },
+          {
+            "name": "7",
+            "start": "10:58",
+            "end": "11:29"
+          },
+          {
+            "name": "8",
+            "start": "11:29",
+            "end": "12:00"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "09:15",
+            "end": "09:27"
+          },
+          {
+            "name": "1",
+            "start": "09:27",
+            "end": "10:03"
+          },
+          {
+            "name": "2",
+            "start": "10:03",
+            "end": "10:39"
+          },
+          {
+            "name": "3",
+            "start": "10:39",
+            "end": "11:15"
+          },
+          {
+            "name": "4",
+            "start": "11:15",
+            "end": "11:51"
+          },
+          {
+            "name": "5",
+            "start": "11:51",
+            "end": "12:27"
+          },
+          {
+            "name": "6",
+            "start": "12:27",
+            "end": "13:03"
+          },
+          {
+            "name": "7",
+            "start": "13:03",
+            "end": "13:39"
+          },
+          {
+            "name": "8",
+            "start": "13:39",
+            "end": "14:15"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://www.runnemedeschools.org/pics/header_logo.png",
+      "sacc": {
+        "am_hours": "6:45 AM - 7:45 AM",
+        "pm_hours": "2:15 PM - 6:00 PM (preschool 2:30 PM - 6:00 PM)",
+        "site_phone": null,
+        "absence_phone": "(856) 931-5365 ext. 212",
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM. After 6:00 PM: $15 for the first half hour and $15 for each further 30 minutes; three late pickups can mean removal from the program. If a child is not picked up by 6:00 PM, staff call every authorized contact, and if none is reached within 30 minutes the NJ Division of Child Protection and Permanency is notified.",
+        "pickup_change_procedure": "Parents escort children in and out to sign in and out. Only people listed in the student information system (RealTime) may pick up; call the program or the school office to change them. Drop-off and pick-up: main school entrance.",
+        "closures_notes": "No before or after care on days with an inclement-weather delayed opening or early dismissal, or when school is closed. Fees: $35 one-time annual registration per family; monthly tuition is billed by the 1st (3 days/week: AM $80, PM $160, both $200; 5 days/week: AM $130, PM $250, both $320); late payment adds $20. Sibling discount 5%.",
+        "handbook_url": "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619032&type=d"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

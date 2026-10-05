@@ -49,7 +49,8 @@ _RESOURCE_MANAGER_RE = re.compile(r'href="(/fs/resource-manager/view/[0-9a-fA-F-
 _MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december")
 # Eastern Regional's single monthly menu: "08182026_September2026_002.pdf" -
 # no grade band, since the district is one high school.
-_MONTH_YEAR_RE = re.compile(r"(" + "|".join(_MONTHS) + r")_?(\d{4})", re.IGNORECASE)
+# Runnemede's is "OCTOBER  2026  Menu.pdf" (double spaces, so "%20%20" in the href).
+_MONTH_YEAR_RE = re.compile(r"(" + "|".join(_MONTHS) + r")(?:_|%20|\s)*(\d{4})", re.IGNORECASE)
 
 
 # Evesham publishes the menu PDF beside per-band "..._lunch_spreadsheet.pdf" /
@@ -199,7 +200,9 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     type's lunch menu, latest month winning."""
     result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a", block_assets=True)
 
-    urls = set(re.findall(r'href="([^"]+\.pdf)"', result["html"], re.IGNORECASE))
+    # Edlio/ednet file links are site-relative and carry a cache-buster
+    # ("/ourpages/auto/.../File.pdf?rnd=1773934928084") once a file is replaced.
+    urls = {urljoin(menu_page_url, u) for u in re.findall(r'href="([^"]+\.pdf(?:\?[^"]*)?)"', result["html"], re.IGNORECASE)}
     urls |= await _resolve_resource_manager_links(menu_page_url, result["html"])
 
     by_key: dict[tuple, dict] = {}

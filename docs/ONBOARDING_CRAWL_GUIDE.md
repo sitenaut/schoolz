@@ -975,3 +975,95 @@ on this list** - it's ArbiterLive branding, already supported.
     office; shared district logo only; `school_info.scan` warns every run
     (no address/phone in the WordPress footer, seed values are kept).
 
+
+- **Runnemede Public School District** (3 schools: Bingham and Downing PreK/K-3,
+  Volz PreK-8 tracked as `middle`; one Educational Networks / SchoolSitePro site,
+  `runnemedeschools.org`) - `backend/seed/runnemede.json`. Its high school is
+  Triton (Black Horse Pike Regional), a separate district, not onboarded.
+  - **Crawl method that found things**: render every `/apps/pages/` link from the
+    home page and *both school menus* through the scraper and list `iframe[src]`
+    as well as anchors. The plain home page has a school's sub-menu in static
+    HTML, but page *content* is client-rendered (`#pageContentWrapper`).
+  - **School `website_url` is the school's own page** (`/apps/pages/index.jsp?
+    uREC_ID=<id>&type=d`; Bingham and Downing share one), not the district root:
+    its menu carries Handbooks / Pre-K Handbook / a bell-schedule link that the
+    root nav lacks. `school_documents.discover_from_website` and
+    `staff_roster._fetch_ednet_roster` therefore resolve links/`/apps/staff/`
+    against the origin when the URL has a query. `school_info.scan` warns each
+    run (no school footer); address/phone/hours are typed in from the district
+    Contact page, and the scan still geocodes.
+  - **Roster is district-wide** (`/apps/staff/`, ~128 people, titles only, no
+    emails), so every school shows everyone. Each school also has its own
+    hand-typed "<School> - Staff Directories" page (`uREC_ID=622246/7/8`,
+    server-rendered, same `.staff-categoryStaffMember` markup) linked from
+    Parent Resources / Teachers & Staff Websites, *not* from the school menu.
+    Per-school rosters would need a `staff_directory_url` field - not built.
+  - **Calendars**: `/servlet/ICalServlet?id=0` is only a stock US-holiday feed
+    (Tax Day, Cinco de Mayo) - **not wired**. The detailed calendars are
+    **embedded Google Calendars** (`iframe src=...calendar/embed?src=<id>`): one
+    shared by Bingham & Downing on their school page (district-scoped feed with
+    `school_types: ["elementary"]`, so it shows on both and not Volz) and Volz's
+    own on its "Calendar" sub-page (`school_slug: volz`); fetched as public iCal,
+    ~5k events incl. history. The district's printed calendar is a one-page PDF on
+    a Google Drive link in the nav; a Drive `uc?export=download&id=<fileId>` URL
+    serves the bytes anonymously and `district_calendar_pdf.fetch_pdf` accepts a
+    URL that is itself the PDF, so it is `District.calendar_pdf_url`. **Next year
+    the nav link has a new file id** - re-copy it. The Buildings & Grounds page
+    embeds a facilities-use calendar (building rentals, not wired).
+  - **Lunch**: no SchoolCafé match; one district-wide monthly PDF on
+    `/apps/pages/index.jsp?uREC_ID=619036` named `OCTOBER  2026  Menu.pdf`
+    (double spaces, `%20%20` in the href, site-relative, newer files carry
+    `?rnd=`). `_MONTH_YEAR_RE` tolerates `%20`/whitespace, and discovery accepts
+    `.pdf?query` hrefs and joins relative ones to the page URL.
+  - **Hours**: Bingham/Downing's page has K-3 and Pre-K hours, a 90-minute delay
+    (doors 9:45-10:00, late after 10:00) and early dismissal (K-3 12:45, Pre-K
+    12:20-12:30); flat fields use K-3. Volz's are on its own "School Hours &
+    Directions" sub-page (4-8: 7:45-2:15, "One Session" until 12:00, preschool
+    8:30-2:30 / 12:15) and its period table is a Google Slides deck (found by
+    `documents.scan` as `bell_schedule`; `/export/txt` gives text with the slide
+    titles detached from their blocks - tell delay / early / full day apart by
+    the times): `bell_periods` regular, early_dismissal, delayed_opening
+    (delay starts 9:15). Bingham/Downing publish no period table.
+  - **Before & after care** (`School.sacc`): one district PDF on
+    `/apps/pages/index.jsp?uREC_ID=619032` (file name changes yearly - the page
+    is tracked as `handbook_url`). Hours differ by school (Volz AM ends 7:45),
+    entrances differ, one district phone, fees and late-pickup charges. Fees go
+    into `closures_notes` (no field for them). No before/after care on weather
+    delay or early-dismissal days. Per-school site phones are not published.
+  - **Documents**: Volz publishes Student, AI and Preschool handbooks (Google Docs) and
+    Bingham/Downing a Pre-K handbook PDF; all found from the school pages.
+  - **Absence**: phone, "press 1 and leave a message", per-school lines.
+  - **Gaps**: Bingham/Downing newsletters are monthly Google Slides decks on a
+    per-year page ("Newsletters 25 - 26"), which nothing scans; no ArbiterLive
+    (Volz's sports schedules/locations are Google Docs, the games come through
+    its calendar); PTA is Facebook-only (officer list is 2023-24); no
+    transportation page; Pre-K / preschool hours aren't stored (one set of flat
+    times per school); no Bingham/Downing bell periods.
+
+- **Black Horse Pike Regional (Finalsite) + its sending districts** — Runnemede
+  (above), Bellmawr, Gloucester Township. `backend/seed/{black_horse_pike,bellmawr,
+  gloucester_township}.json`. BHPRSD runs Highland (Blackwood), Timber Creek (Erial)
+  and Triton (Runnemede); `towns` is Bellmawr, Gloucester Township, Runnemede.
+  - **BHPRSD**: one Finalsite site (`www.bhprsd.org`) plus a subdomain per high
+    school (`hhs`/`tchs`/`ths`). Calendar ids work on every host and are shared:
+    1 Triton, 3 Timber Creek, 4 Highland, 10 Highland Athletics, 13 Triton
+    Activities (6 Timber Creek and 8 Triton Athletics, 11 counseling and 12 weekends
+    were empty in October). Each is attached with `school_slug`. Lunch is one
+    district PDF per month plus a breakfast PDF at `/our-district/food-services/monthly-menu`
+    (no SchoolCafé match under any Nutri-Serve shortname tried). **Athletics are
+    on GoBound (`gobound.com/nj/schools/...`), not ArbiterLive** — nothing reads it,
+    so `athletics_url` is null; the ICS athletics calendars cover Highland only.
+    Bell schedules are linked PDFs/images, so times are null.
+  - **Bellmawr and Gloucester Township are Apptegy**, not Finalsite, though a plain
+    GET returns Finalsite's "Client Challenge" interstitial — go straight to the
+    scraper. A school's Apptegy org id is the most common `cmsv2-assets.apptegy.net/
+    uploads/<id>/` in its rendered home page (`/o/<code>`); the district's is the
+    same on `/`. Verify with `apptegy.fetch_events`. Bellmawr district 10774; GT 23780
+    (23874 also answers, with 647 unrelated events — not the district).
+  - **Bellmawr lunch**: SchoolCafé `BellmawrPublicsdNutriServemetz` (found on the
+    menu page's links; `GetISDByShortName` confirms). Hours are on the district
+    footer. **GT lunch** has no public menu link on its site (page is empty) and
+    no SchoolCafé match; the Preschool Program (org 25533) is not tracked.
+  - **Gaps**: no absence method, hours (GT, BHPRSD), logos for two Bellmawr schools,
+    newsletters or PTAs anywhere; Bellmawr's EC Center shares Bellmawr Park's address
+    and its phone is unverified.

@@ -198,3 +198,34 @@ def test_dead_url_is_not_retried_or_fallen_back():
     dead = httpx.HTTPStatusError("x", request=req, response=httpx.Response(502, request=req, text="net::ERR_NAME_NOT_RESOLVED at https://x/"))
     flaky = httpx.HTTPStatusError("x", request=req, response=httpx.Response(502, request=req, text="Timeout 15000ms exceeded"))
     assert not _is_retryable(dead) and _is_retryable(flaky)
+
+
+def test_school_page_url_is_read_as_given_and_links_resolve_against_the_origin(monkeypatch):
+    # Runnemede: a school's website_url is its own page on the district host.
+    import asyncio
+
+    import httpx
+
+    import scraper_client
+    from services import school_documents
+
+    page = "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619697&type=d"
+    handbooks = "https://www.runnemedeschools.org/apps/pages/index.jsp?uREC_ID=619697&type=d&pREC_ID=1188385"
+    home = '<nav><a href="/apps/pages/index.jsp?uREC_ID=619697&type=d&pREC_ID=1188385">Handbooks</a></nav>'
+    landing = '<div id="pageContentWrapper"><a href="https://docs.google.com/document/d/abc/edit">Student Handbook</a></div>'
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        school_documents.httpx, "AsyncClient",
+        lambda **kw: real_client(transport=httpx.MockTransport(lambda r: httpx.Response(200, text="<html></html>")), **kw),
+    )
+    fetched = []
+
+    async def fake_fetch_html(url, **kw):
+        fetched.append(url)
+        return {"html": home if url == page else landing, "title": "Volz"}
+
+    monkeypatch.setattr(scraper_client, "fetch_html", fake_fetch_html)
+    docs = asyncio.run(school_documents.discover_from_website(page))
+    assert fetched == [page, handbooks]
+    assert [d["url"] for d in docs] == ["https://docs.google.com/document/d/abc/edit"]

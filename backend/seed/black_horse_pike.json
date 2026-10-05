@@ -1,0 +1,138 @@
+{
+  "exported_at": "2026-10-05T18:00:00Z",
+  "source": "onboarding: Black Horse Pike Regional School District",
+  "districts": [
+    {
+      "name": "Black Horse Pike Regional School District",
+      "website_url": "https://www.bhprsd.org",
+      "food_services_menu_url": "https://www.bhprsd.org/our-district/food-services/monthly-menu",
+      "ics_feeds": [
+        {
+          "name": "Triton Calendar",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=1",
+          "school_slug": "triton-regional-high"
+        },
+        {
+          "name": "Triton Activities",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=13",
+          "school_slug": "triton-regional-high"
+        },
+        {
+          "name": "Triton Athletics",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=8",
+          "school_slug": "triton-regional-high"
+        },
+        {
+          "name": "Timber Creek Calendar",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=3",
+          "school_slug": "timber-creek-regional-high"
+        },
+        {
+          "name": "Timber Creek Athletics",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=6",
+          "school_slug": "timber-creek-regional-high"
+        },
+        {
+          "name": "Highland Calendar",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=4",
+          "school_slug": "highland-regional-high"
+        },
+        {
+          "name": "Highland Athletics",
+          "url": "https://www.bhprsd.org/fs/calendar-manager/events.ics?calendar_ids[]=10",
+          "school_slug": "highland-regional-high"
+        }
+      ],
+      "calendar_pdf_url": null,
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Bellmawr",
+        "Gloucester Township",
+        "Runnemede"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "highland-regional-high",
+      "name": "Highland Regional High School",
+      "short_name": "Highland",
+      "district_name": "Black Horse Pike Regional School District",
+      "school_type": "high",
+      "address": "450 Erial Road, Blackwood, NJ 08012",
+      "main_phone": "(856) 227-4100",
+      "website_url": "https://hhs.bhprsd.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "timber-creek-regional-high",
+      "name": "Timber Creek Regional High School",
+      "short_name": "Timber Creek",
+      "district_name": "Black Horse Pike Regional School District",
+      "school_type": "high",
+      "address": "501 Jarvis Road, Erial, NJ 08081",
+      "main_phone": "(856) 232-9703",
+      "website_url": "https://tchs.bhprsd.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "triton-regional-high",
+      "name": "Triton Regional High School",
+      "short_name": "Triton",
+      "district_name": "Black Horse Pike Regional School District",
+      "school_type": "high",
+      "address": "250 Schubert Avenue, Runnemede, NJ 08078",
+      "main_phone": "(856) 939-4500",
+      "website_url": "https://ths.bhprsd.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}
