@@ -67,3 +67,7 @@ Deliberately out of scope for this: anything *discovered* by a scan rather than 
 3. **Investigate Rosa's non-scanning newsletter** and re-verify Cooper's and Clara Barton's current issue links — three of eight tracked newsletters have a known problem.
 4. **Expand Smore (or an equivalent) adoption** to the 20 schools with none tracked, or confirm which of them genuinely don't publish one at all so effort isn't wasted looking for something that doesn't exist.
 5. **Find a lunch menu for the 9 preschools without one.**
+
+## Later districts: known gaps
+
+- **Voorhees / Eastern** — transportation and before/after care (Cherry Hill's parsers are district-specific), Voorhees delayed-opening times, Hamilton's documents, Signal Hill's contact page yields only the principal, and Voorhees school logos are the shared district header graphic. Eastern is PowerSchool, so Kids View/Backpack Capture don't cover its students. Voorhees's staff directory lists teachers' websites with no titles, so nurse/principal come from each school's contact page (`services/contact_page.py`).

@@ -17,8 +17,8 @@ console access (no admin API token available for non-interactive
 dashboard/alert creation) or a week of real traffic to analyze - neither
 achievable in this session. Written so a Sonnet session can execute
 it phase by phase. Each phase lists exact files, the change, and how to
-verify it. Do the phases in order. Commit after each phase (branch
-`ecastillo-dev`). If a step's verification fails, stop and report back.
+verify it. Do the phases in order. Commit after each phase (on the
+working branch). If a step's verification fails, stop and report back.
 Don't improvise around it.
 
 Progress:

@@ -54,7 +54,7 @@ merge alone shipped anything.
    gh pr merge <n> --merge --delete-branch=false
    ```
    (Don't delete the branch unless the user's workflow expects that - this
-   repo's convention keeps `ecastillo-dev` alive across merges.)
+   repo's convention keeps its long-lived dev branch alive across merges.)
 
 5. **Check what actually triggered:**
    ```
