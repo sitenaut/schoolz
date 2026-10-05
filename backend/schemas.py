@@ -1130,12 +1130,72 @@ class CommunitySubmissionOut(BaseModel):
     status: str
     admin_notes: str | None
     reviewed_at: datetime | None
+    extracted_at: datetime | None = None
     created_at: datetime
 
 
 class CommunitySubmissionUpdate(BaseModel):
     status: str | None = Field(default=None, pattern="^(pending|approved|rejected)$")
     admin_notes: str | None = None
+    # The sender often leaves "which school" blank or wrong; the reviewer
+    # sets it, and it decides where published items land.
+    school_id: str | None = None
+
+
+_LOCAL_DATE_PATTERN = r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$"
+
+
+class SubmissionItemIn(BaseModel):
+    """A draft calendar item typed or corrected by the reviewer. Every field
+    is optional so the same shape serves create and partial update; the
+    router requires a title on create."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    description: str | None = Field(default=None, max_length=5000)
+    category: str | None = Field(default=None, max_length=30)
+    scope: str | None = Field(default=None, pattern="^(school|district)$")
+    # "" clears the date; otherwise local wall-clock, no offset.
+    start_local: str | None = Field(default=None, pattern=_LOCAL_DATE_PATTERN + "|^$")
+    end_local: str | None = Field(default=None, pattern=_LOCAL_DATE_PATTERN + "|^$")
+    tentative: bool | None = None
+    # "" clears it.
+    replaces_item_id: str | None = None
+
+
+class SubmissionFlag(BaseModel):
+    code: str
+    text: str
+    hold: bool
+    item_id: str | None = None
+
+
+class SubmissionItemOut(BaseModel):
+    id: str
+    origin: str
+    title: str
+    description: str | None
+    category: str
+    scope: str
+    start_local: str | None
+    end_local: str | None
+    stated_weekday: str | None
+    tentative: bool
+    source_excerpt: str | None
+    replaces_item_id: str | None
+    content_item_id: str | None
+    flags: list[SubmissionFlag]
+
+
+class SubmissionReviewOut(BaseModel):
+    submission: CommunitySubmissionOut
+    items: list[SubmissionItemOut]
+    # Page-level warnings (the sender's note naming a date no item has).
+    note_flags: list[str]
+    categories: list[str]
+
+
+class SubmissionPublishIn(BaseModel):
+    item_ids: list[str] = Field(min_length=1, max_length=200)
 
 
 class SurveyResponseCreate(BaseModel):

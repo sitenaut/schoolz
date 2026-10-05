@@ -921,7 +921,10 @@ class SchoolContentItem(Base):
     # "school_events_doc" (from services/school_events_doc.py) |
     # "local_events" (a local_events source tagged with RawEvent.school_slug -
     # e.g. a school's own Ludus theatre page - dual-written by
-    # local_events/school_sync.py alongside the normal local_events row).
+    # local_events/school_sync.py alongside the normal local_events row) |
+    # "community" (a reviewer published it from a community submission -
+    # routers/community_submissions.py; external_uid is
+    # "submission:<draft id>").
     # external_uid is the iCal UID for ics_feed/school_ics rows - lets a
     # re-scan update an existing row in place instead of creating a
     # duplicate, and also lets the ics scan claim an already-newsletter-
@@ -1274,6 +1277,58 @@ class CommunitySubmission(Base):
     admin_notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     reviewed_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # When "Read this flyer" last ran. Distinguishes "never read" from
+    # "read, and nothing dated was on it".
+    extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class CommunitySubmissionItem(Base):
+    """One calendar item proposed from a submission, held as a draft until a
+    reviewer publishes it (routers/community_submissions.py).
+
+    A draft is never public. Publishing copies it into a SchoolContentItem
+    (`source="community"`) and records that row in `content_item_id` - the
+    draft is "published" exactly while that pointer is set, so unpublishing
+    or the content row disappearing puts it back to a plain draft.
+
+    Dates are kept as the local wall-clock string a person reads off the
+    flyer ("2026-10-14" or "2026-10-14T17:00:00"), not a datetime: a draft
+    may have no date at all, and the reviewer edits what they see.
+    `stated_weekday` is the weekday the flyer itself printed beside the date,
+    kept so a mismatch can be checked in code instead of trusted to a model.
+    """
+
+    __tablename__ = "community_submission_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    submission_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("community_submissions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # "model" (read off the upload) | "manual" (typed by the reviewer)
+    origin: Mapped[str] = mapped_column(String(10), default="manual", nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+    category: Mapped[str] = mapped_column(String(30), default="event", nullable=False)
+    # "school" | "district" - same meaning as SchoolContentItem.scope.
+    scope: Mapped[str] = mapped_column(String(10), default="school", nullable=False)
+    start_local: Mapped[str | None] = mapped_column(String(19), nullable=True)
+    end_local: Mapped[str | None] = mapped_column(String(19), nullable=True)
+    stated_weekday: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    tentative: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # What the reader wants a human to double-check: a handwritten
+    # correction (printed value and corrected value), the page disagreeing
+    # with itself.
+    reader_note: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    source_excerpt: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # An existing calendar item this one should retire when published.
+    replaces_item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("school_content_items.id", ondelete="SET NULL"), nullable=True
+    )
+    content_item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("school_content_items.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 

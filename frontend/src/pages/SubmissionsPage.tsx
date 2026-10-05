@@ -1,20 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { DataTable, type Column } from "../components/ui/DataTable";
-import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useToast } from "../components/ui/Toast";
-import { IconCheck, IconInbox, IconLink, IconRefresh, IconSearch, IconTrash, IconUpload, IconX } from "../components/icons";
+import { IconInbox, IconLink, IconRefresh, IconSearch, IconTrash, IconUpload } from "../components/icons";
 import { fmtDateTime, relativeTime } from "../lib/format";
-import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { can } from "../lib/permissions";
 import {
   deleteSubmission,
   listSubmissions,
-  downloadSubmissionFile,
-  updateSubmission,
   type CommunitySubmission,
 } from "./submissions/submissionsApi";
 
@@ -29,17 +26,15 @@ function statusTone(status: string): "warn" | "ok" | "bad" | "muted" {
 
 export function SubmissionsPage() {
   const toast = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const canEdit = can(user, "submissions.manage");
   const [rows, setRows] = useState<CommunitySubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
-  const [detail, setDetail] = useState<CommunitySubmission | null>(null);
-  const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<CommunitySubmission | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -54,26 +49,6 @@ export function SubmissionsPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
-
-  useEffect(() => {
-    setNotes(detail?.admin_notes ?? "");
-    setPreviewUrl(null);
-    if (detail?.kind === "file" && detail.file_content_type?.startsWith("image/")) {
-      let revoked = "";
-      apiFetch(`/submissions/${detail.id}/file`)
-        .then((r) => (r.ok ? r.blob() : null))
-        .then((blob) => {
-          if (blob) {
-            revoked = URL.createObjectURL(blob);
-            setPreviewUrl(revoked);
-          }
-        })
-        .catch(() => undefined);
-      return () => {
-        if (revoked) URL.revokeObjectURL(revoked);
-      };
-    }
-  }, [detail]);
 
   const counts = useMemo(() => {
     const by = { pending: 0, approved: 0, rejected: 0 };
@@ -92,37 +67,6 @@ export function SubmissionsPage() {
     });
   }, [rows, q, statusFilter]);
 
-  const patchLocal = (updated: CommunitySubmission) => {
-    setRows((cur) => cur.map((r) => (r.id === updated.id ? updated : r)));
-    setDetail((cur) => (cur && cur.id === updated.id ? updated : cur));
-  };
-
-  const setStatus = async (row: CommunitySubmission, status: "approved" | "rejected", withNotes?: string) => {
-    setBusy(true);
-    try {
-      const updated = await updateSubmission(row.id, { status, admin_notes: withNotes ?? notes });
-      patchLocal(updated);
-      toast({ title: status === "approved" ? "Marked approved" : "Marked rejected", tone: "ok" });
-    } catch (e) {
-      toast({ title: "Could not update", description: e instanceof Error ? e.message : undefined, tone: "bad" });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveNotes = async (row: CommunitySubmission) => {
-    setBusy(true);
-    try {
-      const updated = await updateSubmission(row.id, { admin_notes: notes });
-      patchLocal(updated);
-      toast({ title: "Notes saved", tone: "ok" });
-    } catch (e) {
-      toast({ title: "Could not save notes", description: e instanceof Error ? e.message : undefined, tone: "bad" });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const doDelete = async () => {
     if (!pendingDelete) return;
     setBusy(true);
@@ -130,7 +74,6 @@ export function SubmissionsPage() {
       await deleteSubmission(pendingDelete.id);
       setRows((cur) => cur.filter((r) => r.id !== pendingDelete.id));
       setPendingDelete(null);
-      setDetail((cur) => (cur?.id === pendingDelete.id ? null : cur));
       toast({ title: "Deleted", tone: "ok" });
     } catch (e) {
       toast({ title: "Could not delete", description: e instanceof Error ? e.message : undefined, tone: "bad" });
@@ -187,7 +130,7 @@ export function SubmissionsPage() {
       <PageHeader
         upperTitle="Admin"
         title="Submissions inbox"
-        subtitle="Fliers and newsletter links the community has sent in. Review each one and, if it's real and useful, add it yourself via Newsletters/Schools - nothing here publishes automatically."
+        subtitle="Fliers and newsletter links the community has sent in. Open one to read it, correct what was read and choose what goes on the calendar - nothing here publishes automatically."
         actions={
           <button className="btn" onClick={refresh} title="Refresh">
             <IconRefresh /> Refresh
@@ -223,7 +166,7 @@ export function SubmissionsPage() {
         rows={filtered}
         getRowId={(r) => r.id}
         loading={loading}
-        onRowClick={setDetail}
+        onRowClick={(r) => navigate(`/admin/submissions/${r.id}`)}
         empty={
           <div className="empty">
             <IconInbox /> Nothing here{statusFilter ? ` (${statusFilter})` : ""}.
@@ -239,90 +182,10 @@ export function SubmissionsPage() {
         }
       />
 
-      <Modal
-        open={Boolean(detail)}
-        onClose={() => setDetail(null)}
-        size="lg"
-        title={detail?.kind === "link" ? "Link submission" : "File submission"}
-        subtitle={detail && <Badge tone={statusTone(detail.status)}>{detail.status}</Badge>}
-        footer={
-          detail && canEdit && (
-            <>
-              <button className="btn solid-danger" onClick={() => setStatus(detail, "rejected")} disabled={busy}>
-                <IconX /> Reject
-              </button>
-              <button className="btn btn-primary" onClick={() => setStatus(detail, "approved")} disabled={busy}>
-                <IconCheck /> Approve
-              </button>
-            </>
-          )
-        }
-      >
-        {detail && (
-          <dl className="kv">
-            <dt>{detail.kind === "link" ? "Link" : "File"}</dt>
-            <dd>
-              {detail.kind === "link" ? (
-                <a href={detail.url ?? undefined} target="_blank" rel="noreferrer">
-                  {detail.url}
-                </a>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="linklike"
-                    onClick={() =>
-                      downloadSubmissionFile(detail.id, detail.file_name).catch((e) =>
-                        toast({
-                          title: "Could not download this file",
-                          description: e instanceof Error ? e.message : undefined,
-                          tone: "bad",
-                        })
-                      )
-                    }
-                  >
-                    {detail.file_name} ({Math.round((detail.file_size ?? 0) / 1024)} KB)
-                  </button>
-                  {previewUrl && (
-                    <img src={previewUrl} alt="" style={{ maxWidth: "100%", marginTop: 8, borderRadius: 8, display: "block" }} />
-                  )}
-                </>
-              )}
-            </dd>
-            {detail.description && (
-              <>
-                <dt>What they're hoping for</dt>
-                <dd>{detail.description}</dd>
-              </>
-            )}
-            <dt>About</dt>
-            <dd>{detail.school_name || detail.district_name || "not specified"}</dd>
-            <dt>From</dt>
-            <dd>
-              {detail.submitter_name || "—"}
-              {detail.submitter_email && ` · ${detail.submitter_email}`}
-            </dd>
-            <dt>Submitted</dt>
-            <dd>{fmtDateTime(detail.created_at)}</dd>
-            <dt>Admin notes</dt>
-            <dd>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                onBlur={() => detail && notes !== (detail.admin_notes ?? "") && saveNotes(detail)}
-                rows={3}
-                placeholder="e.g. Added as Beck's Smore newsletter"
-                style={{ width: "100%" }}
-              />
-            </dd>
-          </dl>
-        )}
-      </Modal>
-
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         title="Delete this submission?"
-        description="This removes it (and its file, if any) permanently."
+        description="This removes it (and its file, if any) permanently. Items already published from it stay on the calendar."
         danger
         busy={busy}
         onConfirm={doDelete}
