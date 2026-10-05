@@ -1051,9 +1051,16 @@ on this list** - it's ArbiterLive branding, already supported.
     were empty in October). Each is attached with `school_slug`. Lunch is one
     district PDF per month plus a breakfast PDF at `/our-district/food-services/monthly-menu`
     (no SchoolCafé match under any Nutri-Serve shortname tried). **Athletics are
-    on GoBound (`gobound.com/nj/schools/...`), not ArbiterLive** — nothing reads it,
-    so `athletics_url` is null; the ICS athletics calendars cover Highland only.
-    Bell schedules are linked PDFs/images, so times are null.
+    ArbiterLive** (`/m/team/<id>`: Highland 10054, Timber Creek 23438, Triton
+    23768; the owner supplied the ids, the schools' own pages link GoBound). The
+    schools' athletics ICS calendars repeat the same games under different titles,
+    so they are left out of the seed; removing a feed does not delete its old rows.
+    **Bell schedules** are Google Drive PDFs (Highland, Triton: regular, half-day,
+    2-hour delay, assemblies; `drive.google.com/uc?export=download&id=` serves the
+    bytes) and, for Timber Creek, a single regular-schedule PNG (Finalsite's
+    `f_auto` returns a PNG even for a `.pdf` URL). Highland and Triton share the
+    7:20-2:01 day and the same half-day (ends 11:45); only lunch/activity time
+    differs (Tartan vs Mustang vs Charger Time).
   - **Bellmawr and Gloucester Township are Apptegy**, not Finalsite, though a plain
     GET returns Finalsite's "Client Challenge" interstitial — go straight to the
     scraper. A school's Apptegy org id is the most common `cmsv2-assets.apptegy.net/
