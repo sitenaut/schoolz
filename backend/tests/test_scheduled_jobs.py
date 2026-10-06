@@ -10,7 +10,7 @@ from sqlalchemy import update
 
 import database
 from main import app
-from models import User
+from models import ScheduledJob, User
 
 
 async def _register(client: AsyncClient, tag: str, *, admin: bool) -> dict[str, str]:
@@ -146,3 +146,38 @@ async def test_stuck_run_reaper_keys_on_last_progress_not_start():
         assert alive.status == "running"
         assert dead.status == "error" and dead.error_code == "abandoned"
         assert silent.status == "error"  # no heartbeat at all: falls back to started_at
+
+
+@pytest.mark.anyio
+async def test_list_jobs_filters_by_last_status_and_enabled():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _register(client, "jobfilter", admin=True)
+        tag = uuid.uuid4().hex[:8]
+        school = await client.post("/schools", json={"name": f"Filter Elementary {tag}"}, headers=admin)
+        assert school.status_code == 201, school.text
+        ids = {}
+        for label, enabled in (("broken", True), ("broken_off", False), ("fine", True), ("fresh", True)):
+            created = await client.post(
+                "/scheduled-jobs",
+                json={"kind": "school_info.scan", "name": f"{label} {tag}", "cron_expr": "0 6 * * *",
+                      "timezone": "America/New_York", "params": {"school_id": school.json()["id"]}, "enabled": enabled},
+                headers=admin,
+            )
+            assert created.status_code == 201, created.text
+            ids[label] = created.json()["id"]
+        async with database.SessionLocal() as db:
+            await db.execute(update(ScheduledJob).where(ScheduledJob.id.in_([ids["broken"], ids["broken_off"]])).values(last_status="error"))
+            await db.execute(update(ScheduledJob).where(ScheduledJob.id == ids["fine"]).values(last_status="success"))
+            await db.commit()
+
+        async def listed(query: str) -> set[str]:
+            res = await client.get(f"/scheduled-jobs?{query}", headers=admin)
+            assert res.status_code == 200, res.text
+            return {j["id"] for j in res.json()} & set(ids.values())
+
+        assert await listed("last_status=error") == {ids["broken"], ids["broken_off"]}
+        assert await listed("last_status=error&enabled=true") == {ids["broken"]}
+        assert await listed("last_status=never") == {ids["fresh"]}
+        assert await listed("enabled=false") == {ids["broken_off"]}
+        assert await listed("kind=school_info.scan") == set(ids.values())

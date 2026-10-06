@@ -119,13 +119,29 @@ async def test_fetch(body: TestFetchIn) -> TestFetchOut:
 
 
 @router.get("", response_model=list[ScheduledJobOut], dependencies=[Depends(require_permission("scans.view"))])
-async def list_jobs(kind: str | None = None, db: AsyncSession = Depends(get_db)):
+async def list_jobs(
+    kind: str | None = None,
+    last_status: str | None = None,
+    enabled: bool | None = None,
+    db: AsyncSession = Depends(get_db),
+):
     """Admin-only - this is the visibility view for every centrally-managed
     scan (district feeds, staff rosters, documents, lunch menus, Smore,
-    school info, email scanners)."""
+    school info, email scanners).
+
+    `last_status=error&enabled=true` is "what is broken right now", so a
+    script or an alert responder doesn't have to download every job to find
+    the handful that failed. `last_status=never` matches jobs that have not
+    run yet, the same word `/runs/summary` uses for them."""
     query = select(ScheduledJob)
     if kind:
         query = query.where(ScheduledJob.kind == kind)
+    if last_status == "never":
+        query = query.where(ScheduledJob.last_status.is_(None))
+    elif last_status:
+        query = query.where(ScheduledJob.last_status == last_status)
+    if enabled is not None:
+        query = query.where(ScheduledJob.enabled.is_(enabled))
     query = query.order_by(ScheduledJob.kind, ScheduledJob.name)
     jobs = list((await db.execute(query)).scalars().all())
     return await _attach_targets(db, jobs)

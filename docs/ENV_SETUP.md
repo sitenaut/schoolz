@@ -151,6 +151,24 @@ Fly via `fly secrets set` — that step, plus the Faro (RUM) frontend wiring,
 the `grafana_ro` read-only Postgres datasource, and Grafana dashboards/alerts,
 are tracked phase-by-phase in `docs/OBSERVABILITY_PLAN.md`.
 
+**Grafana sync** (`scripts/grafana_sync.py`, see `docs/RUNBOOK.md`) reads from
+`env/secrets.prod.env`:
+
+```
+GRAFANA_URL=https://<stack>.grafana.net
+GRAFANA_TOKEN=<service-account token, Admin - also drives the IRM API>
+GRAFANA_ALERT_EMAIL=<optional; defaults to an address the stack already emails>
+GRAFANA_CLOUDWATCH_ACCESS_KEY_ID=<optional; a read-only IAM user's key, never an admin's>
+GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY=
+```
+
+Without the CloudWatch pair the datasource and the Alexa-skill alerts are
+skipped, nothing else changes. The IAM user needs `cloudwatch:GetMetricData`,
+`cloudwatch:ListMetrics`, `cloudwatch:DescribeAlarms*`, `logs:DescribeLogGroups`,
+`logs:GetLogGroupFields`, `logs:StartQuery`, `logs:StopQuery`,
+`logs:GetQueryResults`, `logs:GetLogEvents`, `ec2:DescribeRegions` and
+`tag:GetResources`.
+
 `scripts/compose-local.sh` sources `env/base.env`, `env/auth.local.env`,
 `env/db.local.env`, `env/frontend.local.env`, `env/secrets.local.env` (in that
 order — later files win) and then runs

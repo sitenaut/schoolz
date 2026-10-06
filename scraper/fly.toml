@@ -7,6 +7,11 @@ primary_region = "ewr"
 # scraper. Keeps the Playwright/Chromium service off the public internet
 # entirely; SCRAPER_API_KEY is still required as defense in depth.
 
+[env]
+  # Without this the scraper's telemetry tags itself deployment.environment=local
+  # (scraper/telemetry.py's default), and prod data reads as a dev machine's.
+  APP_ENV = "prod"
+
 [build]
 
 [[vm]]

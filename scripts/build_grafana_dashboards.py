@@ -22,6 +22,8 @@ Run: python3 scripts/build_grafana_dashboards.py
 import json
 import pathlib
 
+from build_grafana_alerts import ALEXA_FUNCTION, SLOS
+
 OUT = pathlib.Path(__file__).resolve().parent.parent / "grafana" / "cloud-dashboards"
 
 NS = 'service_namespace="schoolz"'
@@ -42,6 +44,7 @@ TRUNCATED = 'stop_reason="max_tokens"'
 SERVER_ERROR = 'http_response_status_code=~"5.."'
 POOL_USED = 'state="used"'
 MEM_RSS = 'type="rss"'
+API_SVC = 'service_name="schoolz-api"'
 
 
 def ds_var(name: str, kind: str, label: str) -> dict:
@@ -353,9 +356,71 @@ def ux() -> dict:
     )
 
 
+# --------------------------------------------------------------------------
+# 4. Operations - the one page to open when something notifies you
+# --------------------------------------------------------------------------
+def alert_list(pid, title, tiers, gp, desc) -> dict:
+    return panel(pid, title, [], gp, ptype="alertlist", desc=desc, extra={"options": {
+        "alertInstanceLabelFilter": '{app="schoolz", tier=~"%s"}' % tiers,
+        "stateFilter": {"firing": True, "pending": True, "noData": True, "error": True, "normal": False},
+        "groupMode": "default", "viewMode": "list", "sortOrder": 3, "maxItems": 30, "alertName": "",
+    }})
+
+
+def cloudwatch_target(metric: str, ref: str) -> dict:
+    return {
+        "datasource": {"type": "cloudwatch", "uid": "${DS_CLOUDWATCH}"},
+        "refId": ref, "queryMode": "Metrics", "metricQueryType": 0, "metricEditorMode": 0,
+        "region": "default", "namespace": "AWS/Lambda", "metricName": metric,
+        "dimensions": {"FunctionName": [ALEXA_FUNCTION]}, "statistic": "Sum", "period": "300",
+        "matchExact": True, "id": "", "expression": "", "label": metric,
+    }
+
+
+def ops() -> dict:
+    sli = [target(f'grafana_slo_sli_window{{grafana_slo_uuid="{s["uuid"]}"}}', s["name"], ref=chr(65 + i))
+           for i, s in enumerate(SLOS)]
+    budget = [target(f'1 - (1 - grafana_slo_sli_window{{grafana_slo_uuid="{s["uuid"]}"}}) / {round(1 - s["objective"], 6)}',
+                     s["name"], ref=chr(65 + i)) for i, s in enumerate(SLOS)]
+    burn = [target(f'(1 - grafana_slo_sli_1h{{grafana_slo_uuid="{s["uuid"]}"}}) / {round(1 - s["objective"], 6)}',
+                   s["name"], ref=chr(65 + i)) for i, s in enumerate(SLOS)]
+    red_below_zero = {"fieldConfig": {"defaults": {"unit": "percentunit", "custom": {}, "thresholds": {
+        "mode": "absolute", "steps": [{"color": "red", "value": None}, {"color": "orange", "value": 0},
+                                      {"color": "green", "value": 0.25}]}}, "overrides": []}}
+    panels = [
+        alert_list(1, "Needs action (page + ticket)", "page|ticket", {"h": 9, "w": 12, "x": 0, "y": 0},
+                   "Everything routed to IRM. Empty is the goal."),
+        alert_list(2, "Informational", "info", {"h": 9, "w": 12, "x": 12, "y": 0},
+                   "Triggers and causes: context for whatever is on the left, emailed in batches, never paged."),
+        panel(3, "SLO attainment (28d)", sli, {"h": 6, "w": 12, "x": 0, "y": 9}, ptype="stat", unit="percentunit",
+              desc="Objectives: " + ", ".join(f'{s["name"]} {s["objective"]:.1%}' for s in SLOS) + "."),
+        panel(4, "Error budget remaining (28d)", budget, {"h": 6, "w": 12, "x": 12, "y": 9}, ptype="stat",
+              desc="100% = nothing spent, 0% = the objective is exactly met, negative = the SLO is violated.",
+              extra=red_below_zero),
+        panel(5, "Burn rate (1h)", burn, {"h": 8, "w": 12, "x": 0, "y": 15},
+              desc="1x spends exactly the budget over 28 days. The fast alert needs 14.4x over 1h, the slow one 3x over a day."),
+        panel(6, "Is each process reporting?",
+              [target(f'count(process_memory_usage_bytes{sel(API_SVC)})', "API machines", ref="A"),
+               target(f'sum(increase(schoolz_scheduler_reconciles_total{sel()}[10m]))', "scheduler ticks / 10m", ref="B"),
+               target('count(schoolz_scraper_pages_open{service_name="schoolz-scraper"})', "scraper machines", ref="C")],
+              {"h": 8, "w": 12, "x": 12, "y": 15},
+              desc="The three liveness signals behind the down/silent alerts. A line ending is the outage."),
+        panel(7, "Alexa skill (Lambda)",
+              [cloudwatch_target("Invocations", "A"), cloudwatch_target("Errors", "B"), cloudwatch_target("Throttles", "C")],
+              {"h": 8, "w": 24, "x": 0, "y": 23},
+              desc="The only part of schoolz on AWS. From CloudWatch, so it lags a few minutes."),
+    ]
+    return dashboard(
+        "schoolz-ops", "schoolz / Operations",
+        "What needs a person, how the SLOs stand, and whether every process is alive.",
+        panels,
+        [ds_var("DS_METRICS", "prometheus", "Metrics"), ds_var("DS_CLOUDWATCH", "cloudwatch", "CloudWatch")],
+    )
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    for name, build in (("scans", scans), ("api", api), ("user-experience", ux)):
+    for name, build in (("scans", scans), ("api", api), ("user-experience", ux), ("operations", ops)):
         path = OUT / f"schoolz-{name}.json"
         path.write_text(json.dumps(build(), indent=2) + "\n")
         print(f"wrote {path.relative_to(OUT.parent.parent)}")

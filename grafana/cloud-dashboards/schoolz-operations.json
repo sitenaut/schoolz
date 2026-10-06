@@ -1,0 +1,492 @@
+{
+  "uid": "schoolz-ops",
+  "title": "schoolz / Operations",
+  "description": "What needs a person, how the SLOs stand, and whether every process is alive.",
+  "tags": [
+    "schoolz"
+  ],
+  "timezone": "America/New_York",
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Metrics",
+        "multi": false,
+        "name": "DS_METRICS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "CloudWatch",
+        "multi": false,
+        "name": "DS_CLOUDWATCH",
+        "options": [],
+        "query": "cloudwatch",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Needs action (page + ticket)",
+      "description": "Everything routed to IRM. Empty is the goal.",
+      "type": "alertlist",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "alertInstanceLabelFilter": "{app=\"schoolz\", tier=~\"page|ticket\"}",
+        "stateFilter": {
+          "firing": true,
+          "pending": true,
+          "noData": true,
+          "error": true,
+          "normal": false
+        },
+        "groupMode": "default",
+        "viewMode": "list",
+        "sortOrder": 3,
+        "maxItems": 30,
+        "alertName": ""
+      }
+    },
+    {
+      "id": 2,
+      "title": "Informational",
+      "description": "Triggers and causes: context for whatever is on the left, emailed in batches, never paged.",
+      "type": "alertlist",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "alertInstanceLabelFilter": "{app=\"schoolz\", tier=~\"info\"}",
+        "stateFilter": {
+          "firing": true,
+          "pending": true,
+          "noData": true,
+          "error": true,
+          "normal": false
+        },
+        "groupMode": "default",
+        "viewMode": "list",
+        "sortOrder": 3,
+        "maxItems": 30,
+        "alertName": ""
+      }
+    },
+    {
+      "id": 3,
+      "title": "SLO attainment (28d)",
+      "description": "Objectives: API availability 99.5%, API latency 95.0%, Prerender for crawlers 99.0%, Scan runs 99.0%.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "grafana_slo_sli_window{grafana_slo_uuid=\"schoolzapiavail\"}",
+          "legendFormat": "API availability",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "grafana_slo_sli_window{grafana_slo_uuid=\"schoolzapilatency\"}",
+          "legendFormat": "API latency",
+          "range": true,
+          "format": "time_series",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "grafana_slo_sli_window{grafana_slo_uuid=\"schoolzprerender\"}",
+          "legendFormat": "Prerender for crawlers",
+          "range": true,
+          "format": "time_series",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "grafana_slo_sli_window{grafana_slo_uuid=\"schoolzscans\"}",
+          "legendFormat": "Scan runs",
+          "range": true,
+          "format": "time_series",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Error budget remaining (28d)",
+      "description": "100% = nothing spent, 0% = the objective is exactly met, negative = the SLO is violated.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "1 - (1 - grafana_slo_sli_window{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+          "legendFormat": "API availability",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "1 - (1 - grafana_slo_sli_window{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+          "legendFormat": "API latency",
+          "range": true,
+          "format": "time_series",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "1 - (1 - grafana_slo_sli_window{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+          "legendFormat": "Prerender for crawlers",
+          "range": true,
+          "format": "time_series",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "1 - (1 - grafana_slo_sli_window{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+          "legendFormat": "Scan runs",
+          "range": true,
+          "format": "time_series",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 0.25
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Burn rate (1h)",
+      "description": "1x spends exactly the budget over 28 days. The fast alert needs 14.4x over 1h, the slow one 3x over a day.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+          "legendFormat": "API availability",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+          "legendFormat": "API latency",
+          "range": true,
+          "format": "time_series",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+          "legendFormat": "Prerender for crawlers",
+          "range": true,
+          "format": "time_series",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+          "legendFormat": "Scan runs",
+          "range": true,
+          "format": "time_series",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "Is each process reporting?",
+      "description": "The three liveness signals behind the down/silent alerts. A line ending is the outage.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "count(process_memory_usage_bytes{service_namespace=\"schoolz\", service_name=\"schoolz-api\"})",
+          "legendFormat": "API machines",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(increase(schoolz_scheduler_reconciles_total{service_namespace=\"schoolz\"}[10m]))",
+          "legendFormat": "scheduler ticks / 10m",
+          "range": true,
+          "format": "time_series",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "count(schoolz_scraper_pages_open{service_name=\"schoolz-scraper\"})",
+          "legendFormat": "scraper machines",
+          "range": true,
+          "format": "time_series",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Alexa skill (Lambda)",
+      "description": "The only part of schoolz on AWS. From CloudWatch, so it lags a few minutes.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CLOUDWATCH}"
+          },
+          "refId": "A",
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "region": "default",
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "dimensions": {
+            "FunctionName": [
+              "ask-schoolhelper-default-default-1791156946239"
+            ]
+          },
+          "statistic": "Sum",
+          "period": "300",
+          "matchExact": true,
+          "id": "",
+          "expression": "",
+          "label": "Invocations"
+        },
+        {
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CLOUDWATCH}"
+          },
+          "refId": "B",
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "region": "default",
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "dimensions": {
+            "FunctionName": [
+              "ask-schoolhelper-default-default-1791156946239"
+            ]
+          },
+          "statistic": "Sum",
+          "period": "300",
+          "matchExact": true,
+          "id": "",
+          "expression": "",
+          "label": "Errors"
+        },
+        {
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${DS_CLOUDWATCH}"
+          },
+          "refId": "C",
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "region": "default",
+          "namespace": "AWS/Lambda",
+          "metricName": "Throttles",
+          "dimensions": {
+            "FunctionName": [
+              "ask-schoolhelper-default-default-1791156946239"
+            ]
+          },
+          "statistic": "Sum",
+          "period": "300",
+          "matchExact": true,
+          "id": "",
+          "expression": "",
+          "label": "Throttles"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "editable": true
+}

@@ -1,0 +1,136 @@
+{
+  "slos": [
+    {
+      "uuid": "schoolzapiavail",
+      "name": "schoolz API availability",
+      "description": "Share of API requests from real visitors answered without a 5xx.",
+      "query": {
+        "type": "freeform",
+        "freeform": {
+          "query": "sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route!=\"/prerender\", http_request_method!=\"OPTIONS\", http_response_status_code!~\"5..\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route!=\"/prerender\", http_request_method!=\"OPTIONS\"}[$__rate_interval]))"
+        }
+      },
+      "objectives": [
+        {
+          "value": 0.995,
+          "window": "28d"
+        }
+      ],
+      "labels": [
+        {
+          "key": "app",
+          "value": "schoolz"
+        },
+        {
+          "key": "component",
+          "value": "api"
+        }
+      ],
+      "destinationDatasource": {
+        "uid": "${DS_METRICS}"
+      },
+      "folder": {
+        "uid": "schoolz"
+      }
+    },
+    {
+      "uuid": "schoolzapilatency",
+      "name": "schoolz API latency",
+      "description": "Share of interactive GETs answered within 1 second.",
+      "query": {
+        "type": "freeform",
+        "freeform": {
+          "query": "sum(rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\", le=\"1\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[$__rate_interval]))"
+        }
+      },
+      "objectives": [
+        {
+          "value": 0.95,
+          "window": "28d"
+        }
+      ],
+      "labels": [
+        {
+          "key": "app",
+          "value": "schoolz"
+        },
+        {
+          "key": "component",
+          "value": "api"
+        }
+      ],
+      "destinationDatasource": {
+        "uid": "${DS_METRICS}"
+      },
+      "folder": {
+        "uid": "schoolz"
+      }
+    },
+    {
+      "uuid": "schoolzprerender",
+      "name": "schoolz Prerender for crawlers",
+      "description": "Share of /prerender requests (search engines and link previews) that returned a page.",
+      "query": {
+        "type": "freeform",
+        "freeform": {
+          "query": "sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route=\"/prerender\", http_response_status_code!~\"5..\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route=\"/prerender\"}[$__rate_interval]))"
+        }
+      },
+      "objectives": [
+        {
+          "value": 0.99,
+          "window": "28d"
+        }
+      ],
+      "labels": [
+        {
+          "key": "app",
+          "value": "schoolz"
+        },
+        {
+          "key": "component",
+          "value": "prerender"
+        }
+      ],
+      "destinationDatasource": {
+        "uid": "${DS_METRICS}"
+      },
+      "folder": {
+        "uid": "schoolz"
+      }
+    },
+    {
+      "uuid": "schoolzscans",
+      "name": "schoolz Scan runs",
+      "description": "Share of scan runs that finished without an error (warnings count as finished).",
+      "query": {
+        "type": "freeform",
+        "freeform": {
+          "query": "sum(rate(schoolz_job_runs_total{service_namespace=\"schoolz\", status=~\"success|warning\"}[$__rate_interval])) / sum(rate(schoolz_job_runs_total{service_namespace=\"schoolz\", status!=\"skipped\"}[$__rate_interval]))"
+        }
+      },
+      "objectives": [
+        {
+          "value": 0.99,
+          "window": "28d"
+        }
+      ],
+      "labels": [
+        {
+          "key": "app",
+          "value": "schoolz"
+        },
+        {
+          "key": "component",
+          "value": "scans"
+        }
+      ],
+      "destinationDatasource": {
+        "uid": "${DS_METRICS}"
+      },
+      "folder": {
+        "uid": "schoolz"
+      }
+    }
+  ]
+}
