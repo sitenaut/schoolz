@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from .sources.deyra_schedule import DeyraScheduleSource
+from .sources.dostuff import DoStuffSource
 from .sources.ccls import CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
@@ -92,6 +93,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     theatre_sources = body.params.get("theatre_sources") or []
     placewise_sources = body.params.get("placewise_sources") or []
     patch_sources = body.params.get("patch_sources") or []
+    dostuff_sources = body.params.get("dostuff_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -122,6 +124,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.placewise_sources must be a list")
     if not isinstance(patch_sources, list):
         raise HTTPException(status_code=400, detail="params.patch_sources must be a list")
+    if not isinstance(dostuff_sources, list):
+        raise HTTPException(status_code=400, detail="params.dostuff_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -444,6 +448,26 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             fetch_via=entry.get("fetch_via", "direct"),
             center=entry.get("center"),
             max_miles=entry.get("max_miles"),
+            default_categories=list(entry.get("default_categories") or []),
+        )))
+
+    for entry in dostuff_sources:
+        name = (entry or {}).get("name") or "(unnamed dostuff source)"
+        base_url = (entry or {}).get("base_url")
+        if not base_url:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'base_url' field", source_type="dostuff",
+            ))
+            continue
+        results.append(await _probe("dostuff", DoStuffSource(
+            name=name,
+            base_url=base_url,
+            category_path=entry.get("category_path", "live-music-events-philadelphia"),
+            # Three days, one page each, for a fast dry-run.
+            days_ahead=3,
+            max_pages_per_day=1,
             default_categories=list(entry.get("default_categories") or []),
         )))
 

@@ -83,3 +83,11 @@ def test_price_parsing():
     assert tribe._price({"cost": "Free"}) == (0.0, 0.0, True)
     assert tribe._price({"cost": ""}) == (None, None, None)
     assert tribe._price({"cost": "Donation"}) == (None, None, None)
+
+
+def test_midnight_start_with_all_day_unset_is_a_blank_time_not_a_midnight_show():
+    src = TribeEventsSource(name="x", base_url="https://example.org")
+    base = {"id": 1, "title": "Band", "status": "publish", "all_day": False}
+    blank = src._to_raw({**base, "start_date": "2026-10-06 00:00:00"})
+    timed = src._to_raw({**base, "start_date": "2026-10-06 20:00:00"})
+    assert blank.all_day is True and timed.all_day is False
