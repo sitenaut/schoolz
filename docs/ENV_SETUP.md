@@ -160,7 +160,15 @@ GRAFANA_TOKEN=<service-account token, Admin - also drives the IRM API>
 GRAFANA_ALERT_EMAIL=<optional; defaults to an address the stack already emails>
 GRAFANA_CLOUDWATCH_ACCESS_KEY_ID=<optional; a read-only IAM user's key, never an admin's>
 GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY=
+GRAFANA_GA_SERVICE_ACCOUNT_FILE=env/<service-account-key>.json   # optional
+GRAFANA_GA_PROPERTY_ID=<numeric GA4 property id, not the G-... measurement id>
 ```
+
+The Google Analytics pair makes a `schoolz-ga` datasource (the stack's Infinity
+plugin signing in as that service account) and fills the GA panels on the User
+experience dashboard. The service account needs the Google Analytics Data API
+enabled in its project and **Viewer** on the GA property (GA Admin → Property
+access management) - no Google Cloud role. The key file stays in `env/`.
 
 Without the CloudWatch pair the datasource and the Alexa-skill alerts are
 skipped, nothing else changes. The IAM user needs `cloudwatch:GetMetricData`,

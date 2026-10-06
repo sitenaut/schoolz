@@ -50,6 +50,18 @@
         "query": "grafana-postgresql-datasource",
         "refresh": 1,
         "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Google Analytics",
+        "multi": false,
+        "name": "DS_GA",
+        "options": [],
+        "query": "yesoreyeram-infinity-datasource",
+        "refresh": 1,
+        "type": "datasource"
       }
     ]
   },
@@ -369,6 +381,173 @@
           "queryType": "range",
           "refId": "A",
           "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 11,
+      "title": "Visitors and page views per day (Google Analytics)",
+      "description": "GA's count, which loads only on the production hostname and never for crawlers or admins flagged internal. Compare with the server-side page-visit panels: the gap is ad blockers plus anyone who left before GA's deferred load.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_GA}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "timeseries",
+          "parser": "backend",
+          "url": "https://analyticsdata.googleapis.com/v1beta/properties/${GA_PROPERTY}:runReport",
+          "url_options": {
+            "method": "POST",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "data": "{\"dateRanges\": [{\"startDate\": \"${__from:date:YYYY-MM-DD}\", \"endDate\": \"${__to:date:YYYY-MM-DD}\"}], \"dimensions\": [{\"name\": \"date\"}], \"metrics\": [{\"name\": \"activeUsers\"}, {\"name\": \"screenPageViews\"}], \"orderBys\": [{\"dimension\": {\"dimensionName\": \"date\"}}]}"
+          },
+          "root_selector": "rows",
+          "columns": [
+            {
+              "selector": "dimensionValues.0.value",
+              "text": "day",
+              "type": "timestamp",
+              "timestampFormat": "20060102"
+            },
+            {
+              "selector": "metricValues.0.value",
+              "text": "visitors",
+              "type": "number"
+            },
+            {
+              "selector": "metricValues.1.value",
+              "text": "page views",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 12,
+      "title": "Where sessions come from (Google Analytics)",
+      "description": "The one question only GA can answer here: search, social, direct or a campaign link.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 39
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_GA}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://analyticsdata.googleapis.com/v1beta/properties/${GA_PROPERTY}:runReport",
+          "url_options": {
+            "method": "POST",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "data": "{\"dateRanges\": [{\"startDate\": \"${__from:date:YYYY-MM-DD}\", \"endDate\": \"${__to:date:YYYY-MM-DD}\"}], \"dimensions\": [{\"name\": \"sessionDefaultChannelGroup\"}], \"metrics\": [{\"name\": \"sessions\"}], \"orderBys\": [{\"metric\": {\"metricName\": \"sessions\"}, \"desc\": true}], \"limit\": 10}"
+          },
+          "root_selector": "rows",
+          "columns": [
+            {
+              "selector": "dimensionValues.0.value",
+              "text": "channel",
+              "type": "string"
+            },
+            {
+              "selector": "metricValues.0.value",
+              "text": "sessions",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 13,
+      "title": "Top pages (Google Analytics)",
+      "description": "Paths as GA receives them: tokens stripped, personal and admin routes collapsed.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 39
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_GA}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://analyticsdata.googleapis.com/v1beta/properties/${GA_PROPERTY}:runReport",
+          "url_options": {
+            "method": "POST",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "data": "{\"dateRanges\": [{\"startDate\": \"${__from:date:YYYY-MM-DD}\", \"endDate\": \"${__to:date:YYYY-MM-DD}\"}], \"dimensions\": [{\"name\": \"pagePath\"}], \"metrics\": [{\"name\": \"screenPageViews\"}, {\"name\": \"activeUsers\"}], \"orderBys\": [{\"metric\": {\"metricName\": \"screenPageViews\"}, \"desc\": true}], \"limit\": 15}"
+          },
+          "root_selector": "rows",
+          "columns": [
+            {
+              "selector": "dimensionValues.0.value",
+              "text": "page",
+              "type": "string"
+            },
+            {
+              "selector": "metricValues.0.value",
+              "text": "views",
+              "type": "number"
+            },
+            {
+              "selector": "metricValues.1.value",
+              "text": "visitors",
+              "type": "number"
+            }
+          ]
         }
       ],
       "fieldConfig": {

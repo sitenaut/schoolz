@@ -11,6 +11,7 @@ Credentials come from env/secrets.prod.env (gitignored):
     GRAFANA_TOKEN=glsa_...
     GRAFANA_CLOUDWATCH_ACCESS_KEY_ID / _SECRET_ACCESS_KEY   (optional)
     GRAFANA_ALERT_EMAIL                                     (optional)
+    GRAFANA_GA_SERVICE_ACCOUNT_FILE / GRAFANA_GA_PROPERTY_ID (optional)
 
 Create the token at: Grafana -> Administration -> Users and access ->
 Service accounts -> Add service account (Admin) -> Add service account token.
@@ -47,7 +48,8 @@ FOLDER_UID = "schoolz"
 def load_env() -> dict:
     """Process environment first, then env/secrets.prod.env for anything unset."""
     wanted = ("GRAFANA_URL", "GRAFANA_TOKEN", "GRAFANA_ALERT_EMAIL",
-              "GRAFANA_CLOUDWATCH_ACCESS_KEY_ID", "GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY")
+              "GRAFANA_CLOUDWATCH_ACCESS_KEY_ID", "GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY",
+              "GRAFANA_GA_SERVICE_ACCOUNT_FILE", "GRAFANA_GA_PROPERTY_ID")
     env = {key: os.getenv(key, "") for key in wanted}
     if SECRETS.exists():
         for line in SECRETS.read_text().splitlines():
@@ -129,6 +131,9 @@ def resolve_datasources(url: str, token: str) -> dict:
             "avoid": (),
         },
         "DS_CLOUDWATCH": {"types": ("cloudwatch",), "prefer": ("schoolz",), "avoid": ()},
+        # The stack ships its own Infinity datasource with no credentials;
+        # only the one ensure_ga() made can reach Google Analytics.
+        "DS_GA": {"types": ("yesoreyeram-infinity-datasource",), "prefer": (GA_UID,), "avoid": ("grafanacloud",)},
     }
     available = call(url, token, "/api/datasources")
     resolved = {}
@@ -183,6 +188,43 @@ def ensure_cloudwatch(url: str, token: str, env: dict, dry: bool) -> None:
     else:
         call(url, token, "/api/datasources", "POST", ds)
     print("  datasource schoolz-cloudwatch")
+
+
+GA_UID = "schoolz-ga"
+GA_HOST = "https://analyticsdata.googleapis.com"
+
+
+def ensure_ga(url: str, token: str, env: dict, dry: bool) -> None:
+    """Google Analytics through the Infinity datasource already on the
+    stack, rather than one more plugin: GA's Data API is plain JSON over
+    HTTPS, and Infinity can sign in as a service account. The account needs
+    only Viewer on the GA property - no Google Cloud role at all."""
+    key_file, prop = env["GRAFANA_GA_SERVICE_ACCOUNT_FILE"], env["GRAFANA_GA_PROPERTY_ID"]
+    if not key_file or not prop:
+        print("  no GRAFANA_GA_* settings in env - Google Analytics datasource skipped")
+        return
+    path = pathlib.Path(key_file)
+    account = json.loads((path if path.is_absolute() else ROOT / path).read_text())
+    ds = {
+        "uid": GA_UID, "name": GA_UID, "type": "yesoreyeram-infinity-datasource", "access": "proxy",
+        "jsonData": {
+            "auth_method": "oauth2",
+            "oauth2": {"oauth2_type": "jwt", "email": account["client_email"], "token_url": account["token_uri"],
+                       "scopes": ["https://www.googleapis.com/auth/analytics.readonly"]},
+            # Infinity refuses to send credentials anywhere not listed here.
+            "allowedHosts": [GA_HOST],
+        },
+        "secureJsonData": {"oauth2JWTPrivateKey": account["private_key"]},
+    }
+    if dry:
+        print(f"  would upsert datasource {GA_UID}")
+        return
+    status, _ = request(url, f"/api/datasources/uid/{GA_UID}", "GET", None, {"Authorization": f"Bearer {token}"})
+    if status == 200:
+        call(url, token, f"/api/datasources/uid/{GA_UID}", "PUT", ds)
+    else:
+        call(url, token, "/api/datasources", "POST", ds)
+    print(f"  datasource {GA_UID}")
 
 
 def runbook_url() -> str:
@@ -452,6 +494,7 @@ def main() -> None:
         print("(dry run - nothing will be written)")
 
     ensure_cloudwatch(url, token, env, args.dry_run)
+    ensure_ga(url, token, env, args.dry_run)
 
     # Resolved even on a dry run: it's a read-only GET, it proves the token
     # actually works, and which datasources matched is the main thing worth
@@ -459,6 +502,8 @@ def main() -> None:
     # SQL panels would land empty).
     print("Resolving datasources...")
     mapping = resolve_datasources(url, token)
+    if env["GRAFANA_GA_PROPERTY_ID"]:
+        mapping["GA_PROPERTY"] = env["GRAFANA_GA_PROPERTY_ID"]
 
     if not args.dry_run:
         # Creating a folder that already exists returns 409 (conflict) or 412
