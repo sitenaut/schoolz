@@ -1,6 +1,6 @@
 {
   "exported_at": "2026-09-30T12:00:00Z",
-  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County, The Promenade at Sagemore)",
+  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County, The Promenade at Sagemore, WXPN, Do215)",
   "districts": [],
   "schools": [],
   "smore_newsletters": [],
@@ -44,6 +44,20 @@
           "default_categories": [
             "camden-county"
           ]
+        },
+        {
+          "name": "wxpn_concerts",
+          "base_url": "https://xpn.org",
+          "days_ahead": 60,
+          "max_miles": 30,
+          "center": [
+            39.9346,
+            -75.0307
+          ],
+          "default_categories": [
+            "music",
+            "concerts"
+          ]
         }
       ],
       "placewise_sources": [
@@ -81,6 +95,19 @@
             "patch"
           ],
           "fetch_via": "scraper"
+        }
+      ],
+      "dostuff_sources": [
+        {
+          "name": "do215_music",
+          "base_url": "https://do215.com",
+          "category_path": "live-music-events-philadelphia",
+          "days_ahead": 14,
+          "default_categories": [
+            "music",
+            "concerts",
+            "philadelphia"
+          ]
         }
       ]
     }

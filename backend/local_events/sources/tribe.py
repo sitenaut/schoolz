@@ -216,7 +216,9 @@ class TribeEventsSource(Source):
             description=_text(e.get("description")),
             start_time=start,
             end_time=_local_dt(e.get("end_date")),
-            all_day=bool(e.get("all_day")),
+            # An exact-midnight start with all_day unset is an editor who left the
+            # time blank (WXPN lists most shows this way), not a 12:00 AM show.
+            all_day=bool(e.get("all_day")) or (start.hour, start.minute, start.second) == (0, 0, 0),
             venue_name=_text(venue.get("venue")),
             venue_address=address or None,
             latitude=coords[0] if coords else None,

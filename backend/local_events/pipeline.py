@@ -34,6 +34,7 @@ from .normalizer import normalize
 from .school_sync import group_by_school, sync_school_content
 from .sources.base import RawEvent, Source
 from .sources.deyra_schedule import DeyraScheduleSource
+from .sources.dostuff import DoStuffSource
 from .sources.ccls import CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
@@ -233,6 +234,19 @@ def _build_sources(params: dict) -> list[Source]:
                 center=entry.get("center"),
                 nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
                 max_pages=int(entry.get("max_pages", 40)),
+            )
+        )
+    for entry in params.get("dostuff_sources") or []:
+        if not entry.get("base_url") or not entry.get("name"):
+            continue
+        sources.append(
+            DoStuffSource(
+                name=entry["name"],
+                base_url=entry["base_url"],
+                category_path=entry.get("category_path", "live-music-events-philadelphia"),
+                days_ahead=int(entry.get("days_ahead", 14)),
+                max_pages_per_day=int(entry.get("max_pages_per_day", 4)),
+                default_categories=list(entry.get("default_categories") or []),
             )
         )
     for entry in params.get("theatre_sources") or []:

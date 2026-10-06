@@ -29,6 +29,7 @@ SOURCE_KEYS = (
     "ludus_sources",
     "placewise_sources",
     "patch_sources",
+    "dostuff_sources",
 )
 
 
