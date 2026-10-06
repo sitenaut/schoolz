@@ -20,6 +20,7 @@ not just the first.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
@@ -33,6 +34,10 @@ logger = logging.getLogger(__name__)
 _BASE = "https://events.camdencountylibrary.org"
 _NON_BRANCH_LOCATIONS = {"virtual", "off site", "system wide"}
 _PAGE_SIZE = 50
+# Seconds slept before every branch after the first in a run. The branches are
+# fetched one after another against the same Drupal server, whose slow pages
+# (Voorhees ~14 s alone) timed out when queued straight behind each other.
+DEFAULT_CCLS_PAUSE = 5.0
 # Every attribute _to_event reads, and nothing else. Without a sparse fieldset
 # Drupal returns each full node (body, metadata, ...): a Voorhees page was
 # ~630 KB and took 17-43 s, so three pages blew through even a 90 s read
@@ -68,15 +73,19 @@ class CCLSSource(Source):
         days_ahead: int = 90,
         max_pages: int = 20,
         timeout: float = 30.0,
+        pause_before: float = 0.0,
     ) -> None:
         self.name = name
         self.branch_name = branch_name
+        self.pause_before = pause_before
         self.default_categories = list(default_categories or []) + ["library"]
         self.days_ahead = days_ahead
         self.max_pages = max_pages
         self.timeout = timeout
 
     async def fetch(self) -> list[RawEvent]:
+        if self.pause_before:
+            await asyncio.sleep(self.pause_before)
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             branches = await list_branches(client)
             location_id = next((v for k, v in branches.items() if k.lower() == self.branch_name.lower()), None)

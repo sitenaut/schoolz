@@ -35,7 +35,7 @@ from .school_sync import group_by_school, sync_school_content
 from .sources.base import RawEvent, Source
 from .sources.deyra_schedule import DeyraScheduleSource
 from .sources.dostuff import DoStuffSource
-from .sources.ccls import CCLSSource
+from .sources.ccls import DEFAULT_CCLS_PAUSE, CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
@@ -209,6 +209,7 @@ def _build_sources(params: dict) -> list[Source]:
                 max_pages=int(entry.get("max_pages", 10)),
             )
         )
+    ccls_built = 0
     for entry in params.get("ccls_sources") or []:
         if not entry.get("name") or not entry.get("branch_name"):
             continue
@@ -219,8 +220,12 @@ def _build_sources(params: dict) -> list[Source]:
                 default_categories=list(entry.get("default_categories") or []),
                 days_ahead=int(entry.get("days_ahead", 90)),
                 max_pages=int(entry.get("max_pages", 20)),
+                timeout=float(entry.get("timeout", 30)),
+                # Branches hit one Drupal server back to back; space them out.
+                pause_before=float(entry.get("pause_seconds", DEFAULT_CCLS_PAUSE)) if ccls_built else 0.0,
             )
         )
+        ccls_built += 1
     for entry in params.get("tribe_sources") or []:
         if not entry.get("base_url") or not entry.get("name"):
             continue

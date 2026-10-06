@@ -529,6 +529,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             branch_name=branch_name,
             default_categories=list(entry.get("default_categories") or []),
             days_ahead=int(entry.get("days_ahead", 90)),
+            timeout=float(entry.get("timeout", 30)),
             # First page only for a fast dry-run.
             max_pages=1,
         )
