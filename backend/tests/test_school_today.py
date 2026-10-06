@@ -175,3 +175,32 @@ async def test_upcoming_keeps_a_multi_day_item_until_its_last_day():
         assert [i.title for i in (await build_today(db, school, date(2026, 10, 6))).upcoming] == ["Spirit Week"]
         assert [i.title for i in (await build_today(db, school, date(2026, 10, 9))).upcoming] == ["Spirit Week"]
         assert (await build_today(db, school, date(2026, 10, 10))).upcoming == []
+
+
+@pytest.mark.anyio
+async def test_week_strip_puts_a_days_own_items_ahead_of_week_long_ones():
+    import database
+    from models import School
+    from services.school_today import build_today
+
+    async with database.SessionLocal() as db:
+        school = School(name=f"Strip School {uuid.uuid4().hex[:8]}", slug=f"strip-{uuid.uuid4().hex[:8]}")
+        db.add(school)
+        await db.flush()
+
+        def event(title: str, day: int, end_day: int | None = None) -> SchoolContentItem:
+            return SchoolContentItem(
+                scope="school",
+                school_id=school.id,
+                category="event",
+                title=title,
+                start_date=datetime(2026, 10, day, tzinfo=_ET),
+                end_date=datetime(2026, 10, end_day, tzinfo=_ET) if end_day else None,
+                is_all_day=True,
+            )
+
+        db.add_all([event("Week A", 5, 10), event("Week B", 5, 10), event("Week C", 5, 10), event("Green Day", 8)])
+        await db.flush()
+        today = await build_today(db, school, date(2026, 10, 6))
+        thursday = next(d for d in today.week if str(d.date) == "2026-10-08")
+        assert [i.title for i in thursday.items] == ["Green Day", "Week A", "Week B"]
