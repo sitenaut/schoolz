@@ -26,7 +26,8 @@ const INACTIVE_KEY = "schoolz_inactive_schools";
 // the "exclude district" checkbox themselves; status items (closed/half
 // day/delayed) and grading dates always show regardless either way (see
 // lib/districtItems.ts:isNoisyDistrictItem). The Calendar page is the
-// only place with a control to turn it on.
+// only place with a control for it; untouched, it is off there and on for
+// Today and the week strip (see excludeDistrictOnToday).
 // _v2: the default flipped from on to off, and browsers that saved a value
 // under the old default kept it; a new key starts everyone at the new default.
 /** Fired when someone taps a school-ribbon chip - pages that narrow to one
@@ -35,12 +36,12 @@ export const RIBBON_CHANGE_EVENT = "schoolz:ribbon-change";
 
 const EXCLUDE_DISTRICT_KEY = "schoolz_exclude_district_v2";
 
-function readBool(key: string, fallback: boolean): boolean {
+function readOptBool(key: string): boolean | null {
   try {
     const raw = localStorage.getItem(key);
-    return raw === null ? fallback : raw === "1";
+    return raw === null ? null : raw === "1";
   } catch {
-    return fallback;
+    return null;
   }
 }
 
@@ -98,6 +99,8 @@ type Ctx = {
    * lib/districtItems.ts. Shared/persisted so Calendar's control also
    * governs what Today's dated lists show. */
   excludeDistrict: boolean;
+  /** The same setting as it applies to Today and the week strip: on until someone chooses otherwise. */
+  excludeDistrictOnToday: boolean;
   setExcludeDistrict: (value: boolean) => void;
 };
 
@@ -117,7 +120,12 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
   // from an incomplete `slugs` and permanently miss the account's schools.
   const [accountLoaded, setAccountLoaded] = useState(false);
   const [inactiveSlugs, setInactiveSlugs] = useState<string[]>(readList(INACTIVE_KEY));
-  const [excludeDistrict, setExcludeDistrictState] = useState<boolean>(readBool(EXCLUDE_DISTRICT_KEY, false));
+  // null = never chosen. The Calendar starts with district items shown; Today
+  // and the week strip have two or three slots, so there an untouched setting
+  // means hidden - a board meeting was taking the slot of a school's own day.
+  const [excludeDistrictChoice, setExcludeDistrictState] = useState<boolean | null>(readOptBool(EXCLUDE_DISTRICT_KEY));
+  const excludeDistrict = excludeDistrictChoice ?? false;
+  const excludeDistrictOnToday = excludeDistrictChoice ?? true;
 
   const setExcludeDistrict = useCallback((value: boolean) => {
     setExcludeDistrictState(value);
@@ -240,6 +248,7 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
     activateAll,
     isFiltered: activeSchools.length < mySchools.length,
     excludeDistrict,
+    excludeDistrictOnToday,
     setExcludeDistrict,
   };
   return <MySchoolsContext.Provider value={value}>{children}</MySchoolsContext.Provider>;

@@ -403,7 +403,7 @@ function SaccFact({ sacc }: { sacc: NonNullable<SchoolToday["sacc"]> }) {
 
 export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
   const { t } = useTranslation();
-  const { excludeDistrict } = useMySchools();
+  const { excludeDistrictOnToday: excludeDistrict } = useMySchools();
   const s = data.school;
   const kind = schoolTypeLabel(s.school_type);
   const nurse = data.contacts.find((c) => c.role === "nurse");
@@ -592,7 +592,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
 
 export function WeekStrip({ week, schoolSlug, specials }: { week: TodayDay[]; schoolSlug: string; specials?: SchoolToday["my_specials"] }) {
   const { t } = useTranslation();
-  const { excludeDistrict } = useMySchools();
+  const { excludeDistrictOnToday: excludeDistrict } = useMySchools();
   const today = todayKey();
   return (
     <div className="week">

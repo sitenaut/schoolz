@@ -203,4 +203,4 @@ async def test_week_strip_puts_a_days_own_items_ahead_of_week_long_ones():
         await db.flush()
         today = await build_today(db, school, date(2026, 10, 6))
         thursday = next(d for d in today.week if str(d.date) == "2026-10-08")
-        assert [i.title for i in thursday.items] == ["Green Day", "Week A", "Week B"]
+        assert [i.title for i in thursday.items] == ["Green Day", "Week A", "Week B", "Week C"]

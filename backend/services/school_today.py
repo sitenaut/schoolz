@@ -41,6 +41,11 @@ _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I
 _ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(?:\([^)]*\))?\s*$", re.I)
 _UPCOMING_CATEGORIES = ("event", "deadline", "initiative", "reminder", "marking_period")
 _UPCOMING_WINDOW_DAYS = 60
+# More than the three "coming up" rows and two week-strip pills the page shows:
+# the browser hides district noise first (on by default there), and with only
+# what fits sent, a day of board meetings left the slots empty.
+_UPCOMING_SENT = 12
+_WEEK_DAY_SENT = 6
 _ALERT_WINDOW_DAYS = 7
 
 _WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -333,7 +338,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         # book fair) used to vanish from here the morning after it began,
         # with most of it still ahead.
         if _item_date_range(i)[-1] >= today and i.category in _UPCOMING_CATEGORIES and not _is_rotation_item(i)
-    ][:5]
+    ][:_UPCOMING_SENT]
 
     seen: set[tuple[date, str]] = set()
     alert_items: list[SchoolContentItem] = []
@@ -359,7 +364,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         d: sorted(
             (i for i in by_day.get(d, []) if not _is_rotation_item(i) and not _is_status_item(i)),
             key=lambda i: len(_item_date_range(i)) > 1,
-        )[:3]
+        )[:_WEEK_DAY_SENT]
         for d in week
     }
 
