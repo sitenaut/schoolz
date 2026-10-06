@@ -41,7 +41,7 @@ Causes are informational on purpose. When the API is failing you get one
 actionable alert (the availability SLO) and an email naming the route - not two
 pages for one problem. If a cause fires with no symptom, the system absorbed it.
 
-`component` (`api`, `prerender`, `scheduler`, `scans`, `scraper`, `llm`, `auth`,
+`component` (`edge`, `api`, `prerender`, `scheduler`, `scans`, `scraper`, `llm`, `auth`,
 `database`, `alexa`, `growth`) is for filtering and grouping; IRM alert groups
 are per alert name + component.
 
@@ -81,16 +81,25 @@ scan SLO. `schoolz-job-failing` reads the database instead and has no such gap.
 
 ## What is not covered
 
-- **Nothing probes the site from outside.** If Fly's proxy or DNS fails, no
-  request reaches the app, so no metric says so; `schoolz-api-down` only catches
-  the process being gone. A Synthetic Monitoring check on the web and API URLs
-  is the fix (free tier covers it) and has to be created in the Grafana UI.
-- **The web container** (nginx) emits nothing. Its health is inferred from RUM.
+- **The web container** (nginx) emits nothing. Its health is inferred from RUM
+  and from the outside probe.
 - **Postgres** itself (connections, disk) is only visible from the app's pool.
 - **CloudWatch** rules exist only once a read-only key is in
   `env/secrets.prod.env` (`GRAFANA_CLOUDWATCH_*`); until then they're skipped.
 
 ## Alerts
+
+### schoolz-site-unreachable
+A Synthetic Monitoring check (`schoolz-web` on the site root, `schoolz-api` on a
+public GET that reads the database) is failing from every probe location. First
+question: are the app's own alerts quiet? If `schoolz-api-down` and the
+availability SLO are fine, requests aren't reaching the app - check DNS, the
+certificate (`fly certs show`) and Fly's status page. If they're firing too,
+this is the same outage seen from outside; work that one.
+
+The checks live only in the Grafana UI (Testing & synthetics); the rule matches
+their job names, so renaming one unwatches it - `schoolz-probe-silent` exists
+to say so.
 
 ### schoolz-api-down
 No API machine has reported telemetry for 10 minutes. One machine is always kept
@@ -168,6 +177,11 @@ call; re-run the affected scan after raising the cap or shrinking the chunk.
 ### schoolz-scraper-silent
 The schoolz scraper machine isn't reporting. It never auto-stops, so it's down:
 `fly status -a schoolz-scraper`. Scans fall back to the droplet meanwhile.
+
+### schoolz-probe-silent
+Fewer than two uptime checks are reporting, so part of the site has no outside
+watcher. Open Testing & synthetics → Checks: a check was deleted, disabled,
+renamed away from `schoolz-web` / `schoolz-api`, or never saved.
 
 ### schoolz-auth-stalled
 A visitor's auth check never resolved and they saw the Reload fallback. This is

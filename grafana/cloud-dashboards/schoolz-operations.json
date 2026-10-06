@@ -343,7 +343,7 @@
     {
       "id": 6,
       "title": "Is each process reporting?",
-      "description": "The three liveness signals behind the down/silent alerts. A line ending is the outage.",
+      "description": "The liveness signals behind the down/silent alerts, plus the outside probes. A line ending or dropping to 0 is the outage.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -384,6 +384,17 @@
           "range": true,
           "format": "time_series",
           "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "max by (job) (probe_success{job=~\"schoolz-web|schoolz-api\"})",
+          "legendFormat": "{{job}} reachable",
+          "range": true,
+          "format": "time_series",
+          "refId": "D"
         }
       ],
       "fieldConfig": {

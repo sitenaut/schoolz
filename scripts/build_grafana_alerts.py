@@ -15,8 +15,8 @@ policy (scripts/grafana_sync.py) routes on `tier` alone:
                symptom  a user- or data-visible failure with no SLO behind it
                cause    explains a symptom; rarely actionable on its own
                event    something happened (a signup), nothing is wrong
-    component  api | prerender | scheduler | scans | scraper | llm | auth |
-               database | alexa | growth
+    component  edge | api | prerender | scheduler | scans | scraper | llm |
+               auth | database | alexa | growth
     severity   critical | warning | info (derived from tier; kept because
                Grafana's own UI colours by it)
 
@@ -242,6 +242,10 @@ def burn(slo: dict, speed: str) -> dict:
     )
 
 
+# Synthetic Monitoring checks, made by hand in the Grafana UI (its API
+# refuses the service-account token). The job names are the contract.
+PROBES = 'probe_success{job=~"schoolz-web|schoolz-api"}'
+
 API = 'service_name="schoolz-api"'
 # What "the API" means for the availability and latency SLOs: real requests
 # from people. /prerender is crawler-only and has its own SLO; preflights
@@ -328,6 +332,16 @@ def rules() -> list:
                         "you: pages keep serving yesterday's data and no run fails, because no run starts.",
             dashboard="schoolz-scans",
         ),
+        prom(
+            "schoolz-site-unreachable", "schoolz: site unreachable from outside",
+            f"max by (job, instance) ({PROBES})", 1, op="lt", range_s=600,
+            tier="page", kind="symptom", component="edge", for_="6m",
+            summary="{{ $labels.instance }} is failing from every probe location",
+            description="The only alert that sees what a visitor sees: DNS, TLS, Fly's proxy and the app "
+                        "together. Every location must fail for two checks in a row, so one probe's bad "
+                        "network can't page. If the app's own alerts are quiet, the problem is in front of it.",
+            dashboard="schoolz-ops",
+        ),
         burn(SLOS[0], "fast"),
 
         # ---- ticket: real, but it can wait for daylight --------------------
@@ -387,6 +401,15 @@ def rules() -> list:
             description="It never auto-stops, so silence means it is down. Scans fall back to the shared "
                         "droplet, which is why this is a ticket and not a page.",
             dashboard="schoolz-scans",
+        ),
+        prom(
+            "schoolz-probe-silent", "schoolz: an uptime probe is not reporting",
+            f"count(count by (job) ({PROBES}))", 2, op="lt", range_s=900,
+            tier="ticket", kind="cause", component="edge", for_="15m", no_data="Alerting",
+            summary="Fewer than two uptime checks are reporting",
+            description="schoolz-site-unreachable can only fire for a check that reports. A check that "
+                        "was deleted, disabled or renamed leaves that half of the site unwatched, silently.",
+            dashboard="schoolz-ops",
         ),
         loki(
             "schoolz-auth-stalled", "schoolz: a visitor's auth check never resolved",
