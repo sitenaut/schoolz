@@ -44,6 +44,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.ludus import LudusSource
 from .sources.patch import PatchSource
 from .sources.placewise import PlacewiseSource
+from .sources.runsignup import RunSignupSource
 from .sources.rss import RSSSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
@@ -289,6 +290,20 @@ def _build_sources(params: dict) -> list[Source]:
                 fetch_via=entry.get("fetch_via", "direct"),
                 center=entry.get("center"),
                 max_miles=entry.get("max_miles"),
+                default_categories=list(entry.get("default_categories") or []),
+            )
+        )
+    for entry in params.get("runsignup_sources") or []:
+        if not entry.get("name") or not entry.get("zipcode"):
+            continue
+        sources.append(
+            RunSignupSource(
+                name=entry["name"],
+                zipcode=str(entry["zipcode"]),
+                radius=int(entry.get("radius", 15)),
+                days_ahead=int(entry.get("days_ahead", 120)),
+                states=list(entry.get("states") or []),
+                exclude_patterns=list(entry.get("exclude_patterns") or []),
                 default_categories=list(entry.get("default_categories") or []),
             )
         )

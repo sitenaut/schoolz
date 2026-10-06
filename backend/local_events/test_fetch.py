@@ -21,6 +21,7 @@ from .sources.listing_page import ListingPageSource
 from .sources.patch import PatchSource
 from .sources.placewise import PlacewiseSource
 from .sources.rss import RSSSource
+from .sources.runsignup import API_URL as RUNSIGNUP_API_URL, RunSignupSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
 from .sources.theatre import TheatreSiteSource
@@ -94,6 +95,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     placewise_sources = body.params.get("placewise_sources") or []
     patch_sources = body.params.get("patch_sources") or []
     dostuff_sources = body.params.get("dostuff_sources") or []
+    runsignup_sources = body.params.get("runsignup_sources") or []
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -126,6 +128,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.patch_sources must be a list")
     if not isinstance(dostuff_sources, list):
         raise HTTPException(status_code=400, detail="params.dostuff_sources must be a list")
+    if not isinstance(runsignup_sources, list):
+        raise HTTPException(status_code=400, detail="params.runsignup_sources must be a list")
 
     async def _diagnose(source_type: str, source, url: str) -> dict[str, str] | None:
         """Return source-type-specific diagnostic info for verbose mode."""
@@ -470,6 +474,29 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             max_pages_per_day=1,
             default_categories=list(entry.get("default_categories") or []),
         )))
+
+    for entry in runsignup_sources:
+        name = (entry or {}).get("name") or "(unnamed runsignup source)"
+        zipcode = (entry or {}).get("zipcode")
+        if not zipcode:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'zipcode' field", source_type="runsignup",
+            ))
+            continue
+        runsignup_source = RunSignupSource(
+            name=name,
+            zipcode=str(zipcode),
+            radius=int(entry.get("radius", 15)),
+            # A month is one page - enough to show the filters working.
+            days_ahead=min(int(entry.get("days_ahead", 120)), 30),
+            states=list(entry.get("states") or []),
+            exclude_patterns=list(entry.get("exclude_patterns") or []),
+            default_categories=list(entry.get("default_categories") or []),
+        )
+        runsignup_source.url = RUNSIGNUP_API_URL  # type: ignore[attr-defined]
+        results.append(await _probe("runsignup", runsignup_source))
 
     for entry in yodel_sources:
         name = (entry or {}).get("name") or "(unnamed yodel widget)"
