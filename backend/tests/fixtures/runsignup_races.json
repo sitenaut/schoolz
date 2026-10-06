@@ -1,0 +1,1554 @@
+{
+ "races": [
+  {
+   "race": {
+    "race_id": 146264,
+    "name": "BookSmiles 5K & 1 Mile Walk for Literacy",
+    "last_date": "10/11/2026",
+    "last_end_date": "10/11/2026",
+    "next_date": "10/11/2026",
+    "next_end_date": "10/11/2026",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "4/13/2023 12:49",
+    "last_modified": "10/6/2026 06:43",
+    "description": "<p>Flat and fast chip timed 5K on a certified course in Pennsauken, NJ at Cooper River Park.\u00a0</p>\n<p>Finisher, Overall and age group awards, HD finish line video, text messaging within seconds of your finish and a great event T-shirt.</p>\n<p><strong>T-shirts not guaranteed if you register after Sept",
+    "url": "https://runsignup.com/Race/NJ/CherryHill/BookSmiles5K",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "510 Park Blvd",
+     "street2": null,
+     "city": "Cherry Hill",
+     "state": "NJ",
+     "zipcode": "08002",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/races/race146264-logo-0.bKodr6.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1140738,
+      "race_event_days_id": 399075,
+      "name": "5K",
+      "details": null,
+      "start_time": "10/11/2026 09:00",
+      "end_time": "10/11/2026 11:00",
+      "age_calc_base_date": null,
+      "registration_opens": "4/1/2026 00:00",
+      "event_type": "running_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "4/1/2026 00:00",
+        "registration_closes": "10/11/2026 09:00",
+        "race_fee": "$35.00",
+        "processing_fee": "$0.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1140739,
+      "race_event_days_id": 399075,
+      "name": "1 Mile Walk",
+      "details": null,
+      "start_time": "10/11/2026 09:00",
+      "end_time": "10/11/2026 11:00",
+      "age_calc_base_date": null,
+      "registration_opens": "4/1/2026 00:00",
+      "event_type": "walking_only",
+      "distance": "1 Miles",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "4/1/2026 00:00",
+        "registration_closes": "10/11/2026 09:00",
+        "race_fee": "$35.00",
+        "processing_fee": "$0.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 201397,
+    "name": "Cookie Run 5K/10K/13.1 NEW JERSEY",
+    "last_date": "10/10/2026",
+    "last_end_date": "10/10/2026",
+    "next_date": "10/10/2026",
+    "next_end_date": "10/10/2026",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "2/18/2026 07:28",
+    "last_modified": "8/25/2026 05:27",
+    "description": "<h4><span style=\"color:rgb( 16 , 30 , 169 )\"><strong>Get Ready for the Cookie Run! &#x1f36a;\u2728</strong></span></h4>\n<h4><span style=\"color:rgb( 16 , 30 , 169 )\"><strong>Join us for the Cookie Run It&#39;s not just a race, it&#39;s an adventure filled with delicious cookies for those who run with a sw",
+    "url": "https://runsignup.com/Race/NJ/Camden/BagelRun5K10KNEWJERSEY1010",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "Wiggins Waterfront Trail (Course Map will be emailed)",
+     "street2": null,
+     "city": "Camden",
+     "state": "NJ",
+     "zipcode": "08103",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/uploads/generic/genericImage-websiteLogo-275116-1787650023.4231-0.bQJv_N.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1124734,
+      "race_event_days_id": 393033,
+      "name": "5K Registration",
+      "details": null,
+      "start_time": "10/10/2026 07:30",
+      "end_time": "10/10/2026 10:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/23/2025 23:00",
+      "event_type": "running_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/23/2025 23:00",
+        "registration_closes": "10/10/2026 01:00",
+        "race_fee": "$37.00",
+        "processing_fee": "$3.22"
+       }
+      ],
+      "giveaway": "Running Shirt + Packet"
+     },
+     {
+      "event_id": 1124735,
+      "race_event_days_id": 393033,
+      "name": "10K Registration",
+      "details": null,
+      "start_time": "10/10/2026 07:30",
+      "end_time": "10/10/2026 10:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/23/2025 23:00",
+      "event_type": "running_race",
+      "distance": "10K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/23/2025 23:00",
+        "registration_closes": "10/10/2026 01:00",
+        "race_fee": "$42.00",
+        "processing_fee": "$3.52"
+       }
+      ],
+      "giveaway": "Running Shirt + Packet"
+     },
+     {
+      "event_id": 1124736,
+      "race_event_days_id": 393033,
+      "name": "13.1 Half-Marathon Registration",
+      "details": null,
+      "start_time": "10/10/2026 07:30",
+      "end_time": "10/10/2026 10:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/23/2025 23:00",
+      "event_type": "running_race",
+      "distance": "13.1 Miles",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/23/2025 23:00",
+        "registration_closes": "10/10/2026 01:00",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       }
+      ],
+      "giveaway": "Running Shirt + Packet"
+     },
+     {
+      "event_id": 1124737,
+      "race_event_days_id": 393033,
+      "name": "Virtual Run Registration",
+      "details": null,
+      "start_time": "10/10/2026 07:30",
+      "end_time": "10/10/2026 10:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/23/2025 23:00",
+      "event_type": "virtual_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/23/2025 23:00",
+        "registration_closes": "10/10/2026 01:00",
+        "race_fee": "$37.00",
+        "processing_fee": "$3.22"
+       }
+      ],
+      "giveaway": "Virtual Packet (5K/10K/13.1)"
+     },
+     {
+      "event_id": 1124738,
+      "race_event_days_id": 393033,
+      "name": "Family 1 Mile Fun Run",
+      "details": null,
+      "start_time": "10/10/2026 07:30",
+      "end_time": "10/10/2026 10:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/23/2025 15:41",
+      "event_type": "running_race",
+      "distance": "1 Miles",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/23/2025 15:41",
+        "registration_closes": "10/10/2026 01:00",
+        "race_fee": "$35.00",
+        "processing_fee": "$3.10"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1124739,
+      "race_event_days_id": 393033,
+      "name": "5K/10K/13.1 Eco-Registration (No Shirt)",
+      "details": null,
+      "start_time": "10/10/2026 07:30",
+      "end_time": "10/10/2026 10:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/24/2025 00:49",
+      "event_type": "running_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/24/2025 00:49",
+        "registration_closes": "10/10/2026 01:00",
+        "race_fee": "$30.00",
+        "processing_fee": "$2.80"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 171423,
+    "name": "St. Charles Cheer",
+    "last_date": "10/19/2026",
+    "last_end_date": "02/27/2027",
+    "next_date": "10/19/2026",
+    "next_end_date": "02/27/2027",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "9/23/2024 13:18",
+    "last_modified": "9/21/2026 18:43",
+    "description": "<p>We are excited for our 2026-2027 cheer season. \u00a0We thank everyone for your ongoing support and look forward to having a successful season!</p>\n<p>Children in 1st through 8th grade and attending St. Charles Borromeo School or attending the St. Charles Borromeo Religious Education Program are eligi",
+    "url": "https://runsignup.com/Race/NJ/Cinnaminson/StCharlesCheer",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "St. Charles Borromeo School",
+     "street2": "2500 Branch Pike",
+     "city": "Cinnaminson",
+     "state": "NJ",
+     "zipcode": "08077",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/uploads/generic/genericImage-websiteLogo-238301-1785765886.0978-0.bQCj_-.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1211896,
+      "race_event_days_id": 422667,
+      "name": "1st - 8th Grade Cheer",
+      "details": null,
+      "start_time": "10/19/2026 12:00",
+      "end_time": "2/27/2027 12:00",
+      "age_calc_base_date": null,
+      "registration_opens": "9/8/2026 00:00",
+      "event_type": "other",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/8/2026 00:00",
+        "registration_closes": "10/15/2026 23:59",
+        "race_fee": "$110.00",
+        "processing_fee": "$0.00"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 107022,
+    "name": "Cinnaminson Running Club",
+    "last_date": null,
+    "last_end_date": null,
+    "next_date": null,
+    "next_end_date": null,
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "2/14/2021 15:52",
+    "last_modified": "10/4/2026 21:18",
+    "description": "<p>Our Cinnaminson Running Club is a youth running club for kids in Cinnaminson and neighboring towns from kindergarten through high school (for the 2026 - 2027 school year). \u00a0Our club is an affiliate member of the Road Runners Club of America (RRCA).</p>\n<p><b>Our club&#39;s mission</b> is to:</p>\n",
+    "url": "https://runsignup.com/Race/NJ/Cinnaminson/CinnaminsonRunningClub",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "Memorial Park",
+     "street2": "Lenola Rd & Forklanding Rd",
+     "city": "Cinnaminson",
+     "state": "NJ",
+     "zipcode": "08077",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/races/race107022-logo-0.bGkVNt.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 471588,
+      "race_event_days_id": 180297,
+      "name": "Club Membership",
+      "details": null,
+      "start_time": "9/1/2026 00:00",
+      "end_time": "8/30/2027 23:59",
+      "age_calc_base_date": null,
+      "registration_opens": "9/1/2026 00:00",
+      "event_type": "virtual_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/1/2026 00:00",
+        "registration_closes": "8/30/2027 23:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$0.00"
+       }
+      ],
+      "giveaway": "Tech team shirt"
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 162527,
+    "name": "Healthy Kids Running Series Fall 2026 - Gloucester Twp., NJ",
+    "last_date": "10/11/2026",
+    "last_end_date": "11/08/2026",
+    "next_date": "10/11/2026",
+    "next_end_date": "11/08/2026",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "3/22/2024 16:08",
+    "last_modified": "10/5/2026 11:34",
+    "description": "<p><strong>Who We Are:</strong> Healthy Kids Running Series is a five (5) week running program in the spring and fall for kids Pre-K through 8th grade. Each HKRS Series takes place once a week and offers age-appropriate running events including the 50 &amp; 75 yard dashes, the 1/4 mile, the 1/2 mile",
+    "url": "https://runsignup.com/Race/NJ/LaurelSprings/HealthyKidsRunningSeriesGloucesterTwpNJ",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "Veterans Memorial Park",
+     "street2": "1261 Chews Landing Rd",
+     "city": "Laurel Springs",
+     "state": "NJ",
+     "zipcode": "08021",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/races/race162527-scaled-logo-0.bMiwcn.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1171140,
+      "race_event_days_id": 409598,
+      "name": "PreK 2/3 Yr Old - 50 Yard Dash",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171141,
+      "race_event_days_id": 409598,
+      "name": "PreK 4/5 Yr Old - 75 Yard Dash",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171142,
+      "race_event_days_id": 409598,
+      "name": "Kindergarten & 1st Grade - 1/4 Mile",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171143,
+      "race_event_days_id": 409598,
+      "name": "2nd & 3rd Grade - 1/2 Mile",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171144,
+      "race_event_days_id": 409598,
+      "name": "4th & 5th Grade - 1 Mile",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171145,
+      "race_event_days_id": 409598,
+      "name": "6th to 8th Grade - 1 Mile",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171146,
+      "race_event_days_id": 409598,
+      "name": "Challenger Division - 75 Yard Dash",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "6/9/2026 15:17",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/9/2026 15:17",
+        "registration_closes": "9/6/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$3.70"
+       },
+       {
+        "registration_opens": "9/7/2026 00:00",
+        "registration_closes": "10/25/2026 23:59",
+        "race_fee": "$50.00",
+        "processing_fee": "$4.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1171147,
+      "race_event_days_id": 409598,
+      "name": "Single Day Walk Up Week 1",
+      "details": null,
+      "start_time": "10/11/2026 10:30",
+      "end_time": "11/8/2026 11:30",
+      "age_calc_base_date": null,
+      "registration_opens": "10/11/2026 09:30",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/11/2026 09:30",
+        "registration_closes": "10/11/2026 12:30",
+        "race_fee": "$15.00",
+        "processing_fee": "$1.90"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 77344,
+    "name": "WXPN 5K Run for Musicians On Call",
+    "last_date": "10/11/2026",
+    "last_end_date": "10/18/2026",
+    "next_date": "10/11/2026",
+    "next_end_date": "10/18/2026",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "6/13/2019 21:35",
+    "last_modified": "10/6/2026 11:09",
+    "description": "<h4><strong>Make a Difference with Every Step!</strong></h4>\n<p>Hey, music lovers and change-makers! It&#39;s time to lace up those running shoes and gather your squad. Join us for the 12th annual WXPN 5K Run, the ultimate event to support Musicians On Call, our heartwarming initiative that has been",
+    "url": "https://runsignup.com/Race/PA/Philadelphia/WXPN5krun",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "Penn Park or anywhere you want to run or walk",
+     "street2": "3100 Lower Walnut Street.",
+     "city": "Philadelphia",
+     "state": "PA",
+     "zipcode": "19104",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/uploads/generic/genericImage-websiteLogo-83995-1781642951.7149-0.bQmBBh.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1139327,
+      "race_event_days_id": 398519,
+      "name": "5K Run @ Penn Park",
+      "details": null,
+      "start_time": "10/18/2026 00:00",
+      "end_time": "10/18/2026 11:00",
+      "age_calc_base_date": null,
+      "registration_opens": "6/18/2026 00:00",
+      "event_type": "running_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/18/2026 00:00",
+        "registration_closes": "7/2/2026 23:59",
+        "race_fee": "$35.00",
+        "processing_fee": "$2.48"
+       },
+       {
+        "registration_opens": "7/3/2026 00:00",
+        "registration_closes": "10/12/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$2.96"
+       },
+       {
+        "registration_opens": "10/16/2026 13:00",
+        "registration_closes": "10/18/2026 23:59",
+        "race_fee": "$60.00",
+        "processing_fee": "$3.68"
+       }
+      ],
+      "giveaway": "Official Event Shirt"
+     },
+     {
+      "event_id": 1139328,
+      "race_event_days_id": 398519,
+      "name": "5K Run - Virtual",
+      "details": null,
+      "start_time": "10/11/2026 00:00",
+      "end_time": "10/18/2026 11:00",
+      "age_calc_base_date": null,
+      "registration_opens": "6/18/2026 00:00",
+      "event_type": "virtual_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/18/2026 00:00",
+        "registration_closes": "7/2/2026 23:59",
+        "race_fee": "$30.00",
+        "processing_fee": "$2.24"
+       },
+       {
+        "registration_opens": "7/3/2026 00:00",
+        "registration_closes": "10/12/2026 23:59",
+        "race_fee": "$40.00",
+        "processing_fee": "$2.72"
+       }
+      ],
+      "giveaway": "Official Event Shirt"
+     },
+     {
+      "event_id": 1139329,
+      "race_event_days_id": 398519,
+      "name": "Funky Miler Walk @ Penn Park",
+      "details": null,
+      "start_time": "10/18/2026 00:00",
+      "end_time": "10/18/2026 11:00",
+      "age_calc_base_date": null,
+      "registration_opens": "6/18/2026 00:00",
+      "event_type": "walking_only",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/18/2026 00:00",
+        "registration_closes": "7/2/2026 23:59",
+        "race_fee": "$35.00",
+        "processing_fee": "$2.48"
+       },
+       {
+        "registration_opens": "7/3/2026 00:00",
+        "registration_closes": "10/12/2026 23:59",
+        "race_fee": "$45.00",
+        "processing_fee": "$2.96"
+       },
+       {
+        "registration_opens": "10/16/2026 13:00",
+        "registration_closes": "10/18/2026 09:00",
+        "race_fee": "$60.00",
+        "processing_fee": "$3.68"
+       }
+      ],
+      "giveaway": "Official Event Shirt"
+     },
+     {
+      "event_id": 1139330,
+      "race_event_days_id": 398519,
+      "name": "Funky Miler Walk - Virtual",
+      "details": null,
+      "start_time": "10/11/2026 00:00",
+      "end_time": "10/18/2026 11:00",
+      "age_calc_base_date": null,
+      "registration_opens": "6/18/2026 09:00",
+      "event_type": "virtual_race",
+      "distance": "1 Miles",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "6/18/2026 09:00",
+        "registration_closes": "7/2/2026 23:59",
+        "race_fee": "$30.00",
+        "processing_fee": "$2.24"
+       },
+       {
+        "registration_opens": "7/3/2026 00:00",
+        "registration_closes": "10/12/2026 23:59",
+        "race_fee": "$40.00",
+        "processing_fee": "$2.72"
+       }
+      ],
+      "giveaway": "Official Event Shirt"
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 164465,
+    "name": "Hainesport Endurance Run",
+    "last_date": "10/10/2026",
+    "last_end_date": "10/12/2026",
+    "next_date": "10/10/2026",
+    "next_end_date": "10/12/2026",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "4/30/2024 06:56",
+    "last_modified": "10/6/2026 13:11",
+    "description": "<p>Timed endurance runs on a one mile loop.</p>",
+    "url": "https://runsignup.com/Race/NJ/Hainesport/endurancerun",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "1401 Marne Hwy",
+     "street2": null,
+     "city": "Hainesport",
+     "state": "NJ",
+     "zipcode": "08036",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/uploads/generic/genericImage-websiteLogo-229625-1714477604.3656-0.bMmnOK.jpg",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1068796,
+      "race_event_days_id": 374585,
+      "name": "12 Hour - Saturday",
+      "details": null,
+      "start_time": "10/10/2026 09:00",
+      "end_time": "10/10/2026 21:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$75.00",
+        "processing_fee": "$5.50"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$95.00",
+        "processing_fee": "$6.70"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$115.00",
+        "processing_fee": "$7.90"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$125.00",
+        "processing_fee": "$8.50"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$135.00",
+        "processing_fee": "$9.10"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/10/2026 08:45",
+        "race_fee": "$155.00",
+        "processing_fee": "$10.30"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068797,
+      "race_event_days_id": 374585,
+      "name": "12 Hour - Sunday",
+      "details": null,
+      "start_time": "10/11/2026 09:00",
+      "end_time": "10/11/2026 21:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$55.00",
+        "processing_fee": "$4.30"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$75.00",
+        "processing_fee": "$5.50"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$95.00",
+        "processing_fee": "$6.70"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$105.00",
+        "processing_fee": "$7.30"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$115.00",
+        "processing_fee": "$7.90"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/11/2026 08:45",
+        "race_fee": "$135.00",
+        "processing_fee": "$9.10"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068798,
+      "race_event_days_id": 374585,
+      "name": "24 Hour - Saturday",
+      "details": null,
+      "start_time": "10/10/2026 09:00",
+      "end_time": "10/11/2026 09:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$160.00",
+        "processing_fee": "$10.60"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$190.00",
+        "processing_fee": "$12.40"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$210.00",
+        "processing_fee": "$13.60"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$230.00",
+        "processing_fee": "$14.80"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$250.00",
+        "processing_fee": "$13.50"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/10/2026 08:45",
+        "race_fee": "$280.00",
+        "processing_fee": "$15.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068799,
+      "race_event_days_id": 374585,
+      "name": "24 Hour - Sunday",
+      "details": null,
+      "start_time": "10/11/2026 09:00",
+      "end_time": "10/12/2026 09:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$125.00",
+        "processing_fee": "$8.50"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$165.00",
+        "processing_fee": "$10.90"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$185.00",
+        "processing_fee": "$12.10"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$205.00",
+        "processing_fee": "$13.30"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$225.00",
+        "processing_fee": "$14.50"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/11/2026 08:45",
+        "race_fee": "$255.00",
+        "processing_fee": "$13.75"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068800,
+      "race_event_days_id": 374585,
+      "name": "100 Miler",
+      "details": null,
+      "start_time": "10/10/2026 09:00",
+      "end_time": "10/11/2026 15:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$160.00",
+        "processing_fee": "$10.60"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$190.00",
+        "processing_fee": "$12.40"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$210.00",
+        "processing_fee": "$13.60"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$230.00",
+        "processing_fee": "$14.80"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$250.00",
+        "processing_fee": "$13.50"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/10/2026 08:45",
+        "race_fee": "$280.00",
+        "processing_fee": "$15.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068801,
+      "race_event_days_id": 374585,
+      "name": "48 Hour",
+      "details": null,
+      "start_time": "10/10/2026 09:00",
+      "end_time": "10/12/2026 09:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$210.00",
+        "processing_fee": "$13.60"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$240.00",
+        "processing_fee": "$15.40"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$250.00",
+        "processing_fee": "$13.50"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$260.00",
+        "processing_fee": "$14.00"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$280.00",
+        "processing_fee": "$15.00"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/10/2026 08:45",
+        "race_fee": "$310.00",
+        "processing_fee": "$16.50"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068802,
+      "race_event_days_id": 374585,
+      "name": "12 Hour Relay - Sunday",
+      "details": null,
+      "start_time": "10/11/2026 09:00",
+      "end_time": "10/11/2026 21:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$250.00",
+        "processing_fee": "$13.50"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$280.00",
+        "processing_fee": "$15.00"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$290.00",
+        "processing_fee": "$15.50"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$310.00",
+        "processing_fee": "$16.50"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$330.00",
+        "processing_fee": "$17.50"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/11/2026 08:45",
+        "race_fee": "$350.00",
+        "processing_fee": "$18.50"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     },
+     {
+      "event_id": 1068803,
+      "race_event_days_id": 374585,
+      "name": "24 Hour Relay - Saturday",
+      "details": null,
+      "start_time": "10/10/2026 09:00",
+      "end_time": "10/11/2026 09:00",
+      "age_calc_base_date": null,
+      "registration_opens": "10/26/2025 00:00",
+      "event_type": "running_race",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "10/26/2025 00:00",
+        "registration_closes": "12/31/2025 23:59",
+        "race_fee": "$400.00",
+        "processing_fee": "$21.00"
+       },
+       {
+        "registration_opens": "1/1/2026 00:00",
+        "registration_closes": "3/28/2026 23:59",
+        "race_fee": "$430.00",
+        "processing_fee": "$22.50"
+       },
+       {
+        "registration_opens": "3/29/2026 00:00",
+        "registration_closes": "7/29/2026 23:59",
+        "race_fee": "$440.00",
+        "processing_fee": "$23.00"
+       },
+       {
+        "registration_opens": "7/30/2026 00:00",
+        "registration_closes": "8/29/2026 23:59",
+        "race_fee": "$460.00",
+        "processing_fee": "$24.00"
+       },
+       {
+        "registration_opens": "8/30/2026 00:00",
+        "registration_closes": "9/25/2026 23:59",
+        "race_fee": "$480.00",
+        "processing_fee": "$25.00"
+       },
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "10/10/2026 08:45",
+        "race_fee": "$500.00",
+        "processing_fee": "$26.00"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 138892,
+    "name": "Winter Thaw Out Race Series",
+    "last_date": null,
+    "last_end_date": null,
+    "next_date": null,
+    "next_end_date": null,
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "11/8/2022 10:16",
+    "last_modified": "9/26/2026 12:06",
+    "description": "<h4><b>*The race on 3/1 has been postponed due to several fallen trees on the course*</b></h4>\n<p>\u00a0</p>\n<p><b>Having trouble getting motivated while its cold out? Want to get a jump on the spring racing season? The come out and join us for a series of four 5k races.\u00a0 Race will be held at Elephant Sw",
+    "url": "https://runsignup.com/Race/NJ/Glassboro/WinterThawOutRaceSeries",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "Elk Township Recreational Park, Recreation Dr",
+     "street2": null,
+     "city": "Glassboro",
+     "state": "NJ",
+     "zipcode": "08028",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/races/race138892-logo-0.bLPwDh.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1219149,
+      "race_event_days_id": 424813,
+      "name": "5k Trail Run 2/28",
+      "details": null,
+      "start_time": "2/28/2027 09:00",
+      "end_time": null,
+      "age_calc_base_date": null,
+      "registration_opens": "9/26/2026 10:00",
+      "event_type": "trail_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/26/2026 10:00",
+        "registration_closes": "1/3/2027 00:00",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       },
+       {
+        "registration_opens": "1/4/2027 00:00",
+        "registration_closes": "2/28/2027 08:50",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       }
+      ]
+     },
+     {
+      "event_id": 1219150,
+      "race_event_days_id": 424813,
+      "name": "5k Trail Run 3/7",
+      "details": null,
+      "start_time": "3/7/2027 09:00",
+      "end_time": null,
+      "age_calc_base_date": null,
+      "registration_opens": "9/26/2026 10:00",
+      "event_type": "trail_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/26/2026 10:00",
+        "registration_closes": "12/13/2026 23:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       },
+       {
+        "registration_opens": "12/14/2026 00:00",
+        "registration_closes": "3/7/2027 08:45",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       }
+      ]
+     },
+     {
+      "event_id": 1219151,
+      "race_event_days_id": 424813,
+      "name": "5k Trail Run 3/14",
+      "details": null,
+      "start_time": "3/14/2027 09:00",
+      "end_time": null,
+      "age_calc_base_date": null,
+      "registration_opens": "9/26/2026 10:00",
+      "event_type": "trail_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/26/2026 10:00",
+        "registration_closes": "1/3/2027 23:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       },
+       {
+        "registration_opens": "1/4/2027 00:00",
+        "registration_closes": "3/6/2027 23:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       },
+       {
+        "registration_opens": "3/7/2027 00:00",
+        "registration_closes": "3/14/2027 23:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       }
+      ]
+     },
+     {
+      "event_id": 1219152,
+      "race_event_days_id": 424813,
+      "name": "5k Trail Run 3/21",
+      "details": null,
+      "start_time": "3/21/2027 09:00",
+      "end_time": null,
+      "age_calc_base_date": null,
+      "registration_opens": "9/26/2026 00:00",
+      "event_type": "trail_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/26/2026 00:00",
+        "registration_closes": "1/3/2027 23:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       },
+       {
+        "registration_opens": "1/4/2027 00:00",
+        "registration_closes": "3/13/2027 11:59",
+        "race_fee": "$25.00",
+        "processing_fee": "$2.50"
+       },
+       {
+        "registration_opens": "3/13/2027 12:00",
+        "registration_closes": "3/21/2027 23:59",
+        "race_fee": "$30.00",
+        "processing_fee": "$2.80"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 211374,
+    "name": "We Love Teachers 5K  -  Philadelphia",
+    "last_date": "10/10/2026",
+    "last_end_date": "10/10/2026",
+    "next_date": "10/10/2026",
+    "next_end_date": "10/10/2026",
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "T",
+    "created": "7/20/2026 15:17",
+    "last_modified": "9/29/2026 05:51",
+    "description": "<h2 style=\"line-height:1\"><span style=\"color:rgb( 224 , 62 , 45 )\"><strong>This is a virtual race only.</strong></span></h2>\n<h3 style=\"line-height:1\">\u00a0</h3>\n<h3 style=\"line-height:1\"><strong>10 Cities.\u00a0</strong></h3>\n<h3 style=\"line-height:1\"><strong>One Day. </strong></h3>\n<h3 style=\"line-height:1",
+    "url": "https://runsignup.com/Race/PA/Philadelphia/WeLoveTeachers5KPhiladelphia",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "8500 Pine Road",
+     "street2": null,
+     "city": "Philadelphia",
+     "state": "PA",
+     "zipcode": "19111",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/uploads/generic/genericImage-websiteLogo-282396-1778534433.333-0.bQaKGH.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 1207957,
+      "race_event_days_id": 414693,
+      "name": "Virtual - We \u2665\ufe0f  Teachers 5K",
+      "details": null,
+      "start_time": "10/10/2026 08:00",
+      "end_time": null,
+      "age_calc_base_date": null,
+      "registration_opens": "9/3/2026 13:40",
+      "event_type": "virtual_race",
+      "distance": "5K",
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/3/2026 13:40",
+        "registration_closes": "10/10/2026 11:00",
+        "race_fee": "$40.00",
+        "processing_fee": "$3.40"
+       }
+      ],
+      "giveaway": "T-Shirt"
+     }
+    ]
+   }
+  },
+  {
+   "race": {
+    "race_id": 118533,
+    "name": "Ninja Warrior Open Gym",
+    "last_date": null,
+    "last_end_date": null,
+    "next_date": null,
+    "next_end_date": null,
+    "is_draft_race": "F",
+    "is_private_race": "F",
+    "is_registration_open": "F",
+    "created": "9/12/2021 20:44",
+    "last_modified": "6/5/2024 15:53",
+    "description": "<p>Open gym with Ninja Warrior courses set up.</p>",
+    "url": "https://runsignup.com/Race/NJ/MountLaurel/NinjaWarriorOpenGym",
+    "external_race_url": null,
+    "external_results_url": null,
+    "fb_page_id": null,
+    "fb_event_id": null,
+    "address": {
+     "street": "2036 Briggs Rd",
+     "street2": null,
+     "city": "Mount Laurel",
+     "state": "NJ",
+     "zipcode": "08054",
+     "country_code": "US"
+    },
+    "timezone": "America/New_York",
+    "logo_url": "https://d368g9lw5ileu7.cloudfront.net/img/logos/genericWebsiteLogos/adventure-300px.bMjMog.png",
+    "real_time_notifications_enabled": "F",
+    "events": [
+     {
+      "event_id": 534486,
+      "race_event_days_id": 201312,
+      "name": "Ninja Clinic/Open Gym Meet American Ninja Warrior Superstar Captain NBC-Jamie Rahn",
+      "details": null,
+      "start_time": "10/3/2021 13:00",
+      "end_time": "10/3/2121 14:30",
+      "age_calc_base_date": null,
+      "registration_opens": "9/12/2021 20:44",
+      "event_type": "obstacle_course",
+      "distance": null,
+      "volunteer": "F",
+      "require_dob": "T",
+      "require_phone": "T",
+      "registration_periods": [
+       {
+        "registration_opens": "9/12/2021 20:44",
+        "registration_closes": "10/2/2021 23:59",
+        "race_fee": "$35.00",
+        "processing_fee": "$3.03"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

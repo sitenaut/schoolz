@@ -109,6 +109,22 @@
             "philadelphia"
           ]
         }
+      ],
+      "runsignup_sources": [
+        {
+          "name": "runsignup",
+          "zipcode": "08002",
+          "radius": 25,
+          "days_ahead": 120,
+          "exclude_patterns": [
+            "course map will be emailed",
+            "^test\\b",
+            "volunteer sign-?up"
+          ],
+          "default_categories": [
+            "sports"
+          ]
+        }
       ]
     }
   }
