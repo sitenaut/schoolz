@@ -75,3 +75,12 @@ def test_numeric_ordinal_grade_names_match_spelled_out_ones():
 def test_upper_elementary_matches_middle_school():
     cafe = _cafe("Bell Oaks Upper Elementary School", "Bellmawr Park Elementary School")
     assert match_school("Bell Oaks Middle School", cafe)["SchoolId"] == "id-0"
+
+
+def test_match_school_ignores_middle_initial_and_level_word():
+    cafe = [
+        {"SchoolName": "Mary Bray Elementary"},
+        {"SchoolName": "Raymond Kershaw Elementary"},
+    ]
+    assert match_school("Raymond W. Kershaw Middle School", cafe)["SchoolName"] == "Raymond Kershaw Elementary"
+    assert match_school("Someone Else Middle School", cafe) is None

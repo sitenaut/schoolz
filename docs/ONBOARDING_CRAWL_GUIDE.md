@@ -830,6 +830,26 @@ on this list** - it's ArbiterLive branding, already supported.
     archive page; staff directory has names and titles only (no emails but the
     principal's); no transportation page; Lenape's
     seed already lists Medford Lakes as a sending town.
+- **Mount Ephraim (Edlio CMS, `www.mtephraimschools.com` + a subdomain per
+  school)** — Mary Bray (PreK-2/elementary) and Raymond W. Kershaw (middle),
+  K-8; grades 9-12 go to Audubon HS, so `audubon_barrington.json` lists
+  "Mount Ephraim" in Audubon's `towns`. Seed `backend/seed/mt_ephraim.json`.
+  - **Calendar**: `/apps/events/ical/?id=N` on the district host, as at Medford
+    Township: 0 = district (only 3 items), 1 = Mary Bray, 2 = Kershaw
+    (`school_slug` feeds, ~240 and ~120 items).
+  - **Lunch**: SchoolCafé `MOUNTEPHRAIMPSNUTRISERVE` (the obvious `...SD...`
+    guesses are empty). Its two sites are both typed "Elementary", so
+    `match_school` gained a last-resort match on name tokens minus level words
+    and middle initials ("Raymond W. Kershaw Middle" = "Raymond Kershaw
+    Elementary"). The food page's own menus are Drive PDFs, not used.
+  - **Per-school websites**: each school has its own Edlio subdomain
+    (`mbe.`/`rkm.`), so `school_info`, staff and documents scans work as for
+    Medford Township (staff 25-47 per school, names and titles only).
+  - **Gaps**: bell times (the Mary Bray schedule is a Google Sheet that needs a
+    sign-in; none published for Kershaw), absence method (Red Rover is the
+    staff tool; nothing public for parents), no newsletters, no logos,
+    transportation. Kershaw's footer prints its ZIP as `8059`, which
+    `school_info.scan` writes back over the seed's `08059`.
 - **Sterling Regional HS district + its four sending districts** (Somerdale,
   Magnolia, Stratford incl. Hi-Nella's students, Laurel Springs) —
   `backend/seed/{sterling,somerdale,stratford,magnolia,laurel_springs}.json`.
