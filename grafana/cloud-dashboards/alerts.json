@@ -3,38 +3,44 @@
   "groups": [
     {
       "orgId": 1,
-      "name": "schoolz-alerts",
+      "name": "schoolz-page",
       "folder": "schoolz",
-      "interval": "5m",
+      "interval": "1m",
       "rules": [
         {
-          "uid": "schoolz-scheduler-down",
-          "title": "schoolz: scheduler has stopped reconciling",
+          "uid": "schoolz-api-down",
+          "title": "schoolz: API is not reporting",
           "condition": "C",
           "for": "10m",
           "labels": {
             "app": "schoolz",
-            "severity": "warning"
+            "tier": "page",
+            "kind": "symptom",
+            "component": "api",
+            "severity": "critical"
           },
           "annotations": {
-            "summary": "The scheduler process hasn't ticked in 10 minutes - every scan is silently stopped. It reconciles every 30s, so this should never be below 1."
+            "summary": "No schoolz-api machine has reported in 10 minutes",
+            "description": "Every API machine exports a memory sample every 30s and one machine is always kept running, so silence means none is up (or telemetry export broke). The site shows empty pages while this lasts.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-api-down",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
           },
           "noDataState": "Alerting",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-page",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 3600,
+                "from": 600,
                 "to": 0
               },
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "sum(increase(schoolz_scheduler_reconciles_total{service_namespace=\"schoolz\"}[10m]))",
+                "expr": "count(process_memory_usage_bytes{service_namespace=\"schoolz\", service_name=\"schoolz-api\"})",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -46,7 +52,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -71,85 +80,28 @@
           ]
         },
         {
-          "uid": "schoolz-job-error-ratio",
-          "title": "schoolz: scan failure ratio above 30%",
-          "condition": "C",
-          "for": "30m",
-          "labels": {
-            "app": "schoolz",
-            "severity": "warning"
-          },
-          "annotations": {
-            "summary": "More than 30% of scans failed over the last 12h window (one full scan cycle). Check the Scans dashboard's failures-by-error-code panel."
-          },
-          "noDataState": "OK",
-          "execErrState": "Error",
-          "orgId": 1,
-          "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 3600,
-                "to": 0
-              },
-              "datasourceUid": "${DS_METRICS}",
-              "model": {
-                "refId": "A",
-                "expr": "sum(increase(schoolz_job_runs_total{service_namespace=\"schoolz\", status=\"error\"}[12h])) / clamp_min(sum(increase(schoolz_job_runs_total{service_namespace=\"schoolz\"}[12h])), 1)",
-                "instant": true,
-                "editorMode": "code"
-              }
-            },
-            {
-              "refId": "B",
-              "datasourceUid": "__expr__",
-              "model": {
-                "refId": "B",
-                "type": "reduce",
-                "reducer": "last",
-                "expression": "A"
-              }
-            },
-            {
-              "refId": "C",
-              "datasourceUid": "__expr__",
-              "model": {
-                "refId": "C",
-                "type": "threshold",
-                "expression": "B",
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "type": "gt",
-                      "params": [
-                        0.3
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "uid": "schoolz-api-5xx",
-          "title": "schoolz: API 5xx ratio above 2%",
+          "uid": "schoolz-scheduler-down",
+          "title": "schoolz: scheduler has stopped reconciling",
           "condition": "C",
           "for": "10m",
           "labels": {
             "app": "schoolz",
-            "severity": "warning"
+            "tier": "page",
+            "kind": "symptom",
+            "component": "scheduler",
+            "severity": "critical"
           },
           "annotations": {
-            "summary": "The API is returning server errors to real visitors."
+            "summary": "The scheduler hasn't ticked in 10 minutes - every scan is stopped",
+            "description": "It reconciles every 30s, so this should never be below 1. Nothing else will tell you: pages keep serving yesterday's data and no run fails, because no run starts.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-scheduler-down",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
           },
-          "noDataState": "OK",
+          "noDataState": "Alerting",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-page",
           "data": [
             {
               "refId": "A",
@@ -160,7 +112,7 @@
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", http_response_status_code=~\"5..\"}[10m])) / clamp_min(sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\"}[10m])), 0.001)",
+                "expr": "sum(increase(schoolz_scheduler_reconciles_total{service_namespace=\"schoolz\"}[10m]))",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -172,7 +124,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -185,9 +140,9 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "type": "gt",
+                      "type": "lt",
                       "params": [
-                        0.02
+                        1
                       ]
                     }
                   }
@@ -197,33 +152,895 @@
           ]
         },
         {
-          "uid": "schoolz-api-latency",
-          "title": "schoolz: public GET p95 above 1.5s",
+          "uid": "schoolz-slo-api-availability-fast",
+          "title": "schoolz SLO: API availability error budget burning fast",
+          "condition": "F",
+          "for": "2m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "page",
+            "kind": "slo",
+            "component": "api",
+            "severity": "critical",
+            "slo": "api-availability"
+          },
+          "annotations": {
+            "summary": "API availability: error budget burning fast (objective 99.5% over 28d)",
+            "description": "Share of API requests from real visitors answered without a 5xx. At this rate the whole 28-day error budget is gone in about two days. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1h, {{ printf \"%.1f\" $values.C.Value }}x over 6h.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-api-availability-fast",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzapiavail"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-page",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_5m{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_30m{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route!=\"/prerender\", http_request_method!=\"OPTIONS\"}[1h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 14.4 && $B > 14.4) || ($C > 6 && $D > 6)) && $E > 50"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "schoolz-ticket",
+      "folder": "schoolz",
+      "interval": "5m",
+      "rules": [
+        {
+          "uid": "schoolz-slo-api-availability-slow",
+          "title": "schoolz SLO: API availability error budget burning steadily",
+          "condition": "F",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "api",
+            "severity": "warning",
+            "slo": "api-availability"
+          },
+          "annotations": {
+            "summary": "API availability: error budget burning steadily (objective 99.5% over 28d)",
+            "description": "Share of API requests from real visitors answered without a 5xx. Nothing is on fire, but this pace spends the 28-day error budget before the window ends. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1d, {{ printf \"%.1f\" $values.C.Value }}x over 3d.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-api-availability-slow",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzapiavail"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1d{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_2h{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_3d{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzapiavail\"}) / 0.005",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route!=\"/prerender\", http_request_method!=\"OPTIONS\"}[6h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 3 && $B > 3) || ($C > 1 && $D > 1)) && $E > 300"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-slo-api-latency-fast",
+          "title": "schoolz SLO: API latency error budget burning fast",
+          "condition": "F",
+          "for": "2m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "api",
+            "severity": "warning",
+            "slo": "api-latency"
+          },
+          "annotations": {
+            "summary": "API latency: error budget burning fast (objective 95.0% over 28d)",
+            "description": "Share of interactive GETs answered within 1 second. At this rate the whole 28-day error budget is gone in about two days. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1h, {{ printf \"%.1f\" $values.C.Value }}x over 6h.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-api-latency-fast",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzapilatency"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_5m{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_30m{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[1h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 14.4 && $B > 14.4) || ($C > 6 && $D > 6)) && $E > 50"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-slo-api-latency-slow",
+          "title": "schoolz SLO: API latency error budget burning steadily",
+          "condition": "F",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "api",
+            "severity": "warning",
+            "slo": "api-latency"
+          },
+          "annotations": {
+            "summary": "API latency: error budget burning steadily (objective 95.0% over 28d)",
+            "description": "Share of interactive GETs answered within 1 second. Nothing is on fire, but this pace spends the 28-day error budget before the window ends. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1d, {{ printf \"%.1f\" $values.C.Value }}x over 3d.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-api-latency-slow",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzapilatency"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1d{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_2h{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_3d{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzapilatency\"}) / 0.05",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[6h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 3 && $B > 3) || ($C > 1 && $D > 1)) && $E > 300"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-slo-prerender-fast",
+          "title": "schoolz SLO: Prerender for crawlers error budget burning fast",
+          "condition": "F",
+          "for": "2m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "prerender",
+            "severity": "warning",
+            "slo": "prerender"
+          },
+          "annotations": {
+            "summary": "Prerender for crawlers: error budget burning fast (objective 99.0% over 28d)",
+            "description": "Share of /prerender requests (search engines and link previews) that returned a page. At this rate the whole 28-day error budget is gone in about two days. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1h, {{ printf \"%.1f\" $values.C.Value }}x over 6h.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-prerender-fast",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzprerender"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_5m{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_30m{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route=\"/prerender\"}[1h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 14.4 && $B > 14.4) || ($C > 6 && $D > 6)) && $E > 30"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-slo-prerender-slow",
+          "title": "schoolz SLO: Prerender for crawlers error budget burning steadily",
+          "condition": "F",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "prerender",
+            "severity": "warning",
+            "slo": "prerender"
+          },
+          "annotations": {
+            "summary": "Prerender for crawlers: error budget burning steadily (objective 99.0% over 28d)",
+            "description": "Share of /prerender requests (search engines and link previews) that returned a page. Nothing is on fire, but this pace spends the 28-day error budget before the window ends. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1d, {{ printf \"%.1f\" $values.C.Value }}x over 3d.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-prerender-slow",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzprerender"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1d{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_2h{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_3d{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzprerender\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_route=\"/prerender\"}[6h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 3 && $B > 3) || ($C > 1 && $D > 1)) && $E > 180"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-slo-scans-fast",
+          "title": "schoolz SLO: Scan runs error budget burning fast",
+          "condition": "F",
+          "for": "2m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "scans",
+            "severity": "warning",
+            "slo": "scans"
+          },
+          "annotations": {
+            "summary": "Scan runs: error budget burning fast (objective 99.0% over 28d)",
+            "description": "Share of scan runs that finished without an error (warnings count as finished). At this rate the whole 28-day error budget is gone in about two days. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1h, {{ printf \"%.1f\" $values.C.Value }}x over 6h.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-scans-fast",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzscans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1h{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_5m{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_30m{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(schoolz_job_runs_total{service_namespace=\"schoolz\", status!=\"skipped\"}[1h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 14.4 && $B > 14.4) || ($C > 6 && $D > 6)) && $E > 10"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-slo-scans-slow",
+          "title": "schoolz SLO: Scan runs error budget burning steadily",
+          "condition": "F",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "slo",
+            "component": "scans",
+            "severity": "warning",
+            "slo": "scans"
+          },
+          "annotations": {
+            "summary": "Scan runs: error budget burning steadily (objective 99.0% over 28d)",
+            "description": "Share of scan runs that finished without an error (warnings count as finished). Nothing is on fire, but this pace spends the 28-day error budget before the window ends. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1d, {{ printf \"%.1f\" $values.C.Value }}x over 3d.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-slo-scans-slow",
+            "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzscans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "(1 - grafana_slo_sli_1d{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "B",
+                "expr": "(1 - grafana_slo_sli_2h{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "C",
+                "expr": "(1 - grafana_slo_sli_3d{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "D",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "D",
+                "expr": "(1 - grafana_slo_sli_6h{grafana_slo_uuid=\"schoolzscans\"}) / 0.01",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "E",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "E",
+                "expr": "sum(increase(schoolz_job_runs_total{service_namespace=\"schoolz\", status!=\"skipped\"}[6h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "F",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "F",
+                "type": "math",
+                "expression": "(($A > 3 && $B > 3) || ($C > 1 && $D > 1)) && $E > 60"
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-no-scans",
+          "title": "schoolz: no scan has run in 13 hours",
           "condition": "C",
           "for": "15m",
           "labels": {
             "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "scans",
             "severity": "warning"
           },
           "annotations": {
-            "summary": "The site feels slow. Check whether it's cold starts or a specific route on the API dashboard."
+            "summary": "No scan of any kind has run in 13 hours",
+            "description": "The cheapest feeds run every 12h, so a full 13h with zero runs means the scheduler is up but not firing jobs (every job disabled, or the reconcile loop is not loading them).",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-no-scans",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-ticket",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 3600,
+                "from": 46800,
                 "to": 0
               },
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\"}[10m])))",
+                "expr": "sum(increase(schoolz_job_runs_total{service_namespace=\"schoolz\"}[13h]))",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -235,7 +1052,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -248,9 +1068,9 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "type": "gt",
+                      "type": "lt",
                       "params": [
-                        1.5
+                        1
                       ]
                     }
                   }
@@ -260,33 +1080,39 @@
           ]
         },
         {
-          "uid": "schoolz-llm-truncated",
-          "title": "schoolz: an LLM reply was truncated (max_tokens)",
+          "uid": "schoolz-job-stuck",
+          "title": "schoolz: a scan has been running for over an hour",
           "condition": "C",
-          "for": "5m",
+          "for": "1h",
           "labels": {
             "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "scans",
             "severity": "warning"
           },
           "annotations": {
-            "summary": "An extraction hit the output cap and was cut off mid-structure. This has silently produced zero extracted items from a full newsletter before - the run won't necessarily look failed."
+            "summary": "A {{ $labels.job_kind }} run has been in flight for over an hour",
+            "description": "The reaper clears runs with no progress after 45 minutes, so one still in flight is either checkpointing slowly or holding a concurrency slot. Look for real evidence before force-erroring it.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-job-stuck",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-ticket",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 3600,
+                "from": 600,
                 "to": 0
               },
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "sum(increase(schoolz_llm_calls_total{service_namespace=\"schoolz\", stop_reason=\"max_tokens\"}[1h]))",
+                "expr": "max by (job_kind) (schoolz_job_in_flight{service_namespace=\"schoolz\"})",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -298,7 +1124,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -323,33 +1152,39 @@
           ]
         },
         {
-          "uid": "schoolz-scraper-failing",
-          "title": "schoolz: scraper failing more than 30% of page loads",
+          "uid": "schoolz-memory-high",
+          "title": "schoolz: process memory above 85% of its machine",
           "condition": "C",
-          "for": "30m",
+          "for": "15m",
           "labels": {
             "app": "schoolz",
+            "tier": "ticket",
+            "kind": "cause",
+            "component": "api",
             "severity": "warning"
           },
           "annotations": {
-            "summary": "Most scraper fetches are failing - either the scraper machine is unhealthy or a lot of school sites are unreachable. Scans will be returning warnings rather than data."
+            "summary": "{{ $labels.service_name }} is at {{ humanizePercentage $values.B.Value }} of its machine's memory",
+            "description": "The next step is an OOM kill, which for the scheduler abandons whatever scan was running. Limits are the Fly machine sizes in backend/fly.toml.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-memory-high",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-ticket",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 3600,
+                "from": 600,
                 "to": 0
               },
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "sum(rate(schoolz_scraper_page_load_seconds_count{service_name=\"schoolz-scraper\", outcome=\"error\"}[1h])) / clamp_min(sum(rate(schoolz_scraper_page_load_seconds_count{service_name=\"schoolz-scraper\"}[1h])), 0.001)",
+                "expr": "max by (service_name) (process_memory_usage_bytes{service_namespace=\"schoolz\", service_name=\"schoolz-api\"}) / 536870912 or max by (service_name) (process_memory_usage_bytes{service_namespace=\"schoolz\", service_name=\"schoolz-scheduler\"}) / 1073741824",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -361,7 +1196,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -376,7 +1214,7 @@
                     "evaluator": {
                       "type": "gt",
                       "params": [
-                        0.3
+                        0.85
                       ]
                     }
                   }
@@ -386,33 +1224,39 @@
           ]
         },
         {
-          "uid": "schoolz-parse-issues",
-          "title": "schoolz: parse issues spiking",
+          "uid": "schoolz-db-pool-saturated",
+          "title": "schoolz: database pool fully checked out",
           "condition": "C",
-          "for": "1h",
+          "for": "10m",
           "labels": {
             "app": "schoolz",
+            "tier": "ticket",
+            "kind": "cause",
+            "component": "database",
             "severity": "warning"
           },
           "annotations": {
-            "summary": "Scans are succeeding but dropping an unusual amount of content. This is the failure mode that doesn't turn anything red - coverage degrades quietly."
+            "summary": "{{ $labels.service_name }} has held {{ $values.B.Value }} of its 6 database connections for 10 minutes",
+            "description": "Pool is 4 + 2 overflow per process; at 6 every further request waits and then fails with db_pool_timeout. Usually one slow query or a leaked session.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-db-pool-saturated",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-ticket",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 3600,
+                "from": 600,
                 "to": 0
               },
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "sum(increase(schoolz_parse_issues_total{service_namespace=\"schoolz\"}[6h]))",
+                "expr": "max by (service_name) (db_client_connections_usage{service_namespace=\"schoolz\", state=\"used\"})",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -424,7 +1268,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -439,7 +1286,151 @@
                     "evaluator": {
                       "type": "gt",
                       "params": [
-                        50
+                        5
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-llm-truncated",
+          "title": "schoolz: an LLM reply was truncated (max_tokens)",
+          "condition": "C",
+          "for": "5m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "llm",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "A {{ $labels.purpose }} reply hit the output cap and was cut off",
+            "description": "A truncated extraction has silently produced zero items from a full newsletter before - the run does not necessarily look failed.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-llm-truncated",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum by (purpose) (increase(schoolz_llm_calls_total{service_namespace=\"schoolz\", stop_reason=\"max_tokens\"}[1h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-scraper-silent",
+          "title": "schoolz: scraper is not reporting",
+          "condition": "C",
+          "for": "15m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "cause",
+            "component": "scraper",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "The schoolz scraper machine has not reported in 15 minutes",
+            "description": "It never auto-stops, so silence means it is down. Scans fall back to the shared droplet, which is why this is a ticket and not a page.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-scraper-silent",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "Alerting",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 900,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "count(schoolz_scraper_pages_open{service_name=\"schoolz-scraper\"})",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        1
                       ]
                     }
                   }
@@ -455,16 +1446,22 @@
           "for": "0m",
           "labels": {
             "app": "schoolz",
-            "severity": "critical"
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "auth",
+            "severity": "warning"
           },
           "annotations": {
-            "summary": "AuthContext gave up waiting on the auth check and showed the reload fallback. This is the failure that left logged-in mobile visitors stuck on 'Loading...' until they reloaded by hand - see the onAuthStateChange comment in frontend/src/context/AuthContext.tsx. Any occurrence is worth looking at; it should be zero."
+            "summary": "{{ $values.B.Value }} visitor(s) hit the auth timeout fallback in 30 minutes",
+            "description": "AuthContext gave up waiting and showed Reload. This is the failure that left signed-in mobile visitors stuck on 'Loading...' - see the onAuthStateChange comment in frontend/src/context/AuthContext.tsx. It should be zero.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-auth-stalled",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ux"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-ticket",
           "data": [
             {
               "refId": "A",
@@ -487,7 +1484,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -512,22 +1512,625 @@
           ]
         },
         {
+          "uid": "schoolz-alexa-errors",
+          "title": "schoolz: Alexa skill Lambda is erroring",
+          "condition": "C",
+          "for": "5m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "alexa",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "The Alexa skill failed {{ $values.B.Value }} invocations in 30 minutes",
+            "description": "Each one is a person hearing 'there was a problem with the requested skill's response'. The Lambda's log group has the traceback.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-alexa-errors",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ops"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1800,
+                "to": 0
+              },
+              "datasourceUid": "${DS_CLOUDWATCH}",
+              "model": {
+                "refId": "A",
+                "queryMode": "Metrics",
+                "metricQueryType": 0,
+                "metricEditorMode": 0,
+                "region": "default",
+                "namespace": "AWS/Lambda",
+                "metricName": "Errors",
+                "dimensions": {
+                  "FunctionName": [
+                    "ask-schoolhelper-default-default-1791156946239"
+                  ]
+                },
+                "statistic": "Sum",
+                "period": "300",
+                "matchExact": true,
+                "id": "",
+                "expression": ""
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "sum",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        2
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "schoolz-info",
+      "folder": "schoolz",
+      "interval": "5m",
+      "rules": [
+        {
+          "uid": "schoolz-route-5xx",
+          "title": "schoolz: a route is returning 5xx",
+          "condition": "C",
+          "for": "5m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "api",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ $labels.http_request_method }} {{ $labels.http_route }} returned {{ printf \"%.0f\" $values.B.Value }} server errors in 30 minutes",
+            "description": "Names the route behind an availability burn. On its own it is only a pointer - the SLO alert decides whether it matters.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-route-5xx",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1800,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum by (http_route, http_request_method) (increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_response_status_code=~\"5..\"}[30m]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        5
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-route-slow",
+          "title": "schoolz: a route's p95 is above 2.5s",
+          "condition": "C",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "api",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ $labels.http_route }} p95 is {{ printf \"%.1f\" $values.B.Value }}s",
+            "description": "Names the route behind a latency burn. Only routes with more than 20 requests in the window count, so one cold start can't trip it.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-route-slow",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1800,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[30m]))) and on (http_route) sum by (http_route) (increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[30m])) > 20",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        2.5
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-scraper-failing",
+          "title": "schoolz: scraper failing more than 30% of page loads",
+          "condition": "C",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "scraper",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ humanizePercentage $values.B.Value }} of scraper page loads are failing",
+            "description": "Either the scraper machine is unhealthy or many school sites are unreachable. Callers retry and fall back to the droplet, so the scans SLO says whether this hurt.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-scraper-failing",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum(rate(schoolz_scraper_page_load_seconds_count{service_name=\"schoolz-scraper\", outcome=\"error\"}[1h])) / clamp_min(sum(rate(schoolz_scraper_page_load_seconds_count{service_name=\"schoolz-scraper\"}[1h])), 0.001)",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0.3
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-scan-warnings",
+          "title": "schoolz: a scan kind mostly finds nothing",
+          "condition": "C",
+          "for": "1h",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "scans",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ humanizePercentage $values.B.Value }} of {{ $labels.job_kind }} runs ended in a warning over 24h",
+            "description": "Fetched fine, found nothing. For a kind that normally finds something, a site redesign looks exactly like this.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-scan-warnings",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 86400,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum by (job_kind) (increase(schoolz_job_runs_total{service_namespace=\"schoolz\", status=\"warning\"}[24h])) / sum by (job_kind) (increase(schoolz_job_runs_total{service_namespace=\"schoolz\", status!=\"skipped\"}[24h]) > 5)",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0.5
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-parse-issues",
+          "title": "schoolz: parse issues spiking",
+          "condition": "C",
+          "for": "1h",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "scans",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ printf \"%.0f\" $values.B.Value }} {{ $labels.code }} parse issues from {{ $labels.job_kind }} in 6h",
+            "description": "Scans are succeeding but dropping content. This is the failure mode that doesn't turn anything red - coverage degrades quietly.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-parse-issues",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 21600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum by (job_kind, code) (increase(schoolz_parse_issues_total{service_namespace=\"schoolz\"}[6h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        500
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-queue-wait",
+          "title": "schoolz: scans are queueing",
+          "condition": "C",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "scheduler",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "Scans wait {{ humanizeDuration $values.B.Value }} at p95 for a concurrency slot",
+            "description": "Too many jobs landing in the same minute, or one long job holding a slot.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-queue-wait",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "histogram_quantile(0.95, sum by (le) (rate(schoolz_job_queue_wait_seconds_bucket{service_namespace=\"schoolz\"}[1h])))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        300
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-llm-spend",
+          "title": "schoolz: LLM token use well above normal",
+          "condition": "C",
+          "for": "30m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "llm",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ humanize $values.B.Value }} LLM tokens in 24h",
+            "description": "A normal day is well under half of this. A loop re-extracting the same content, or a translation backfill, looks like this.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-llm-spend",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 86400,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\"}[24h]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        15000000
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
           "uid": "schoolz-auth-slow",
           "title": "schoolz: auth check p95 above 5s",
           "condition": "C",
           "for": "15m",
           "labels": {
             "app": "schoolz",
-            "severity": "warning"
+            "tier": "info",
+            "kind": "cause",
+            "component": "auth",
+            "severity": "info"
           },
           "annotations": {
-            "summary": "The client-side auth check is taking over 5s at p95. Short of the outright stall schoolz-auth-stalled catches, but the same failure mode degrading: every API call waits behind the Supabase auth lock, so this shows up to visitors as a slow or blank logged-in page."
+            "summary": "The client-side auth check takes {{ printf \"%.0f\" $values.B.Value }}ms at p95",
+            "description": "Short of the outright stall schoolz-auth-stalled catches, but the same failure degrading: every API call waits behind the Supabase auth lock.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-auth-slow",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ux"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-info",
           "data": [
             {
               "refId": "A",
@@ -550,7 +2153,10 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
@@ -581,16 +2187,22 @@
           "for": "0m",
           "labels": {
             "app": "schoolz",
+            "tier": "info",
+            "kind": "event",
+            "component": "growth",
             "severity": "info"
           },
           "annotations": {
-            "summary": "A new user account was just created (local register or Supabase first-sign-in). Informational - check the Loki `user_created` log line for the source and user_id."
+            "summary": "A new account was just created",
+            "description": "Local register or a first Supabase sign-in. The `user_created` log line has the source.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-user-created",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ux"
           },
           "noDataState": "OK",
           "execErrState": "Error",
           "orgId": 1,
           "folderUID": "schoolz",
-          "ruleGroup": "schoolz-alerts",
+          "ruleGroup": "schoolz-info",
           "data": [
             {
               "refId": "A",
@@ -613,7 +2225,322 @@
                 "refId": "B",
                 "type": "reduce",
                 "reducer": "last",
-                "expression": "A"
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-alexa-throttled",
+          "title": "schoolz: Alexa skill Lambda throttled",
+          "condition": "C",
+          "for": "5m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "alexa",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "The Alexa skill Lambda was throttled {{ $values.B.Value }} times in 30 minutes",
+            "description": "The account's concurrency limit was hit. Expected never at this traffic.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-alexa-throttled",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ops"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1800,
+                "to": 0
+              },
+              "datasourceUid": "${DS_CLOUDWATCH}",
+              "model": {
+                "refId": "A",
+                "queryMode": "Metrics",
+                "metricQueryType": 0,
+                "metricEditorMode": 0,
+                "region": "default",
+                "namespace": "AWS/Lambda",
+                "metricName": "Throttles",
+                "dimensions": {
+                  "FunctionName": [
+                    "ask-schoolhelper-default-default-1791156946239"
+                  ]
+                },
+                "statistic": "Sum",
+                "period": "300",
+                "matchExact": true,
+                "id": "",
+                "expression": ""
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "sum",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "schoolz-sql",
+      "folder": "schoolz",
+      "interval": "15m",
+      "rules": [
+        {
+          "uid": "schoolz-job-failing",
+          "title": "schoolz: a scan has failed twice in a row",
+          "condition": "C",
+          "for": "0m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "scans",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "{{ $labels.job }} failed twice in a row ({{ $labels.error_code }})",
+            "description": "One failure is usually a flaky site; two in a row is real. The Runs tab in /admin has the stage and traceback for this job.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-job-failing",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-sql",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_SQL}",
+              "model": {
+                "refId": "A",
+                "rawSql": "SELECT j.kind, j.name AS job, COALESCE(j.last_error_code, 'unknown') AS error_code, 1 AS value\nFROM scheduled_jobs j\nWHERE j.enabled AND (\n  SELECT count(*) FROM (\n    SELECT r.status FROM job_runs r\n    WHERE r.job_id = j.id AND r.status NOT IN ('skipped', 'running')\n    ORDER BY r.started_at DESC LIMIT 2\n  ) last2 WHERE last2.status = 'error'\n) = 2",
+                "rawQuery": true,
+                "format": "table",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-newsletter-stale",
+          "title": "schoolz: newsletters not scanned in 8 days",
+          "condition": "C",
+          "for": "1h",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "scans",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ printf \"%.0f\" $values.B.Value }} newsletter(s) have missed a weekly scan",
+            "description": "The Scans dashboard lists which. An expired per-issue URL does not show up here - it scans fine and finds nothing (smore_no_blocks).",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-newsletter-stale",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-sql",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_SQL}",
+              "model": {
+                "refId": "A",
+                "rawSql": "SELECT count(*) AS value FROM smore_newsletters\nWHERE last_scanned_at IS NULL OR last_scanned_at < now() - interval '8 days'",
+                "rawQuery": true,
+                "format": "table",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-vision-backlog",
+          "title": "schoolz: flyer images waiting on vision extraction",
+          "condition": "C",
+          "for": "1d",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "llm",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "{{ printf \"%.0f\" $values.B.Value }} image block(s) have been pending for a day",
+            "description": "A failed vision extract stays pending and retries on the next scan; a day of it means the image itself can't be read.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-vision-backlog",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-sql",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_SQL}",
+              "model": {
+                "refId": "A",
+                "rawSql": "SELECT count(*) AS value FROM smore_blocks WHERE pending_vision_extraction",
+                "rawQuery": true,
+                "format": "table",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
               }
             },
             {
