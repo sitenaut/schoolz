@@ -116,3 +116,30 @@ async def test_requests_only_the_fields_the_parser_reads(monkeypatch):
     requested = set(seen[0].split(","))
     assert {"title", "field_date_time", "field_text_teaser", "path", "event_thumbnail", "drupal_internal__nid"} <= requested
     assert out[0].title == "Story Time" and out[0].description == "Join us!" and out[0].url.endswith("/event/1")
+
+
+@pytest.mark.anyio
+async def test_pause_before_sleeps_ahead_of_the_request(monkeypatch):
+    slept = []
+
+    async def fake_sleep(seconds):
+        slept.append(seconds)
+
+    monkeypatch.setattr(ccls.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(ccls.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(_handler([]))))
+
+    await CCLSSource(name="a", branch_name="Voorhees").fetch()
+    await CCLSSource(name="b", branch_name="Voorhees", pause_before=5.0).fetch()
+    assert slept == [5.0]
+
+
+def test_job_params_set_timeout_and_space_every_branch_after_the_first():
+    from local_events.pipeline import DEFAULT_CCLS_PAUSE, _build_sources
+
+    built = _build_sources({"ccls_sources": [
+        {"name": "ccls_bellmawr", "branch_name": "Bellmawr"},
+        {"name": "ccls_voorhees", "branch_name": "Voorhees", "timeout": 90},
+        {"name": "ccls_ferry", "branch_name": "Ferry Avenue", "pause_seconds": 2},
+    ]})
+    assert [s.pause_before for s in built] == [0.0, DEFAULT_CCLS_PAUSE, 2.0]
+    assert [s.timeout for s in built] == [30.0, 90.0, 30.0]
