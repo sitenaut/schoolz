@@ -5,6 +5,7 @@ Responsibilities:
 - Strip HTML from description.
 - Infer is_free from price_min == 0 or text keywords.
 - Infer categories from title/description + the source's default_categories.
+- A known price decides the "free" category; the keyword only when there is none.
 """
 from __future__ import annotations
 
@@ -113,6 +114,14 @@ def normalize(raw: RawEvent) -> dict:
         end = end.astimezone(timezone.utc)
     categories = _infer_categories(raw.title, description, raw.default_categories)
     is_free = raw.is_free if raw.is_free is not None else _infer_is_free(raw.price_min, raw.title, description)
+    # A source that gave a price knows whether it's free; the word "free" in
+    # its blurb is then "free race photos" or "kids under 10 free" on a $35
+    # race, not the event. The keyword only decides when nothing else can.
+    if raw.is_free is not None or raw.price_min is not None:
+        if is_free and "free" not in categories:
+            categories.append("free")
+        elif not is_free and "free" in categories and "free" not in raw.default_categories:
+            categories.remove("free")
     return {
         "source": raw.source,
         "source_event_id": raw.source_event_id,

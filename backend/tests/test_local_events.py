@@ -314,6 +314,37 @@ def test_source_class_categories_fold_into_classes_and_lessons():
 
 
 @pytest.mark.parametrize(
+    "kwargs, tagged",
+    [
+        # A paid race whose blurb says "free race photos" isn't a free event.
+        ({"price_min": 35.0, "price_max": 35.0}, False),
+        ({"price_min": 0.0, "price_max": 45.0, "is_free": False}, False),
+        ({"price_min": 0.0}, True),
+        ({"is_free": True}, True),
+        # No price from the source: the keyword is all there is.
+        ({}, True),
+        # A source that calls itself free keeps the tag whatever a price says.
+        ({"price_min": 5.0, "default_categories": ["free"]}, True),
+    ],
+)
+def test_a_known_price_decides_the_free_category(kwargs, tagged):
+    from local_events.normalizer import normalize
+
+    raw = RawEvent(
+        source="s", source_event_id="1", title="Turkey Trot 5K", description="Free race photos for all finishers.",
+        start_time=datetime(2031, 11, 27, 13, tzinfo=timezone.utc), **kwargs,
+    )
+    assert ("free" in normalize(raw)["categories"]) is tagged
+
+
+def test_a_free_price_tags_free_without_the_word():
+    from local_events.normalizer import normalize
+
+    raw = RawEvent(source="s", source_event_id="1", title="Training run", start_time=datetime(2031, 6, 1, tzinfo=timezone.utc), price_min=0.0)
+    assert "free" in normalize(raw)["categories"]
+
+
+@pytest.mark.parametrize(
     "description, is_class",
     [
         ("Lessons will be scheduled on a first-come, first-served basis.", True),
