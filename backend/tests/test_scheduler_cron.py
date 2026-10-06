@@ -47,7 +47,10 @@ def test_migration_copy_matches_live_cadence():
     spec = importlib.util.spec_from_file_location("m0075", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    assert set(mod._WEEKLY_KINDS) == WEEKLY_KINDS
-    assert set(mod._DAILY_KINDS) == DAILY_KINDS
-    for kind in WEEKLY_KINDS | DAILY_KINDS:
+    # The migration is applied history: it retimed the jobs that existed then.
+    # A kind added later has no rows for it to retime, so it lives only in
+    # cron.py - but nothing the migration retimed may be missing or moved.
+    assert set(mod._WEEKLY_KINDS) <= WEEKLY_KINDS
+    assert set(mod._DAILY_KINDS) <= DAILY_KINDS
+    for kind in set(mod._WEEKLY_KINDS) | set(mod._DAILY_KINDS):
         assert mod._cron(kind, "school-x") == public_scan_cron(kind, "school-x")

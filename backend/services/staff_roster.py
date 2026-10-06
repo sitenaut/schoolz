@@ -7,7 +7,12 @@ import hashlib
 import re
 from urllib.parse import parse_qs, urljoin, urlparse
 
+import io
+import zipfile
+import xml.etree.ElementTree as ET
+
 import httpx
+import pdfplumber
 from bs4 import BeautifulSoup
 
 import scraper_client
@@ -336,6 +341,204 @@ async def _fetch_plain_page_roster(base: str) -> list[dict]:
     except httpx.HTTPError:
         return []
     return []
+
+
+_NOT_A_PERSON_RE = re.compile(r"vacant|conference room|^tbd$|^n/?a$|/", re.I)
+
+
+def _column_map(cells: list[str]) -> dict[str, int]:
+    """Which column is which, from a header row's text. Schools head the name
+    column anything ("Name", "Teacher", "Staff Members", "School Leadership"),
+    and the title column "Title", "Position", "Subject" or "Grade"."""
+    cols: dict[str, int] = {}
+    for field, words in (
+        ("email", ("email",)),
+        ("department", ("department",)),
+        ("phone", ("ext", "phone")),
+        ("title", ("title", "position", "subject", "grade")),
+        ("name", ("name", "teacher", "staff", "leadership", "faculty")),
+    ):
+        for i, c in enumerate(cells):
+            if i not in cols.values() and any(w in c.lower() for w in words):
+                cols[field] = i
+                break
+    if "name" not in cols:  # an unclaimed first column is the name
+        free = [i for i in range(len(cells)) if i not in cols.values() and cells[i]]
+        if free:
+            cols["name"] = free[0]
+    return cols
+
+
+def _first_last(name: str) -> str:
+    """"Last, First" -> "First Last"; a suffix ("Smith, Jr.") is left alone."""
+    last, comma, first = name.partition(",")
+    if comma and "," not in first and first.strip() and not re.match(r"^(jr|sr|ii|iii|iv)\b", first.strip(), re.I):
+        return f"{first.strip()} {last.strip()}"
+    return name
+
+
+def _people_from_rows(tables, key_prefix: str) -> list[dict]:
+    """Rows of a document's tables -> roster entries. A header row - any row
+    with an "Email" cell and no address in it - names the columns, and stays in
+    force across pages and tables, since the sheets print it once; a new header
+    mid-table (Davis re-heads its "Staff Members" section) replaces it. Rows
+    that aren't a person (a "Vacant" slot, a conference-room line, a shared
+    "Veronica/Joey" desk, a section label) are skipped. Email cells in
+    hand-typed sheets carry stray characters ("name@x.org>"), so only the
+    address itself is kept. Identity is the email when there is one, else
+    name + title, so a re-scan matches the same person."""
+    items: dict[str, dict] = {}
+    cols: dict[str, int] | None = None
+    for table in tables:
+        for raw in table:
+            cells = [re.sub(r"\s+", " ", c or "").strip() for c in raw]
+            if any("email" in c.lower() for c in cells) and not any("@" in c for c in cells):
+                cols = _column_map(cells)
+                continue
+            if not cols or "name" not in cols or "email" not in cols:
+                continue
+            col = lambda field: cells[cols[field]] if field in cols and cols[field] < len(cells) else ""  # noqa: E731
+            name = _first_last(col("name"))
+            if not name or _NOT_A_PERSON_RE.search(name):
+                continue
+            title = col("title")
+            email_match = _EMAIL_RE.search(col("email"))
+            email = email_match.group(0).lower() if email_match else None
+            phone = col("phone")
+            key = f"{key_prefix}:{email or _slug(name) + '|' + _slug(title)}"
+            items[key] = {
+                "constituent_id": key,
+                "full_name": name,
+                "title": title or None,
+                "department": col("department") or None,
+                "email": email,
+                "phone": phone if _PHONE_CELL_RE.match(phone) else None,
+            }
+    return list(items.values())
+
+
+def parse_pdf_directory(data: bytes) -> list[dict]:
+    """A staff directory published as a PDF table (Camden's Eastside, Davis and
+    Catto sheets); see _people_from_rows for the row rules."""
+    with pdfplumber.open(io.BytesIO(data)) as pdf:
+        return _people_from_rows((t for page in pdf.pages for t in page.extract_tables()), "pdf")
+
+
+_XLSX_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+
+
+def _xlsx_sheets(data: bytes) -> list[list[list[str]]]:
+    """Each sheet of an .xlsx as rows of cell text, read with the standard
+    library (an xlsx is zipped XML) rather than a spreadsheet dependency for
+    one school's file."""
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        shared = []
+        if "xl/sharedStrings.xml" in z.namelist():
+            shared = ["".join(t.text or "" for t in si.iter(_XLSX_NS + "t")) for si in ET.fromstring(z.read("xl/sharedStrings.xml")).findall(_XLSX_NS + "si")]
+        sheets = []
+        for name in sorted(n for n in z.namelist() if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", n)):
+            rows = []
+            for r in ET.fromstring(z.read(name)).iter(_XLSX_NS + "row"):
+                row: list[str] = []
+                for c in r.findall(_XLSX_NS + "c"):
+                    idx = _col_index(c.get("r") or "")
+                    row.extend([""] * (idx - len(row)))
+                    v = c.find(_XLSX_NS + "v")
+                    inline = c.find(_XLSX_NS + "is")
+                    if v is not None:
+                        row.append(shared[int(v.text)] if c.get("t") == "s" else (v.text or ""))
+                    elif inline is not None:
+                        row.append("".join(t.text or "" for t in inline.iter(_XLSX_NS + "t")))
+                    else:
+                        row.append("")
+                rows.append(row)
+            sheets.append(rows)
+        return sheets
+
+
+def _col_index(ref: str) -> int:
+    letters = re.match(r"[A-Z]+", ref)
+    n = 0
+    for ch in letters.group(0) if letters else "A":
+        n = n * 26 + ord(ch) - 64
+    return n - 1
+
+
+def parse_xlsx_directory(data: bytes) -> list[dict]:
+    """A staff roster kept as a spreadsheet (Veterans Memorial's), which stacks
+    several sections each under its own header row. Sheets are read
+    separately so a header never carries onto an unrelated sheet."""
+    out: dict[str, dict] = {}
+    for rows in _xlsx_sheets(data):
+        for e in _people_from_rows([rows], "xlsx"):
+            out[e["constituent_id"]] = e
+    return list(out.values())
+
+
+_SLIDES_RE = re.compile(r"https://docs\.google\.com/presentation/d/([\w-]+)")
+_PAGE_MARKER_RE = re.compile(r"^pg \d+$|^teacher email addresses$", re.I)
+_PAREN_RE = re.compile(r"\s*\(([^)]*)\)\s*$")
+
+
+def parse_slides_directory(text: str) -> list[dict]:
+    """A staff contact list kept as a Google Slides deck (Cooper's Poynt),
+    read from Google's plain-text export: grade/area headings, then each
+    person as a name line ("Ms. Baker", "Mr. King (PE/Health)") immediately
+    followed by an email line. A line followed by an email is a person; any
+    other line is a heading for the people under it (a parenthetical-only
+    line like "(PE/Health)" isn't one). Only the honorific + surname is
+    published, which is what full_name holds. Hand-typed addresses carry
+    typos, so an address that isn't well-formed, or whose domain differs from
+    the list's own most common one, is dropped rather than shown - the person
+    stays, since a wrong address mails a stranger about a child."""
+    lines = [re.sub(r"\s+", " ", ln).strip() for ln in text.splitlines()]
+    lines = [ln for ln in lines if ln and not _PAGE_MARKER_RE.match(ln)]
+    people: list[tuple[str, str, str | None]] = []
+    section = ""
+    for i, line in enumerate(lines):
+        if _EMAIL_RE.fullmatch(line) or "@" in line:
+            continue
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if "@" in nxt:
+            paren = _PAREN_RE.search(line)
+            name = _PAREN_RE.sub("", line).strip()
+            title = (f"{section} ({paren.group(1)})" if section else paren.group(1)) if paren else section
+            email = _EMAIL_RE.fullmatch(nxt.replace("\u2019", "'"))
+            people.append((name, title, nxt if email and "\u2019" not in nxt else None))
+        elif not line.startswith("("):
+            section = line
+    domains = [e.rsplit("@", 1)[1].lower() for _, _, e in people if e]
+    modal = max(set(domains), key=domains.count) if domains else None
+    items: dict[str, dict] = {}
+    for name, title, email in people:
+        email = email.lower() if email and email.rsplit("@", 1)[1].lower() == modal else None
+        key = f"doc:{email or _slug(name) + '|' + _slug(title)}"
+        items[key] = {
+            "constituent_id": key,
+            "full_name": name,
+            "title": title or None,
+            "department": None,
+            "email": email,
+            "phone": None,
+        }
+    return list(items.values())
+
+
+async def fetch_directory_document(url: str) -> list[dict]:
+    """The school's directory as a document rather than a page. A Google Slides
+    deck is read through its public plain-text export; anything else is taken
+    to be a PDF table (or an .xlsx sheet), fetched through the scraper's /fetch-raw because school
+    sites behind a bot wall (Camden's Cloudflare) 403 a plain GET."""
+    slides = _SLIDES_RE.match(url)
+    if slides:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.get(f"https://docs.google.com/presentation/d/{slides.group(1)}/export/txt")
+            resp.raise_for_status()
+        return parse_slides_directory(resp.text)
+    data = await scraper_client.fetch_raw_bytes(url)
+    if urlparse(url).path.lower().endswith(".xlsx"):
+        return parse_xlsx_directory(data)
+    return parse_pdf_directory(data)
 
 
 # Moorestown: "/for_staff/staff_directory", except Upper Elementary, whose

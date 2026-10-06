@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
+import scraper_client
 from services.handtyped_directory import _clean, _name_like
 
 _ROLE_LINK_RE = re.compile(r"\b(principal|nurse|counselor|counsellor)\b", re.I)
@@ -45,9 +46,16 @@ def find_role_links(home_html: str, base_url: str) -> list[tuple[str, str]]:
     return out[:_MAX_ROLE_PAGES]
 
 
+def _content_root(soup):
+    """The page body: the Smart Sites wrapper, else <main> (WordPress), else
+    everything. Without this a footer's webmaster/HIB-specialist address
+    becomes a candidate for the page's person."""
+    return soup.select_one("#page-content-wrapper") or soup.find("main") or soup
+
+
 def _content_lines(html: str) -> list[str]:
     soup = BeautifulSoup(html, "lxml")
-    root = soup.select_one("#page-content-wrapper") or soup
+    root = _content_root(soup)
     for t in root(["script", "style", "nav"]):
         t.decompose()
     lines = [_clean(l) for l in root.get_text("\n").splitlines()]
@@ -67,12 +75,52 @@ def _email_near(lines: list[str], i: int) -> str | None:
     return None
 
 
+_INLINE_RE = re.compile(
+    r"\b((?:school\s+)?(?:nurse|counselor|principal))\s+((?:(?!(?:health|office|phone|email|school|nurse)\b)[A-Z][\w.'\u2019-]*\s+){1,3}(?!(?:health|office|phone|email|school|nurse)\b)[A-Z][\w'\u2019-]+)\s+(?:(?:health\s+office\s+)?phone:?\s+)?\(?\d{3}\)?[\s.-]",
+    re.I,
+)
+
+
+_INLINE_AFTER_RE = re.compile(
+    r"((?:(?!(?i:health|office|phone|email|school|nurse)\b)[A-Z][\w.'\u2019-]*\s+){1,2}(?!(?i:health|office|phone|email|school|nurse)\b)[A-Z][\w'\u2019-]+)"
+    r"\s+((?i:(?:school\s+)?(?:nurse|counselor)))\s+(?i:(?:health\s+office\s+)?phone:?\s+)?\(?\d{3}\)?[\s.-]",
+)
+
+
+def _inline_person(lines: list[str], page_emails: list[str], title: str) -> dict | None:
+    """"School Nurse Jane Doe 856-555-0100, extension 4 - jdoe@..." in the
+    page's running text (Camden's WordPress sites; each piece is its own
+    element, so the lines are joined first). The name is placed by its role label
+    and phone number; the address must contain the person's surname, so a
+    footer's bullying-specialist address can't be taken for hers."""
+    for text in (" ".join(lines),):
+        m = _INLINE_RE.search(text)
+        name, role = (m.group(2), m.group(1)) if m else (None, None)
+        if not m and (m := _INLINE_AFTER_RE.search(text)):
+            name, role = m.group(1), m.group(2)
+        if not name:
+            continue
+        name = name.strip()
+        surname = re.sub(r"[^a-z]", "", name.split()[-1].lower())
+        email = next((e.lower() for e in page_emails if surname and surname in e.split("@")[0].lower()), None)
+        return {"full_name": name, "title": role.title(), "email": email}
+    return None
+
+
+def parse_inline_page(html: str, title: str) -> dict | None:
+    lines = _content_lines(html)
+    soup = BeautifulSoup(html, "lxml")
+    emails = [a["href"][7:].split("?")[0].strip().lower() for a in _content_root(soup).select("a[href^='mailto:']")]
+    emails += [e.lower() for e in _EMAIL_RE.findall(" ".join(lines))]
+    return _inline_person(lines, emails, title)
+
+
 def parse_page(html: str, title: str) -> dict | None:
     lines = _content_lines(html)
     page_emails = [e for e in _EMAIL_RE.findall(" ".join(lines)) if not _GENERIC_EMAIL_RE.match(e)]
     # mailto links carry the address without it appearing as text
     soup = BeautifulSoup(html, "lxml")
-    for a in soup.select("#page-content-wrapper a[href^='mailto:']"):
+    for a in _content_root(soup).select("a[href^='mailto:']"):
         addr = a["href"][7:].split("?")[0].strip().lower()
         if "@" in addr and not _GENERIC_EMAIL_RE.match(addr):
             page_emails.append(addr)
@@ -89,11 +137,15 @@ def parse_page(html: str, title: str) -> dict | None:
             signed = l  # last sign-off wins
     name = adjacent or signed
     if not name:
-        return None
+        return _inline_person(lines, page_emails, title)
     email = None
     for i, l in enumerate(lines):
         if l == name:
             email = _email_near(lines, i)
+            # The job title printed under the name ("School Nurse") beats the
+            # nav label the link was found by ("Nurse's Corner").
+            if i + 1 < len(lines) and _TITLE_LINE_RE.search(lines[i + 1]):
+                title = lines[i + 1]
             break
     email = email or (page_emails[0] if len(set(page_emails)) == 1 else None)
     return {"full_name": name, "title": title, "email": email}
@@ -111,4 +163,24 @@ async def fetch_role_staff(client, home_html: str, base_url: str) -> list[dict]:
             continue
         key = person["email"] or re.sub(r"[^a-z0-9]+", "-", person["full_name"].lower()).strip("-")
         out.append({"constituent_id": f"ss:{key}"[:64], **person, "department": None, "phone": None})
+    return out
+
+
+async def fetch_role_staff_scraped(base_url: str) -> list[dict]:
+    """Nurse pages for a site a plain GET can't reach (Camden's Cloudflare
+    wall), fetched through the scraper. Only the inline "School Nurse <name>
+    <phone>" shape counts: on these WordPress pages the generic name-placement
+    rules took a page heading ("Nurse's Corner") for a person, and a principal
+    page's bio for a contact."""
+    home = await scraper_client.fetch_html(base_url.rstrip("/") + "/", wait_for_selector="a", block_assets=True)
+    out = []
+    for title, url in find_role_links(home["html"], base_url):
+        if not re.search(r"nurse|health", title, re.I):
+            continue
+        page = await scraper_client.fetch_html(url, block_assets=True)
+        person = parse_inline_page(page["html"], title)
+        if not person:
+            continue
+        key = person["email"] or re.sub(r"[^a-z0-9]+", "-", person["full_name"].lower()).strip("-")
+        out.append({"constituent_id": f"rp:{key}"[:64], **person, "department": None, "phone": None})
     return out

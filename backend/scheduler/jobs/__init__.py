@@ -4,6 +4,7 @@ from . import documents_scan  # noqa: F401
 from . import email_scan  # noqa: F401
 from . import fdmealplanner_menu_scan  # noqa: F401
 from . import healthepro_menu_scan  # noqa: F401
+from . import myschoolplate_menu_scan  # noqa: F401
 from . import presence_menu_scan  # noqa: F401
 from . import givebacks_scan  # noqa: F401
 from . import hs_activities_site_scan  # noqa: F401
