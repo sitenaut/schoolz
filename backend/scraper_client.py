@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import os
 
 import httpx
@@ -179,3 +180,14 @@ async def fetch_paginated(
     )
     return result["pages"]
 
+
+
+async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
+    """A binary download (PDF) through a real browser context, for sites whose
+    WAF 403s a plain GET. Uses /fetch-raw, which returns `body_base64`;
+    playwright-scraper's variant returns a text `body` that would corrupt a
+    PDF, so a service that answers without base64 is skipped, not trusted."""
+    result = await _post_with_fallback("/fetch-raw", {"url": url, "timeout_ms": timeout_ms}, timeout_s=timeout_ms / 1000 * 2 + 10)
+    if not result.get("body_base64"):
+        raise RuntimeError(f"scraper returned no binary body for {url}")
+    return base64.b64decode(result["body_base64"])

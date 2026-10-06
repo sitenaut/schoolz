@@ -933,7 +933,26 @@ on this list** - it's ArbiterLive branding, already supported.
     User-Agent string; only a real browser (the Playwright scraper) gets
     past it. Go straight to the scraper here, don't burn a round-trip on
     plain HTTP first the way the crawl procedure otherwise recommends.
-  - **SchoolCafé**: shortname `CAMDENCITYPS`, verified live.
+  - **Lunch: Aramark MySchoolPlate**, not SchoolCafé (the `CAMDENCITYPS`
+    shortname exists but matches no school, so it only ever warned).
+    `School.myschoolplate_location` = `camden/<location-key>`, found by
+    matching the school's address against `services/myschoolplate.py:
+    fetch_locations` - 14 of 15 matched on street number + first street word;
+    Eastside had to be set by name. The site lists charters too (Mastery,
+    Uncommon, Urban Promise) - skipped like the rest of the Renaissance
+    schools. The four campus high schools share one location, so each gets the
+    same menu. The vendor's own address for Eastside is the Mickle Street one,
+    which supports the new-building reading of the address conflict below.
+  - **Staff directories are documents, not pages** - 6 of the 15 link one
+    from "About Us" (PDF tables for Eastside, Davis, Catto; an `.xlsx` for
+    Veterans; a Google Slides deck for Cooper's Poynt), set as
+    `School.staff_directory_url`. Forest Hill's and Creative Arts' directory
+    pages are empty shells, Camden High has none (only a leadership page and
+    an attendance contact), Dudley has nothing on its site. All of them are
+    dated (2022-23 to 24-25): the rows carry no as-of date, so they read as
+    current. Nurses come from each school's "Nurse's Corner" page instead
+    (`role_pages.parse_inline_page`: "School Nurse <name> <phone>" in the page
+    text, email accepted only if it contains her surname).
   - **Calendar**: tracked as the `/calendar/` page itself
     (`District.calendar_pdf_url`), not a dated PDF filename — no ICS feed
     found.

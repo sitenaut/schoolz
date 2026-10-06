@@ -56,6 +56,7 @@ from routers.schools import (
     _ensure_documents_scan_job,
     _ensure_fdmealplanner_job,
     _ensure_healthepro_job,
+    _ensure_myschoolplate_job,
     _ensure_presence_menu_job,
     _ensure_givebacks_job,
     _ensure_school_info_job,
@@ -130,6 +131,8 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 fdmealplanner_location=s.fdmealplanner_location,
                 healthepro_location=s.healthepro_location,
                 presence_menu_page_url=s.presence_menu_page_url,
+                myschoolplate_location=s.myschoolplate_location,
+                staff_directory_url=s.staff_directory_url,
                 bulletin_doc_url=s.bulletin_doc_url,
             )
             for s in schools
@@ -282,9 +285,14 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         if s.healthepro_location:
             school.healthepro_location = s.healthepro_location
             await _ensure_healthepro_job(db, school, user)
+        if s.myschoolplate_location:
+            school.myschoolplate_location = s.myschoolplate_location
+            await _ensure_myschoolplate_job(db, school, user)
         if s.presence_menu_page_url:
             school.presence_menu_page_url = s.presence_menu_page_url
             await _ensure_presence_menu_job(db, school, user)
+        if s.staff_directory_url:
+            school.staff_directory_url = s.staff_directory_url
         if s.bulletin_doc_url:
             school.bulletin_doc_url = s.bulletin_doc_url
             await _ensure_bulletin_job(db, school, user)

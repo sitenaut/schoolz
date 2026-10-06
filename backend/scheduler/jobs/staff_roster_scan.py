@@ -8,7 +8,8 @@ from scheduler.registry import register_job
 from services.apptegy import fetch_staff as fetch_apptegy_staff
 from services.staff_roles import classify_role
 from services.contact_page import fetch_contacts
-from services.staff_roster import drop_sibling_school_staff, fetch_roster
+from services.role_pages import fetch_role_staff_scraped
+from services.staff_roster import drop_sibling_school_staff, fetch_directory_document, fetch_roster
 
 
 @register_job(
@@ -27,13 +28,23 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not school:
         return f"school {school_id} no longer exists"
 
-    contacts_added = 0
+    contacts_added = 0  # people read from a contact or nurse page rather than a directory
     if school.apptegy_org_id:
         # Apptegy's own directory API already carries title/email/phone
         # directly - no Finalsite-style contact-page fallback needed (or
         # possible: apptegy.py has no website scraper of its own).
         roster = await fetch_apptegy_staff(school.apptegy_org_id)
         checked = f"Apptegy org {school.apptegy_org_id}"
+    elif school.staff_directory_url:
+        # A directory the school publishes as a document (PDF table, Google Slides) - there is no page to parse.
+        roster = await fetch_directory_document(school.staff_directory_url)
+        checked = school.staff_directory_url
+        # A document rarely carries the nurse; a school's own nurse page does.
+        if school.website_url and not any(classify_role(e["title"]) == "nurse" for e in roster):
+            have = {(e["email"] or "").lower() for e in roster}
+            extra = [e for e in await fetch_role_staff_scraped(school.website_url) if e["email"] not in have]
+            roster = roster + extra
+            contacts_added = len(extra)
     elif school.website_url:
         roster = await fetch_roster(school.website_url)
         # A directory with no titles (Voorhees: teachers' websites only) can't
@@ -45,6 +56,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             roster = roster + extra
             contacts_added = len(extra)
         checked = school.website_url
+        if school.website_url and not any(classify_role(e["title"]) == "nurse" for e in roster):
+            have = {(e["email"] or "").lower() for e in roster}
+            extra = [e for e in await fetch_role_staff_scraped(school.website_url) if e["email"] not in have]
+            roster = roster + extra
+            contacts_added += len(extra)
     else:
         return "school has no website_url or apptegy_org_id configured"
 

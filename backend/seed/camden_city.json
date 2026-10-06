@@ -15,8 +15,7 @@
       "transportation_url": null,
       "towns": [
         "Camden"
-      ],
-      "schoolcafe_shortname": "CAMDENCITYPS"
+      ]
     }
   ],
   "schools": [
@@ -29,21 +28,22 @@
       "address": "1700 Park Boulevard, Camden, NJ 08103",
       "main_phone": "856-966-5100",
       "website_url": "https://camdencityschools.org/chs/",
-      "absence_method": null,
+      "absence_method": "phone",
       "absence_emails": [],
-      "absence_phone": null,
+      "absence_phone": "856-966-5100",
       "absence_portal_name": null,
       "absence_portal_url": null,
-      "absence_instructions": null,
-      "start_time": "8:05 AM",
-      "end_time": "2:25 PM",
+      "absence_instructions": "Call the main office or send a note: handwritten notes within 15 days of the absence (10 per year without principal approval), doctor's notes any time. Excuse an absence within 3 days or it counts as unexcused.",
+      "start_time": "9:00 AM",
+      "end_time": "3:20 PM",
       "early_dismissal_time": null,
       "delayed_opening_time": null,
       "athletics_url": "https://arbiterlive.com/Teams?entityId=3073",
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/CHS.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/camden-high-school"
     },
     {
       "slug": "eastside-high-school",
@@ -68,7 +68,9 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://camdencityschools.org/eastsidehs/wp-content/uploads/sites/9/2023/08/Eastside-High-School-Staff-Phone-Directory-Sheet1.pdf",
+      "myschoolplate_location": "camden/eastside-high-school"
     },
     {
       "slug": "brimm-medical-arts-high-school",
@@ -93,7 +95,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/brimmlogo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/camden-high-school"
     },
     {
       "slug": "creative-arts-academy",
@@ -118,7 +121,8 @@
       "logo_url": "https://camdencityschools.org/creative-arts/wp-content/uploads/sites/13/2019/07/creativeartslogo-1.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/camden-high-school"
     },
     {
       "slug": "big-picture-learning-academy",
@@ -143,7 +147,8 @@
       "logo_url": null,
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/camden-high-school"
     },
     {
       "slug": "cream-early-childhood-development-center",
@@ -168,7 +173,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/CREAM-logo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/r-t-cream-family-school"
     },
     {
       "slug": "martha-f-wilson-early-childhood-development-center",
@@ -193,7 +199,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/MWlogo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/early-childhood-development-center"
     },
     {
       "slug": "coopers-poynt-family-school",
@@ -218,7 +225,9 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/CPlogo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://docs.google.com/presentation/d/1kGsDhHlPI0vJDTIVtB6nW2-41J8cO8bTT3BUdDohKwo/present?slide=id.p",
+      "myschoolplate_location": "camden/coopers-poynt-school"
     },
     {
       "slug": "dr-henry-h-davis-family-school",
@@ -243,7 +252,9 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/DAVIS-logo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://camdencityschools.org/davis/wp-content/uploads/sites/5/2024/12/Davis-School-Staff-Directory-24-25.pdf",
+      "myschoolplate_location": "camden/davis-family-school"
     },
     {
       "slug": "forest-hill-school",
@@ -268,7 +279,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/FHlogo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/forest-hill-school"
     },
     {
       "slug": "hb-wilson-family-school",
@@ -293,7 +305,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/HBWILSON-logo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/h-b-wilson-family-school"
     },
     {
       "slug": "octavius-v-catto-family-school",
@@ -318,7 +331,9 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/Cattologo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://camdencityschools.org/catto/wp-content/uploads/sites/14/2023/01/2022-2023-STAFF-LIST-Sheet1.pdf",
+      "myschoolplate_location": "camden/octavius-v-catto-community-family-school"
     },
     {
       "slug": "thomas-h-dudley-family-school",
@@ -343,7 +358,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/dudleylogo-1.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/thomas-h-dudley-family-school"
     },
     {
       "slug": "veterans-memorial-family-school",
@@ -368,7 +384,9 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/vetslogo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://camdencityschools.org/veterans/wp-content/uploads/sites/12/2023/09/Vets-Faculty-Staff-List-2023-24-Copy.xlsx",
+      "myschoolplate_location": "camden/veterans-memorial-family-school"
     },
     {
       "slug": "yorkship-family-school",
@@ -393,7 +411,8 @@
       "logo_url": "https://camdencityschools.org/wp-content/uploads/2021/09/yorkshiplogo.png",
       "bell_periods": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "myschoolplate_location": "camden/yorkship-family-school"
     }
   ],
   "smore_newsletters": []
