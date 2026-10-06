@@ -352,7 +352,16 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
                 seen.add(key)
                 alert_items.append(i)
 
-    week_items = {d: [i for i in by_day.get(d, []) if not _is_rotation_item(i) and not _is_status_item(i)][:3] for d in week}
+    # Single-day items first: a week-long item is on every day of the strip
+    # already, and two of them once took the slots a day's own themed event
+    # needed ("Earth Respect Day" hidden behind two "Week of Respect" rows).
+    week_items = {
+        d: sorted(
+            (i for i in by_day.get(d, []) if not _is_rotation_item(i) and not _is_status_item(i)),
+            key=lambda i: len(_item_date_range(i)) > 1,
+        )[:3]
+        for d in week
+    }
 
     def status_source(d: date, st: str) -> SchoolContentItem | None:
         """The item whose own title is the day's status label (a closure's
