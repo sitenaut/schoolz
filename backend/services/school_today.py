@@ -329,7 +329,10 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     upcoming_items = [
         i
         for i in items
-        if local_date(i.start_date) >= today and i.category in _UPCOMING_CATEGORIES and not _is_rotation_item(i)
+        # Its last day, not its first: a multi-day item (a spirit week, a
+        # book fair) used to vanish from here the morning after it began,
+        # with most of it still ahead.
+        if _item_date_range(i)[-1] >= today and i.category in _UPCOMING_CATEGORIES and not _is_rotation_item(i)
     ][:5]
 
     seen: set[tuple[date, str]] = set()

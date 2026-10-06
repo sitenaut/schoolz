@@ -232,7 +232,12 @@ async def run_now(newsletter_id: str, user: User = Depends(require_permission("n
 
 
 @router.post("/{newsletter_id}/reextract-all")
-async def reextract_all(newsletter_id: str, user: User = Depends(require_permission("newsletters.manage")), db: AsyncSession = Depends(get_db)):
+async def reextract_all(
+    newsletter_id: str,
+    block_id: str | None = None,
+    user: User = Depends(require_permission("newsletters.manage")),
+    db: AsyncSession = Depends(get_db),
+):
     """Re-runs extraction over every block this newsletter has ever
     fetched, not just newly-seen ones. `run-now`'s normal scan+extract path
     only ever passes *new* blocks to extraction - once a block is stored,
@@ -248,13 +253,20 @@ async def reextract_all(newsletter_id: str, user: User = Depends(require_permiss
     a block that already produced an item creates a second, duplicate item,
     it doesn't update the first. Safe on a newsletter that currently has
     zero (or far fewer than expected) items; not a routine "refresh" button
-    for one that's already fully extracted."""
+    for one that's already fully extracted.
+
+    `block_id` narrows it to that one block - for a newsletter that is
+    otherwise fine but whose one flyer was read under an older prompt (real
+    case: a spirit week stored as a single item before themed days were
+    split out), without re-stating every other block's items."""
     newsletter = await _require_manageable(db, newsletter_id)
-    result = await db.execute(
-        select(SmoreBlock).where(SmoreBlock.newsletter_id == newsletter.id).order_by(SmoreBlock.position)
-    )
-    blocks = result.scalars().all()
+    query = select(SmoreBlock).where(SmoreBlock.newsletter_id == newsletter.id).order_by(SmoreBlock.position)
+    if block_id:
+        query = query.where(SmoreBlock.id == block_id)
+    blocks = (await db.execute(query)).scalars().all()
     if not blocks:
+        if block_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such block in this newsletter")
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Newsletter has no fetched blocks yet - run a scan first")
 
     from services.content_extractor import extract_from_newsletter

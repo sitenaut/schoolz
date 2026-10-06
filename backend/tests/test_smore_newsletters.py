@@ -93,3 +93,31 @@ async def test_duplicate_url_rejected():
         assert first.status_code == 201
         second = await client.post("/smore-newsletters", json={"url": url}, headers=admin)
         assert second.status_code == 409
+
+
+@pytest.mark.anyio
+async def test_reextract_can_be_narrowed_to_one_block(monkeypatch):
+    from models import SmoreBlock
+    from services import content_extractor
+
+    seen: list[list[str]] = []
+
+    async def fake_extract(db, newsletter, blocks, job_kind="smore.scan"):
+        seen.append([b.id for b in blocks])
+        return "ok"
+
+    monkeypatch.setattr(content_extractor, "extract_from_newsletter", fake_extract)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        nl = (await client.post("/smore-newsletters", json={"url": f"https://app.smore.com/n/{uuid.uuid4().hex[:8]}"}, headers=admin)).json()
+        async with database.SessionLocal() as db:
+            blocks = [SmoreBlock(newsletter_id=nl["id"], position=n, block_type="text", content_hash=uuid.uuid4().hex, text_content=f"b{n}") for n in range(3)]
+            db.add_all(blocks)
+            await db.commit()
+            ids = [b.id for b in blocks]
+
+        assert (await client.post(f"/smore-newsletters/{nl['id']}/reextract-all?block_id={ids[1]}", headers=admin)).status_code == 200
+        assert (await client.post(f"/smore-newsletters/{nl['id']}/reextract-all", headers=admin)).status_code == 200
+        assert seen == [[ids[1]], ids]
+        assert (await client.post(f"/smore-newsletters/{nl['id']}/reextract-all?block_id={uuid.uuid4()}", headers=admin)).status_code == 404

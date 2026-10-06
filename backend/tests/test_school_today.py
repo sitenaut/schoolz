@@ -1,5 +1,8 @@
+import uuid
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
+
+import pytest
 
 from models import SchoolContentItem
 from services.school_today import _item_date_range, classify_day, week_window
@@ -144,3 +147,31 @@ def test_school_types_from_title_grade_spans():
     assert school_types_from_title("SCHOOLS CLOSED - Presidents' Day") is None
     assert school_types_from_title("IN-SERVICE (Eid al-Fitr)") is None
     assert school_types_from_title("Board meeting 7-9 PM") is None
+
+
+@pytest.mark.anyio
+async def test_upcoming_keeps_a_multi_day_item_until_its_last_day():
+    # Real case: a "Week of Respect" Mon-Fri was gone from Today on Tuesday.
+    import database
+    from models import School
+    from services.school_today import build_today
+
+    async with database.SessionLocal() as db:
+        school = School(name=f"Range School {uuid.uuid4().hex[:8]}", slug=f"range-{uuid.uuid4().hex[:8]}")
+        db.add(school)
+        await db.flush()
+        db.add(
+            SchoolContentItem(
+                scope="school",
+                school_id=school.id,
+                category="event",
+                title="Spirit Week",
+                start_date=datetime(2026, 10, 5, tzinfo=_ET),
+                end_date=datetime(2026, 10, 10, tzinfo=_ET),
+                is_all_day=True,
+            )
+        )
+        await db.flush()
+        assert [i.title for i in (await build_today(db, school, date(2026, 10, 6))).upcoming] == ["Spirit Week"]
+        assert [i.title for i in (await build_today(db, school, date(2026, 10, 9))).upcoming] == ["Spirit Week"]
+        assert (await build_today(db, school, date(2026, 10, 10))).upcoming == []
