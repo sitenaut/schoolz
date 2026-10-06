@@ -94,6 +94,36 @@ def sql_target(sql: str, ref: str = "A", fmt: str = "table") -> dict:
     }
 
 
+def ga_target(dimension: str, metrics: list, columns: list, limit: int = 0, ref: str = "A") -> dict:
+    """One Google Analytics Data API report, through the Infinity datasource
+    (scripts/grafana_sync.py:ensure_ga). The dashboard's own time range
+    becomes the report's date range; `${GA_PROPERTY}` is filled in at sync so
+    the property id never lands in a tracked file."""
+    by_date = dimension == "date"
+    body = {
+        "dateRanges": [{"startDate": "${__from:date:YYYY-MM-DD}", "endDate": "${__to:date:YYYY-MM-DD}"}],
+        "dimensions": [{"name": dimension}],
+        "metrics": [{"name": m} for m in metrics],
+        "orderBys": [{"dimension": {"dimensionName": "date"}}] if by_date
+                    else [{"metric": {"metricName": metrics[0]}, "desc": True}],
+    }
+    if limit:
+        body["limit"] = limit
+    first = ({"selector": "dimensionValues.0.value", "text": columns[0], "type": "timestamp", "timestampFormat": "20060102"}
+             if by_date else {"selector": "dimensionValues.0.value", "text": columns[0], "type": "string"})
+    return {
+        "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_GA}"},
+        "refId": ref, "type": "json", "source": "url", "format": "timeseries" if by_date else "table",
+        "parser": "backend",
+        "url": "https://analyticsdata.googleapis.com/v1beta/properties/${GA_PROPERTY}:runReport",
+        "url_options": {"method": "POST", "body_type": "raw", "body_content_type": "application/json",
+                        "data": json.dumps(body)},
+        "root_selector": "rows",
+        "columns": [first] + [{"selector": f"metricValues.{i}.value", "text": name, "type": "number"}
+                              for i, name in enumerate(columns[1:])],
+    }
+
+
 def panel(pid, title, targets, gp, ptype="timeseries", unit=None, desc="", extra=None) -> dict:
     p = {
         "id": pid,
@@ -345,6 +375,20 @@ def ux() -> dict:
               {"h": 8, "w": 12, "x": 12, "y": 31},
               desc="Catches the class of bug that blanked every local build (faro-react's FaroRoutes) before "
                    "a user has to report it."),
+        panel(11, "Visitors and page views per day (Google Analytics)",
+              [ga_target("date", ["activeUsers", "screenPageViews"], ["day", "visitors", "page views"])],
+              {"h": 8, "w": 12, "x": 0, "y": 39},
+              desc="GA's count, which loads only on the production hostname and never for crawlers or admins "
+                   "flagged internal. Compare with the server-side page-visit panels: the gap is ad blockers "
+                   "plus anyone who left before GA's deferred load."),
+        panel(12, "Where sessions come from (Google Analytics)",
+              [ga_target("sessionDefaultChannelGroup", ["sessions"], ["channel", "sessions"], limit=10)],
+              {"h": 8, "w": 6, "x": 12, "y": 39}, ptype="table",
+              desc="The one question only GA can answer here: search, social, direct or a campaign link."),
+        panel(13, "Top pages (Google Analytics)",
+              [ga_target("pagePath", ["screenPageViews", "activeUsers"], ["page", "views", "visitors"], limit=15)],
+              {"h": 8, "w": 6, "x": 18, "y": 39}, ptype="table",
+              desc="Paths as GA receives them: tokens stripped, personal and admin routes collapsed."),
     ]
     return dashboard(
         "schoolz-ux", "schoolz / User experience",
@@ -352,7 +396,8 @@ def ux() -> dict:
         panels,
         [ds_var("DS_METRICS", "prometheus", "Metrics"),
          ds_var("DS_LOGS", "loki", "Logs (Faro RUM)"),
-         ds_var("DS_SQL", "grafana-postgresql-datasource", "schoolz database")],
+         ds_var("DS_SQL", "grafana-postgresql-datasource", "schoolz database"),
+         ds_var("DS_GA", "yesoreyeram-infinity-datasource", "Google Analytics")],
     )
 
 
