@@ -50,6 +50,13 @@ def _squash(name: str) -> str:
     return re.sub(r"elem(?!entary)", "elementary", _norm(name).replace(" ", ""))
 
 
+_LEVEL_WORDS = {"elementary", "middle", "junior", "senior", "high", "primary", "intermediate"}
+
+
+def _core_tokens(name: str) -> set[str]:
+    return {t for t in _norm(name).split() if len(t) > 1 and t not in _LEVEL_WORDS}
+
+
 def _either_contains(a: set[str], b: set[str]) -> bool:
     return bool(a) and bool(b) and (a <= b or b <= a)
 
@@ -74,7 +81,14 @@ def match_school(our_name: str, cafe_schools: list[dict]) -> dict | None:
     if len(contained) == 1:
         return contained[0]
     squashed = [s for s in cafe_schools if _squash(s["SchoolName"]) == _squash(our_name)]
-    return squashed[0] if len(squashed) == 1 else None
+    if len(squashed) == 1:
+        return squashed[0]
+    # Last resort: the same name with a different level word and/or a middle
+    # initial (Mount Ephraim's "Raymond W. Kershaw Middle School" is "Raymond
+    # Kershaw Elementary" on SchoolCafé). Only when exactly one site is left.
+    core = _core_tokens(our_name)
+    cored = [s for s in cafe_schools if core and _core_tokens(s["SchoolName"]) == core]
+    return cored[0] if len(cored) == 1 else None
 
 
 def day_description(categories: dict[str, list[dict]]) -> str | None:

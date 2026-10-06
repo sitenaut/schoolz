@@ -1,0 +1,93 @@
+{
+  "exported_at": "2026-10-06T12:00:00Z",
+  "source": "onboarding: Mount Ephraim School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Mount Ephraim School District",
+      "website_url": "https://www.mtephraimschools.com",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Mount Ephraim District Calendar",
+          "url": "https://www.mtephraimschools.com/apps/events/ical/?id=0"
+        },
+        {
+          "name": "Mary Bray Calendar",
+          "url": "https://www.mtephraimschools.com/apps/events/ical/?id=1",
+          "school_slug": "mary-bray"
+        },
+        {
+          "name": "Kershaw Calendar",
+          "url": "https://www.mtephraimschools.com/apps/events/ical/?id=2",
+          "school_slug": "kershaw"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Mount Ephraim"
+      ],
+      "schoolcafe_shortname": "MOUNTEPHRAIMPSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "mary-bray",
+      "name": "Mary Bray Elementary School",
+      "short_name": "Mary Bray",
+      "district_name": "Mount Ephraim School District",
+      "school_type": "elementary",
+      "address": "225 West Kings Highway, Mount Ephraim, NJ 08059",
+      "main_phone": "(856) 931-7807",
+      "website_url": "https://mbe.mtephraimschools.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "kershaw",
+      "name": "Raymond W. Kershaw Middle School",
+      "short_name": "Kershaw",
+      "district_name": "Mount Ephraim School District",
+      "school_type": "middle",
+      "address": "125 South Black Horse Pike, Mount Ephraim, NJ 08059",
+      "main_phone": "(856) 931-7807",
+      "website_url": "https://rkm.mtephraimschools.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ]
+}
