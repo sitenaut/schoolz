@@ -152,6 +152,78 @@
           ]
         },
         {
+          "uid": "schoolz-site-unreachable",
+          "title": "schoolz: site unreachable from outside",
+          "condition": "C",
+          "for": "6m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "page",
+            "kind": "symptom",
+            "component": "edge",
+            "severity": "critical"
+          },
+          "annotations": {
+            "summary": "{{ $labels.instance }} is failing from every probe location",
+            "description": "The only alert that sees what a visitor sees: DNS, TLS, Fly's proxy and the app together. Every location must fail for two checks in a row, so one probe's bad network can't page. If the app's own alerts are quiet, the problem is in front of it.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-site-unreachable",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ops"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-page",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "max by (job, instance) (probe_success{job=~\"schoolz-web|schoolz-api\"})",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        1
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
           "uid": "schoolz-slo-api-availability-fast",
           "title": "schoolz SLO: API availability error budget burning fast",
           "condition": "F",
@@ -1431,6 +1503,78 @@
                       "type": "lt",
                       "params": [
                         1
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-probe-silent",
+          "title": "schoolz: an uptime probe is not reporting",
+          "condition": "C",
+          "for": "15m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "cause",
+            "component": "edge",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Fewer than two uptime checks are reporting",
+            "description": "schoolz-site-unreachable can only fire for a check that reports. A check that was deleted, disabled or renamed leaves that half of the site unwatched, silently.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-probe-silent",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ops"
+          },
+          "noDataState": "Alerting",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 900,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "count(count by (job) (probe_success{job=~\"schoolz-web|schoolz-api\"}))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        2
                       ]
                     }
                   }
