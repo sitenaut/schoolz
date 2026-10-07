@@ -480,7 +480,12 @@ MODEL_PRICES = {
 }
 PRICED_MODELS = "|".join(MODEL_PRICES)
 DIRECTIONS = ("input", "output", "cache_write", "cache_read")
-CHAT_LOGS = '{service_name="schoolz-api"} |= "chatbot_usage"'
+# Every log record reaches Loki twice: telemetry.py attaches an OTel handler
+# and LoggingInstrumentor attaches its own. Only the second carries code_*
+# attributes, so an empty code_function_name selects one copy of each line.
+# If that is ever fixed at the source and these panels drop to zero, the
+# surviving handler is the other one - remove this filter.
+CHAT_LOGS = '{service_name="schoolz-api"} |= "chatbot_usage" | code_function_name=""'
 CACHE_READ = 'direction="cache_read"'
 ANY_INPUT = 'direction=~"input|cache_read|cache_write"'
 
@@ -525,6 +530,41 @@ def loki_instant(expr: str) -> dict:
     return t
 
 
+# Substring of a model id -> the same four prices, for the per-key estimate,
+# which is computed inside the query (JSONata) because the cost report cannot
+# be grouped by key. Order matters: "opus-5-5" must be tried before "opus-5".
+BILLING_PRICES = (("haiku-4-5", MODEL_PRICES["claude-haiku-4-5.*"]), ("sonnet-5", MODEL_PRICES["claude-sonnet-5.*"]),
+                  ("opus-5-5", MODEL_PRICES["claude-opus-5-5.*"]),
+                  ("opus-5", MODEL_PRICES["claude-opus-5|claude-opus-5-20.*"]),
+                  ("fable-5", MODEL_PRICES["claude-fable-5.*"]))
+BILLING_RANGE = "starting_at=${__from:date:iso}&ending_at=${__to:date:iso}&limit=31"
+# ${ANTHROPIC_NAMES} is a JSON object of id -> Console name, written in by
+# scripts/grafana_sync.py; an id it doesn't know is shown as it is.
+NAMED = ('function($id) { $type($id) = "string" ? ($exists($lookup($n, $id)) ? $lookup($n, $id) : $id) '
+         ': "default workspace" }')
+
+
+def billing_target(report: str, selector: str, columns: list, ref: str = "A") -> dict:
+    """One call to Anthropic's usage or cost report, through the Infinity
+    datasource scripts/grafana_sync.py:ensure_anthropic makes. Both reports
+    return ids, nested per-day buckets and amounts as strings, so every
+    selector flattens, converts and names them in JSONata."""
+    return {
+        "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_ANTHROPIC}"},
+        "refId": ref, "type": "json", "source": "url", "format": "table", "parser": "backend",
+        "url": f"https://api.anthropic.com/v1/organizations/{report}&{BILLING_RANGE}",
+        "url_options": {"method": "GET"},
+        "root_selector": "( $n := ${ANTHROPIC_NAMES}; $name := " + NAMED + "; " + selector + " )",
+        "columns": [{"selector": name, "text": name, "type": kind} for name, kind in columns],
+    }
+
+
+def billed_by(field: str, expr: str) -> str:
+    """Cost-report dollars summed per distinct value of `expr`."""
+    return ('$r := data.results.{"k": ' + expr + ', "usd": $number(amount) / 100}; '
+            '$distinct($r.k).( $k := $; {"' + field + '": $k, "usd": $sum($r[k = $k].usd)} )')
+
+
 def cost() -> dict:
     usd = {"fieldConfig": {"defaults": {"unit": "currencyUSD", "decimals": 2, "custom": {}}, "overrides": []}}
     bars = {"options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": True,
@@ -538,6 +578,22 @@ def cost() -> dict:
     def used(name: str, usage: str, included: str, ref: str) -> dict:
         return instant(f"sum({usage}) / sum({included})", name, ds="DS_USAGE", ref=ref)
 
+    price_of = "".join(f'$contains($m, "{part}") ? {list(prices)} : ' for part, prices in BILLING_PRICES) + "[0, 0, 0, 0]"
+    by_key = (
+        "$price := function($m) { " + price_of + " }; "
+        "$r := data.results.( $p := $price(model); {"
+        '"k": $type(api_key_id) = "string" ? $name(api_key_id) : "no key (Console or Claude Code)", '
+        '"usd": ($number(uncached_input_tokens) * $p[0] + $number(output_tokens) * $p[1] '
+        "+ $number(cache_creation.ephemeral_5m_input_tokens) * $p[2] "
+        "+ $number(cache_creation.ephemeral_1h_input_tokens) * $p[0] * 2 "
+        "+ $number(cache_read_input_tokens) * $p[3]) / 1000000} ); "
+        '$distinct($r.k).( $k := $; {"key": $k, "usd": $sum($r[k = $k].usd)} )')
+    rows = {"options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": True,
+                        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": True}}}
+    per_series = {"transformations": [{"id": "partitionByValues", "options": {
+        "fields": ["workspace"], "naming": {"asLabels": True}}}]}
+    billed_bars = {"fieldConfig": {"defaults": {"unit": "currencyUSD", "displayName": "${__field.labels.workspace}", "custom": {
+        "drawStyle": "bars", "fillOpacity": 80, "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []}}
     chat_tokens = (f'sum by (provider, model) (sum_over_time({CHAT_LOGS} | model!~"{PRICED_MODELS}" '
                    f'| unwrap input_tokens [$__range]))')
     panels = [
@@ -631,7 +687,38 @@ def cost() -> dict:
               [instant('sort_desc(count by (service_namespace) ({__name__=~".+"}))', "{{service_namespace}}")],
               {"h": 10, "w": 6, "x": 18, "y": 38}, ptype="bargauge", extra=bars,
               desc="Who is using the series allowance. The unlabelled bar is everything with no service_namespace."),
-        panel(19, "Not on this dashboard yet", [], {"h": 9, "w": 24, "x": 0, "y": 48}, ptype="text",
+        # --- the invoice
+        panel(20, "Billed by Anthropic (selected range)",
+              [billing_target("cost_report?group_by[]=description",
+                              '{"usd": $sum(data.results.($number(amount))) / 100}', [("usd", "number")])],
+              {"h": 5, "w": 6, "x": 0, "y": 48}, ptype="stat", extra=usd,
+              desc="What the account was actually charged, for every workspace and app on it - not only schoolz. "
+                   "The estimates above should sit a little under schoolz-prod's share of this. "
+                   "Reaches back 31 days at most."),
+        panel(21, "Billed by model",
+              [billing_target("cost_report?group_by[]=description",
+                              billed_by("model", '$type(model) = "string" ? model : description'),
+                              [("model", "string"), ("usd", "number")])],
+              {"h": 5, "w": 6, "x": 0, "y": 53}, ptype="bargauge", extra={**usd, **rows}),
+        panel(22, "Billed per day, by workspace",
+              [billing_target("cost_report?group_by[]=workspace_id",
+                              'data.( $t := starting_at; results.{"time": $t, "workspace": $name(workspace_id), '
+                              '"usd": $number(amount) / 100} )',
+                              [("time", "timestamp"), ("workspace", "string"), ("usd", "number")])],
+              {"h": 10, "w": 18, "x": 6, "y": 48}, extra={**billed_bars, **per_series},
+              desc="A workspace is a cost centre with its own spend limit: one per app and environment."),
+        panel(23, "Billed by workspace (selected range)",
+              [billing_target("cost_report?group_by[]=workspace_id", billed_by("workspace", "$name(workspace_id)"),
+                              [("workspace", "string"), ("usd", "number")])],
+              {"h": 8, "w": 8, "x": 0, "y": 58}, ptype="bargauge", extra={**usd, **rows}),
+        panel(24, "Spend by API key (selected range, priced from tokens)",
+              [billing_target("usage_report/messages?bucket_width=1d&group_by[]=api_key_id&group_by[]=model", by_key,
+                              [("key", "string"), ("usd", "number")])],
+              {"h": 8, "w": 16, "x": 8, "y": 58}, ptype="bargauge", extra={**usd, **rows},
+              desc="The cost report cannot be split by key, so this prices Anthropic's own token counts per key "
+                   "with the list prices in MODEL_PRICES. Scans, person-triggered work, public chat and "
+                   "signed-in chat each have a key."),
+        panel(19, "Not on this dashboard yet", [], {"h": 8, "w": 24, "x": 0, "y": 66}, ptype="text",
               extra={"options": {"mode": "markdown", "content": NOT_METERED}}),
     ]
     d = dashboard(
@@ -641,7 +728,8 @@ def cost() -> dict:
         [ds_var("DS_METRICS", "prometheus", "Metrics"),
          ds_var("DS_LOGS", "loki", "Logs"),
          ds_var("DS_SQL", "grafana-postgresql-datasource", "schoolz database"),
-         ds_var("DS_USAGE", "prometheus", "Grafana Cloud usage")],
+         ds_var("DS_USAGE", "prometheus", "Grafana Cloud usage"),
+         ds_var("DS_ANTHROPIC", "yesoreyeram-infinity-datasource", "Anthropic billing")],
     )
     d["time"] = {"from": "now-30d", "to": "now"}
     d["refresh"] = "1h"
@@ -652,8 +740,6 @@ NOT_METERED = """\
 | Cost centre | Why it is missing | What closes the gap |
 |---|---|---|
 | **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |
-| **Anthropic invoice** (the real dollars) | Panels above are estimates from token counts | A read-only Admin API key behind an Infinity datasource: `usage_report/messages` and `cost_report`, grouped by workspace and API key |
-| **Chatbot, anonymous vs signed-in** | One log line for both audiences | Record chatbot turns in `schoolz_llm_tokens_total` with a purpose per audience |
 | **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |
 | **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |
 """
