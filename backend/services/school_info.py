@@ -192,9 +192,18 @@ def _parse_presence_footer(html: str, base_url: str) -> dict | None:
     """SchoolMessenger Presence (ex-SharpSchool; Sterling, Somerdale): the
     footer's address is a text node in `.address` or `#footer-address`, the
     phone a "Phone 856-..." run beside it (Somerdale nests it inside the
-    address box). Sterling spells the state out ("New Jersey"). None for any
-    other platform."""
+    address box). Sterling spells the state out ("New Jersey"). Delran's
+    template has no footer box: the header carries a `ul.address` whose items
+    are told apart by their icon (map, phone, fax). None for any other
+    platform."""
     soup = BeautifulSoup(html, "lxml")
+    listed = soup.select_one("ul.address")
+    if listed and listed.select_one(".fa-map"):
+        item = lambda icon: " ".join(i.parent.get_text(" ", strip=True).split()) if (i := listed.select_one(f"li > .{icon}")) else None  # noqa: E731
+        address = item("fa-map")
+        if not address:
+            return None
+        return {"address": address, "main_phone": item("fa-phone"), "logo_url": _find_logo_url(html, base_url)}
     box = soup.select_one("#footer .address") or soup.select_one("#footer-address")
     if not box:
         return None

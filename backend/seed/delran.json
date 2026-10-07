@@ -1,0 +1,423 @@
+{
+  "exported_at": "2026-10-07T12:00:00Z",
+  "source": "onboarding: Delran Township School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Delran Township School District",
+      "website_url": "https://www.delranschools.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Delran High School Calendar",
+          "url": "https://dhs.delranschools.org/ICalendarHandler?calendarId=3421735",
+          "school_slug": "delran-high"
+        },
+        {
+          "name": "Delran Middle School Calendar",
+          "url": "https://dms.delranschools.org/ICalendarHandler?calendarId=3558794",
+          "school_slug": "delran-middle"
+        },
+        {
+          "name": "Delran Intermediate School Calendar",
+          "url": "https://dis.delranschools.org/ICalendarHandler?calendarId=3614723",
+          "school_slug": "delran-intermediate"
+        },
+        {
+          "name": "Millbridge Elementary Calendar",
+          "url": "https://mes.delranschools.org/ICalendarHandler?calendarId=3672179",
+          "school_slug": "millbridge"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Delran"
+      ],
+      "schoolcafe_shortname": "DELRANTOWNSHIPSDNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "delran-high",
+      "name": "Delran High School",
+      "short_name": "Delran High",
+      "district_name": "Delran Township School District",
+      "school_type": "high",
+      "address": "50 Hartford Road, Delran, NJ 08075",
+      "main_phone": "856-461-6100",
+      "website_url": "https://dhs.delranschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "856-461-6100 ext. 3003",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Attendance Office before 8:20 AM for each day your child will be absent or late. An early dismissal needs a parent note or an email from a verified address to DHSoffice@delranschools.org.",
+      "start_time": "7:30 AM",
+      "end_time": "2:15 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:30 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1/HR",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "2",
+            "start": "08:19",
+            "end": "09:00"
+          },
+          {
+            "name": "3",
+            "start": "09:04",
+            "end": "09:45"
+          },
+          {
+            "name": "4",
+            "start": "09:49",
+            "end": "10:30"
+          },
+          {
+            "name": "5",
+            "start": "10:34",
+            "end": "11:15"
+          },
+          {
+            "name": "6",
+            "start": "11:19",
+            "end": "12:00"
+          },
+          {
+            "name": "7",
+            "start": "12:04",
+            "end": "12:45"
+          },
+          {
+            "name": "8",
+            "start": "12:49",
+            "end": "13:30"
+          },
+          {
+            "name": "9",
+            "start": "13:34",
+            "end": "14:15"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1/HR",
+            "start": "07:30",
+            "end": "08:00"
+          },
+          {
+            "name": "2",
+            "start": "08:04",
+            "end": "08:30"
+          },
+          {
+            "name": "3",
+            "start": "08:34",
+            "end": "09:00"
+          },
+          {
+            "name": "4",
+            "start": "09:04",
+            "end": "09:30"
+          },
+          {
+            "name": "5",
+            "start": "09:34",
+            "end": "10:00"
+          },
+          {
+            "name": "6",
+            "start": "10:04",
+            "end": "10:30"
+          },
+          {
+            "name": "7",
+            "start": "10:34",
+            "end": "11:00"
+          },
+          {
+            "name": "8",
+            "start": "11:04",
+            "end": "11:30"
+          },
+          {
+            "name": "9",
+            "start": "11:34",
+            "end": "12:00"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1/HR",
+            "start": "09:30",
+            "end": "10:00"
+          },
+          {
+            "name": "2",
+            "start": "10:04",
+            "end": "10:32"
+          },
+          {
+            "name": "3",
+            "start": "10:36",
+            "end": "11:04"
+          },
+          {
+            "name": "4",
+            "start": "11:08",
+            "end": "11:36"
+          },
+          {
+            "name": "5",
+            "start": "11:40",
+            "end": "12:08"
+          },
+          {
+            "name": "6",
+            "start": "12:12",
+            "end": "12:40"
+          },
+          {
+            "name": "7",
+            "start": "12:44",
+            "end": "13:12"
+          },
+          {
+            "name": "8",
+            "start": "13:16",
+            "end": "13:44"
+          },
+          {
+            "name": "9",
+            "start": "13:48",
+            "end": "14:15"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=5773",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSYOgQ2FdZ4U76Bwk5zwgX4-aihz68aurW0D2pxcavMH_0zzejocBoClv4fn-BtEbBi-fMOqPksYRgM/pubhtml?gid=0&single=true"
+    },
+    {
+      "slug": "delran-middle",
+      "name": "Delran Middle School",
+      "short_name": "Delran Middle",
+      "district_name": "Delran Township School District",
+      "school_type": "middle",
+      "address": "905 S Chester Avenue, Delran, NJ 08075",
+      "main_phone": "856-461-8822",
+      "website_url": "https://dms.delranschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "856-461-8822 ext. 4350",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call before 8:00 AM to report your child's absence.",
+      "start_time": "7:30 AM",
+      "end_time": "2:15 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:30 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:19",
+            "end": "09:02"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:06",
+            "end": "09:49"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:53",
+            "end": "10:36"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:40",
+            "end": "11:23"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:27",
+            "end": "12:10"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:14",
+            "end": "12:57"
+          },
+          {
+            "name": "BEAR",
+            "start": "13:01",
+            "end": "13:27"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:31",
+            "end": "14:15"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:30",
+            "end": "08:02"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:06",
+            "end": "08:36"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:40",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:14",
+            "end": "09:44"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:48",
+            "end": "10:18"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:22",
+            "end": "10:52"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:56",
+            "end": "11:26"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:30",
+            "end": "12:00"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "09:30",
+            "end": "10:03"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:07",
+            "end": "10:38"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:42",
+            "end": "11:13"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:17",
+            "end": "11:48"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:52",
+            "end": "12:25"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:29",
+            "end": "13:02"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:06",
+            "end": "13:39"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:43",
+            "end": "14:15"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=5774",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQnSOjr6NID2NEX07EBa7DUDSur_cihQl3v9fa3fPcDc6gmxGy9TZPdAou5vzTmjF21D2-bxa9p2SJg/pubhtml?gid=0&single=true"
+    },
+    {
+      "slug": "delran-intermediate",
+      "name": "Delran Intermediate School",
+      "short_name": "Delran Intermediate",
+      "district_name": "Delran Township School District",
+      "school_type": "elementary",
+      "address": "20 Creek Road, Delran, NJ 08075",
+      "main_phone": "856-764-5100",
+      "website_url": "https://dis.delranschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "856-764-5100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school before 8:10 AM to report an absence. If no message is received you will get an automated call.",
+      "start_time": "8:10 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:10 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSJYqUq9rDiQy7mvmBZ9NTGYb6QdxpKXhLqOx6KpSh3HXyJnjdl7wfMDaItfEKZvKrc1y7JUGRiZkRD/pubhtml?gid=0&single=true"
+    },
+    {
+      "slug": "millbridge",
+      "name": "Millbridge Elementary School",
+      "short_name": "Millbridge",
+      "district_name": "Delran Township School District",
+      "school_type": "elementary",
+      "address": "282 Conrow Road, Delran, NJ 08075",
+      "main_phone": "856-461-2900",
+      "website_url": "https://mes.delranschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "856-461-2900",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school by 9:00 AM to report an absence.",
+      "start_time": "9:00 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": "11:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSq8mwAPIGZnO2bkNPGE_dJM1VDxHHige-9jFzf8X1qREA7LPgYNQnLjFLndrB1pD6HgY5oRYluYYHD/pubhtml?gid=0&single=true"
+    }
+  ]
+}

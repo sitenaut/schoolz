@@ -101,3 +101,8 @@ def test_role_links_come_from_the_nav_and_principals_message_is_the_principal():
         ("Nurse", "https://x.example/nurse"),
         ("Principal", "https://x.example/principalsmessage"),
     ]
+
+
+def test_footer_phone_drops_the_country_code():
+    html = '<footer><a href="tel:+18568297770" aria-label="Phone +1 856-829-7770">+1 856-829-7770</a></footer>'
+    assert smart_sites.parse_footer(html)["main_phone"] == "856-829-7770"

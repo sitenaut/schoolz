@@ -484,6 +484,8 @@ class SchoolUpdate(BaseModel):
     healthepro_location: str | None = Field(default=None, max_length=40, pattern=r"^\d+/\d+$")
     presence_menu_page_url: str | None = Field(default=None, max_length=500)
     myschoolplate_location: str | None = Field(default=None, max_length=100, pattern=r"^[a-z0-9-]+/[a-z0-9-]+$")
+    # Nutrislice menu location, "district/school-slug" (services/nutrislice.py).
+    nutrislice_location: str | None = Field(default=None, max_length=100, pattern=r"^[a-z0-9-]+/[a-z0-9-]+$")
     staff_directory_url: str | None = Field(default=None, max_length=500)
     # Lets an admin hand-enter or correct the per-period table behind the
     # "what period is it right now" chip (services/bell_schedule.py) - e.g.
@@ -539,6 +541,7 @@ class SchoolOut(BaseModel):
     healthepro_location: str | None = None
     presence_menu_page_url: str | None = None
     myschoolplate_location: str | None = None
+    nutrislice_location: str | None = None
     staff_directory_url: str | None = None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
@@ -1040,6 +1043,7 @@ class ExportSchoolOut(BaseModel):
     healthepro_location: str | None = None
     presence_menu_page_url: str | None = None
     myschoolplate_location: str | None = None
+    nutrislice_location: str | None = None
     staff_directory_url: str | None = None
     bulletin_doc_url: str | None = None
 

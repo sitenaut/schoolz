@@ -1,0 +1,711 @@
+{
+  "exported_at": "2026-10-07T12:00:00Z",
+  "source": "onboarding: Cinnaminson Township Public Schools",
+  "smore_newsletters": [
+    {
+      "url": "https://cms.cinnaminson.com",
+      "label": "Crow's Nest Chronicle (Cinnaminson Middle)",
+      "school_slug": "cinnaminson-middle",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ],
+  "districts": [
+    {
+      "name": "Cinnaminson Township Public Schools",
+      "website_url": "https://www.cinnaminson.com",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Cinnaminson District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_6067gu9ij1voff960jurffc7bg%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "CHS Calendar of Events",
+          "url": "https://calendar.google.com/calendar/ical/c_om1sha91cvcc99re9ou9rb7tbc%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "cinnaminson-high"
+        },
+        {
+          "name": "Cinnaminson Middle School Calendar of Events",
+          "url": "https://calendar.google.com/calendar/ical/c_pt8ie34432ots71fd6ldhq1g14%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "cinnaminson-middle"
+        },
+        {
+          "name": "ERS Calendar of Events",
+          "url": "https://calendar.google.com/calendar/ical/c_vifeifimj2c5h90bifvje06sb8%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "eleanor-rush"
+        },
+        {
+          "name": "New Albany Calendar of Events",
+          "url": "https://calendar.google.com/calendar/ical/c_26fh27eie5eucc9u7c4q5f1fts%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "new-albany"
+        },
+        {
+          "name": "Cinnaminson Preschool Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_294f8eea1b2d2e41476f7d8bb0a6e66b314de361cbd9d3f73574e52b3c90462f%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "cinnaminson-preschool"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Cinnaminson"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "cinnaminson-high",
+      "name": "Cinnaminson High School",
+      "short_name": "Cinnaminson High",
+      "district_name": "Cinnaminson Township Public Schools",
+      "school_type": "high",
+      "address": "1197 Riverton Road, Cinnaminson, NJ 08077",
+      "main_phone": "856-829-7770",
+      "website_url": "https://chs.cinnaminson.com",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.cinnaminson.com",
+      "absence_instructions": "Report an absence, late arrival or early dismissal in the Genesis Parent Portal: Student Data > Attendance > Notify Office. You can upload a doctor's note there, within 2 days. Questions go to the attendance secretary at (856) 829-7770 ext. 3840.",
+      "start_time": "7:35 AM",
+      "end_time": "2:11 PM",
+      "early_dismissal_time": "12:02 PM",
+      "delayed_opening_time": "9:35 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Arrival",
+            "start": "07:20",
+            "end": "07:35"
+          },
+          {
+            "name": "1",
+            "start": "07:35",
+            "end": "08:16"
+          },
+          {
+            "name": "2",
+            "start": "08:19",
+            "end": "09:00"
+          },
+          {
+            "name": "3",
+            "start": "09:03",
+            "end": "09:44"
+          },
+          {
+            "name": "4",
+            "start": "09:48",
+            "end": "10:29"
+          },
+          {
+            "name": "5",
+            "start": "10:33",
+            "end": "11:14"
+          },
+          {
+            "name": "6 (Smart Lunch)",
+            "start": "11:17",
+            "end": "11:55"
+          },
+          {
+            "name": "7",
+            "start": "12:01",
+            "end": "12:42"
+          },
+          {
+            "name": "8",
+            "start": "12:45",
+            "end": "13:26"
+          },
+          {
+            "name": "9",
+            "start": "13:30",
+            "end": "14:11"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Arrival",
+            "start": "07:20",
+            "end": "07:35"
+          },
+          {
+            "name": "1",
+            "start": "07:35",
+            "end": "08:05"
+          },
+          {
+            "name": "2",
+            "start": "08:09",
+            "end": "08:39"
+          },
+          {
+            "name": "3",
+            "start": "08:43",
+            "end": "09:13"
+          },
+          {
+            "name": "4",
+            "start": "09:17",
+            "end": "09:47"
+          },
+          {
+            "name": "5",
+            "start": "09:51",
+            "end": "10:21"
+          },
+          {
+            "name": "7",
+            "start": "10:25",
+            "end": "10:55"
+          },
+          {
+            "name": "8",
+            "start": "10:59",
+            "end": "11:29"
+          },
+          {
+            "name": "9",
+            "start": "11:32",
+            "end": "12:02"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Arrival",
+            "start": "09:20",
+            "end": "09:35"
+          },
+          {
+            "name": "1",
+            "start": "09:35",
+            "end": "10:05"
+          },
+          {
+            "name": "2",
+            "start": "10:08",
+            "end": "10:38"
+          },
+          {
+            "name": "3",
+            "start": "10:41",
+            "end": "11:11"
+          },
+          {
+            "name": "4",
+            "start": "11:14",
+            "end": "11:44"
+          },
+          {
+            "name": "5",
+            "start": "11:47",
+            "end": "12:17"
+          },
+          {
+            "name": "Lunch",
+            "start": "12:20",
+            "end": "12:35"
+          },
+          {
+            "name": "7",
+            "start": "12:35",
+            "end": "13:05"
+          },
+          {
+            "name": "8",
+            "start": "13:08",
+            "end": "13:38"
+          },
+          {
+            "name": "9",
+            "start": "13:41",
+            "end": "14:11"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=4340",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "cinnaminson/cinnaminson-high-school"
+    },
+    {
+      "slug": "cinnaminson-middle",
+      "name": "Cinnaminson Middle School",
+      "short_name": "Cinnaminson Middle",
+      "district_name": "Cinnaminson Township Public Schools",
+      "school_type": "middle",
+      "address": "312 Forklanding Road, Cinnaminson, NJ 08077",
+      "main_phone": "856-786-8012",
+      "website_url": "https://cms.cinnaminson.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "856-786-8012",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Contact the main office by 9:00 AM to report an absence (student handbook).",
+      "start_time": "8:02 AM",
+      "end_time": "2:35 PM",
+      "early_dismissal_time": "12:22 PM",
+      "delayed_opening_time": "10:02 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:02",
+            "end": "08:14"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:17",
+            "end": "08:57"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:00",
+            "end": "09:40"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:43",
+            "end": "10:23"
+          },
+          {
+            "name": "Period 4 (Lunch A)",
+            "start": "10:26",
+            "end": "10:56"
+          },
+          {
+            "name": "Period 4-5",
+            "start": "10:26",
+            "end": "11:06"
+          },
+          {
+            "name": "Period 5-6",
+            "start": "10:59",
+            "end": "11:39"
+          },
+          {
+            "name": "Period 6 (Lunch B)",
+            "start": "11:09",
+            "end": "11:39"
+          },
+          {
+            "name": "Period 6-7",
+            "start": "11:09",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 7-8",
+            "start": "11:42",
+            "end": "12:22"
+          },
+          {
+            "name": "Period 8 (Lunch C)",
+            "start": "11:52",
+            "end": "12:22"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:25",
+            "end": "12:35"
+          },
+          {
+            "name": "Period 9-10",
+            "start": "12:25",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 10 (Lunch D)",
+            "start": "12:35",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 11",
+            "start": "13:08",
+            "end": "13:48"
+          },
+          {
+            "name": "Period 12",
+            "start": "13:51",
+            "end": "14:31"
+          },
+          {
+            "name": "AN",
+            "start": "14:31",
+            "end": "14:35"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:02",
+            "end": "08:14"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:16",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:47",
+            "end": "09:16"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:18",
+            "end": "09:47"
+          },
+          {
+            "name": "Period 4-5 or 5-6",
+            "start": "09:49",
+            "end": "10:18"
+          },
+          {
+            "name": "Period 6-7 or 7-8",
+            "start": "10:20",
+            "end": "10:49"
+          },
+          {
+            "name": "Period 9-10",
+            "start": "10:51",
+            "end": "11:20"
+          },
+          {
+            "name": "Period 11",
+            "start": "11:22",
+            "end": "11:51"
+          },
+          {
+            "name": "Period 12",
+            "start": "11:53",
+            "end": "12:22"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "10:02",
+            "end": "10:37"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:38",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:09",
+            "end": "11:39"
+          },
+          {
+            "name": "Period 4 (Lunch A)",
+            "start": "11:40",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 4-5",
+            "start": "11:40",
+            "end": "12:10"
+          },
+          {
+            "name": "Period 5-6",
+            "start": "12:01",
+            "end": "12:31"
+          },
+          {
+            "name": "Period 6 (Lunch B)",
+            "start": "12:11",
+            "end": "12:31"
+          },
+          {
+            "name": "Period 7-8",
+            "start": "12:32",
+            "end": "13:02"
+          },
+          {
+            "name": "Period 8 (Lunch C)",
+            "start": "12:42",
+            "end": "13:02"
+          },
+          {
+            "name": "Period 9-10",
+            "start": "13:03",
+            "end": "13:33"
+          },
+          {
+            "name": "Period 10 (Lunch D)",
+            "start": "13:13",
+            "end": "13:33"
+          },
+          {
+            "name": "Period 11",
+            "start": "13:34",
+            "end": "14:04"
+          },
+          {
+            "name": "Period 12",
+            "start": "14:05",
+            "end": "14:35"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=4341",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "cinnaminson/cinnaminson-middle-school"
+    },
+    {
+      "slug": "eleanor-rush",
+      "name": "Eleanor Rush Intermediate School",
+      "short_name": "Rush",
+      "district_name": "Cinnaminson Township Public Schools",
+      "school_type": "elementary",
+      "address": "1200 Wynwood Drive, Cinnaminson, NJ 08077",
+      "main_phone": "856-829-7778",
+      "website_url": "https://ers.cinnaminson.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:36 AM",
+      "end_time": "3:04 PM",
+      "early_dismissal_time": "12:53 PM",
+      "delayed_opening_time": "10:36 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Morning Meeting",
+            "start": "08:36",
+            "end": "08:50"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:50",
+            "end": "09:34"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:36",
+            "end": "10:20"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:22",
+            "end": "11:06"
+          },
+          {
+            "name": "Period 4 (3rd Gr. Lunch)",
+            "start": "11:08",
+            "end": "11:53"
+          },
+          {
+            "name": "Period 5 (4th Gr. Lunch)",
+            "start": "11:56",
+            "end": "12:41"
+          },
+          {
+            "name": "Period 6 (5th Gr. Lunch)",
+            "start": "12:44",
+            "end": "13:29"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:31",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:17",
+            "end": "15:01"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Morning Meeting",
+            "start": "08:36",
+            "end": "08:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:40",
+            "end": "09:07"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:09",
+            "end": "09:36"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:38",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 4 (3rd Gr. Lunch)",
+            "start": "10:07",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 5 (4th Gr. Lunch)",
+            "start": "10:42",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 6 (5th Gr. Lunch)",
+            "start": "11:17",
+            "end": "11:50"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:52",
+            "end": "12:19"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:21",
+            "end": "12:48"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Morning Meeting",
+            "start": "10:36",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:40",
+            "end": "11:09"
+          },
+          {
+            "name": "Period 2",
+            "start": "11:11",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:42",
+            "end": "12:11"
+          },
+          {
+            "name": "Period 4 (3rd Gr. Lunch)",
+            "start": "12:13",
+            "end": "12:46"
+          },
+          {
+            "name": "Period 5 (4th Gr. Lunch)",
+            "start": "12:48",
+            "end": "13:21"
+          },
+          {
+            "name": "Period 6 (5th Gr. Lunch)",
+            "start": "13:23",
+            "end": "13:56"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:58",
+            "end": "14:27"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:29",
+            "end": "14:58"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:45 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(856) 829-7600 ext. 2814",
+        "absence_phone": "(856) 829-7600 ext. 2814",
+        "absence_form_url": null,
+        "late_pickup_policy": "Students cannot be dropped off before 7:00 AM and must be picked up by 6:00 PM. If you may be delayed, arrange for someone to pick up your child and tell SAC who it will be.",
+        "pickup_change_procedure": "The schools do not tell SAC when a child is absent or sent home sick, so notify the SAC staff yourself.",
+        "closures_notes": "SAC (Student Activity Center) is tuition based, for grades K-5, and is held at Memorial School, 2195 Riverton Road. Closed when school is closed. On a 2-hour delay it opens at 9:00 AM and still closes at 6:00 PM. On an emergency early dismissal it stays open for a shortened time, announced to parents. Closed on the half days before Thanksgiving, Christmas and Easter. Tuition is due by the first of each month.",
+        "handbook_url": "https://www.cinnaminson.com/student-activity-center-sac-before"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "cinnaminson/eleanor-rush-school"
+    },
+    {
+      "slug": "new-albany",
+      "name": "New Albany Elementary School",
+      "short_name": "New Albany",
+      "district_name": "Cinnaminson Township Public Schools",
+      "school_type": "elementary",
+      "address": "2701 New Albany Road, Cinnaminson, NJ 08077",
+      "main_phone": "856-786-2284",
+      "website_url": "https://nas.cinnaminson.com",
+      "absence_method": "portal",
+      "absence_emails": [
+        "nasmainoffice@cinnaminson.com"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.cinnaminson.com",
+      "absence_instructions": "By 8:30 AM, either mark your child absent in the Genesis Parent Portal (Attendance > Notify Office) or email your child's teacher and the office at nasmainoffice@cinnaminson.com. Later than that, you may get an automated call saying your child is absent.",
+      "start_time": "9:06 AM",
+      "end_time": "3:34 PM",
+      "early_dismissal_time": "1:25 PM",
+      "delayed_opening_time": "11:06 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:45 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(856) 829-7600 ext. 2814",
+        "absence_phone": "(856) 829-7600 ext. 2814",
+        "absence_form_url": null,
+        "late_pickup_policy": "Students cannot be dropped off before 7:00 AM and must be picked up by 6:00 PM. If you may be delayed, arrange for someone to pick up your child and tell SAC who it will be.",
+        "pickup_change_procedure": "The schools do not tell SAC when a child is absent or sent home sick, so notify the SAC staff yourself.",
+        "closures_notes": "SAC (Student Activity Center) is tuition based, for grades K-5, and is held at Memorial School, 2195 Riverton Road. Closed when school is closed. On a 2-hour delay it opens at 9:00 AM and still closes at 6:00 PM. On an emergency early dismissal it stays open for a shortened time, announced to parents. Closed on the half days before Thanksgiving, Christmas and Easter. Tuition is due by the first of each month.",
+        "handbook_url": "https://www.cinnaminson.com/student-activity-center-sac-before"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "cinnaminson/new-albany-elementary-school"
+    },
+    {
+      "slug": "cinnaminson-preschool",
+      "name": "Cinnaminson Memorial Preschool",
+      "short_name": "Memorial Preschool",
+      "district_name": "Cinnaminson Township Public Schools",
+      "school_type": "elementary",
+      "address": "2195 Riverton Road, Cinnaminson, NJ 08077",
+      "main_phone": "856-829-7955",
+      "website_url": "https://preschool.cinnaminson.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ]
+}

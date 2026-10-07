@@ -4,6 +4,7 @@ via `?const_page=N`, with a stable `data-constituent-id` per person that
 survives re-scans even if name formatting changes slightly)."""
 
 import asyncio
+import csv
 import hashlib
 import time
 import re
@@ -482,6 +483,40 @@ def parse_xlsx_directory(data: bytes) -> list[dict]:
     return list(out.values())
 
 
+_SHEET_RE = re.compile(r"https://docs\.google\.com/spreadsheets/d/e/([\w-]+)/pub")
+
+
+def published_sheet_csv_url(url: str) -> str | None:
+    """The CSV export of a Google Sheet that was "published to the web" (the
+    `/d/e/<key>/pubhtml` link a school embeds as an iframe), same tab."""
+    m = _SHEET_RE.match(url)
+    if not m:
+        return None
+    gid = (parse_qs(urlparse(url).query).get("gid") or ["0"])[0]
+    return f"https://docs.google.com/spreadsheets/d/e/{m.group(1)}/pub?gid={gid}&single=true&output=csv"
+
+
+def parse_csv_directory(text: str) -> list[dict]:
+    """A staff list kept as a published Google Sheet (Delran's four schools).
+    The sheets split the name over "First Name" / "Last Name" columns and head
+    the address "E-Mail", so the header is rewritten to the one-name-column
+    shape _people_from_rows reads. Extension columns hold a bare "3024", not a
+    number a parent can dial, and are left out."""
+    rows = []
+    first = last = None
+    for raw in csv.reader(io.StringIO(text)):
+        cells = [c.strip() for c in raw]
+        lowered = [c.lower() for c in cells]
+        if "first name" in lowered and "last name" in lowered:
+            first, last = lowered.index("first name"), lowered.index("last name")
+            cells = ["Email" if c.replace("-", "") == "email" else cells[i] for i, c in enumerate(lowered)]
+        if first is not None and max(first, last) < len(cells):
+            name = "Name" if cells[first].lower() == "first name" else f"{cells[first]} {cells[last]}".strip()
+            cells = [name] + [c for i, c in enumerate(cells) if i not in (first, last)]
+        rows.append(cells)
+    return _people_from_rows([rows], "sheet")
+
+
 _SLIDES_RE = re.compile(r"https://docs\.google\.com/presentation/d/([\w-]+)")
 _PAGE_MARKER_RE = re.compile(r"^pg \d+$|^teacher email addresses$", re.I)
 _PAREN_RE = re.compile(r"\s*\(([^)]*)\)\s*$")
@@ -533,7 +568,8 @@ def parse_slides_directory(text: str) -> list[dict]:
 
 async def fetch_directory_document(url: str) -> list[dict]:
     """The school's directory as a document rather than a page. A Google Slides
-    deck is read through its public plain-text export; anything else is taken
+    deck is read through its public plain-text export and a published Google
+    Sheet through its CSV export; anything else is taken
     to be a PDF table (or an .xlsx sheet), fetched through the scraper's /fetch-raw because school
     sites behind a bot wall (Camden's Cloudflare) 403 a plain GET."""
     slides = _SLIDES_RE.match(url)
@@ -542,6 +578,12 @@ async def fetch_directory_document(url: str) -> list[dict]:
             resp = await client.get(f"https://docs.google.com/presentation/d/{slides.group(1)}/export/txt")
             resp.raise_for_status()
         return parse_slides_directory(resp.text)
+    sheet_csv = published_sheet_csv_url(url)
+    if sheet_csv:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.get(sheet_csv)
+            resp.raise_for_status()
+        return parse_csv_directory(resp.content.decode("utf-8-sig"))
     data = await scraper_client.fetch_raw_bytes(url)
     if urlparse(url).path.lower().endswith(".xlsx"):
         return parse_xlsx_directory(data)

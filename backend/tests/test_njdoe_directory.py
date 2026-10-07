@@ -45,3 +45,8 @@ def test_same_person_ignores_honorifics_and_needs_the_surname():
     assert not same_person("Anthony Dent", "Anthony Denton")
     assert not same_person("Anthony Dent", "Brianna Dent")
     assert not same_person("Dent", "Anthony Dent")
+
+
+def test_a_vacant_post_filed_as_na_is_nobody():
+    row = {"Principal First Name": "N/A", "Principal Last Name": "N/A"}
+    assert nj._person(row, "Principal", "School Principal", "N/A") is None

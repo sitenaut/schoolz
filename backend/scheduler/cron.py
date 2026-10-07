@@ -35,6 +35,7 @@ DAILY_KINDS = frozenset({
     "fdmealplanner_menu.scan",
     "healthepro_menu.scan",
     "myschoolplate_menu.scan",
+    "nutrislice_menu.scan",
     "presence_menu.scan",
     "givebacks.scan",
     "hs_activities_site.scan",

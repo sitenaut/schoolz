@@ -1180,3 +1180,53 @@ on this list** - it's ArbiterLive branding, already supported.
     PDF name carries no month); no handbooks found for Gibbsboro or Berlin
     Township; Clementon's footer isn't parsed, so address and phone live in
     the seed.
+
+- **Cinnaminson (ParentSquare Smart Sites) and Delran (Presence)** — both K-12
+  with no sending or receiving partners. Seeds
+  `backend/seed/{cinnaminson,delran}.json`.
+  - **A Smart Sites calendar may be a Google Calendar underneath.** The
+    `/api/calendars/<calID>/events` JSON says so itself: `feed_source: "google"`
+    and a `calIDref=<id>@group.calendar.google.com` in each event's `link`. That
+    id's public iCal feed works with no code, so no JSON scanner was needed.
+    A school's `calID` only answers on that school's own host, and its page
+    mixes in the district calendar, so read the distinct `calIDref`s.
+  - **Nutrislice** (`cinnaminson.nutrislice.com`): school slugs come from
+    `https://<district>.api.nutrislice.com/menu/api/schools/?format=json`.
+    The preschool has no site of its own (New Albany carries a "Pre-K
+    Breakfast" type, not read).
+  - **Smart Sites directory widget with no real titles**: every Cinnaminson
+    row is titled "Teacher", so no contact resolves from it. Nurses come from
+    each school's nurse page, where the name is the line carrying nursing
+    credentials ("..., RN, BSN, CSN" — `role_pages._credentialed_nurse`);
+    principals from the NJ DOE CSV (`scripts/import_njdoe_contacts.py`, a
+    one-off per environment). The footer phone prints "+1", stripped.
+  - **Presence calendars**: `https://<host>/ICalendarHandler?calendarId=<id>`,
+    where the id is the `parentId.<n>=` value in the home page's event links
+    (not `contextId` or `pageId`, which answer with zero events). Delran's
+    district calendar is the union of its four school calendars under
+    different UIDs, so only the school feeds are wired; closures therefore
+    arrive once per school, school-scoped.
+  - **Staff lists as published Google Sheets** (Delran): each school's "Staff
+    Listing" page is an iframe of `docs.google.com/spreadsheets/d/e/<key>/pubhtml`.
+    `pub?gid=0&single=true&output=csv` exports it (`output=xlsx` 400s on some).
+    The high school's sheet has an empty Title column.
+  - **Presence header address**: Delran's template has no footer box; address
+    and phone are `ul.address` items told apart by their icon.
+  - **ArbiterLive has a school search**:
+    `https://www.arbiterlive.com/School/Search?searchString=<name>` lists
+    `/School/<id>` links. Delran's own "Sports Schedule" page only redirects to
+    the Arbiter home page, so the ids (and the two middle schools') came from
+    there; `Teams?entityId=<id>` is the form the scan reads.
+  - **Bell schedules as pictures** (Delran High: three PNGs; Delran Middle:
+    scanned PDFs still dated 2024-25) were read by eye and typed in.
+  - **Checked and not wired**: Delran's MS/HS PTA resolves on Givebacks
+    (via its MemberHub link) but has zero blocks; the elementary PTO's site was
+    last posted in 2021. Delran's calendar PDF has no marking periods.
+    Neither district's transportation page matches a parser (a phone, staff
+    and bus rules on a Smart Sites page; a phone and "see the parent portal"
+    on Presence).
+  - **Gaps**: transportation; Delran marking periods; no nurse or titles for
+    Delran High; no absence method for Eleanor Rush or the preschool; the
+    preschool's hours (four programs, one set of flat times) and lunch; Rush's
+    newsletter page and the preschool's bulletin page are empty; Delran's
+    district newsletter is a Presence documents widget nothing scans.

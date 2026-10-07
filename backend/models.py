@@ -680,10 +680,13 @@ class School(Base):
     # Aramark MySchoolPlate menu location as "tenant/location-key" - Camden
     # City's lunch vendor, read from its public GraphQL API (services/myschoolplate.py).
     myschoolplate_location: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Nutrislice menu location as "district/school-slug" - Cinnaminson's lunch
+    # vendor, read from its public JSON API (services/nutrislice.py).
+    nutrislice_location: Mapped[str | None] = mapped_column(String(100), nullable=True)
     # A Presence-hosted school page whose Documents widget holds the monthly
     # menu files (PDF or picture) - Somerdale Park. services/presence_documents.py.
     presence_menu_page_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    # A staff directory published as a document, not a page: a PDF table or a Google Slides deck (services/staff_roster.py:fetch_directory_document).
+    # A staff directory published as a document, not a page: a PDF table, a Google Slides deck or a published Google Sheet (services/staff_roster.py:fetch_directory_document).
     staff_directory_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # A school's weekly student bulletin published as one Google Doc that is
     # rewritten in place (Marlton Middle). bulletin_content_hash lets a scan
@@ -694,6 +697,7 @@ class School(Base):
     fdmealplanner_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     healthepro_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     myschoolplate_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    nutrislice_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     presence_menu_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)

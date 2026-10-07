@@ -7,8 +7,8 @@ duplicate/miscounted-day bug this module exists to prevent."""
 
 import re
 
-CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bin-?service\b|\bconference\b", re.I)
-EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b", re.I)
+CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b", re.I)
+EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 
 
@@ -31,7 +31,7 @@ def is_status_title(title: str) -> bool:
 _BOILERPLATE_RE = re.compile(
     r"\b(schools?\s+closed|district\s+closed|no\s+school|closed"
     r"|in-?service(\s+days?)?|conferences?"
-    r"|early\s+dismissal|half[\s-]day|delayed\s+opening|\d\s*-?\s*hour\s+delay)\b",
+    r"|early\s+dismissal|half[\s-]day|single[\s-]session(\s+days?)?|no\s+students|delayed\s+opening|\d\s*-?\s*hour\s+delay)\b",
     re.I,
 )
 _PUNCT_RE = re.compile(r"[()\[\]{}:;,./–—-]+")

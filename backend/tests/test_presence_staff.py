@@ -60,3 +60,11 @@ def test_presence_footer_both_template_variants():
     assert out["main_phone"] == "856-783-6261"
 
     assert _parse_presence_footer("<footer>nothing</footer>", "https://x.org") is None
+
+    delran = (
+        '<ul class="address"><li><span class="fa fa-map"></span>50 Hartford Rd., Delran, NJ 08075</li>'
+        '<li><span class="fa fa-phone"></span>856.461.6100</li>'
+        '<li><span class="fax-n"><span class="fa fa-fax"></span><span class="footer-fax">856.764.6177</span></span></li></ul>'
+    )
+    out = _parse_presence_footer(delran, "https://dhs.example.org")
+    assert out["address"] == "50 Hartford Rd., Delran, NJ 08075" and out["main_phone"] == "856.461.6100"

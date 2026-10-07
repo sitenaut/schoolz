@@ -7,8 +7,8 @@ import { i18n } from "./i18n";
 // - kept here so both the Calendar page and the Today cards agree on what
 // counts as a "no school" / "half day" status item vs. an ordinary
 // district-wide event like a Board of Education meeting.
-export const CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bin-?service\b|\bconference\b/i;
-export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b/i;
+export const CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b/i;
+export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Eastern Regional appends the class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
 const ROTATION_RE = /^\s*Day\s+\d+\s*(?:\([^)]*\))?\s*$/i;

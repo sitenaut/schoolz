@@ -191,3 +191,46 @@ def test_role_page_inline_title_after_name():
     assert role_pages.parse_inline_page(html, "Nurse's Corner") == {
         "full_name": "Jane Doe", "title": "School Nurse", "email": "jdoe@school.test",
     }
+
+
+def test_published_sheet_directory_joins_first_and_last_name():
+    text = (
+        "First Name,Last Name,E-Mail,Position,Ext.\r\n"
+        ",,,,\r\n"
+        "Pat,Nurse,pnurse@school.test,School Nurse,3024\r\n"
+        "Rae,Teach,,Art Teacher,\r\n"
+    )
+    by_name = {e["full_name"]: e for e in staff_roster.parse_csv_directory(text)}
+    assert set(by_name) == {"Pat Nurse", "Rae Teach"}
+    assert by_name["Pat Nurse"] == {
+        "constituent_id": "sheet:pnurse@school.test", "full_name": "Pat Nurse", "title": "School Nurse",
+        "department": None, "email": "pnurse@school.test", "phone": None,
+    }
+    assert by_name["Rae Teach"]["email"] is None and by_name["Rae Teach"]["title"] == "Art Teacher"
+
+
+def test_published_sheet_csv_url_keeps_the_tab():
+    url = "https://docs.google.com/spreadsheets/d/e/2PACX-ab_c/pubhtml?gid=7&single=true&widget=true&headers=false"
+    assert staff_roster.published_sheet_csv_url(url) == "https://docs.google.com/spreadsheets/d/e/2PACX-ab_c/pub?gid=7&single=true&output=csv"
+    assert staff_roster.published_sheet_csv_url("https://docs.google.com/presentation/d/abc/edit") is None
+
+
+def test_nurse_page_names_her_by_her_credentials():
+    from services import role_pages
+
+    def page(body):
+        return f'<div id="page-content-wrapper"><h1>School Nurse Home</h1>{body}</div>'
+
+    out = role_pages.parse_inline_page(page("<p>Welcome!</p><p>Mrs. Pat Doe, RN, BSN, CSN</p><p>(856) 555-0100 ext. 5803</p>"), "School Nurse Home")
+    assert out == {"full_name": "Pat Doe", "title": "School Nurse", "email": None}
+    out = role_pages.parse_inline_page(
+        page('<p>Rae Roe BSN, RN, NJ-CSN</p><p>Email:</p><a href="mailto:roer@school.test">roer@school.test</a><a href="mailto:hib@school.test">x</a>'),
+        "School Nurse",
+    )
+    assert out == {"full_name": "Rae Roe", "title": "School Nurse", "email": "roer@school.test"}
+    out = role_pages.parse_inline_page(
+        page("<p>Jane Black, BSN, CSN, RN</p><p>Contact Nurse Black</p><p>Example Middle School Nurse</p><p>555-8012 ext. 4864</p>"), "School Nurse"
+    )
+    assert out["full_name"] == "Jane Black"
+    assert role_pages.parse_inline_page(page("<p>Contact Pat Doe, BSN, RN</p><p>829-7600 ext. 2870</p>"), "x")["full_name"] == "Pat Doe"
+    assert role_pages.parse_inline_page(page("<p>Asthma Action Plan Packet</p><p>Routine Physical Policy</p>"), "School Nurse") is None

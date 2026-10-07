@@ -65,7 +65,8 @@ def _person(row: dict, prefix: str, title: str, email: str | None = None) -> dic
     # the state's header really is spelled "HIB First Nname"
     first = row.get(f"{prefix} First Name") or row.get(f"{prefix} First Nname", "")
     last = row.get(f"{prefix} Last Name", "")
-    if not (first and last):
+    # A vacant post is filed as "N/A N/A" (Delran Middle's principal).
+    if not (first and last) or first.upper() == "N/A" or last.upper() == "N/A":
         return None
     return {
         "full_name": f"{first} {last}",
