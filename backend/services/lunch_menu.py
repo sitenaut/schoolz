@@ -15,9 +15,10 @@ import re
 import time
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 import httpx
+from bs4 import BeautifulSoup
 from anthropic import AsyncAnthropic
 
 import observability
@@ -102,9 +103,11 @@ def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
 #
 # The year is optional: Magnolia's files are "SEPTLUNCHMENU.pdf" / "OCTLUNCHMENU.pdf",
 # the same name every year, so the year is inferred as the one putting that
-# month closest to today.
+# month closest to today. Berlin Township's are "October-Lunch-Menu.pdf" (words
+# separated, no year); its "October-Pre-K-Lunch-Menu.pdf" twin doesn't match
+# because only a separator, not another word, may sit before the meal.
 _ABBREV_MENU_RE = re.compile(
-    r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*?(\d{4}|\d{2})?(Breakfast|Lunch)Menu(?!_?SPA)",
+    r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*?[-_ ]?(\d{4}|\d{2})?[-_ ]?(Breakfast|Lunch)[-_ ]?Menu(?!_?SPA)",
     re.IGNORECASE,
 )
 
@@ -189,6 +192,76 @@ async def _resolve_resource_manager_links(page_url: str, html: str) -> set[str]:
     return resolved
 
 
+# Gibbsboro: the lunchroom page embeds each month's menu as a Google Drive
+# viewer (`<iframe src="drive.google.com/file/d/<id>/preview">`), so there is
+# no filename in the page at all. The real one is the Drive page's own
+# <title> ("October 2026 monthly menu.pdf"); the bytes download anonymously
+# from /uc?export=download.
+_DRIVE_FILE_RE = re.compile(r"drive\.google\.com/file/d/([\w-]{20,})/", re.IGNORECASE)
+_DRIVE_TITLE_RE = re.compile(r"<title>(.*?)\s+-\s+Google Drive</title>", re.IGNORECASE | re.DOTALL)
+_MAX_DRIVE_LINKS = 10
+
+
+async def _resolve_drive_links(html: str) -> dict[str, str]:
+    """{download URL: Drive file name} for every Drive file the page embeds
+    or links. Non-menus (a budget PDF) resolve fine and are filtered out by
+    the classifiers, which look for a month and year in the name."""
+    ids = list(dict.fromkeys(_DRIVE_FILE_RE.findall(html)))[:_MAX_DRIVE_LINKS]
+    resolved: dict[str, str] = {}
+    if not ids:
+        return resolved
+    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as client:
+        for file_id in ids:
+            try:
+                resp = await client.get(f"https://drive.google.com/file/d/{file_id}/view")
+            except httpx.HTTPError:
+                continue
+            title = _DRIVE_TITLE_RE.search(resp.text)
+            if title:
+                resolved[f"https://drive.google.com/uc?export=download&id={file_id}"] = title.group(1).strip()
+    return resolved
+
+
+# Clementon: a real <table>, a month per row, a Breakfast cell and a Lunch
+# cell, each "PreK / K-8" Drive links. The Drive titles are all over the place
+# ("CLE BRK 9.26", "Sept. k- 8th Lunch Menu"), so month and meal come from the
+# cell's position and the year from the "2026-2027" heading above the table.
+_SCHOOL_YEAR_RE = re.compile(r"^\s*(20\d{2})\s*-\s*(20\d{2})\s*$")
+_K8_LINK_RE = re.compile(r"drive\.google\.com/file/d/([\w-]{20,})/", re.IGNORECASE)
+
+
+def _classify_menu_table(html: str, school_type: str) -> list[dict]:
+    """Menus laid out as a month/breakfast/lunch table of Drive links. Only
+    the K-8 file is kept: the PreK one is a near-copy."""
+    soup = BeautifulSoup(html, "html.parser")
+    heading = next((h for h in soup.find_all(["h3", "h4"]) if _SCHOOL_YEAR_RE.match(h.get_text())), None)
+    if heading is None:
+        return []
+    start_year = int(_SCHOOL_YEAR_RE.match(heading.get_text()).group(1))
+    found = []
+    for row in soup.find_all("tr"):
+        cells = row.find_all("td")
+        month = cells[0].get_text(strip=True).lower() if cells else ""
+        if len(cells) < 3 or month not in _MONTHS:
+            continue
+        month_idx = _MONTHS.index(month)
+        year = start_year if month_idx >= 6 else start_year + 1  # school year runs Jul-Jun
+        for meal, cell in (("breakfast", cells[1]), ("lunch", cells[2])):
+            link = next((a for a in cell.find_all("a", href=_K8_LINK_RE) if re.fullmatch(r"K\s*-\s*8", a.get_text(strip=True), re.IGNORECASE)), None)
+            if link:
+                file_id = _K8_LINK_RE.search(link["href"]).group(1)
+                found.append(
+                    {
+                        "school_type": school_type,
+                        "meal_type": meal,
+                        "period_label": f"{month.title()} {year}",
+                        "pdf_url": f"https://drive.google.com/uc?export=download&id={file_id}",
+                        "_sort": (year, month_idx),
+                    }
+                )
+    return found
+
+
 async def discover_current_menus(menu_page_url: str, school_types: list[str] | None = None) -> list[dict]:
     """Returns one entry per (school_type, meal_type) found on the page,
     e.g. {"school_type": "elementary", "meal_type": "lunch",
@@ -204,6 +277,14 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     # ("/ourpages/auto/.../File.pdf?rnd=1773934928084") once a file is replaced.
     urls = {urljoin(menu_page_url, u) for u in re.findall(r'href="([^"]+\.pdf(?:\?[^"]*)?)"', result["html"], re.IGNORECASE)}
     urls |= await _resolve_resource_manager_links(menu_page_url, result["html"])
+    # Drive files have no filename in their URL, so each is classified under a
+    # stand-in URL ending in its Drive title, then swapped back to the real one.
+    table = _classify_menu_table(result["html"], (school_types or ["elementary"])[0])
+    alias = {} if table else {f"https://drive.google.com/{quote(title)}": url for url, title in (await _resolve_drive_links(result["html"])).items()}
+    urls |= set(alias)
+
+    def restore(entries: list[dict]) -> list[dict]:
+        return [{**c, "pdf_url": alias.get(c["pdf_url"], c["pdf_url"])} for c in entries]
 
     by_key: dict[tuple, dict] = {}
     for url in urls:
@@ -233,13 +314,15 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         for c in (_classify_abbreviated_pdf_link(u, school_types[0]) or _classify_numeric_pdf_link(u, school_types[0]) for u in urls):
             if c:
                 by_meal.setdefault(c["meal_type"], []).append(c)
+        for c in table:
+            by_meal.setdefault(c["meal_type"], []).append(c)
         if by_meal:
-            return fan_out([c for entries in by_meal.values() for c in current_or_latest(entries)])
+            return restore(fan_out([c for entries in by_meal.values() for c in current_or_latest(entries)]))
 
         unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
         if unbanded:
-            return fan_out(current_or_latest(unbanded))
-    return [{k: v for k, v in c.items() if k != "_sort"} for c in by_key.values()]
+            return restore(fan_out(current_or_latest(unbanded)))
+    return restore([{k: v for k, v in c.items() if k != "_sort"} for c in by_key.values()])
 
 
 _MENU_TOOL = {

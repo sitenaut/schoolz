@@ -34,3 +34,20 @@ def test_build_items_multi_day_end_is_exclusive_and_bad_dates_skipped():
     thanks = next(f for f in wanted.values() if f["title"].startswith("Schools Closed"))
     assert thanks["start_date"].day == 26 and thanks["end_date"].day == 28
     assert all(uid.startswith("dcpdf:abc123:") for uid in wanted)
+
+
+def test_drive_calendar_link_and_base_href():
+    html = (
+        '<base href="https://www.clemsd.org/"><a href="documents/Forms/Use-of-facilities.pdf">Use</a>'
+        '2026-27 Calendar (Approved 2.12.26) - <a href="https://drive.google.com/file/d/1Pv9wzE63-EsCy9q4kHrpE3aKGecJxjoh/view?usp=sharing">English</a>'
+    )
+    assert find_pdf_link(html, "https://www.clemsd.org/District-Info/District-Calendar/index.html") == (
+        "https://drive.google.com/uc?export=download&id=1Pv9wzE63-EsCy9q4kHrpE3aKGecJxjoh"
+    )
+    only_pdf = '<base href="https://www.clemsd.org/"><a href="documents/x.pdf">x</a>'
+    assert find_pdf_link(only_pdf, "https://www.clemsd.org/a/b/index.html") == "https://www.clemsd.org/documents/x.pdf"
+
+
+def test_drive_calendar_label_must_sit_against_the_link():
+    nav = '<a href="/cal">Calendar</a> <a href="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAA/view">Referral Services</a>'
+    assert find_pdf_link(nav, "https://x.test/") is None

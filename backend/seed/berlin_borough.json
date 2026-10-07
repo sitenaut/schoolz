@@ -1,0 +1,56 @@
+{
+  "exported_at": "2026-10-06T12:00:00Z",
+  "source": "onboarding: Berlin Borough School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Berlin Borough School District",
+      "website_url": "https://www.bcsberlin.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Berlin Community School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/bcsevents%40bcsberlin.org/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Berlin"
+      ],
+      "schoolcafe_shortname": "BERLINBOROUGHSDNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "berlin-community",
+      "name": "Berlin Community School",
+      "short_name": "Berlin Community",
+      "district_name": "Berlin Borough School District",
+      "school_type": "elementary",
+      "address": "215 South Franklin Avenue, Berlin, NJ 08009",
+      "main_phone": "(856) 767-0129",
+      "website_url": "https://www.bcsberlin.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ]
+}

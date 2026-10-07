@@ -1114,3 +1114,69 @@ on this list** - it's ArbiterLive branding, already supported.
   - **Gaps**: no absence method, hours (GT, BHPRSD), logos for two Bellmawr schools,
     newsletters or PTAs anywhere; Bellmawr's EC Center shares Bellmawr Park's address
     and its phone is unverified.
+
+- **Eastern's and Overbrook's sending districts, plus Lindenwold** — Gibbsboro
+  and Berlin Borough (K-8, high school at Eastern), Berlin Township and
+  Clementon (K-8, high school at Overbrook in Pine Hill), Pine Hill (K-12, runs
+  Overbrook) and Lindenwold (K-12, no sending partners). Seeds
+  `backend/seed/{gibbsboro,berlin_borough,berlin_township,clementon,pine_hill,lindenwold}.json`.
+  Pine Hill's `towns` lists Berlin Township and Clementon. Hi-Nella has no
+  school; it is a town on Stratford and Sterling.
+  - **Check that the scan works, not that the source exists.** The first pass
+    confirmed each feed and shortname by hand and still shipped five broken
+    scans, found only by importing locally and running every job: a staff
+    directory at a path the scan never tries, a SchoolCafé site whose name the
+    matcher couldn't pair, a calendar page whose "calendar PDF" was a budget, a
+    calendar page still linking last year's PDF first, and a marking-period
+    layout no parser read. Import locally and run-now every job before calling
+    a district onboarded.
+  - **Don't read filenames out of a whitespace-splitting grep.** `[^" ]*\.pdf`
+    turned "User Friendly Budget 26-27.pdf" into `26-27.pdf`, which read as a
+    calendar. Print the whole href and the link text.
+  - **Legacy Finalsite calendar feed** (Gibbsboro, Pine Hill):
+    `/cf_calendar/feed.cfm?type=ical&feedID=<32 hex>&isgmt=1` is one feed for
+    every calendar on the site. The newer `/fs/calendar-manager/events.ics`
+    ids and `feed_id` on the same sites answer with zero events.
+  - **Incident IQ public calendars** (Pine Hill's "Facility Events Calendars",
+    `services/incidentiq.py`): the page body is empty until a widget loads 2-3
+    seconds in, so a fetch that returns at DOM-ready sees nothing. Watch the
+    network instead: the widget POSTs a `ViewId` to
+    `https://<tenant>.incidentiq.com/api/event/events` with no login and gets
+    the events as JSON in a hidden input. Stored in `ics_feeds` as
+    `.../api/event/events?ViewId=<guid>` with a `school_slug`. They are room
+    bookings, so community rentals sit beside school events. The district-wide
+    view is the union of the school views; wiring it too would turn every
+    school-scoped event into a district one.
+  - **Menus in Google Drive** (`lunch_menu._resolve_drive_links`): Gibbsboro
+    embeds each menu as a Drive viewer iframe, so the page has no filename; the
+    Drive page's own title has it and `/uc?export=download&id=` serves the bytes.
+    Clementon's page is a month/breakfast/lunch table of "PreK / K-8" Drive
+    links with useless titles, so month and meal come from the cell
+    (`_classify_menu_table`); its SchoolCafé district exists with zero sites.
+    Berlin Township's are `October-Lunch-Menu.pdf` (no year, hyphenated).
+  - **Staff directories are found from the school's own nav** when no fixed
+    path works (`staff_roster.find_directory_links`, same host only):
+    Lindenwold's are `/our-school/<school>-staff-directory` (names and emails,
+    no titles), Gibbsboro's a "Staff Member | Position" table with
+    "Last, First" names.
+  - **Berlin Township (WordPress, Beaver Builder grid, Cloudflare)**: one
+    `/staff-directory/` page lists the whole district; the school each person
+    works at ("Location(s)") and the email are only on their own
+    `/staff-member/<slug>/` page, so the scan reads every profile (cached 6h,
+    shared by both schools) and `drop_sibling_school_staff` splits on location.
+    Plain HTTP serves emails Cloudflare-obfuscated (`data-cfemail`). The site
+    answers plain requests from some networks and challenges others; the
+    sitemap (`/sitemap_index.xml`, named in robots.txt) needs a real browser.
+  - **Marking periods printed as a grid** (Pine Hill's calendar PDF,
+    `marking_period.parse_marking_period_grid`): a block per level, labels on
+    one line and ranges on the next. A block named for buildings rather than a
+    level is taken as elementary.
+  - **SchoolCafé names**: "School Five" is "School 5" there, and "Elem" is a
+    level word. Lindenwold's Early Childhood Center is "Lindenwold Preschool",
+    which nothing matches.
+  - **Gaps**: no absence method, bell periods, newsletters or PTAs for any of
+    the six; no staff directory for Overbrook, Pine Hill Middle or Berlin
+    Community (it lists administrators only); Berlin Township breakfast (the
+    PDF name carries no month); no handbooks found for Gibbsboro or Berlin
+    Township; Clementon's footer isn't parsed, so address and phone live in
+    the seed.

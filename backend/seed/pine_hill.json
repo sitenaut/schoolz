@@ -1,0 +1,164 @@
+{
+  "exported_at": "2026-10-06T12:00:00Z",
+  "source": "onboarding: Pine Hill School District (Overbrook HS)",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Pine Hill School District",
+      "website_url": "https://www.pinehillschools.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Pine Hill School Calendars",
+          "url": "https://www.pinehillschools.org/cf_calendar/feed.cfm?type=ical&feedID=5A452BD6894547E0A288920BA4198FC9&isgmt=1"
+        },
+        {
+          "name": "Bean Facility Events",
+          "url": "https://pinehill.incidentiq.com/api/event/events?ViewId=aad03058-ad68-f011-8dca-000d3a0dbd19",
+          "school_slug": "albert-bean"
+        },
+        {
+          "name": "Glenn Facility Events",
+          "url": "https://pinehill.incidentiq.com/api/event/events?ViewId=d51c295e-ad68-f011-8dca-000d3a0dbd19",
+          "school_slug": "john-glenn"
+        },
+        {
+          "name": "Middle School Facility Events",
+          "url": "https://pinehill.incidentiq.com/api/event/events?ViewId=951ac3bd-ad68-f011-8dca-000d3a0dbd19",
+          "school_slug": "pine-hill-middle"
+        },
+        {
+          "name": "Overbrook Facility Events",
+          "url": "https://pinehill.incidentiq.com/api/event/events?ViewId=d9c02e69-ac68-f011-8dca-000d3a0dbd19",
+          "school_slug": "overbrook-high"
+        },
+        {
+          "name": "Field Trips",
+          "url": "https://pinehill.incidentiq.com/api/event/events?ViewId=eec31376-ad68-f011-8dca-000d3a0dbd19"
+        }
+      ],
+      "calendar_pdf_url": "https://www.pinehillschools.org/community/district-calendar",
+      "marking_period_url": "https://www.pinehillschools.org/community/district-calendar",
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Pine Hill",
+        "Berlin Township",
+        "Clementon"
+      ],
+      "schoolcafe_shortname": "PineHillSDNutriServeMETZ"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "overbrook-high",
+      "name": "Overbrook High School",
+      "short_name": "Overbrook High",
+      "district_name": "Pine Hill School District",
+      "school_type": "high",
+      "address": "1200 Turnerville Road, Pine Hill, NJ 08021",
+      "main_phone": "(856) 767-8000",
+      "website_url": "https://ohs.pinehillschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=17310",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "pine-hill-middle",
+      "name": "Pine Hill Middle School",
+      "short_name": "Pine Hill Middle",
+      "district_name": "Pine Hill School District",
+      "school_type": "middle",
+      "address": "1100 Turnerville Road, Pine Hill, NJ 08021",
+      "main_phone": "(856) 210-0200",
+      "website_url": "https://phms.pinehillschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "albert-bean",
+      "name": "Dr. Albert M. Bean Elementary School",
+      "short_name": "Bean",
+      "district_name": "Pine Hill School District",
+      "school_type": "elementary",
+      "address": "70 East Third Avenue, Pine Hill, NJ 08021",
+      "main_phone": "(856) 783-5300",
+      "website_url": "https://bean.pinehillschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "john-glenn",
+      "name": "John H. Glenn Elementary School",
+      "short_name": "Glenn",
+      "district_name": "Pine Hill School District",
+      "school_type": "elementary",
+      "address": "1005 Turnerville Road, Pine Hill, NJ 08021",
+      "main_phone": "(856) 783-4100",
+      "website_url": "https://glenn.pinehillschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ]
+}
