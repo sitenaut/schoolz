@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gmail_client import extract_body_text, extract_header
 from models import EmailScanner, EmailScannerMatch, ScheduledJob, SchoolEmailMessage, SmoreNewsletter
+from scheduler.cron import spread_default_smore_cron
 from services.email_processors import ProcessorResult, register_processor
 
 # Default cadence for a Smore scan auto-scheduled this way - matches the
@@ -61,7 +62,7 @@ async def _process(
                 owner_user_id=scanner.owner_user_id,
                 kind="smore.scan",
                 name=f"Smore scan: {url}",
-                cron_expr=_DEFAULT_SMORE_CRON,
+                cron_expr=spread_default_smore_cron(_DEFAULT_SMORE_CRON, newsletter.id),
                 timezone=_DEFAULT_SMORE_TIMEZONE,
                 params={"newsletter_id": newsletter.id},
                 enabled=True,

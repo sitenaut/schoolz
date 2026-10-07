@@ -11,6 +11,7 @@ from sqlalchemy import update
 import database
 from main import app
 from models import User
+from scheduler.cron import smore_scan_cron
 
 
 async def _admin_headers(client: AsyncClient) -> dict[str, str]:
@@ -46,7 +47,8 @@ async def test_district_wide_newsletter_has_no_school_and_resolves_district_name
         assert body["school_id"] is None
         assert body["district_id"] == district_id
         assert body["district_name"] == district.json()["name"]
-        assert body["scheduled_job"]["cron_expr"] == "0 8 * * 1"
+        # Monday 8 AM like every Smore scan, on the minute its id hashes to.
+        assert body["scheduled_job"]["cron_expr"] == smore_scan_cron(body["id"])
 
         listed = await client.get("/smore-newsletters")
         assert any(n["id"] == body["id"] and n["district_name"] == district.json()["name"] for n in listed.json())

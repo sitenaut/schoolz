@@ -64,7 +64,7 @@ from routers.schools import (
     _ensure_staff_roster_job,
 )
 from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
-from scheduler.cron import public_scan_cron
+from scheduler.cron import public_scan_cron, spread_default_smore_cron
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
 
@@ -344,7 +344,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
                 owner_user_id=user.id,
                 kind=_JOB_KIND_BY_SOURCE_TYPE[n.source_type],
                 name=f"{_JOB_LABEL_BY_SOURCE_TYPE[n.source_type]}: {n.label or n.url}",
-                cron_expr=n.cron_expr,
+                cron_expr=spread_default_smore_cron(n.cron_expr, newsletter.id),
                 timezone=n.timezone,
                 params={"newsletter_id": newsletter.id},
                 enabled=n.enabled,

@@ -17,14 +17,24 @@ import hashlib
 # Heavy Chromium scans of pages that change around August-September and
 # rarely otherwise. Edit a school and use run-now when something's urgent.
 WEEKLY_KINDS = frozenset({
-    "documents.scan",
-    "school_info.scan",
-    "staff_roster.scan",
     "marking_period.scan",
     "preschool_locations.scan",
     "preschool_team.scan",
     "transportation.scan",
     "hs_rotation.scan",
+})
+
+# The per-school scans that were weekly and were still ~375 job-minutes a
+# week. Handbooks and rosters change a few times a year, and a school's
+# address and phone almost never do. Cron has no "every 2 weeks", so
+# biweekly is two days of the month 14 apart (the gap across a month end is
+# 14-17 days) and monthly is one. Run-now covers anything urgent.
+BIWEEKLY_KINDS = frozenset({
+    "documents.scan",
+    "staff_roster.scan",
+})
+MONTHLY_KINDS = frozenset({
+    "school_info.scan",
 })
 
 # Published monthly or weekly; daily still catches a new month's file the
@@ -47,9 +57,32 @@ _WEEKLY_HOURS = (0, 3, 4, 5, 22, 23)
 _DAILY_HOURS = (3, 4, 5)
 
 
+# Smore stays weekly on Monday morning by explicit instruction, but all of
+# them used to fire at exactly 8:00 against the same Chromium.
+DEFAULT_SMORE_CRON = "0 8 * * 1"
+
+
+def smore_scan_cron(newsletter_id: str) -> str:
+    minute = int(hashlib.sha256(f"smore.scan:{newsletter_id}".encode()).hexdigest(), 16) % 60
+    return f"{minute} 8 * * 1"
+
+
+def spread_default_smore_cron(cron_expr: str, newsletter_id: str) -> str:
+    """The form and importer default every newsletter to Monday 8:00; give
+    that default its own minute, and leave any cron someone chose alone."""
+    return smore_scan_cron(newsletter_id) if cron_expr == DEFAULT_SMORE_CRON else cron_expr
+
+
 def public_scan_cron(kind: str, target_id: str) -> str:
     h = int(hashlib.sha256(f"{kind}:{target_id}".encode()).hexdigest(), 16)
     minute = h % 60
+    if kind in BIWEEKLY_KINDS:
+        hour = _WEEKLY_HOURS[(h // 60) % len(_WEEKLY_HOURS)]
+        day = 1 + (h // 3600) % 14
+        return f"{minute} {hour} {day},{day + 14} * *"
+    if kind in MONTHLY_KINDS:
+        hour = _WEEKLY_HOURS[(h // 60) % len(_WEEKLY_HOURS)]
+        return f"{minute} {hour} {1 + (h // 3600) % 28} * *"
     if kind in WEEKLY_KINDS:
         hour = _WEEKLY_HOURS[(h // 60) % len(_WEEKLY_HOURS)]
         return f"{minute} {hour} * * {(h // 3600) % 7}"

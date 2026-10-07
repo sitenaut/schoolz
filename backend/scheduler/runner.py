@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import observability
 from database import SessionLocal
 from models import JobRun, ScheduledJob
-from scheduler import progress
+from scheduler import backoff, progress
 from scheduler.errors import classify_exception, parse_warning
 from scheduler.registry import registry
 
@@ -139,6 +139,23 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
         try:
             job = (await db.execute(select(ScheduledJob).where(ScheduledJob.id == job_id))).scalar_one_or_none()
             if not job:
+                return
+            recent = [
+                (status, code, started)
+                for status, code, started in (
+                    await db.execute(
+                        select(JobRun.status, JobRun.error_code, JobRun.started_at)
+                        .where(JobRun.job_id == job_id, JobRun.status != "skipped")
+                        .order_by(JobRun.started_at.desc())
+                        .limit(backoff.STREAK_LENGTH)
+                    )
+                ).all()
+            ] if job.kind in backoff.EMPTY_CODES and triggered_by in backoff.BACKOFF_TRIGGERS else []
+            skip_reason = backoff.back_off_reason(job.kind, triggered_by, recent, started_at)
+            if skip_reason:
+                db.add(JobRun(job_id=job_id, status="skipped", triggered_by=triggered_by, finished_at=datetime.now(timezone.utc), log_excerpt=skip_reason))
+                await db.commit()
+                observability.job_runs_total.add(1, {"job.kind": job.kind, "status": "skipped", "triggered_by": triggered_by})
                 return
             spec = registry.get(job.kind)
             if not spec:
@@ -266,6 +283,34 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
 # the Postgres advisory lock (leaking it on that pooled connection forever).
 _background_tasks: set[asyncio.Task] = set()
 
+# Catch-up and first runs are queued all at once - after a deploy that is
+# every fire the restart swallowed (13 rosters at once failed Beck's scan with
+# a 502 on 2026-10-07), after an import every new school. Starting them this
+# far apart lets the scraper's three slots keep up instead of queueing behind
+# each other; a cron fire is already spread by its own minute.
+LAUNCH_SPACING_S = float(os.getenv("JOB_LAUNCH_SPACING_S", "20"))
+
+
+def _spawn(coro) -> None:
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
+def launch_staggered(job_ids: list[str], triggered_by: str, spacing_s: float | None = None) -> None:
+    """Starts each job `spacing_s` after the previous one, in the order given."""
+    if not job_ids:
+        return
+    gap = LAUNCH_SPACING_S if spacing_s is None else spacing_s
+
+    async def _launch() -> None:
+        for index, job_id in enumerate(job_ids):
+            if index and gap:
+                await asyncio.sleep(gap)
+            _spawn(_execute(job_id, triggered_by=triggered_by))
+
+    _spawn(_launch())
+
 
 def run_job_now(job_id: str) -> None:
     """Fire-and-forget: schedules the run on the current event loop and
@@ -321,11 +366,8 @@ async def queue_missed_runs() -> int:
         jobs = (await db.execute(select(ScheduledJob).where(ScheduledJob.enabled.is_(True)))).scalars().all()
         missed = [(fire, job.id) for job in jobs if (fire := missed_fire_time(job, now)) is not None]
     missed.sort()
-    for _fire, job_id in missed:
-        _first_runs_queued.add(job_id)
-        task = asyncio.create_task(_execute(job_id, triggered_by="catchup"))
-        _background_tasks.add(task)
-        task.add_done_callback(_background_tasks.discard)
+    _first_runs_queued.update(job_id for _fire, job_id in missed)
+    launch_staggered([job_id for _fire, job_id in missed], "catchup")
     return len(missed)
 
 
@@ -365,11 +407,8 @@ async def queue_first_runs() -> int:
             )
         ).scalars().all()
         due = [job.id for job in jobs if job.id not in _first_runs_queued and first_run_due(job, now)]
-    for job_id in due:
-        _first_runs_queued.add(job_id)
-        task = asyncio.create_task(_execute(job_id, triggered_by="first_run"))
-        _background_tasks.add(task)
-        task.add_done_callback(_background_tasks.discard)
+    _first_runs_queued.update(due)
+    launch_staggered(due, "first_run")
     return len(due)
 
 

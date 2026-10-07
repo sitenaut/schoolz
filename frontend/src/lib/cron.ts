@@ -59,10 +59,18 @@ export function describeCron(expr: string): string {
       if (single) return `Weekly on ${single} at ${time}`;
     }
   }
+  const ordinal = (d: number) => {
+    const teen = d % 100 >= 11 && d % 100 <= 13;
+    const suffix = teen ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[d % 10] ?? "th";
+    return `${d}${suffix}`;
+  };
   if (isNum(min) && isNum(hour) && isNum(dom) && mon === "*" && dow === "*") {
-    const d = Number(dom);
-    const ord = d === 1 ? "1st" : d === 2 ? "2nd" : d === 3 ? "3rd" : `${d}th`;
-    return `Monthly on the ${ord} at ${clock(Number(hour), Number(min))}`;
+    return `Monthly on the ${ordinal(Number(dom))} at ${clock(Number(hour), Number(min))}`;
+  }
+  // The two days a biweekly scan runs on, e.g. "3,17".
+  if (isNum(min) && isNum(hour) && /^\d+,\d+$/.test(dom) && mon === "*" && dow === "*") {
+    const [a, b] = dom.split(",").map(Number);
+    return `Twice a month, the ${ordinal(a)} and ${ordinal(b)}, at ${clock(Number(hour), Number(min))}`;
   }
   return expr;
 }
