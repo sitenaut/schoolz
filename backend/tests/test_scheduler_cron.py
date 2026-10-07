@@ -81,3 +81,36 @@ def test_the_trigger_fires_on_the_weekday_cron_names():
             fires.append(at)
         it = croniter(expr, base)
         assert fires == [it.get_next(datetime) for _ in range(3)], expr
+
+
+def test_reconcile_leaves_an_unchanged_job_alone():
+    # Rebuilding every job on every 30s reconcile logged two lines per job and
+    # recomputed each next fire from "now".
+    from types import SimpleNamespace
+
+    from apscheduler.schedulers.background import BackgroundScheduler
+
+    from scheduler.runner import build_apscheduler_job
+
+    scheduler = BackgroundScheduler(timezone="UTC")
+    scheduler.start(paused=True)
+    try:
+        job = SimpleNamespace(id="reconcile-test", cron_expr="5 4 * * 3", timezone="America/New_York", enabled=True)
+        build_apscheduler_job(scheduler, job)
+        first = scheduler.get_job("job-reconcile-test")
+        build_apscheduler_job(scheduler, job)
+        assert scheduler.get_job("job-reconcile-test") is not None
+        assert scheduler.get_job("job-reconcile-test").trigger is first.trigger  # same job, not a rebuilt one
+
+        job.cron_expr = "6 4 * * 3"
+        build_apscheduler_job(scheduler, job)
+        assert scheduler.get_job("job-reconcile-test").trigger is not first.trigger
+
+        job.enabled = False
+        build_apscheduler_job(scheduler, job)
+        assert scheduler.get_job("job-reconcile-test") is None
+        job.enabled = True
+        build_apscheduler_job(scheduler, job)
+        assert scheduler.get_job("job-reconcile-test") is not None
+    finally:
+        scheduler.shutdown(wait=False)

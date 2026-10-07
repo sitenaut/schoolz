@@ -480,11 +480,10 @@ MODEL_PRICES = {
 }
 PRICED_MODELS = "|".join(MODEL_PRICES)
 DIRECTIONS = ("input", "output", "cache_write", "cache_read")
-# Every log record reaches Loki twice: telemetry.py attaches an OTel handler
-# and LoggingInstrumentor attaches its own. Only the second carries code_*
-# attributes, so an empty code_function_name selects one copy of each line.
-# If that is ever fixed at the source and these panels drop to zero, the
-# surviving handler is the other one - remove this filter.
+# Log records from before the duplicate handler was removed from
+# telemetry.py are in Loki twice. Only the removed handler's copy carries
+# code_* attributes, so an empty code_function_name selects one copy of an
+# old line and every new one. Safe to drop once those lines age out.
 CHAT_LOGS = '{service_name="schoolz-api"} |= "chatbot_usage" | code_function_name=""'
 CACHE_READ = 'direction="cache_read"'
 ANY_INPUT = 'direction=~"input|cache_read|cache_write"'
