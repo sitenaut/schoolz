@@ -464,9 +464,205 @@ def ops() -> dict:
     )
 
 
+# --------------------------------------------------------------------------
+# 5. Cost - what is being spent, on what, and what isn't metered yet
+# --------------------------------------------------------------------------
+# $ per million tokens as (input, output, cache_write, cache_read), keyed by a
+# model-id regex. Anthropic list prices, looked up 2026-10-07. A model that
+# matches nothing here is counted in tokens but priced at nothing, which is
+# why the dashboard has an "unpriced models" panel instead of a silent zero.
+MODEL_PRICES = {
+    "claude-haiku-4-5.*": (1.00, 5.00, 1.25, 0.10),
+    "claude-sonnet-5.*": (2.00, 10.00, 2.50, 0.20),
+    "claude-opus-5-5.*": (4.00, 20.00, 5.00, 0.20),
+    "claude-opus-5|claude-opus-5-20.*": (5.00, 25.00, 6.25, 0.50),
+    "claude-fable-5.*": (10.00, 50.00, 12.50, 0.25),
+}
+PRICED_MODELS = "|".join(MODEL_PRICES)
+DIRECTIONS = ("input", "output", "cache_write", "cache_read")
+CHAT_LOGS = '{service_name="schoolz-api"} |= "chatbot_usage"'
+CACHE_READ = 'direction="cache_read"'
+ANY_INPUT = 'direction=~"input|cache_read|cache_write"'
+
+
+def llm_cost(by: str = "", window: str = "$__range") -> str:
+    """Dollars from schoolz_llm_tokens_total. Every (model, direction) pair is
+    its own series, so the priced terms are unioned with `or` and summed -
+    adding them with `+` would drop any purpose that lacks one direction."""
+    terms = []
+    for rx, prices in MODEL_PRICES.items():
+        for direction, price in zip(DIRECTIONS, prices):
+            selector = sel('model=~"%s"' % rx, 'direction="%s"' % direction)
+            terms.append(f"increase(schoolz_llm_tokens_total{selector}[{window}]) * {price / 1e6:.3g}")
+    return f"sum{f' by ({by})' if by else ''} ({' or '.join(terms)})"
+
+
+def chat_cost(by: str = "", window: str = "$__range") -> str:
+    """The same sum for the chatbot, which logs usage to Loki rather than the
+    token counter. The `t` label keeps the four token kinds of one model from
+    colliding in the `or`."""
+    terms = []
+    for rx, prices in MODEL_PRICES.items():
+        for direction, price in zip(DIRECTIONS, prices):
+            field = f"{direction}_tokens"
+            terms.append(
+                f'label_replace(sum by (provider, model) (sum_over_time({CHAT_LOGS} | model=~"{rx}" '
+                f'| unwrap {field} [{window}])) * {price / 1e6:.3g}, "t", "{direction}", "", "")')
+    return f"sum{f' by ({by})' if by else ''} ({' or '.join(terms)})"
+
+
+def instant(expr: str, legend: str = "", ds: str = "DS_METRICS", ref: str = "A") -> dict:
+    t = target(expr, legend, ds=ds, ref=ref)
+    t.update({"range": False, "instant": True})
+    return t
+
+
+def loki_instant(expr: str) -> dict:
+    # loki_target's `instant` flag alone still runs a range query, and a
+    # [$__range] window on top of a 30-day range is past Loki's query limit.
+    t = loki_target(expr, instant=True)
+    t["queryType"] = "instant"
+    return t
+
+
+def cost() -> dict:
+    usd = {"fieldConfig": {"defaults": {"unit": "currencyUSD", "decimals": 2, "custom": {}}, "overrides": []}}
+    bars = {"options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": True,
+                        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}}}
+    stacked = {"fieldConfig": {"defaults": {"unit": "currencyUSD", "custom": {
+        "drawStyle": "bars", "fillOpacity": 80, "stacking": {"mode": "normal", "group": "A"}}}, "overrides": []}}
+    quota = {"fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1.5, "custom": {}, "thresholds": {
+        "mode": "absolute", "steps": [{"color": "green", "value": None}, {"color": "orange", "value": 0.8},
+                                      {"color": "red", "value": 1}]}}, "overrides": []}}
+
+    def used(name: str, usage: str, included: str, ref: str) -> dict:
+        return instant(f"sum({usage}) / sum({included})", name, ds="DS_USAGE", ref=ref)
+
+    chat_tokens = (f'sum by (provider, model) (sum_over_time({CHAT_LOGS} | model!~"{PRICED_MODELS}" '
+                   f'| unwrap input_tokens [$__range]))')
+    panels = [
+        # --- headline
+        panel(1, "Scans and extraction (selected range)", [instant(llm_cost())],
+              {"h": 5, "w": 5, "x": 0, "y": 0}, ptype="stat", extra=usd,
+              desc="Every Anthropic call that goes through observability.record_llm_call, priced per model. "
+                   "An estimate: a counter's first increment after a deploy is invisible to increase(), so "
+                   "this reads slightly low. The invoice is the truth; see the last panel."),
+        panel(2, "Chatbot (selected range)", [loki_instant(chat_cost())],
+              {"h": 5, "w": 5, "x": 5, "y": 0}, ptype="stat", extra=usd,
+              desc="From chatbot_usage log lines, so it only reaches back as far as log retention. "
+                   "Anthropic models only - other providers are in the unpriced panel."),
+        panel(3, "Scans run-rate, per 30 days", [instant(f"({llm_cost(window='7d')}) * 30 / 7")],
+              {"h": 5, "w": 5, "x": 10, "y": 0}, ptype="stat", extra=usd,
+              desc="The last 7 days scaled to a month. A backfill inside those 7 days inflates it."),
+        panel(4, "Grafana Cloud overage", [instant("sum(grafanacloud_org_total_overage)", ds="DS_USAGE")],
+              {"h": 5, "w": 4, "x": 15, "y": 0}, ptype="stat", extra=usd,
+              desc="What Grafana Cloud would bill beyond the included plan, for the whole shared stack."),
+        panel(5, "Share of input served from cache",
+              [instant(f'(sum(increase(schoolz_llm_tokens_total{sel(CACHE_READ)}[$__range])) or vector(0)) / '
+                       f'sum(increase(schoolz_llm_tokens_total{sel(ANY_INPUT)}[$__range]))')],
+              {"h": 5, "w": 5, "x": 19, "y": 0}, ptype="stat", unit="percentunit",
+              desc="Scans and extraction only. Near zero is expected today: no scan sets a cache breakpoint. "
+                   "It is the cheapest lever if a purpose grows."),
+        # --- by cost centre
+        panel(6, "Spend by purpose (selected range)", [instant(llm_cost("purpose"), "{{purpose}}")],
+              {"h": 10, "w": 8, "x": 0, "y": 5}, ptype="bargauge", extra={**usd, **bars},
+              desc="The cost centres that exist in code today. One purpose per call site."),
+        panel(7, "Spend per day, by purpose", [target(llm_cost("purpose", "1d"), "{{purpose}}")],
+              {"h": 10, "w": 16, "x": 8, "y": 5}, extra={**stacked, "interval": "1d"},
+              desc="A one-off (a translation backfill, a new district's first extraction) is a single tall bar; "
+                   "a standing cost is a floor that never goes away."),
+        panel(8, "Spend by process", [instant(llm_cost("service_name"), "{{service_name}}")],
+              {"h": 7, "w": 8, "x": 0, "y": 15}, ptype="bargauge", extra={**usd, **bars},
+              desc="scheduler = unattended scans. api = work a person triggered (run-now, translation, kids view). "
+                   "Both processes share one key today, so this split exists only here, not on the invoice."),
+        panel(9, "Spend by model", [instant(llm_cost("model"), "{{model}}")],
+              {"h": 7, "w": 8, "x": 8, "y": 15}, ptype="bargauge", extra={**usd, **bars}),
+        panel(10, "Cost per call, by purpose",
+              [instant(f"({llm_cost('purpose')}) / sum by (purpose) (increase(schoolz_llm_calls_total{sel()}[$__range]) > 0)",
+                       "{{purpose}}")],
+              {"h": 7, "w": 8, "x": 16, "y": 15}, ptype="bargauge",
+              extra={"fieldConfig": {"defaults": {"unit": "currencyUSD", "decimals": 4, "custom": {}}, "overrides": []}, **bars},
+              desc="Which call is expensive each time, as opposed to merely frequent."),
+        panel(11, "Tokens per day, by direction",
+              [target(f"sum by (direction) (increase(schoolz_llm_tokens_total{sel()}[1d]))", "{{direction}}")],
+              {"h": 8, "w": 12, "x": 0, "y": 22}, extra={"interval": "1d"},
+              desc="Output costs five times input on every model, so a rising output line matters most."),
+        panel(12, "Calls per day, by purpose",
+              [target(f"sum by (purpose) (increase(schoolz_llm_calls_total{sel()}[1d]))", "{{purpose}}")],
+              {"h": 8, "w": 12, "x": 12, "y": 22}, extra={"interval": "1d"}),
+        # --- chatbot
+        panel(13, "Chatbot spend per day, by model",
+              [loki_target(chat_cost("provider, model", "1d"))],
+              {"h": 8, "w": 8, "x": 0, "y": 30}, extra={**stacked, "interval": "1d"},
+              desc="Anonymous and signed-in turns are not told apart in the log line yet, so neither is this."),
+        panel(14, "Chatbot turns per day, by model",
+              [loki_target(f"sum by (provider, model) (count_over_time({CHAT_LOGS} [1d]))")],
+              {"h": 8, "w": 8, "x": 8, "y": 30}, extra={"interval": "1d"}),
+        panel(15, "Chatbot tokens on unpriced models (selected range)",
+              [loki_instant(chat_tokens)],
+              {"h": 8, "w": 8, "x": 16, "y": 30}, ptype="bargauge", extra=bars,
+              desc="Input tokens sent to a model with no row in MODEL_PRICES (Gemini and the other "
+                   "non-Anthropic providers). Billed by that provider, absent from every dollar figure here."),
+        # --- what drove it
+        panel(16, "Job runs and machine time, by kind (selected range)",
+              [sql_target(
+                  "SELECT j.kind AS \"Kind\", count(*) AS \"Runs\",\n"
+                  "  count(*) FILTER (WHERE r.triggered_by <> 'cron') AS \"Run by hand\",\n"
+                  "  round(sum(r.duration_ms) / 60000.0, 1) AS \"Minutes\",\n"
+                  "  round(avg(r.duration_ms) / 1000.0, 1) AS \"Avg seconds\"\n"
+                  "FROM job_runs r JOIN scheduled_jobs j ON j.id = r.job_id\n"
+                  "WHERE $__timeFilter(r.started_at)\n"
+                  "GROUP BY 1 ORDER BY 4 DESC NULLS LAST;")],
+              {"h": 10, "w": 12, "x": 0, "y": 38}, ptype="table",
+              desc="Fly bills the scheduler and scraper machines flat, so this is not dollars - it is which "
+                   "scan kinds would force a bigger machine, and how much of the volume is hand-triggered."),
+        # --- the observability bill itself
+        panel(17, "Grafana Cloud: used / included",
+              [used("metric series", "grafanacloud_org_metrics_billable_series", "grafanacloud_org_metrics_included_series", "A"),
+               used("logs", "grafanacloud_org_logs_usage", "grafanacloud_org_logs_included_usage", "B"),
+               used("traces", "grafanacloud_org_traces_usage", "grafanacloud_org_traces_included_usage", "C"),
+               used("RUM sessions", "grafanacloud_org_fe_o11y_billable_sessions", "grafanacloud_org_fe_o11y_included_sessions", "D"),
+               used("synthetic checks", "grafanacloud_org_sm_billable_check_executions", "grafanacloud_org_sm_included_check_executions", "E"),
+               used("IRM users", "grafanacloud_org_irm_users", "grafanacloud_org_irm_included_users", "F"),
+               used("Grafana users", "grafanacloud_org_grafana_billable_users", "grafanacloud_org_grafana_included_users", "G")],
+              {"h": 10, "w": 6, "x": 12, "y": 38}, ptype="bargauge", extra={**quota, **bars},
+              desc="Over 100% is past the plan's allowance. The stack is shared, so this is every app on it."),
+        panel(18, "Active series by app",
+              [instant('sort_desc(count by (service_namespace) ({__name__=~".+"}))', "{{service_namespace}}")],
+              {"h": 10, "w": 6, "x": 18, "y": 38}, ptype="bargauge", extra=bars,
+              desc="Who is using the series allowance. The unlabelled bar is everything with no service_namespace."),
+        panel(19, "Not on this dashboard yet", [], {"h": 9, "w": 24, "x": 0, "y": 48}, ptype="text",
+              extra={"options": {"mode": "markdown", "content": NOT_METERED}}),
+    ]
+    d = dashboard(
+        "schoolz-cost", "schoolz / Cost",
+        "What schoolz spends on models and observability, split by cost centre, and what is not metered yet.",
+        panels,
+        [ds_var("DS_METRICS", "prometheus", "Metrics"),
+         ds_var("DS_LOGS", "loki", "Logs"),
+         ds_var("DS_SQL", "grafana-postgresql-datasource", "schoolz database"),
+         ds_var("DS_USAGE", "prometheus", "Grafana Cloud usage")],
+    )
+    d["time"] = {"from": "now-30d", "to": "now"}
+    d["refresh"] = "1h"
+    return d
+
+
+NOT_METERED = """\
+| Cost centre | Why it is missing | What closes the gap |
+|---|---|---|
+| **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |
+| **Anthropic invoice** (the real dollars) | Panels above are estimates from token counts | A read-only Admin API key behind an Infinity datasource: `usage_report/messages` and `cost_report`, grouped by workspace and API key |
+| **Chatbot, anonymous vs signed-in** | One log line for both audiences | Record chatbot turns in `schoolz_llm_tokens_total` with a purpose per audience |
+| **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |
+| **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |
+"""
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    for name, build in (("scans", scans), ("api", api), ("user-experience", ux), ("operations", ops)):
+    for name, build in (("scans", scans), ("api", api), ("user-experience", ux), ("operations", ops),
+                        ("cost", cost)):
         path = OUT / f"schoolz-{name}.json"
         path.write_text(json.dumps(build(), indent=2) + "\n")
         print(f"wrote {path.relative_to(OUT.parent.parent)}")

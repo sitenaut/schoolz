@@ -1,0 +1,923 @@
+{
+  "uid": "schoolz-cost",
+  "title": "schoolz / Cost",
+  "description": "What schoolz spends on models and observability, split by cost centre, and what is not metered yet.",
+  "tags": [
+    "schoolz"
+  ],
+  "timezone": "America/New_York",
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "1h",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Metrics",
+        "multi": false,
+        "name": "DS_METRICS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Logs",
+        "multi": false,
+        "name": "DS_LOGS",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "schoolz database",
+        "multi": false,
+        "name": "DS_SQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Grafana Cloud usage",
+        "multi": false,
+        "name": "DS_USAGE",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Scans and extraction (selected range)",
+      "description": "Every Anthropic call that goes through observability.record_llm_call, priced per model. An estimate: a counter's first increment after a deploy is invisible to increase(), so this reads slightly low. The invoice is the truth; see the last panel.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[$__range]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[$__range]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[$__range]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[$__range]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[$__range]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[$__range]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[$__range]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[$__range]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[$__range]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[$__range]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[$__range]) * 2.5e-07)",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Chatbot (selected range)",
+      "description": "From chatbot_usage log lines, so it only reaches back as far as log retention. Anthropic models only - other providers are in the unpriced panel.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 5,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum (label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap input_tokens [$__range])) * 1e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap output_tokens [$__range])) * 5e-06, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_write_tokens [$__range])) * 1.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_read_tokens [$__range])) * 1e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap input_tokens [$__range])) * 2e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap output_tokens [$__range])) * 1e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_write_tokens [$__range])) * 2.5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_read_tokens [$__range])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap input_tokens [$__range])) * 4e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap output_tokens [$__range])) * 2e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_write_tokens [$__range])) * 5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_read_tokens [$__range])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap input_tokens [$__range])) * 5e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap output_tokens [$__range])) * 2.5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_write_tokens [$__range])) * 6.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_read_tokens [$__range])) * 5e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap input_tokens [$__range])) * 1e-05, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap output_tokens [$__range])) * 5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_write_tokens [$__range])) * 1.25e-05, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_read_tokens [$__range])) * 2.5e-07, \"t\", \"cache_read\", \"\", \"\"))",
+          "queryType": "instant",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Scans run-rate, per 30 days",
+      "description": "The last 7 days scaled to a month. A backfill inside those 7 days inflates it.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 10,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(sum (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[7d]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[7d]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[7d]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[7d]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[7d]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[7d]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[7d]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[7d]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[7d]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[7d]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[7d]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[7d]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[7d]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[7d]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[7d]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[7d]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[7d]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[7d]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[7d]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[7d]) * 2.5e-07)) * 30 / 7",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Grafana Cloud overage",
+      "description": "What Grafana Cloud would bill beyond the included plan, for the whole shared stack.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 15,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_total_overage)",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Share of input served from cache",
+      "description": "Scans and extraction only. Near zero is expected today: no scan sets a cache breakpoint. It is the cheapest lever if a purpose grows.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 19,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", direction=\"cache_read\"}[$__range])) or vector(0)) / sum(increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", direction=~\"input|cache_read|cache_write\"}[$__range]))",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Spend by purpose (selected range)",
+      "description": "The cost centres that exist in code today. One purpose per call site.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (purpose) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[$__range]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[$__range]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[$__range]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[$__range]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[$__range]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[$__range]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[$__range]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[$__range]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[$__range]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[$__range]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[$__range]) * 2.5e-07)",
+          "legendFormat": "{{purpose}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Spend per day, by purpose",
+      "description": "A one-off (a translation backfill, a new district's first extraction) is a single tall bar; a standing cost is a floor that never goes away.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 8,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (purpose) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[1d]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[1d]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[1d]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[1d]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[1d]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[1d]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[1d]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[1d]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[1d]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[1d]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[1d]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[1d]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[1d]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[1d]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[1d]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[1d]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[1d]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[1d]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[1d]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[1d]) * 2.5e-07)",
+          "legendFormat": "{{purpose}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {},
+      "interval": "1d"
+    },
+    {
+      "id": 8,
+      "title": "Spend by process",
+      "description": "scheduler = unattended scans. api = work a person triggered (run-now, translation, kids view). Both processes share one key today, so this split exists only here, not on the invoice.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (service_name) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[$__range]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[$__range]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[$__range]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[$__range]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[$__range]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[$__range]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[$__range]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[$__range]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[$__range]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[$__range]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[$__range]) * 2.5e-07)",
+          "legendFormat": "{{service_name}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Spend by model",
+      "description": "",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (model) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[$__range]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[$__range]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[$__range]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[$__range]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[$__range]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[$__range]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[$__range]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[$__range]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[$__range]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[$__range]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[$__range]) * 2.5e-07)",
+          "legendFormat": "{{model}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Cost per call, by purpose",
+      "description": "Which call is expensive each time, as opposed to merely frequent.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "(sum by (purpose) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"input\"}[$__range]) * 1e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"output\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-haiku-4-5.*\", direction=\"cache_read\"}[$__range]) * 1e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"input\"}[$__range]) * 2e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"output\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_write\"}[$__range]) * 2.5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-sonnet-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"input\"}[$__range]) * 4e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"output\"}[$__range]) * 2e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_write\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5-5.*\", direction=\"cache_read\"}[$__range]) * 2e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"input\"}[$__range]) * 5e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"output\"}[$__range]) * 2.5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_write\"}[$__range]) * 6.25e-06 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-opus-5|claude-opus-5-20.*\", direction=\"cache_read\"}[$__range]) * 5e-07 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"input\"}[$__range]) * 1e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"output\"}[$__range]) * 5e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_write\"}[$__range]) * 1.25e-05 or increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\", model=~\"claude-fable-5.*\", direction=\"cache_read\"}[$__range]) * 2.5e-07)) / sum by (purpose) (increase(schoolz_llm_calls_total{service_namespace=\"schoolz\"}[$__range]) > 0)",
+          "legendFormat": "{{purpose}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Tokens per day, by direction",
+      "description": "Output costs five times input on every model, so a rising output line matters most.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (direction) (increase(schoolz_llm_tokens_total{service_namespace=\"schoolz\"}[1d]))",
+          "legendFormat": "{{direction}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {},
+      "interval": "1d"
+    },
+    {
+      "id": 12,
+      "title": "Calls per day, by purpose",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (purpose) (increase(schoolz_llm_calls_total{service_namespace=\"schoolz\"}[1d]))",
+          "legendFormat": "{{purpose}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {},
+      "interval": "1d"
+    },
+    {
+      "id": 13,
+      "title": "Chatbot spend per day, by model",
+      "description": "Anonymous and signed-in turns are not told apart in the log line yet, so neither is this.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum by (provider, model) (label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap input_tokens [1d])) * 1e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap output_tokens [1d])) * 5e-06, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_write_tokens [1d])) * 1.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_read_tokens [1d])) * 1e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap input_tokens [1d])) * 2e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap output_tokens [1d])) * 1e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_write_tokens [1d])) * 2.5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_read_tokens [1d])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap input_tokens [1d])) * 4e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap output_tokens [1d])) * 2e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_write_tokens [1d])) * 5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_read_tokens [1d])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap input_tokens [1d])) * 5e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap output_tokens [1d])) * 2.5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_write_tokens [1d])) * 6.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_read_tokens [1d])) * 5e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap input_tokens [1d])) * 1e-05, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap output_tokens [1d])) * 5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_write_tokens [1d])) * 1.25e-05, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_read_tokens [1d])) * 2.5e-07, \"t\", \"cache_read\", \"\", \"\"))",
+          "queryType": "range",
+          "refId": "A",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {},
+      "interval": "1d"
+    },
+    {
+      "id": 14,
+      "title": "Chatbot turns per day, by model",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum by (provider, model) (count_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" [1d]))",
+          "queryType": "range",
+          "refId": "A",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {},
+      "interval": "1d"
+    },
+    {
+      "id": 15,
+      "title": "Chatbot tokens on unpriced models (selected range)",
+      "description": "Input tokens sent to a model with no row in MODEL_PRICES (Gemini and the other non-Anthropic providers). Billed by that provider, absent from every dollar figure here.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model!~\"claude-haiku-4-5.*|claude-sonnet-5.*|claude-opus-5-5.*|claude-opus-5|claude-opus-5-20.*|claude-fable-5.*\" | unwrap input_tokens [$__range]))",
+          "queryType": "instant",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Job runs and machine time, by kind (selected range)",
+      "description": "Fly bills the scheduler and scraper machines flat, so this is not dollars - it is which scan kinds would force a bigger machine, and how much of the volume is hand-triggered.",
+      "type": "table",
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_SQL}"
+          },
+          "rawSql": "SELECT j.kind AS \"Kind\", count(*) AS \"Runs\",\n  count(*) FILTER (WHERE r.triggered_by <> 'cron') AS \"Run by hand\",\n  round(sum(r.duration_ms) / 60000.0, 1) AS \"Minutes\",\n  round(avg(r.duration_ms) / 1000.0, 1) AS \"Avg seconds\"\nFROM job_runs r JOIN scheduled_jobs j ON j.id = r.job_id\nWHERE $__timeFilter(r.started_at)\nGROUP BY 1 ORDER BY 4 DESC NULLS LAST;",
+          "rawQuery": true,
+          "format": "table",
+          "editorMode": "code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 17,
+      "title": "Grafana Cloud: used / included",
+      "description": "Over 100% is past the plan's allowance. The stack is shared, so this is every app on it.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 10,
+        "w": 6,
+        "x": 12,
+        "y": 38
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_metrics_billable_series) / sum(grafanacloud_org_metrics_included_series)",
+          "legendFormat": "metric series",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_logs_usage) / sum(grafanacloud_org_logs_included_usage)",
+          "legendFormat": "logs",
+          "range": false,
+          "format": "time_series",
+          "refId": "B",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_traces_usage) / sum(grafanacloud_org_traces_included_usage)",
+          "legendFormat": "traces",
+          "range": false,
+          "format": "time_series",
+          "refId": "C",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_fe_o11y_billable_sessions) / sum(grafanacloud_org_fe_o11y_included_sessions)",
+          "legendFormat": "RUM sessions",
+          "range": false,
+          "format": "time_series",
+          "refId": "D",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_sm_billable_check_executions) / sum(grafanacloud_org_sm_included_check_executions)",
+          "legendFormat": "synthetic checks",
+          "range": false,
+          "format": "time_series",
+          "refId": "E",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_irm_users) / sum(grafanacloud_org_irm_included_users)",
+          "legendFormat": "IRM users",
+          "range": false,
+          "format": "time_series",
+          "refId": "F",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_USAGE}"
+          },
+          "expr": "sum(grafanacloud_org_grafana_billable_users) / sum(grafanacloud_org_grafana_included_users)",
+          "legendFormat": "Grafana users",
+          "range": false,
+          "format": "time_series",
+          "refId": "G",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1.5,
+          "custom": {},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 18,
+      "title": "Active series by app",
+      "description": "Who is using the series allowance. The unlabelled bar is everything with no service_namespace.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 10,
+        "w": 6,
+        "x": 18,
+        "y": 38
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sort_desc(count by (service_namespace) ({__name__=~\".+\"}))",
+          "legendFormat": "{{service_namespace}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Not on this dashboard yet",
+      "description": "",
+      "type": "text",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "targets": [],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "| Cost centre | Why it is missing | What closes the gap |\n|---|---|---|\n| **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |\n| **Anthropic invoice** (the real dollars) | Panels above are estimates from token counts | A read-only Admin API key behind an Infinity datasource: `usage_report/messages` and `cost_report`, grouped by workspace and API key |\n| **Chatbot, anonymous vs signed-in** | One log line for both audiences | Record chatbot turns in `schoolz_llm_tokens_total` with a purpose per audience |\n| **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |\n| **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |\n"
+      }
+    }
+  ],
+  "editable": true
+}
