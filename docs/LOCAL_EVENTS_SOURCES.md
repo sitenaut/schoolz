@@ -31,3 +31,14 @@ Per-source notes for `backend/local_events/` (the `/local` page). The pipeline-l
 - **SJ Magazine** — its Events Calendar API is empty and "Things to Do" is a monthly article that lags a month.
 - **JamBase** — plain requests get a 403 (bot wall) from its concert pages, and nothing public exposes a feed. WXPN and Do215 already cover the Philadelphia-area indie shows it would list; revisit if it offers an official API or feed.
 - **Eventbrite** — its terms prohibit automated scraping.
+
+## Pipeline notes
+
+Community events — **public, no auth dependency at all** (no per-viewer personalization). `backend/local_events/` is a **port of billz's `events/` pipeline** and `local_events.refresh` takes billz's `events.refresh` params verbatim (Scans → **Import from billz**).
+
+- Admin UI is billz's: JSON params editor + **Test fetch** (`POST /scheduled-jobs/test-fetch`, a dry run with per-source status). Test before saving.
+- Rendering goes to the shared Playwright droplet first, schoolz's own scraper second; the residential Pi is opt-in per call.
+- **Deleting a job, or removing a source from its params, deletes that source's events** (`local_events/prune.py`), by source name across all remaining jobs. Disabling keeps them. **`prune.SOURCE_KEYS` must list every `*_sources` key** or every job edit deletes that source's events as orphaned (`tests/test_placewise_source.py` checks this).
+- A failed source makes the run `WARNING` (billz only marks it `-1`).
+- **Local compose scraper binds `0.0.0.0`**: the image binds `::` for Fly's IPv6-only 6PN, and asyncio makes that socket IPv6-only locally.
+- **`uvicorn --reload` watches `backend/` incl. `tests/`**, so editing any file kills a run-now job in the API process. Run long jobs from `schoolz-scheduler-local` (`SCHEDULER=1`).

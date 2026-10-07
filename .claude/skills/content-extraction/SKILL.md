@@ -1,0 +1,26 @@
+---
+name: content-extraction
+description: How newsletter blocks become SchoolContentItems in schoolz - the Claude vision and tool-use passes, date handling, supersede and dedup rules, closure and half-day status wording, content scoping, and high-school class pages. Load before changing backend/content_extractor.py, services/school_status.py, school_today.py, class_years.py, or frontend/src/lib/districtItems.ts.
+---
+
+# Content extraction
+
+`content_extractor.py` turns new `SmoreBlock`s into `SchoolContentItem`s: a Claude vision pass over new image blocks, then one structured tool-use call over block text + vision output. Runs **once per newsletter**, shared/public — the point is not re-running Claude per parent.
+
+- **`temperature=0`**; the prompt demands every bullet in a dated list and at least one item per flyer.
+- **`items` is FIRST in the tool schema.** Fields generate in schema order, and a long newsletter can hit `max_tokens` mid-response; with `items` last, a real newsletter produced *zero* items. `max_tokens=8192`, chunks of 12 blocks, `stop_reason == "max_tokens"` → `WARNING`.
+- **A tool schema's `"required"` isn't enforced**, even with forced `tool_choice` — always `item.get(...)` with per-item skip + `record_parse_issue` (a bare index once dropped a whole crawl's items).
+- **Dates are local, not UTC.** The model returns bare ISO strings in school-local time; `_parse_date` attaches `America/New_York`. The frontend formats via `lib/calendar.ts:localDateKey` and anchors menu dates at noon UTC, never raw browser `Date` math. `is_all_day` is inferred from whether the string has a time, not the model's boolean.
+- **Stale years roll forward.** Flyers reuse artwork with last year's date; the item then superseded the correct row and the event vanished from forward views. `_correct_stale_year()` rolls dates >30 days stale forward (5-year cap), and `_may_supersede()` won't let a past-dated item retire an upcoming one.
+- **Corrections via supersede** — block dedup is exact-hash, so a typo fix is a new block; the call sees current items and can set `supersedes_item_id` (old row → `is_current=False`).
+- **A half day is also a "Single Session", a closure also "No Students"** (Delran, Cinnaminson). The wording lives in three places that must agree: `school_today.py`, `school_status.py` and `frontend/src/lib/districtItems.ts`. A title that names a grade span stopping short of the school ("K-8 Single Session" in a high school's own feed) is not that school's status (`school_today.other_grades_only`).
+- **Status titles force `scope='district'`** (`services/school_status.py:is_status_title`) before dedup — closures/half-days are never one school's news. Its own regex set, *not* shared with `school_today.py:classify_day`, whose precedence (closed beats early dismissal) breaks on "EARLY DISMISSAL - Staff In-Service".
+- **Links are verified, never trusted to the model**: `_find_link()` checks for a real anchor then a bare-URL regex on any block type; `link_url` is backfilled from the source block. Portal URLs come from `_KNOWN_PORTAL_URLS`, never the model.
+- **Image blocks:** a hover "zoom" control once made every image block's `text_content` a junk string that beat the vision output, silently dropping every flyer. A YouTube block's play icon is a `data:` URI `<img>` — the real content is on `data-video-title`/`data-video-original-url`. A failed vision extract stays pending and warns (it used to be marked done, permanently). Media type is sniffed from bytes, not `Content-Type` (Smore labels PNGs `image/jpeg`).
+- Prefer determinism where achievable (e.g. `_parse_lunch_menu_days` regex-splits model output instead of a second call); event-vs-reminder classification varies run to run and isn't worth chasing.
+- **Known gap:** only closures/half-days dedupe across sources; an ordinary event reported by both the district feed and a newsletter in different words double-counts.
+
+## Content model
+
+- **Content scoping** — `SchoolContentItem.scope` is `school` or `district`. District items dedupe one row per `(district, category, start_date)` because every school's newsletter reports the same holidays — except `^Day \d$` titles: rotation feeds put a `category="event"` marker on nearly every school day, and keying on them either crashed with `MultipleResultsFound` or dropped real events as "duplicates" of "Day 3". `GET /schools/{id}/content` unions a school's items with its district's.
+- **High-school class pages** (`SchoolClassYear`, `ClassPayment`, `routers/class_years.py`, design in `docs/HS_CLASS_PAGES_DESIGN.md`) — organized by graduating class, not grade, because the school's own materials describe multi-year things relative to the cohort and a grade number silently means different kids every July. `SchoolContentItem.applies_to_grad_years` mirrors `applies_to_school_types` (null = whole school). `services/class_years.py:CLASS_PAGE_SOURCES` (`school_ics`, `hs_announcements`, `hs_activities_site`) are too club-level for general views: off by default in `/calendar` and `/content`, on via `include_class_sources=true` and on the class page. `hs_activities_site` crawls Google Sites with plain `httpx` (server-rendered) — never the scraper.
