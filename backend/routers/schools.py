@@ -235,6 +235,24 @@ async def _ensure_myschoolplate_job(db: AsyncSession, school: School, user: User
     school.myschoolplate_job_id = job.id
 
 
+async def _ensure_nutrislice_job(db: AsyncSession, school: School, user: User) -> None:
+    """Auto-creates the recurring Nutrislice menu scan the first time a
+    school gets nutrislice_location."""
+    if school.nutrislice_job_id or not school.nutrislice_location:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="nutrislice_menu.scan",
+        name=f"Nutrislice menu scan: {school.name}",
+        cron_expr=public_scan_cron("nutrislice_menu.scan", school.id),
+        params={"school_id": school.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    school.nutrislice_job_id = job.id
+
+
 async def _ensure_announcements_job(db: AsyncSession, school: School, user: User) -> None:
     """Auto-creates the recurring scan of a HIGH SCHOOL's Morning
     Announcements doc the first time it gets announcements_doc_url. Tighter
@@ -403,7 +421,7 @@ async def update_school(
         "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
         "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
         "events_doc_url", "bulletin_doc_url", "apptegy_org_id", "givebacks_shortname", "fdmealplanner_location",
-        "healthepro_location", "myschoolplate_location", "presence_menu_page_url", "staff_directory_url",
+        "healthepro_location", "myschoolplate_location", "nutrislice_location", "presence_menu_page_url", "staff_directory_url",
     ):
         value = getattr(payload, field)
         if value is not None:
@@ -427,6 +445,7 @@ async def update_school(
     await _ensure_fdmealplanner_job(db, school, user)
     await _ensure_healthepro_job(db, school, user)
     await _ensure_myschoolplate_job(db, school, user)
+    await _ensure_nutrislice_job(db, school, user)
     await _ensure_presence_menu_job(db, school, user)
     await db.commit()
     await db.refresh(school)

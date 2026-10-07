@@ -33,6 +33,21 @@ def test_classify_day_precedence_and_labels():
     assert classify_day(["EARLY DISMISSAL", "SCHOOLS CLOSED - Snow"])[0] == "closed"
     assert classify_day(["2 Hour Delay"])[0] == "delayed"
     assert classify_day(["Back to School Night"]) == ("open", None)
+    # Delran's and Cinnaminson's wording.
+    assert classify_day(["PCPEP - K-8 Single Session"])[0] == "early_dismissal"
+    assert classify_day(["Staff Development Day - No Students"])[0] == "closed"
+    assert classify_day(["K-5 Single Session - Parent Conferences"])[0] == "early_dismissal"
+
+
+def test_a_grade_span_that_stops_short_of_the_school_is_not_its_status():
+    from services.school_today import other_grades_only
+
+    assert other_grades_only("DHS Prom & K-8 PCPEP Single Session", "high")
+    assert not other_grades_only("DHS Prom & K-8 PCPEP Single Session", "middle")
+    assert not other_grades_only("Single Session K-12", "high")
+    assert not other_grades_only("K-5 Single Session - Parent Conferences", "middle")
+    assert other_grades_only("PK-4 Single Session", "middle")
+    assert not other_grades_only("Early Dismissal", "high")
 
 
 def test_item_date_range_expands_multi_day_all_day_closure():

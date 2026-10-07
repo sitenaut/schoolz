@@ -66,6 +66,8 @@ def parse_footer(html: str) -> dict:
     tel = soup.select_one("footer a[href^='tel:']")
     if tel:
         phone = tel.get_text(strip=True) or re.sub(r"^Phone:?\s*", "", tel.get("aria-label") or "", flags=re.I).strip() or None
+    if phone:  # Cinnaminson's footers print the country code: "+1 856-829-7770"
+        phone = re.sub(r"^\+1[\s-]*", "", phone)
     return {"address": address, "main_phone": phone}
 
 

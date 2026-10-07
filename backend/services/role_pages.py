@@ -107,12 +107,37 @@ def _inline_person(lines: list[str], page_emails: list[str], title: str) -> dict
     return None
 
 
+_CREDENTIAL = r"(?:NJ-)?(?:RN|BSN|MSN|CSN)\b"
+_CREDENTIALED_RE = re.compile(
+    rf"^(?:Contact\s+)?(?:(?:Mrs?|Ms|Dr)\.?\s+)?((?!{_CREDENTIAL})[A-Z][\w.'-]*(?:\s+(?!{_CREDENTIAL})[A-Z][\w.'-]*){{1,2}}),?\s+{_CREDENTIAL}(?:[,\s]+{_CREDENTIAL})*$"
+)
+
+
+def _credentialed_nurse(lines: list[str], page_emails: list[str]) -> dict | None:
+    """A line that is a name followed by nursing credentials ("Mrs. Pat Doe,
+    RN, BSN, CSN", "Contact Pat Doe, BSN, RN" - Cinnaminson's nurse pages)
+    names the nurse: nothing else on a page is written that way. The address
+    must contain her surname."""
+    for line in lines:
+        m = _CREDENTIALED_RE.match(line)
+        if not m:
+            continue
+        name = m.group(1).strip()
+        surname = re.sub(r"[^a-z]", "", name.split()[-1].lower())
+        email = next((e.lower() for e in page_emails if surname and surname in e.split("@")[0].lower()), None)
+        return {"full_name": name, "title": "School Nurse", "email": email}
+    return None
+
+
 def parse_inline_page(html: str, title: str) -> dict | None:
     lines = _content_lines(html)
     soup = BeautifulSoup(html, "lxml")
     emails = [a["href"][7:].split("?")[0].strip().lower() for a in _content_root(soup).select("a[href^='mailto:']")]
     emails += [e.lower() for e in _EMAIL_RE.findall(" ".join(lines))]
-    return _inline_person(lines, emails, title)
+    # Credentials first: on a page that has such a line, the looser inline rule
+    # can read "Jane Roe / Example Middle School Nurse / 555-..." as a
+    # person called "Roe Example Middle".
+    return _credentialed_nurse(lines, emails) or _inline_person(lines, emails, title)
 
 
 def parse_page(html: str, title: str) -> dict | None:
@@ -182,5 +207,7 @@ async def fetch_role_staff_scraped(base_url: str) -> list[dict]:
         if not person:
             continue
         key = person["email"] or re.sub(r"[^a-z0-9]+", "-", person["full_name"].lower()).strip("-")
-        out.append({"constituent_id": f"rp:{key}"[:64], **person, "department": None, "phone": None})
+        # The nav often links one nurse page twice ("School Nurse", "School Nurse Home").
+        if not any(e["constituent_id"] == f"rp:{key}"[:64] for e in out):
+            out.append({"constituent_id": f"rp:{key}"[:64], **person, "department": None, "phone": None})
     return out

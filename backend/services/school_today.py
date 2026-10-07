@@ -34,8 +34,13 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 # "conference", which would wrongly outrank early_dismissal's precedence
 # here on a real title like "EARLY DISMISSAL - Staff In-Service"
 # (test_school_today.py:test_classify_day_precedence_and_labels pins this).
-_CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b", re.I)
-_EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b", re.I)
+# "No Students" (a staff development day) and "Single Session" (a half day)
+# are how Delran and Cinnaminson word it.
+_CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b", re.I)
+_EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b", re.I)
+# A status title scoped to grades by its own wording: "PCPEP - K-8 Single
+# Session", "K-5 Single Session - Parent Conferences".
+_GRADES_THROUGH_RE = re.compile(r"\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b", re.I)
 _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Eastern Regional's feed appends the day's class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
 _ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(?:\([^)]*\))?\s*$", re.I)
@@ -93,6 +98,19 @@ def _item_date_range(item: SchoolContentItem) -> list[date]:
 
 def _is_status_item(item: SchoolContentItem) -> bool:
     return bool(_CLOSED_RE.search(item.title) or _EARLY_RE.search(item.title) or _DELAY_RE.search(item.title))
+
+
+def other_grades_only(title: str, school_type: str | None) -> bool:
+    """True when a title names a grade span that stops short of this school:
+    Delran High's own feed carries "DHS Prom & K-8 PCPEP Single Session",
+    which is a half day for the K-8 schools and a full one for the high
+    school. Only the unambiguous cases count - a span ending by 8th grade at a
+    high school, by 4th at a middle school."""
+    m = _GRADES_THROUGH_RE.search(title)
+    if not m:
+        return False
+    through = int(m.group(1))
+    return (school_type == "high" and through <= 8) or (school_type == "middle" and through <= 4)
 
 
 def _is_rotation_item(item: SchoolContentItem) -> bool:
@@ -244,7 +262,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     def day_status(d: date) -> tuple[str, str | None]:
         if d.weekday() >= 5:
             return "weekend", None
-        return classify_day([i.title for i in by_day.get(d, [])])
+        return classify_day([i.title for i in by_day.get(d, []) if not other_grades_only(i.title, school.school_type)])
 
     def rotation_item(d: date) -> SchoolContentItem | None:
         return next((i for i in by_day.get(d, []) if _is_rotation_item(i)), None)
@@ -338,7 +356,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     seen: set[tuple[date, str]] = set()
     alert_items: list[SchoolContentItem] = []
     for i in items:
-        if not _is_status_item(i):
+        if not _is_status_item(i) or other_grades_only(i.title, school.school_type):
             continue
         # Any day the item covers falling in the alert window is enough -
         # a multi-day closure that started before today but is still
