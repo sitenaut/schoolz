@@ -145,7 +145,7 @@ async def run_chat_turn(
     Haiku escalating to Sonnet.
     """
     config = config or AudienceConfig()
-    providers = providers if providers is not None else configured_providers()
+    providers = providers if providers is not None else configured_providers(signed_in=personal is not None)
     provider = providers.get(config.provider)
     if provider is None:
         return {

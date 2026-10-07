@@ -84,14 +84,18 @@ LOCAL_EVENTS_SCRAPER_URL=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
-# For the Smore image-block vision-extraction pass. Plumbed through to both
-# backend and scheduler containers, but not yet used anywhere - that pass
-# isn't built yet (see CLAUDE.md).
+# Every model call outside the chatbot: newsletter extraction, scans,
+# translation, the kids view. In prod this is the scheduler's key - the API
+# process swaps in ANTHROPIC_API_KEY_INTERACTIVE at startup when that is set
+# (backend/main.py), so person-triggered work and unattended scans are two
+# keys with two spend limits. Unset, both processes share ANTHROPIC_API_KEY.
 ANTHROPIC_API_KEY=
+ANTHROPIC_API_KEY_INTERACTIVE=
 
 # Chatbot (services/chat_providers.py). Its own Anthropic key keeps the
 # public chatbot's spend separate from newsletter extraction; falls back to
-# ANTHROPIC_API_KEY. The Gemini/DeepSeek/Qwen keys each enable that provider
+# ANTHROPIC_API_KEY. CHATBOT_MEMBERS_ANTHROPIC_API_KEY, when set, is used for
+# signed-in turns instead, falling back to CHATBOT_ANTHROPIC_API_KEY. The Gemini/DeepSeek/Qwen keys each enable that provider
 # in /admin -> Chatbot (provider switch + side-by-side compare); unset, a
 # provider shows as "no API key on server". Use paid-tier keys: signed-in
 # chats carry children's grades/schedules, and free tiers may retain prompts.
@@ -102,6 +106,7 @@ ANTHROPIC_API_KEY=
 # In prod these are Fly secrets on schoolz-api:
 #   fly secrets set CHATBOT_GEMINI_API_KEY=... -a schoolz-api
 CHATBOT_ANTHROPIC_API_KEY=
+CHATBOT_MEMBERS_ANTHROPIC_API_KEY=
 CHATBOT_GEMINI_API_KEY=
 CHATBOT_DEEPSEEK_API_KEY=
 CHATBOT_QWEN_API_KEY=

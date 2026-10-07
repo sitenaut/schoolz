@@ -221,6 +221,33 @@ def test_gemini_list_keeps_only_chat_models():
     assert [i for i in ids if chat_providers.gemini_chat_model(i)] == ["gemini-3.8-flash", "gemini-pro-latest"]
 
 
+def test_the_api_process_bills_to_the_interactive_key():
+    # main.py swaps the key before any service reads it at import; a fresh
+    # interpreter is the only way to see that ordering.
+    import os
+    import subprocess
+    import sys
+
+    env = {**os.environ, "ANTHROPIC_API_KEY": "scans", "ANTHROPIC_API_KEY_INTERACTIVE": "interactive",
+           "OTEL_EXPORTER_OTLP_ENDPOINT": ""}
+    code = "import main, services.content_extractor as c, os; print(c.ANTHROPIC_API_KEY, os.environ['ANTHROPIC_API_KEY'])"
+    out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, cwd=os.path.dirname(os.path.dirname(__file__)))
+    assert out.stdout.split()[-2:] == ["interactive", "interactive"], out.stderr[-400:]
+
+
+def test_signed_in_chat_uses_the_members_key_and_falls_back_to_the_public_one(monkeypatch):
+    seen = []
+    monkeypatch.setattr(chat_providers, "AnthropicProvider", lambda key: seen.append(key) or key)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "shared")
+    monkeypatch.setenv("CHATBOT_ANTHROPIC_API_KEY", "public")
+    monkeypatch.setenv("CHATBOT_MEMBERS_ANTHROPIC_API_KEY", "members")
+    chat_providers.configured_providers()
+    chat_providers.configured_providers(signed_in=True)
+    monkeypatch.delenv("CHATBOT_MEMBERS_ANTHROPIC_API_KEY")
+    chat_providers.configured_providers(signed_in=True)
+    assert seen == ["public", "members", "public"]
+
+
 def test_configured_providers_reads_deepseek_and_qwen_keys(monkeypatch):
     for key in ("CHATBOT_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY", "CHATBOT_GEMINI_API_KEY", "GEMINI_API_KEY"):
         monkeypatch.delenv(key, raising=False)

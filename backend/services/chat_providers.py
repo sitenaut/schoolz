@@ -284,12 +284,18 @@ class OpenAICompatibleProvider:
             return sorted(i for i in ids if self._model_filter(i))
 
 
-def configured_providers() -> dict[str, Any]:
+def configured_providers(signed_in: bool = False) -> dict[str, Any]:
     """Providers with a key set. The chatbot's Anthropic key is its own spend
     pool (CHATBOT_ANTHROPIC_API_KEY) with the shared key as a fallback - see
-    services/chatbot.py."""
+    services/chatbot.py. A signed-in turn uses CHATBOT_MEMBERS_ANTHROPIC_API_KEY
+    when it is set, so abuse of the public widget can't spend the budget that
+    answers families about their own children."""
     providers: dict[str, Any] = {}
-    anthropic_key = os.getenv("CHATBOT_ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+    anthropic_key = (
+        (os.getenv("CHATBOT_MEMBERS_ANTHROPIC_API_KEY") if signed_in else None)
+        or os.getenv("CHATBOT_ANTHROPIC_API_KEY")
+        or os.getenv("ANTHROPIC_API_KEY")
+    )
     if anthropic_key:
         providers["anthropic"] = AnthropicProvider(anthropic_key)
     gemini_key = os.getenv("CHATBOT_GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
