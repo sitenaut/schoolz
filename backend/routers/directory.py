@@ -114,19 +114,29 @@ async def search_directory(
     school_id: str | None = Query(default=None, description="School id or slug"),
     school_type: str | None = None,
     category: str | None = None,
+    district_id: list[str] = Query(default=[], description="Only schools of these districts (repeatable) - the visitor's own"),
     limit: int = Query(default=50, ge=1, le=_MAX_LIMIT),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ) -> DirectoryPageOut:
+    # Scoped in SQL, unlike the other filters: a person's rows all sit in one
+    # district (the district's own central staff are written to its own
+    # schools), so the school list can't be truncated by it - and the page
+    # then never loads the other districts' people at all.
+    in_scope = School.district_id.in_(district_id) if district_id else True
     rows = (
         await db.execute(
-            select(StaffMember, School).join(School, StaffMember.school_id == School.id).order_by(StaffMember.full_name)
+            select(StaffMember, School).join(School, StaffMember.school_id == School.id).where(in_scope).order_by(StaffMember.full_name)
         )
     ).all()
 
+    # Counted over the same schools, so "District-wide · 4 elementary schools"
+    # means every elementary school in the visitor's districts.
     type_totals = {
         school_type_value: count
-        for school_type_value, count in (await db.execute(select(School.school_type, func.count()).group_by(School.school_type))).all()
+        for school_type_value, count in (
+            await db.execute(select(School.school_type, func.count()).where(in_scope).group_by(School.school_type))
+        ).all()
     }
 
     people: dict[str, dict] = {}

@@ -36,10 +36,15 @@ function initials(name: string): string {
  * Searching, filtering and paging are all server-side (GET
  * /directory/staff): the full list is a few hundred KB of JSON, which is
  * not something to hand a phone on a school-morning connection just so
- * the filtering can happen in the browser. */
+ * the filtering can happen in the browser.
+ *
+ * Scoped to the visitor's own districts (those of the schools they picked,
+ * or their children's): a Cherry Hill parent has no use for the other
+ * districts' people, and not loading them is most of the page's weight.
+ * Nothing picked, or a picked school with no district, shows everyone. */
 export function DirectoryPage() {
   const { t } = useTranslation();
-  const { allSchools, myTowns } = useMySchools();
+  const { allSchools, myTowns, mySchools, loading: schoolsLoading } = useMySchools();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [school, setSchool] = useState("");
@@ -48,6 +53,13 @@ export function DirectoryPage() {
   const [data, setData] = useState<DirectoryPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // Sorted and joined so the effect below re-runs on a change of districts,
+  // not on every new array the provider builds.
+  const districtKey = useMemo(() => {
+    if (mySchools.length === 0 || mySchools.some((s) => !s.district_id)) return "";
+    return [...new Set(mySchools.map((s) => s.district_id as string))].sort().join(",");
+  }, [mySchools]);
 
   // Same 300ms settle as the calendar's search box - a query per keystroke
   // against 1900 rows is pointless churn, and the chip counts visibly
@@ -65,10 +77,14 @@ export function DirectoryPage() {
   // resolves), so only the newest request is allowed to paint.
   const reqId = useRef(0);
   useEffect(() => {
+    // Until the picked schools are known, an unscoped request would load the
+    // very people this page is meant not to.
+    if (schoolsLoading) return;
     const controller = new AbortController();
     const id = ++reqId.current;
     setLoading(true);
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
+    for (const d of districtKey ? districtKey.split(",") : []) params.append("district_id", d);
     if (query.trim()) params.set("q", query.trim());
     if (school) params.set("school_id", school);
     if (category) params.set("category", category);
@@ -86,7 +102,7 @@ export function DirectoryPage() {
         setLoading(false);
       });
     return () => controller.abort();
-  }, [query, school, category, offset]);
+  }, [query, school, category, offset, districtKey, schoolsLoading]);
 
   usePrerenderReady(!loading);
 
@@ -98,14 +114,14 @@ export function DirectoryPage() {
   const schoolsBySlug = useMemo(() => new Map(allSchools.map((s) => [s.slug, s])), [allSchools]);
   // Same tier grouping as /schools and the picker, as <optgroup>s - a flat
   // 27-entry select of mixed elementary/middle/high/preschool is a wall.
-  const schoolGroups = useMemo(
-    () =>
-      SCHOOL_TYPE_TIERS.map((tier) => ({
-        ...tier,
-        schools: allSchools.filter((s) => (s.school_type ?? "other") === tier.key),
-      })).filter((g) => g.schools.length > 0),
-    [allSchools],
-  );
+  const schoolGroups = useMemo(() => {
+    const inScope = districtKey ? new Set(districtKey.split(",")) : null;
+    const schools = inScope ? allSchools.filter((s) => s.district_id && inScope.has(s.district_id)) : allSchools;
+    return SCHOOL_TYPE_TIERS.map((tier) => ({
+      ...tier,
+      schools: schools.filter((s) => (s.school_type ?? "other") === tier.key),
+    })).filter((g) => g.schools.length > 0);
+  }, [allSchools, districtKey]);
 
   const isFiltered = !!(search || school || category);
   const clearAll = () => {
