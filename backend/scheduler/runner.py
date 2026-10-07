@@ -404,11 +404,32 @@ def cron_trigger(cron_expr: str, tz: ZoneInfo):
                        day_of_week=",".join(dict.fromkeys(parts)), timezone=tz)
 
 
+# What each job is currently scheduled as, so a reconcile only touches the
+# ones that changed.
+_scheduled_as: dict[str, tuple[str, str]] = {}
+
+
+def forget_apscheduler_job(apscheduler_job_id: str) -> None:
+    _scheduled_as.pop(apscheduler_job_id, None)
+
+
 def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:
+    """Puts one job's trigger into APScheduler, or leaves it alone if it is
+    already there unchanged.
+
+    The reconcile runs every 30s over every job. Removing and re-adding all
+    of them each time logged two lines per job (most of the scheduler's log
+    volume) and recomputed every next fire from "now", so a job that came due
+    while the loop was running lost that fire.
+    """
     apscheduler_job_id = f"job-{job.id}"
     existing = scheduler.get_job(apscheduler_job_id)
+    wanted = (job.cron_expr, job.timezone) if job.enabled else None
+    if existing and wanted and _scheduled_as.get(apscheduler_job_id) == wanted:
+        return
     if existing:
         scheduler.remove_job(apscheduler_job_id)
+    _scheduled_as.pop(apscheduler_job_id, None)
     if not job.enabled:
         return
 
@@ -422,3 +443,4 @@ def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:
         coalesce=True,
         misfire_grace_time=300,
     )
+    _scheduled_as[apscheduler_job_id] = wanted

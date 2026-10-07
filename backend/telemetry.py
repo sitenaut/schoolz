@@ -17,7 +17,7 @@ from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
 from opentelemetry.metrics import set_meter_provider
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -120,9 +120,15 @@ def setup_telemetry(service_name: str) -> None:
         _logger_provider = LoggerProvider(resource=resource)
         _logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
         set_logger_provider(_logger_provider)
-        logging.getLogger().addHandler(LoggingHandler(level=logging.INFO, logger_provider=_logger_provider))
 
-    LoggingInstrumentor().instrument(set_logging_format=False)
+    # LoggingInstrumentor attaches the handler that ships records to the
+    # provider above. Adding the SDK's own (deprecated) LoggingHandler as
+    # well, as this once did, sent every line to Loki twice.
+    LoggingInstrumentor().instrument(
+        set_logging_format=False,
+        enable_log_auto_instrumentation=_logger_provider is not None,
+        log_handler_level=logging.INFO,
+    )
     HTTPXClientInstrumentor().instrument()
 
     try:

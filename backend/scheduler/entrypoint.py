@@ -11,7 +11,7 @@ import observability
 from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
-from scheduler.runner import build_apscheduler_job, queue_first_runs, queue_missed_runs
+from scheduler.runner import build_apscheduler_job, forget_apscheduler_job, queue_first_runs, queue_missed_runs
 
 setup_logging()
 telemetry.setup_telemetry("schoolz-scheduler")
@@ -86,6 +86,7 @@ async def _reconcile(aps_scheduler: AsyncIOScheduler) -> None:
         for existing in aps_scheduler.get_jobs():
             if existing.id.startswith("job-") and existing.id not in seen_ids:
                 aps_scheduler.remove_job(existing.id)
+                forget_apscheduler_job(existing.id)
 
 
 async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
