@@ -1,0 +1,52 @@
+{
+  "exported_at": "2026-10-06T12:00:00Z",
+  "source": "onboarding: Clementon School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Clementon School District",
+      "website_url": "https://www.clemsd.org",
+      "food_services_menu_url": "https://www.clemsd.org/Parents/Cafeteria-Information/School-Menus--Printable/index.html",
+      "ics_feeds": [],
+      "calendar_pdf_url": "https://www.clemsd.org/District-Info/District-Calendar/index.html",
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Clementon"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "clementon-elementary",
+      "name": "Clementon Elementary School",
+      "short_name": "Clementon",
+      "district_name": "Clementon School District",
+      "school_type": "elementary",
+      "address": "4 Audubon Avenue, Clementon, NJ 08021",
+      "main_phone": "(856) 783-2300",
+      "website_url": "https://www.clemsd.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ]
+}
