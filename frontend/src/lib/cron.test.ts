@@ -14,6 +14,14 @@ describe("describeCron", () => {
     expect(describeCron("15 14 * * mon,wed")).toBe("Mon, Wed at 2:15 PM");
   });
 
+  it("glosses the biweekly and monthly day lists the per-school scans use", () => {
+    expect(describeCron("12 3 3,17 * *")).toBe("Twice a month, the 3rd and 17th, at 3:12 AM");
+    expect(describeCron("40 23 12,26 * *")).toBe("Twice a month, the 12th and 26th, at 11:40 PM");
+    expect(describeCron("5 4 21 * *")).toBe("Monthly on the 21st at 4:05 AM");
+    expect(describeCron("5 4 22 * *")).toBe("Monthly on the 22nd at 4:05 AM");
+    expect(describeCron("5 4 11 * *")).toBe("Monthly on the 11th at 4:05 AM");
+  });
+
   it("falls back to the raw expression for anything it doesn't recognize", () => {
     expect(describeCron("0 0 1 1 *")).toBe("0 0 1 1 *");
     expect(describeCron("nonsense")).toBe("nonsense");

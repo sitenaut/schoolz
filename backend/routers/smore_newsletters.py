@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from models import District, ScheduledJob, School, SmoreBlock, SmoreNewsletter, User
+from scheduler.cron import spread_default_smore_cron
 from schemas import ScheduledJobOut, SmoreBlockOut, SmoreNewsletterCreate, SmoreNewsletterOut, SmoreNewsletterUpdate
 
 router = APIRouter(prefix="/smore-newsletters", tags=["smore-newsletters"])
@@ -128,7 +129,7 @@ async def create_newsletter(
         owner_user_id=user.id,
         kind=_JOB_KIND_BY_SOURCE_TYPE[payload.source_type],
         name=f"{_JOB_LABEL_BY_SOURCE_TYPE[payload.source_type]}: {payload.label or payload.url}",
-        cron_expr=payload.cron_expr,
+        cron_expr=spread_default_smore_cron(payload.cron_expr, newsletter.id),
         timezone=payload.timezone,
         params={"newsletter_id": newsletter.id},
         enabled=payload.enabled,
@@ -178,7 +179,7 @@ async def update_newsletter(
             owner_user_id=user.id,
             kind=_JOB_KIND_BY_SOURCE_TYPE[newsletter.source_type],
             name=f"{_JOB_LABEL_BY_SOURCE_TYPE[newsletter.source_type]}: {newsletter.label or newsletter.url}",
-            cron_expr=cron_expr,
+            cron_expr=spread_default_smore_cron(cron_expr, newsletter.id),
             timezone=timezone,
             params={"newsletter_id": newsletter.id},
             enabled=True,
