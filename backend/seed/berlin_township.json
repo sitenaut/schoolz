@@ -1,0 +1,83 @@
+{
+  "exported_at": "2026-10-06T12:00:00Z",
+  "source": "onboarding: Berlin Township Public Schools",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Berlin Township Public Schools",
+      "website_url": "https://www.btwpschools.org",
+      "food_services_menu_url": "https://btwpschools.org/food-services/",
+      "ics_feeds": [
+        {
+          "name": "Berlin Township Calendar",
+          "url": "https://calendar.google.com/calendar/ical/btwpschools.org_595g2tsfte98hucfpblcgpj6gc%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Berlin Township"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "berlin-township-kennedy",
+      "name": "John F. Kennedy Elementary School",
+      "short_name": "Kennedy",
+      "district_name": "Berlin Township Public Schools",
+      "school_type": "elementary",
+      "address": "228 Mt Vernon Avenue, West Berlin, NJ 08091",
+      "main_phone": null,
+      "website_url": "https://btwpschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    },
+    {
+      "slug": "berlin-township-eisenhower",
+      "name": "Dwight D. Eisenhower Middle School",
+      "short_name": "Eisenhower",
+      "district_name": "Berlin Township Public Schools",
+      "school_type": "middle",
+      "address": "235 Grove Avenue, West Berlin, NJ 08091",
+      "main_phone": null,
+      "website_url": "https://btwpschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "apptegy_org_id": null,
+      "healthepro_location": null
+    }
+  ]
+}
