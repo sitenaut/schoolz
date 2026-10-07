@@ -1,6 +1,6 @@
 ---
 name: deploy-schoolz
-description: Ship committed schoolz changes to production via GitHub - push the branch, open/update a PR, merge it, and make sure the DB-migrate and Fly deploy GitHub Actions actually run to completion. Use when the user asks to deploy, ship, "push to prod", "merge and deploy", or "make sure it went live".
+description: Ship committed schoolz changes to production via GitHub - push the branch, open/update a PR, merge it, and make sure the DB-migrate and Fly deploy GitHub Actions actually run to completion. Use when the user asks to deploy, ship, "push to prod", "merge and deploy", or "make sure it went live". Also holds the prod facts (which Supabase project is the prod DB, pooler host, Fly networking, running one-off prod scripts) - load it when diagnosing or changing anything in prod.
 ---
 
 # Deploying schoolz to production
@@ -104,3 +104,17 @@ merge alone shipped anything.
   an `app` machine - SSH doesn't count as traffic for fly-proxy's idle timer
   and the machine can auto-stop mid-script. Use the `scheduler` machine
   (always on) for one-off prod scripts if a deploy needs follow-up data work.
+
+## Prod facts
+
+Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`.
+
+- **The prod DB is the Supabase project misleadingly named `billz-prod`** (billz's real data is in the equally misnamed `clockin`). `DATABASE_URL` must be the **Session Pooler** on `aws-1-us-east-1` — the direct host is IPv6-only on the free tier (unreachable from GitHub runners); `aws-0` answers "tenant not found". RLS on with no policies is correct: nothing uses the Data API.
+- **Custom domains must be Cloudflare DNS-only (grey cloud)**, or Fly certs never verify.
+- **The scraper is on Fly's private network** (`http://schoolz-scraper.internal:8765`): 6PN is IPv6-only, so bind `::`; and it must **never auto-stop** — private traffic bypasses fly-proxy, so nothing wakes it and `.internal` resolves only started machines. It isn't in `deploy.yml`: ship with `fly deploy` from `scraper/`.
+- **`schoolz-api` needs `--proxy-headers --forwarded-allow-ips='*'`** — Fly forwards plain HTTP, so `Location` headers came out `http://` and clients dropped POST bodies on the downgrade. `*` is safe; only fly-proxy reaches the port.
+- **One-off prod scripts** run on the `scheduler` machine (always on), file under `/app`; the filesystem resets on deploy. Never run long scripts on an `app` machine over SSH — SSH doesn't count as traffic and it auto-stops mid-run. `fly ssh console` is intermittently unavailable; retry, don't diagnose.
+- **Private preschools' documents/school-info/staff-roster scans are disabled** — chain websites, never one success, just burst load.
+- **Prerender** (`/prerender`, for crawlers) is single-flighted per path, and serves stale cache if a re-render fails.
+- **Supabase auth**: email signup requires the confirmation click first (reads as "login broken"). Google SSO needs the client ID/secret in Supabase *and* the Supabase callback in the client's redirect URIs.
+- `.woodpecker.yml` is supplementary self-hosted CI (test/build only).
