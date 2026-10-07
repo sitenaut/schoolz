@@ -272,3 +272,44 @@ def test_category_classification_of_real_title_shapes():
     assert classify_directory_category(None, "Preschool Administration") == "office"
     assert classify_directory_category(None, "Guidance") == "support"
     assert classify_directory_category(None, None) == "other"
+
+
+@pytest.mark.anyio
+async def test_district_scope_loads_only_that_districts_people():
+    from models import District
+
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        mine, other = District(name=f"Dirtest Mine {tag}"), District(name=f"Dirtest Other {tag}")
+        db.add_all([mine, other])
+        await db.flush()
+        a = School(name=f"Dirtest A {tag}", slug=f"dirtest-a-{tag}", school_type="elementary", district_id=mine.id)
+        b = School(name=f"Dirtest B {tag}", slug=f"dirtest-b-{tag}", school_type="elementary", district_id=mine.id)
+        c = School(name=f"Dirtest C {tag}", slug=f"dirtest-c-{tag}", school_type="elementary", district_id=other.id)
+        db.add_all([a, b, c])
+        await db.flush()
+        db.add_all(
+            [
+                StaffMember(school_id=a.id, source_constituent_id="1", full_name="Mina Scopetest", email=f"mina-{tag}@example.com"),
+                StaffMember(school_id=b.id, source_constituent_id="2", full_name="Mina Scopetest", email=f"mina-{tag}@example.com"),
+                StaffMember(school_id=c.id, source_constituent_id="3", full_name="Otto Scopetest", email=f"otto-{tag}@example.com"),
+            ]
+        )
+        await db.commit()
+        mine_id, other_id = mine.id, other.id
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get("/directory/staff", params={"q": "scopetest"})
+        assert sorted(_names(res.json())) == ["Mina Scopetest", "Otto Scopetest"]  # unscoped: everyone
+
+        res = await client.get("/directory/staff", params={"q": "scopetest", "district_id": mine_id})
+        body = res.json()
+        assert _names(body) == ["Mina Scopetest"] and body["total"] == 1
+        # Mina covers both of the district's elementary schools - and the
+        # count of "every elementary school" is the district's, not the state's.
+        assert body["items"][0]["is_district_wide"] is True
+
+        res = await client.get("/directory/staff", params={"q": "scopetest", "district_id": [mine_id, other_id]})
+        assert sorted(_names(res.json())) == ["Mina Scopetest", "Otto Scopetest"]
+
+        res = await client.get("/directory/staff", params={"q": "scopetest", "district_id": "no-such-district"})
+        assert res.json()["total"] == 0
