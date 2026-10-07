@@ -54,3 +54,30 @@ def test_migration_copy_matches_live_cadence():
     assert set(mod._DAILY_KINDS) <= DAILY_KINDS
     for kind in set(mod._WEEKLY_KINDS) | set(mod._DAILY_KINDS):
         assert mod._cron(kind, "school-x") == public_scan_cron(kind, "school-x")
+
+
+def test_the_trigger_fires_on_the_weekday_cron_names():
+    # APScheduler numbers weekdays from Monday, cron and croniter from Sunday.
+    # Passed through unchanged, every weekly job fired a day late and a
+    # restart in between ran it twice (catch-up, then the late fire).
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from croniter import croniter
+
+    from scheduler.runner import cron_trigger
+
+    tz = ZoneInfo("America/New_York")
+    base = datetime(2026, 10, 5, 12, 0, tzinfo=tz)  # a Monday
+    exprs = [public_scan_cron("staff_roster.scan", f"school-{i}") for i in range(40)]
+    exprs += ["35 3 * * 3", "0 3 * * 0", "23 23 * * 6", "0 6 * * 7", "0 6 * * 1-5", "0 6 * * 0-6",
+              "0 6 * * 0,3", "0 6 * * 1-5/2", "0 6 * * mon", "8 */12 * * *", "0 5,17 * * *"]
+    for expr in exprs:
+        # Three fires: enough to see the weekday, and short of the November
+        # clock change, where croniter itself is an hour out.
+        fires, at = [], base
+        for _ in range(3):
+            at = cron_trigger(expr, tz).get_next_fire_time(None, at.replace(second=1))
+            fires.append(at)
+        it = croniter(expr, base)
+        assert fires == [it.get_next(datetime) for _ in range(3)], expr

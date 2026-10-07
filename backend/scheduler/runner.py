@@ -373,9 +373,38 @@ async def queue_first_runs() -> int:
     return len(due)
 
 
-def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:
+_WEEKDAYS = ("sun", "mon", "tue", "wed", "thu", "fri", "sat")
+
+
+def cron_trigger(cron_expr: str, tz: ZoneInfo):
+    """A CronTrigger that fires on the weekdays the crontab actually names.
+
+    CronTrigger.from_crontab passes the day-of-week field straight through,
+    and APScheduler numbers weekdays from Monday=0 where cron (and croniter,
+    which the catch-up and next_run_at use) numbers them from Sunday=0. So
+    every weekly job fired a day late, and a scheduler restart inside that
+    day saw a "missed" fire, ran a catch-up, and the job ran again the next
+    morning. Numbers are rewritten as names, which both sides agree on;
+    ranges are expanded because "sun-sat" is backwards in APScheduler's order.
+    """
     from apscheduler.triggers.cron import CronTrigger
 
+    minute, hour, day, month, dow = cron_expr.split()
+    parts = []
+    for part in dow.split(","):
+        span, _, step = part.partition("/")
+        if not span[0].isdigit():  # "*", "*/2" or already a name
+            parts.append(part)
+            continue
+        first, _, last = span.partition("-")
+        # A bare "N/step" means "from N on", as in cron.
+        end = int(last) if last else (6 if step else int(first))
+        parts.extend(_WEEKDAYS[n % 7] for n in range(int(first), end + 1, int(step or 1)))
+    return CronTrigger(minute=minute, hour=hour, day=day, month=month,
+                       day_of_week=",".join(dict.fromkeys(parts)), timezone=tz)
+
+
+def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:
     apscheduler_job_id = f"job-{job.id}"
     existing = scheduler.get_job(apscheduler_job_id)
     if existing:
@@ -383,7 +412,7 @@ def build_apscheduler_job(scheduler, job: ScheduledJob) -> None:
     if not job.enabled:
         return
 
-    trigger = CronTrigger.from_crontab(job.cron_expr, timezone=ZoneInfo(job.timezone))
+    trigger = cron_trigger(job.cron_expr, ZoneInfo(job.timezone))
     scheduler.add_job(
         _execute,
         trigger=trigger,

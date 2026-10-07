@@ -131,6 +131,8 @@ def resolve_datasources(url: str, token: str) -> dict:
             "avoid": (),
         },
         "DS_CLOUDWATCH": {"types": ("cloudwatch",), "prefer": ("schoolz",), "avoid": ()},
+        # Grafana Cloud's own billing metrics - the datasource DS_METRICS rules out.
+        "DS_USAGE": {"types": ("prometheus",), "prefer": ("usage",), "avoid": ("-prom",)},
         # The stack ships its own Infinity datasource with no credentials;
         # only the one ensure_ga() made can reach Google Analytics.
         "DS_GA": {"types": ("yesoreyeram-infinity-datasource",), "prefer": (GA_UID,), "avoid": ("grafanacloud",)},
