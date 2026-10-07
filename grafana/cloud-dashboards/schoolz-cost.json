@@ -62,6 +62,18 @@
         "query": "prometheus",
         "refresh": 1,
         "type": "datasource"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Anthropic billing",
+        "multi": false,
+        "name": "DS_ANTHROPIC",
+        "options": [],
+        "query": "yesoreyeram-infinity-datasource",
+        "refresh": 1,
+        "type": "datasource"
       }
     ]
   },
@@ -126,7 +138,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum (label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap input_tokens [$__range])) * 1e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap output_tokens [$__range])) * 5e-06, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_write_tokens [$__range])) * 1.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_read_tokens [$__range])) * 1e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap input_tokens [$__range])) * 2e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap output_tokens [$__range])) * 1e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_write_tokens [$__range])) * 2.5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_read_tokens [$__range])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap input_tokens [$__range])) * 4e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap output_tokens [$__range])) * 2e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_write_tokens [$__range])) * 5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_read_tokens [$__range])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap input_tokens [$__range])) * 5e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap output_tokens [$__range])) * 2.5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_write_tokens [$__range])) * 6.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_read_tokens [$__range])) * 5e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap input_tokens [$__range])) * 1e-05, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap output_tokens [$__range])) * 5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_write_tokens [$__range])) * 1.25e-05, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_read_tokens [$__range])) * 2.5e-07, \"t\", \"cache_read\", \"\", \"\"))",
+          "expr": "sum (label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap input_tokens [$__range])) * 1e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap output_tokens [$__range])) * 5e-06, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_write_tokens [$__range])) * 1.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_read_tokens [$__range])) * 1e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap input_tokens [$__range])) * 2e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap output_tokens [$__range])) * 1e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap cache_write_tokens [$__range])) * 2.5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap cache_read_tokens [$__range])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap input_tokens [$__range])) * 4e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap output_tokens [$__range])) * 2e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap cache_write_tokens [$__range])) * 5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap cache_read_tokens [$__range])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap input_tokens [$__range])) * 5e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap output_tokens [$__range])) * 2.5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_write_tokens [$__range])) * 6.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_read_tokens [$__range])) * 5e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap input_tokens [$__range])) * 1e-05, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap output_tokens [$__range])) * 5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap cache_write_tokens [$__range])) * 1.25e-05, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap cache_read_tokens [$__range])) * 2.5e-07, \"t\", \"cache_read\", \"\", \"\"))",
           "queryType": "instant",
           "refId": "A",
           "instant": true
@@ -586,7 +598,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum by (provider, model) (label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap input_tokens [1d])) * 1e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap output_tokens [1d])) * 5e-06, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_write_tokens [1d])) * 1.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_read_tokens [1d])) * 1e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap input_tokens [1d])) * 2e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap output_tokens [1d])) * 1e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_write_tokens [1d])) * 2.5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-sonnet-5.*\" | unwrap cache_read_tokens [1d])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap input_tokens [1d])) * 4e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap output_tokens [1d])) * 2e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_write_tokens [1d])) * 5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5-5.*\" | unwrap cache_read_tokens [1d])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap input_tokens [1d])) * 5e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap output_tokens [1d])) * 2.5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_write_tokens [1d])) * 6.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_read_tokens [1d])) * 5e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap input_tokens [1d])) * 1e-05, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap output_tokens [1d])) * 5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_write_tokens [1d])) * 1.25e-05, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model=~\"claude-fable-5.*\" | unwrap cache_read_tokens [1d])) * 2.5e-07, \"t\", \"cache_read\", \"\", \"\"))",
+          "expr": "sum by (provider, model) (label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap input_tokens [1d])) * 1e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap output_tokens [1d])) * 5e-06, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_write_tokens [1d])) * 1.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-haiku-4-5.*\" | unwrap cache_read_tokens [1d])) * 1e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap input_tokens [1d])) * 2e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap output_tokens [1d])) * 1e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap cache_write_tokens [1d])) * 2.5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-sonnet-5.*\" | unwrap cache_read_tokens [1d])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap input_tokens [1d])) * 4e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap output_tokens [1d])) * 2e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap cache_write_tokens [1d])) * 5e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5-5.*\" | unwrap cache_read_tokens [1d])) * 2e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap input_tokens [1d])) * 5e-06, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap output_tokens [1d])) * 2.5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_write_tokens [1d])) * 6.25e-06, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-opus-5|claude-opus-5-20.*\" | unwrap cache_read_tokens [1d])) * 5e-07, \"t\", \"cache_read\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap input_tokens [1d])) * 1e-05, \"t\", \"input\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap output_tokens [1d])) * 5e-05, \"t\", \"output\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap cache_write_tokens [1d])) * 1.25e-05, \"t\", \"cache_write\", \"\", \"\") or label_replace(sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model=~\"claude-fable-5.*\" | unwrap cache_read_tokens [1d])) * 2.5e-07, \"t\", \"cache_read\", \"\", \"\"))",
           "queryType": "range",
           "refId": "A",
           "instant": false
@@ -626,7 +638,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum by (provider, model) (count_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" [1d]))",
+          "expr": "sum by (provider, model) (count_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" [1d]))",
           "queryType": "range",
           "refId": "A",
           "instant": false
@@ -658,7 +670,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | model!~\"claude-haiku-4-5.*|claude-sonnet-5.*|claude-opus-5-5.*|claude-opus-5|claude-opus-5-20.*|claude-fable-5.*\" | unwrap input_tokens [$__range]))",
+          "expr": "sum by (provider, model) (sum_over_time({service_name=\"schoolz-api\"} |= \"chatbot_usage\" | code_function_name=\"\" | model!~\"claude-haiku-4-5.*|claude-sonnet-5.*|claude-opus-5-5.*|claude-opus-5|claude-opus-5-20.*|claude-fable-5.*\" | unwrap input_tokens [$__range]))",
           "queryType": "instant",
           "refId": "A",
           "instant": true
@@ -896,15 +908,331 @@
       }
     },
     {
+      "id": 20,
+      "title": "Billed by Anthropic (selected range)",
+      "description": "What the account was actually charged, for every workspace and app on it - not only schoolz. The estimates above should sit a little under schoolz-prod's share of this. Reaches back 31 days at most.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 48
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_ANTHROPIC}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://api.anthropic.com/v1/organizations/cost_report?group_by[]=description&starting_at=${__from:date:iso}&ending_at=${__to:date:iso}&limit=31",
+          "url_options": {
+            "method": "GET"
+          },
+          "root_selector": "( $n := ${ANTHROPIC_NAMES}; $name := function($id) { $type($id) = \"string\" ? ($exists($lookup($n, $id)) ? $lookup($n, $id) : $id) : \"default workspace\" }; {\"usd\": $sum(data.results.($number(amount))) / 100} )",
+          "columns": [
+            {
+              "selector": "usd",
+              "text": "usd",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "Billed by model",
+      "description": "",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 53
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_ANTHROPIC}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://api.anthropic.com/v1/organizations/cost_report?group_by[]=description&starting_at=${__from:date:iso}&ending_at=${__to:date:iso}&limit=31",
+          "url_options": {
+            "method": "GET"
+          },
+          "root_selector": "( $n := ${ANTHROPIC_NAMES}; $name := function($id) { $type($id) = \"string\" ? ($exists($lookup($n, $id)) ? $lookup($n, $id) : $id) : \"default workspace\" }; $r := data.results.{\"k\": $type(model) = \"string\" ? model : description, \"usd\": $number(amount) / 100}; $distinct($r.k).( $k := $; {\"model\": $k, \"usd\": $sum($r[k = $k].usd)} ) )",
+          "columns": [
+            {
+              "selector": "model",
+              "text": "model",
+              "type": "string"
+            },
+            {
+              "selector": "usd",
+              "text": "usd",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Billed per day, by workspace",
+      "description": "A workspace is a cost centre with its own spend limit: one per app and environment.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 10,
+        "w": 18,
+        "x": 6,
+        "y": 48
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_ANTHROPIC}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://api.anthropic.com/v1/organizations/cost_report?group_by[]=workspace_id&starting_at=${__from:date:iso}&ending_at=${__to:date:iso}&limit=31",
+          "url_options": {
+            "method": "GET"
+          },
+          "root_selector": "( $n := ${ANTHROPIC_NAMES}; $name := function($id) { $type($id) = \"string\" ? ($exists($lookup($n, $id)) ? $lookup($n, $id) : $id) : \"default workspace\" }; data.( $t := starting_at; results.{\"time\": $t, \"workspace\": $name(workspace_id), \"usd\": $number(amount) / 100} ) )",
+          "columns": [
+            {
+              "selector": "time",
+              "text": "time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "workspace",
+              "text": "workspace",
+              "type": "string"
+            },
+            {
+              "selector": "usd",
+              "text": "usd",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "displayName": "${__field.labels.workspace}",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {},
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "workspace"
+            ],
+            "naming": {
+              "asLabels": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Billed by workspace (selected range)",
+      "description": "",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 58
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_ANTHROPIC}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://api.anthropic.com/v1/organizations/cost_report?group_by[]=workspace_id&starting_at=${__from:date:iso}&ending_at=${__to:date:iso}&limit=31",
+          "url_options": {
+            "method": "GET"
+          },
+          "root_selector": "( $n := ${ANTHROPIC_NAMES}; $name := function($id) { $type($id) = \"string\" ? ($exists($lookup($n, $id)) ? $lookup($n, $id) : $id) : \"default workspace\" }; $r := data.results.{\"k\": $name(workspace_id), \"usd\": $number(amount) / 100}; $distinct($r.k).( $k := $; {\"workspace\": $k, \"usd\": $sum($r[k = $k].usd)} ) )",
+          "columns": [
+            {
+              "selector": "workspace",
+              "text": "workspace",
+              "type": "string"
+            },
+            {
+              "selector": "usd",
+              "text": "usd",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      }
+    },
+    {
+      "id": 24,
+      "title": "Spend by API key (selected range, priced from tokens)",
+      "description": "The cost report cannot be split by key, so this prices Anthropic's own token counts per key with the list prices in MODEL_PRICES. Scans, person-triggered work, public chat and signed-in chat each have a key.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 58
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "${DS_ANTHROPIC}"
+          },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "parser": "backend",
+          "url": "https://api.anthropic.com/v1/organizations/usage_report/messages?bucket_width=1d&group_by[]=api_key_id&group_by[]=model&starting_at=${__from:date:iso}&ending_at=${__to:date:iso}&limit=31",
+          "url_options": {
+            "method": "GET"
+          },
+          "root_selector": "( $n := ${ANTHROPIC_NAMES}; $name := function($id) { $type($id) = \"string\" ? ($exists($lookup($n, $id)) ? $lookup($n, $id) : $id) : \"default workspace\" }; $price := function($m) { $contains($m, \"haiku-4-5\") ? [1.0, 5.0, 1.25, 0.1] : $contains($m, \"sonnet-5\") ? [2.0, 10.0, 2.5, 0.2] : $contains($m, \"opus-5-5\") ? [4.0, 20.0, 5.0, 0.2] : $contains($m, \"opus-5\") ? [5.0, 25.0, 6.25, 0.5] : $contains($m, \"fable-5\") ? [10.0, 50.0, 12.5, 0.25] : [0, 0, 0, 0] }; $r := data.results.( $p := $price(model); {\"k\": $type(api_key_id) = \"string\" ? $name(api_key_id) : \"no key (Console or Claude Code)\", \"usd\": ($number(uncached_input_tokens) * $p[0] + $number(output_tokens) * $p[1] + $number(cache_creation.ephemeral_5m_input_tokens) * $p[2] + $number(cache_creation.ephemeral_1h_input_tokens) * $p[0] * 2 + $number(cache_read_input_tokens) * $p[3]) / 1000000} ); $distinct($r.k).( $k := $; {\"key\": $k, \"usd\": $sum($r[k = $k].usd)} ) )",
+          "columns": [
+            {
+              "selector": "key",
+              "text": "key",
+              "type": "string"
+            },
+            {
+              "selector": "usd",
+              "text": "usd",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      }
+    },
+    {
       "id": 19,
       "title": "Not on this dashboard yet",
       "description": "",
       "type": "text",
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 66
       },
       "targets": [],
       "fieldConfig": {
@@ -915,7 +1243,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "| Cost centre | Why it is missing | What closes the gap |\n|---|---|---|\n| **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |\n| **Anthropic invoice** (the real dollars) | Panels above are estimates from token counts | A read-only Admin API key behind an Infinity datasource: `usage_report/messages` and `cost_report`, grouped by workspace and API key |\n| **Chatbot, anonymous vs signed-in** | One log line for both audiences | Record chatbot turns in `schoolz_llm_tokens_total` with a purpose per audience |\n| **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |\n| **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |\n"
+        "content": "| Cost centre | Why it is missing | What closes the gap |\n|---|---|---|\n| **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |\n| **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |\n| **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |\n"
       }
     }
   ],

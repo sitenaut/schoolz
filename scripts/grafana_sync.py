@@ -12,6 +12,7 @@ Credentials come from env/secrets.prod.env (gitignored):
     GRAFANA_CLOUDWATCH_ACCESS_KEY_ID / _SECRET_ACCESS_KEY   (optional)
     GRAFANA_ALERT_EMAIL                                     (optional)
     GRAFANA_GA_SERVICE_ACCOUNT_FILE / GRAFANA_GA_PROPERTY_ID (optional)
+    ANTHROPIC_ADMIN_API_KEY                                 (optional)
 
 Create the token at: Grafana -> Administration -> Users and access ->
 Service accounts -> Add service account (Admin) -> Add service account token.
@@ -49,7 +50,7 @@ def load_env() -> dict:
     """Process environment first, then env/secrets.prod.env for anything unset."""
     wanted = ("GRAFANA_URL", "GRAFANA_TOKEN", "GRAFANA_ALERT_EMAIL",
               "GRAFANA_CLOUDWATCH_ACCESS_KEY_ID", "GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY",
-              "GRAFANA_GA_SERVICE_ACCOUNT_FILE", "GRAFANA_GA_PROPERTY_ID")
+              "GRAFANA_GA_SERVICE_ACCOUNT_FILE", "GRAFANA_GA_PROPERTY_ID", "ANTHROPIC_ADMIN_API_KEY")
     env = {key: os.getenv(key, "") for key in wanted}
     if SECRETS.exists():
         for line in SECRETS.read_text().splitlines():
@@ -136,6 +137,8 @@ def resolve_datasources(url: str, token: str) -> dict:
         # The stack ships its own Infinity datasource with no credentials;
         # only the one ensure_ga() made can reach Google Analytics.
         "DS_GA": {"types": ("yesoreyeram-infinity-datasource",), "prefer": (GA_UID,), "avoid": ("grafanacloud",)},
+        "DS_ANTHROPIC": {"types": ("yesoreyeram-infinity-datasource",), "prefer": (ANTHROPIC_UID,),
+                         "avoid": ("grafanacloud", GA_UID)},
     }
     available = call(url, token, "/api/datasources")
     resolved = {}
@@ -194,6 +197,8 @@ def ensure_cloudwatch(url: str, token: str, env: dict, dry: bool) -> None:
 
 GA_UID = "schoolz-ga"
 GA_HOST = "https://analyticsdata.googleapis.com"
+ANTHROPIC_UID = "schoolz-anthropic"
+ANTHROPIC_HOST = "https://api.anthropic.com"
 
 
 def ensure_ga(url: str, token: str, env: dict, dry: bool) -> None:
@@ -227,6 +232,52 @@ def ensure_ga(url: str, token: str, env: dict, dry: bool) -> None:
     else:
         call(url, token, "/api/datasources", "POST", ds)
     print(f"  datasource {GA_UID}")
+
+
+def ensure_anthropic(url: str, token: str, env: dict, dry: bool) -> None:
+    """Anthropic's usage and cost reports, through Infinity like GA. They
+    need an Admin API key (sk-ant-admin...), which only a team organization
+    can create - an individual one has no Admin keys page at all. The key
+    can read every workspace's spend and manage keys, so it lives only in
+    Grafana's encrypted datasource settings, never on an app machine."""
+    if not env["ANTHROPIC_ADMIN_API_KEY"]:
+        print("  no ANTHROPIC_ADMIN_API_KEY in env - Anthropic billing datasource skipped")
+        return
+    ds = {
+        "uid": ANTHROPIC_UID, "name": ANTHROPIC_UID, "type": "yesoreyeram-infinity-datasource", "access": "proxy",
+        "jsonData": {"httpHeaderName1": "x-api-key", "httpHeaderName2": "anthropic-version",
+                     "allowedHosts": [ANTHROPIC_HOST]},
+        "secureJsonData": {"httpHeaderValue1": env["ANTHROPIC_ADMIN_API_KEY"], "httpHeaderValue2": "2023-06-01"},
+    }
+    if dry:
+        print(f"  would upsert datasource {ANTHROPIC_UID}")
+        return
+    status, _ = request(url, f"/api/datasources/uid/{ANTHROPIC_UID}", "GET", None, {"Authorization": f"Bearer {token}"})
+    if status == 200:
+        call(url, token, f"/api/datasources/uid/{ANTHROPIC_UID}", "PUT", ds)
+    else:
+        call(url, token, "/api/datasources", "POST", ds)
+    print(f"  datasource {ANTHROPIC_UID}")
+
+
+def anthropic_names(env: dict) -> str:
+    """Workspace and API-key ids to their Console names, as a JSON object the
+    cost panels look ids up in. The reports return ids only, and the names
+    are account detail that doesn't belong in a tracked dashboard file, so
+    they are read here and written into the uploaded copy. Re-run the sync
+    after creating a key or workspace, or it shows as its id."""
+    key = env["ANTHROPIC_ADMIN_API_KEY"]
+    if not key:
+        return "{}"
+    names = {}
+    for path in ("/v1/organizations/workspaces", "/v1/organizations/api_keys"):
+        status, body = request(ANTHROPIC_HOST, f"{path}?limit=1000", "GET", None,
+                               {"x-api-key": key, "anthropic-version": "2023-06-01"})
+        if status != 200:
+            print(f"  ! {path} answered HTTP {status} - ids will show unnamed")
+            continue
+        names.update({row["id"]: row["name"] for row in body.get("data", [])})
+    return json.dumps(names)
 
 
 def runbook_url() -> str:
@@ -497,6 +548,7 @@ def main() -> None:
 
     ensure_cloudwatch(url, token, env, args.dry_run)
     ensure_ga(url, token, env, args.dry_run)
+    ensure_anthropic(url, token, env, args.dry_run)
 
     # Resolved even on a dry run: it's a read-only GET, it proves the token
     # actually works, and which datasources matched is the main thing worth
@@ -506,6 +558,7 @@ def main() -> None:
     mapping = resolve_datasources(url, token)
     if env["GRAFANA_GA_PROPERTY_ID"]:
         mapping["GA_PROPERTY"] = env["GRAFANA_GA_PROPERTY_ID"]
+    mapping["ANTHROPIC_NAMES"] = anthropic_names(env)
 
     if not args.dry_run:
         # Creating a folder that already exists returns 409 (conflict) or 412
