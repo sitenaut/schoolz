@@ -142,3 +142,75 @@ def test_unbanded_menu_with_spaces_and_cache_buster():
     assert c["period_label"] == "October 2026" and c["_sort"] == (2026, 9)
     c = _classify_unbanded_pdf_link("/x/SEPTEMBER%20%202026%20%20Menu.pdf?rnd=1787590730626", "elementary")
     assert c["period_label"] == "September 2026"
+
+
+def test_drive_iframe_menus_are_found_by_their_drive_title(monkeypatch):
+    # Gibbsboro embeds each menu as a Drive viewer; the filename lives only
+    # in Drive's own page title.
+    html = (
+        '<iframe src="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAA/preview"></iframe>'
+        '<iframe src="https://drive.google.com/file/d/BBBBBBBBBBBBBBBBBBBB/preview"></iframe>'
+        '<a href="https://drive.google.com/file/d/CCCCCCCCCCCCCCCCCCCC/view">Budget</a>'
+    )
+
+    async def fake_fetch(url, **kw):
+        return {"html": html}
+
+    async def fake_rm(url, html):
+        return set()
+
+    async def fake_drive(html):
+        return {
+            "https://drive.google.com/uc?export=download&id=AAAAAAAAAAAAAAAAAAAA": "October 2099 monthly menu.pdf",
+            "https://drive.google.com/uc?export=download&id=BBBBBBBBBBBBBBBBBBBB": "10-11 Menu.pdf",
+            "https://drive.google.com/uc?export=download&id=CCCCCCCCCCCCCCCCCCCC": "Advertised Budget 2025-2026",
+        }
+
+    monkeypatch.setattr(lunch_menu.scraper_client, "fetch_html", fake_fetch)
+    monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
+    monkeypatch.setattr(lunch_menu, "_resolve_drive_links", fake_drive)
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x", school_types=["elementary"]))
+    assert [(e["school_type"], e["period_label"], e["pdf_url"]) for e in found] == [
+        ("elementary", "October 2099", "https://drive.google.com/uc?export=download&id=AAAAAAAAAAAAAAAAAAAA")
+    ]
+
+
+def test_drive_link_regex_reads_iframes_and_anchors():
+    html = '<iframe src="https://drive.google.com/file/d/1EsjbF3RpoY56tnjZkhVg1gOyPQwKcq0j/preview"></iframe>'
+    assert lunch_menu._DRIVE_FILE_RE.findall(html) == ["1EsjbF3RpoY56tnjZkhVg1gOyPQwKcq0j"]
+
+
+def test_hyphenated_yearless_menu_skips_the_prek_twin():
+    ok = lunch_menu._classify_abbreviated_pdf_link("http://x/October-Lunch-Menu.pdf", "elementary")
+    assert ok and ok["meal_type"] == "lunch" and ok["period_label"].startswith("October ")
+    assert lunch_menu._classify_abbreviated_pdf_link("http://x/October-Pre-K-Lunch-Menu.pdf", "elementary") is None
+
+
+def test_menu_table_of_drive_links_reads_month_meal_and_k8(monkeypatch):
+    def cell(prek, k8):
+        return (
+            f'<td><h5><a href="https://drive.google.com/file/d/{prek * 20}/view">PreK</a> / '
+            f'<a href="https://drive.google.com/file/d/{k8 * 20}/view">K-8</a></h5></td>'
+        )
+
+    html = (
+        "<a href='https://x/2025-2026.pdf'>old</a><h4>2098-2099</h4><table>"
+        "<tr><td><h4>MONTH</h4></td><td><h4>BREAKFAST</h4></td><td><h4>LUNCH</h4></td></tr>"
+        f"<tr><td><h5><strong>September</strong></h5></td>{cell('A', 'B')}{cell('C', 'D')}</tr>"
+        f"<tr><td><h5><strong>January</strong></h5></td>{cell('E', 'F')}<td></td></tr></table>"
+    )
+
+    async def fake_fetch(url, **kw):
+        return {"html": html}
+
+    async def fake_rm(url, html):
+        return set()
+
+    monkeypatch.setattr(lunch_menu.scraper_client, "fetch_html", fake_fetch)
+    monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x", school_types=["elementary"]))
+    assert {(e["meal_type"], e["period_label"], e["pdf_url"][-20:]) for e in found} == {
+        ("breakfast", "September 2098", "B" * 20),
+        ("lunch", "September 2098", "D" * 20),
+        ("breakfast", "January 2099", "F" * 20),
+    }

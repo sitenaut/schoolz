@@ -71,23 +71,47 @@ _CALENDAR_TOOL = {
 }
 
 
+_BASE_HREF_RE = re.compile(r"""<base\s[^>]*href=["']([^"']+)["']""", re.I)
+_DRIVE_ANCHOR_RE = re.compile(r"""<a\s[^>]*href=["'][^"']*drive\.google\.com/file/d/([\w-]{20,})/[^"']*["'][^>]*>""", re.I)
+
+
+def _drive_calendar_link(text: str) -> str | None:
+    """Clementon posts "2026-27 Calendar (Approved 2.12.26) - English / Spanish"
+    as Drive links, no .pdf anywhere. The first Drive file whose preceding
+    text says calendar is the English one."""
+    for m in _DRIVE_ANCHOR_RE.finditer(text):
+        before = text[max(0, m.start() - 300) : m.start()]
+        # Only the text sitting right against the link: back to the previous
+        # link or block, so a nav bar's "Calendar" can't label a later file.
+        boundary = max((mm.end() for mm in re.finditer(r"</a>|</?(?:p|div|li|br|td|tr|h\d)\b[^>]*>", before, re.I)), default=0)
+        lead = re.sub(r"<[^>]+>|\s+", " ", before[boundary:]).strip()
+        if "calendar" in lead.lower():
+            return f"https://drive.google.com/uc?export=download&id={m.group(1)}"
+    return None
+
+
 def find_pdf_link(html: str, page_url: str) -> str | None:
     """The calendar PDF on a page. Smart Sites' document-viewer pages are
     client-rendered but carry the file URL JSON-escaped ("https:\\/\\/files...")
     in inline script, so un-escape before looking. Several PDFs: prefer one
-    whose name says calendar."""
+    whose name says calendar, then a Drive file labelled calendar; only then
+    the first PDF. Relative links resolve against <base href> when present
+    (Clementon's pages sit in subfolders but link from the site root)."""
     text = html.replace("\\/", "/")
+    base = _BASE_HREF_RE.search(text)
+    base_url = urljoin(page_url, base.group(1)) if base else page_url
     found: list[str] = []
     for m in _PDF_URL_RE.finditer(text):
         if m.group(0) not in found:
             found.append(m.group(0))
     for m in re.finditer(r"""href=["']([^"']+\.pdf[^"']*)["']""", text, re.I):
-        url = urljoin(page_url, m.group(1))
+        url = urljoin(base_url, m.group(1))
         if url not in found:
             found.append(url)
-    if not found:
-        return None
-    return next((u for u in found if "calendar" in u.lower()), found[0])
+    named = next((u for u in found if "calendar" in u.lower()), None)
+    if named:
+        return named
+    return _drive_calendar_link(text) or (found[0] if found else None)
 
 
 async def fetch_pdf(page_url: str) -> tuple[str, bytes] | None:

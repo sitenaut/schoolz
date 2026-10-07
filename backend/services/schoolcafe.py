@@ -30,6 +30,8 @@ _ENTREE_CATEGORIES = ("ENTREE", "ENTREES", "MAIN", "MAIN DISH", "ENTRÉES")
 # part of a real school's name.
 _ORDINALS = {"1": "first", "2": "second", "3": "third", "4": "fourth", "5": "fifth", "6": "sixth", "7": "seventh", "8": "eighth", "9": "ninth"}
 _NAME_NOISE = re.compile(r"\b(school|the|of|and)\b")
+# Lindenwold's own "School Five" is "School 5" on SchoolCafé.
+_CARDINALS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9"}
 
 
 def _norm(name: str) -> str:
@@ -41,6 +43,7 @@ def _norm(name: str) -> str:
     # "Haines 6th Grade Center" is "Haines Sixth Grade Center" on SchoolCafé.
     for digit, word in _ORDINALS.items():
         cleaned = re.sub(rf"\b{digit}(?:st|nd|rd|th)\b", word, cleaned)
+    cleaned = re.sub(r"\b(" + "|".join(_CARDINALS) + r")\b", lambda m: _CARDINALS[m.group(1)], cleaned)
     return " ".join(_NAME_NOISE.sub(" ", cleaned).split())
 
 
@@ -50,11 +53,11 @@ def _squash(name: str) -> str:
     return re.sub(r"elem(?!entary)", "elementary", _norm(name).replace(" ", ""))
 
 
-_LEVEL_WORDS = {"elementary", "middle", "junior", "senior", "high", "primary", "intermediate"}
+_LEVEL_WORDS = {"elementary", "elem", "middle", "junior", "senior", "high", "primary", "intermediate"}
 
 
 def _core_tokens(name: str) -> set[str]:
-    return {t for t in _norm(name).split() if len(t) > 1 and t not in _LEVEL_WORDS}
+    return {t for t in _norm(name).split() if (len(t) > 1 or t.isdigit()) and t not in _LEVEL_WORDS}
 
 
 def _either_contains(a: set[str], b: set[str]) -> bool:

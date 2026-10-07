@@ -162,6 +162,72 @@ def parse_calendar_pdf_dated(text: str) -> list[dict]:
     return out
 
 
+# Pine Hill: one block per school level, labels on one line and their date
+# ranges on the next ("1st MP 2nd MP" / "9/1/26 - 11/4/26 11/9/26 -1/27/27"),
+# with the calendar's legend glued onto the same lines.
+_GRID_HEADING_RE = re.compile(r"^(.*?)\s*Marking Period Dates", re.IGNORECASE)
+_GRID_LABEL_RE = re.compile(r"(\d)(?:st|nd|rd|th)\s+MP\b", re.IGNORECASE)
+_GRID_RANGE_RE = re.compile(_FULL + r"\s*-\s*" + _FULL)
+
+
+def _grid_school_types(heading: str) -> list[str]:
+    """"PHMS/OHS" -> middle + high; a block named for buildings
+    ("Glenn/Bean") has no level word and is the elementary schools."""
+    types = []
+    for token in re.split(r"[/&,]|\band\b", heading):
+        token = token.strip().upper()
+        if not token:
+            continue
+        if token.endswith("HS") or "HIGH" in token:
+            kind = "high"
+        elif token.endswith("MS") or "MIDDLE" in token:
+            kind = "middle"
+        else:
+            kind = "elementary"
+        if kind not in types:
+            types.append(kind)
+    return types
+
+
+def parse_marking_period_grid(text: str) -> list[dict]:
+    blocks: list[tuple[list[str], list[tuple[int, datetime]]]] = []
+    pending: list[int] = []
+    for line in text.splitlines():
+        heading = _GRID_HEADING_RE.match(line.strip())
+        if heading:
+            blocks.append((_grid_school_types(heading.group(1)), []))
+            pending = []
+            continue
+        if not blocks:
+            continue
+        labels = [int(n) for n in _GRID_LABEL_RE.findall(line)]
+        if labels:
+            pending = labels
+            continue
+        ranges = _GRID_RANGE_RE.findall(line)
+        if pending and ranges:
+            for number, parts in zip(pending, ranges):
+                end = _full_date(*parts[3:6])
+                if end:
+                    blocks[-1][1].append((number, end))
+            pending = []
+    out = []
+    for types, periods in blocks:
+        unit = "Trimester" if len(periods) == 3 else "Marking Period"
+        for number, end in periods:
+            for kind in types:
+                title = f"{unit} {number} Ends"
+                out.append(
+                    {
+                        "school_type": kind,
+                        "title": title,
+                        "start_date": end,
+                        "external_uid": f"marking_period:pdf:{kind}:{title}:{end.date().isoformat()}",
+                    }
+                )
+    return out
+
+
 def parse_calendar_pdf_text(text: str) -> list[dict]:
     """Marking-period dates printed in a school-year calendar PDF's sidebar
     ("1st Marking Period Ends - 11/4 (44 days)", "Final Q1 Grades Posted -
@@ -169,7 +235,7 @@ def parse_calendar_pdf_text(text: str) -> list[dict]:
     it comes from the "2026-2027 School Calendar" title: July-December is the
     first year, January-June the second. School-wide (no school_type). Falls
     through to the full-date layouts (`parse_calendar_pdf_dated`)."""
-    return _parse_sidebar_pdf(text) or parse_calendar_pdf_dated(text)
+    return _parse_sidebar_pdf(text) or parse_calendar_pdf_dated(text) or parse_marking_period_grid(text)
 
 
 def _parse_sidebar_pdf(text: str) -> list[dict]:
@@ -229,13 +295,20 @@ async def _presence_calendar_dates(url: str) -> list[dict] | None:
 
 def find_calendar_pdf(html: str, page_url: str) -> str | None:
     """The school-year calendar PDF linked from a page (Stratford's home page,
-    Laurel Springs' calendar page): a .pdf whose link text or name says calendar."""
+    Laurel Springs' calendar page): a .pdf whose link text or name says calendar.
+    A page that still links last year's beside this year's (Pine Hill) gets the
+    one whose name carries the latest year; ties keep page order."""
     soup = BeautifulSoup(html, "lxml")
+    found: list[tuple[int, str]] = []
     for a in soup.find_all("a", href=True):
         href = urljoin(page_url, a["href"].strip())
         if urlparse(href).path.lower().endswith(".pdf") and "calendar" in (a.get_text(" ", strip=True) + href).lower():
-            return quote(href, safe=":/%?=&")
-    return None
+            years = [int(y) for y in re.findall(r"(?<!\d)(20\d{2})(?!\d)", urlparse(href).path.rsplit("/", 1)[-1])]
+            found.append((max(years, default=0), quote(href, safe=":/%?=&")))
+    if not found:
+        return None
+    best = max(year for year, _ in found)
+    return next(url for year, url in found if year == best)
 
 
 async def _pdf_calendar_dates(url: str) -> list[dict]:

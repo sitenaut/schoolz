@@ -30,6 +30,7 @@ SOURCE_KEYS = (
     "placewise_sources",
     "patch_sources",
     "dostuff_sources",
+    "runsignup_sources",
 )
 
 

@@ -23,6 +23,8 @@ import httpx
 from bs4 import BeautifulSoup
 from icalendar import Calendar
 
+from services import incidentiq
+
 logger = logging.getLogger(__name__)
 
 _ET = ZoneInfo("America/New_York")
@@ -94,7 +96,10 @@ def description_text(raw: str | None) -> str | None:
 
 async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[dict]:
     """Returns a list of {external_uid, title, description, start_date,
-    end_date, is_all_day} dicts, one per VEVENT."""
+    end_date, is_all_day} dicts, one per VEVENT. An Incident IQ feed key
+    (Pine Hill's facilities calendars) is routed to its own adapter."""
+    if incidentiq.is_incidentiq_feed(ics_url):
+        return await incidentiq.fetch_events(ics_url, timeout)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
         resp = await client.get(ics_url, headers={"User-Agent": "schoolz-district-calendar/1.0"})
         resp.raise_for_status()

@@ -3,7 +3,9 @@
 via `?const_page=N`, with a stable `data-constituent-id` per person that
 survives re-scans even if name formatting changes slightly)."""
 
+import asyncio
 import hashlib
+import time
 import re
 from urllib.parse import parse_qs, urljoin, urlparse
 
@@ -211,14 +213,19 @@ def _parse_table_page(html: str) -> list[dict]:
         name_col = next((i for i, h in enumerate(header) if "staff member" in h), None)
         if name_col is None:
             continue
+        # Gibbsboro: "Staff Member | Position", names typed "Last, First".
+        title_col = next((i for i, h in enumerate(header) if h in ("position", "title", "assignment")), None)
         email_col = next((i for i, h in enumerate(header) if h == "email"), None)
         phone_col = next((i for i, h in enumerate(header) if "ext" in h or "room" in h), None)
         for row in rows[1:]:
             cells = [re.sub(r"\s+", " ", c.get_text(" ", strip=True)) for c in row.select("td,th")]
             if len(cells) <= name_col or not cells[name_col]:
                 continue
-            name = cells[name_col]
-            title = cells[0] if name_col > 0 else ""
+            name = _first_last(cells[name_col])
+            if title_col is not None:
+                title = cells[title_col] if title_col < len(cells) else ""
+            else:
+                title = cells[0] if name_col > 0 else ""
             email_match = _EMAIL_RE.search(cells[email_col]) if email_col is not None and email_col < len(cells) else None
             phone = cells[phone_col] if phone_col is not None and phone_col < len(cells) else ""
             key = f"table:{_slug(name)}|{_slug(title)}"
@@ -676,6 +683,180 @@ _DIRECTORY_PATHS = (
 )
 
 
+# Berlin Township (WordPress, Beaver Builder "UABB" post grid behind a
+# Cloudflare challenge, so every fetch goes through the scraper): one
+# /staff-directory/ page lists the whole district - every teacher of both
+# schools plus the district office - as cards of name + title, filterable by
+# grade/department. Which school someone works at, and their email, are only
+# on their own /staff-member/<slug>/ page ("Location(s): Dwight D. Eisenhower |
+# John F. Kennedy"). `locations` rides on each item so the scan can keep the
+# right people per school (drop_sibling_school_staff).
+_WP_GRID_PATH = "/staff-directory/"
+_WP_GRID_TTL = 6 * 3600
+_wp_grid_cache: dict[str, tuple[float, list[dict]]] = {}
+_WP_PROFILE_LABELS = ("Grade(s)/Department:", "Title(s):", "Location(s):")
+
+
+def _parse_wp_staff_grid(html: str) -> list[dict]:
+    soup = BeautifulSoup(html, "lxml")
+    categories = {}
+    for li in soup.select("li[data-filter]"):
+        match = re.search(r"cat-(\d+)", li.get("data-filter", ""))
+        if match:
+            categories[match.group(1)] = li.get_text(" ", strip=True)
+    items: dict[str, dict] = {}
+    for card in soup.select(".uabb-post-wrapper"):
+        link = card.select_one("a[href*='/staff-member/']")
+        heading = card.select_one(".uabb-post-heading")
+        if not link or not heading:
+            continue
+        name = re.sub(r"\s+", " ", heading.get_text(" ", strip=True))
+        slug = urlparse(link["href"]).path.rstrip("/").rsplit("/", 1)[-1]
+        if not name or not slug:
+            continue
+        parts = [re.sub(r"\s+", " ", t) for t in card.get_text("\n", strip=True).split("\n")]
+        title = next((t for t in parts if t and t != name and not t.lower().startswith("read bio")), "")
+        depts = [categories[c] for c in re.findall(r"uabb-masonary-cat-(\d+)", " ".join(card.get("class", []))) if c in categories]
+        items[slug] = {
+            "constituent_id": f"wpstaff:{slug}"[:64],
+            "full_name": name,
+            "title": title or None,
+            "department": ", ".join(depts) or None,
+            "email": None,
+            "phone": None,
+            "profile_url": link["href"],
+            "locations": [],
+        }
+    return list(items.values())
+
+
+_PHONE_TEXT_RE = re.compile(r"\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}(?:\s*(?:ext\.?|x)\s*\d+)?", re.IGNORECASE)
+
+
+def _parse_wp_staff_profile(html: str, name: str) -> dict:
+    """{"locations": [...], "email": ..., "phone": ...} from one person's
+    page. The fields are a run of labels and values after the person's name;
+    the email and an optional phone follow the last location. Over plain HTTP
+    Cloudflare serves the email obfuscated ("[email protected]" with the real
+    one in data-cfemail); a rendered page has it as text."""
+    soup = BeautifulSoup(html, "lxml")
+    for tag in soup(["script", "style", "nav", "header", "footer"]):
+        tag.decompose()
+    hidden = soup.select_one("[data-cfemail]")
+    email = _decode_cf_email("#" + hidden["data-cfemail"]) if hidden else None
+    parts = [re.sub(r"\s+", " ", t) for t in soup.get_text("\n", strip=True).split("\n") if t.strip()]
+    starts = [i for i, t in enumerate(parts) if t == name]
+    parts = parts[starts[-1] :] if starts else parts
+    locations: list[str] = []
+    phone = None
+    if "Location(s):" in parts:
+        after = parts[parts.index("Location(s):") + 1 :]
+        for i, value in enumerate(after):
+            found = _EMAIL_RE.search(value)
+            if found or "[email" in value or _PHONE_TEXT_RE.search(value):
+                email = email or (found.group(0) if found else None)
+                number = next((m.group(0) for v in after[i : i + 3] if (m := _PHONE_TEXT_RE.search(v))), None)
+                phone = number
+                break
+            if value in _WP_PROFILE_LABELS or value.lower().startswith(("staff directory", "staff bio")):
+                break
+            locations.append(value)
+    return {"locations": locations, "email": email.lower() if email else None, "phone": phone}
+
+
+async def _get_html(client: httpx.AsyncClient, url: str) -> str | None:
+    """Plain HTTP first; the scraper only when the site's bot wall answers
+    instead (Cloudflare lets some networks through and challenges others)."""
+    try:
+        resp = await client.get(url)
+        if resp.status_code == 200:
+            return resp.text
+        if resp.status_code not in (403, 429, 503):
+            return None
+    except httpx.HTTPError:
+        pass
+    try:
+        return (await scraper_client.fetch_html(url, wait_for_selector="a", timeout_ms=30_000))["html"]
+    except Exception:  # noqa: BLE001 - an unreachable page is simply not this layout
+        return None
+
+
+async def _fetch_wp_staff_grid_roster(base: str) -> list[dict]:
+    cached = _wp_grid_cache.get(base)
+    if cached and time.monotonic() - cached[0] < _WP_GRID_TTL:
+        return [dict(item) for item in cached[1]]
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
+        listing = await _get_html(client, base + _WP_GRID_PATH)
+        people = _parse_wp_staff_grid(listing) if listing and "uabb-post-wrapper" in listing else []
+        if not people:
+            return []
+        gate = asyncio.Semaphore(5)
+
+        async def fill(person: dict) -> None:
+            async with gate:
+                page = await _get_html(client, person["profile_url"])
+            if page:  # else keep the person, just without a school or email
+                person.update(_parse_wp_staff_profile(page, person["full_name"]))
+
+        await asyncio.gather(*(fill(p) for p in people))
+    for person in people:
+        person.pop("profile_url", None)
+    _wp_grid_cache[base] = (time.monotonic(), people)
+    return [dict(item) for item in people]
+
+
+_DIRECTORY_LINK_RE = re.compile(r"staff[\s_-]*directory|faculty[\s_-]*(?:&|and)?[\s_-]*staff|staff[\s_-]*list", re.IGNORECASE)
+_MAX_DISCOVERED = 3
+
+
+def find_directory_links(home_html: str, base: str) -> list[str]:
+    """Staff-directory pages a school links from its own navigation, best
+    first. The fixed paths above cover the common Finalsite layouts, but a
+    directory can sit anywhere (Lindenwold: /our-school/high-school-staff-directory;
+    Gibbsboro: /our-district/staff-directory). Same site only - a link to the
+    district's directory from a school subsite would list every school's staff."""
+    host = urlparse(base).hostname or ""
+    scored: dict[str, int] = {}
+    for a in BeautifulSoup(home_html, "lxml").find_all("a", href=True):
+        url = urljoin(base + "/", a["href"].strip()).split("#")[0]
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or parsed.hostname != host:
+            continue
+        text = a.get_text(" ", strip=True)
+        in_text, in_path = bool(_DIRECTORY_LINK_RE.search(text)), bool(_DIRECTORY_LINK_RE.search(parsed.path))
+        if not (in_text or in_path) or re.search(r"websites?", text + parsed.path, re.IGNORECASE):
+            continue
+        scored[url] = max(scored.get(url, 0), 2 * in_text + in_path)
+    return sorted(scored, key=lambda u: -scored[u])[:_MAX_DISCOVERED]
+
+
+async def _fetch_discovered_roster(base: str) -> list[dict]:
+    """Follows the school's own "Staff Directory" link when no known path
+    worked: constituent cards are clicked through like any Finalsite
+    directory, anything else is read as a plain table page."""
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
+            home = await client.get(base)
+            if home.status_code != 200:
+                return []
+            for url in find_directory_links(home.text, base):
+                page = await client.get(url)
+                if page.status_code != 200:
+                    continue
+                if "fsConstituentItem" in page.text:
+                    pages_html = await scraper_client.fetch_paginated(url, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True)
+                    people = {item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}
+                    if people:
+                        return list(people.values())
+                    continue
+                items = _parse_table_page(page.text) or _parse_wp_card_page(page.text) or _parse_tablepress_directory(page.text)
+                if items:
+                    return items
+    except httpx.HTTPError:
+        return []
+    return []
+
+
 async def fetch_roster(school_website_url: str) -> list[dict]:
     """Paginates by actually clicking the "next page" control in one live
     browser session - confirmed the directory's ?const_page=N query param
@@ -706,6 +887,11 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
     presence = await _fetch_presence_roster(base)
     if presence:
         return presence
+    # Before the Finalsite loop, which would spend its page loads on a
+    # WordPress site; returns at once when /staff-directory/ isn't this layout.
+    grid = await _fetch_wp_staff_grid_roster(base)
+    if grid:
+        return grid
     for path in _DIRECTORY_PATHS:
         pages_html = await scraper_client.fetch_paginated(
             base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True
@@ -718,7 +904,7 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
         if by_constituent_id:
             return list(by_constituent_id.values())
 
-    return []
+    return await _fetch_discovered_roster(base)
 
 
 _SCHOOL_NAME_NOISE = {"the", "school", "schools", "elementary", "middle", "high", "junior", "senior", "jr", "sr", "memorial", "township", "public", "center", "primary", "intermediate"}
@@ -742,6 +928,10 @@ def drop_sibling_school_staff(roster: list[dict], own_names: list[str | None], s
         return roster, []
     kept, dropped = [], []
     for e in roster:
-        words = set(re.findall(r"[a-z]+", (e["title"] or "").lower()))
+        # A directory that says where each person works (Berlin Township's
+        # "Location(s)") decides it outright; someone at both schools, or at
+        # neither (district office), stays on each.
+        source = " ".join(e["locations"]) if e.get("locations") else (e["title"] or "")
+        words = set(re.findall(r"[a-z]+", source.lower()))
         (dropped if words & sibling and not words & own else kept).append(e)
     return kept, dropped

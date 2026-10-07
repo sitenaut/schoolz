@@ -484,6 +484,22 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "runsignup_sources": {
+            "type": "array",
+            "description": "RunSignup races near a zip code (runsignup.com/races) - its public JSON API, no key, no scraper. One event per race, dated from its in-person events; virtual races and club/season sign-ups are skipped.",
+            "items": {
+                "type": "object",
+                "required": ["name", "zipcode"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "zipcode": {"type": "string", "description": "Centre of the search, e.g. '08002'."},
+                    "radius": {"type": "integer", "default": 15, "description": "Miles from the zip code."},
+                    "days_ahead": {"type": "integer", "default": 120},
+                    "states": {"type": "array", "items": {"type": "string"}, "description": "Keep only these states, e.g. ['NJ']. Omit to keep everything in the radius."},
+                    "exclude_patterns": {"type": "array", "items": {"type": "string"}, "description": "Case-insensitive regexes over race title + street; a match drops the race (e.g. 'course map will be emailed' for run-it-yourself race mills)."},
+                },
+            },
+        },
         "yodel_sources": {
             "type": "array",
             "description": "Yodel (events.yodel.today) calendar widgets, e.g. the one Macaroni KID embeds on its /events page. Plain HTTP, no scraper: reads the widget's server-rendered first page, then pages through its own 'load more' call.",
