@@ -13,6 +13,14 @@ from logging_config import setup_logging
 
 setup_logging()
 
+# The API process bills its Anthropic calls to its own key. What runs here was
+# started by a person (a run-now, an on-demand translation, the kids view, a
+# submission review), so a spend cap on it must not be able to stop the
+# unattended scans in the scheduler, or the other way round. Swapped here,
+# before the imports below, because several services read the key at import.
+if os.getenv("ANTHROPIC_API_KEY_INTERACTIVE"):
+    os.environ["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY_INTERACTIVE"]
+
 import database  # noqa: E402
 import models  # noqa: F401,E402  (register tables with Base.metadata)
 import observability  # noqa: E402
