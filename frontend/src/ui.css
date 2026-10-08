@@ -1785,6 +1785,55 @@ button.link-card:disabled {
   flex: none;
 }
 
+.seasonal-attractions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.seasonal-attraction {
+  padding: 14px;
+}
+.seasonal-attraction-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+.seasonal-attraction-head small {
+  display: block;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+.seasonal-attraction-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.seasonal-attraction p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+.seasonal-attraction dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  margin: 0 0 10px;
+  font-size: 13.5px;
+}
+.seasonal-attraction dt {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.seasonal-attraction dd {
+  margin: 0;
+}
+.seasonal-attraction-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* iOS Safari zooms the whole page when a form field under 16px gets focus,
    and does not zoom back - on the chat panel that pushed the Send button
    off-screen. Every field is at least 16px on touch devices, everywhere.

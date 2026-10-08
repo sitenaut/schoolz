@@ -561,6 +561,36 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         query = f"?season={season}" if season else ""
         return _finalize(await _get(f"/seasonal-guides{query}"))
 
+    @mcp.tool()
+    async def find_seasonal_attractions(
+        season: str | None = None,
+        kind: str | None = None,
+        scare_level: str | None = None,
+        on_date: str | None = None,
+        open_only: bool = False,
+    ) -> Any:
+        """Places open for a season - haunted hayrides and trails, flashlight
+        corn mazes, drive-through light shows, Santa visits - that ordinary
+        event listings miss. Use for "any haunted hayrides near Voorhees",
+        "something not too scary for a 7-year-old", "what's open Friday night".
+
+        season: "halloween", "fall" or "winter"; omit for any.
+        kind: haunt, hayride, corn_maze, trail, light_show, santa or festival.
+        scare_level: family (not scary), mild, or scary - the venue's own
+            description; null in a result means unknown, so say so for kids.
+        on_date: YYYY-MM-DD, default today. Results are attractions still
+            running then; open_on_day is true/false, or null when the venue
+            only says "select nights" - then send people to its site rather
+            than promising it's open.
+        open_only: only those open (or possibly open) on on_date.
+
+        Each result has a town and address but distance isn't computed here:
+        judge "near X" from the towns. Give the schedule, price and ages as
+        listed, and link the venue's url.
+        """
+        params = {"season": season, "kind": kind, "scare_level": scare_level, "on": on_date, "open_only": open_only or None}
+        return _finalize(await _get("/seasonal-attractions", params))
+
     # -----------------------------------------------------------------
     # How to use schoolz itself
     # -----------------------------------------------------------------
