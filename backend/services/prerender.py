@@ -29,7 +29,12 @@ from models import PrerenderedPage
 
 logger = logging.getLogger(__name__)
 
-_TTL_SECONDS = 6 * 3600
+# How long a snapshot counts as fresh. A crawler is served an older one
+# anyway (and it's refreshed in the background) - this only decides when
+# that refresh happens. A day is plenty for a search index, and the nightly
+# scheduler job (scheduler/jobs/prerender_warm.py) renders every sitemap
+# page before it expires, so crawlers essentially never wait on a render.
+_TTL_SECONDS = 24 * 3600
 # path -> (expires at, as time.time(); html). Wall clock, not monotonic,
 # since entries also come from the DB with a rendered_at timestamp.
 _CACHE: dict[str, tuple[float, str]] = {}
@@ -61,6 +66,7 @@ _ALLOWED_PATHS = {
     "/directory",
     "/calendar",
     "/lunch",
+    "/local",
     "/privacy",
     "/backpack-capture/privacy",
     "/contact",
@@ -123,26 +129,51 @@ async def get_prerendered_html(path: str) -> str:
         if stored and (not cached or stored[0] > cached[0]):
             cached = stored
             _CACHE[path] = stored
-    if cached and cached[0] > time.time():
+    if cached:
+        # Stale-while-revalidate: a crawler kept waiting 2-10s on an
+        # uncached render is how pages ended up as Search Console "server
+        # errors" - three render slots, Googlebot fetching in parallel, and
+        # anything that timed out with nothing cached became a 500. An
+        # expired snapshot is served instantly and refreshed behind it.
+        if cached[0] <= time.time() and path not in _INFLIGHT:
+            _start_render(path).add_done_callback(_log_background_failure)
         return cached[1]
 
+    # Shielded so one caller giving up doesn't cancel the render every
+    # other caller is waiting on.
+    return await asyncio.shield(_start_render(path))
+
+
+def _start_render(path: str) -> "asyncio.Task[str]":
     task = _INFLIGHT.get(path)
     if task is None:
         task = asyncio.create_task(_render(path))
         _INFLIGHT[path] = task
         task.add_done_callback(lambda _t, p=path: _INFLIGHT.pop(p, None))
+    return task
 
-    try:
-        # Shielded so one caller giving up doesn't cancel the render every
-        # other caller is waiting on.
-        return await asyncio.shield(task)
-    except Exception:
-        # An expired entry is kept rather than evicted precisely for this:
-        # six-hour-old real content beats an error page for a crawler.
-        if cached:
-            logger.warning("prerender_failed_serving_stale", extra={"path": path})
-            return cached[1]
-        raise
+
+def _log_background_failure(task: "asyncio.Task[str]") -> None:
+    if not task.cancelled() and task.exception() is not None:
+        logger.warning("prerender_refresh_failed", extra={"error": repr(task.exception())})
+
+
+async def refresh(path: str) -> None:
+    """Render `path` now and store it, whatever the cache holds - the
+    nightly warm job's entry point."""
+    if len(path) > _MAX_PATH_LEN or not _is_allowed(path):
+        raise PathNotAllowed(path)
+    await asyncio.shield(_start_render(path))
+
+
+async def paths_needing_render(paths: list[str], older_than_seconds: float) -> list[str]:
+    """The subset of `paths` with no stored snapshot, or one rendered more
+    than `older_than_seconds` ago - in the order given."""
+    cutoff = datetime.now(timezone.utc).timestamp() - older_than_seconds
+    async with database.SessionLocal() as db:
+        rows = (await db.execute(select(PrerenderedPage.path, PrerenderedPage.rendered_at).where(PrerenderedPage.path.in_(paths)))).all()
+    fresh = {path for path, rendered_at in rows if rendered_at.timestamp() > cutoff}
+    return [p for p in paths if p not in fresh]
 
 
 async def _render(path: str) -> str:

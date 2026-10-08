@@ -63,7 +63,7 @@ async def test_a_cached_page_is_not_rendered_again(monkeypatch):
 
 @pytest.mark.anyio
 async def test_stale_content_is_served_when_a_re_render_fails(monkeypatch):
-    # Six-hour-old real content beats an error page for a crawler, so an
+    # Day-old real content beats an error page for a crawler, so an
     # expired entry is kept rather than evicted.
     prerender._CACHE["/lunch"] = (time.time() - 1, "<html>stale</html>")
 
@@ -74,6 +74,7 @@ async def test_stale_content_is_served_when_a_re_render_fails(monkeypatch):
     monkeypatch.setattr(scraper_client, "fetch_html", failing_fetch_html)
 
     assert await prerender.get_prerendered_html("/lunch") == "<html>stale</html>"
+    await _drain_renders()
 
 
 @pytest.mark.anyio
@@ -145,28 +146,38 @@ async def test_a_render_survives_a_process_restart(monkeypatch):
     assert len(calls) == 1
 
 
-@pytest.mark.anyio
-async def test_an_expired_stored_page_is_rendered_again(monkeypatch):
+async def _store_old(path: str, hours: float = 25) -> None:
     import database
     from models import PrerenderedPage
 
     async with database.SessionLocal() as db:
-        db.add(PrerenderedPage(path="/lunch", html_gz=gzip.compress(b"<html>old</html>"), rendered_at=datetime.now(timezone.utc) - timedelta(hours=7)))
+        db.add(PrerenderedPage(path=path, html_gz=gzip.compress(b"<html>old</html>"), rendered_at=datetime.now(timezone.utc) - timedelta(hours=hours)))
         await db.commit()
+
+
+async def _drain_renders() -> None:
+    while prerender._INFLIGHT:
+        await asyncio.gather(*prerender._INFLIGHT.values(), return_exceptions=True)
+
+
+@pytest.mark.anyio
+async def test_an_expired_page_is_served_at_once_and_refreshed_behind_it(monkeypatch):
+    # A crawler kept waiting on a 2-10s render is how pages became Search
+    # Console server errors; an expired snapshot is served immediately.
+    await _store_old("/lunch")
     calls = await _fake_render(monkeypatch, "<html>new</html>")
 
+    assert await prerender.get_prerendered_html("/lunch") == "<html>old</html>"
+    await _drain_renders()
+    assert len(calls) == 1
+    prerender._CACHE.clear()
     assert await prerender.get_prerendered_html("/lunch") == "<html>new</html>"
     assert len(calls) == 1
 
 
 @pytest.mark.anyio
 async def test_a_stale_stored_page_is_served_when_the_render_fails(monkeypatch):
-    import database
-    from models import PrerenderedPage
-
-    async with database.SessionLocal() as db:
-        db.add(PrerenderedPage(path="/survey", html_gz=gzip.compress(b"<html>old</html>"), rendered_at=datetime.now(timezone.utc) - timedelta(hours=7)))
-        await db.commit()
+    await _store_old("/survey")
 
     async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
         raise RuntimeError("scraper unavailable")
@@ -174,9 +185,66 @@ async def test_a_stale_stored_page_is_served_when_the_render_fails(monkeypatch):
     monkeypatch.setattr(scraper_client, "fetch_html", failing_fetch_html)
 
     assert await prerender.get_prerendered_html("/survey") == "<html>old</html>"
+    await _drain_renders()
+    # Still the old copy - a failed refresh never evicts it.
+    assert await prerender.get_prerendered_html("/survey") == "<html>old</html>"
 
 
 @pytest.mark.anyio
 async def test_an_overlong_path_is_rejected():
     with pytest.raises(prerender.PathNotAllowed):
         await prerender.get_prerendered_html("/schools/" + "x" * 300)
+
+
+def test_local_events_page_is_prerendered():
+    # It's in the sitemap; without it here every crawl of /local was a 404.
+    assert prerender._is_allowed("/local")
+
+
+@pytest.mark.anyio
+async def test_paths_needing_render_skips_recent_snapshots():
+    await _store_old("/lunch", hours=1)
+    await _store_old("/calendar", hours=20)
+
+    assert await prerender.paths_needing_render(["/", "/lunch", "/calendar"], 18 * 3600) == ["/", "/calendar"]
+
+
+@pytest.mark.anyio
+async def test_warm_job_renders_only_what_would_expire(monkeypatch):
+    from scheduler.jobs import prerender_warm
+
+    async def fake_paths(_db):
+        return ["/", "/lunch", "/calendar"]
+
+    monkeypatch.setattr(prerender_warm, "sitemap_paths", fake_paths)
+    await _store_old("/lunch", hours=1)
+    calls = await _fake_render(monkeypatch)
+
+    import database
+
+    async with database.SessionLocal() as db:
+        summary = await prerender_warm.run(db, {})
+
+    assert summary == "rendered 2 of 2 stale pages, 0 failed"
+    assert sorted(c.split("?")[0].rsplit("/", 1)[-1] for c in calls) == ["", "calendar"]
+
+
+@pytest.mark.anyio
+async def test_warm_job_warns_when_every_render_fails(monkeypatch):
+    from scheduler.jobs import prerender_warm
+
+    async def fake_paths(_db):
+        return ["/privacy"]
+
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+        raise RuntimeError("scraper unavailable")
+
+    monkeypatch.setattr(prerender_warm, "sitemap_paths", fake_paths)
+    monkeypatch.setattr(scraper_client, "fetch_html", failing_fetch_html)
+
+    import database
+
+    async with database.SessionLocal() as db:
+        summary = await prerender_warm.run(db, {})
+
+    assert summary.startswith("WARNING[prerender_warm_all_failed]")
