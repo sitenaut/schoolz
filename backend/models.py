@@ -1484,6 +1484,23 @@ class PageVisit(Base):
     __table_args__ = (UniqueConstraint("day", "path", "source", name="uq_page_visits_day_path_source"),)
 
 
+class PrerenderedPage(Base):
+    """The crawler-facing HTML snapshot of one public page (services/prerender.py).
+
+    In the database rather than process memory because a process-local
+    cache didn't survive: two API machines each kept their own, and every
+    deploy or auto-stop wiped them, so ~1,000 distinct paths were rendered
+    ~3,000 times a day - each one a Playwright render on the scraper budget
+    the real scans share. gzip because a page is 45-80 KB of HTML that
+    compresses ~8x."""
+
+    __tablename__ = "prerendered_pages"
+
+    path: Mapped[str] = mapped_column(String(200), primary_key=True)
+    html_gz: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    rendered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class SurveyResponse(Base):
     """One family's answers to the district-communication survey (/survey).
 
