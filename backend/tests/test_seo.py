@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 import database
 from main import app
-from models import District, School
+from models import District, School, SchoolContentItem
 
 
 _WEB_URL = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
@@ -80,3 +80,40 @@ def test_prerender_allows_language_prefixed_paths():
     assert not prerender._is_allowed("/history")
     assert not prerender._is_allowed("/es/admin")
     assert not prerender._is_allowed("/essex")
+
+
+@pytest.mark.anyio
+async def test_sitemap_dates_school_pages_by_their_newest_content():
+    from datetime import datetime, timezone
+
+    async with database.SessionLocal() as db:
+        district = District(name="Lastmod District")
+        db.add(district)
+        await db.flush()
+        school = School(name="Lastmod Elementary", slug="lastmod-elementary", school_type="elementary", district_id=district.id)
+        db.add(school)
+        await db.flush()
+        db.add(SchoolContentItem(scope="district", district_id=district.id, category="event", title="Board meeting", extracted_at=datetime(2031, 3, 4, 15, tzinfo=timezone.utc)))
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+    assert f"<loc>{_WEB_URL}/schools/lastmod-elementary</loc><lastmod>2031-03-04</lastmod>" in res.text
+    assert f"<loc>{_WEB_URL}/es/schools/lastmod-elementary</loc><lastmod>2031-03-04</lastmod>" in res.text
+    # Static pages have no honest content date, so they carry none.
+    assert f"<loc>{_WEB_URL}/privacy</loc></url>" in res.text
+
+
+@pytest.mark.anyio
+async def test_sitemap_paths_match_the_sitemap():
+    from routers.seo import sitemap_paths
+
+    async with database.SessionLocal() as db:
+        paths = await sitemap_paths(db)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+    import re
+
+    assert sorted(paths) == sorted(loc[len(_WEB_URL):] or "/" for loc in re.findall(r"<loc>([^<]+)</loc>", res.text))

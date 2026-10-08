@@ -120,10 +120,25 @@ server {
         # traffic for this feature at all.
         proxy_ssl_server_name on;
 
+        # A crawler must never get a 5xx: Google counts each as a server
+        # error and slows its crawl of the whole site for them (Search
+        # Console showed 48). If the prerender fails or runs long, hand the
+        # crawler the plain app instead - Googlebot runs the JS itself, so
+        # it still sees the content, just slower. 404s pass through, so an
+        # unknown path still reads as not found. The render itself keeps
+        # going in the API after nginx gives up, and is stored for next time.
+        proxy_read_timeout 25s;
+        proxy_intercept_errors on;
+        error_page 500 502 503 504 = @spa_for_crawler;
+
         if ($is_crawler) {
             proxy_pass ${BACKEND_INTERNAL_URL}/prerender?path=$uri;
             break;
         }
         try_files $uri $uri/ /index.html;
+    }
+
+    location @spa_for_crawler {
+        try_files /index.html =404;
     }
 }
