@@ -1,4 +1,5 @@
 import { API_URL } from "../authConfig";
+import { IS_PRERENDER } from "./prerenderReady";
 
 const SOURCE_KEY = "schoolz_visit_source";
 const SEEN_KEY = "schoolz_visit_seen";
@@ -69,6 +70,7 @@ function sanitize(value: string): string {
  * stores only an aggregate (day, path, source) counter - see the PageVisit
  * model for why there's deliberately nothing per-visitor in it. */
 export function countVisit(path: string): void {
+  if (IS_PRERENDER) return;
   let seen: string[] = [];
   try {
     seen = JSON.parse(sessionStorage.getItem(SEEN_KEY) || "[]");
