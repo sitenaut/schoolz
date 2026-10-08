@@ -56,3 +56,45 @@ export function useSeasons(): { seasons: Season[]; loaded: boolean } {
   const seasons = [...bySeason].map(([season, list]) => ({ season, ...seasonLook(season), guides: list }));
   return { seasons, loaded: guides !== null };
 }
+
+/** A place open for a season - a haunt, a flashlight maze, a light show
+ * (GET /seasonal-attractions). Our own list from each venue's site. */
+export type SeasonalAttraction = {
+  id: string;
+  season: string;
+  kind: string;
+  name: string;
+  venue: string | null;
+  address: string;
+  town: string;
+  url: string;
+  ticket_url: string | null;
+  starts_on: string;
+  ends_on: string;
+  open_dates: string[] | null;
+  schedule: string | null;
+  price: string | null;
+  scare_level: "family" | "mild" | "scary" | null;
+  ages: string | null;
+  note: string | null;
+  verified_on: string | null;
+  /** Open today: true/false, or null when the venue only says "select nights". */
+  open_on_day: boolean | null;
+};
+
+/** This season's attractions still running, soonest first; [] on failure. */
+export function useAttractions(season: string): { attractions: SeasonalAttraction[]; loaded: boolean } {
+  const [attractions, setAttractions] = useState<SeasonalAttraction[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setAttractions(null);
+    apiFetch(`/seasonal-attractions?season=${encodeURIComponent(season)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .catch(() => [])
+      .then((a: SeasonalAttraction[]) => !cancelled && setAttractions(a));
+    return () => {
+      cancelled = true;
+    };
+  }, [season]);
+  return { attractions: attractions ?? [], loaded: attractions !== null };
+}

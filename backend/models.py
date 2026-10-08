@@ -1431,6 +1431,50 @@ class SeasonalGuide(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class SeasonalAttraction(Base):
+    """A place that's open for a season - a haunted hayride, a flashlight
+    corn maze, a drive-through light show, Santa at a farm - rather than a
+    one-off event, which is why the local events feeds miss them.
+
+    Our own list, built from each venue's official site (or, failing that,
+    a dated news item, named in source_url), never copied from an
+    aggregator's guide: the guides that list these ask not to be reused.
+    Facts only - dates, nights, hours, price, the venue's own age advice -
+    in our words, with verified_on saying when someone last checked."""
+
+    __tablename__ = "seasonal_attractions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    # Same season keys as SeasonalGuide - the badge's page lists both.
+    season: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    # haunt | hayride | corn_maze | trail | light_show | santa | festival
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    venue: Mapped[str | None] = mapped_column(Text, nullable=True)
+    address: Mapped[str] = mapped_column(Text, nullable=False)
+    town: Mapped[str] = mapped_column(Text, nullable=False)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    ticket_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    starts_on: Mapped[date] = mapped_column(Date, nullable=False)
+    ends_on: Mapped[date] = mapped_column(Date, nullable=False)
+    # The exact nights it's open, when the venue publishes them. Null means
+    # "some nights in the window" - `schedule` says which, and "open
+    # tonight?" is answered as unknown rather than yes.
+    open_dates: Mapped[list[date] | None] = mapped_column(ARRAY(Date), nullable=True)
+    schedule: Mapped[str | None] = mapped_column(Text, nullable=True)  # "Fri–Sun, 7–10pm"
+    price: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # family | mild | scary - from the venue's own description; null = unknown.
+    scare_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    ages: Mapped[str | None] = mapped_column(Text, nullable=True)  # the venue's advice, e.g. "Best for 10 and up"
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)  # where the facts were checked, if not `url`
+    verified_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
 class ContactMessage(Base):
     """A message sent from the public /contact form into the admins' shared
     inbox. Shared on purpose: read state is one value for every admin (who
