@@ -125,7 +125,10 @@ def _parse_location(html: str, base_url: str) -> dict:
 
     phone_link = soup.select_one(".fsLocationPhone a[href^='tel:']")
     if phone_link:
-        result["main_phone"] = phone_link.get_text(strip=True)
+        # Pennsauken's link carries a screen-reader "Phone: " label inside it.
+        text = phone_link.get_text(strip=True)
+        match = _PLAIN_PHONE_RE.search(text)
+        result["main_phone"] = match.group(0) if match else text
     else:
         # Some Finalsite footers (Merchantville) print "P: (856) 663-1091" as
         # plain text with no tel: link.

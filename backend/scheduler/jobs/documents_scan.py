@@ -4,7 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import District, School, SchoolDocument, SmoreNewsletter
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
-from services.school_documents import discover_district_letter_days, discover_from_smore, discover_from_website, keep_own_school_bell_schedules
+from services.school_documents import (
+    discover_district_letter_days,
+    discover_from_smore,
+    discover_from_website,
+    keep_own_school_bell_schedules,
+    school_name_tokens,
+)
 
 
 @register_job(
@@ -44,7 +50,16 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 pass  # the school's own site result still stands
     for entry in await discover_from_smore(db, school_id):
         found.append({**entry, "source": "newsletter"})
-    found, bells_narrowed = keep_own_school_bell_schedules(found, [school.short_name, school.name.split()[0]])
+    district_name = None
+    siblings: list[School] = []
+    if school.district_id:
+        district_name = (await db.execute(select(District.name).where(District.id == school.district_id))).scalar_one_or_none()
+        siblings = (await db.execute(select(School).where(School.district_id == school.district_id, School.id != school.id))).scalars().all()
+    found, bells_narrowed = keep_own_school_bell_schedules(
+        found,
+        school_name_tokens(school.name, school.short_name, district_name),
+        [school_name_tokens(s.name, s.short_name, district_name) for s in siblings],
+    )
 
     if not found:
         if site_error is not None:
@@ -97,8 +112,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     await db.flush()
 
     # Year preference is per doc_type - a 2026-27 bell schedule shouldn't
-    # retire a 2025-26 handbook that hasn't been republished yet.
-    for doc_type in doc_types:
+    # retire a 2025-26 handbook that hasn't been republished yet. A narrowing
+    # that left none (every listed bell schedule was a sibling's) still
+    # retires the ones stored before.
+    for doc_type in doc_types | ({"bell_schedule"} if bells_narrowed else set()):
         docs = (
             await db.execute(select(SchoolDocument).where(SchoolDocument.school_id == school_id, SchoolDocument.doc_type == doc_type))
         ).scalars().all()

@@ -41,6 +41,11 @@ def test_multiple_cards_on_one_page():
     assert {i["constituent_id"] for i in items} == {"4990", "3001"}
 
 
+def test_filler_staff_placeholders_are_dropped():
+    filler = '<div class="fsConstituentItem" data-constituent-id="77"><h3 class="fsFullName"><a>FILLER STAFF RO-ART</a></h3></div>'
+    assert [i["constituent_id"] for i in _parse_page(filler + _CARD_WITHOUT_TITLE)] == ["3001"]
+
+
 _EDNET_PAGE = """
 <div id="staff"><div class="staff-category"><div class="staff-header"><h1>Administration</h1></div>
 <ul class="staff-categoryStaffMembers">

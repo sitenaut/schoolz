@@ -31,6 +31,11 @@ def _text_after_label(el, label: str) -> str | None:
 _NEXT_PAGE_SELECTOR = "a.fsNextPageLink"
 
 
+# Scheduling placeholders a district leaves in its directory (Pennsauken:
+# "FILLER STAFF RO-ART", "FILLER STAFF CA-03"), not people.
+_PLACEHOLDER_NAME_RE = re.compile(r"filler\s+staff\b", re.I)
+
+
 def _parse_page(html: str) -> list[dict]:
     soup = BeautifulSoup(html, "lxml")
     items = []
@@ -38,7 +43,7 @@ def _parse_page(html: str) -> list[dict]:
         constituent_id = el.get("data-constituent-id")
         name_el = el.select_one(".fsFullName")
         name = name_el.get_text(strip=True) if name_el else None
-        if not constituent_id or not name:
+        if not constituent_id or not name or _PLACEHOLDER_NAME_RE.match(name):
             continue
 
         title_el = el.select_one(".fsTitles")
