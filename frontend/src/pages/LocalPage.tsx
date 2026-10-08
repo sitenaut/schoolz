@@ -8,6 +8,7 @@ import { Modal } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, timeOfDay } from "../lib/calendar";
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
+import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackEvent } from "../lib/track";
 import type { LocalEvent, LocalEventFacets } from "../types";
 import styles from "./CalendarPage.module.css";
@@ -113,6 +114,10 @@ export function LocalPage() {
     if (idx >= shown) setShown(idx + PAGE);
     requestAnimationFrame(() => document.getElementById(`local-${listed[idx].id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }, [scrollToToday, selectedDay, loadedKey, queryKey, listed, shown, viewDate]);
+
+  // Without this every crawler render of /local waited out the prerender
+  // timeout and failed - it's in the sitemap, but Google only ever got errors.
+  usePrerenderReady(loadedKey === queryKey);
 
   const changeMonth = (delta: number) => {
     setViewDate((d) => (viewMode === "year" ? new Date(d.getFullYear() + delta, d.getMonth(), 1) : new Date(d.getFullYear(), d.getMonth() + delta, 1)));

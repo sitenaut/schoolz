@@ -128,6 +128,10 @@ server {
         # unknown path still reads as not found. The render itself keeps
         # going in the API after nginx gives up, and is stored for next time.
         proxy_read_timeout 25s;
+        # Retry the API's other address (it has an A and an AAAA) only when
+        # a connection fails, never after a timeout - the default "error
+        # timeout" made a slow render cost a crawler 25s twice.
+        proxy_next_upstream error;
         proxy_intercept_errors on;
         error_page 500 502 503 504 = @spa_for_crawler;
 
