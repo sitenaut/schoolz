@@ -36,6 +36,7 @@ PERMISSIONS: tuple[Permission, ...] = (
     Permission("inbox.manage", "Contact inbox", "Mark messages read/unread and delete them.", "write"),
     Permission("submissions.manage", "Community submissions", "Approve, edit and delete submitted sources.", "write"),
     Permission("chatbot.manage", "Chatbot settings", "Switch chatbot providers/models and run comparisons.", "write"),
+    Permission("seasonal.manage", "Seasonal guides", "Add, edit and delete the seasonal guide links behind the season badge.", "write"),
     Permission(
         "config.manage",
         "Import config",

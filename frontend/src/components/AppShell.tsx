@@ -19,6 +19,7 @@ import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
 import { invitePath, loadPendingInvite } from "../lib/pendingInvite";
 import { useKeyboardViewportReset } from "../lib/keyboardReset";
+import { useSeasons } from "../lib/seasonal";
 
 // Route templates for the routes registered in App.tsx - used to keep
 // page_view's `route` attribute low-cardinality (a school slug or invite
@@ -28,6 +29,7 @@ const ROUTE_TEMPLATES: [RegExp, string][] = [
   [/^\/schools\/[^/]+$/, "/schools/:schoolId"],
   [/^\/invites\/[^/]+$/, "/invites/:token"],
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
+  [/^\/seasonal\/[^/]+$/, "/seasonal/:season"],
 ];
 
 const GA_HOLD_MS = 3000;
@@ -71,6 +73,7 @@ export function AppShell() {
   const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
   const { mySchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname, search } = useLocation();
+  const { seasons } = useSeasons();
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
   // Calendar only, by explicit product call. That page auto-scrolls ~3000px
@@ -230,6 +233,19 @@ export function AppShell() {
           schoolz
         </Link>
         <div className="spacer" />
+        {/* Shown only while a season's guides are running (data, not a
+            release), so it appears and disappears with no deploy. */}
+        {seasons.map((s) => (
+          <Link
+            key={s.season}
+            to={`/seasonal/${s.season}`}
+            className="btn icon season-badge"
+            title={`${t("Seasonal guides")}: ${s.heading}`}
+            aria-label={`${t("Seasonal guides")}: ${s.heading}`}
+          >
+            <span aria-hidden="true">{s.emoji}</span>
+          </Link>
+        ))}
         {unreadNotifications > 0 && (
           <Link
             to="/account/notifications"

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
+import { SeasonalBanner } from "../components/SeasonalBanner";
 import { Modal } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, timeOfDay } from "../lib/calendar";
@@ -159,6 +160,7 @@ export function LocalPage() {
           </button>
         </div>
       </div>
+      <SeasonalBanner />
       <p className="note" style={{ marginTop: 0 }}>
         Community events around Cherry Hill - libraries, townships, the Y, concerts and more.
         {isAdmin && (

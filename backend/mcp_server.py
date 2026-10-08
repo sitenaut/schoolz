@@ -542,6 +542,26 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         return _finalize(data)
 
     # -----------------------------------------------------------------
+    # Seasonal guides
+    # -----------------------------------------------------------------
+
+    @mcp.tool()
+    async def get_seasonal_guides(season: str | None = None) -> Any:
+        """Seasonal guides running right now - e.g. a Halloween house map or
+        a fall-festival roundup (season: "halloween", or omit for every
+        active season). Use for "where can we see Halloween houses /
+        decorations / lights" or "what fall things are there to do".
+
+        These are links to guides other people publish (title, publisher,
+        url, a one-line note) - schoolz doesn't hold their listings, so
+        never name specific houses or invent stops: point the person to the
+        guide as a [title](url) link and credit its publisher. An empty
+        result means no guide is active for that season right now.
+        """
+        query = f"?season={season}" if season else ""
+        return _finalize(await _get(f"/seasonal-guides{query}"))
+
+    # -----------------------------------------------------------------
     # How to use schoolz itself
     # -----------------------------------------------------------------
 
