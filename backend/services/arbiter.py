@@ -100,6 +100,7 @@ async def fetch_events(entity_id: str, start: date, end: date, timeout: float = 
                 out.append(
                     {
                         "external_uid": game_id,
+                        "team": event.get("title") or "",
                         "title": title or "(untitled)",
                         "description": event.get("location") or None,
                         "start_date": start_dt,
@@ -109,3 +110,30 @@ async def fetch_events(entity_id: str, start: date, end: date, timeout: float = 
                 )
 
     return out
+
+
+_MIDDLE_SCHOOL_TEAM_RE = re.compile(r"\bmiddle school\s*$", re.I)
+
+
+def is_middle_school_team(event: dict) -> bool:
+    """The team's level, read from the team name alone ("Field Hockey - Girls
+    Middle School"), never the opponent ("vs Northern Burlington Middle
+    School")."""
+    return bool(_MIDDLE_SCHOOL_TEAM_RE.search(event.get("team") or ""))
+
+
+def games_for_school(school_type: str | None, own: list[dict], sibling_high_school: list[dict], district_has_middle_school: bool) -> list[dict]:
+    """Which games a school shows when one district's teams are split across
+    Arbiter entities. Pennsauken's high-school entity also carries most of
+    Phifer Middle's teams, and Phifer's own entity only a few: a middle school
+    adds the middle-school teams from its district's high-school entities,
+    and a high school whose district has a middle school leaves them out."""
+    if school_type == "middle":
+        games = {e["external_uid"]: e for e in own}
+        for e in sibling_high_school:
+            if is_middle_school_team(e):
+                games.setdefault(e["external_uid"], e)
+        return list(games.values())
+    if school_type == "high" and district_has_middle_school:
+        return [e for e in own if not is_middle_school_team(e)]
+    return own

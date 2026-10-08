@@ -32,6 +32,29 @@ def test_entity_id_from_school_calendar_url():
     assert entity_id_from_athletics_url("https://arbiterlive.com/School/Calendar/975") == "975"
 
 
+def _game(uid, team, opponent="vs Delran High School"):
+    return {"external_uid": uid, "team": team, "title": f"{team} {opponent}"}
+
+
+def test_middle_school_level_reads_the_team_not_the_opponent():
+    assert arbiter.is_middle_school_team(_game("1", "Field Hockey - Girls Middle School"))
+    assert not arbiter.is_middle_school_team(_game("2", "Cross Country - Coed Varsity", "vs Northern Burlington Middle School"))
+
+
+def test_games_split_between_a_districts_high_and_middle_school():
+    ms_on_hs = _game("10", "Cross Country - Coed Middle School")
+    varsity = _game("11", "Soccer - Boys Varsity")
+    ms_own = _game("20", "Soccer - Girls Middle School")
+    # Pennsauken: Phifer's own entity has a few games; most are on the high school's.
+    assert arbiter.games_for_school("middle", [ms_own], [ms_on_hs, varsity], True) == [ms_own, ms_on_hs]
+    # A game listed on both entities is kept once.
+    assert arbiter.games_for_school("middle", [ms_on_hs], [ms_on_hs], True) == [ms_on_hs]
+    assert arbiter.games_for_school("high", [ms_on_hs, varsity], [], True) == [varsity]
+    # No middle school with its own scan in the district: the high school keeps them.
+    assert arbiter.games_for_school("high", [ms_on_hs, varsity], [], False) == [ms_on_hs, varsity]
+    assert arbiter.games_for_school("elementary", [ms_on_hs], [], True) == [ms_on_hs]
+
+
 def _month_payload(year, month, events):
     return {"year": year, "month": month, "days": [e["day"] for e in events], "events": events}
 
