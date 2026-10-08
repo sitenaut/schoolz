@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
+import { SeoHead } from "../components/SeoHead";
 import { Modal } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, timeOfDay } from "../lib/calendar";
@@ -149,6 +150,11 @@ export function LocalPage() {
 
   return (
     <div>
+      <SeoHead
+        title="Local events · Cherry Hill & South Jersey · schoolz"
+        description="Free and family community events around Cherry Hill and South Jersey - library programs, township events, the Y, concerts and more, in one calendar."
+        path="/local"
+      />
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>Local</h2>
         <div className="tabs" style={{ margin: 0 }}>
