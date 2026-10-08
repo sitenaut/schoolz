@@ -91,6 +91,12 @@ GOOGLE_CLIENT_SECRET=
 # keys with two spend limits. Unset, both processes share ANTHROPIC_API_KEY.
 ANTHROPIC_API_KEY=
 ANTHROPIC_API_KEY_INTERACTIVE=
+# Local only. When set, the local scheduler container (SCHEDULER=1) uses this
+# instead of ANTHROPIC_API_KEY, so onboarding a district (import it, then
+# run-now every job to prove the scans work; see the onboard-district skill)
+# is its own line in the Anthropic console with its own spend limit. Not
+# used in prod: prod's scheduler keeps ANTHROPIC_API_KEY.
+ANTHROPIC_API_KEY_ONBOARDING=
 
 # Chatbot (services/chat_providers.py). Its own Anthropic key keeps the
 # public chatbot's spend separate from newsletter extraction; falls back to
