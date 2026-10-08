@@ -102,7 +102,9 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Local only: onboarding verification runs (run-now of a new district's
+      # jobs) bill to their own key/workspace when set, else the scans key.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY_ONBOARDING:-${ANTHROPIC_API_KEY:-}}
       SCRAPER_URL: ${SCRAPER_URL:-http://scraper:8765}
       SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
       LOCAL_EVENTS_SCRAPER_URL: ${LOCAL_EVENTS_SCRAPER_URL:-}

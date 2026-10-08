@@ -2,7 +2,7 @@
 
 Things the Runnemede, Black Horse Pike, Bellmawr and Gloucester Township
 onboarding could not find. Each is a lookup for a person, not a code bug. Tick
-off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md`.
+off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md` or the matching `docs/platforms/` file.
 
 ## Black Horse Pike Regional (Highland, Timber Creek, Triton)
 - [ ] Timber Creek half-day and 2-hour-delay schedules: its bell-schedule page publishes only the regular schedule (a PNG). Ask the school or look for a handbook.
