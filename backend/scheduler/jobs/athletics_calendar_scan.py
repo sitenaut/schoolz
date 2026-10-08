@@ -1,11 +1,11 @@
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School, SchoolContentItem
 from scheduler.registry import register_job
-from services.arbiter import entity_id_from_athletics_url, fetch_events
+from services.arbiter import entity_id_from_athletics_url, fetch_events, games_for_school
 
 # A season runs a few months; wide enough either direction to cover a
 # season already in progress and next season's early games without
@@ -39,7 +39,36 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         return "school's athletics_url isn't an ArbiterLive team page (/m/team/<id>) - nothing to fetch"
 
     today = date.today()
-    events = await fetch_events(entity_id, today - timedelta(days=_WINDOW_PAST_DAYS), today + timedelta(days=_WINDOW_FUTURE_DAYS))
+    start, end = today - timedelta(days=_WINDOW_PAST_DAYS), today + timedelta(days=_WINDOW_FUTURE_DAYS)
+    events = await fetch_events(entity_id, start, end)
+
+    # One district's teams can be split across Arbiter entities (Pennsauken's
+    # high-school entity carries most of Phifer Middle's teams); see
+    # arbiter.games_for_school. Only siblings with their own Arbiter scan count.
+    siblings = []
+    if school.district_id and school.school_type in ("middle", "high"):
+        siblings = [
+            s
+            for s in (await db.execute(select(School).where(School.district_id == school.district_id, School.id != school.id))).scalars().all()
+            if entity_id_from_athletics_url(s.athletics_url)
+        ]
+    sibling_hs_events: list[dict] = []
+    if school.school_type == "middle":
+        for hs_entity in {entity_id_from_athletics_url(s.athletics_url) for s in siblings if s.school_type == "high"} - {entity_id}:
+            sibling_hs_events += await fetch_events(hs_entity, start, end)
+    own_uids = {e["external_uid"] for e in events}
+    events = games_for_school(school.school_type, events, sibling_hs_events, any(s.school_type == "middle" for s in siblings))
+    # Games this school's own entity lists but that now belong to a sibling
+    # (stored before the split, or before the sibling was tracked).
+    handed_off = own_uids - {e["external_uid"] for e in events}
+    if handed_off:
+        await db.execute(
+            delete(SchoolContentItem).where(
+                SchoolContentItem.school_id == school_id,
+                SchoolContentItem.source == "arbiter_athletics",
+                SchoolContentItem.external_uid.in_(handed_off),
+            )
+        )
     if not events:
         return "WARNING[no_arbiter_events]: no games found on ArbiterLive for this school"
 
