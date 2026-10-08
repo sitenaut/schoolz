@@ -52,7 +52,7 @@ _ALLOWED_PATHS = {
     "/chcomms",
     "/survey",
 }
-_ALLOWED_PREFIXES = ("/schools/",)
+_ALLOWED_PREFIXES = ("/schools/", "/seasonal/")
 
 
 class PathNotAllowed(ValueError):

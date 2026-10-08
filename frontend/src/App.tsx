@@ -10,6 +10,7 @@ import { TodayPage } from "./pages/TodayPage";
 import { PickSchoolsPage } from "./pages/PickSchoolsPage";
 import { LunchPage } from "./pages/LunchPage";
 import { LocalPage } from "./pages/LocalPage";
+import { SeasonalPage } from "./pages/SeasonalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -206,6 +207,7 @@ function Routed() {
         />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/local" element={<LocalPage />} />
+        <Route path="/seasonal/:season" element={<SeasonalPage />} />
         <Route
           path="/admin"
           element={

@@ -1,9 +1,9 @@
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, LargeBinary, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, LargeBinary, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -1396,6 +1396,37 @@ class LocalEvent(Base):
     categories: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class SeasonalGuide(Base):
+    """A link to someone else's seasonal guide (a Halloween house map, a
+    fall-festival roundup), shown while its window is open: the top-bar
+    season badge, /seasonal/<season>, the Calendar banner and the chatbot.
+
+    Links only, deliberately. These guides are other people's curation -
+    the Halloween map's publisher asks in writing that her work not be
+    copied or compiled into another directory - so we store a title, the
+    publisher's name, the URL and a note in our own words, never their
+    listings. Importing a guide's data needs the publisher's permission
+    first and belongs in its own table."""
+
+    __tablename__ = "seasonal_guides"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    # Groups guides under one badge and page; frontend/src/lib/seasonal.ts
+    # maps a season to its emoji and heading.
+    season: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    publisher: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Inclusive, in Eastern dates - shown from starts_on through ends_on.
+    starts_on: Mapped[date] = mapped_column(Date, nullable=False)
+    ends_on: Mapped[date] = mapped_column(Date, nullable=False)
+    # Lower first; the headline guide (the map) leads the badge's page.
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

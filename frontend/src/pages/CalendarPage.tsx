@@ -5,6 +5,7 @@ import { townsLabel } from "../lib/towns";
 import { apiFetch } from "../api";
 import { EventSheet, ItemRow } from "../components/today";
 import { SeoHead } from "../components/SeoHead";
+import { SeasonalBanner } from "../components/SeasonalBanner";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { CLOSED_RE, HALF_DAY_RE, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
@@ -329,6 +330,7 @@ export function CalendarPage() {
           </button>
         </div>
       </div>
+      <SeasonalBanner />
 
       {deepSchool && (
         <div className="scopeBar">

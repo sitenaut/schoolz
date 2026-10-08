@@ -73,6 +73,7 @@ def test_prerender_allows_language_prefixed_paths():
     assert prerender._is_allowed("/es")
     assert prerender._is_allowed("/es/schools/some-school")
     assert prerender._is_allowed("/es/lunch")
+    assert prerender._is_allowed("/seasonal/halloween")
     assert prerender._is_allowed("/zh/schools/some-school")
     assert prerender._is_allowed("/ko/lunch")
     assert prerender._is_allowed("/hi")
