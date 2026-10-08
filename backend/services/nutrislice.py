@@ -11,7 +11,8 @@ token. A school's location is stored as "district/school-slug" (e.g.
   `menu_items` list of station headers, text rows and foods.
 
 Entrées are the foods whose `food_category` is "entree" (for a breakfast
-with none, its "grain" foods), read deterministically - no model. Every day repeats the same standing choices (a
+with none, its "grain" foods; a day with no entrée whose first food is
+uncategorized, that first food), read deterministically - no model. Every day repeats the same standing choices (a
 ham and cheese sandwich), so the shared `day_descriptions` rule
 (`fdmealplanner.day_descriptions`) drops items served on most days.
 """
@@ -42,11 +43,20 @@ def entrees(menu_items: list[dict] | None, meal: str = "lunch") -> list[str]:
     with no entrée at all, so a breakfast day without one falls back to its
     grains."""
     by_category: dict[str, list[str]] = {}
+    first_category = None
     for item in menu_items or []:
         food = item.get("food") or {}
         name = (food.get("name") or "").strip()
         if name:
-            by_category.setdefault((food.get("food_category") or "").lower(), []).append(name)
+            category = (food.get("food_category") or "").lower()
+            if first_category is None:
+                first_category = category
+            by_category.setdefault(category, []).append(name)
+    if "entree" not in by_category and first_category == "":
+        # A tenant that files little or nothing (Pennsauken: lunch never,
+        # breakfast only the odd "grain") lists the day's main item first,
+        # then its sides and the standing cereal/milk/fruit rows.
+        return by_category[""][:1]
     names = by_category.get("entree") or (by_category.get("grain", []) if meal == "breakfast" else [])
     return list(dict.fromkeys(names))
 

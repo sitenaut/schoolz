@@ -1,6 +1,6 @@
 # Finalsite
 
-Lenape Regional, Merchantville, Black Horse Pike Regional (which also covers Bellmawr and Gloucester Township, both Apptegy: see apptegy.md). Most common platform so far; the main crawl guide already covers its calendar/lunch/roster patterns.
+Lenape Regional, Merchantville, Pennsauken, Black Horse Pike Regional (which also covers Bellmawr and Gloucester Township, both Apptegy: see apptegy.md). Most common platform so far; the main crawl guide already covers its calendar/lunch/roster patterns.
 
 Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler loads only the platform it is looking at. Same rules: when you confirm a new shape, add it here in the same PR.
 
@@ -29,6 +29,46 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   works anonymously): call the main office, ext. 510, before 8:45 AM. A nav-only
   crawl misses it. PTA is Facebook-only;
   no Smore/newsletter feed.
+
+- **Pennsauken (Finalsite, one subdomain per school)** — `backend/seed/pennsauken.json`.
+  - **Calendar ids are in the page HTML**: each `.fsCalendar` on `/calendars` carries
+    `data-calendar-ids="N"` under a titled tab, so no clipboard intercept is needed
+    (`calendars.json` 401s). 2 District, 9 PHS, 3 Burling, 8 Phifer, 10 Intermediate,
+    11 Roosevelt, 13 Baldwin, 4 Carson, 5 Delair, 6 Fine, 7 Franklin; skip 1 (sample),
+    12 Purchasing, 14 Weekends. Ids work on every host. Every school feed re-posts the
+    district Board Meetings under the same UIDs.
+  - **Feed 2 has no closures.** Holidays/closures/early dismissals are only in the
+    year-calendar PDF on `/calendars`, so `calendar_pdf_url` tracks that page. Its link
+    is a resource-manager wrapper (`<a data-file-name="...Calendar...pdf"
+    href="/fs/resource-manager/view/<uuid>">`) with no `.pdf` in the href, and a
+    school's direct-linked `CarsonCalendarforSept2026.pdf` sits further down;
+    `district_calendar_pdf.find_pdf_link` checks resource-manager anchors first.
+  - **Resource lists are often `<button data-resource-uuid>` with no href** (Spear
+    Point pages); `/fs/resource-manager/view/<uuid>` on the school host redirects to the
+    file. The nearby label belongs to the *previous* item, so identify a uuid by the
+    filename it redirects to. Many PDFs are scanned images with no text layer.
+  - **Lunch is Nutrislice** (`pennsauken/<slug>`, all but Burling). Every food has an
+    empty `food_category`; the day's main item is listed first, so
+    `nutrislice.entrees` takes the first food when nothing is categorized.
+  - **Bell times**: `/families/school-bell-schedules` (mirrored on every host) has
+    flat times for some schools and links each school's own PDF; others post the PDF
+    only on the principal's "Spear Point" page (slug varies: `/meet-the-principal/spearpoint`,
+    `/meet-the-principals/the-spear-point-principals-resources`). Because every host
+    lists every school's PDF, `documents.scan` keeps a bell schedule only when its
+    *file name* names this school (short name, first word or initials, e.g. `PHS`;
+    district-name words don't count) and drops the ones naming a sibling. Carson's
+    PDFs are unnamed resource links, so Carson gets none.
+  - **Footer phone** `tel:` links carry a hidden "Phone: " label; `school_info` keeps
+    only the number.
+  - **Athletics**: ArbiterLive `Teams?entityId=17834` is the high school (and also
+    carries some middle-school teams); Phifer Middle is `/m/team/10545` (the owner
+    supplied it). `pennsaukenindiansathletics.com` is VNN/PlayOn, not an Arbiter
+    white-label.
+  - **Staff**: per-school `/directory` (client-paginated, departments, no titles;
+    every school has "FILLER STAFF <code>" placeholders, which `_parse_page` drops).
+    Baldwin's 83 span two pages; its first paginated run came back empty after 3
+    minutes and the re-run got 69, so treat one empty run as transient.
+    No `<img>` in the school headers, only hero photos; every school uses the district logo.
 
 - **Black Horse Pike Regional (Finalsite) + its sending districts** — Runnemede
   (above), Bellmawr, Gloucester Township. `backend/seed/{black_horse_pike,bellmawr,

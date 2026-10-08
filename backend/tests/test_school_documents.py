@@ -88,6 +88,35 @@ def test_shared_site_bell_schedules_narrow_to_the_schools_own():
     assert keep_own_school_bell_schedules([neeta], ["Neeta"]) == ([neeta], False)
 
 
+def test_shared_district_bell_page_drops_sibling_schools_files():
+    from services.school_documents import keep_own_school_bell_schedules, school_name_tokens
+
+    district = "Pennsauken Township School District"
+    page = "School Bell Schedules - Pennsauken Public Schools"
+    base = "https://resources.finalsite.net/images/v1/pennsaukennet/x/"
+    phs = {"doc_type": "bell_schedule", "title": page, "url": base + "PHSBellSchedules.pdf"}
+    fine = {"doc_type": "bell_schedule", "title": page, "url": base + "FineBellSchedule24-25.pdf"}
+    delair = {"doc_type": "bell_schedule", "title": page, "url": base + "2025-2026DelairBellSchedule.pdf"}
+    code = {"doc_type": "handbook", "title": "District Code of Student Conduct - Pennsauken Public Schools", "url": "https://docs.google.com/x"}
+    entries = [phs, fine, delair, code]
+    tokens = {
+        "phs": school_name_tokens("Pennsauken High School", "Pennsauken High", district),
+        "fine": school_name_tokens("George B. Fine Elementary School", "Fine", district),
+        "delair": school_name_tokens("Delair Elementary School", "Delair", district),
+        "carson": school_name_tokens("G. Harry Carson Elementary School", "Carson", district),
+    }
+    assert "PHS" in tokens["phs"] and "Pennsauken" not in tokens["phs"]
+    assert "G" not in tokens["carson"]
+
+    def keep(slug):
+        return keep_own_school_bell_schedules(entries, tokens[slug], [t for s, t in tokens.items() if s != slug])[0]
+
+    assert keep("phs") == [phs, code]
+    assert keep("fine") == [fine, code]
+    # Carson's own schedule isn't in the list at all: none of these are its.
+    assert keep("carson") == [code]
+
+
 def test_presence_site_is_read_over_plain_http_never_the_scraper(monkeypatch):
     import asyncio
 

@@ -72,6 +72,10 @@ _CALENDAR_TOOL = {
 
 
 _BASE_HREF_RE = re.compile(r"""<base\s[^>]*href=["']([^"']+)["']""", re.I)
+_RESOURCE_ANCHOR_RE = re.compile(
+    r"""<a\s(?=[^>]*data-file-name=["'](?P<name>[^"']+\.pdf)["'])(?=[^>]*href=["'](?P<href>[^"']*/fs/resource-manager/view/[^"']+)["'])[^>]*>""",
+    re.I,
+)
 _DRIVE_ANCHOR_RE = re.compile(r"""<a\s[^>]*href=["'][^"']*drive\.google\.com/file/d/([\w-]{20,})/[^"']*["'][^>]*>""", re.I)
 
 
@@ -100,6 +104,13 @@ def find_pdf_link(html: str, page_url: str) -> str | None:
     text = html.replace("\\/", "/")
     base = _BASE_HREF_RE.search(text)
     base_url = urljoin(page_url, base.group(1)) if base else page_url
+    # Finalsite resource-manager links carry the filename only in
+    # data-file-name; the href is a /fs/resource-manager/view/<uuid> redirect.
+    # Pennsauken's page lists its year calendar this way above a school's
+    # direct-linked "CarsonCalendarforSept2026.pdf", so these come first.
+    for m in _RESOURCE_ANCHOR_RE.finditer(text):
+        if "calendar" in m.group("name").lower():
+            return urljoin(base_url, m.group("href"))
     found: list[str] = []
     for m in _PDF_URL_RE.finditer(text):
         if m.group(0) not in found:

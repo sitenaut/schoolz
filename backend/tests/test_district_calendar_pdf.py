@@ -48,6 +48,15 @@ def test_drive_calendar_link_and_base_href():
     assert find_pdf_link(only_pdf, "https://www.clemsd.org/a/b/index.html") == "https://www.clemsd.org/documents/x.pdf"
 
 
+def test_finalsite_resource_manager_calendar_beats_a_direct_school_pdf():
+    html = (
+        '<a data-file-name="2026-2027CalendarUpdated9-15-26.pdf" data-resource-uuid="202275b0" '
+        'href="/fs/resource-manager/view/202275b0-e22f" target="_blank">2026-2027 Pennsauken Public Schools Calendar</a>'
+        '<a class="fsResourceLink" href="https://resources.finalsite.net/images/v1/pennsaukennet/x/CarsonCalendarforSept2026.pdf">Carson</a>'
+    )
+    assert find_pdf_link(html, "https://www.pennsauken.net/calendars") == "https://www.pennsauken.net/fs/resource-manager/view/202275b0-e22f"
+
+
 def test_drive_calendar_label_must_sit_against_the_link():
     nav = '<a href="/cal">Calendar</a> <a href="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAA/view">Referral Services</a>'
     assert find_pdf_link(nav, "https://x.test/") is None

@@ -33,6 +33,17 @@ def test_breakfast_without_an_entree_falls_back_to_grains():
     assert nutrislice.entrees(day + [_food("Fresh Whole Wheat Bagel", "entree")], "breakfast") == ["Fresh Whole Wheat Bagel"]
 
 
+def test_uncategorized_tenant_takes_the_first_food():
+    day = [_food("MOZZ STICKS, WG", ""), _food("Marinara Cup", ""), _food("MILK MIX - AVE", "")]
+    assert nutrislice.entrees(day) == ["MOZZ STICKS, WG"]
+    assert nutrislice.entrees(day, "breakfast") == ["MOZZ STICKS, WG"]
+    # Breakfast files only some foods: an uncategorized lead item still wins,
+    # a categorized one (grain) goes through the usual fallback.
+    cereal = _food("Cereal Bowl - Cocoa Puffs", "other")
+    assert nutrislice.entrees([_food("YOGURT-RASPBERRY DANIMAL", ""), cereal], "breakfast") == ["YOGURT-RASPBERRY DANIMAL"]
+    assert nutrislice.entrees([_food("PUMPKIN BREAD", "grain"), cereal], "breakfast") == ["PUMPKIN BREAD"]
+
+
 def test_parse_location():
     assert nutrislice.parse_location("cinnaminson/eleanor-rush-school") == ("cinnaminson", "eleanor-rush-school")
     assert nutrislice.parse_location("2984/16222/3") is None

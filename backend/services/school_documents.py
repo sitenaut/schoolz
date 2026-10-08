@@ -211,18 +211,47 @@ def _find_letter_day_pdfs(html: str, page_url: str, today: date | None = None) -
     return results
 
 
-def keep_own_school_bell_schedules(entries: list[dict], school_tokens: list[str]) -> tuple[list[dict], bool]:
+def _names_school(entry: dict, tokens: list[str]) -> bool:
+    # File name and title only: the rest of the URL is a host or CDN path
+    # (".../pennsaukennet/...") that names every school's file alike.
+    text = unquote(entry["url"].rsplit("/", 1)[-1] + " " + entry["title"]).lower()
+    return any(re.search(rf"(?<![a-z]){re.escape(t)}", text) for t in tokens)
+
+
+def keep_own_school_bell_schedules(
+    entries: list[dict], school_tokens: list[str], sibling_tokens: list[list[str]] = ()
+) -> tuple[list[dict], bool]:
     """Sister schools on one shared site (Medford Lakes) each get their own
     bell-schedule PDF, and the nav lists all of them. When some of the
     bell schedules name this school in their file name or title, keep only
-    those; when none do (one schedule for everyone), keep them all. Returns
-    (entries, filtered)."""
+    those. When none do, drop the ones that name a sibling school
+    (Pennsauken's shared bell page lists every school's PDF, and Carson's
+    own sits behind an unnamed resource link); the rest are one schedule
+    for everyone. Returns (entries, filtered)."""
     tokens = [t.lower() for t in school_tokens if t]
     bells = [e for e in entries if e["doc_type"] == "bell_schedule"]
-    own = [e for e in bells if any(t in unquote(e["url"] + " " + e["title"]).lower() for t in tokens)]
-    if not own or len(own) == len(bells):
+    own = [e for e in bells if _names_school(e, tokens)]
+    if own and len(own) < len(bells):
+        keep = own
+    elif not own:
+        keep = [e for e in bells if not any(_names_school(e, [t.lower() for t in sib if t]) for sib in sibling_tokens)]
+    else:
+        keep = bells
+    if len(keep) == len(bells):
         return entries, False
-    return [e for e in entries if e["doc_type"] != "bell_schedule" or e in own], True
+    return [e for e in entries if e["doc_type"] != "bell_schedule" or e in keep], True
+
+
+def school_name_tokens(name: str, short_name: str | None, district_name: str | None) -> list[str]:
+    """Words that identify a school in a file name: its short name, its first
+    word, and its initials ("PHS" for Pennsauken High School) - minus any
+    word that is also in the district's name, which every sibling shares."""
+    shared = {w.lower() for w in re.findall(r"[A-Za-z]+", district_name or "")}
+    words = re.findall(r"[A-Za-z]+", name)
+    initials = "".join(w[0] for w in words if w[0].isupper())
+    tokens = [short_name, words[0] if words else None, initials if len(initials) >= 3 else None]
+    # A bare initial ("G. Harry Carson") would match almost any file name.
+    return [t for t in dict.fromkeys(tokens) if t and len(t) >= 3 and t.lower() not in shared]
 
 
 def looks_like_file_download(headers: httpx.Headers) -> bool:
