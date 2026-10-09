@@ -83,7 +83,10 @@ run)
   [ -n "${!key_var:-}" ] || die "$key_var is not set - run: scripts/schoolz-api.sh login prod"
   export "$key_var"
 
-  exec python3 - "$base_url" "$web_url" "$key_var" "$token_file" "$reason" "$secrets" -- "$@" <<'PY'
+  # The program goes in as -c text, not on stdin: the approved command inherits
+  # this script's stdin, and a heredoc there would hand it an empty pipe (op
+  # then reads "piped JSON" and fails; interactive commands lose the terminal).
+  read -r -d '' prog <<'PY' || true
 import json, os, shlex, subprocess, sys, time, urllib.error, urllib.request
 
 base_url, web_url, key_var, token_file, reason, secrets_csv = sys.argv[1:7]
@@ -156,6 +159,7 @@ try:
 except FileNotFoundError:
     sys.exit(f"{cmd[0]}: command not found")
 PY
+  exec python3 -c "$prog" "$base_url" "$web_url" "$key_var" "$token_file" "$reason" "$secrets" -- "$@"
   ;;
 
 *) usage ;;
