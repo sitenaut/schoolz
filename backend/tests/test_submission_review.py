@@ -289,3 +289,109 @@ async def test_a_link_submission_has_nothing_to_read():
         assert (await client.post(f"/submissions/{sid}/extract", headers=admin)).status_code == 400
         review = await client.get(f"/submissions/{sid}", headers=admin)
         assert review.status_code == 200 and review.json()["items"] == []
+
+
+LOCAL_FLYER = [
+    {"title": "Harvest Fest", "category": "event", "start": "2026-10-17T11:00:00", "end": "2026-10-17T15:00:00",
+     "stated_weekday": "Saturday", "tentative": False, "description": "Hayrides, kids' crafts, <b>free</b> cider",
+     "reader_note": None, "venue_name": "Barclay Farmstead", "venue_address": "209 Greentree Rd, Cherry Hill, NJ",
+     "source_excerpt": "HARVEST FEST Sat Oct 17, 11-3 at Barclay Farmstead"},
+]
+
+
+@pytest.mark.anyio
+async def test_a_local_item_publishes_to_local_events_without_a_school_and_comes_back_off(monkeypatch):
+    from local_events.prune import prune_orphaned_events
+    from models import LocalEvent
+
+    monkeypatch.setattr(submission_review, "today_local", lambda: TODAY)
+
+    async def _read(data, **kwargs):
+        return [c for c in (submission_review._clean_item(i) for i in LOCAL_FLYER) if c]
+
+    monkeypatch.setattr(submission_review, "read_upload", _read)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        sid = await _uploaded(client)  # no school on the submission
+        review = (await client.post(f"/submissions/{sid}/extract", headers=admin)).json()
+        draft = review["items"][0]
+        assert draft["venue_name"] == "Barclay Farmstead" and draft["scope"] == "school"
+
+        # As a school item it still needs a school...
+        assert (await client.post(f"/submissions/{sid}/publish", json={"item_ids": [draft["id"]]}, headers=admin)).status_code == 400
+        # ...but the reviewer can send it to /local instead.
+        bad = await client.patch(f"/submissions/{sid}/items/{draft['id']}", json={"local_categories": ["nonsense"]}, headers=admin)
+        assert bad.status_code == 400
+        assert "music" in review["local_categories"]
+        moved = await client.patch(
+            f"/submissions/{sid}/items/{draft['id']}",
+            json={"scope": "local", "local_categories": ["music", "classes-&-lessons"]},
+            headers=admin,
+        )
+        assert moved.status_code == 200, moved.text
+        published = await client.post(f"/submissions/{sid}/publish", json={"item_ids": [draft["id"]]}, headers=admin)
+        assert published.status_code == 200, published.text
+        item = published.json()["items"][0]
+        assert item["local_event_id"] and item["content_item_id"] is None
+        assert published.json()["submission"]["status"] == "approved"
+
+        async with database.SessionLocal() as db:
+            event = (await db.execute(select(LocalEvent).where(LocalEvent.id == item["local_event_id"]))).scalar_one()
+            assert event.source == "community" and event.venue_name == "Barclay Farmstead"
+            assert event.description == "Hayrides, kids' crafts, free cider"  # markup stripped like any feed
+            assert "free" in event.categories and "family" in event.categories  # inferred from the text
+            assert {"music", "classes-&-lessons"} <= set(event.categories)  # picked by the reviewer
+            # 11 am Eastern, not UTC.
+            assert event.start_time.astimezone(_DEFAULT_TZ).hour == 11 and event.all_day is False
+            # A job edit/delete prunes orphaned sources; this one has no job.
+            await prune_orphaned_events(db)
+            assert (await db.execute(select(LocalEvent).where(LocalEvent.id == event.id))).scalar_one_or_none() is not None
+
+        # Moving a published item between destinations needs an unpublish first.
+        blocked = await client.patch(f"/submissions/{sid}/items/{draft['id']}", json={"scope": "school"}, headers=admin)
+        assert blocked.status_code == 400
+        assert (await client.delete(f"/submissions/{sid}/items/{draft['id']}", headers=admin)).status_code == 400
+
+        # Editing it edits the live event.
+        await client.patch(f"/submissions/{sid}/items/{draft['id']}", json={"venue_name": "Barclay Farm"}, headers=admin)
+        async with database.SessionLocal() as db:
+            assert (await db.execute(select(LocalEvent.venue_name).where(LocalEvent.id == event.id))).scalar_one() == "Barclay Farm"
+
+        # Reading again leaves the published draft alone.
+        again = (await client.post(f"/submissions/{sid}/extract", headers=admin)).json()
+        assert [i["local_event_id"] for i in again["items"] if i["local_event_id"]] == [event.id]
+
+        off = await client.post(f"/submissions/{sid}/items/{draft['id']}/unpublish", headers=admin)
+        assert off.status_code == 200 and off.json()["submission"]["status"] == "pending"
+        assert off.json()["items"][0]["local_event_id"] is None
+        async with database.SessionLocal() as db:
+            assert (await db.execute(select(LocalEvent).where(LocalEvent.id == event.id))).scalar_one_or_none() is None
+
+
+@pytest.mark.anyio
+async def test_a_local_draft_is_flagged_when_a_feed_already_has_the_event(monkeypatch):
+    from models import LocalEvent
+
+    monkeypatch.setattr(submission_review, "today_local", lambda: TODAY)
+    async with database.SessionLocal() as db:
+        db.add(
+            LocalEvent(
+                source="some-feed", source_event_id=uuid.uuid4().hex, title="Harvest Fest at Barclay Farmstead",
+                start_time=datetime(2026, 10, 17, 15, 0, tzinfo=_DEFAULT_TZ), categories=[],
+            )
+        )
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        sid = await _uploaded(client)
+        added = await client.post(
+            f"/submissions/{sid}/items",
+            json={"title": "Harvest Fest", "scope": "local", "start_local": "2026-10-17T11:00:00"},
+            headers=admin,
+        )
+        flags = added.json()["items"][0]["flags"]
+        assert [f["code"] for f in flags] == ["already_listed"] and flags[0]["hold"] is True

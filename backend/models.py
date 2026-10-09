@@ -1351,8 +1351,14 @@ class CommunitySubmissionItem(Base):
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     category: Mapped[str] = mapped_column(String(30), default="event", nullable=False)
-    # "school" | "district" - same meaning as SchoolContentItem.scope.
+    # "school" | "district" - same meaning as SchoolContentItem.scope - or
+    # "local": a community event for /local, not tied to any school.
     scope: Mapped[str] = mapped_column(String(10), default="school", nullable=False)
+    # Only read for scope "local".
+    venue_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    venue_address: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # Tags added by hand on top of the ones inferred from the text.
+    local_categories: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     start_local: Mapped[str | None] = mapped_column(String(19), nullable=True)
     end_local: Mapped[str | None] = mapped_column(String(19), nullable=True)
     stated_weekday: Mapped[str | None] = mapped_column(String(10), nullable=True)
@@ -1368,6 +1374,11 @@ class CommunitySubmissionItem(Base):
     )
     content_item_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("school_content_items.id", ondelete="SET NULL"), nullable=True
+    )
+    # The published LocalEvent, for a local-scope draft. A draft is published
+    # while either pointer is set.
+    local_event_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("local_events.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
@@ -1397,7 +1408,7 @@ class LocalEvent(Base):
     """A community event (library, township, YMCA, concerts, ...) pulled in
     by the local_events.refresh job - the pipeline in local_events/ is a
     port of billz's events feed. Unlike SchoolContentItem this is not
-    school data: it's shown only to signed-in users, on /local.
+    school data: it lives on /local, which is public.
 
     Same-source rows upsert on (source, source_event_id); a cross-source
     duplicate (same title/time/venue from two feeds) is merged into the

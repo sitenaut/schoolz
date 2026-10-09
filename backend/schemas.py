@@ -1171,7 +1171,11 @@ class SubmissionItemIn(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=300)
     description: str | None = Field(default=None, max_length=5000)
     category: str | None = Field(default=None, max_length=30)
-    scope: str | None = Field(default=None, pattern="^(school|district)$")
+    scope: str | None = Field(default=None, pattern="^(school|district|local)$")
+    # Local scope only. "" clears.
+    venue_name: str | None = Field(default=None, max_length=200)
+    venue_address: str | None = Field(default=None, max_length=300)
+    local_categories: list[str] | None = Field(default=None, max_length=20)
     # "" clears the date; otherwise local wall-clock, no offset.
     start_local: str | None = Field(default=None, pattern=_LOCAL_DATE_PATTERN + "|^$")
     end_local: str | None = Field(default=None, pattern=_LOCAL_DATE_PATTERN + "|^$")
@@ -1199,8 +1203,12 @@ class SubmissionItemOut(BaseModel):
     stated_weekday: str | None
     tentative: bool
     source_excerpt: str | None
+    venue_name: str | None = None
+    venue_address: str | None = None
+    local_categories: list[str] = []
     replaces_item_id: str | None
     content_item_id: str | None
+    local_event_id: str | None = None
     flags: list[SubmissionFlag]
 
 
@@ -1210,6 +1218,8 @@ class SubmissionReviewOut(BaseModel):
     # Page-level warnings (the sender's note naming a date no item has).
     note_flags: list[str]
     categories: list[str]
+    # Tags a reviewer can add to a local event.
+    local_categories: list[str] = []
 
 
 class SubmissionPublishIn(BaseModel):

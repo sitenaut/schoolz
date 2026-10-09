@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import LocalEvent, ScheduledJob
 
 KIND = "local_events.refresh"
+# Events a reviewer published from a community submission. No job lists this
+# source, so without the exemption the next job edit would delete them all.
+COMMUNITY_SOURCE = "community"
 SOURCE_KEYS = (
     "evvnt_sources",
     "json_sources",
@@ -54,8 +57,6 @@ async def prune_orphaned_events(db: AsyncSession) -> int:
     keep: set[str] = set()
     for p in params:
         keep |= source_names(p)
-    stmt = delete(LocalEvent)
-    if keep:
-        stmt = stmt.where(LocalEvent.source.not_in(keep))
-    result = await db.execute(stmt)
+    keep.add(COMMUNITY_SOURCE)
+    result = await db.execute(delete(LocalEvent).where(LocalEvent.source.not_in(keep)))
     return result.rowcount or 0

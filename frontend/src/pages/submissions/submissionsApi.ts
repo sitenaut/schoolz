@@ -24,23 +24,29 @@ export type CommunitySubmission = {
 
 export type SubmissionFlag = { code: string; text: string; hold: boolean; item_id: string | null };
 
-/** A draft calendar item read off (or typed in beside) a submission. It is
- * live on the public calendar exactly while content_item_id is set. */
+/** A draft item read off (or typed in beside) a submission. It is live
+ * exactly while content_item_id (school calendar) or local_event_id (/local)
+ * is set. */
 export type SubmissionItem = {
   id: string;
   origin: "model" | "manual";
   title: string;
   description: string | null;
   category: string;
-  scope: "school" | "district";
+  scope: "school" | "district" | "local";
   // Local wall-clock, "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS" - never a UTC instant.
   start_local: string | null;
   end_local: string | null;
   stated_weekday: string | null;
   tentative: boolean;
   source_excerpt: string | null;
+  // Local scope only.
+  venue_name: string | null;
+  venue_address: string | null;
+  local_categories: string[];
   replaces_item_id: string | null;
   content_item_id: string | null;
+  local_event_id: string | null;
   flags: SubmissionFlag[];
 };
 
@@ -49,11 +55,16 @@ export type SubmissionReview = {
   items: SubmissionItem[];
   note_flags: string[];
   categories: string[];
+  // Tags a reviewer can add to a local event.
+  local_categories: string[];
 };
 
 export type SubmissionItemInput = Partial<
   Pick<SubmissionItem, "title" | "category" | "scope" | "tentative"> & {
     description: string;
+    venue_name: string;
+    venue_address: string;
+    local_categories: string[];
     start_local: string;
     end_local: string;
     replaces_item_id: string;

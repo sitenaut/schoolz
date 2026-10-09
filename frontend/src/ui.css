@@ -1690,6 +1690,11 @@ button.link-card:disabled {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0 12px;
 }
+.sr-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .sr-switch {
   display: flex;
   gap: 10px;
