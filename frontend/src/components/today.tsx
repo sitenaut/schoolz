@@ -337,8 +337,15 @@ export function WeatherFact({ w, children }: { w: TodayWeather; children?: React
         <div className="k">{!w.day_label || w.day_label === "Today" ? t("Weather at school") : t("{{day}}'s weather at school", { day: w.day_label })}</div>
         <div className="v">
           {temp(w.dropoff_temp)}{" "}
-          {w.dropoff_label === "Now" ? t("now") : w.dropoff_label.toLowerCase().startsWith("morning") ? t("in the morning") : t("at {{label}}", { label: w.dropoff_label })} → {temp(w.pickup_temp)}{" "}
-          {w.pickup_label.toLowerCase().startsWith("afternoon") ? t("in the afternoon") : t("at {{label}}", { label: w.pickup_label })}
+          {w.dropoff_label === "Now" ? t("now") : w.dropoff_label.toLowerCase().startsWith("morning") ? t("in the morning") : t("at {{label}}", { label: w.dropoff_label })}
+          {/* Past dismissal NWS has no period for pickup (its hourly forecast starts at the current hour): say nothing rather than "→ –". */}
+          {w.pickup_temp !== null && (
+            <>
+              {" → "}
+              {temp(w.pickup_temp)}{" "}
+              {w.pickup_label.toLowerCase().startsWith("afternoon") ? t("in the afternoon") : t("at {{label}}", { label: w.pickup_label })}
+            </>
+          )}
         </div>
         <div className="weatherLine">
           <div className="sub">{details.join(" · ")}</div>
