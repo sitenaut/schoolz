@@ -373,7 +373,7 @@ def _job_finding(point: DataPoint, ctx: AuditContext, job: ScheduledJob, *, has_
 
     if run and run.status == "warning" and run.error_code in not_found_codes and not has_data:
         return Finding(NONE, point.none_why, point.none_why_district, point.none_next, point.ask,
-                       tag="not found", tag_district="not found", last_good=good, error_code=run.error_code, **base)
+                       tag="not found", tag_district="not found", error_code=run.error_code, **base)
     if run and (run.status == "error" or (run.status == "warning" and not (warning_ok and has_data))):
         code = run.error_code or ("unspecified" if run.status == "warning" else "unknown")
         kind = "warning" if run.status == "warning" else "error"
@@ -401,11 +401,11 @@ def _job_finding(point: DataPoint, ctx: AuditContext, job: ScheduledJob, *, has_
     if has_data is False:
         if missing_status == NONE:
             return Finding(NONE, point.none_why, point.none_why_district, point.none_next, point.ask,
-                           tag="not found", tag_district="not found", last_good=good, **base)
-        return Finding(FAILING, f"The last {job.kind} run succeeded but nothing is on file.",
+                           tag="not found", tag_district="not found", **base)
+        return Finding(FAILING, f"The last {job.kind} run succeeded but found no {point.label.lower()}.",
                        "The published source didn't contain this when we last checked.",
                        "Open the run's log to see what it read.", point.ask, tag="scan found nothing",
-                       tag_district="not found in the source", last_good=good, **base)
+                       tag_district="not found in the source", **base)
     return Finding(CURRENT, "The last scan succeeded and the data on file is inside its freshness window.",
                    "On file and up to date.", "Nothing to do.", "Nothing needed.", last_good=good, **base)
 
