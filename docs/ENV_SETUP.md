@@ -134,7 +134,7 @@ SCRAPER_API_KEY=<any long random string>
 LOCAL_EVENTS_SCRAPER_KEY=
 LOCAL_EVENTS_SCRAPER_URL=
 
-# Gmail OAuth (for the email parser - "Connect Gmail" on /gmail). NOT needed
+# Gmail OAuth (for the email parser - "Connect Gmail" on /admin/email). NOT needed
 # for Smore newsletter scanning (/smore), which needs no Google credentials
 # at all. See notes/prod-checklist.md for how to create these in Google
 # Cloud Console; register <PUBLIC_API_URL>/gmail/callback as the redirect URI.

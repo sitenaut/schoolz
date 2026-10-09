@@ -34,5 +34,5 @@ export function AdminLayout() {
 export function AdminIndexRedirect() {
   const { user } = useAuth();
   const first = visibleAdminTabs(user)[0];
-  return <Navigate to={first ? first.to : "/account/admin"} replace />;
+  return <Navigate to={first ? first.to : "/"} replace />;
 }

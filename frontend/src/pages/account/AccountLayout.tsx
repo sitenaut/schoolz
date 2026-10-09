@@ -1,6 +1,5 @@
-import { can } from "../../lib/permissions";
 import { NavLink, Outlet } from "react-router-dom";
-import { IconBell, IconLock, IconSettings, IconShield, IconUser, IconUsers } from "../../components/icons";
+import { IconBell, IconLock, IconShield, IconUser, IconUsers } from "../../components/icons";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 
@@ -31,14 +30,6 @@ export function AccountLayout() {
           <NavLink to="/account/notifications">
             <IconBell /> Notifications
           </NavLink>
-          {can(user, "analytics.view") && (
-            <>
-              <div className="nav-sep" aria-hidden="true" />
-              <NavLink to="/account/admin">
-                <IconSettings /> Admin
-              </NavLink>
-            </>
-          )}
         </nav>
         <div style={{ minWidth: 0 }}>
           <Outlet />
