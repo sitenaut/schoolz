@@ -33,6 +33,17 @@
       ],
       "tribe_sources": [
         {
+          "name": "haddon_heights_library",
+          "base_url": "https://www.haddonheightslibrary.com",
+          "days_ahead": 90,
+          "default_categories": [
+            "haddon-heights",
+            "library"
+          ],
+          "venue_name": "Haddon Heights Library",
+          "venue_address": "608 Station Avenue, Haddon Heights, NJ 08035"
+        },
+        {
           "name": "camden_county_parks",
           "base_url": "https://www.camdencounty.com",
           "days_ahead": 90,
@@ -57,6 +68,27 @@
           "default_categories": [
             "music",
             "concerts"
+          ]
+        },
+        {
+          "name": "audubon_library",
+          "base_url": "https://audubonlibrary.org",
+          "days_ahead": 90,
+          "venue_name": "Free Public Library of Audubon",
+          "venue_address": "239 Oakland Avenue, Audubon, NJ 08106",
+          "default_categories": [
+            "audubon",
+            "library"
+          ]
+        },
+        {
+          "name": "runnemede_library",
+          "base_url": "https://runnemedepubliclibrary.org",
+          "days_ahead": 90,
+          "via_scraper": true,
+          "default_categories": [
+            "runnemede",
+            "library"
           ]
         }
       ],
@@ -123,6 +155,110 @@
           ],
           "default_categories": [
             "sports"
+          ]
+        }
+      ],
+      "ical_sources": [
+        {
+          "name": "haddonfield_library",
+          "url": "https://haddonfield.librarycalendar.com/events/feed/ical",
+          "venue_name": "Haddonfield Public Library",
+          "venue_address": "60 N Haddon Ave, Haddonfield, NJ 08033",
+          "upcoming_only": true,
+          "default_categories": [
+            "haddonfield",
+            "library"
+          ]
+        },
+        {
+          "name": "mount_laurel_library",
+          "url": "https://mountlaurel.librarycalendar.com/events/feed/ical",
+          "upcoming_only": true,
+          "default_categories": [
+            "mount-laurel",
+            "library"
+          ]
+        },
+        {
+          "name": "berlin_borough_library",
+          "url": "https://berlinborolibrary.org/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events",
+          "upcoming_only": true,
+          "default_categories": [
+            "berlin",
+            "library"
+          ]
+        },
+        {
+          "name": "clementon_township",
+          "url": "https://clementon-nj.com/?feed=my-calendar-ics",
+          "upcoming_only": true,
+          "default_categories": [
+            "clementon",
+            "municipal"
+          ]
+        }
+      ],
+      "libcal_sources": [
+        {
+          "name": "moorestown_library",
+          "base_url": "https://events.moorestownlibrary.org",
+          "venue_name": "Moorestown Library",
+          "venue_address": "111 West Second Street, Moorestown, NJ 08057",
+          "default_categories": [
+            "moorestown",
+            "library"
+          ]
+        },
+        {
+          "name": "barrington_library",
+          "base_url": "https://barringtonlibrary.libcal.com",
+          "venue_name": "Barrington Public Library",
+          "default_categories": [
+            "barrington",
+            "library"
+          ]
+        },
+        {
+          "name": "stratford_library",
+          "base_url": "https://stratfordlibrary.libcal.com",
+          "venue_name": "Stratford Public Library",
+          "venue_address": "303 Union Ave, Stratford, NJ 08084",
+          "default_categories": [
+            "stratford",
+            "library"
+          ]
+        }
+      ],
+      "mec_sources": [
+        {
+          "name": "collingswood_library",
+          "page_url": "https://www.collingswoodlib.org/eventcalendar/",
+          "months_ahead": 3,
+          "default_categories": [
+            "collingswood",
+            "library"
+          ]
+        }
+      ],
+      "drupal_fullcalendar_sources": [
+        {
+          "name": "pennsauken_library",
+          "url": "https://www.pennsaukenlibrary.org/events",
+          "venue_name": "Pennsauken Free Public Library",
+          "days_ahead": 120,
+          "default_categories": [
+            "pennsauken",
+            "library"
+          ]
+        }
+      ],
+      "bibliocommons_sources": [
+        {
+          "name": "burlington_county_library",
+          "library": "bclsnj",
+          "days_ahead": 90,
+          "default_categories": [
+            "library"
           ]
         }
       ]

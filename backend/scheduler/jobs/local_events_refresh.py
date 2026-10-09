@@ -39,6 +39,10 @@ DEFAULT_PARAMS = {
         }
     ],
     "ical_sources": [
+        {"name": "haddonfield_library", "url": "https://haddonfield.librarycalendar.com/events/feed/ical", "venue_name": "Haddonfield Public Library", "venue_address": "60 N Haddon Ave, Haddonfield, NJ 08033", "upcoming_only": True, "default_categories": ["haddonfield", "library"]},
+        {"name": "mount_laurel_library", "url": "https://mountlaurel.librarycalendar.com/events/feed/ical", "upcoming_only": True, "default_categories": ["mount-laurel", "library"]},
+        {"name": "berlin_borough_library", "url": "https://berlinborolibrary.org/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events", "upcoming_only": True, "default_categories": ["berlin", "library"]},
+        {"name": "clementon_township", "url": "https://clementon-nj.com/?feed=my-calendar-ics", "upcoming_only": True, "default_categories": ["clementon", "municipal"]},
         # Example shape (URL must point to an actual .ics feed, not a calendar landing page):
         # {"name": "cherryhill_township",
         #  "url": "https://www.cherryhill-nj.com/common/modules/iCalendar/iCalendar.aspx?feed=calendar",
@@ -101,6 +105,20 @@ DEFAULT_PARAMS = {
             ],
         }
     ],
+    "libcal_sources": [
+        {"name": "moorestown_library", "base_url": "https://events.moorestownlibrary.org", "venue_name": "Moorestown Library", "venue_address": "111 West Second Street, Moorestown, NJ 08057", "default_categories": ["moorestown", "library"]},
+        {"name": "barrington_library", "base_url": "https://barringtonlibrary.libcal.com", "venue_name": "Barrington Public Library", "default_categories": ["barrington", "library"]},
+        {"name": "stratford_library", "base_url": "https://stratfordlibrary.libcal.com", "venue_name": "Stratford Public Library", "venue_address": "303 Union Ave, Stratford, NJ 08084", "default_categories": ["stratford", "library"]},
+    ],
+    "bibliocommons_sources": [
+        {"name": "burlington_county_library", "library": "bclsnj", "days_ahead": 90, "default_categories": ["library"]},
+    ],
+    "mec_sources": [
+        {"name": "collingswood_library", "page_url": "https://www.collingswoodlib.org/eventcalendar/", "months_ahead": 3, "default_categories": ["collingswood", "library"]},
+    ],
+    "drupal_fullcalendar_sources": [
+        {"name": "pennsauken_library", "url": "https://www.pennsaukenlibrary.org/events", "venue_name": "Pennsauken Free Public Library", "days_ahead": 120, "default_categories": ["pennsauken", "library"]},
+    ],
     "listing_page_sources": [
     ],
     "yodel_sources": [
@@ -124,6 +142,16 @@ DEFAULT_PARAMS = {
             "max_miles": 50,
         },
         {"name": "downtown_haddonfield", "base_url": "https://downtownhaddonfield.com", "days_ahead": 60},
+        {
+            "name": "haddon_heights_library",
+            "base_url": "https://www.haddonheightslibrary.com",
+            "days_ahead": 90,
+            "venue_name": "Haddon Heights Library",
+            "venue_address": "608 Station Avenue, Haddon Heights, NJ 08035",
+            "default_categories": ["haddon-heights", "library"],
+        },
+        {"name": "audubon_library", "base_url": "https://audubonlibrary.org", "days_ahead": 90, "venue_name": "Free Public Library of Audubon", "venue_address": "239 Oakland Avenue, Audubon, NJ 08106", "default_categories": ["audubon", "library"]},
+        {"name": "runnemede_library", "base_url": "https://runnemedepubliclibrary.org", "days_ahead": 90, "via_scraper": True, "default_categories": ["runnemede", "library"]},
     ],
     "sitemap_sources": [
         # For sites whose listing/calendar pages are JS-rendered shells but
@@ -295,6 +323,10 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                         "description": "Route the fetch through the Playwright scraper service to bypass WAF/Cloudflare blocks.",
                         "default": False,
                     },
+                    "prefer_residential": {"type": "boolean", "default": False, "description": "With via_scraper: try the home-IP scraper first."},
+                    "venue_name": {"type": "string", "description": "Replaces the feed's LOCATION as the venue - for a library's own feed, where LOCATION is missing or junk."},
+                    "venue_address": {"type": "string"},
+                    "upcoming_only": {"type": "boolean", "default": False, "description": "Drop events already over, for feeds that keep years of history."},
                 },
             },
         },
@@ -404,6 +436,68 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "center": {"type": "array", "items": {"type": "number"}, "description": "[lat, lng] for max_miles; defaults to Cherry Hill."},
                     "nearby_zip_prefixes": {"type": "array", "items": {"type": "string"}, "description": "For venues with no coordinates: keep only zips starting with these. Default 080, 081, 190, 191."},
                     "max_pages": {"type": "integer", "default": 40, "description": "50 events per page."},
+                    "via_scraper": {"type": "boolean", "default": False, "description": "Fetch the API through the Playwright scraper, for Cloudflare-fronted sites that 403 plain HTTP."},
+                    "venue_name": {"type": "string", "description": "Venue for events that carry none of their own (a library's calendar)."},
+                    "venue_address": {"type": "string"},
+                },
+            },
+        },
+        "libcal_sources": {
+            "type": "array",
+            "description": "Springshare LibCal public calendars (<name>.libcal.com or a library's own domain) - the page's own /ajax/calendar/list JSON, all calendars at once, no scraper.",
+            "items": {
+                "type": "object",
+                "required": ["name", "base_url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "base_url": {"type": "string", "description": "e.g. https://barringtonlibrary.libcal.com"},
+                    "venue_name": {"type": "string"},
+                    "venue_address": {"type": "string", "description": "Street address; the room LibCal reports is put in front of it."},
+                    "days_ahead": {"type": "integer", "default": 90},
+                    "max_pages": {"type": "integer", "default": 20, "description": "50 events per page."},
+                },
+            },
+        },
+        "bibliocommons_sources": {
+            "type": "array",
+            "description": "BiblioCommons library events (<slug>.bibliocommons.com) via gateway.bibliocommons.com - public JSON, no key. One system covers many branches; list `branches` to keep only some.",
+            "items": {
+                "type": "object",
+                "required": ["name", "library"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "library": {"type": "string", "description": "The subdomain slug, e.g. bclsnj."},
+                    "branches": {"type": "array", "items": {"type": "string"}, "description": "Branch names as BiblioCommons spells them, e.g. 'Cinnaminson Library'. Omit for all."},
+                    "days_ahead": {"type": "integer", "default": 90},
+                    "max_pages": {"type": "integer", "default": 20, "description": "100 events per page."},
+                },
+            },
+        },
+        "mec_sources": {
+            "type": "array",
+            "description": "WordPress Modern Events Calendar monthly view, read through the plugin's own month-switch AJAX (admin-ajax.php) - for sites with neither an iCal export nor the Events Calendar REST API.",
+            "items": {
+                "type": "object",
+                "required": ["name", "page_url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "page_url": {"type": "string", "description": "The page holding the monthly calendar, e.g. https://www.collingswoodlib.org/eventcalendar/."},
+                    "months_ahead": {"type": "integer", "default": 3, "description": "Months after the current one to fetch."},
+                },
+            },
+        },
+        "drupal_fullcalendar_sources": {
+            "type": "array",
+            "description": "Drupal FullCalendar pages that embed their event list in drupalSettings (pennsaukenlibrary.org/events). Dates only - times live on each node page.",
+            "items": {
+                "type": "object",
+                "required": ["name", "url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "url": {"type": "string"},
+                    "venue_name": {"type": "string"},
+                    "venue_address": {"type": "string"},
+                    "days_ahead": {"type": "integer", "default": 120},
                 },
             },
         },
