@@ -3,8 +3,8 @@
 One row per (school, data point) a school confirmed it doesn't publish - see
 models.AuditNotPublished.
 
-Revision ID: 0086
-Revises: 0085
+Revision ID: 0087
+Revises: 0086
 Create Date: 2026-10-09 12:00:00
 
 """
@@ -14,8 +14,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = "0086"
-down_revision: Union[str, None] = "0085"
+revision: str = "0087"
+down_revision: Union[str, None] = "0086"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
