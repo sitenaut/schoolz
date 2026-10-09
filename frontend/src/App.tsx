@@ -33,6 +33,8 @@ import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
 import { UsersRolesPage } from "./pages/UsersRolesPage";
 import { ApiKeysPage } from "./pages/ApiKeysPage";
 import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
+import { SecretRequestsPage } from "./pages/SecretRequestsPage";
+import { ApproveSecretRequestPage } from "./pages/ApproveSecretRequestPage";
 import { can, isStaff } from "./lib/permissions";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
@@ -226,6 +228,8 @@ function Routed() {
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
           <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
           <Route path="api-keys/approve" element={<RequireAdmin superOnly><ApproveApiKeyPage /></RequireAdmin>} />
+          <Route path="secret-requests" element={<RequireAdmin superOnly><SecretRequestsPage /></RequireAdmin>} />
+          <Route path="secret-requests/approve" element={<RequireAdmin superOnly><ApproveSecretRequestPage /></RequireAdmin>} />
         </Route>
       </Route>
     </FaroRoutes>
