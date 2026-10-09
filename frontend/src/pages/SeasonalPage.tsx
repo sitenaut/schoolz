@@ -44,15 +44,35 @@ export function SeasonalPage() {
         </div>
       ) : (
         <>
+          {attractions.length > 0 && guides.length > 0 && (
+            <nav className="chips" aria-label="Jump to a section">
+              {[
+                ["places", "Places to go", attractions.length],
+                ["guides", "Guides", guides.length],
+              ].map(([id, label, n]) => (
+                <a
+                  key={id}
+                  className="chip"
+                  href={`#${id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(String(id))?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  {label} <span className="chip-count">{n}</span>
+                </a>
+              ))}
+            </nav>
+          )}
           {attractions.length > 0 && (
-            <section>
+            <section id="places" style={{ scrollMarginTop: 72 }}>
               <h3>Places to go</h3>
               <p className="note">Dates, prices and ages from each venue's own site. Check there before you go: weather closes these.</p>
               <SeasonalAttractions attractions={attractions} season={season} />
             </section>
           )}
           {guides.length > 0 && (
-            <section>
+            <section id="guides" style={{ scrollMarginTop: 72 }}>
               <h3>Guides</h3>
               <p className="note">From local publishers who put in the work to keep them current. Tap one to open it on their site.</p>
               <div className="seasonal-guides">
