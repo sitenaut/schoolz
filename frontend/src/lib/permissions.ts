@@ -16,6 +16,7 @@ export const ADMIN_TABS: { to: string; label: string; permission: string | null 
   { to: "/admin/inbox", label: "Inbox", permission: "inbox.view" },
   { to: "/admin/newsletters", label: "Newsletters", permission: "newsletters.manage" },
   { to: "/admin/scans", label: "Scans", permission: "scans.view" },
+  { to: "/admin/audit", label: "Audit", permission: "audit.view" },
   { to: "/admin/chatbot", label: "Chatbot", permission: "chatbot.view" },
   { to: "/admin/config", label: "Import/export", permission: "config.view" },
   { to: "/admin/kids", label: "Kids", permission: "kids.view" },

@@ -30,6 +30,11 @@ import { JobsPage } from "./pages/JobsPage";
 import { AdminConfigPage } from "./pages/AdminConfigPage";
 import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
 import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
+import { AuditBySchoolPage } from "./pages/audit/AuditBySchoolPage";
+import { AuditCatalogPage } from "./pages/audit/AuditCatalogPage";
+import { AuditReportPage } from "./pages/audit/AuditReportPage";
+import { AuditSchoolPage } from "./pages/audit/AuditSchoolPage";
+import { AuditShell } from "./pages/audit/AuditShell";
 import { UsersRolesPage } from "./pages/UsersRolesPage";
 import { ApiKeysPage } from "./pages/ApiKeysPage";
 import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
@@ -220,6 +225,13 @@ function Routed() {
           <Route path="inbox" element={<RequireAdmin permission="inbox.view"><InboxPage /></RequireAdmin>} />
           <Route path="newsletters" element={<RequireAdmin permission="newsletters.manage"><SmoreNewslettersPage /></RequireAdmin>} />
           <Route path="scans" element={<RequireAdmin permission="scans.view"><JobsPage /></RequireAdmin>} />
+          <Route path="audit" element={<RequireAdmin permission="audit.view"><AuditShell /></RequireAdmin>}>
+            <Route index element={<AuditBySchoolPage />} />
+            <Route path="data-points" element={<AuditCatalogPage />} />
+            <Route path="report" element={<AuditReportPage />} />
+            <Route path="schools/:schoolId" element={<AuditSchoolPage />} />
+            <Route path="schools/:schoolId/report" element={<AuditReportPage />} />
+          </Route>
           <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
