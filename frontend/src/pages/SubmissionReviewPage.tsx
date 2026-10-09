@@ -251,7 +251,10 @@ export function SubmissionReviewPage() {
   if (!review || !submission) return <div className="page" aria-busy="true" />;
 
   const hasFile = submission.kind === "file";
-  const publishCount = groups.dated.filter((i) => selected.has(i.id)).length;
+  const chosen = groups.dated.filter((i) => selected.has(i.id));
+  const publishCount = chosen.length;
+  // Only items for a school or district calendar need a school; local events stand alone.
+  const needsSchool = !submission.school_id && chosen.some((i) => i.scope !== "local");
 
   const itemRow = (item: SubmissionItem) => {
     const live = isLive(item);
@@ -482,8 +485,8 @@ export function SubmissionReviewPage() {
           >
             <IconX /> Reject
           </button>
-          <button className="btn btn-primary" disabled={busy !== null || publishCount === 0 || !submission.school_id} onClick={publish}>
-            <IconCheck /> {submission.school_id ? `Publish ${publishCount} item${publishCount === 1 ? "" : "s"}` : "Pick a school to publish"}
+          <button className="btn btn-primary" disabled={busy !== null || publishCount === 0 || needsSchool} onClick={publish}>
+            <IconCheck /> {needsSchool ? "Pick a school to publish" : `Publish ${publishCount} item${publishCount === 1 ? "" : "s"}`}
           </button>
         </div>
       )}
