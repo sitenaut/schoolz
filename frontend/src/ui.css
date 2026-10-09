@@ -1834,6 +1834,487 @@ button.link-card:disabled {
   flex-wrap: wrap;
 }
 
+/* ---------- data audit (pages/audit) ---------- */
+/* The shell's 1fr column would otherwise grow to fit the 26-column grid. */
+.shell-main:has(.audit) {
+  min-width: 0;
+}
+.audit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.audit .stats {
+  margin-bottom: 0;
+}
+.audit-hd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+.audit-hd h1 {
+  margin: 0 0 4px;
+}
+.audit-hd-a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.audit-tabs {
+  margin-top: 8px;
+}
+.audit-audience {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.audit-stat-hint {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.audit-stat-static {
+  cursor: default;
+}
+.audit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+.audit-filters .field {
+  flex: 1 1 170px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.audit-filters > .btn {
+  min-height: 38px;
+}
+.audit-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.audit-pad {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.audit-card-hd {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.audit-card-tabs {
+  padding: 12px 18px 0;
+  margin-top: 0;
+}
+/* The grid scrolls inside its own box at phone width; the page never does. */
+.audit-grid-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.audit-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.audit-grid th,
+.audit-grid td {
+  padding: 3px 1px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+.audit-grid-groups th {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-left: 1px solid var(--line);
+  padding: 8px 4px 4px;
+  white-space: nowrap;
+}
+.audit-grid-groups th:first-child,
+.audit-grid-groups th:last-child {
+  border-left: 0;
+}
+.audit-grid-col {
+  vertical-align: bottom;
+  height: 150px;
+  min-width: 29px;
+}
+.audit-grid-col span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.audit-grid .audit-grid-school {
+  text-align: left;
+  min-width: 170px;
+  max-width: 220px;
+  padding: 6px 12px 6px 18px;
+  position: sticky;
+  left: 0;
+  background: var(--card);
+  z-index: 1;
+}
+.audit-grid tbody .audit-grid-school a {
+  display: block;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+.audit-grid tbody .audit-grid-school a:hover {
+  color: var(--primary-strong);
+  text-decoration: underline;
+}
+.audit-grid .cell-sub {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.audit-grid-pct {
+  white-space: nowrap;
+  padding: 3px 12px !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.audit-grid-pct .btn {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.audit-cell {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.audit-cell.on {
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+.audit-cell.mini {
+  width: 20px;
+  height: 20px;
+  cursor: default;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.audit-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.audit-cell.current {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.audit-cell.stale {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.audit-cell.failing {
+  background: var(--bad);
+  color: var(--card);
+}
+.audit-cell.not_collecting {
+  background: var(--bg);
+  border-color: var(--line-2);
+  color: var(--ink-3);
+}
+.audit-cell.not_collecting .audit-dot {
+  background: transparent;
+  border: 2px solid currentColor;
+}
+.audit-cell.not_applicable {
+  background: transparent;
+  border: 1px dashed var(--line-2);
+  color: transparent;
+}
+.audit-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 18px;
+}
+.audit-pager > .muted {
+  flex: 1 1 320px;
+}
+.audit-size {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.audit-size select {
+  padding: 6px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+}
+.audit-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.audit-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px 18px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.audit-detail {
+  padding: 16px 18px;
+}
+.audit-detail-hd {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+}
+.audit-detail-t {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.audit-detail-t h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.audit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px 20px;
+}
+.audit-detail-grid .stat-k {
+  margin-bottom: 4px;
+}
+.audit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.audit .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.audit-windows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.audit-windows > div {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.audit-catalog,
+.audit-school-table {
+  min-width: 860px;
+}
+.audit-catalog td,
+.audit-school-table td {
+  vertical-align: top;
+}
+.audit-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.audit-summary {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
+}
+.audit-summary-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+.audit-report-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.audit-include {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.audit-include legend {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+  padding: 0;
+  margin-bottom: 6px;
+}
+.audit-include label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+.audit-report {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.audit-report h1 {
+  margin: 2px 0 4px;
+}
+.audit-report h2 {
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.audit-report-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.audit-report-tiles > div {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+}
+.audit-report-tiles strong {
+  font-family: var(--font-d);
+  font-size: 22px;
+}
+.audit-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.audit-report-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.audit-report-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.audit-report-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .audit-grid .audit-grid-school {
+    min-width: 120px;
+    max-width: 140px;
+    padding-left: 12px;
+  }
+  .audit-report {
+    padding: 16px;
+  }
+  .audit-report-table thead {
+    display: none;
+  }
+  .audit-report-table tr {
+    display: block;
+    border-bottom: 1px solid var(--line);
+    padding: 6px 0;
+  }
+  .audit-report-table td {
+    display: block;
+    border: 0;
+    padding: 3px 0;
+  }
+  .audit-report-table .num {
+    text-align: left;
+  }
+}
+/* Print only the report: no app chrome, no toolbars, black on white. */
+@media print {
+  body:has(.audit-report-page) .shell-top,
+  body:has(.audit-report-page) .shell-nav,
+  body:has(.audit-report-page) .shell-footer,
+  body:has(.audit-report-page) .ribbon,
+  body:has(.audit-report-page) .admin-tabs,
+  body:has(.audit-report-page) .toasts,
+  body:has(.audit-report-page) .chat-fab,
+  .audit .no-print {
+    display: none !important;
+  }
+  body:has(.audit-report-page) .shell {
+    display: block;
+  }
+  body:has(.audit-report-page) {
+    background: #fff;
+    color: #000;
+  }
+  body:has(.audit-report-page) .shell-main {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+  .audit-report {
+    border: 0;
+    padding: 0;
+  }
+  .audit-report-table tr {
+    break-inside: avoid;
+  }
+}
+
 /* iOS Safari zooms the whole page when a form field under 16px gets focus,
    and does not zoom back - on the chat panel that pushed the Send button
    off-screen. Every field is at least 16px on touch devices, everywhere.

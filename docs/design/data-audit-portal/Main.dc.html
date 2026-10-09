@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Data audit by school</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+body{margin:0;background:#f5f7f9}
+a{color:#185a70}a:hover{color:#17202a}
+sc-for,sc-if{display:contents}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1500px; background: #f5f7f9; color: #17202a; font-family: 'Nunito Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45; padding: 24px 32px 48px">
+<div style="max-width: 1296px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+
+<nav aria-label="Admin sections" style="display: flex; flex-wrap: wrap; gap: 6px">
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Inbox</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Newsletters</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Scans</a>
+<a href="#" aria-current="page" style="padding: 8px 14px; border-radius: 999px; background: #e3f1f6; color: #185a70; text-decoration: none; font-weight: 700">Audit</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Chatbot</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Import/export</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Kids</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Users &amp; roles</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">API keys</a>
+</nav>
+
+<header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', 'Nunito Sans', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.15">Data audit</h1>
+<div style="display: flex; flex-wrap: wrap; gap: 4px">
+<a href="Main.dc.html" aria-current="page" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 14px; border-bottom: 3px solid #1f7f9f; color: #17202a; text-decoration: none; font-weight: 700">By school</a>
+<a href="Catalog.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 14px; border-bottom: 3px solid transparent; color: #3d4752; text-decoration: none; font-weight: 600">By data point</a>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<a href="#" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 16px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; text-decoration: none; font-weight: 700">Download CSV</a>
+<a href="DistrictReport.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 10px; background: #1f7f9f; color: #ffffff; text-decoration: none; font-weight: 700">Missing-data report</a>
+</div>
+</header>
+
+<section aria-label="Summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px">
+<div style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px; padding: 14px 18px; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Compliant</div>
+<div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1; color: #256f47">{{pct}}</div>
+<div style="color: #5b6672; font-size: 13px">{{okCount}} of {{appCount}} applicable data points are current</div>
+</div>
+<button type="button" aria-pressed="{{tNone.pressed}}" onClick="{{tNone.pick}}" style="text-align: left; cursor: pointer; background: #ffffff; border: 2px solid {{tNone.border}}; border-radius: 12px; padding: 13px 17px; display: flex; flex-direction: column; gap: 2px; color: #17202a; font-size: 14px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Not collecting</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1; color: #17202a">{{noneCount}}</span>
+<span style="color: #5b6672; font-size: 13px">No source set, or the school doesn't publish it</span>
+</button>
+<button type="button" aria-pressed="{{tFail.pressed}}" onClick="{{tFail.pick}}" style="text-align: left; cursor: pointer; background: #ffffff; border: 2px solid {{tFail.border}}; border-radius: 12px; padding: 13px 17px; display: flex; flex-direction: column; gap: 2px; color: #17202a; font-size: 14px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Failing</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1; color: #a8322c">{{failCount}}</span>
+<span style="color: #5b6672; font-size: 13px">Source set, last scan errored or warned</span>
+</button>
+<button type="button" aria-pressed="{{tStale.pressed}}" onClick="{{tStale.pick}}" style="text-align: left; cursor: pointer; background: #ffffff; border: 2px solid {{tStale.border}}; border-radius: 12px; padding: 13px 17px; display: flex; flex-direction: column; gap: 2px; color: #17202a; font-size: 14px">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Stale</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1; color: #8a5a12">{{staleCount}}</span>
+<span style="color: #5b6672; font-size: 13px">Two scheduled runs missed, or the content is out of date</span>
+</button>
+</section>
+
+<section aria-label="Filter and order" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px; padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px">
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 2 1 200px; min-width: 0">
+<label for="f-q" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Search</label>
+<input id="f-q" type="search" placeholder="School name" value="{{q}}" onChange="{{onQ}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 170px; min-width: 0">
+<label for="f-district" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">District</label>
+<select id="f-district" value="{{district}}" onChange="{{onDistrict}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="all">All districts</option>
+<option value="Cherry Hill">Cherry Hill</option>
+<option value="Cinnaminson">Cinnaminson</option>
+<option value="Delran">Delran</option>
+<option value="Eastern Regional">Eastern Regional</option>
+<option value="Voorhees">Voorhees</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 130px; min-width: 0">
+<label for="f-type" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">School type</label>
+<select id="f-type" value="{{type}}" onChange="{{onType}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="all">All types</option>
+<option value="Preschool">Preschool</option>
+<option value="Elementary">Elementary</option>
+<option value="Middle">Middle</option>
+<option value="High">High</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; min-width: 0">
+<label for="f-col" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Data point</label>
+<select id="f-col" value="{{col}}" onChange="{{onCol}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="all">Any data point</option>
+<option value="info">Address and phone</option>
+<option value="logo">Logo</option>
+<option value="geo">Map location</option>
+<option value="staff">Staff directory</option>
+<option value="absence">Absence method</option>
+<option value="pkteam">Preschool team</option>
+<option value="hours">School hours</option>
+<option value="alt">Early and delayed times</option>
+<option value="periods">Period table</option>
+<option value="cal">District calendar</option>
+<option value="mp">Marking periods</option>
+<option value="rot">Day rotation</option>
+<option value="news">Newsletter</option>
+<option value="pta">PTA page</option>
+<option value="backpack">District flyers</option>
+<option value="events">School events calendar</option>
+<option value="bulletin">Student bulletin</option>
+<option value="ann">Morning announcements</option>
+<option value="actcal">Activities calendar</option>
+<option value="actsite">Class pages</option>
+<option value="ath">Athletics calendar</option>
+<option value="menu">Meal menus</option>
+<option value="hand">Handbook</option>
+<option value="belldoc">Bell schedule document</option>
+<option value="bus">Transportation</option>
+<option value="care">Before and after care</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 150px; min-width: 0">
+<label for="f-status" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Status</label>
+<select id="f-status" value="{{filter}}" onChange="{{onFilter}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="all">Any status</option>
+<option value="g">Any gap</option>
+<option value="n">Not collecting</option>
+<option value="f">Failing</option>
+<option value="s">Stale</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 190px; min-width: 0">
+<label for="f-sort" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Order by</label>
+<select id="f-sort" value="{{sort}}" onChange="{{onSort}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="pctAsc">Least compliant first</option>
+<option value="pctDesc">Most compliant first</option>
+<option value="fail">Most failing first</option>
+<option value="stale">Most stale first</option>
+<option value="none">Most not collected first</option>
+<option value="name">School name, A to Z</option>
+<option value="district">District, then school</option>
+</select>
+</div>
+<button type="button" onClick="{{clear}}" style="min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: #185a70; font-weight: 700; font-size: 14px; text-decoration: underline; cursor: pointer">Clear filters</button>
+</section>
+
+<section aria-label="Audit by school" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; padding: 6px 20px; border-bottom: 1px solid #e2e7ec">
+<div style="font-weight: 700">{{resultLabel}}</div>
+<a href="DistrictReport.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; font-size: 13px">Missing-data report for these results</a>
+</div>
+
+<div style="overflow-x: auto">
+<div style="min-width: 1240px">
+
+<div style="display: grid; grid-template-columns: 216px repeat(26, minmax(0, 1fr)) 92px; align-items: end; padding: 12px 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #5b6672">
+<div></div>
+<div style="grid-column: span 3; margin: 0 2px; padding-bottom: 6px; border-bottom: 2px solid #e2e7ec; text-align: center">Identity</div>
+<div style="grid-column: span 3; margin: 0 2px; padding-bottom: 6px; border-bottom: 2px solid #e2e7ec; text-align: center">People</div>
+<div style="grid-column: span 6; margin: 0 2px; padding-bottom: 6px; border-bottom: 2px solid #e2e7ec; text-align: center">Schedule</div>
+<div style="grid-column: span 9; margin: 0 2px; padding-bottom: 6px; border-bottom: 2px solid #e2e7ec; text-align: center">News and events</div>
+<div style="grid-column: span 5; margin: 0 2px; padding-bottom: 6px; border-bottom: 2px solid #e2e7ec; text-align: center">Services and documents</div>
+<div></div>
+</div>
+
+<div style="display: grid; grid-template-columns: 216px repeat(26, minmax(0, 1fr)) 92px; align-items: end; padding: 8px 10px 10px; font-size: 12px; font-weight: 600; color: #3d4752; border-bottom: 1px solid #e2e7ec">
+<div style="font-weight: 700; color: #17202a; padding-left: 8px">School</div>
+<sc-for list="{{heads}}" as="h" hint-placeholder-count="26">
+<div style="display: flex; justify-content: center; align-items: flex-end; height: 156px"><span style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap">{{h.label}}</span></div>
+</sc-for>
+<div style="font-weight: 700; color: #17202a; text-align: right; padding-right: 8px">Compliant</div>
+</div>
+
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 216px repeat(26, minmax(0, 1fr)) 92px; align-items: center; padding: 0 10px; border-bottom: 1px solid #eef1f4">
+<div style="display: flex; flex-direction: column; padding: 4px 8px; min-width: 0">
+<a href="School.dc.html" style="font-weight: 700; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</a>
+<span style="color: #5b6672; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sub}}</span>
+</div>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="26">
+<button type="button" aria-label="{{c.aria}}" onClick="{{c.pick}}" style="height: 44px; margin: 0; padding: 0; border: 0; border-radius: 7px; background: transparent; box-shadow: {{c.ring}}; cursor: pointer; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{c.isOk}}" hint-placeholder-val="{{true}}">
+<span style="display: block; width: 8px; height: 8px; border-radius: 50%; background: #2f8f5b"></span>
+</sc-if>
+<sc-if value="{{c.isStale}}" hint-placeholder-val="{{false}}">
+<span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; background: #fbf0d9">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#8a5a12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.8V8l2.2 1.4"></path></svg>
+</span>
+</sc-if>
+<sc-if value="{{c.isFail}}" hint-placeholder-val="{{false}}">
+<span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; background: #c2413a">
+<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M8 3.5v5.5"></path><path d="M8 12.2v.3"></path></svg>
+</span>
+</sc-if>
+<sc-if value="{{c.isNone}}" hint-placeholder-val="{{false}}">
+<span style="display: block; box-sizing: border-box; width: 24px; height: 24px; border-radius: 6px; border: 2px dashed #5b6672"></span>
+</sc-if>
+<sc-if value="{{c.isNa}}" hint-placeholder-val="{{false}}">
+<span style="display: block; width: 10px; height: 2px; border-radius: 1px; background: #b4bdc6"></span>
+</sc-if>
+</button>
+</sc-for>
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 2px">
+<span style="font-weight: 700; font-variant-numeric: tabular-nums">{{r.pct}}</span>
+<a href="SchoolReport.dc.html" aria-label="{{r.reportAria}}" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; color: #5b6672">
+<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h6l3 3v10h-9z"></path><path d="M10.5 2.5v3h3"></path><path d="M6.8 9.5h4.4M6.8 12h4.4"></path></svg>
+</a>
+</div>
+</div>
+</sc-for>
+
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+<div style="padding: 36px 20px; text-align: center; color: #3d4752">No schools match these filters.</div>
+</sc-if>
+
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 20px; border-bottom: 1px solid #e2e7ec">
+<div style="display: flex; align-items: center; gap: 8px; color: #3d4752">
+<label for="f-size">Rows per page</label>
+<select id="f-size" value="{{size}}" onChange="{{onSize}}" style="min-height: 44px; padding: 0 8px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="10">10</option>
+<option value="25">25</option>
+<option value="50">50</option>
+</select>
+</div>
+<nav aria-label="Pages" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<button type="button" onClick="{{prev}}" disabled="{{noPrev}}" style="min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer; opacity: {{prevOpacity}}">Previous</button>
+<sc-for list="{{pages}}" as="p" hint-placeholder-count="2">
+<button type="button" onClick="{{p.pick}}" aria-label="{{p.aria}}" aria-current="{{p.cur}}" style="min-width: 44px; min-height: 44px; padding: 0 8px; border: 1px solid {{p.border}}; border-radius: 10px; background: {{p.bg}}; color: {{p.ink}}; font-weight: 700; font-size: 14px; cursor: pointer">{{p.n}}</button>
+</sc-for>
+<button type="button" onClick="{{next}}" disabled="{{noNext}}" style="min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer; opacity: {{nextOpacity}}">Next</button>
+</nav>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 14px 20px; color: #3d4752; font-size: 13px">
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="display: block; width: 8px; height: 8px; border-radius: 50%; background: #2f8f5b"></span><span><strong>Current</strong></span></span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="display: block; box-sizing: border-box; width: 18px; height: 18px; border-radius: 5px; border: 2px dashed #5b6672"></span><span><strong>Not collecting</strong></span></span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="display: block; width: 18px; height: 18px; border-radius: 5px; background: #c2413a"></span><span><strong>Failing</strong></span></span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="display: block; width: 18px; height: 18px; border-radius: 5px; background: #fbf0d9; border: 1px solid #e0c891; box-sizing: border-box"></span><span><strong>Stale</strong></span></span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="display: block; width: 10px; height: 2px; border-radius: 1px; background: #b4bdc6"></span><span><strong>Not applicable</strong>, left out of the score</span></span>
+<span>Select any cell to see why.</span>
+</div>
+</section>
+
+<section aria-label="Selected data point" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px; box-shadow: 0 1px 2px rgba(23,32,42,0.06), 0 4px 14px rgba(23,32,42,0.06); padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">{{sel.title}}</h2>
+<span style="display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: {{sel.badgeBg}}; color: {{sel.badgeInk}}">{{sel.status}}</span>
+<sc-if value="{{sel.hasTag}}" hint-placeholder-val="{{true}}">
+<span style="display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f0f3f6; color: #3d4752; font-family: ui-monospace, 'SF Mono', Menlo, monospace">{{sel.tag}}</span>
+</sc-if>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Run scan now</button>
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Edit source</button>
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Mark as not published</button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Why</div>
+<div>{{sel.why}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Last good data</div>
+<div>{{sel.last}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Collected by</div>
+<div>{{sel.src}}</div>
+<div style="color: #5b6672; font-size: 13px">Runs: {{sel.runs}}</div>
+<div style="color: #5b6672; font-size: 13px">Stale after: {{sel.win}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Next step</div>
+<div>{{sel.next}}</div>
+</div>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1500}}'>
+class Component extends DCLogic {
+  state = { filter: 'all', q: '', district: 'all', type: 'all', col: 'all', sort: 'pctAsc', page: 0, size: '10', sel: 'rosa:news' };
+
+  cols() {
+    const c = (k, label, src, runs, win, applies) => ({ k: k, label: label, src: src, runs: runs, win: win, applies: applies });
+    return [
+      c('info', 'Address and phone', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('logo', 'Logo', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('geo', 'Map location', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('staff', 'Staff directory', 'staff_roster.scan', 'Twice a month', '35 days', 'All schools'),
+      c('absence', 'Absence method', 'Newsletter extraction, or entered by hand', 'No scan', 'Not confirmed this school year', 'All schools'),
+      c('pkteam', 'Preschool team', 'preschool_team.scan', 'Weekly', '16 days', 'Preschools'),
+      c('hours', 'School hours', 'Entered by hand', 'No scan', 'Not confirmed this school year', 'All schools'),
+      c('alt', 'Early and delayed times', 'Entered by hand', 'No scan', 'Not confirmed this school year', 'All schools'),
+      c('periods', 'Period table', 'Entered by hand', 'No scan', 'Not confirmed this school year', 'Middle and high'),
+      c('cal', 'District calendar', 'district_calendar.scan or district_calendar_pdf.scan', 'Every 12 hours', '36 hours', 'All schools'),
+      c('mp', 'Marking periods', 'marking_period.scan', 'Weekly', '16 days', 'All but preschools'),
+      c('rot', 'Day rotation', 'hs_rotation.scan', 'Weekly', '16 days', 'High schools'),
+      c('news', 'Newsletter', 'smore.scan', 'Weekly, on Monday', '16 days, or newest issue over 21 days old', 'All schools'),
+      c('pta', 'PTA page', 'givebacks.scan or ptboard.scan', 'Daily or weekly', '3 days or 16 days', 'All schools'),
+      c('backpack', 'District flyers', 'virtual_backpack.scan', 'Daily', '3 days', 'All schools'),
+      c('events', 'School events calendar', 'special_events.scan or school_events_doc.scan', 'Weekly or every 12 hours', '16 days or 36 hours', 'All schools'),
+      c('bulletin', 'Student bulletin', 'student_bulletin.scan', 'Every 12 hours', '36 hours', 'Middle and high'),
+      c('ann', 'Morning announcements', 'hs_announcements.scan', 'Every 2 hours on school days', '1 school day', 'High schools'),
+      c('actcal', 'Activities calendar', 'hs_class_calendar.scan', 'Every 12 hours', '36 hours', 'High schools'),
+      c('actsite', 'Class pages', 'hs_activities_site.scan', 'Daily', '3 days', 'High schools'),
+      c('ath', 'Athletics calendar', 'athletics_calendar.scan', 'Every 12 hours', '36 hours', 'Middle and high'),
+      c('menu', 'Meal menus', 'lunch_menu.scan or a vendor menu scan', 'Daily', '3 days, or no menu for the current week', 'All schools'),
+      c('hand', 'Handbook', 'documents.scan', 'Twice a month', '35 days, or dated an earlier school year', 'All schools'),
+      c('belldoc', 'Bell schedule document', 'documents.scan', 'Twice a month', '35 days, or dated an earlier school year', 'All schools'),
+      c('bus', 'Transportation', 'transportation.scan', 'Weekly', '16 days', 'All but preschools'),
+      c('care', 'Before and after care', 'One-off district import', 'No scan', 'Not confirmed this school year', 'Elementary')
+    ];
+  }
+
+  schools() {
+    const s = (id, name, short, kind, district, over) => ({ id: id, name: name, short: short, kind: kind, district: district, over: over });
+    return [
+      s('harte', 'Bret Harte Elementary', 'Harte', 'Elementary', 'Cherry Hill', 'absence:o news:o pta:o'),
+      s('barton', 'Clara Barton Elementary', 'Barton', 'Elementary', 'Cherry Hill', 'news:s'),
+      s('cooper', 'James F. Cooper Elementary', 'Cooper', 'Elementary', 'Cherry Hill', 'news:s hand:n'),
+      s('kilmer', 'Joyce Kilmer Elementary', 'Kilmer', 'Elementary', 'Cherry Hill', 'staff:f'),
+      s('beck', 'Beck Middle', 'Beck', 'Middle', 'Cherry Hill', 'menu:s news:o'),
+      s('carusi', 'Carusi Middle', 'Carusi', 'Middle', 'Cherry Hill', 'menu:s hand:n'),
+      s('rosa', 'Rosa International Middle', 'Rosa', 'Middle', 'Cherry Hill', 'menu:s news:f'),
+      s('east', 'Cherry Hill High School East', 'East', 'High', 'Cherry Hill', 'absence:o alt:o periods:o rot:o ann:o actcal:o actsite:o ath:o belldoc:o'),
+      s('west', 'Cherry Hill High School West', 'West', 'High', 'Cherry Hill', 'alt:o periods:s rot:o ann:o actcal:o actsite:o events:o ath:o belldoc:o'),
+      s('barclay', 'Barclay Early Childhood Center', 'Barclay', 'Preschool', 'Cherry Hill', ''),
+      s('hamilton', 'Edward T. Hamilton Elementary', 'Hamilton', 'Elementary', 'Voorhees', 'hand:n'),
+      s('signal', 'Signal Hill Elementary', 'Signal Hill', 'Elementary', 'Voorhees', ''),
+      s('vms', 'Voorhees Middle', 'Voorhees Middle', 'Middle', 'Voorhees', ''),
+      s('eastern', 'Eastern Regional High', 'Eastern', 'High', 'Eastern Regional', 'alt:o belldoc:o ath:o'),
+      s('cinm', 'Cinnaminson Middle', 'Cinnaminson Middle', 'Middle', 'Cinnaminson', 'news:o'),
+      s('cinh', 'Cinnaminson High', 'Cinnaminson High', 'High', 'Cinnaminson', ''),
+      s('rush', 'Eleanor Rush Intermediate', 'Eleanor Rush', 'Elementary', 'Cinnaminson', ''),
+      s('delh', 'Delran High', 'Delran High', 'High', 'Delran', 'alt:o belldoc:o'),
+      s('delm', 'Delran Middle', 'Delran Middle', 'Middle', 'Delran', 'alt:o belldoc:s')
+    ];
+  }
+
+  statuses(r) {
+    const st = {};
+    'info logo geo staff hours cal mp menu backpack hand bus'.split(' ').forEach((k) => { st[k] = 'o'; });
+    'absence alt news pta events belldoc'.split(' ').forEach((k) => { st[k] = 'n'; });
+    const applies = { Elementary: 'care', Middle: 'periods bulletin ath', High: 'periods rot bulletin ann actcal actsite ath', Preschool: 'pkteam' }[r.kind].split(' ');
+    'pkteam periods rot bulletin ann actcal actsite ath care'.split(' ').forEach((k) => { st[k] = applies.indexOf(k) >= 0 ? 'n' : 'x'; });
+    if (r.kind === 'Elementary') st.care = 'o';
+    if (r.kind === 'Preschool') { st.pkteam = 'o'; st.mp = 'x'; st.bus = 'x'; st.menu = 'n'; st.hand = 'n'; st.staff = 'n'; }
+    const gaps = { 'Voorhees': 'bus care backpack', 'Eastern Regional': 'bus backpack', 'Cinnaminson': 'bus care backpack', 'Delran': 'bus care backpack mp' }[r.district];
+    if (gaps) gaps.split(' ').forEach((k) => { if (st[k] !== 'x') st[k] = 'n'; });
+    r.over.split(' ').forEach((p) => { if (p) { const kv = p.split(':'); st[kv[0]] = kv[1]; } });
+    return st;
+  }
+
+  meta() {
+    return {
+      o: { label: 'Current', bg: '#e4f3ea', ink: '#1f5c3a' },
+      s: { label: 'Stale', bg: '#fbf0d9', ink: '#6f470c' },
+      f: { label: 'Failing', bg: '#fae4e2', ink: '#8f2620' },
+      n: { label: 'Not collecting', bg: '#e9edf1', ink: '#2c353f' },
+      x: { label: 'Not applicable', bg: '#f0f3f6', ink: '#3d4752' }
+    };
+  }
+
+  detail(r, col, st) {
+    const generic = {
+      o: { tag: '', why: 'The last scan succeeded and the data on file is inside its freshness window.', last: 'Inside its window', next: 'Nothing to do.' },
+      s: { tag: '', why: 'Two scheduled runs have passed without fresh data, or the content on file is out of date.', last: 'Past its window', next: 'Check whether the source has moved or stopped updating.' },
+      f: { tag: '', why: 'A source is set, but the last run ended in an error or a warning.', last: 'Older data may still be showing', next: 'Open the run for its error code, then re-run.' },
+      n: { tag: 'no source set', why: 'No source is set for this school, so nothing is being collected.', last: 'None on file', next: 'Add a source, or mark it as not published.' },
+      x: { tag: '', why: 'This does not apply to this type of school, so it is left out of the score.', last: 'None expected', next: 'Nothing to do.' }
+    };
+    const none = {
+      absence: { why: 'No tracked newsletter states how to report an absence, so the method was never extracted.', next: 'Enter it by hand on the school, or track a newsletter that states it.' },
+      alt: { tag: 'not published', why: 'Early-dismissal and delayed-opening times are not published anywhere we found.', next: 'Request them from the district, or mark as not published.' },
+      periods: { tag: 'not published', why: 'No period-by-period table is published for this school.', next: 'Request it from the school, or mark as not published.' },
+      news: { why: 'No newsletter URL is tracked for this school.', next: "Add the school's Smore URL, or connect a Gmail scanner." },
+      hand: { why: 'No handbook was found on the school site or in a newsletter.', next: 'Add the document link by hand, or mark as not published.' },
+      bus: { tag: 'no parser yet', why: "The district's transportation pages exist, but there is no parser for them.", next: 'Build the parser for this district.' },
+      care: { why: 'No before and after care source has been imported for this district.', next: 'Run the one-off import for this district.' }
+    };
+    const perIssue = { tag: 'new URL per issue', why: 'This school publishes every issue at a fresh URL. The tracked issue still scans cleanly, but it is five weeks old.', last: 'Issue from five weeks ago', next: 'Add the current issue URL, or connect a Gmail scanner to catch new ones.' };
+    const midMenu = { tag: 'inherited from district', why: "Middle-school menus come from one district PDF per month. September is on file and October's has not been found.", last: 'September menu', next: 'Fix once at district level: check the food-services page for the October PDF.' };
+    const notes = {
+      'rosa:news': { tag: 'smore_no_blocks (warning)', why: 'The page loads but has no newsletter blocks. The link has most likely expired, which looks the same as "nothing new" unless it is flagged.', last: 'Never scanned successfully', next: 'Replace the newsletter URL with a live issue.' },
+      'kilmer:staff': { tag: 'site_did_not_load (fetch)', why: 'The school site did not load in the scraper on the last three runs.', last: 'Roster from 44 days ago is still showing', next: 'Re-run off-peak. If it keeps failing, check the site for a bot wall.' },
+      'barton:news': perIssue, 'cooper:news': perIssue,
+      'beck:menu': midMenu, 'carusi:menu': midMenu, 'rosa:menu': midMenu,
+      'west:periods': { tag: 'entered by hand', why: "The period table was typed in from the school's PDF and nothing re-checks it. It has not been confirmed for this school year.", last: 'Entered last school year', next: 'Compare against the current PDF, then confirm or correct it.' },
+      'delm:belldoc': { tag: 'source is out of date', why: 'The bell-schedule PDFs on the school site are dated 2024-25. The scan reads them fine; the documents themselves are old.', last: '2024-25 schedule', next: "Ask the school for this year's schedule." }
+    };
+    return Object.assign({}, generic[st], st === 'n' ? none[col.k] : null, notes[r.id + ':' + col.k]);
+  }
+
+  renderVals() {
+    const cols = this.cols();
+    const meta = this.meta();
+    const s = this.state;
+    const set = (key) => (e) => this.setState({ [key]: e.target.value, page: 0 });
+    const count = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+    let sel = null;
+
+    const all = this.schools().map((r) => {
+      const st = this.statuses(r);
+      const n = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+      const cells = cols.map((col) => {
+        const v = st[col.k];
+        const id = r.id + ':' + col.k;
+        count[v] += 1;
+        n[v] += 1;
+        if (id === s.sel) {
+          const d = this.detail(r, col, v);
+          sel = { title: r.name + ' · ' + col.label, status: meta[v].label, badgeBg: meta[v].bg, badgeInk: meta[v].ink, tag: d.tag, hasTag: !!d.tag, why: d.why, last: d.last, next: d.next, src: col.src, runs: col.runs, win: col.win };
+        }
+        return {
+          isOk: v === 'o', isStale: v === 's', isFail: v === 'f', isNone: v === 'n', isNa: v === 'x',
+          aria: r.name + ', ' + col.label + ': ' + meta[v].label,
+          ring: id === s.sel ? 'inset 0 0 0 2px #1f7f9f' : 'none',
+          pick: () => this.setState({ sel: id })
+        };
+      });
+      const pctNum = n.o / (cols.length - n.x);
+      return { name: r.name, kind: r.kind, district: r.district, sub: r.kind + ' · ' + r.district, cells: cells, st: st, n: n, pctNum: pctNum, pct: Math.round(pctNum * 100) + '%', reportAria: 'Missing-data report for ' + r.name };
+    });
+
+    const q = s.q.trim().toLowerCase();
+    const hit = (v) => (s.filter === 'g' ? 'nfs'.indexOf(v) >= 0 : v === s.filter);
+    const matched = all.filter((r) => {
+      if (q && r.name.toLowerCase().indexOf(q) < 0) return false;
+      if (s.district !== 'all' && r.district !== s.district) return false;
+      if (s.type !== 'all' && r.kind !== s.type) return false;
+      if (s.filter === 'all') return true;
+      return s.col !== 'all' ? hit(r.st[s.col]) : cols.some((c) => hit(r.st[c.k]));
+    });
+
+    const byName = (a, b) => a.name.localeCompare(b.name);
+    const sorters = {
+      pctAsc: (a, b) => a.pctNum - b.pctNum || byName(a, b),
+      pctDesc: (a, b) => b.pctNum - a.pctNum || byName(a, b),
+      fail: (a, b) => b.n.f - a.n.f || a.pctNum - b.pctNum || byName(a, b),
+      stale: (a, b) => b.n.s - a.n.s || a.pctNum - b.pctNum || byName(a, b),
+      none: (a, b) => b.n.n - a.n.n || a.pctNum - b.pctNum || byName(a, b),
+      name: byName,
+      district: (a, b) => a.district.localeCompare(b.district) || byName(a, b)
+    };
+    matched.sort(sorters[s.sort] || sorters.pctAsc);
+
+    const size = Number(s.size) || 10;
+    const pageCount = Math.max(1, Math.ceil(matched.length / size));
+    const page = Math.min(s.page, pageCount - 1);
+    const start = page * size;
+    const rows = matched.slice(start, start + size);
+    const pages = [];
+    for (let i = 0; i < pageCount; i += 1) {
+      const on = i === page;
+      pages.push({ n: i + 1, aria: 'Page ' + (i + 1), cur: on ? 'page' : 'false', bg: on ? '#1f7f9f' : '#ffffff', ink: on ? '#ffffff' : '#17202a', border: on ? '#1f7f9f' : '#cfd6dd', pick: () => this.setState({ page: i }) });
+    }
+
+    const app = count.o + count.s + count.f + count.n;
+    const tile = (key) => ({ pressed: s.filter === key, border: s.filter === key ? '#1f7f9f' : '#e2e7ec', pick: () => this.setState({ filter: s.filter === key ? 'all' : key, page: 0 }) });
+
+    return {
+      heads: cols.map((c) => ({ label: c.label })),
+      rows: rows,
+      empty: matched.length === 0,
+      resultLabel: matched.length === 0
+        ? '0 of ' + all.length + ' schools'
+        : 'Showing ' + (start + 1) + ' to ' + (start + rows.length) + ' of ' + matched.length + (matched.length === all.length ? ' schools' : ' matching schools (' + all.length + ' in total)'),
+      sel: sel || { title: 'Select a cell', status: '', badgeBg: 'transparent', badgeInk: '#17202a', tag: '', hasTag: false, why: '', last: '', next: '', src: '', runs: '', win: '' },
+      pct: Math.round((count.o / app) * 100) + '%',
+      okCount: count.o, appCount: app,
+      noneCount: count.n, failCount: count.f, staleCount: count.s,
+      tNone: tile('n'), tFail: tile('f'), tStale: tile('s'),
+      q: s.q, district: s.district, type: s.type, col: s.col, filter: s.filter, sort: s.sort, size: s.size,
+      onQ: set('q'), onDistrict: set('district'), onType: set('type'), onCol: set('col'), onFilter: set('filter'), onSort: set('sort'), onSize: set('size'),
+      clear: () => this.setState({ filter: 'all', q: '', district: 'all', type: 'all', col: 'all', page: 0 }),
+      pages: pages,
+      prev: () => this.setState({ page: Math.max(0, page - 1) }),
+      next: () => this.setState({ page: Math.min(pageCount - 1, page + 1) }),
+      noPrev: page === 0, noNext: page >= pageCount - 1,
+      prevOpacity: page === 0 ? '0.45' : '1', nextOpacity: page >= pageCount - 1 ? '0.45' : '1'
+    };
+  }
+}
+</script>
+</body>
+</html>

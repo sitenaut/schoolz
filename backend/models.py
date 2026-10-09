@@ -2085,3 +2085,22 @@ class AppSetting(Base):
     value: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
     updated_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+class AuditNotPublished(Base):
+    """A data point a school (or its district) confirmed it doesn't publish -
+    the data audit's "Mark as not published". It keeps the cell at "not
+    collecting" (still counted in the score; only "not applicable" is left
+    out) but swaps "no source set" for a reason a district can read, so the
+    gap stops looking like our oversight. `data_point` is a key from
+    services/data_audit.py:DATA_POINTS, not a foreign key."""
+
+    __tablename__ = "audit_not_published"
+    __table_args__ = (UniqueConstraint("school_id", "data_point", name="uq_audit_not_published_school_point"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    school_id: Mapped[str] = mapped_column(String(36), ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
+    data_point: Mapped[str] = mapped_column(String(30), nullable=False)
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
