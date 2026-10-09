@@ -21,7 +21,7 @@ export function SubmitSourcePage() {
   const [description, setDescription] = useState("");
   const [submitterName, setSubmitterName] = useState("");
   const [submitterEmail, setSubmitterEmail] = useState("");
-  const [targetKind, setTargetKind] = useState<"unsure" | "school" | "district">("unsure");
+  const [targetKind, setTargetKind] = useState<"unsure" | "school" | "district" | "local">("unsure");
   const [schoolId, setSchoolId] = useState("");
   const [districtId, setDistrictId] = useState("");
   const [targets, setTargets] = useState<{ schools: TargetOption[]; districts: TargetOption[] }>({
@@ -47,7 +47,9 @@ export function SubmitSourcePage() {
       await submitContent({
         url: kind === "link" ? url.trim() : undefined,
         file: kind === "file" ? file ?? undefined : undefined,
-        description: description.trim() || undefined,
+        // There's no field for it: the reviewer sees this in the sender's note
+        // and still decides where the items go.
+        description: (targetKind === "local" ? `[Local event] ${description.trim()}` : description.trim()).trim().slice(0, 2000) || undefined,
         submitter_name: submitterName.trim() || undefined,
         submitter_email: submitterEmail.trim() || undefined,
         school_id: targetKind === "school" ? schoolId || undefined : undefined,
@@ -88,12 +90,12 @@ export function SubmitSourcePage() {
     <div style={{ maxWidth: 560, margin: "0 auto" }}>
       <SeoHead
         title="Send a flier or newsletter · schoolz"
-        description="Send us a school flier or newsletter link we're not tracking yet - a real person reviews every submission."
+        description="Send us a school or local-event flier, or a newsletter link we're not tracking yet - a real person reviews every submission."
         path="/contact/submit"
       />
       <h2>Send a flier or newsletter</h2>
       <p className="note">
-        Spot a school flier or a newsletter link we're not tracking yet? Send it over - a real person reviews
+        Spot a school flier, a town event or a newsletter link we're not tracking yet? Send it over - a real person reviews
         everything submitted here before it's added to the site.
       </p>
 
@@ -143,7 +145,7 @@ export function SubmitSourcePage() {
           />
         </Field>
 
-        <Field label="Which school or district is this about?">
+        <Field label="What is this about?">
           <select
             value={targetKind}
             onChange={(e) => setTargetKind(e.target.value as typeof targetKind)}
@@ -152,6 +154,7 @@ export function SubmitSourcePage() {
             <option value="unsure">Not sure / other</option>
             <option value="school">A school</option>
             <option value="district">The whole district</option>
+            <option value="local">A local event (not a school)</option>
           </select>
           {targetKind === "school" && (
             <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
