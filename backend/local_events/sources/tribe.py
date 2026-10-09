@@ -33,6 +33,7 @@ Example job-params entry:
 from __future__ import annotations
 
 import html
+import json
 import math
 import re
 from datetime import date, datetime, timedelta
@@ -54,6 +55,7 @@ CHERRY_HILL = (39.9346, -75.0307)
 PER_PAGE = 50
 DEFAULT_DAYS_AHEAD = 60
 DEFAULT_MAX_PAGES = 40
+SCRAPER_ATTEMPTS = 4
 DEFAULT_NEARBY_ZIP_PREFIXES = ("080", "081", "190", "191")
 
 # Site category names (lowercased, entities unescaped) -> this app's
@@ -133,6 +135,9 @@ class TribeEventsSource(Source):
         nearby_zip_prefixes: list[str] | tuple[str, ...] | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
         timeout: float = 30.0,
+        via_scraper: bool = False,
+        venue_name: str | None = None,
+        venue_address: str | None = None,
     ):
         self.name = name
         self.base_url = base_url.rstrip("/")
@@ -145,6 +150,37 @@ class TribeEventsSource(Source):
         self.max_pages = max(1, int(max_pages))
         self.timeout = timeout
         self.skipped_far = 0
+        # Cloudflare-fronted sites 403 plain HTTP (runnemedepubliclibrary.org); the
+        # scraper's browser gets the JSON. The home-IP scraper is blocked there too,
+        # so it isn't preferred.
+        self.via_scraper = via_scraper
+        # Fallback for events that carry no venue of their own - a library's
+        # events are at the library (haddonheightslibrary.com sets none).
+        self.venue_name = venue_name
+        self.venue_address = venue_address
+
+    async def _get_json(self, client: httpx.AsyncClient, url: str, params: dict[str, Any] | None) -> tuple[int, Any]:
+        if not self.via_scraper:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 404:
+                return 404, None
+            resp.raise_for_status()
+            return resp.status_code, resp.json()
+        from .scraper import fetch_rendered_html
+
+        full = str(httpx.URL(url).copy_merge_params(params or {}))
+        # Cloudflare lets some of the scraper's requests through and 403s others
+        # (an HTML "403 - Forbidden" page, not a challenge page), so try a few times.
+        for _attempt in range(SCRAPER_ATTEMPTS):
+            page, _ = await fetch_rendered_html(full, timeout_ms=int(self.timeout * 1000))
+            # Chromium shows a JSON response inside <pre>; the REST API's 404 is JSON too.
+            body = html.unescape(_TAG_RE.sub("", page)).strip()
+            if body.startswith("{"):
+                data = json.loads(body)
+                if isinstance(data, dict) and str(data.get("code", "")).startswith("rest_") and "events" not in data:
+                    return 404, None
+                return 200, data
+        raise RuntimeError(f"{full} was blocked {SCRAPER_ATTEMPTS} times through the scraper")
 
     def _params(self, today: date) -> dict[str, Any]:
         return {
@@ -162,12 +198,12 @@ class TribeEventsSource(Source):
             for _page in range(self.max_pages):
                 if not url:
                     break
-                resp = await client.get(url, params=params)
+                status, data = await self._get_json(client, url, params)
                 # The API answers past the last page with 404 rest_event_invalid_page.
-                if resp.status_code == 404 and out:
-                    break
-                resp.raise_for_status()
-                data = resp.json()
+                if status == 404:
+                    if out:
+                        break
+                    raise RuntimeError(f"{url} has no Events Calendar REST API")
                 for event in data.get("events") or []:
                     raw = self._to_raw(event)
                     if raw is not None:
@@ -219,8 +255,8 @@ class TribeEventsSource(Source):
             # An exact-midnight start with all_day unset is an editor who left the
             # time blank (WXPN lists most shows this way), not a 12:00 AM show.
             all_day=bool(e.get("all_day")) or (start.hour, start.minute, start.second) == (0, 0, 0),
-            venue_name=_text(venue.get("venue")),
-            venue_address=address or None,
+            venue_name=_text(venue.get("venue")) or self.venue_name,
+            venue_address=address or (self.venue_address if not venue.get("venue") else None),
             latitude=coords[0] if coords else None,
             longitude=coords[1] if coords else None,
             url=e.get("url") or e.get("website"),

@@ -59,19 +59,31 @@ class ICalSource(Source):
         default_categories: list[str] | None = None,
         timeout: float = 30.0,
         via_scraper: bool = False,
+        prefer_residential: bool = False,
+        venue_name: str | None = None,
+        venue_address: str | None = None,
+        upcoming_only: bool = False,
     ):
         self.name = name
         self.url = url
         self.default_categories = default_categories or []
         self.timeout = timeout
         self.via_scraper = via_scraper
+        self.prefer_residential = prefer_residential
+        # Overrides for feeds whose LOCATION is missing or junk ("US"): every
+        # event on a library's own feed is at the library.
+        self.venue_name = venue_name
+        self.venue_address = venue_address
+        # Some feeds carry years of history (berlinborolibrary.org goes back to
+        # 2023); drop what's already over instead of storing it.
+        self.upcoming_only = upcoming_only
 
     async def fetch(self) -> list[RawEvent]:
         if self.via_scraper:
             # Route through Playwright via /fetch-raw to bypass WAF/Cloudflare.
             # Uses expect_download() so ICS file downloads are captured as raw
             # bytes rather than crashing the Playwright worker.
-            raw_text = await fetch_raw_via_scraper(self.url, timeout=90.0)
+            raw_text = await fetch_raw_via_scraper(self.url, timeout=90.0, prefer_residential=self.prefer_residential)
             body = raw_text.encode("utf-8")
         else:
             async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
@@ -86,6 +98,7 @@ class ICalSource(Source):
             return []
 
         out: list[RawEvent] = []
+        today = datetime.now(_ET).replace(hour=0, minute=0, second=0, microsecond=0)
         for component in cal.walk("VEVENT"):
             try:
                 dtstart = component.get("DTSTART")
@@ -97,6 +110,8 @@ class ICalSource(Source):
                 dtend = component.get("DTEND")
                 end = _as_datetime(dtend.dt) if dtend is not None else None
                 all_day = isinstance(dtstart.dt, date) and not isinstance(dtstart.dt, datetime)
+                if self.upcoming_only and (end or start) < today:
+                    continue
 
                 title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
                 description = str(component.get("DESCRIPTION") or "").strip() or None
@@ -114,8 +129,8 @@ class ICalSource(Source):
                         start_time=start,
                         end_time=end,
                         all_day=all_day,
-                        venue_name=location,
-                        venue_address=location,
+                        venue_name=self.venue_name or location,
+                        venue_address=self.venue_address or location,
                         url=url_str,
                         default_categories=list(self.default_categories),
                         raw={"uid": uid},

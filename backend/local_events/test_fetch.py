@@ -15,7 +15,11 @@ from .sources.dostuff import DoStuffSource
 from .sources.ccls import CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
+from .sources.bibliocommons import BiblioCommonsSource
+from .sources.drupal_fullcalendar import DrupalFullCalendarSource
 from .sources.ical import ICalSource
+from .sources.libcal import LibCalSource
+from .sources.mec import MECSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
 from .sources.patch import PatchSource
@@ -91,6 +95,10 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     yodel_sources = body.params.get("yodel_sources") or []
     tribe_sources = body.params.get("tribe_sources") or []
     ccls_sources = body.params.get("ccls_sources") or []
+    libcal_sources = body.params.get("libcal_sources") or []
+    bibliocommons_sources = body.params.get("bibliocommons_sources") or []
+    mec_sources = body.params.get("mec_sources") or []
+    drupal_fullcalendar_sources = body.params.get("drupal_fullcalendar_sources") or []
     theatre_sources = body.params.get("theatre_sources") or []
     placewise_sources = body.params.get("placewise_sources") or []
     patch_sources = body.params.get("patch_sources") or []
@@ -120,6 +128,12 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         raise HTTPException(status_code=400, detail="params.tribe_sources must be a list")
     if not isinstance(ccls_sources, list):
         raise HTTPException(status_code=400, detail="params.ccls_sources must be a list")
+    for key, value in (
+        ("libcal_sources", libcal_sources), ("bibliocommons_sources", bibliocommons_sources),
+        ("mec_sources", mec_sources), ("drupal_fullcalendar_sources", drupal_fullcalendar_sources),
+    ):
+        if not isinstance(value, list):
+            raise HTTPException(status_code=400, detail=f"params.{key} must be a list")
     if not isinstance(theatre_sources, list):
         raise HTTPException(status_code=400, detail="params.theatre_sources must be a list")
     if not isinstance(placewise_sources, list):
@@ -211,6 +225,10 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             url=url,
             default_categories=list(entry.get("default_categories") or []),
             via_scraper=bool(entry.get("via_scraper", False)),
+            prefer_residential=bool(entry.get("prefer_residential", False)),
+            venue_name=entry.get("venue_name"),
+            venue_address=entry.get("venue_address"),
+            upcoming_only=bool(entry.get("upcoming_only", False)),
         )))
 
     for entry in rss_sources:
@@ -539,6 +557,9 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
             # First page only for a fast dry-run.
             max_pages=1,
+            via_scraper=bool(entry.get("via_scraper", False)),
+            venue_name=entry.get("venue_name"),
+            venue_address=entry.get("venue_address"),
         )))
 
     for entry in ccls_sources:
@@ -562,6 +583,30 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         )
         ccls_source.url = "https://events.camdencountylibrary.org/jsonapi/node/event"  # type: ignore[attr-defined]
         results.append(await _probe("ccls", ccls_source))
+
+    for source_type, entries, required, build in (
+        ("libcal", libcal_sources, "base_url", lambda n, e: LibCalSource(
+            n, e["base_url"], venue_name=e.get("venue_name"), venue_address=e.get("venue_address"),
+            default_categories=list(e.get("default_categories") or []), days_ahead=int(e.get("days_ahead", 90)), max_pages=1)),
+        ("bibliocommons", bibliocommons_sources, "library", lambda n, e: BiblioCommonsSource(
+            n, e["library"], branches=list(e.get("branches") or []),
+            default_categories=list(e.get("default_categories") or []), days_ahead=int(e.get("days_ahead", 90)), max_pages=1)),
+        ("mec", mec_sources, "page_url", lambda n, e: MECSource(
+            n, e["page_url"], default_categories=list(e.get("default_categories") or []), months_ahead=0)),
+        ("drupal_fullcalendar", drupal_fullcalendar_sources, "url", lambda n, e: DrupalFullCalendarSource(
+            n, e["url"], venue_name=e.get("venue_name"), venue_address=e.get("venue_address"),
+            default_categories=list(e.get("default_categories") or []), days_ahead=int(e.get("days_ahead", 120)))),
+    ):
+        for entry in entries:
+            name = (entry or {}).get("name") or f"(unnamed {source_type})"
+            if not (entry or {}).get(required):
+                results.append(TestFetchSourceResult(
+                    name=name, url=None, status="misconfigured",
+                    event_count=0, sample_titles=[],
+                    error=f"missing {required!r} field", source_type=source_type,
+                ))
+                continue
+            results.append(await _probe(source_type, build(name, entry)))
 
     for entry in theatre_sources:
         name = (entry or {}).get("name") or "(unnamed theatre)"

@@ -178,16 +178,18 @@ async def fetch_rendered_html(
     raise RuntimeError("all scraper services failed:\n  " + "\n  ".join(errors))
 
 
-async def fetch_raw_via_scraper(url: str, timeout: float = 90.0) -> str:
+async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_residential: bool = False) -> str:
     """Fetch a raw response body (e.g. an ICS file download) via the scraper service.
 
     Uses /fetch-raw instead of /fetch-html so Playwright captures the download
     content rather than trying to render the response as a page. The droplet
     returns `body`; schoolz's scraper returns `body_base64`. Returns the body
-    as a string. Raises RuntimeError if all services fail.
+    as a string. Raises RuntimeError if all services fail. A bot-challenge page
+    counts as a failure, so the next service (`prefer_residential` puts the
+    home-IP one first) gets its turn.
     """
     errors: list[str] = []
-    for service_url, key in _services():
+    for service_url, key in _services(prefer_residential):
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0)) as client:
                 resp = await client.post(
@@ -202,6 +204,9 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0) -> str:
                 body = base64.b64decode(data["body_base64"]).decode("utf-8", errors="replace")
             if not body:
                 errors.append(f"{service_url}: empty body")
+                continue
+            if _looks_like_challenge(body):
+                errors.append(f"{service_url}: bot challenge")
                 continue
             return body
         except Exception as exc:  # noqa: BLE001

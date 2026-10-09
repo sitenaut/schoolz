@@ -39,6 +39,10 @@ from .sources.ccls import DEFAULT_CCLS_PAUSE, CCLSSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
+from .sources.libcal import LibCalSource
+from .sources.bibliocommons import BiblioCommonsSource
+from .sources.mec import MECSource
+from .sources.drupal_fullcalendar import DrupalFullCalendarSource
 from .sources.json_api import JsonApiSource
 from .sources.listing_page import ListingPageSource
 from .sources.ludus import LudusSource
@@ -66,6 +70,10 @@ def _build_sources(params: dict) -> list[Source]:
                 url=entry["url"],
                 default_categories=list(entry.get("default_categories") or []),
                 via_scraper=bool(entry.get("via_scraper", False)),
+                prefer_residential=bool(entry.get("prefer_residential", False)),
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                upcoming_only=bool(entry.get("upcoming_only", False)),
             )
         )
     for entry in params.get("rss_sources") or []:
@@ -240,6 +248,60 @@ def _build_sources(params: dict) -> list[Source]:
                 center=entry.get("center"),
                 nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
                 max_pages=int(entry.get("max_pages", 40)),
+                via_scraper=bool(entry.get("via_scraper", False)),
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+            )
+        )
+    for entry in params.get("libcal_sources") or []:
+        if not entry.get("base_url") or not entry.get("name"):
+            continue
+        sources.append(
+            LibCalSource(
+                name=entry["name"],
+                base_url=entry["base_url"],
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []),
+                days_ahead=int(entry.get("days_ahead", 90)),
+                max_pages=int(entry.get("max_pages", 20)),
+            )
+        )
+    for entry in params.get("bibliocommons_sources") or []:
+        if not entry.get("library") or not entry.get("name"):
+            continue
+        sources.append(
+            BiblioCommonsSource(
+                name=entry["name"],
+                library=entry["library"],
+                branches=list(entry.get("branches") or []),
+                default_categories=list(entry.get("default_categories") or []),
+                days_ahead=int(entry.get("days_ahead", 90)),
+                max_pages=int(entry.get("max_pages", 20)),
+            )
+        )
+    for entry in params.get("mec_sources") or []:
+        if not entry.get("page_url") or not entry.get("name"):
+            continue
+        sources.append(
+            MECSource(
+                name=entry["name"],
+                page_url=entry["page_url"],
+                default_categories=list(entry.get("default_categories") or []),
+                months_ahead=int(entry.get("months_ahead", 3)),
+            )
+        )
+    for entry in params.get("drupal_fullcalendar_sources") or []:
+        if not entry.get("url") or not entry.get("name"):
+            continue
+        sources.append(
+            DrupalFullCalendarSource(
+                name=entry["name"],
+                url=entry["url"],
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []),
+                days_ahead=int(entry.get("days_ahead", 120)),
             )
         )
     for entry in params.get("dostuff_sources") or []:
