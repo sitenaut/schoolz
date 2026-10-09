@@ -36,6 +36,10 @@ _USER_AGENT = f"schoolz/1.0 ({os.getenv('NWS_CONTACT') or 'https://schoolz.siten
 _TIMEOUT = 5.0
 _FORECAST_TTL = 60 * 60  # NWS refreshes hourly forecasts about once an hour
 _UV_TTL = 3 * 60 * 60
+# A failed upstream is remembered briefly too. The EPA UV endpoint answers 404
+# for every ZIP (0.5-2s each), and failures used to go uncached, so every Today
+# card re-paid that wait on every request.
+_FAIL_TTL = 10 * 60
 
 _ZIP_RE = re.compile(r"\b(\d{5})(?:-\d{4})?\b")
 _RAIN_RE = re.compile(r"rain|shower|thunder|drizzle|storm", re.IGNORECASE)
@@ -64,7 +68,12 @@ async def _cached(key: str, ttl: float, fetch):
         hit = _cache.get(key)
         if hit and hit[0] > _time.monotonic():
             return hit[1]
-        value = await fetch()
+        try:
+            value = await fetch()
+        except Exception as exc:
+            logger.warning("weather_fetch_failed", extra={"cache_key": key, "error": str(exc)})
+            _cache[key] = (_time.monotonic() + _FAIL_TTL, None)
+            return None
         if value is not None:
             _cache[key] = (_time.monotonic() + ttl, value)
         return value
