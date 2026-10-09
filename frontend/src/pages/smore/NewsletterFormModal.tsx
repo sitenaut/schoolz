@@ -35,7 +35,7 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
   // scheduled) should reflect that it's actually off right now - only a
   // brand-new newsletter defaults to on.
   const [enabled, setEnabled] = useState(newsletter ? Boolean(newsletter.scheduled_job?.enabled) : true);
-  const [runOnce, setRunOnce] = useState(newsletter ? Boolean(newsletter.scheduled_job?.run_once) : false);
+  const [runOnce, setRunOnce] = useState(newsletter ? Boolean(newsletter.scheduled_job?.run_once) : true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
     setCron(newsletter?.scheduled_job?.cron_expr ?? "0 8 * * 1");
     setTimezone(newsletter?.scheduled_job?.timezone ?? "America/New_York");
     setEnabled(newsletter ? Boolean(newsletter.scheduled_job?.enabled) : true);
-    setRunOnce(newsletter ? Boolean(newsletter.scheduled_job?.run_once) : false);
+    setRunOnce(newsletter ? Boolean(newsletter.scheduled_job?.run_once) : true);
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, newsletter?.id]);
