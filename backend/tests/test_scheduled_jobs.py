@@ -181,3 +181,42 @@ async def test_list_jobs_filters_by_last_status_and_enabled():
         assert await listed("last_status=never") == {ids["fresh"]}
         assert await listed("enabled=false") == {ids["broken_off"]}
         assert await listed("kind=school_info.scan") == set(ids.values())
+
+
+def test_job_sources_say_what_a_scan_reads():
+    from types import SimpleNamespace
+
+    from scheduler.sources import job_sources
+
+    district = SimpleNamespace(website_url="https://district.example", ics_feeds=[{"name": "Main", "url": "https://district.example/cal.ics"}])
+    school = SimpleNamespace(
+        website_url="https://school.example", school_type="elementary", apptegy_org_id=None, staff_directory_url="https://school.example/staff"
+    )
+
+    docs = job_sources("documents.scan", school=school, district=district)
+    assert {"label": "School website", "value": "https://school.example"} in docs
+    assert any(s["value"] == "https://district.example" for s in docs)
+
+    # The roster reads the directory when one is set, not the homepage.
+    assert job_sources("staff_roster.scan", school=school, district=district)[0] == {"label": "Staff directory", "value": "https://school.example/staff"}
+    assert job_sources("district_calendar.scan", district=district) == [{"label": "Calendar feed: Main", "value": "https://district.example/cal.ics"}]
+    assert job_sources("smore.scan", newsletter_url="https://smore.example/n/abc") == [{"label": "Newsletter", "value": "https://smore.example/n/abc"}]
+    # Unset field, unknown kind, deleted target: nothing to show, never an error.
+    assert job_sources("athletics_calendar.scan", school=SimpleNamespace(athletics_url=None)) == []
+    assert job_sources("prerender.warm") == []
+    assert job_sources("documents.scan", school=None) == []
+
+
+@pytest.mark.anyio
+async def test_job_out_includes_the_url_it_fetches():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _register(client, "jobsrc", admin=True)
+        school = await client.post(
+            "/schools", json={"name": f"Source Middle {uuid.uuid4().hex[:6]}", "website_url": "https://sources.example"}, headers=admin
+        )
+        assert school.status_code == 201, school.text
+        jobs = (await client.get("/scheduled-jobs?kind=documents.scan", headers=admin)).json()
+        mine = [j for j in jobs if j["params"].get("school_id") == school.json()["id"]]
+        assert mine, "setting website_url should have auto-created the documents scan"
+        assert {"label": "School website", "value": "https://sources.example"} in mine[0]["sources"]
