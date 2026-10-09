@@ -7,7 +7,18 @@ from sqlalchemy.orm import defer
 
 from auth import require_permission
 from database import get_db
-from models import CommunitySubmission, CommunitySubmissionItem, District, School, SchoolContentItem, User
+from local_events import normalizer as local_normalizer
+from local_events.prune import COMMUNITY_SOURCE
+from local_events.sources.base import RawEvent
+from models import (
+    CommunitySubmission,
+    CommunitySubmissionItem,
+    District,
+    LocalEvent,
+    School,
+    SchoolContentItem,
+    User,
+)
 from schemas import (
     CommunitySubmissionOut,
     CommunitySubmissionUpdate,
@@ -266,9 +277,37 @@ async def _existing_calendar(db: AsyncSession, submission: CommunitySubmission, 
     ]
 
 
+def _is_published(draft: CommunitySubmissionItem) -> bool:
+    return bool(draft.content_item_id or draft.local_event_id)
+
+
+async def _existing_local(db: AsyncSession, drafts: list[CommunitySubmissionItem]) -> list:
+    """Local events on the days of the local-scope drafts, as (id, title,
+    local day) - the same shape `_existing_calendar` gives, so a flyer for an
+    event a feed already carries is flagged rather than listed twice."""
+    local = [d for d in drafts if d.scope == "local"]
+    days = [d for d in (submission_review.local_day(draft.start_local) for draft in local) if d]
+    if not days:
+        return []
+    lo = datetime.combine(min(days), datetime.min.time(), tzinfo=_DEFAULT_TZ)
+    hi = datetime.combine(max(days), datetime.min.time(), tzinfo=_DEFAULT_TZ) + timedelta(days=1)
+    mine = {draft.local_event_id for draft in local if draft.local_event_id}
+    result = await db.execute(
+        select(LocalEvent.id, LocalEvent.title, LocalEvent.start_time).where(
+            LocalEvent.start_time >= lo, LocalEvent.start_time < hi
+        )
+    )
+    return [
+        (event_id, title, start.astimezone(_DEFAULT_TZ).date())
+        for event_id, title, start in result.all()
+        if event_id not in mine
+    ]
+
+
 async def _review(db: AsyncSession, submission: CommunitySubmission) -> SubmissionReviewOut:
     drafts = await _drafts(db, submission.id)
     existing = await _existing_calendar(db, submission, drafts)
+    existing_local = await _existing_local(db, drafts)
     today = submission_review.today_local()
     return SubmissionReviewOut(
         submission=(await _to_outs(db, [submission]))[0],
@@ -285,9 +324,13 @@ async def _review(db: AsyncSession, submission: CommunitySubmission) -> Submissi
                 stated_weekday=d.stated_weekday,
                 tentative=d.tentative,
                 source_excerpt=d.source_excerpt,
+                venue_name=d.venue_name,
+                venue_address=d.venue_address,
+                local_categories=d.local_categories or [],
                 replaces_item_id=d.replaces_item_id,
                 content_item_id=d.content_item_id,
-                flags=submission_review.item_flags(d, existing, today),
+                local_event_id=d.local_event_id,
+                flags=submission_review.item_flags(d, existing_local if d.scope == "local" else existing, today),
             )
             for d in drafts
         ],
@@ -295,6 +338,7 @@ async def _review(db: AsyncSession, submission: CommunitySubmission) -> Submissi
         # in the note would "match nothing".
         note_flags=submission_review.note_flags(submission.description, drafts) if any(d.start_local for d in drafts) else [],
         categories=submission_review.CATEGORIES,
+        local_categories=local_normalizer.PICKABLE_CATEGORIES,
     )
 
 
@@ -333,7 +377,7 @@ async def extract_submission(
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 
     for draft in await _drafts(db, submission_id):
-        if draft.origin == "model" and draft.content_item_id is None:
+        if draft.origin == "model" and not _is_published(draft):
             await db.delete(draft)
     for position, item in enumerate(items):
         db.add(CommunitySubmissionItem(submission_id=submission_id, position=position, origin="model", **item))
@@ -352,8 +396,18 @@ def _apply(draft: CommunitySubmissionItem, payload: SubmissionItemIn) -> None:
         if payload.category not in submission_review.CATEGORIES:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown category")
         draft.category = payload.category
-    if "scope" in fields and payload.scope:
+    if "scope" in fields and payload.scope and payload.scope != draft.scope:
+        if _is_published(draft):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unpublish this item before changing where it goes")
         draft.scope = payload.scope
+    if "local_categories" in fields and payload.local_categories is not None:
+        unknown = set(payload.local_categories) - set(local_normalizer.PICKABLE_CATEGORIES)
+        if unknown:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown category")
+        draft.local_categories = list(dict.fromkeys(payload.local_categories))
+    for name in ("venue_name", "venue_address"):
+        if name in fields:
+            setattr(draft, name, (getattr(payload, name) or "").strip() or None)
     for name in ("start_local", "end_local"):
         if name in fields:
             value = getattr(payload, name) or None
@@ -394,6 +448,32 @@ def _write_item(item: SchoolContentItem, draft: CommunitySubmissionItem, school:
     item.end_date = _parse_date(draft.end_local, job_kind="submission.review")
     item.is_all_day = "T" not in draft.start_local
     item.source_excerpt = draft.source_excerpt
+
+
+def _write_local_event(event: LocalEvent, draft: CommunitySubmissionItem) -> None:
+    """Fills a LocalEvent from a draft, with the same normalisation (HTML
+    strip, UTC storage, keyword categories) the feeds get."""
+    start = _parse_date(draft.start_local, job_kind="submission.review")
+    if start is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"“{draft.title}” has no date, so it can't be published")
+    normalized = local_normalizer.normalize(
+        RawEvent(
+            source=COMMUNITY_SOURCE,
+            source_event_id=f"submission:{draft.id}",
+            title=_published_title(draft),
+            description=draft.description,
+            start_time=start,
+            end_time=_parse_date(draft.end_local, job_kind="submission.review"),
+            all_day="T" not in draft.start_local,
+            venue_name=draft.venue_name,
+            venue_address=draft.venue_address,
+            default_categories=list(draft.local_categories or []),
+            # A reviewer who ticks "free" knows it is; the keyword guess only runs without that.
+            is_free=True if "free" in (draft.local_categories or []) else None,
+        )
+    )
+    for name, value in normalized.items():
+        setattr(event, name, value)
 
 
 async def _submission_school(db: AsyncSession, submission: CommunitySubmission) -> School:
@@ -448,6 +528,10 @@ async def update_item(
         ).scalar_one_or_none()
         if item:
             _write_item(item, draft, await _submission_school(db, submission))
+    if draft.local_event_id:
+        event = (await db.execute(select(LocalEvent).where(LocalEvent.id == draft.local_event_id))).scalar_one_or_none()
+        if event:
+            _write_local_event(event, draft)
     await db.commit()
     return await _review(db, submission)
 
@@ -461,7 +545,7 @@ async def delete_item(
 ):
     submission = await _load(db, submission_id)
     draft = await _draft(db, submission_id, item_id)
-    if draft.content_item_id:
+    if _is_published(draft):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unpublish this item before deleting it")
     await db.delete(draft)
     await db.commit()
@@ -476,13 +560,22 @@ async def publish_items(
     db: AsyncSession = Depends(get_db),
 ):
     submission = await _load(db, submission_id)
-    school = await _submission_school(db, submission)
     wanted = set(payload.item_ids)
-    drafts = [d for d in await _drafts(db, submission_id) if d.id in wanted and d.content_item_id is None]
+    drafts = [d for d in await _drafts(db, submission_id) if d.id in wanted and not _is_published(d)]
     if not drafts:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Nothing to publish")
+    # A school is only needed by the items that go on a school's calendar; a
+    # local event stands on its own.
+    school = await _submission_school(db, submission) if any(d.scope != "local" for d in drafts) else None
 
     for draft in drafts:
+        if draft.scope == "local":
+            event = LocalEvent(source=COMMUNITY_SOURCE, source_event_id=f"submission:{draft.id}")
+            _write_local_event(event, draft)
+            db.add(event)
+            await db.flush()
+            draft.local_event_id = event.id
+            continue
         item = SchoolContentItem(source="community", external_uid=f"submission:{draft.id}")
         _write_item(item, draft, school)
         db.add(item)
@@ -503,6 +596,12 @@ async def publish_items(
     return await _review(db, submission)
 
 
+async def _reopen_if_nothing_published(db: AsyncSession, submission: CommunitySubmission, taken_down: CommunitySubmissionItem) -> None:
+    remaining = [d for d in await _drafts(db, submission.id) if _is_published(d) and d.id != taken_down.id]
+    if not remaining and submission.status == "approved":
+        submission.status = "pending"
+
+
 @router.post("/{submission_id}/items/{item_id}/unpublish", response_model=SubmissionReviewOut)
 async def unpublish_item(
     submission_id: str,
@@ -514,8 +613,16 @@ async def unpublish_item(
     replaced. The draft stays, so it can be fixed and published again."""
     submission = await _load(db, submission_id)
     draft = await _draft(db, submission_id, item_id)
-    if not draft.content_item_id:
+    if not _is_published(draft):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This item isn't published")
+    if draft.local_event_id:
+        event = (await db.execute(select(LocalEvent).where(LocalEvent.id == draft.local_event_id))).scalar_one_or_none()
+        if event:
+            await db.delete(event)
+        draft.local_event_id = None
+        await _reopen_if_nothing_published(db, submission, draft)
+        await db.commit()
+        return await _review(db, submission)
     replaced = (
         await db.execute(select(SchoolContentItem).where(SchoolContentItem.superseded_by_id == draft.content_item_id))
     ).scalars().all()
@@ -529,9 +636,6 @@ async def unpublish_item(
     if item:
         await db.delete(item)
     draft.content_item_id = None
-
-    remaining = [d for d in await _drafts(db, submission_id) if d.content_item_id and d.id != draft.id]
-    if not remaining and submission.status == "approved":
-        submission.status = "pending"
+    await _reopen_if_nothing_published(db, submission, draft)
     await db.commit()
     return await _review(db, submission)

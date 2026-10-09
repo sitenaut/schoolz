@@ -38,6 +38,10 @@ KEYWORD_CATEGORIES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bpersonal train(?:ing|er|ers)\b", re.I), "exercise"),
 ]
 
+# The tags a reviewer can add by hand to an event they publish from a
+# community submission. The keyword tags above plus the classes umbrella.
+PICKABLE_CATEGORIES: list[str] = list(dict.fromkeys([tag for _, tag in KEYWORD_CATEGORIES] + [CLASSES_CATEGORY]))
+
 # "Classes & Lessons": one umbrella for anything you sign up to learn, so a
 # filter doesn't mean picking "piano" and "cello" and "violin" separately.
 # Overlaps freely with other categories. The title is trusted; a description

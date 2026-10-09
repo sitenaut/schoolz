@@ -36,13 +36,16 @@ type Draft = {
   title: string;
   description: string;
   category: string;
-  scope: "school" | "district";
+  scope: "school" | "district" | "local";
+  venueName: string;
+  venueAddress: string;
+  localCategories: string[];
   tentative: boolean;
   published: boolean;
 } & DateParts;
 
 const BLANK: Draft = {
-  id: null, title: "", description: "", category: "event", scope: "school", tentative: false, published: false,
+  id: null, title: "", description: "", category: "event", scope: "school", venueName: "", venueAddress: "", localCategories: [], tentative: false, published: false,
   date: "", time: "", endDate: "", endTime: "",
 };
 
@@ -54,6 +57,7 @@ function statusTone(status: string): "warn" | "ok" | "bad" | "muted" {
 }
 
 const CATEGORY_LABELS: Record<string, string> = { pta: "PTA", org_club: "Club", merch_ad: "Merchandise" };
+const isLive = (i: SubmissionItem) => Boolean(i.content_item_id || i.local_event_id);
 const labelize = (key: string) => CATEGORY_LABELS[key] ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
 /** One page for the whole job: see the upload, have it read, correct what
@@ -90,7 +94,7 @@ export function SubmissionReviewPage() {
     setSelected((cur) => {
       const out = new Set<string>();
       for (const item of next.items) {
-        if (item.content_item_id) continue;
+        if (isLive(item)) continue;
         if (defaulted.current.has(item.id)) {
           if (cur.has(item.id) && item.start_local) out.add(item.id);
         } else {
@@ -137,9 +141,9 @@ export function SubmissionReviewPage() {
   const groups = useMemo(() => {
     const items = review?.items ?? [];
     return {
-      live: items.filter((i) => i.content_item_id),
-      dated: items.filter((i) => !i.content_item_id && i.start_local),
-      undated: items.filter((i) => !i.content_item_id && !i.start_local),
+      live: items.filter(isLive),
+      dated: items.filter((i) => !isLive(i) && i.start_local),
+      undated: items.filter((i) => !isLive(i) && !i.start_local),
     };
   }, [review]);
 
@@ -178,8 +182,11 @@ export function SubmissionReviewPage() {
       description: item.description ?? "",
       category: item.category,
       scope: item.scope,
+      venueName: item.venue_name ?? "",
+      venueAddress: item.venue_address ?? "",
+      localCategories: item.local_categories,
       tentative: item.tentative,
-      published: Boolean(item.content_item_id),
+      published: isLive(item),
       ...splitLocal(item.start_local, item.end_local),
     });
 
@@ -190,6 +197,9 @@ export function SubmissionReviewPage() {
       description: editing.description,
       category: editing.category,
       scope: editing.scope,
+      venue_name: editing.venueName,
+      venue_address: editing.venueAddress,
+      local_categories: editing.localCategories,
       tentative: editing.tentative,
       ...joinLocal(editing),
     };
@@ -201,7 +211,7 @@ export function SubmissionReviewPage() {
     // Correcting an item is a decision to use it: once nothing holds it
     // back, tick it rather than making the reviewer find it again.
     const saved = next.items.find((i) => (editing.id ? i.id === editing.id : !known.has(i.id)));
-    if (saved && !saved.content_item_id && saved.start_local && !saved.flags.some((f) => f.hold)) {
+    if (saved && !isLive(saved) && saved.start_local && !saved.flags.some((f) => f.hold)) {
       setSelected((cur) => new Set(cur).add(saved.id));
     }
     setEditing(null);
@@ -244,8 +254,10 @@ export function SubmissionReviewPage() {
   const publishCount = groups.dated.filter((i) => selected.has(i.id)).length;
 
   const itemRow = (item: SubmissionItem) => {
-    const live = Boolean(item.content_item_id);
-    const listed = item.flags.find((f) => f.code === "already_listed");
+    const live = isLive(item);
+    const local = item.scope === "local";
+    // Replacing retires a school calendar item; a local event can only be skipped.
+    const listed = local ? undefined : item.flags.find((f) => f.code === "already_listed");
     return (
       <li key={item.id} className={`sr-item ${live ? "live" : ""}`}>
         {!live && item.start_local && canEdit && (
@@ -262,9 +274,10 @@ export function SubmissionReviewPage() {
             {item.title}
             {live && <Badge tone="ok">Live</Badge>}
             {item.scope === "district" && <Badge tone="info" dot={false}>District</Badge>}
+            {local && <Badge tone="info" dot={false}>Local</Badge>}
           </div>
           <div className="sr-item-when">
-            {formatWhen(item.start_local, item.end_local)} · {labelize(item.category)}
+            {formatWhen(item.start_local, item.end_local)} · {local ? [item.venue_name || "No venue", ...item.local_categories.map(labelize)].join(" · ") : labelize(item.category)}
           </div>
           {item.description && <div className="note">{item.description}</div>}
           {item.flags
@@ -301,7 +314,9 @@ export function SubmissionReviewPage() {
               <button
                 className="btn sm"
                 disabled={busy !== null}
-                onClick={() => run("unpublish", "Could not unpublish", () => unpublishItem(submissionId, item.id), "Taken off the calendar")}
+                onClick={() =>
+                  run("unpublish", "Could not unpublish", () => unpublishItem(submissionId, item.id), local ? "Taken off Local" : "Taken off the calendar")
+                }
               >
                 Unpublish
               </button>
@@ -373,7 +388,7 @@ export function SubmissionReviewPage() {
           </SectionCard>
 
           <SectionCard title="Filing">
-            <Field label="School" hint="Published items land on this school's page and calendar.">
+            <Field label="School" hint="School and district items land on this school's page and calendar. Local events don't need one.">
               <select
                 value={submission.school_id ?? ""}
                 disabled={!canEdit || busy !== null}
@@ -486,7 +501,7 @@ export function SubmissionReviewPage() {
         open={Boolean(editing)}
         onClose={() => setEditing(null)}
         title={editing?.id ? "Edit item" : "Add item"}
-        subtitle={editing?.published ? "This item is live - saving changes the calendar." : undefined}
+        subtitle={editing?.published ? "This item is live - saving changes what the public sees." : undefined}
         footer={
           <>
             <button className="btn" onClick={() => setEditing(null)}>
@@ -518,25 +533,67 @@ export function SubmissionReviewPage() {
               <input type="date" value={editing.endDate} onChange={(e) => setEditing({ ...editing, endDate: e.target.value })} />
             </Field>
             <div className="sr-form-row">
-              <Field label="Kind">
-                <select value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
-                  {review.categories.map((c) => (
-                    <option key={c} value={c}>
-                      {labelize(c)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Applies to">
+              {editing.scope !== "local" && (
+                <Field label="Kind">
+                  <select value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
+                    {review.categories.map((c) => (
+                      <option key={c} value={c}>
+                        {labelize(c)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <Field
+                label="Goes on"
+                hint={editing.published ? "Unpublish it to move it somewhere else." : undefined}
+              >
                 <select
                   value={editing.scope}
+                  disabled={editing.published}
                   onChange={(e) => setEditing({ ...editing, scope: e.target.value as Draft["scope"] })}
                 >
-                  <option value="school">This school</option>
-                  <option value="district">The whole district</option>
+                  <option value="school">This school's calendar</option>
+                  <option value="district">The whole district's calendar</option>
+                  <option value="local">Local events (not a school)</option>
                 </select>
               </Field>
             </div>
+            {editing.scope === "local" && (
+              <Field label="Tags" hint="Added to whatever is picked up from the title and details.">
+                <div className="sr-tags">
+                  {review.local_categories.map((c) => {
+                    const on = editing.localCategories.includes(c);
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        className={`btn sm ${on ? "btn-primary" : ""}`}
+                        aria-pressed={on}
+                        onClick={() =>
+                          setEditing({
+                            ...editing,
+                            localCategories: on ? editing.localCategories.filter((x) => x !== c) : [...editing.localCategories, c],
+                          })
+                        }
+                      >
+                        {labelize(c)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
+            {editing.scope === "local" && (
+              <div className="sr-form-row">
+                <Field label="Venue">
+                  <input value={editing.venueName} onChange={(e) => setEditing({ ...editing, venueName: e.target.value })} />
+                </Field>
+                <Field label="Address">
+                  <input value={editing.venueAddress} onChange={(e) => setEditing({ ...editing, venueAddress: e.target.value })} />
+                </Field>
+              </div>
+            )}
             <Field label="Details">
               <textarea
                 value={editing.description}

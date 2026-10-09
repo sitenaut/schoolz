@@ -46,6 +46,7 @@ Community events — **public, no auth dependency at all** (no per-viewer person
 
 - Admin UI is billz's: JSON params editor + **Test fetch** (`POST /scheduled-jobs/test-fetch`, a dry run with per-source status). Test before saving.
 - Rendering goes to the shared Playwright droplet first, schoolz's own scraper second; the residential Pi is opt-in per call.
+- **Reviewer-published events** — an admin can publish a draft from a community submission (`/admin/submissions`) as a local event by choosing "Local events" as where it goes; no school needed. They are stored with `source="community"`, which no job lists, so `prune.COMMUNITY_SOURCE` is exempt from the orphan delete (`tests/test_placewise_source.py` pins it). Unpublishing deletes the row.
 - **Deleting a job, or removing a source from its params, deletes that source's events** (`local_events/prune.py`), by source name across all remaining jobs. Disabling keeps them. **`prune.SOURCE_KEYS` must list every `*_sources` key** or every job edit deletes that source's events as orphaned (`tests/test_placewise_source.py` checks this).
 - A failed source makes the run `WARNING` (billz only marks it `-1`).
 - **Local compose scraper binds `0.0.0.0`**: the image binds `::` for Fly's IPv6-only 6PN, and asyncio makes that socket IPv6-only locally.

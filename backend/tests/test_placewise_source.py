@@ -58,3 +58,23 @@ def test_prune_knows_every_source_list_the_pipeline_reads():
     pipeline = (Path(__file__).parent.parent / "local_events" / "pipeline.py").read_text()
     read = set(re.findall(r'params\.get\("(\w+_sources)"\)', pipeline))
     assert read and read <= set(SOURCE_KEYS), sorted(read - set(SOURCE_KEYS))
+
+
+@pytest.mark.anyio
+async def test_prune_never_deletes_events_published_from_community_submissions():
+    import uuid
+    from datetime import datetime, timezone
+
+    import database
+    from local_events.prune import COMMUNITY_SOURCE, prune_orphaned_events
+    from models import LocalEvent
+    from sqlalchemy import select
+
+    async with database.SessionLocal() as db:
+        keep = LocalEvent(source=COMMUNITY_SOURCE, source_event_id=uuid.uuid4().hex, title="Kept", start_time=datetime.now(timezone.utc), categories=[])
+        orphan = LocalEvent(source="gone-feed", source_event_id=uuid.uuid4().hex, title="Orphan", start_time=datetime.now(timezone.utc), categories=[])
+        db.add_all([keep, orphan])
+        await db.flush()
+        await prune_orphaned_events(db)
+        remaining = {r for r in (await db.execute(select(LocalEvent.title).where(LocalEvent.id.in_([keep.id, orphan.id])))).scalars()}
+    assert remaining == {"Kept"}
