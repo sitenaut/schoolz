@@ -649,6 +649,11 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.kv.job-facts {
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
 pre.log {
   margin: 0;
   background: #0f1419;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { IconEdit, IconPlay, IconRefresh } from "../../components/icons";
@@ -8,6 +8,15 @@ import type { JobRun, ScheduledJob } from "../../types";
 import { listRuns } from "./jobsApi";
 
 type Tab = "runs" | "overview";
+
+function FactRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd>{children}</dd>
+    </>
+  );
+}
 
 type Props = {
   job: ScheduledJob | null;
@@ -29,6 +38,7 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
   const [runs, setRuns] = useState<JobRun[]>([]);
   const [loading, setLoading] = useState(false);
   const [openRun, setOpenRun] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     if (!job) return;
@@ -47,6 +57,7 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
   useEffect(() => {
     setTab(initialTab);
     setOpenRun(null);
+    setCopied(false);
     setRuns([]);
     if (job) load();
   }, [job?.id, initialTab, load, job]);
@@ -90,6 +101,38 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
         )
       }
     >
+      {/* Above the tabs on purpose: arriving from a failed status badge lands
+          on Runs, and "what was it fetching" + an id to quote are the first
+          two things anyone asks about a failure. */}
+      <dl className="kv job-facts">
+        {(job.sources ?? []).map((src) => (
+          <FactRow key={`${src.label}|${src.value}`} label={src.label}>
+            {/^https?:\/\//.test(src.value) ? (
+              <a href={src.value} target="_blank" rel="noreferrer">
+                {src.value}
+              </a>
+            ) : (
+              src.value
+            )}
+          </FactRow>
+        ))}
+        <FactRow label="Job id">
+          <span className="code-chip">{job.id}</span>{" "}
+          <button
+            type="button"
+            className="btn sm"
+            onClick={() =>
+              navigator.clipboard
+                ?.writeText(job.id)
+                .then(() => setCopied(true))
+                .catch(() => undefined)
+            }
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </FactRow>
+      </dl>
+
       <div className="utabs" role="tablist">
         <button role="tab" aria-selected={tab === "runs"} onClick={() => setTab("runs")}>
           Runs
@@ -132,10 +175,6 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
           </dd>
           <dt>Created</dt>
           <dd>{fmtDateTime(job.created_at)}</dd>
-          <dt>Job id</dt>
-          <dd>
-            <span className="code-chip">{job.id}</span>
-          </dd>
         </dl>
       ) : (
         <div className="runs">

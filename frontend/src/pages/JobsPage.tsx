@@ -169,7 +169,8 @@ export function JobsPage() {
       const status = running.has(j.id) ? "running" : (j.last_status ?? "never");
       if (statusFilter && status !== statusFilter) return false;
       if (needle) {
-        const hay = `${j.name} ${j.kind} ${j.target_label ?? ""} ${j.last_error_code ?? ""} ${j.description ?? ""}`.toLowerCase();
+        const sources = (j.sources ?? []).map((src) => src.value).join(" ");
+        const hay = `${j.name} ${j.kind} ${j.target_label ?? ""} ${j.last_error_code ?? ""} ${j.description ?? ""} ${sources} ${j.id}`.toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
@@ -303,7 +304,7 @@ export function JobsPage() {
       <div className="tb">
         <div className="search">
           <IconSearch />
-          <input placeholder="Search jobs, schools, error codes…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input placeholder="Search jobs, schools, URLs, error codes, job id…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <select value={kindFilter} onChange={(e) => setKindFilter(e.target.value)} aria-label="Filter by kind">
           <option value="">All kinds</option>

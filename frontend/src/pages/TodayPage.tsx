@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { DayCard } from "../components/today";
+import { IconPin } from "../components/icons";
+import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
@@ -85,6 +87,22 @@ export function TodayPage() {
             </Link>
           </p>
         </div>
+        {/* Local and seasonal need no school. On a phone the Local tab is the
+            sixth item, off the edge of the bar, so without these the picker
+            above read as the only way into the site. */}
+        <p className="note" style={{ margin: "18px 0 8px" }}>
+          {t("No school needed")}
+        </p>
+        <SeasonalBanner />
+        <Link className="link-card" to="/local">
+          <span className="ico">
+            <IconPin />
+          </span>
+          <span>
+            <b>{t("Local events")}</b>
+            <small>{t("Things to do around South Jersey and Philadelphia")} →</small>
+          </span>
+        </Link>
       </>
     );
 

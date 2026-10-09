@@ -173,6 +173,11 @@ class EmailScannerUpdate(BaseModel):
     enabled: bool | None = None
 
 
+class JobSourceOut(BaseModel):
+    label: str
+    value: str
+
+
 class ScheduledJobOut(BaseModel):
     id: str
     kind: str
@@ -195,6 +200,9 @@ class ScheduledJobOut(BaseModel):
     # only populated by the /scheduled-jobs list/detail endpoints.
     target_type: str | None = None
     target_label: str | None = None
+    # What the job reads (scheduler/sources.py) - params only carry the
+    # target's id, so this is where the URL being fetched becomes visible.
+    sources: list[JobSourceOut] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

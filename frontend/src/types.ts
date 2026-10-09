@@ -299,6 +299,8 @@ export type ScheduledJob = {
   created_at: string | null;
   target_type: string | null;
   target_label: string | null;
+  /** What the job reads - the URL lives on the school/district row, not in params. */
+  sources?: { label: string; value: string }[];
 };
 
 export type JobRun = {

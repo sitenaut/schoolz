@@ -12,8 +12,9 @@ from local_events.billz_import import plan_import
 from local_events.prune import KIND as LOCAL_EVENTS_KIND, prune_orphaned_events
 from local_events.test_fetch import TestFetchIn, TestFetchOut, run_test_fetch
 from models import District, EmailScanner, JobRun, ScheduledJob, School, SmoreNewsletter, User
-from schemas import JobKindOut, JobRunOut, JobRunSummaryOut, ScheduledJobCreate, ScheduledJobOut, ScheduledJobUpdate
+from schemas import JobKindOut, JobRunOut, JobSourceOut, JobRunSummaryOut, ScheduledJobCreate, ScheduledJobOut, ScheduledJobUpdate
 from scheduler.registry import registry
+from scheduler.sources import job_sources
 
 router = APIRouter(prefix="/scheduled-jobs", tags=["scheduled-jobs"])
 
@@ -54,20 +55,26 @@ async def _attach_targets(db: AsyncSession, jobs: list[ScheduledJob]) -> list[Sc
                 ids[key].add(value)
 
     labels: dict[tuple[str, str], str] = {}
+    schools: dict[str, School] = {}
+    districts: dict[str, District] = {}
+    newsletter_urls: dict[str, str] = {}
     if ids["school_id"]:
-        rows = await db.execute(select(School.id, School.short_name, School.name).where(School.id.in_(ids["school_id"])))
-        for sid, short_name, name in rows.all():
-            labels[("school", sid)] = short_name or name
-    if ids["district_id"]:
-        rows = await db.execute(select(District.id, District.name).where(District.id.in_(ids["district_id"])))
-        for did, name in rows.all():
-            labels[("district", did)] = name
+        for school in (await db.execute(select(School).where(School.id.in_(ids["school_id"])))).scalars().all():
+            schools[school.id] = school
+            labels[("school", school.id)] = school.short_name or school.name
+    # A school-targeted job can also read its district's site (documents.scan).
+    district_ids = ids["district_id"] | {s.district_id for s in schools.values() if s.district_id}
+    if district_ids:
+        for district in (await db.execute(select(District).where(District.id.in_(district_ids)))).scalars().all():
+            districts[district.id] = district
+            labels[("district", district.id)] = district.name
     if ids["newsletter_id"]:
         rows = await db.execute(
             select(SmoreNewsletter.id, SmoreNewsletter.label, SmoreNewsletter.url).where(SmoreNewsletter.id.in_(ids["newsletter_id"]))
         )
         for nid, label, url in rows.all():
             labels[("newsletter", nid)] = label or url
+            newsletter_urls[nid] = url
     if ids["scanner_id"]:
         rows = await db.execute(select(EmailScanner.id, EmailScanner.name).where(EmailScanner.id.in_(ids["scanner_id"])))
         for scid, name in rows.all():
@@ -88,6 +95,12 @@ async def _attach_targets(db: AsyncSession, jobs: list[ScheduledJob]) -> list[Sc
                 item.target_type = target_type
                 item.target_label = labels.get((target_type, value)) or f"(deleted {target_type})"
                 break
+        school = schools.get(params.get("school_id"))
+        district = districts.get(params.get("district_id") or (school.district_id if school else None))
+        item.sources = [
+            JobSourceOut(**source)
+            for source in job_sources(job.kind, school=school, district=district, newsletter_url=newsletter_urls.get(params.get("newsletter_id")))
+        ]
         out.append(item)
     return out
 
