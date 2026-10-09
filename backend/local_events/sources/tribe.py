@@ -24,7 +24,7 @@ Example job-params entry:
       "name": "visit_south_jersey",
       "base_url": "https://visitsouthjersey.com",
       "days_ahead": 60,
-      "max_miles": 25,
+      "max_miles": 50,
       "center": [39.9346, -75.0307],
       "nearby_zip_prefixes": ["080", "081", "190", "191"],
       "default_categories": []
