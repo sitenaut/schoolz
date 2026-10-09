@@ -31,7 +31,7 @@ Example job-params entry:
       "name": "patch",
       "regions": ["cherryhill", "collingswood", "haddon", "moorestown"],
       "center": [39.85, -74.98],
-      "max_miles": 15,
+      "max_miles": 50,
       "fetch_via": "scraper",
       "default_categories": ["patch"]
     }

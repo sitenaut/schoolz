@@ -121,7 +121,7 @@ DEFAULT_PARAMS = {
             "name": "visit_south_jersey",
             "base_url": "https://visitsouthjersey.com",
             "days_ahead": 60,
-            "max_miles": 25,
+            "max_miles": 50,
         },
         {"name": "downtown_haddonfield", "base_url": "https://downtownhaddonfield.com", "days_ahead": 60},
     ],
