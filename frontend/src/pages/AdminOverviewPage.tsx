@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch, downloadFile } from "../../api";
-import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../../components/icons";
-import { SectionCard } from "../../components/ui/SectionCard";
-import { useToast } from "../../components/ui/Toast";
-import { listSubmissions } from "../submissions/submissionsApi";
-import { loadCampaignReport, loadPageVisits, loadSurveySummary, type CampaignReport, type PageVisitReport } from "../survey/surveyApi";
+import { apiFetch, downloadFile } from "../api";
+import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings, IconTransfer } from "../components/icons";
+import { PageHeader } from "../components/ui/PageHeader";
+import { SectionCard } from "../components/ui/SectionCard";
+import { useToast } from "../components/ui/Toast";
+import { listSubmissions } from "./submissions/submissionsApi";
+import { loadCampaignReport, loadPageVisits, loadSurveySummary, type CampaignReport, type PageVisitReport } from "./survey/surveyApi";
 
 type Summary = { total: number; by_status: Record<string, number> };
 
@@ -18,7 +19,7 @@ function FunnelRow({ label, count }: { label: string; count: number }) {
   );
 }
 
-export function AdminSection() {
+export function AdminOverviewPage() {
   const toast = useToast();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -64,6 +65,7 @@ export function AdminSection() {
   const s = summary?.by_status ?? {};
   return (
     <>
+      <PageHeader upperTitle="Admin" title="Overview" subtitle="Scan health, campaign traffic, and shortcuts into the admin tools." />
       <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/admin/scans">Open jobs</Link>}>
         <div className="stats" style={{ marginBottom: 0 }}>
           <Link className="stat" to="/admin/scans">
@@ -223,7 +225,7 @@ export function AdminSection() {
               <small>{downloading ? "Preparing download…" : "Download every /survey answer as a spreadsheet"}</small>
             </span>
           </button>
-          <Link className="link-card" to="/gmail">
+          <Link className="link-card" to="/admin/email">
             <span className="ico">
               <IconMail />
             </span>

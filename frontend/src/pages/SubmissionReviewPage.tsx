@@ -234,7 +234,7 @@ export function SubmissionReviewPage() {
   if (missing) {
     return (
       <div className="page">
-        <PageHeader upperTitle="Admin" title="Submission not found" back={{ to: "/admin/submissions", label: "Inbox" }} />
+        <PageHeader upperTitle="Admin" title="Submission not found" back={{ to: "/admin/submissions", label: "Submissions" }} />
       </div>
     );
   }
@@ -325,7 +325,7 @@ export function SubmissionReviewPage() {
     <div className="page sr-page">
       <PageHeader
         upperTitle="Admin"
-        back={{ to: "/admin/submissions", label: "Inbox" }}
+        back={{ to: "/admin/submissions", label: "Submissions" }}
         title={hasFile ? submission.file_name : "Link submission"}
         subtitle={
           <>
