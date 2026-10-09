@@ -207,3 +207,35 @@ async def test_a_failed_upstream_is_remembered_so_it_is_not_retried_every_reques
     assert await weather._cached("uv:test", 60, fetch) is None
     assert await weather._cached("uv:test", 60, fetch) is None
     assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_hourly_uv_reads_open_meteo_hours_as_local_ints(monkeypatch):
+    import services.weather as weather
+
+    monkeypatch.setattr(weather, "_cache", {})
+
+    class Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"hourly": {"time": ["2026-10-14T12:00", "2026-10-14T13:00", "2026-10-14T14:00"], "uv_index": [3.4, None, 5.6]}}
+
+    class Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+        async def get(self, url, params=None):
+            assert params["latitude"] == 39.93 and "open-meteo" in url
+            return Resp()
+
+    monkeypatch.setattr(weather.httpx, "AsyncClient", Client)
+    uv = await weather.hourly_uv(39.9349, -75.0188)
+    assert uv == {datetime(2026, 10, 14, 12, tzinfo=LOCAL_TZ): 3, datetime(2026, 10, 14, 14, tzinfo=LOCAL_TZ): 6}

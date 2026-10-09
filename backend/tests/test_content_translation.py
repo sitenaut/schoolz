@@ -283,7 +283,7 @@ async def test_weather_condition_is_spanish_but_labels_stay_english_for_the_fron
         return periods
 
     monkeypatch.setattr(weather, "hourly_forecast", fake_forecast)
-    school = SimpleNamespace(id="s", nws_grid="PHI/1,1", address=None, start_time="7:30 AM", end_time="2:30 PM", early_dismissal_time=None, delayed_opening_time=None)
+    school = SimpleNamespace(id="s", nws_grid="PHI/1,1", address=None, latitude=None, longitude=None, start_time="7:30 AM", end_time="2:30 PM", early_dismissal_time=None, delayed_opening_time=None)
     en = await weather.today_weather(school, "open", day)
     es = await weather.today_weather(school, "open", day, "es")
     assert en["condition"] == "Chance Rain Showers"
