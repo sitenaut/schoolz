@@ -190,3 +190,20 @@ async def test_today_endpoint_takes_a_date_and_says_which_day_the_forecast_is_fo
         far = day + timedelta(days=30)
         assert (await client.get(f"/schools/weather-on-{run}/today", params={"on": far.isoformat()})).status_code == 422
         assert (await client.get(f"/schools/weather-on-{run}/today", params={"on": "tomorrow"})).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_a_failed_upstream_is_remembered_so_it_is_not_retried_every_request(monkeypatch):
+    import services.weather as weather
+
+    monkeypatch.setattr(weather, "_cache", {})
+    calls = 0
+
+    async def fetch():
+        nonlocal calls
+        calls += 1
+        raise RuntimeError("404")
+
+    assert await weather._cached("uv:test", 60, fetch) is None
+    assert await weather._cached("uv:test", 60, fetch) is None
+    assert calls == 1
