@@ -1216,7 +1216,7 @@ button.link-card:disabled {
   }
 }
 
-/* ---------- campaign funnel (AdminSection) ---------- */
+/* ---------- campaign funnel (AdminOverviewPage) ---------- */
 .funnel {
   display: flex;
   flex-direction: column;

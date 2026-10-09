@@ -35,6 +35,7 @@ import { AuditCatalogPage } from "./pages/audit/AuditCatalogPage";
 import { AuditReportPage } from "./pages/audit/AuditReportPage";
 import { AuditSchoolPage } from "./pages/audit/AuditSchoolPage";
 import { AuditShell } from "./pages/audit/AuditShell";
+import { AdminOverviewPage } from "./pages/AdminOverviewPage";
 import { UsersRolesPage } from "./pages/UsersRolesPage";
 import { ApiKeysPage } from "./pages/ApiKeysPage";
 import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
@@ -56,7 +57,6 @@ import { SecuritySection } from "./pages/account/SecuritySection";
 import { NotificationsSection } from "./pages/account/NotificationsSection";
 import { PrivacySection } from "./pages/account/PrivacySection";
 import { FamilySection } from "./pages/account/FamilySection";
-import { AdminSection } from "./pages/account/AdminSection";
 
 // Gates the *optional* personal layer (my kids, my calendar, account
 // settings) - never the public directory/calendar/school pages, which are
@@ -134,14 +134,6 @@ function Routed() {
           <Route path="privacy" element={<PrivacySection />} />
           <Route path="notifications" element={<NotificationsSection />} />
           <Route path="family" element={<FamilySection />} />
-          <Route
-            path="admin"
-            element={
-              <RequireAdmin permission="analytics.view">
-                <AdminSection />
-              </RequireAdmin>
-            }
-          />
         </Route>
         <Route
           path="/children"
@@ -169,16 +161,10 @@ function Routed() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/gmail"
-          element={
-            <RequireAdmin permission="email.view">
-              <GmailPage />
-            </RequireAdmin>
-          }
-        />
         {/* Old bookmarked/linked paths - keep working, just land on the
             consolidated tab now. */}
+        <Route path="/account/admin" element={<Navigate to="/admin/overview" replace />} />
+        <Route path="/gmail" element={<Navigate to="/admin/email" replace />} />
         <Route path="/smore" element={<Navigate to="/admin/newsletters" replace />} />
         <Route path="/jobs" element={<Navigate to="/admin/scans" replace />} />
         <Route path="/schools" element={<SchoolsPage />} />
@@ -196,22 +182,6 @@ function Routed() {
         <Route path="/contact/submit" element={<SubmitSourcePage />} />
         <Route path="/chcomms" element={<ChCommsPage />} />
         <Route path="/survey" element={<SurveyPage />} />
-        <Route
-          path="/admin/submissions"
-          element={
-            <RequireAdmin permission="submissions.view">
-              <SubmissionsPage />
-            </RequireAdmin>
-          }
-        />
-        <Route
-          path="/admin/submissions/:submissionId"
-          element={
-            <RequireAdmin permission="submissions.view">
-              <SubmissionReviewPage />
-            </RequireAdmin>
-          }
-        />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/local" element={<LocalPage />} />
         <Route path="/seasonal/:season" element={<SeasonalPage />} />
@@ -224,7 +194,10 @@ function Routed() {
           }
         >
           <Route index element={<AdminIndexRedirect />} />
+          <Route path="overview" element={<RequireAdmin permission="analytics.view"><AdminOverviewPage /></RequireAdmin>} />
           <Route path="inbox" element={<RequireAdmin permission="inbox.view"><InboxPage /></RequireAdmin>} />
+          <Route path="submissions" element={<RequireAdmin permission="submissions.view"><SubmissionsPage /></RequireAdmin>} />
+          <Route path="submissions/:submissionId" element={<RequireAdmin permission="submissions.view"><SubmissionReviewPage /></RequireAdmin>} />
           <Route path="newsletters" element={<RequireAdmin permission="newsletters.manage"><SmoreNewslettersPage /></RequireAdmin>} />
           <Route path="scans" element={<RequireAdmin permission="scans.view"><JobsPage /></RequireAdmin>} />
           <Route path="audit" element={<RequireAdmin permission="audit.view"><AuditShell /></RequireAdmin>}>
@@ -234,6 +207,7 @@ function Routed() {
             <Route path="schools/:schoolId" element={<AuditSchoolPage />} />
             <Route path="schools/:schoolId/report" element={<AuditReportPage />} />
           </Route>
+          <Route path="email" element={<RequireAdmin permission="email.view"><GmailPage /></RequireAdmin>} />
           <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
