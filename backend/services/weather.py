@@ -170,21 +170,30 @@ async def hourly_forecast(grid: str) -> list[dict] | None:
     return await _cached(f"nws:{grid}", _FORECAST_TTL, fetch)
 
 
-async def hourly_uv(zip_code: str) -> dict[datetime, int] | None:
+async def hourly_uv(lat: float, lon: float) -> dict[datetime, int] | None:
+    # Open-Meteo (free, keyless, hourly uv_index by coordinate). Rounded to two
+    # decimals (~1 km) so neighbouring schools share one cached entry.
+    lat, lon = round(lat, 2), round(lon, 2)
+
     async def fetch():
         async with httpx.AsyncClient(timeout=_TIMEOUT, follow_redirects=True) as client:
-            resp = await client.get(f"https://data.epa.gov/efservice/getEnvirofactsUVHOURLY/ZIP/{zip_code}/JSON")
+            resp = await client.get(
+                "https://api.open-meteo.com/v1/forecast",
+                params={"latitude": lat, "longitude": lon, "hourly": "uv_index", "timezone": "America/New_York", "forecast_days": 4},
+            )
             resp.raise_for_status()
+        hourly = resp.json().get("hourly") or {}
         out = {}
-        for row in resp.json() or []:
-            try:
-                hour = datetime.strptime(row["DATE_TIME"], "%b/%d/%Y %I %p").replace(tzinfo=LOCAL_TZ)
-            except (KeyError, ValueError):
+        for stamp, value in zip(hourly.get("time") or [], hourly.get("uv_index") or []):
+            if value is None:
                 continue
-            out[hour] = int(row.get("UV_VALUE") or 0)
+            try:
+                out[datetime.fromisoformat(stamp).replace(tzinfo=LOCAL_TZ)] = round(value)
+            except ValueError:
+                continue
         return out
 
-    return await _cached(f"uv:{zip_code}", _UV_TTL, fetch)
+    return await _cached(f"uv:{lat},{lon}", _UV_TTL, fetch)
 
 
 def school_window(school, status: str, day: date) -> tuple[datetime, datetime, datetime, datetime]:
@@ -290,11 +299,10 @@ async def today_weather(school, status: str, day: date, lang: str = "en") -> dic
     if not school.nws_grid or status in ("weekend", "closed"):
         return None
     try:
-        zip_code = zip_from_address(school.address)
         periods, uv = await asyncio.wait_for(
             asyncio.gather(
                 hourly_forecast(school.nws_grid),
-                hourly_uv(zip_code) if zip_code else asyncio.sleep(0, result=None),
+                hourly_uv(school.latitude, school.longitude) if school.latitude is not None and school.longitude is not None else asyncio.sleep(0, result=None),
                 return_exceptions=True,
             ),
             timeout=_TIMEOUT + 1,
