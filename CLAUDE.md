@@ -40,7 +40,9 @@ cd frontend && npm run build && npm run test
 
 `env/` is entirely gitignored (not even `.example` variants) because some files hold real secrets. **`docs/ENV_SETUP.md` is the source of truth** — read it before touching env config. Root `.env.example`/`.env.prod.example` are tracked templates.
 
-**Admin bootstrap:** locally, `ADMIN_EMAIL`/`ADMIN_USERNAME`/`ADMIN_PASSWORD` in `env/secrets.local.env` seed an admin on startup (idempotent, local auth only — `auth.py:seed_admin`). Prod's equivalent is `BOOTSTRAP_ADMIN_EMAIL`, which flags a Supabase email as admin on first login.
+**Secret values live in 1Password** (`schoolz-local`/`-prod`/`-ci` vaults), not in files. `compose-local.sh` injects them with `op run` from the committed `env.op/secrets.local.env`, using a read-only local-vault service-account token kept outside the repo (so agent sessions can restart the stack). **Prod secrets are approval-gated**: run `scripts/prod-secrets.sh run --reason … --secrets … -- <command>`, post the approval link it prints for the owner (Admin → Secret access), and it runs only after they approve; never look for another route to prod secrets. Never print a secret value; refer to secrets by name.
+
+**Admin bootstrap:** locally, `ADMIN_EMAIL`/`ADMIN_USERNAME`/`ADMIN_PASSWORD` (in the `schoolz-local` vault) seed an admin on startup (idempotent, local auth only — `auth.py:seed_admin`). Prod's equivalent is `BOOTSTRAP_ADMIN_EMAIL`, which flags a Supabase email as admin on first login.
 
 ## Access model: public by default
 

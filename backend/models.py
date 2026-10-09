@@ -148,6 +148,36 @@ class ApiKeyRequest(Base):
     api_key_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("api_keys.id", ondelete="SET NULL"), nullable=True)
 
 
+class SecretAccessRequest(Base):
+    """A request to use the prod secrets vault (`scripts/prod-secrets.sh run`):
+    a script or agent says why, what it will run and which secrets it needs; a
+    super admin approves in the browser (usually a phone) and only then is the
+    one-time unlock key handed over. Doubles as the audit log, so rows are
+    kept, never deleted. Holds no secret values and not the unlock key."""
+
+    __tablename__ = "secret_access_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_code: Mapped[str] = mapped_column(String(16), unique=True, index=True, nullable=False)
+    device_code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    client_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    reason: Mapped[str] = mapped_column(String(300), nullable=False)
+    # Exactly what the requester says it will run once unlocked; shown to the approver.
+    command: Mapped[str] = mapped_column(String(1000), nullable=False)
+    secret_names: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    requested_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # The identity the request was made as; only that same key may collect.
+    requested_by_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    api_key_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("api_keys.id", ondelete="SET NULL"), nullable=True)
+    # pending | approved | denied | collected
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    decided_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class Student(Base):
     """Canonical record for a real child. Shared across every guardian who
     matches or is invited onto it - never owned by a single guardian.

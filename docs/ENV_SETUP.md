@@ -8,6 +8,63 @@ The whole `env/` directory is gitignored (see `.gitignore`) — nothing in it is
 ever committed, including `.example` files, because some of these files hold
 real secrets. This doc is the source of truth for what to create by hand.
 
+## Secrets live in 1Password
+
+Secret values are kept in 1Password vaults, not in files: `schoolz-local`,
+`schoolz-prod`, `schoolz-ci`. Each item is an API Credential titled exactly
+as its env var, so its reference is `op://<vault>/<NAME>/credential`.
+
+- **Local:** `scripts/compose-local.sh` runs compose under `op run` with
+  `env.op/secrets.local.env` (committed, references only), so values exist only
+  in that process's environment. Sign in first: `eval $(op signin)`; a session
+  ends after 30 idle minutes. `SCHOOLZ_SECRETS=file` falls back to plain
+  `env/db.local.env` + `env/secrets.local.env` while those still exist.
+- **Unattended local runs (agent sessions, phone):** a 1Password service account
+  with read-only access to the `schoolz-local` vault only. Create it at
+  1password.com (Developer → Service Accounts), then save its token where
+  `compose-local.sh` looks, outside the repo and any synced folder:
+  `mkdir -p $HOME/.config/schoolz && chmod 700 $HOME/.config/schoolz`, write the token to
+  `$HOME/.config/schoolz/op-local-token`, `chmod 600` it. Override the location with
+  `SCHOOLZ_OP_TOKEN_FILE`. Revoke it from 1password.com if it leaks. It must
+  never see `schoolz-prod` or `schoolz-ci`.
+- **Add a secret:** create the item (`op item create --vault schoolz-local
+  --category "API Credential" --title NAME 'credential[password]=…'`, or add it
+  to an env file and re-run `scripts/op-import-env.py`, which skips existing
+  items), then add its line to `env.op/secrets.local.env`.
+- **Prod / CI:** the vault is the master copy; Fly secrets and GitHub Actions
+  secrets are still set from it by hand. Change a value in the vault first.
+- **Prod secrets need an approval** (`scripts/prod-secrets.sh`): no session, human
+  or agent, holds a standing prod credential. `scripts/prod-secrets.sh run
+  --reason "why" --secrets NAME,NAME -- <command…>` asks the API for access
+  (`routers/admin_secret_requests.py`), prints a link and a short code, and
+  waits. A super admin opens **Admin → Secret access** (on a phone is fine),
+  checks the code, reads the reason, the exact command and the secret names, and
+  taps Approve or Deny. On approval the API hands over an unlock key once; the
+  script decrypts the prod service-account token in memory and execs that exact
+  command with `OP_SERVICE_ACCOUNT_TOKEN` set (the API key is stripped from its
+  environment; the script refuses to run if the approved command differs from
+  what it asked). An approval is single-use and expires in 5 minutes; requests
+  expire after 10. Every request and answer is kept in the Secret access log
+  (no values in it). Neither side alone opens the vault: the machine holds only
+  the encrypted token (`$HOME/.config/schoolz/op-prod-token.enc`, or
+  `SCHOOLZ_OP_PROD_TOKEN_FILE`) and the key to it is the Fly secret
+  `SECRETS_UNLOCK_KEY` on `schoolz-api`.
+  - **One-time setup** (at a terminal, because it prompts): create a service
+    account at 1password.com with **read-only** access to `schoolz-prod` only,
+    then run `scripts/prod-secrets.sh init`. It asks for the token (hidden),
+    encrypts it, and sets `SECRETS_UNLOCK_KEY` on `schoolz-api` (restarting its
+    machines). Re-run it to rotate the token or the key. Revoke the service
+    account at 1password.com to cut access outright.
+  - The approver is only as safe as their reading of the command: it sees prod
+    secrets for as long as it runs. A session cannot approve itself — API keys are
+    refused by the decision endpoints.
+- The CLI: install `op` (1Password CLI 2.x) on your PATH. Never echo a value;
+  `op run` masks them in output.
+
+The env files below still hold the **non-secret** config. The secret-holding
+files (`db.local.env`, `secrets.local.env`, `secrets.prod.env`, `db.prod.env`)
+are listed for what each variable means; their values belong in the vault.
+
 Create `env/` at the repo root with these files:
 
 ## env/base.env
