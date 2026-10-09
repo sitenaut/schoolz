@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>School missing-data report</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+body{margin:0;background:#e9edf1}
+a{color:#185a70}a:hover{color:#17202a}
+sc-for,sc-if{display:contents}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1300px; background: #e9edf1; color: #17202a; font-family: 'Nunito Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45; padding: 20px 24px 48px">
+<div style="max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<a href="School.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-weight: 700">Back to Rosa International Middle</a>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Copy as text</button>
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Download CSV</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: #1f7f9f; color: #ffffff; font-weight: 700; font-size: 14px; cursor: pointer">Print or save PDF</button>
+</div>
+</div>
+
+<article style="background: #ffffff; border-radius: 4px; box-shadow: 0 1px 3px rgba(23,32,42,0.12), 0 8px 24px rgba(23,32,42,0.08); padding: 48px 52px; display: flex; flex-direction: column; gap: 26px">
+
+<header style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px; border-bottom: 2px solid #17202a">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5b6672">Missing-data report</div>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.15">Rosa International Middle</h1>
+<div style="color: #3d4752">Cherry Hill Public Schools · generated 7 October 2026</div>
+</header>
+
+<p style="margin: 0; font-size: 16px"><strong>{{okCount}} of {{appCount}}</strong> applicable data points are current ({{pct}}). <strong>{{gapCount}} are missing:</strong> {{failCount}} failing, {{staleCount}} stale, {{noneCount}} not collected.</p>
+
+<section>
+<div style="overflow-x: auto"><div style="min-width: 640px">
+<div style="display: grid; grid-template-columns: 1fr 0.9fr 2fr 1.6fr; gap: 16px; padding: 8px 0; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672; border-bottom: 1px solid #cfd6dd"><div>Data point</div><div>Reason</div><div>Why</div><div>Next step</div></div>
+<sc-for list="{{gaps}}" as="d" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 1fr 0.9fr 2fr 1.6fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e7ec"><div style="font-weight: 700">{{d.label}}</div><div><span style="padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: {{d.bg}}; color: {{d.ink}}">{{d.status}}</span></div><div>{{d.why}}</div><div>{{d.next}}</div></div>
+</sc-for>
+</div></div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Current</h2>
+<p style="margin: 0; color: #3d4752">{{okList}}.</p>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px">Not applicable to a middle school</h2>
+<p style="margin: 0; color: #3d4752">{{naList}}.</p>
+</section>
+
+<footer style="color: #3d4752; font-size: 13px">A data point is compliant when it is on file and inside its freshness window, which is two missed scheduled runs plus a grace period.</footer>
+
+</article>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const labels = 'info:Address and phone|logo:Logo|geo:Map location|staff:Staff directory|absence:Absence method|pkteam:Preschool team|hours:School hours|alt:Early and delayed times|periods:Period table|cal:District calendar|mp:Marking periods|rot:Day rotation|news:Newsletter|pta:PTA page|backpack:District flyers|events:School events calendar|bulletin:Student bulletin|ann:Morning announcements|actcal:Activities calendar|actsite:Class pages|ath:Athletics calendar|menu:Meal menus|hand:Handbook|belldoc:Bell schedule document|bus:Transportation|care:Before and after care';
+    const st = {};
+    'info logo geo staff hours cal mp backpack hand bus'.split(' ').forEach((k) => { st[k] = 'o'; });
+    'absence alt news pta events belldoc periods bulletin ath'.split(' ').forEach((k) => { st[k] = 'n'; });
+    'pkteam rot ann actcal actsite care'.split(' ').forEach((k) => { st[k] = 'x'; });
+    st.menu = 's';
+    st.news = 'f';
+    const meta = {
+      s: { label: 'Stale', bg: '#fbf0d9', ink: '#6f470c' },
+      f: { label: 'Failing', bg: '#fae4e2', ink: '#8f2620' },
+      n: { label: 'Not collecting', bg: '#e9edf1', ink: '#2c353f' }
+    };
+    const generic = { why: 'No source is set for this school, so nothing is being collected.', next: 'Add a source, or confirm the school does not publish it.' };
+    const notes = {
+      absence: { why: 'Nothing we track states how a parent should report an absence.', next: 'The school confirming its method: phone, email or portal.' },
+      alt: { why: 'Early-dismissal and delayed-opening times are not published anywhere we found.', next: 'The district publishing those times.' },
+      periods: { why: 'No period-by-period table is published for this school.', next: 'Request it from the school.' },
+      news: { why: 'smore_no_blocks: the tracked link loads with no content and has most likely expired. It has never scanned successfully.', next: 'A link to a current issue.' },
+      menu: { why: "One district PDF covers all middle schools. September is on file; October's has not been found.", next: 'The October middle-school menu posted on the district food-services page.' }
+    };
+    const n = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+    const rank = { f: 0, s: 1, n: 2 };
+    const gaps = [], ok = [], na = [];
+    labels.split('|').forEach((p, i) => {
+      const k = p.split(':')[0], label = p.split(':')[1], v = st[k];
+      n[v] += 1;
+      if (v === 'o') ok.push(label);
+      else if (v === 'x') na.push(label);
+      else {
+        const d = notes[k] || generic;
+        gaps.push({ label: label, v: v, order: i, status: meta[v].label, bg: meta[v].bg, ink: meta[v].ink, why: d.why, next: d.next });
+      }
+    });
+    gaps.sort((a, b) => rank[a.v] - rank[b.v] || a.order - b.order);
+    const app = n.o + n.s + n.f + n.n;
+    return {
+      gaps: gaps,
+      okCount: n.o, appCount: app, pct: Math.round((n.o / app) * 100) + '%',
+      gapCount: gaps.length, failCount: n.f, staleCount: n.s, noneCount: n.n,
+      okList: ok.join(', '), naList: na.join(', ')
+    };
+  }
+}
+</script>
+</body>
+</html>

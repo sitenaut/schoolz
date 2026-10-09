@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>School data audit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+body{margin:0;background:#f5f7f9}
+a{color:#185a70}a:hover{color:#17202a}
+sc-for,sc-if{display:contents}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1200px; background: #f5f7f9; color: #17202a; font-family: 'Nunito Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45; padding: 24px 32px 48px">
+<div style="max-width: 1296px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+
+<nav aria-label="Breadcrumb" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #5b6672; font-size: 13px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-weight: 700">Audit</a>
+<span aria-hidden="true">/</span>
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-weight: 700">Cherry Hill</a>
+<span aria-hidden="true">/</span>
+<span style="color: #17202a; font-weight: 600">Rosa International Middle</span>
+</nav>
+
+<header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', 'Nunito Sans', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.15">Rosa International Middle</h1>
+<p style="margin: 0; color: #5b6672; font-size: 15px">Middle school · Cherry Hill Public Schools</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Run all scans</button>
+<a href="SchoolReport.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 10px; background: #1f7f9f; color: #ffffff; text-decoration: none; font-weight: 700">Missing-data report</a>
+</div>
+</header>
+
+<section aria-label="Summary" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px; padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 36px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Compliant</div>
+<div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.1">{{pct}}</div>
+<div style="color: #5b6672; font-size: 13px">{{okCount}} of {{appCount}} applicable data points</div>
+</div>
+<div style="flex: 1 1 320px; display: flex; flex-wrap: wrap; gap: 6px 26px; color: #3d4752">
+<span><strong style="color: #17202a">{{okCount}}</strong> current</span>
+<span><strong style="color: #a8322c">{{failCount}}</strong> failing</span>
+<span><strong style="color: #8a5a12">{{staleCount}}</strong> stale</span>
+<span><strong style="color: #17202a">{{noneCount}}</strong> not collecting</span>
+<span><strong style="color: #17202a">{{naCount}}</strong> not applicable, left out of the score</span>
+</div>
+</section>
+
+<section aria-label="Data points" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px">
+<div style="display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 12px 0; border-bottom: 1px solid #e2e7ec">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{t.on}}" onClick="{{t.pick}}" style="min-height: 44px; padding: 0 14px; border: 0; border-bottom: 3px solid {{t.line}}; background: transparent; color: {{t.ink}}; font-weight: 700; font-size: 14px; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 1040px">
+<div style="display: grid; grid-template-columns: 1.1fr 1fr 2.2fr 1.5fr 1.7fr; gap: 16px; padding: 10px 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672; border-bottom: 1px solid #e2e7ec">
+<div>Data point</div><div>Status</div><div>Why</div><div>Collected by</div><div>Next step</div>
+</div>
+<sc-for list="{{rows}}" as="d" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 1.1fr 1fr 2.2fr 1.5fr 1.7fr; gap: 16px; align-items: start; padding: 11px 20px; border-bottom: 1px solid #eef1f4">
+<div style="font-weight: 700">{{d.label}}</div>
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+<span style="padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: {{d.bg}}; color: {{d.ink}}">{{d.status}}</span>
+<span style="font-size: 12px; color: #3d4752">{{d.tag}}</span>
+</div>
+<div>{{d.why}}</div>
+<div style="display: flex; flex-direction: column; gap: 1px"><span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; overflow-wrap: anywhere">{{d.src}}</span><span style="color: #5b6672; font-size: 13px">{{d.runs}} · stale after {{d.win}}</span></div>
+<div>{{d.next}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1200}}'>
+class Component extends DCLogic {
+  state = { tab: 'gaps' };
+
+  cols() {
+    const c = (k, label, src, runs, win, applies) => ({ k: k, label: label, src: src, runs: runs, win: win, applies: applies });
+    return [
+      c('info', 'Address and phone', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('logo', 'Logo', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('geo', 'Map location', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('staff', 'Staff directory', 'staff_roster.scan', 'Twice a month', '35 days', 'All schools'),
+      c('absence', 'Absence method', 'Newsletter extraction, or entered by hand', 'No scan', 'not confirmed this school year', 'All schools'),
+      c('pkteam', 'Preschool team', 'preschool_team.scan', 'Weekly', '16 days', 'Preschools'),
+      c('hours', 'School hours', 'Entered by hand', 'No scan', 'not confirmed this school year', 'All schools'),
+      c('alt', 'Early and delayed times', 'Entered by hand', 'No scan', 'not confirmed this school year', 'All schools'),
+      c('periods', 'Period table', 'Entered by hand', 'No scan', 'not confirmed this school year', 'Middle and high'),
+      c('cal', 'District calendar', 'district_calendar.scan or district_calendar_pdf.scan', 'Every 12 hours', '36 hours', 'All schools'),
+      c('mp', 'Marking periods', 'marking_period.scan', 'Weekly', '16 days', 'All but preschools'),
+      c('rot', 'Day rotation', 'hs_rotation.scan', 'Weekly', '16 days', 'High schools'),
+      c('news', 'Newsletter', 'smore.scan', 'Weekly, on Monday', '16 days, or newest issue over 21 days old', 'All schools'),
+      c('pta', 'PTA page', 'givebacks.scan or ptboard.scan', 'Daily or weekly', '3 days or 16 days', 'All schools'),
+      c('backpack', 'District flyers', 'virtual_backpack.scan', 'Daily', '3 days', 'All schools'),
+      c('events', 'School events calendar', 'special_events.scan or school_events_doc.scan', 'Weekly or every 12 hours', '16 days or 36 hours', 'All schools'),
+      c('bulletin', 'Student bulletin', 'student_bulletin.scan', 'Every 12 hours', '36 hours', 'Middle and high'),
+      c('ann', 'Morning announcements', 'hs_announcements.scan', 'Every 2 hours on school days', '1 school day', 'High schools'),
+      c('actcal', 'Activities calendar', 'hs_class_calendar.scan', 'Every 12 hours', '36 hours', 'High schools'),
+      c('actsite', 'Class pages', 'hs_activities_site.scan', 'Daily', '3 days', 'High schools'),
+      c('ath', 'Athletics calendar', 'athletics_calendar.scan', 'Every 12 hours', '36 hours', 'Middle and high'),
+      c('menu', 'Meal menus', 'lunch_menu.scan or a vendor menu scan', 'Daily', '3 days, or no menu for the current week', 'All schools'),
+      c('hand', 'Handbook', 'documents.scan', 'Twice a month', '35 days, or dated an earlier school year', 'All schools'),
+      c('belldoc', 'Bell schedule document', 'documents.scan', 'Twice a month', '35 days, or dated an earlier school year', 'All schools'),
+      c('bus', 'Transportation', 'transportation.scan', 'Weekly', '16 days', 'All but preschools'),
+      c('care', 'Before and after care', 'One-off district import', 'No scan', 'not confirmed this school year', 'Elementary')
+    ];
+  }
+
+  statuses() {
+    const st = {};
+    'info logo geo staff hours cal mp backpack hand bus'.split(' ').forEach((k) => { st[k] = 'o'; });
+    'absence alt news pta events belldoc periods bulletin ath'.split(' ').forEach((k) => { st[k] = 'n'; });
+    'pkteam rot ann actcal actsite care'.split(' ').forEach((k) => { st[k] = 'x'; });
+    st.menu = 's';
+    st.news = 'f';
+    return st;
+  }
+
+  detail(col, st) {
+    const generic = {
+      o: { tag: '', why: 'The last scan succeeded and the data on file is inside its freshness window.', next: 'Nothing to do.' },
+      n: { tag: 'No source set', why: 'No source is set for this school, so nothing is being collected.', next: 'Add a source, or mark it as not published.' },
+      x: { tag: '', why: 'Applies to: ' + col.applies.toLowerCase() + '. Left out of the score for a middle school.', next: 'Nothing to do.' }
+    };
+    const notes = {
+      absence: { why: 'No tracked newsletter states how to report an absence, so the method was never extracted.', next: 'Enter it by hand on the school, or fix the newsletter so it can be extracted.' },
+      alt: { tag: 'Not published', why: 'Early-dismissal and delayed-opening times are not published anywhere we found.', next: 'Request them from the district, or mark as not published.' },
+      periods: { tag: 'Not published', why: 'No period-by-period table is published for this school.', next: 'Request it from the school, or mark as not published.' },
+      news: { tag: 'smore_no_blocks (warning)', why: 'The page loads but has no newsletter blocks. The link has most likely expired, which looks the same as "nothing new" unless it is flagged. It has never scanned successfully.', next: 'Replace the newsletter URL with a live issue.' },
+      menu: { tag: 'Inherited from district', why: "Middle-school menus come from one district PDF per month. September is on file and October's has not been found. Also affects Beck and Carusi.", next: 'Fix once at district level: check the food-services page for the October PDF.' }
+    };
+    return Object.assign({}, generic[st], notes[col.k]);
+  }
+
+  renderVals() {
+    const meta = {
+      o: { label: 'Current', bg: '#e4f3ea', ink: '#1f5c3a' },
+      s: { label: 'Stale', bg: '#fbf0d9', ink: '#6f470c' },
+      f: { label: 'Failing', bg: '#fae4e2', ink: '#8f2620' },
+      n: { label: 'Not collecting', bg: '#e9edf1', ink: '#2c353f' },
+      x: { label: 'Not applicable', bg: '#f0f3f6', ink: '#3d4752' }
+    };
+    const st = this.statuses();
+    const n = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+    const rank = { f: 0, s: 1, n: 2, o: 3, x: 4 };
+    const all = this.cols().map((col, i) => {
+      const v = st[col.k];
+      n[v] += 1;
+      const d = this.detail(col, v);
+      return { label: col.label, v: v, order: i, status: meta[v].label, bg: meta[v].bg, ink: meta[v].ink, tag: d.tag, why: d.why, next: d.next, src: col.src, runs: col.runs, win: col.win };
+    });
+    const tab = this.state.tab;
+    const inTab = { gaps: (d) => 'fsn'.indexOf(d.v) >= 0, ok: (d) => d.v === 'o', na: (d) => d.v === 'x' };
+    const rows = all.filter(inTab[tab]).sort((a, b) => rank[a.v] - rank[b.v] || a.order - b.order);
+    const app = all.length - n.x;
+    const tabDef = [['gaps', 'Needs attention (' + (n.f + n.s + n.n) + ')'], ['ok', 'Current (' + n.o + ')'], ['na', 'Not applicable (' + n.x + ')']];
+    return {
+      rows: rows,
+      pct: Math.round((n.o / app) * 100) + '%',
+      okCount: n.o, appCount: app, failCount: n.f, staleCount: n.s, noneCount: n.n, naCount: n.x,
+      tabs: tabDef.map((t) => ({ label: t[1], on: tab === t[0], line: tab === t[0] ? '#1f7f9f' : 'transparent', ink: tab === t[0] ? '#17202a' : '#3d4752', pick: () => this.setState({ tab: t[0] }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

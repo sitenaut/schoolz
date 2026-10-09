@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Data audit by data point</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+body{margin:0;background:#f5f7f9}
+a{color:#185a70}a:hover{color:#17202a}
+sc-for,sc-if{display:contents}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1240px; background: #f5f7f9; color: #17202a; font-family: 'Nunito Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45; padding: 24px 32px 48px">
+<div style="max-width: 1296px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+
+<nav aria-label="Admin sections" style="display: flex; flex-wrap: wrap; gap: 6px">
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Inbox</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Newsletters</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Scans</a>
+<a href="#" aria-current="page" style="padding: 8px 14px; border-radius: 999px; background: #e3f1f6; color: #185a70; text-decoration: none; font-weight: 700">Audit</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Chatbot</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Import/export</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Kids</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">Users &amp; roles</a>
+<a href="#" style="padding: 8px 14px; border-radius: 999px; color: #5b6672; text-decoration: none; font-weight: 600">API keys</a>
+</nav>
+
+<header style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', 'Nunito Sans', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.15">Data audit</h1>
+<div style="display: flex; flex-wrap: wrap; gap: 4px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 14px; border-bottom: 3px solid transparent; color: #3d4752; text-decoration: none; font-weight: 600">By school</a>
+<a href="Catalog.dc.html" aria-current="page" style="display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 0 14px; border-bottom: 3px solid #1f7f9f; color: #17202a; text-decoration: none; font-weight: 700">By data point</a>
+</div>
+</header>
+
+<section aria-label="How freshness is set" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+<div><strong>A data point goes stale after two missed runs plus a grace period.</strong> <span style="color: #3d4752">One missed run is noise; two means the schedule is no longer keeping it fresh.</span></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px">
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">Every 2 hours, school days</div><div style="font-weight: 700">1 school day</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">Every 12 hours</div><div style="font-weight: 700">36 hours</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">Daily</div><div style="font-weight: 700">3 days</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">Weekly</div><div style="font-weight: 700">16 days</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">Twice a month</div><div style="font-weight: 700">35 days</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">Monthly</div><div style="font-weight: 700">65 days</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 10px 12px"><div style="color: #3d4752; font-size: 13px">No scan</div><div style="font-weight: 700">Not confirmed this school year</div></div>
+</div>
+</section>
+
+<section aria-label="Filter and order" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px; padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px">
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 2 1 220px; min-width: 0">
+<label for="c-q" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Search</label>
+<input id="c-q" type="search" placeholder="Data point or scan" value="{{q}}" onChange="{{onQ}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; min-width: 0">
+<label for="c-group" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Group</label>
+<select id="c-group" value="{{group}}" onChange="{{onGroup}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="all">All groups</option>
+<option value="Identity">Identity</option>
+<option value="People">People</option>
+<option value="Schedule">Schedule</option>
+<option value="News and events">News and events</option>
+<option value="Services and documents">Services and documents</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; min-width: 0">
+<label for="c-runs" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Collected</label>
+<select id="c-runs" value="{{runs}}" onChange="{{onRuns}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="all">Any way</option>
+<option value="scan">By a scheduled scan</option>
+<option value="hand">By hand, no scan</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; min-width: 0">
+<label for="c-sort" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Order by</label>
+<select id="c-sort" value="{{sort}}" onChange="{{onSort}}" style="box-sizing: border-box; width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px">
+<option value="pctAsc">Least compliant first</option>
+<option value="pctDesc">Most compliant first</option>
+<option value="fail">Most failing first</option>
+<option value="stale">Most stale first</option>
+<option value="none">Most not collected first</option>
+<option value="group">Group order</option>
+<option value="name">Name, A to Z</option>
+</select>
+</div>
+</section>
+
+<section aria-label="Data points" style="background: #ffffff; border: 1px solid #e2e7ec; border-radius: 12px">
+<div style="padding: 14px 20px; font-weight: 700; border-bottom: 1px solid #e2e7ec">{{resultLabel}}</div>
+<div style="overflow-x: auto">
+<div style="min-width: 1080px">
+<div style="display: grid; grid-template-columns: 1.3fr 1.6fr 1fr 1.3fr 0.9fr 0.6fr 1.7fr; gap: 14px; padding: 10px 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672; border-bottom: 1px solid #e2e7ec">
+<div>Data point</div><div>Collected by</div><div>Runs</div><div>Stale after</div><div>Applies to</div><div>Compliant</div><div>Schools</div>
+</div>
+<sc-for list="{{rows}}" as="d" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 1.3fr 1.6fr 1fr 1.3fr 0.9fr 0.6fr 1.7fr; gap: 14px; align-items: center; padding: 9px 20px; border-bottom: 1px solid #eef1f4">
+<div style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 700">{{d.label}}</span><span style="color: #5b6672; font-size: 12px">{{d.group}}</span></div>
+<div style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; color: #3d4752; overflow-wrap: anywhere">{{d.src}}</div>
+<div>{{d.runs}}</div>
+<div style="font-weight: 600">{{d.win}}</div>
+<div style="color: #3d4752">{{d.applies}}</div>
+<div style="font-weight: 700; font-variant-numeric: tabular-nums">{{d.pct}}</div>
+<div style="color: #3d4752">{{d.tally}}</div>
+</div>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+<div style="padding: 36px 20px; text-align: center; color: #3d4752">No data points match these filters.</div>
+</sc-if>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 20px">
+<div style="color: #3d4752; font-size: 13px; flex: 1 1 420px">Also audited per district: the preschool directory (preschool_locations.scan, weekly, stale after 16 days), which creates the preschool rows themselves.</div>
+<nav aria-label="Pages" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<button type="button" onClick="{{prev}}" disabled="{{noPrev}}" style="min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer; opacity: {{prevOpacity}}">Previous</button>
+<sc-for list="{{pages}}" as="p" hint-placeholder-count="3">
+<button type="button" onClick="{{p.pick}}" aria-label="{{p.aria}}" aria-current="{{p.cur}}" style="min-width: 44px; min-height: 44px; padding: 0 8px; border: 1px solid {{p.border}}; border-radius: 10px; background: {{p.bg}}; color: {{p.ink}}; font-weight: 700; font-size: 14px; cursor: pointer">{{p.n}}</button>
+</sc-for>
+<button type="button" onClick="{{next}}" disabled="{{noNext}}" style="min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer; opacity: {{nextOpacity}}">Next</button>
+</nav>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1240}}'>
+class Component extends DCLogic {
+  state = { q: '', group: 'all', runs: 'all', sort: 'pctAsc', page: 0 };
+
+  cols() {
+    const c = (k, label, src, runs, win, applies) => ({ k: k, label: label, src: src, runs: runs, win: win, applies: applies });
+    return [
+      c('info', 'Address and phone', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('logo', 'Logo', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('geo', 'Map location', 'school_info.scan', 'Monthly', '65 days', 'All schools'),
+      c('staff', 'Staff directory', 'staff_roster.scan', 'Twice a month', '35 days', 'All schools'),
+      c('absence', 'Absence method', 'Newsletter extraction, or entered by hand', 'No scan', 'Not confirmed this school year', 'All schools'),
+      c('pkteam', 'Preschool team', 'preschool_team.scan', 'Weekly', '16 days', 'Preschools'),
+      c('hours', 'School hours', 'Entered by hand', 'No scan', 'Not confirmed this school year', 'All schools'),
+      c('alt', 'Early and delayed times', 'Entered by hand', 'No scan', 'Not confirmed this school year', 'All schools'),
+      c('periods', 'Period table', 'Entered by hand', 'No scan', 'Not confirmed this school year', 'Middle and high'),
+      c('cal', 'District calendar', 'district_calendar.scan or district_calendar_pdf.scan', 'Every 12 hours', '36 hours', 'All schools'),
+      c('mp', 'Marking periods', 'marking_period.scan', 'Weekly', '16 days', 'All but preschools'),
+      c('rot', 'Day rotation', 'hs_rotation.scan', 'Weekly', '16 days', 'High schools'),
+      c('news', 'Newsletter', 'smore.scan', 'Weekly, on Monday', '16 days, or newest issue over 21 days old', 'All schools'),
+      c('pta', 'PTA page', 'givebacks.scan or ptboard.scan', 'Daily or weekly', '3 days or 16 days', 'All schools'),
+      c('backpack', 'District flyers', 'virtual_backpack.scan', 'Daily', '3 days', 'All schools'),
+      c('events', 'School events calendar', 'special_events.scan or school_events_doc.scan', 'Weekly or every 12 hours', '16 days or 36 hours', 'All schools'),
+      c('bulletin', 'Student bulletin', 'student_bulletin.scan', 'Every 12 hours', '36 hours', 'Middle and high'),
+      c('ann', 'Morning announcements', 'hs_announcements.scan', 'Every 2 hours on school days', '1 school day', 'High schools'),
+      c('actcal', 'Activities calendar', 'hs_class_calendar.scan', 'Every 12 hours', '36 hours', 'High schools'),
+      c('actsite', 'Class pages', 'hs_activities_site.scan', 'Daily', '3 days', 'High schools'),
+      c('ath', 'Athletics calendar', 'athletics_calendar.scan', 'Every 12 hours', '36 hours', 'Middle and high'),
+      c('menu', 'Meal menus', 'lunch_menu.scan or a vendor menu scan', 'Daily', '3 days, or no menu for the current week', 'All schools'),
+      c('hand', 'Handbook', 'documents.scan', 'Twice a month', '35 days, or dated an earlier school year', 'All schools'),
+      c('belldoc', 'Bell schedule document', 'documents.scan', 'Twice a month', '35 days, or dated an earlier school year', 'All schools'),
+      c('bus', 'Transportation', 'transportation.scan', 'Weekly', '16 days', 'All but preschools'),
+      c('care', 'Before and after care', 'One-off district import', 'No scan', 'Not confirmed this school year', 'Elementary')
+    ];
+  }
+
+  schools() {
+    const s = (id, kind, district, over) => ({ id: id, kind: kind, district: district, over: over });
+    return [
+      s('harte', 'Elementary', 'Cherry Hill', 'absence:o news:o pta:o'),
+      s('barton', 'Elementary', 'Cherry Hill', 'news:s'),
+      s('cooper', 'Elementary', 'Cherry Hill', 'news:s hand:n'),
+      s('kilmer', 'Elementary', 'Cherry Hill', 'staff:f'),
+      s('beck', 'Middle', 'Cherry Hill', 'menu:s news:o'),
+      s('carusi', 'Middle', 'Cherry Hill', 'menu:s hand:n'),
+      s('rosa', 'Middle', 'Cherry Hill', 'menu:s news:f'),
+      s('east', 'High', 'Cherry Hill', 'absence:o alt:o periods:o rot:o ann:o actcal:o actsite:o ath:o belldoc:o'),
+      s('west', 'High', 'Cherry Hill', 'alt:o periods:s rot:o ann:o actcal:o actsite:o events:o ath:o belldoc:o'),
+      s('barclay', 'Preschool', 'Cherry Hill', ''),
+      s('hamilton', 'Elementary', 'Voorhees', 'hand:n'),
+      s('signal', 'Elementary', 'Voorhees', ''),
+      s('vms', 'Middle', 'Voorhees', ''),
+      s('eastern', 'High', 'Eastern Regional', 'alt:o belldoc:o ath:o'),
+      s('cinm', 'Middle', 'Cinnaminson', 'news:o'),
+      s('cinh', 'High', 'Cinnaminson', ''),
+      s('rush', 'Elementary', 'Cinnaminson', ''),
+      s('delh', 'High', 'Delran', 'alt:o belldoc:o'),
+      s('delm', 'Middle', 'Delran', 'alt:o belldoc:s')
+    ];
+  }
+
+  statuses(r) {
+    const st = {};
+    'info logo geo staff hours cal mp menu backpack hand bus'.split(' ').forEach((k) => { st[k] = 'o'; });
+    'absence alt news pta events belldoc'.split(' ').forEach((k) => { st[k] = 'n'; });
+    const applies = { Elementary: 'care', Middle: 'periods bulletin ath', High: 'periods rot bulletin ann actcal actsite ath', Preschool: 'pkteam' }[r.kind].split(' ');
+    'pkteam periods rot bulletin ann actcal actsite ath care'.split(' ').forEach((k) => { st[k] = applies.indexOf(k) >= 0 ? 'n' : 'x'; });
+    if (r.kind === 'Elementary') st.care = 'o';
+    if (r.kind === 'Preschool') { st.pkteam = 'o'; st.mp = 'x'; st.bus = 'x'; st.menu = 'n'; st.hand = 'n'; st.staff = 'n'; }
+    const gaps = { 'Voorhees': 'bus care backpack', 'Eastern Regional': 'bus backpack', 'Cinnaminson': 'bus care backpack', 'Delran': 'bus care backpack mp' }[r.district];
+    if (gaps) gaps.split(' ').forEach((k) => { if (st[k] !== 'x') st[k] = 'n'; });
+    r.over.split(' ').forEach((p) => { if (p) { const kv = p.split(':'); st[kv[0]] = kv[1]; } });
+    return st;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const set = (key) => (e) => this.setState({ [key]: e.target.value, page: 0 });
+    const sts = this.schools().map((r) => this.statuses(r));
+    const groupSizes = [['Identity', 3], ['People', 3], ['Schedule', 6], ['News and events', 9], ['Services and documents', 5]];
+    const groupOf = [];
+    groupSizes.forEach((g) => { for (let i = 0; i < g[1]; i += 1) groupOf.push(g[0]); });
+
+    const all = this.cols().map((col, i) => {
+      const n = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+      sts.forEach((st) => { n[st[col.k]] += 1; });
+      const app = sts.length - n.x;
+      const parts = [n.o + ' of ' + app + ' current'];
+      if (n.n) parts.push(n.n + ' not collecting');
+      if (n.f) parts.push(n.f + ' failing');
+      if (n.s) parts.push(n.s + ' stale');
+      return { label: col.label, src: col.src, runs: col.runs, win: col.win, applies: col.applies, group: groupOf[i], order: i, n: n, pctNum: n.o / app, pct: Math.round((n.o / app) * 100) + '%', tally: parts.join(' · ') };
+    });
+
+    const q = s.q.trim().toLowerCase();
+    const matched = all.filter((d) => {
+      if (q && (d.label + ' ' + d.src).toLowerCase().indexOf(q) < 0) return false;
+      if (s.group !== 'all' && d.group !== s.group) return false;
+      if (s.runs === 'scan' && d.runs === 'No scan') return false;
+      if (s.runs === 'hand' && d.runs !== 'No scan') return false;
+      return true;
+    });
+    const byOrder = (a, b) => a.order - b.order;
+    const sorters = {
+      pctAsc: (a, b) => a.pctNum - b.pctNum || byOrder(a, b),
+      pctDesc: (a, b) => b.pctNum - a.pctNum || byOrder(a, b),
+      fail: (a, b) => b.n.f - a.n.f || a.pctNum - b.pctNum || byOrder(a, b),
+      stale: (a, b) => b.n.s - a.n.s || a.pctNum - b.pctNum || byOrder(a, b),
+      none: (a, b) => b.n.n - a.n.n || a.pctNum - b.pctNum || byOrder(a, b),
+      group: byOrder,
+      name: (a, b) => a.label.localeCompare(b.label)
+    };
+    matched.sort(sorters[s.sort] || sorters.pctAsc);
+
+    const size = 10;
+    const pageCount = Math.max(1, Math.ceil(matched.length / size));
+    const page = Math.min(s.page, pageCount - 1);
+    const start = page * size;
+    const rows = matched.slice(start, start + size);
+    const pages = [];
+    for (let i = 0; i < pageCount; i += 1) {
+      const on = i === page;
+      pages.push({ n: i + 1, aria: 'Page ' + (i + 1), cur: on ? 'page' : 'false', bg: on ? '#1f7f9f' : '#ffffff', ink: on ? '#ffffff' : '#17202a', border: on ? '#1f7f9f' : '#cfd6dd', pick: () => this.setState({ page: i }) });
+    }
+
+    return {
+      rows: rows,
+      empty: matched.length === 0,
+      resultLabel: matched.length === 0 ? '0 of ' + all.length + ' data points' : 'Showing ' + (start + 1) + ' to ' + (start + rows.length) + ' of ' + matched.length + ' data points, across ' + sts.length + ' schools',
+      q: s.q, group: s.group, runs: s.runs, sort: s.sort,
+      onQ: set('q'), onGroup: set('group'), onRuns: set('runs'), onSort: set('sort'),
+      pages: pages,
+      prev: () => this.setState({ page: Math.max(0, page - 1) }),
+      next: () => this.setState({ page: Math.min(pageCount - 1, page + 1) }),
+      noPrev: page === 0, noNext: page >= pageCount - 1,
+      prevOpacity: page === 0 ? '0.45' : '1', nextOpacity: page >= pageCount - 1 ? '0.45' : '1'
+    };
+  }
+}
+</script>
+</body>
+</html>

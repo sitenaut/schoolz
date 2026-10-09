@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>District missing-data report</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+body{margin:0;background:#e9edf1}
+a{color:#185a70}a:hover{color:#17202a}
+sc-for,sc-if{display:contents}
+button,select{font-family:inherit}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 2300px; background: #e9edf1; color: #17202a; font-family: 'Nunito Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45; padding: 20px 24px 48px">
+<div style="max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-weight: 700">Back to audit</a>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Copy as text</button>
+<button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-weight: 700; font-size: 14px; cursor: pointer">Download CSV</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: #1f7f9f; color: #ffffff; font-weight: 700; font-size: 14px; cursor: pointer">Print or save PDF</button>
+</div>
+</div>
+
+<div style="background: #ffffff; border: 1px solid #cfd6dd; border-radius: 12px; padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px">
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 240px; min-width: 0">
+<label for="scope" style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Report for</label>
+<select id="scope" style="min-height: 44px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 10px; background: #ffffff; color: #17202a; font-size: 14px; font-weight: 600">
+<option>District: Cherry Hill Public Schools</option>
+<option>District: Voorhees Township</option>
+<option>School: Rosa International Middle</option>
+<option>Current audit filters</option>
+</select>
+</div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px">
+<legend style="padding: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672">Include</legend>
+<label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1f7f9f">Failing</label>
+<label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1f7f9f">Stale</label>
+<label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1f7f9f">Not collecting</label>
+</fieldset>
+</div>
+
+<article style="background: #ffffff; border-radius: 4px; box-shadow: 0 1px 3px rgba(23,32,42,0.12), 0 8px 24px rgba(23,32,42,0.08); padding: 48px 52px; display: flex; flex-direction: column; gap: 28px">
+
+<header style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px; border-bottom: 2px solid #17202a">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5b6672">Missing-data report</div>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.15">Cherry Hill Public Schools</h1>
+<div style="color: #3d4752">{{schoolCount}} schools · 26 data points audited · generated 7 October 2026</div>
+</header>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 12px 14px"><div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1">{{pct}}</div><div style="color: #3d4752; font-size: 13px">compliant, {{okCount}} of {{appCount}} data points</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 12px 14px"><div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1; color: #a8322c">{{failCount}}</div><div style="color: #3d4752; font-size: 13px">failing</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 12px 14px"><div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1; color: #8a5a12">{{staleCount}}</div><div style="color: #3d4752; font-size: 13px">stale</div></div>
+<div style="border: 1px solid #e2e7ec; border-radius: 10px; padding: 12px 14px"><div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1">{{noneCount}}</div><div style="color: #3d4752; font-size: 13px">not collecting</div></div>
+</section>
+
+<sc-for list="{{sections}}" as="sec" hint-placeholder-count="3">
+<section style="display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">{{sec.title}} <span style="font-family: 'Nunito Sans', sans-serif; font-weight: 400; font-size: 14px; color: #3d4752">· {{sec.sub}}</span></h2>
+<div style="overflow-x: auto"><div style="min-width: 640px">
+<div style="display: grid; grid-template-columns: 1fr 1.4fr 1.8fr 1.5fr; gap: 16px; padding: 8px 0; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672; border-bottom: 1px solid #cfd6dd"><div>Data point</div><div>Schools</div><div>Why</div><div>Next step</div></div>
+<sc-for list="{{sec.groups}}" as="g" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: 1fr 1.4fr 1.8fr 1.5fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid #e2e7ec"><div style="font-weight: 700">{{g.label}}</div><div><strong>{{g.count}}:</strong> {{g.schools}}</div><div>{{g.why}}</div><div>{{g.next}}</div></div>
+</sc-for>
+</div></div>
+</section>
+</sc-for>
+
+<section style="display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">By school</h2>
+<div style="overflow-x: auto"><div style="min-width: 640px">
+<div style="display: grid; grid-template-columns: 2fr 0.7fr 0.7fr 0.7fr 0.9fr; gap: 16px; padding: 8px 0; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5b6672; border-bottom: 1px solid #cfd6dd"><div>School</div><div>Compliant</div><div>Failing</div><div>Stale</div><div>Not collecting</div></div>
+<sc-for list="{{schools}}" as="s" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 2fr 0.7fr 0.7fr 0.7fr 0.9fr; gap: 16px; padding: 9px 0; border-bottom: 1px solid #e2e7ec; font-variant-numeric: tabular-nums"><div style="font-weight: 700">{{s.name}}</div><div>{{s.pct}}</div><div>{{s.f}}</div><div>{{s.s}}</div><div>{{s.n}}</div></div>
+</sc-for>
+</div></div>
+</section>
+
+<footer style="color: #3d4752; font-size: 13px">A data point is compliant when it is on file and inside its freshness window, which is two missed scheduled runs plus a grace period. Data points that do not apply to a school's type are left out of the score.</footer>
+
+</article>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":960,"height":2300}}'>
+class Component extends DCLogic {
+  cols() {
+    const labels = 'info:Address and phone|logo:Logo|geo:Map location|staff:Staff directory|absence:Absence method|pkteam:Preschool team|hours:School hours|alt:Early and delayed times|periods:Period table|cal:District calendar|mp:Marking periods|rot:Day rotation|news:Newsletter|pta:PTA page|backpack:District flyers|events:School events calendar|bulletin:Student bulletin|ann:Morning announcements|actcal:Activities calendar|actsite:Class pages|ath:Athletics calendar|menu:Meal menus|hand:Handbook|belldoc:Bell schedule document|bus:Transportation|care:Before and after care';
+    return labels.split('|').map((p) => ({ k: p.split(':')[0], label: p.split(':')[1] }));
+  }
+
+  schools() {
+    const s = (id, name, short, kind, over) => ({ id: id, name: name, short: short, kind: kind, over: over });
+    return [
+      s('harte', 'Bret Harte Elementary', 'Harte', 'Elementary', 'absence:o news:o pta:o'),
+      s('barton', 'Clara Barton Elementary', 'Barton', 'Elementary', 'news:s'),
+      s('cooper', 'James F. Cooper Elementary', 'Cooper', 'Elementary', 'news:s hand:n'),
+      s('kilmer', 'Joyce Kilmer Elementary', 'Kilmer', 'Elementary', 'staff:f'),
+      s('beck', 'Beck Middle', 'Beck', 'Middle', 'menu:s news:o'),
+      s('carusi', 'Carusi Middle', 'Carusi', 'Middle', 'menu:s hand:n'),
+      s('rosa', 'Rosa International Middle', 'Rosa', 'Middle', 'menu:s news:f'),
+      s('east', 'Cherry Hill High School East', 'East', 'High', 'absence:o alt:o periods:o rot:o ann:o actcal:o actsite:o ath:o belldoc:o'),
+      s('west', 'Cherry Hill High School West', 'West', 'High', 'alt:o periods:s rot:o ann:o actcal:o actsite:o events:o ath:o belldoc:o'),
+      s('barclay', 'Barclay Early Childhood Center', 'Barclay', 'Preschool', '')
+    ];
+  }
+
+  statuses(r) {
+    const st = {};
+    'info logo geo staff hours cal mp menu backpack hand bus'.split(' ').forEach((k) => { st[k] = 'o'; });
+    'absence alt news pta events belldoc'.split(' ').forEach((k) => { st[k] = 'n'; });
+    const applies = { Elementary: 'care', Middle: 'periods bulletin ath', High: 'periods rot bulletin ann actcal actsite ath', Preschool: 'pkteam' }[r.kind].split(' ');
+    'pkteam periods rot bulletin ann actcal actsite ath care'.split(' ').forEach((k) => { st[k] = applies.indexOf(k) >= 0 ? 'n' : 'x'; });
+    if (r.kind === 'Elementary') st.care = 'o';
+    if (r.kind === 'Preschool') { st.pkteam = 'o'; st.mp = 'x'; st.bus = 'x'; st.menu = 'n'; st.hand = 'n'; st.staff = 'n'; }
+    r.over.split(' ').forEach((p) => { if (p) { const kv = p.split(':'); st[kv[0]] = kv[1]; } });
+    return st;
+  }
+
+  detail(key, col, st) {
+    const generic = { why: 'No source is set for these schools, so nothing is being collected.', next: 'Add a source, or mark it as not published.' };
+    const none = {
+      absence: { why: 'No tracked newsletter states how to report an absence.', next: 'Each school confirming its method: phone, email or portal.' },
+      alt: { why: 'Early-dismissal and delayed-opening times are not published anywhere we found.', next: 'The district publishing those times, as the high schools already do.' },
+      periods: { why: 'No period-by-period table is published for these schools.', next: 'Request it from each school, or mark as not published.' },
+      news: { why: 'No newsletter link is known for these schools.', next: "A link to each school's newsletter, or confirmation that there isn't one." },
+      hand: { why: 'No handbook was found on the school site or in a newsletter.', next: 'The current handbook posted on the school site.' }
+    };
+    const notes = {
+      'rosa:news': { why: 'smore_no_blocks: the tracked link loads with no content and has most likely expired. It has never scanned successfully.', next: 'A link to a current issue.' },
+      'kilmer:staff': { why: 'site_did_not_load: the school site has not loaded on the last three scans. A 44-day-old roster is still showing.', next: 'Internal: re-run off-peak and check for a bot wall.' },
+      's:news': { why: 'Each issue is published at a new link. The one on file is five weeks old, past the 21-day window.', next: "One stable link per school, or the current issue's link." },
+      's:menu': { why: "One district PDF covers all middle schools. September is on file; October's has not been found.", next: 'The October middle-school menu posted on the food-services page.' },
+      's:periods': { why: 'The period table was entered by hand last school year and has not been confirmed this year.', next: 'Internal: compare against the current PDF.' }
+    };
+    return notes[key + ':' + col.k] || notes[st + ':' + col.k] || (st === 'n' && none[col.k]) || generic;
+  }
+
+  renderVals() {
+    const cols = this.cols();
+    const total = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+    const rows = this.schools().map((r) => {
+      const st = this.statuses(r);
+      const n = { o: 0, s: 0, f: 0, n: 0, x: 0 };
+      cols.forEach((c) => { n[st[c.k]] += 1; total[st[c.k]] += 1; });
+      const pctNum = n.o / (cols.length - n.x);
+      return { id: r.id, name: r.name, short: r.short, st: st, pctNum: pctNum, pct: Math.round(pctNum * 100) + '%', f: n.f, s: n.s, n: n.n };
+    });
+    const titles = {
+      f: ['Failing', 'a source is set, but the last scan did not work'],
+      s: ['Stale', 'scans work, but the data is out of date'],
+      n: ['Not collecting', 'no source set, or not published']
+    };
+    const sections = ['f', 's', 'n'].map((key) => {
+      const groups = [];
+      cols.forEach((col) => {
+        const hits = rows.filter((r) => r.st[col.k] === key);
+        if (!hits.length) return;
+        const d = this.detail(hits[0].id, col, key);
+        groups.push({ label: col.label, count: hits.length, schools: hits.map((h) => h.short).join(', '), why: d.why, next: d.next });
+      });
+      groups.sort((a, b) => b.count - a.count);
+      return { title: titles[key][0], sub: total[key] + ' data points, ' + titles[key][1], groups: groups };
+    });
+    const app = total.o + total.s + total.f + total.n;
+    return {
+      schoolCount: rows.length,
+      pct: Math.round((total.o / app) * 100) + '%',
+      okCount: total.o, appCount: app, failCount: total.f, staleCount: total.s, noneCount: total.n,
+      sections: sections,
+      schools: rows.slice().sort((a, b) => a.pctNum - b.pctNum || a.name.localeCompare(b.name))
+    };
+  }
+}
+</script>
+</body>
+</html>
