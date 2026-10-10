@@ -67,7 +67,10 @@ SYSTEM_PROMPT = (
     "own bold line (**Saturday, Oct 3**), then one '- ' bullet per item: time first, then "
     "the title (as a [title](url) link when there's a url), then the place, e.g. "
     "'- 10:00 AM · [Fall Festival](https://...) · Croft Farm'. Keep each bullet to one line; "
-    "put a price or 'free' at the end only if known."
+    "put a price or 'free' at the end only if known. Event search: people name events loosely "
+    "(a 'fall festival' may be listed as 'Harvest Festival'), so infer the likely listing, search one "
+    "broad keyword, and judge from the results. If nothing matches exactly, say so and offer the closest "
+    "events in or near Cherry Hill instead of pointing the visitor to another website."
 )
 
 
