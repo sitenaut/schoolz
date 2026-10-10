@@ -423,6 +423,22 @@ def _parse_date(value: str | None, job_kind: str = "smore.scan") -> datetime | N
     return parsed
 
 
+def _current_item_line(item: SchoolContentItem) -> str:
+    """One CURRENT ITEMS context line, with the date in the same local,
+    offset-free format the model is asked to return - the inverse of
+    _parse_date. Rendering the raw UTC datetime here let the model copy a
+    UTC wall-clock time back as local. Confirmed real (East, Oct 2026): the
+    activities calendar's 7pm HOCOrade Dance sat in context as
+    "2026-10-10 23:00:00+00:00", the newsletter's own "7:00pm" mention came
+    back as "2026-10-10T23:00:00", and _parse_date stored it as 11pm - a
+    second row the exact-date dedup couldn't match to the first."""
+    when = None
+    if item.start_date is not None:
+        local = item.start_date.astimezone(_DEFAULT_TZ)
+        when = local.strftime("%Y-%m-%d" if item.is_all_day else "%Y-%m-%dT%H:%M:%S")
+    return f"- id={item.id} [{item.category}] {item.title} (start_date={when})"
+
+
 # A newsletter scanned today essentially never advertises an event that
 # already happened a year ago - but a flyer can still *say* it does.
 # Confirmed real (Chesterbrook Academy, Sept 2026): the preschool PTA
@@ -645,7 +661,7 @@ async def extract_from_newsletter(
             )
             current = result.scalars().all()
             if current:
-                lines = [f"- id={i.id} [{i.category}] {i.title} (start_date={i.start_date})" for i in current]
+                lines = [_current_item_line(i) for i in current]
                 current_items_context = "\n\nCURRENT ITEMS for this school (reference by id in supersedes_item_id if one of these is being corrected/updated):\n" + "\n".join(lines)
 
         _llm_started = time.perf_counter()
