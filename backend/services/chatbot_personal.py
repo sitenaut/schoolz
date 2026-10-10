@@ -132,11 +132,10 @@ _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
     "Categories in use: {categories}. Classes (gym/pool/fitness, lessons, "
     "workshops, courses) are usually paid, so an open-ended search only includes them when the listing "
     "explicitly says they're free; pass a place or class as `query` (e.g. 'YMCA', 'swim') to get all of them. "
-    "`query` needs EVERY word to appear in an event's title, description or venue, so give one distinctive "
-    "keyword ('festival', 'pumpkin'), never a whole phrase and never the town - every event is already local. "
-    "Names vary ('fall festival' is often listed as 'Harvest Festival'): if a search comes back empty or thin, "
-    "retry with a broader word or none at all, and judge from the titles. "
-    "Returns at most 40 events spread across the days in the range, "
+    "With a `query`, events matching ANY of its words come back best match first (title hits, then "
+    "description; 'fall' also finds 'autumn' and 'harvest'), so pass the visitor's own key words "
+    "('fall festival'), and a town they name as `town` rather than in `query`. "
+    "Returns at most 40 events (without a query, spread across the days in the range), "
     "plus the total that matched.",
     {
         "type": "object",
@@ -145,6 +144,7 @@ _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
             "end_date": {"type": "string", "description": "Last day, inclusive, YYYY-MM-DD. Same as start_date for one day."},
             "categories": {"type": "string", "description": "Optional comma-separated categories; any match."},
             "query": {"type": "string", "description": "Optional text search over title, description and venue - e.g. 'pumpkin', or a place like 'YMCA' or 'library' to see what's on there."},
+            "town": {"type": "string", "description": "Optional town the visitor named (e.g. 'Cherry Hill'). Events there rank first; others still come back."},
             "free_only": {"type": "boolean", "description": "Only events known to be free."},
         },
         "required": ["start_date", "end_date"],
@@ -167,11 +167,12 @@ _FREE_TEXT_RE = re.compile(
 )
 _KID_CATEGORIES = {"family", "kids"}
 _MAX_EVENTS = 40
-# Words that don't narrow a search when a multi-word query finds nothing and is
-# retried word by word. Town words still count toward ranking (an event "in
-# Cherry Hill" beats the same event elsewhere) but can't match on their own.
+# A query is matched word by word (any word) and ranked, because people name
+# events loosely: "cherry hill fall festival" is listed as "Harvest Festival".
+# These words narrow nothing, so they're neither searched nor scored.
 _QUERY_STOPWORDS = {"the", "and", "for", "are", "any", "what", "whats", "when", "where", "near", "nearby", "around", "local", "events", "event", "this", "that", "with", "there", "going", "happening"}
-_QUERY_TOWN_WORDS = {"cherry", "hill", "nj", "south", "jersey"}
+_QUERY_SYNONYMS = {"fall": ("autumn", "harvest"), "autumn": ("fall", "harvest"), "harvest": ("fall", "autumn")}
+_MAX_QUERY_WORDS = 5
 _MAX_RANGE_DAYS = 31
 
 PERSONAL_TOOL_NAMES = frozenset(_TOOLS)
@@ -311,6 +312,15 @@ class LocalEventTools:
             logger.exception("chatbot_local_events_tool_failed", extra={"tool": name})
             return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
         text = json.dumps(data, default=str)
+        # 40 events with descriptions run just over the cap, and slicing the
+        # text cut the JSON mid-event, silently losing the last few. Drop whole
+        # events instead (the last by date; ranked results already fit) and say so.
+        items = data.get("items") if isinstance(data, dict) else None
+        while items and len(text) > _MAX_RESULT_CHARS:
+            items.pop()
+            data["returned"] = len(items)
+            data["note"] = "More events matched than shown - narrow by day, category, or a search term to see others."
+            text = json.dumps(data, default=str)
         if len(text) > _MAX_RESULT_CHARS:
             text = text[:_MAX_RESULT_CHARS] + '..."[truncated - ask about one class or a narrower question]"'
         return text
@@ -338,27 +348,32 @@ class LocalEventTools:
         }
         if categories:
             params["categories"] = categories
-        if args.get("query"):
-            params["q"] = str(args["query"])[:200]
         if args.get("free_only"):
             params["is_free"] = "true"
+        town = " ".join(str(args.get("town") or "").lower().split())[:60]
+        town_words = set(town.split())
+        words = [w for w in dict.fromkeys(str(args.get("query") or "").lower().split()) if len(w) >= 3 and w not in _QUERY_STOPWORDS]
+        # A town typed into the query anyway still ranks (via `town`), it just doesn't search.
+        words = [w for w in words if w not in town_words][:_MAX_QUERY_WORDS]
 
-        response = await self._client.get("/local-events", params=params)
-        if response.status_code >= 400:
-            return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
-        body = response.json()
-        events = body["items"]
-        truncated = body.get("total", len(events)) > len(events)
-
-        # /local-events ANDs every query word, so a natural phrase ("cherry hill
-        # fall festival") matches nothing when the listing says "Harvest
-        # Festival". Retry word by word and rank by how much of the phrase each
-        # event covers, rather than telling the visitor there's nothing.
-        relaxed = False
-        words = str(args.get("query") or "").lower().split()
-        if not events and len(words) > 1:
-            events = await self._relaxed_matches(params, words)
-            relaxed = bool(events)
+        if not words:
+            response = await self._client.get("/local-events", params=params)
+            if response.status_code >= 400:
+                return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
+            body = response.json()
+            events = body["items"]
+            truncated = body.get("total", len(events)) > len(events)
+        else:
+            # /local-events ANDs the words of `q`, so search each word (and its
+            # synonyms) separately and rank the union.
+            found: dict[str, dict] = {}
+            for term in dict.fromkeys(t for w in words for t in (w, *_QUERY_SYNONYMS.get(w, ()))):
+                response = await self._client.get("/local-events", params={**params, "q": term})
+                if response.status_code >= 400:
+                    return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
+                for e in response.json()["items"]:
+                    found.setdefault(e["id"], e)
+            events = list(found.values())
             truncated = False
 
         # The free-only rule is for open-ended browsing ("what can we do this
@@ -367,31 +382,22 @@ class LocalEventTools:
         # almost entirely classes, and hiding them made the assistant claim
         # it couldn't look the Y up at all.
         asked = {c.strip() for c in categories.split(",") if c.strip()}
-        explicit = bool(args.get("query")) or bool(asked & _CLASS_CATEGORIES)
+        explicit = bool(words) or bool(asked & _CLASS_CATEGORIES)
         if not explicit:
             events = [e for e in events if not _is_class(e) or _is_explicitly_free(e)]
+
+        if words:
+            return _ranked_result(events, words, town)
+
         matched = len(events)
-
-        if relaxed:
-            # Already ranked best-first; keep the best, show them in date order.
-            picked = sorted(events[:_MAX_EVENTS], key=lambda e: e["start_time"])
-            return {
-                "matched": matched,
-                "returned": len(picked),
-                "items": [_compact_event(e) for e in picked],
-                "note": (
-                    "No event matched every word of that search, so these are the closest matches (best first "
-                    "before date order). Tell the visitor there was no exact match, then offer these as similar events."
-                ),
-            }
-
         # Round-robin across days so Sunday isn't cut off by Saturday
-        # morning's volume; within a day, family/kids-tagged events first.
+        # morning's volume; within a day, events in the named town first, then
+        # family/kids-tagged ones.
         by_day: dict[str, list[dict]] = defaultdict(list)
         for e in events:
             by_day[datetime.fromisoformat(e["start_time"]).astimezone(ET).date().isoformat()].append(e)
         for day_events in by_day.values():
-            day_events.sort(key=lambda e: not set(e["categories"]) & _KID_CATEGORIES)
+            day_events.sort(key=lambda e: (not (town and _in_town(e, town)), not set(e["categories"]) & _KID_CATEGORIES))
         picked: list[dict] = []
         queues = [by_day[d] for d in sorted(by_day)]
         while len(picked) < _MAX_EVENTS and any(queues):
@@ -406,24 +412,66 @@ class LocalEventTools:
         return result
 
 
-    async def _relaxed_matches(self, params: dict[str, Any], words: list[str]) -> list[dict]:
-        """Events matching at least one distinctive word of a query that
-        matched nothing as a whole, best-covered first (title hits count double)."""
-        distinct = [w for w in dict.fromkeys(words) if len(w) >= 3 and w not in _QUERY_STOPWORDS]
-        searchable = [w for w in distinct if w not in _QUERY_TOWN_WORDS][:5]
-        found: dict[str, dict] = {}
-        for word in searchable:
-            response = await self._client.get("/local-events", params={**params, "q": word})
-            if response.status_code < 400:
-                for e in response.json()["items"]:
-                    found.setdefault(e["id"], e)
+def _word_in(word: str, text: str) -> bool:
+    # Word start, so "fall" matches "falls" but not "waterfall".
+    return re.search(rf"\b{re.escape(word)}", text) is not None
 
-        def score(e: dict) -> tuple[int, str]:
-            title = e["title"].lower()
-            rest = f"{e['description'] or ''} {e['venue_name'] or ''} {e['venue_address'] or ''}".lower()
-            return (-sum(2 if w in title else 1 if w in rest else 0 for w in distinct), e["start_time"])
 
-        return sorted(found.values(), key=score)
+def _in_town(e: dict, town: str) -> bool:
+    return town in f"{e['title']} {e['venue_name'] or ''} {e['venue_address'] or ''}".lower()
+
+
+def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str, Any]:
+    """Best match first: each query word (or a synonym) scores 2 in the title,
+    1 elsewhere; being in the named town adds 2. A series listed once per day
+    (a month-long festival) collapses to its first date so it can't crowd out
+    one-day events."""
+
+    def score(e: dict) -> tuple[int, int]:
+        title = e["title"].lower()
+        rest = f"{e['description'] or ''} {e['venue_name'] or ''} {e['venue_address'] or ''}".lower()
+        points = covered = 0
+        for w in words:
+            terms = (w, *_QUERY_SYNONYMS.get(w, ()))
+            if any(_word_in(t, title) for t in terms):
+                points, covered = points + 2, covered + 1
+            elif any(_word_in(t, rest) for t in terms):
+                points, covered = points + 1, covered + 1
+        if town and _in_town(e, town):
+            points += 2
+        return points, covered
+
+    series: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for e in sorted(events, key=lambda e: e["start_time"]):
+        series[(e["source"], e["title"].strip().lower())].append(e)
+    ranked = sorted(series.values(), key=lambda runs: (-score(runs[0])[0], runs[0]["start_time"]))
+
+    # Fill best-first within the tool-result budget, so it's the weakest
+    # matches that don't fit - not whichever events fall last by date.
+    top: list[list[dict]] = []
+    picked: list[tuple[str, dict]] = []
+    size = 0
+    for runs in ranked[:_MAX_EVENTS]:
+        item = _compact_event(runs[0])
+        if len(runs) > 1:
+            last = datetime.fromisoformat(runs[-1]["start_time"]).astimezone(ET)
+            item["repeats"] = f"{len(runs)} dates through {last.strftime('%a %b %-d')}"
+        size += len(json.dumps(item, default=str)) + 2
+        if size > _MAX_RESULT_CHARS - 1_000:
+            break
+        top.append(runs)
+        picked.append((runs[0]["start_time"], item))
+    items = [item for _, item in sorted(picked, key=lambda p: p[0])]
+
+    result: dict[str, Any] = {"matched": len(series), "returned": len(items), "items": items}
+    if top and score(top[0][0])[1] < len(words):
+        result["note"] = (
+            "No event matched every word of that search; these are the closest matches. Say there was no exact "
+            "match, then offer the best of these as similar events."
+        )
+    elif len(series) > len(top):
+        result["note"] = "More events matched than shown - narrow by day or add a word to see others."
+    return result
 
 
 def _is_class(e: dict) -> bool:

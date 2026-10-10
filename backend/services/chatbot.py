@@ -68,9 +68,9 @@ SYSTEM_PROMPT = (
     "the title (as a [title](url) link when there's a url), then the place, e.g. "
     "'- 10:00 AM · [Fall Festival](https://...) · Croft Farm'. Keep each bullet to one line; "
     "put a price or 'free' at the end only if known. Event search: people name events loosely "
-    "(a 'fall festival' may be listed as 'Harvest Festival'), so infer the likely listing, search one "
-    "broad keyword, and judge from the results. If nothing matches exactly, say so and offer the closest "
-    "events in or near Cherry Hill instead of pointing the visitor to another website."
+    "(a 'fall festival' may be listed as 'Harvest Festival'), so search their key words with any town "
+    "they name as `town`, and judge from the titles. If nothing matches exactly, say so and offer the "
+    "closest events instead of pointing the visitor to another website."
 )
 
 
@@ -104,6 +104,14 @@ async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
         return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
     parts = [block.text for block in content if hasattr(block, "text")]
     return "\n".join(parts) if parts else "null"
+
+
+def _log_tool_call(name: str, tool_input: dict[str, Any]) -> None:
+    # What the model actually asked each tool, so a bad answer can be traced to
+    # a bad search (e.g. "fall festival" vs the listing's "Harvest Festival").
+    # Personal tools take a child's id: log only which arguments were passed.
+    logged = sorted(tool_input) if name in PERSONAL_TOOL_NAMES else tool_input
+    logger.info("chatbot_tool_call", extra={"tool": name, "tool_input": json.dumps(logged, default=str)[:500]})
 
 
 def _log_usage(provider: str, model: str, usage: Usage) -> None:
@@ -244,6 +252,7 @@ async def run_chat_turn(
         results = []
         for use in tool_uses:
             tools_called.append(use["name"])
+            _log_tool_call(use["name"], use.get("input") or {})
             if use["name"] == LOCAL_EVENTS_TOOL_NAME and local_events:
                 result_text = await local_events.run(use["name"], use.get("input") or {})
             elif use["name"] in PERSONAL_TOOL_NAMES:
