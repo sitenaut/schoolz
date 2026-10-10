@@ -196,7 +196,7 @@ export function JobDetailModal({ job, initialTab = "runs", running, onClose, onR
                       </div>
                       <div className="run-meta">
                         <span>{fmtDuration(r.duration_ms)}</span>
-                        <span>{r.triggered_by === "manual" ? "manual" : "scheduled"}</span>
+                        <span>{r.triggered_by === "manual" ? "manual" : r.triggered_by === "imported" ? "carried over" : "scheduled"}</span>
                         {r.error_code && <span className="code-chip">{r.error_code}</span>}
                         {r.error_stage && <span>stage: {r.error_stage}</span>}
                       </div>

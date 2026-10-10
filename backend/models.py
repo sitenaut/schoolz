@@ -363,7 +363,8 @@ class JobRun(Base):
     error_code: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     error_stage: Mapped[str | None] = mapped_column(String(20), nullable=True)
     log_excerpt: Mapped[str | None] = mapped_column(String, nullable=True)
-    # "cron" | "manual"
+    # "cron" | "manual" | "catchup" | "first_run" | "imported" (a history row
+    # written by services/config_results.py; nothing ran here)
     triggered_by: Mapped[str] = mapped_column(String(20), default="cron", nullable=False)
     # Set once at run start, independent of the handler's own transaction -
     # if the process is OOM-killed/crashed mid-run, the reaper's generic
@@ -691,6 +692,10 @@ class School(Base):
     # up on the wrong school's page is worse than none.
     givebacks_shortname: Mapped[str | None] = mapped_column(String(100), nullable=True)
     givebacks_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Hash of the "Contact Us" page text the contact-page:* staff rows were
+    # read from (services/contact_page.py). The roster scan skips its model
+    # call while the page still hashes the same.
+    contact_page_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Geocoded once from `address` (services/weather.py:ensure_location) and
     # reset whenever the address changes. nws_grid is the NWS forecast office
     # + gridpoint ("PHI/54,79") - stable for a location, so the two-step

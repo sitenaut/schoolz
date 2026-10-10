@@ -16,13 +16,24 @@ The main session orchestrates; the crawling happens in `district-crawler` subage
 3. **Merge.** Each returns one JSON block (`seed_fragment`, `findings`, `gaps`, `needs_verification`, `new_platform_notes`). Merge fragments into the seed file yourself; crawlers never write. Treat `inferred` as unconfirmed (leave the field null unless the guide says otherwise) and spot-check two or three `confirmed` values against the page, since subagent reports can be wrong. Resolve conflicts between schools' fragments (shared calendar ids, a shared website_url) by hand.
 4. **Import locally and run every job.** Import through Admin -> Import/export or `POST /admin/config/import`, then run-now each created job one at a time from `schoolz-scheduler-local` (not the API container; see `backend/scheduler/CLAUDE.md`). The guide's "Done means the scan works" section exists because hand-confirmed sources still shipped broken scans. Check `needs_verification` items here. Parser changes need the `content-extraction`/`data-sources` skills.
 5. **Record.** Add `gaps` to `docs/DATA_GAPS.md`. Add `new_platform_notes` to the matching `docs/platforms/` file (or create one and add a row to the guide's table) in the same PR. The seed file is committed.
-6. **Prod is a separate, human-approved step.** Stop after local verification and show the owner the summary. Prod import is `scripts/schoolz-api.sh prod POST /admin/config/import <file>` and the `deploy-schoolz` skill; never a direct DB connection.
+6. **Prod is a separate, human-approved step.** Stop after local verification and show the owner the summary. Prod import is `scripts/seed-with-results.sh prod <file>` (see "Carrying scan results" below) and the `deploy-schoolz` skill; never a direct DB connection.
 
 ## Import mechanics
 
 The crawl guide says how to *find* each data point; this section is how it gets *in*.
 
 Seed through **Admin → Import/export** (`POST /admin/config/import`) with a JSON file like those in `backend/seed/`: idempotent, admin-only, runs the same `_ensure_*_job` hooks as the forms, identical on local and prod (`scripts/schoolz-api.sh prod POST /admin/config/import <file>`). `IcsFeed.school_slug` (not an id) makes per-school feeds portable. Process fields with no newsletter source (absence method/phone, hours) are typed into the seed from the district's own pages. The optional `local_events` section upserts sources into an existing `local_events.refresh` job by name; it never removes one (that would delete its events) and isn't exported, since prod deliberately runs a different source list than local.
+
+### Carrying scan results
+
+Step 4 pays for model extraction locally; a bare seed import makes prod pay again, because every new job's first run starts within ~30s. `scripts/seed-with-results.sh <target> <seed.json>` pulls `GET /admin/config/results?district=…` from local and sends it as `results` in the same import call (`services/config_results.py`). Prod's first runs still happen and prove prod can reach each source, but find nothing new to extract.
+
+- **Carried:** newsletter and Givebacks blocks with their items and translations, lunch-menu PDFs, district calendar PDF items, contact-page staff with `School.contact_page_hash`. Each of those scans is gated on that stored state. Scans with no model call are not carried.
+- **One call, not two.** Importing the seed first and results after loses the race with the first runs.
+- **A source that already has results in the target is left alone** (listed in `results_skipped`), so a re-import adds nothing and local never overwrites what prod scanned.
+- Each carried job gets one `JobRun` with `triggered_by="imported"` holding the local run's summary. `last_run_at` stays null so the real first run still fires.
+- **Not covered:** `hs_announcements` and `hs_activities_site` (their URLs aren't in the seed, so a seed import never starts them; the activities site also calls the model on every run regardless of stored state).
+- The results file is never committed; the script builds it in a temp dir.
 
 - **The picker groups by town, not district** (`District.towns`, `lib/towns.ts`) — a family shouldn't need to know their K-8 and high school are two districts. A town gets a chip only once it has a tracked elementary school; town copy (header, SEO) counts only chip towns.
 - **Finalsite calendar ids are enumerable** on most sites: `/fs/calendar-manager/events.ics?calendar_ids[]=N` is a public GET, ids are the filter checkboxes' `value`s, `calendars.json` names them. Ids 1-2 are Finalsite sample calendars everywhere. Older sites hide the URL behind the subscribe button (see Data sources). A per-school feed repeats every district event **under the same UID**, so `district_calendar_scan` subtracts district-feed UIDs and stores the remainder `scope="school"`.

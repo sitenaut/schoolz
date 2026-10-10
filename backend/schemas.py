@@ -1091,6 +1091,121 @@ class ExportSmoreOut(BaseModel):
     source_type: str = "smore"  # defaulted so an export file from before this existed still imports
 
 
+class ResultRun(BaseModel):
+    """The exporting environment's last real run of the job behind a source."""
+    status: str = Field(pattern="^(success|warning)$")
+    finished_at: datetime | None = None
+    summary: str | None = None
+
+
+class ResultTranslation(BaseModel):
+    lang: str
+    title: str
+    description: str | None = None
+    source_hash: str
+    model: str
+
+
+class ResultItem(BaseModel):
+    # The exporter's own row id. Only used to re-link supersede pairs inside
+    # one file; never stored.
+    ref: str
+    scope: str = Field(pattern="^(school|district)$")
+    school_slug: str | None = None
+    district_name: str | None = None
+    source: str
+    external_uid: str | None = None
+    applies_to_school_types: list[str] | None = None
+    applies_to_grad_years: list[int] | None = None
+    category: str
+    title: str
+    description: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    is_all_day: bool = True
+    link_url: str | None = None
+    person_name: str | None = None
+    person_title: str | None = None
+    source_excerpt: str | None = None
+    extracted_at: datetime
+    is_current: bool = True
+    superseded_by_ref: str | None = None
+    source_block_hash: str | None = None
+    translations: list[ResultTranslation] = []
+
+
+class ResultBlock(BaseModel):
+    page_path: str | None = None  # Givebacks only
+    position: int
+    block_type: str
+    text_content: str | None = None
+    image_url: str | None = None
+    link_url: str | None = None
+    content_hash: str
+    pending_vision_extraction: bool = False
+    vision_extracted_text: str | None = None
+    first_seen_at: datetime
+
+
+class ResultNewsletter(BaseModel):
+    url: str
+    latest_summary: str | None = None
+    blocks: list[ResultBlock] = []
+    items: list[ResultItem] = []
+    last_run: ResultRun | None = None
+
+
+class ResultLunchDay(BaseModel):
+    menu_date: datetime
+    description: str
+    notes: str | None = None
+
+
+class ResultLunchMenu(BaseModel):
+    school_type: str | None = None
+    meal_type: str
+    period_label: str
+    source_pdf_url: str
+    parsed_at: datetime
+    days: list[ResultLunchDay] = []
+
+
+class ResultStaff(BaseModel):
+    constituent_id: str
+    full_name: str
+    title: str | None = None
+    department: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+
+class ResultDistrict(BaseModel):
+    name: str
+    lunch_menus: list[ResultLunchMenu] = []
+    lunch_last_run: ResultRun | None = None
+    calendar_pdf_items: list[ResultItem] = []
+    calendar_pdf_last_run: ResultRun | None = None
+
+
+class ResultSchool(BaseModel):
+    slug: str
+    lunch_menus: list[ResultLunchMenu] = []
+    givebacks_blocks: list[ResultBlock] = []
+    givebacks_items: list[ResultItem] = []
+    givebacks_last_run: ResultRun | None = None
+    contact_page_hash: str | None = None
+    contact_staff: list[ResultStaff] = []
+
+
+class ConfigResults(BaseModel):
+    """What the model-backed scans already produced for some districts in
+    the exporting environment - see services/config_results.py."""
+    exported_at: datetime
+    districts: list[ResultDistrict] = []
+    schools: list[ResultSchool] = []
+    newsletters: list[ResultNewsletter] = []
+
+
 class ConfigExport(BaseModel):
     exported_at: datetime
     source: str  # a human label for where this came from, e.g. "local" - informational only
@@ -1102,6 +1217,10 @@ class ConfigExport(BaseModel):
     # source, since removing one deletes its events (local_events/prune.py).
     # Not exported: prod deliberately runs a different source list than local.
     local_events: dict[str, dict[str, list[dict]]] = {}
+    # Import-only, from GET /admin/config/results: applied in the same
+    # transaction as the config above, so a new job's first run already
+    # finds its source extracted (scripts/seed-with-results.sh).
+    results: ConfigResults | None = None
 
     @field_validator("local_events")
     @classmethod
@@ -1129,6 +1248,10 @@ class ConfigImportResult(BaseModel):
     local_event_sources_added: int = 0
     local_event_sources_updated: int = 0
     local_event_jobs_missing: list[str] = []
+    # Counts of carried-over scan results applied, by kind, and one line per
+    # source left alone (untracked here, or it already has results).
+    results_applied: dict[str, int] = {}
+    results_skipped: list[str] = []
 
 
 class CommunitySubmissionOut(BaseModel):
