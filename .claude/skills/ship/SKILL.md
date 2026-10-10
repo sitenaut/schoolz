@@ -38,7 +38,7 @@ more than today's work, say so before merging.
 
 ## 4. Merge
 
-`gh pr merge <n> --merge` (this repo keeps its long-lived dev branch alive; don't delete it).
+`gh pr merge <n> --merge --delete-branch=false`. Leave the branch in place for now: it is deleted in step 7, only once prod is verified. Never delete `main` or the long-lived dev branch.
 
 ## 5. Deploy, and confirm what actually ran
 
@@ -69,3 +69,18 @@ their conclusion, and any manual follow-up (Supabase redirect URLs, prod data
 backfills, scraper deploy).
 
 On a failed run: `gh run view <id> --log-failed` before guessing.
+
+## 7. Clean up the PR's branch
+
+Only after step 6 shows the deploy succeeded **and** the page/health check passed
+(a failed or unverified deploy keeps its branch, so the fix has somewhere to go),
+and only for a branch this PR owns (not `main`, not the long-lived dev branch):
+
+```
+git push origin --delete <branch>
+git checkout main && git pull --ff-only
+git branch -d <branch>
+```
+
+Use `-d`, never `-D`: if git refuses, the branch has commits that never reached
+`main`, so stop and report instead of forcing. Mention the cleanup in the report.
