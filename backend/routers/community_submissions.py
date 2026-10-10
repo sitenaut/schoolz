@@ -379,8 +379,11 @@ async def extract_submission(
     for draft in await _drafts(db, submission_id):
         if draft.origin == "model" and not _is_published(draft):
             await db.delete(draft)
+    # The sender said it's a town event and named no school: start the items
+    # on /local. Only a default - the reviewer still decides each one.
+    scope = "local" if not submission.school_id and (submission.description or "").startswith("[Local event]") else "school"
     for position, item in enumerate(items):
-        db.add(CommunitySubmissionItem(submission_id=submission_id, position=position, origin="model", **item))
+        db.add(CommunitySubmissionItem(submission_id=submission_id, position=position, origin="model", scope=scope, **item))
     submission.extracted_at = datetime.now(timezone.utc)
     await db.commit()
     return await _review(db, submission)
