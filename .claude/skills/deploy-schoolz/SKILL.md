@@ -53,8 +53,9 @@ merge alone shipped anything.
    ```
    gh pr merge <n> --merge --delete-branch=false
    ```
-   (Don't delete the branch unless the user's workflow expects that - this
-   repo's convention keeps its long-lived dev branch alive across merges.)
+   (Don't delete the branch at merge time. Once the deploy is verified in prod,
+   delete the PR's own branch, remote and local, with `git branch -d` - see the
+   `ship` skill, step 7. Never the long-lived dev branch or `main`.)
 
 5. **Check what actually triggered:**
    ```
@@ -96,7 +97,7 @@ merge alone shipped anything.
 
 ## Don't
 
-- Don't force-push or delete branches without being asked.
+- Don't force-push, and don't delete a branch before its deploy is verified in prod (`ship` step 7 covers the cleanup after).
 - Don't skip the "what actually triggered" check (step 5) - assuming a merge
   alone deployed something is exactly the mistake this skill exists to
   prevent.
