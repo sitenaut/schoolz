@@ -6,6 +6,8 @@ from services.content_extractor import (
     _add_years,
     _backfill_from_duplicate,
     _correct_stale_year,
+    _current_item_line,
+    _parse_date,
     _infer_lunch_menu_start_date,
     _may_supersede,
     _parse_lunch_menu_days,
@@ -303,3 +305,33 @@ def test_stale_year_correction_tags_the_givebacks_job_kind(monkeypatch):
     monkeypatch.setattr("services.content_extractor.record_parse_issue", lambda job_kind, code, **ctx: calls.append((job_kind, code)))
     _correct_stale_year(datetime(2025, 9, 24, tzinfo=_NY), _REF, job_kind="givebacks.scan")
     assert calls == [("givebacks.scan", "stale_year")]
+
+
+# CURRENT ITEMS context must speak the model's own date format: local wall
+# clock, no offset. A UTC rendering got copied back verbatim and re-read as
+# local (East's 7pm HOCOrade Dance stored a second time at 11pm).
+_UTC = ZoneInfo("UTC")
+
+
+def test_current_item_line_renders_timed_item_in_local_time():
+    item = SchoolContentItem(id="x", category="event", title="HOCOrade Dance", start_date=datetime(2026, 10, 10, 23, 0, tzinfo=_UTC), is_all_day=False)
+    assert _current_item_line(item) == "- id=x [event] HOCOrade Dance (start_date=2026-10-10T19:00:00)"
+
+
+def test_current_item_line_round_trips_through_parse_date():
+    stored = datetime(2026, 10, 10, 23, 0, tzinfo=_UTC)
+    item = SchoolContentItem(id="x", category="event", title="t", start_date=stored, is_all_day=False)
+    echoed = _current_item_line(item).split("start_date=")[1].rstrip(")")
+    assert _parse_date(echoed) == stored
+
+
+def test_current_item_line_renders_all_day_item_as_local_date():
+    # All-day rows are local midnight, i.e. 04:00Z - a UTC date would still be right
+    # here, but an evening-in-UTC one wouldn't, so check the date comes from local.
+    item = SchoolContentItem(id="x", category="event", title="t", start_date=datetime(2026, 10, 10, 4, 0, tzinfo=_UTC), is_all_day=True)
+    assert _current_item_line(item).endswith("(start_date=2026-10-10)")
+
+
+def test_current_item_line_without_date():
+    item = SchoolContentItem(id="x", category="reminder", title="t", start_date=None, is_all_day=True)
+    assert _current_item_line(item).endswith("(start_date=None)")
