@@ -136,6 +136,39 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
 
 
 @pytest.mark.anyio
+async def test_find_local_events_relaxes_a_phrase_that_matches_nothing():
+    from datetime import datetime, timezone
+
+    import database
+    from models import LocalEvent
+
+    src = f"chatrelax_{uuid.uuid4().hex[:8]}"
+    when = datetime(2031, 10, 18, 16, tzinfo=timezone.utc)
+    async with database.SessionLocal() as db:
+        db.add(LocalEvent(source=src, source_event_id="ch", title="Harvest Festival", start_time=when, venue_address="100 Bortons Mill Road, Cherry Hill, NJ"))
+        db.add(LocalEvent(source=src, source_event_id="other", title="Harvest Festival", start_time=when, venue_address="1 Main St, Voorhees, NJ"))
+        db.add(LocalEvent(source=src, source_event_id="fall", title="Leaf walk", start_time=when, description="A fall stroll"))
+        await db.commit()
+
+    tools = LocalEventTools(app)
+    try:
+        args = {"start_date": "2031-10-18", "end_date": "2031-10-18"}
+        res = json.loads(await tools.run("find_local_events", {**args, "query": "cherry hill fall festival"}))
+        assert "closest matches" in res["note"]
+        mine = [e for e in res["items"] if e["title"] in {"Harvest Festival", "Leaf walk"}]
+        assert {e["title"] for e in mine} == {"Harvest Festival", "Leaf walk"}
+        # Cherry Hill's Harvest Festival outranks the same title elsewhere, which outranks a description-only hit.
+        order = [e["where"] for e in mine]
+        assert order.index("100 Bortons Mill Road, Cherry Hill, NJ") < order.index("1 Main St, Voorhees, NJ")
+
+        # A single-word or already-matching query is untouched.
+        exact = json.loads(await tools.run("find_local_events", {**args, "query": "harvest festival"}))
+        assert "note" not in exact
+    finally:
+        await tools.aclose()
+
+
+@pytest.mark.anyio
 async def test_category_list_is_live_sorted_and_cached(monkeypatch):
     from datetime import datetime, timedelta, timezone
 
