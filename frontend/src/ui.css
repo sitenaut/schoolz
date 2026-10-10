@@ -1690,6 +1690,11 @@ button.link-card:disabled {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0 12px;
 }
+.sr-dest {
+  margin: 4px 0;
+  font-size: 13px;
+  max-width: 100%;
+}
 .sr-tags {
   display: flex;
   flex-wrap: wrap;

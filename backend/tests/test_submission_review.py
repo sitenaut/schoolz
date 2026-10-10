@@ -395,3 +395,22 @@ async def test_a_local_draft_is_flagged_when_a_feed_already_has_the_event(monkey
         )
         flags = added.json()["items"][0]["flags"]
         assert [f["code"] for f in flags] == ["already_listed"] and flags[0]["hold"] is True
+
+
+@pytest.mark.anyio
+async def test_items_start_on_local_when_the_sender_flagged_a_local_event_and_named_no_school(fake_reader):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        flagged = await _uploaded(client, description="[Local event] harvest fest")
+        plain = await _uploaded(client, description="PTA stuff")
+        for sid, expected in ((flagged, "local"), (plain, "school")):
+            review = (await client.post(f"/submissions/{sid}/extract", headers=admin)).json()
+            assert {i["scope"] for i in review["items"]} == {expected}
+
+        # A named school wins: the sender's hint only fills in when nothing else says where.
+        school_id = await _school()
+        both = await _uploaded(client, description="[Local event] x")
+        await client.patch(f"/submissions/{both}", json={"school_id": school_id}, headers=admin)
+        review = (await client.post(f"/submissions/{both}/extract", headers=admin)).json()
+        assert {i["scope"] for i in review["items"]} == {"school"}

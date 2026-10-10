@@ -282,6 +282,21 @@ export function SubmissionReviewPage() {
           <div className="sr-item-when">
             {formatWhen(item.start_local, item.end_local)} · {local ? [item.venue_name || "No venue", ...item.local_categories.map(labelize)].join(" · ") : labelize(item.category)}
           </div>
+          {!live && canEdit && (
+            <select
+              className="sr-dest"
+              value={item.scope}
+              disabled={busy !== null}
+              aria-label={`Where ${item.title} goes`}
+              onChange={(e) =>
+                run("scope", "Could not move this item", () => updateItem(submissionId, item.id, { scope: e.target.value as SubmissionItem["scope"] }))
+              }
+            >
+              <option value="school">This school's calendar</option>
+              <option value="district">The whole district's calendar</option>
+              <option value="local">Local events</option>
+            </select>
+          )}
           {item.description && <div className="note">{item.description}</div>}
           {item.flags
             .filter((f) => f.code !== "no_date")
