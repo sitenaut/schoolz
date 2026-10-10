@@ -136,34 +136,40 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
 
 
 @pytest.mark.anyio
-async def test_find_local_events_relaxes_a_phrase_that_matches_nothing():
-    from datetime import datetime, timezone
+async def test_find_local_events_ranks_loosely_named_events():
+    from datetime import datetime, timedelta, timezone
 
     import database
     from models import LocalEvent
 
-    src = f"chatrelax_{uuid.uuid4().hex[:8]}"
-    when = datetime(2031, 10, 18, 16, tzinfo=timezone.utc)
+    src = f"chatrank_{uuid.uuid4().hex[:8]}"
+    day = datetime(2031, 10, 18, 16, tzinfo=timezone.utc)
     async with database.SessionLocal() as db:
-        db.add(LocalEvent(source=src, source_event_id="ch", title="Harvest Festival", start_time=when, venue_address="100 Bortons Mill Road, Cherry Hill, NJ"))
-        db.add(LocalEvent(source=src, source_event_id="other", title="Harvest Festival", start_time=when, venue_address="1 Main St, Voorhees, NJ"))
-        db.add(LocalEvent(source=src, source_event_id="fall", title="Leaf walk", start_time=when, description="A fall stroll"))
+        # The prod shape that hid Cherry Hill's event: plenty of exact "fall festival"
+        # hits elsewhere (more than the 40 shown) and one festival listed every day.
+        for i in range(45):
+            db.add(LocalEvent(source=src, source_event_id=f"ff{i}", title=f"Fall Festival {i}", start_time=day, venue_address="Hammonton, NJ"))
+        for i in range(20):
+            db.add(LocalEvent(source=src, source_event_id=f"alw{i}", title="ALW Harvest Festival", start_time=day + timedelta(days=i - 10)))
+        db.add(LocalEvent(source=src, source_event_id="ch", title="Harvest Festival", start_time=day, venue_name="Croft Farm, Cherry Hill, NJ"))
+        db.add(LocalEvent(source=src, source_event_id="walk", title="Leaf walk", start_time=day, description="A waterfall stroll"))
         await db.commit()
 
     tools = LocalEventTools(app)
     try:
-        args = {"start_date": "2031-10-18", "end_date": "2031-10-18"}
-        res = json.loads(await tools.run("find_local_events", {**args, "query": "cherry hill fall festival"}))
-        assert "closest matches" in res["note"]
-        mine = [e for e in res["items"] if e["title"] in {"Harvest Festival", "Leaf walk"}]
-        assert {e["title"] for e in mine} == {"Harvest Festival", "Leaf walk"}
-        # Cherry Hill's Harvest Festival outranks the same title elsewhere, which outranks a description-only hit.
-        order = [e["where"] for e in mine]
-        assert order.index("100 Bortons Mill Road, Cherry Hill, NJ") < order.index("1 Main St, Voorhees, NJ")
+        args = {"start_date": "2031-10-08", "end_date": "2031-10-28"}
+        for extra in ({"query": "fall festival", "town": "Cherry Hill"}, {"query": "cherry hill fall festival"}):
+            res = json.loads(await tools.run("find_local_events", {**args, **extra}))
+            titles = [e["title"] for e in res["items"]]
+            assert "Harvest Festival" in titles, extra  # 'fall' finds 'harvest', and the town outranks the 45
+            assert titles.count("ALW Harvest Festival") == 1  # the daily series collapses to one entry
+            alw = next(e for e in res["items"] if e["title"] == "ALW Harvest Festival")
+            assert alw["repeats"].startswith("20 dates through")
+            assert "Leaf walk" not in titles  # 'waterfall' isn't 'fall'
+            assert res["returned"] == 40 and "closest matches" not in res.get("note", "")
 
-        # A single-word or already-matching query is untouched.
-        exact = json.loads(await tools.run("find_local_events", {**args, "query": "harvest festival"}))
-        assert "note" not in exact
+        none = json.loads(await tools.run("find_local_events", {**args, "query": "pumpkin festival"}))
+        assert "closest matches" in none["note"]  # festivals came back, but nothing about pumpkins
     finally:
         await tools.aclose()
 
