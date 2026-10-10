@@ -12,9 +12,16 @@ function stringify(attrs?: Attrs): Record<string, string> | undefined {
 
 /** No-ops when Faro isn't initialized (local dev, vitest, RUM disabled). */
 export function trackEvent(name: string, attrs?: Attrs): void {
-  getFaro()?.api.pushEvent(name, stringify(attrs));
+  if (FARO_EVENTS.has(name)) getFaro()?.api.pushEvent(name, stringify(attrs));
   forwardToGa(name, attrs);
 }
+
+// Product events (actions, searches, sign-up/login, chat...) live in GA4 only,
+// so they aren't collected twice. Faro keeps just the events the Grafana
+// dashboards/alerts query by name: page_view and cta_click (user-experience
+// dashboard) and auth_timeout (alert). Add a name here before pointing a
+// Loki query at it.
+const FARO_EVENTS = new Set(["page_view", "cta_click", "auth_timeout"]);
 
 // Not forwarded: page_view is sent to GA by AppShell (it needs the scrubbed
 // location and waits for auth so admin/test traffic can be flagged first);
