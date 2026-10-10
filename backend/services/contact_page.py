@@ -8,6 +8,7 @@ reads any of them; every person it returns must have an email and name
 that appear verbatim on the page, so nothing is invented.
 """
 
+import hashlib
 import logging
 import os
 import re
@@ -24,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 MODEL = "claude-haiku-4-5-20251001"
 _MAX_CHARS = 12_000
+CONSTITUENT_PREFIX = "contact-page:"
+# Bump when the prompt, tool or verified() changes, so stored hashes stop matching.
+_PARSER_VERSION = "1"
 
 _TOOL = {
     "name": "record_contacts",
@@ -89,7 +93,7 @@ def verified(people: list[dict], text: str) -> list[dict]:
             continue
         seen.add(email)
         out.append({
-            "constituent_id": f"contact-page:{email}",
+            "constituent_id": f"{CONSTITUENT_PREFIX}{email}",
             "full_name": name,
             "title": title or None,
             "department": None,
@@ -99,19 +103,28 @@ def verified(people: list[dict], text: str) -> list[dict]:
     return out
 
 
-async def fetch_contacts(school_website_url: str) -> list[dict]:
-    """Roster-shaped dicts (see staff_roster.fetch_roster), or [] when there's
-    no contact page or no API key."""
+def text_hash(text: str) -> str:
+    return hashlib.sha256(f"{_PARSER_VERSION}\n{text}".encode()).hexdigest()
+
+
+async def fetch_contacts(school_website_url: str, known: tuple[str, list[dict]] | None = None) -> tuple[list[dict], str | None]:
+    """(roster-shaped dicts as in staff_roster.fetch_roster, hash of the page
+    text they came from). ([], None) when there's no contact page or no API
+    key. `known` is (hash, people) from an earlier read: while the page still
+    hashes the same those people are returned without a model call."""
     if not os.getenv("ANTHROPIC_API_KEY"):
-        return []
+        return [], None
     home_url = school_website_url.rstrip("/") + "/"
     home = await scraper_client.fetch_html(home_url, wait_for_selector="a", block_assets=True)
     url = find_contact_page(home["html"], home_url)
     if not url:
-        return []
+        return [], None
     page = await scraper_client.fetch_html(url, wait_for_selector="#fsPageContent", block_assets=True)
 
     text = page_text(page["html"])[:_MAX_CHARS]
+    digest = text_hash(text)
+    if known and known[0] == digest and known[1]:
+        return known[1], digest
 
     client = AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     started = time.perf_counter()
@@ -127,4 +140,4 @@ async def fetch_contacts(school_website_url: str) -> list[dict]:
     observability.record_llm_call("contact_page_extract", MODEL, response, time.perf_counter() - started)
     tool_use = next((b for b in response.content if b.type == "tool_use"), None)
     people = (tool_use.input.get("people") if tool_use else None) or []
-    return verified([p for p in people if isinstance(p, dict)], text)
+    return verified([p for p in people if isinstance(p, dict)], text), digest

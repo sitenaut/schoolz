@@ -7,9 +7,35 @@ from models import School, StaffMember
 from scheduler.registry import register_job
 from services.apptegy import fetch_staff as fetch_apptegy_staff
 from services.staff_roles import classify_role
-from services.contact_page import fetch_contacts
+from services.contact_page import CONSTITUENT_PREFIX, fetch_contacts
 from services.role_pages import fetch_role_staff_scraped
 from services.staff_roster import drop_sibling_school_staff, fetch_directory_document, fetch_roster
+
+
+async def _known_contacts(db: AsyncSession, school: School) -> tuple[str, list[dict]] | None:
+    """The contact-page people already on file and the page hash they were
+    read from, so an unchanged page costs no model call."""
+    if not school.contact_page_hash:
+        return None
+    rows = (
+        await db.execute(
+            select(StaffMember).where(
+                StaffMember.school_id == school.id, StaffMember.source_constituent_id.startswith(CONSTITUENT_PREFIX)
+            )
+        )
+    ).scalars().all()
+    people = [
+        {
+            "constituent_id": r.source_constituent_id,
+            "full_name": r.full_name,
+            "title": r.title,
+            "department": r.department,
+            "email": r.email,
+            "phone": r.phone,
+        }
+        for r in rows
+    ]
+    return school.contact_page_hash, people
 
 
 @register_job(
@@ -52,7 +78,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # page for those instead.
         if not any(classify_role(e["title"]) for e in roster):
             roster_emails = {(e["email"] or "").lower() for e in roster}
-            extra = [c for c in await fetch_contacts(school.website_url) if c["email"] not in roster_emails]
+            contacts, page_hash = await fetch_contacts(school.website_url, await _known_contacts(db, school))
+            # An empty read isn't remembered, so the next scan asks again.
+            if contacts and page_hash:
+                school.contact_page_hash = page_hash
+            extra = [c for c in contacts if c["email"] not in roster_emails]
             roster = roster + extra
             contacts_added = len(extra)
         checked = school.website_url

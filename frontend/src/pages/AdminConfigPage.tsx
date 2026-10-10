@@ -13,6 +13,8 @@ type ImportResult = {
   smore_skipped: string[];
   sacc_created: number;
   sacc_updated: number;
+  results_applied?: Record<string, number>;
+  results_skipped?: string[];
 };
 
 /** Admin-only: port centrally-managed setup (districts, schools, Smore
@@ -177,6 +179,23 @@ export function AdminConfigPage() {
                 <div className="desc">{importResult.sacc_created} created · {importResult.sacc_updated} updated</div>
               </div>
             </div>
+            {(Object.keys(importResult.results_applied ?? {}).length > 0 || (importResult.results_skipped ?? []).length > 0) && (
+              <div className="row" style={{ gridTemplateColumns: "1fr" }}>
+                <div className="what">
+                  <div className="ttl">Carried-over scan results</div>
+                  <div className="desc">
+                    {Object.entries(importResult.results_applied ?? {})
+                      .map(([kind, n]) => `${n} ${kind.replace(/_/g, " ")}`)
+                      .join(" · ") || "Nothing applied"}
+                  </div>
+                  {(importResult.results_skipped ?? []).length > 0 && (
+                    <div className="desc" style={{ marginTop: 4 }}>
+                      Left alone: {importResult.results_skipped!.join("; ")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -24,7 +24,7 @@ one environment and pushes it to another.
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +34,7 @@ from models import District, SaccProgram, ScheduledJob, School, SmoreNewsletter,
 from schemas import (
     ConfigExport,
     ConfigImportResult,
+    ConfigResults,
     ExportDistrictOut,
     ExportSaccOut,
     ExportSchoolOut,
@@ -65,6 +66,7 @@ from routers.schools import (
 )
 from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
 from scheduler.cron import public_scan_cron, spread_default_smore_cron
+from services.config_results import export_results, import_results
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
 
@@ -153,6 +155,15 @@ async def export_config(db: AsyncSession = Depends(get_db)):
             for n in newsletters
         ],
     )
+
+
+@router.get("/results", response_model=ConfigResults, dependencies=[Depends(require_permission("config.view"))])
+async def export_config_results(district: list[str] = Query(..., min_length=1), db: AsyncSession = Depends(get_db)):
+    """What the model-backed scans have already extracted for the named
+    districts, to send along with their config as `results` on import
+    (services/config_results.py). Always scoped to named districts: this
+    environment's other data may be stale or test rows."""
+    return await export_results(db, district)
 
 
 @router.post("/import", response_model=ConfigImportResult, dependencies=[Depends(require_permission("config.manage"))])
@@ -378,6 +389,12 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             job.params, added, updated = merge_local_event_sources(job.params, lists)
             result["local_event_sources_added"] += added
             result["local_event_sources_updated"] += updated
+
+    if payload.results:
+        await db.flush()
+        result["results_applied"], result["results_skipped"] = await import_results(
+            db, payload.results, districts=district_by_name, schools=school_by_slug
+        )
 
     await db.commit()
     return ConfigImportResult(**result)
