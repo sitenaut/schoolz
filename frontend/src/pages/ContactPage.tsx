@@ -102,7 +102,7 @@ export function ContactPage() {
           icon={<IconNewsletter />}
         >
           <div className="link-grid">
-            <Link className="link-card" to="/contact/submit">
+            <Link className="link-card" to="/upload?kind=link">
               <span className="ico">
                 <IconLink />
               </span>
@@ -111,7 +111,7 @@ export function ContactPage() {
                 <small>A newsletter page, an online flier, a PDF</small>
               </span>
             </Link>
-            <Link className="link-card" to="/contact/submit?kind=file">
+            <Link className="link-card" to="/upload">
               <span className="ico">
                 <IconUpload />
               </span>

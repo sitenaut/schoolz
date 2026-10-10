@@ -178,7 +178,7 @@ TOPICS: dict[str, dict[str, str]] = {
         "summary": "Something's missing or wrong: sending a link or a correction",
         "text": (
             f"If you have a link with information schoolz is missing (a newsletter, handbook, flier, menu), "
-            f"submit it at {SITE}/contact/submit, or give it to this chat to submit for you. An admin reviews "
+            f"submit it at {SITE}/upload, or give it to this chat to submit for you. An admin reviews "
             f"everything before it goes live. For anything else, use {SITE}/contact. The **Survey** link "
             "at the bottom of every page is the best place for ideas about what to add."
         ),

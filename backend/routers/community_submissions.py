@@ -1,11 +1,14 @@
+import hashlib
+import logging
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
-from auth import require_permission
+from auth import get_effective_permissions, get_optional_user, is_api_key_request, require_permission
 from database import get_db
 from local_events import normalizer as local_normalizer
 from local_events.prune import COMMUNITY_SOURCE
@@ -17,18 +20,22 @@ from models import (
     LocalEvent,
     School,
     SchoolContentItem,
+    SubmissionAttempt,
     User,
 )
 from schemas import (
     CommunitySubmissionOut,
     CommunitySubmissionUpdate,
+    SubmissionAttemptOut,
     SubmissionItemIn,
     SubmissionItemOut,
     SubmissionPublishIn,
     SubmissionReviewOut,
 )
-from services import submission_review
+from services import submission_review, upload_guard
 from services.content_extractor import _DEFAULT_TZ, _parse_date
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/submissions", tags=["community-submissions"])
 
@@ -37,8 +44,31 @@ router = APIRouter(prefix="/submissions", tags=["community-submissions"])
 # directly, no object storage) can't be turned into a free file host.
 _MAX_FILE_BYTES = 15 * 1024 * 1024
 
+# Per sender address, counted over every attempt (refused ones too) in
+# submission_attempts - so it holds across machines and restarts, unlike an
+# in-memory window. A parent sends one flyer, maybe a handful after a
+# backpack clear-out; nobody sends ten an hour by hand.
+_MAX_ATTEMPTS_PER_HOUR = 10
+_MAX_ATTEMPTS_PER_DAY = 30
 
-async def _to_outs(db: AsyncSession, rows: list[CommunitySubmission]) -> list[CommunitySubmissionOut]:
+
+async def _attempt_outs(db: AsyncSession, attempts: list[SubmissionAttempt]) -> list[SubmissionAttemptOut]:
+    user_ids = {a.user_id for a in attempts if a.user_id}
+    emails: dict[str, str] = {}
+    if user_ids:
+        result = await db.execute(select(User.id, User.email).where(User.id.in_(user_ids)))
+        emails = dict(result.all())
+    outs = []
+    for a in attempts:
+        out = SubmissionAttemptOut.model_validate(a, from_attributes=True)
+        out.user_email = emails.get(a.user_id) if a.user_id else None
+        outs.append(out)
+    return outs
+
+
+async def _to_outs(
+    db: AsyncSession, rows: list[CommunitySubmission], with_source: bool = False
+) -> list[CommunitySubmissionOut]:
     school_ids = [r.school_id for r in rows if r.school_id]
     schools_by_id: dict[str, str] = {}
     if school_ids:
@@ -50,6 +80,14 @@ async def _to_outs(db: AsyncSession, rows: list[CommunitySubmission]) -> list[Co
     if district_ids:
         result = await db.execute(select(District.id, District.name).where(District.id.in_(district_ids)))
         districts_by_id = dict(result.all())
+
+    sources: dict[str, SubmissionAttemptOut] = {}
+    if with_source and rows:
+        result = await db.execute(
+            select(SubmissionAttempt).where(SubmissionAttempt.submission_id.in_([r.id for r in rows]))
+        )
+        for out in await _attempt_outs(db, list(result.scalars().all())):
+            sources[out.submission_id] = out
 
     return [
         CommunitySubmissionOut(
@@ -71,63 +109,168 @@ async def _to_outs(db: AsyncSession, rows: list[CommunitySubmission]) -> list[Co
             reviewed_at=r.reviewed_at,
             extracted_at=r.extracted_at,
             created_at=r.created_at,
+            source=sources.get(r.id),
         )
         for r in rows
     ]
 
 
+async def _refuse(db: AsyncSession, attempt: SubmissionAttempt, outcome: str, code: int, message: str, detail: str | None = None):
+    """Record a refused attempt, then answer with the error. The row is the
+    point: a refused upload is still someone trying."""
+    attempt.outcome = outcome
+    attempt.detail = (detail or message)[:300]
+    db.add(attempt)
+    await db.commit()
+    logger.warning("submission refused: %s ip=%s detail=%s", outcome, attempt.ip, attempt.detail)
+    raise HTTPException(code, message)
+
+
 @router.post("", response_model=CommunitySubmissionOut, status_code=status.HTTP_201_CREATED)
 async def create_submission(
+    request: Request,
     url: str | None = Form(default=None),
     description: str | None = Form(default=None),
     submitter_name: str | None = Form(default=None),
     submitter_email: str | None = Form(default=None),
     school_id: str | None = Form(default=None),
     district_id: str | None = Form(default=None),
+    # Honeypot: a field no person can see or reach.
+    website: str | None = Form(default=None),
+    bot_token: str | None = Form(default=None),
     file: UploadFile | None = File(default=None),
+    user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     # No login required by design - the whole point is letting the
     # community contribute without becoming an admin. That means no
     # per-user ownership to lean on for trust, so everything lands as
-    # "pending" for a human to look at before it touches anything public.
+    # "pending" for a human to look at before it touches anything public,
+    # and every attempt is recorded with where it came from.
     url = url.strip() if url else None
+    name = (submitter_name or "").strip()[:200] or None
+    email = (submitter_email or "").strip()[:255] or None
+
+    attempt = SubmissionAttempt(
+        outcome="accepted",
+        user_id=user.id if user else None,
+        submitter_name=name,
+        submitter_email=email,
+        kind="file" if file else "link" if url else None,
+        url=url[:1000] if url else None,
+        **upload_guard.request_source(request),
+    )
+    data: bytes | None = None
+    if file:
+        attempt.file_name = upload_guard.safe_file_name(file.filename)
+        attempt.file_declared_type = (file.content_type or "")[:100] or None
+        attempt.file_size = file.size
+        # Hashed even when the attempt goes on to be refused, so a file that
+        # keeps being tried is recognisable. Anything over the cap is never
+        # read into memory at all.
+        if file.size is None or file.size <= _MAX_FILE_BYTES:
+            data = await file.read()
+            attempt.file_size = len(data)
+            attempt.file_sha256 = hashlib.sha256(data).hexdigest()
+            attempt.file_detected_type = upload_guard.sniff_file_type(data)
+
+    # Someone who may manage submissions adding one from the admin inbox is
+    # already identified by their login, so the challenge and the rate limit
+    # (which exist for strangers) don't apply. Still recorded, still sniffed.
+    staff = bool(user) and (
+        (user.is_admin and not is_api_key_request(request))
+        or "submissions.manage" in await get_effective_permissions(request, db, user)
+    )
+
+    if website:
+        await _refuse(db, attempt, "honeypot", status.HTTP_400_BAD_REQUEST, "Could not submit this - please try again")
+
+    if attempt.ip and not staff:
+        now = datetime.now(timezone.utc)
+        recent = SubmissionAttempt.created_at > now - timedelta(days=1)
+        result = await db.execute(
+            select(
+                func.count(),
+                func.count().filter(SubmissionAttempt.created_at > now - timedelta(hours=1)),
+            )
+            .select_from(SubmissionAttempt)
+            .where(SubmissionAttempt.ip == attempt.ip, recent)
+        )
+        in_day, in_hour = result.one()
+        if in_hour >= _MAX_ATTEMPTS_PER_HOUR or in_day >= _MAX_ATTEMPTS_PER_DAY:
+            await _refuse(
+                db, attempt, "rate_limited", status.HTTP_429_TOO_MANY_REQUESTS,
+                "Too many uploads from this connection - please try again later.",
+            )
+
+    # Files only. A link puts nothing on this server, and the chatbot's
+    # submit tool (mcp_server.py) posts links here in-process with no browser
+    # to solve a challenge; links still get the rate limit and the record.
+    if file and staff:
+        attempt.bot_check = {"skipped": "staff"}
+    elif file:
+        try:
+            passed, attempt.bot_check = await upload_guard.verify_bot_check(bot_token, attempt.ip)
+        except upload_guard.BotCheckUnavailable as exc:
+            await _refuse(
+                db, attempt, "bot_check_unavailable", status.HTTP_503_SERVICE_UNAVAILABLE,
+                "Uploads are unavailable right now - please try again in a few minutes.", str(exc),
+            )
+        if not passed:
+            await _refuse(
+                db, attempt, "bot_check_failed", status.HTTP_400_BAD_REQUEST,
+                "We couldn't confirm you're a person - please reload the page and try again.",
+            )
+
     if not url and not file:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Provide either a link or a file")
+        await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "Provide either a link or a file")
     if url and file:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Provide either a link or a file, not both")
+        await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "Provide either a link or a file, not both")
+    # The reviewer clicks this link, so nothing but a web address is kept.
+    if url and not url.lower().startswith(("http://", "https://")):
+        await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "The link must start with http:// or https://")
+    if url and len(url) > 1000:
+        await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "That link is too long")
 
     if school_id:
         exists = (await db.execute(select(School.id).where(School.id == school_id))).scalar_one_or_none()
         if not exists:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown school_id")
+            await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "Unknown school_id")
     if district_id:
         exists = (await db.execute(select(District.id).where(District.id == district_id))).scalar_one_or_none()
         if not exists:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown district_id")
+            await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "Unknown district_id")
 
     submission = CommunitySubmission(
         kind="file" if file else "link",
         url=url,
         description=(description or "").strip()[:2000] or None,
-        submitter_name=(submitter_name or "").strip()[:200] or None,
-        submitter_email=(submitter_email or "").strip()[:255] or None,
+        submitter_name=name,
+        submitter_email=email,
         school_id=school_id or None,
         district_id=district_id or None,
     )
 
     if file:
-        data = await file.read()
-        if len(data) > _MAX_FILE_BYTES:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "File is too large (15MB max)")
+        if data is None:
+            await _refuse(db, attempt, "too_large", status.HTTP_400_BAD_REQUEST, "File is too large (15MB max)")
         if not data:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Uploaded file is empty")
+            await _refuse(db, attempt, "invalid", status.HTTP_400_BAD_REQUEST, "Uploaded file is empty")
+        if not attempt.file_detected_type:
+            await _refuse(
+                db, attempt, "bad_file_type", status.HTTP_400_BAD_REQUEST,
+                "That file isn't a photo or PDF - please send a JPG, PNG or PDF.",
+            )
         submission.file_data = data
-        submission.file_name = (file.filename or "upload")[:255]
-        submission.file_content_type = file.content_type or "application/octet-stream"
+        submission.file_name = attempt.file_name
+        # What the bytes are, never what the sender called them.
+        submission.file_content_type = attempt.file_detected_type
         submission.file_size = len(data)
 
     db.add(submission)
+    await db.flush()
+    attempt.submission_id = submission.id
+    db.add(attempt)
     await db.commit()
     await db.refresh(submission)
     return (await _to_outs(db, [submission]))[0]
@@ -146,7 +289,21 @@ async def list_submissions(
     if status_filter:
         query = query.where(CommunitySubmission.status == status_filter)
     rows = (await db.execute(query)).scalars().all()
-    return await _to_outs(db, list(rows))
+    return await _to_outs(db, list(rows), with_source=True)
+
+
+@router.get("/attempts", response_model=list[SubmissionAttemptOut])
+async def list_attempts(
+    limit: int = 200,
+    user: User = Depends(require_permission("submissions.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every recent attempt, newest first - including refused ones and ones
+    whose submission has since been deleted."""
+    result = await db.execute(
+        select(SubmissionAttempt).order_by(SubmissionAttempt.created_at.desc()).limit(max(1, min(limit, 1000)))
+    )
+    return await _attempt_outs(db, list(result.scalars().all()))
 
 
 @router.get("/{submission_id}/file")
@@ -161,7 +318,12 @@ async def download_file(
     return Response(
         content=submission.file_data,
         media_type=submission.file_content_type or "application/octet-stream",
-        headers={"Content-Disposition": f'inline; filename="{submission.file_name or "upload"}"'},
+        headers={
+            # RFC 5987 form: a flyer named in Korean or Spanish can't go in a
+            # plain quoted header value.
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(submission.file_name or 'upload')}",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 
@@ -193,7 +355,7 @@ async def update_submission(
 
     await db.commit()
     await db.refresh(submission)
-    return (await _to_outs(db, [submission]))[0]
+    return (await _to_outs(db, [submission], with_source=True))[0]
 
 
 @router.delete("/{submission_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -310,7 +472,7 @@ async def _review(db: AsyncSession, submission: CommunitySubmission) -> Submissi
     existing_local = await _existing_local(db, drafts)
     today = submission_review.today_local()
     return SubmissionReviewOut(
-        submission=(await _to_outs(db, [submission]))[0],
+        submission=(await _to_outs(db, [submission], with_source=True))[0],
         items=[
             SubmissionItemOut(
                 id=d.id,

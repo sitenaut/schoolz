@@ -257,6 +257,25 @@ scripts/alembic_env.sh local revision --autogenerate -m "..."
 scripts/alembic_env.sh prod upgrade head
 ```
 
+## Upload bot check (Cloudflare Turnstile)
+
+`/upload` is the one place a stranger can put a file on the server, so a file
+upload must pass a Turnstile challenge. A widget has two halves, both from the
+Cloudflare dashboard (Turnstile → Add widget, hostname = the public site):
+
+- **Site key** — public. `VITE_TURNSTILE_SITE_KEY` in `frontend/fly.toml`
+  `[build.args]`; locally `TURNSTILE_SITE_KEY` (compose passes it to the build).
+- **Secret key** — `TURNSTILE_SECRET_KEY` on `schoolz-api` (a Fly secret, value
+  in the `schoolz-prod` vault).
+
+With no secret the backend **skips the check locally and refuses file uploads
+in prod** (`APP_ENV=prod` → 503), so a lost secret can never silently turn the
+protection off — and both halves must be set before a prod deploy of this
+feature, or uploads stop working. Link submissions are not challenged (the
+chatbot's submit tool posts them with no browser). To exercise the real widget
+locally, use Cloudflare's published always-pass test pair: site key
+`1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`.
+
 ## Google Analytics (GA4)
 
 The only value is the **Measurement ID** (`G-XXXXXXXXXX`), which is public: set

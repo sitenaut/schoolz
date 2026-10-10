@@ -313,7 +313,9 @@ async def run_now(job_id: str, db: AsyncSession = Depends(get_db)):
     if job.kind not in registry:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Job kind {job.kind} is not registered in this process")
 
-    from scheduler.runner import run_job_now
+    from scheduler.runner import has_live_run, run_job_now
 
+    if await has_live_run(db, job.id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This job is already running")
     run_job_now(job.id)
     return {"status": "started"}

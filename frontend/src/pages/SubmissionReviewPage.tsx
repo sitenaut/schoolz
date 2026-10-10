@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Badge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -26,6 +26,7 @@ import {
   unpublishItem,
   updateItem,
   updateSubmission,
+  type SubmissionAttempt,
   type SubmissionItem,
   type SubmissionReview,
   type TargetOption,
@@ -363,7 +364,7 @@ export function SubmissionReviewPage() {
         subtitle={
           <>
             <Badge tone={statusTone(submission.status)}>{submission.status}</Badge>{" "}
-            {submission.submitter_name || submission.submitter_email || "Anonymous"} · {fmtDateTime(submission.created_at)}
+            {submission.submitter_name || submission.submitter_email || submission.source?.user_email || "Anonymous"} · {fmtDateTime(submission.created_at)}
           </>
         }
         actions={
@@ -404,6 +405,8 @@ export function SubmissionReviewPage() {
               </div>
             )}
           </SectionCard>
+
+          <SubmissionOrigin source={submission.source ?? null} />
 
           <SectionCard title="Filing">
             <Field label="School" hint="School and district items land on this school's page and calendar. Local events don't need one.">
@@ -642,5 +645,46 @@ export function SubmissionReviewPage() {
         onCancel={() => setConfirmDelete(false)}
       />
     </div>
+  );
+}
+
+/** Where a submission came from, as recorded when it arrived. The same
+ * record stays in the upload log after the submission is deleted. */
+function SubmissionOrigin({ source }: { source: SubmissionAttempt | null }) {
+  if (!source) {
+    return (
+      <SectionCard title="Sent from">
+        <p className="note">Nothing was recorded - this arrived before uploads were tracked.</p>
+      </SectionCard>
+    );
+  }
+  const check = source.bot_check;
+  const botCheck = !check ? "Not required (link)" : check.skipped === "staff" ? "Not needed (added by a signed-in admin)" : check.skipped ? "Skipped (no key configured)" : check.success ? "Passed" : "Failed";
+  const rows: [string, ReactNode][] = [
+    ["IP address", source.ip ? <code>{source.ip}</code> : "unknown"],
+    ["Forwarded for", source.forwarded_for && source.forwarded_for !== source.ip ? <code>{source.forwarded_for}</code> : null],
+    ["Signed in as", source.user_email],
+    ["Browser", source.user_agent],
+    ["Language", source.accept_language],
+    ["Sent from page", source.referer || source.origin],
+    ["Edge region", source.edge_region],
+    ["Bot check", botCheck],
+    ["File type", source.file_detected_type && `${source.file_detected_type}${source.file_declared_type && source.file_declared_type !== source.file_detected_type ? ` (sent as ${source.file_declared_type})` : ""}`],
+    ["SHA-256", source.file_sha256 ? <code>{source.file_sha256}</code> : null],
+    ["Received", fmtDateTime(source.created_at)],
+  ];
+  return (
+    <SectionCard title="Sent from" description="Recorded when it arrived. Kept in the upload log even if this submission is deleted.">
+      <dl className="sr-origin">
+        {rows
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div key={label} style={{ display: "contents" }}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+      </dl>
+    </SectionCard>
   );
 }

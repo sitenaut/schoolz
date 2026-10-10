@@ -226,8 +226,10 @@ async def run_now(newsletter_id: str, user: User = Depends(require_permission("n
     if not newsletter.scheduled_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Newsletter has no linked scheduled job")
 
-    from scheduler.runner import run_job_now
+    from scheduler.runner import has_live_run, run_job_now
 
+    if await has_live_run(db, newsletter.scheduled_job_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This scan is already running")
     run_job_now(newsletter.scheduled_job_id)
     return {"status": "started"}
 
