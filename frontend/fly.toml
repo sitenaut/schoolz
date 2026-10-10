@@ -15,6 +15,10 @@ primary_region = "ewr"
     # GA4 Measurement ID (G-XXXXXXXXXX) - public, not a secret. Empty = off.
     VITE_GA_MEASUREMENT_ID = "G-6R2R3K4B9N"
     VITE_PUBLIC_WEB_URL = "https://schoolz.sitenaut.com"
+    # Cloudflare Turnstile site key for the /upload bot check - public, not a
+    # secret (its secret half is TURNSTILE_SECRET_KEY on schoolz-api). Without
+    # both, file uploads are refused in prod. See docs/ENV_SETUP.md.
+    VITE_TURNSTILE_SITE_KEY = "0x4AAAAAAFTY6sTDGJ1huTTx"
 
 [env]
   # nginx.conf.template proxies crawler user agents here instead of

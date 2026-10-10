@@ -103,3 +103,42 @@ async def test_zero_blocks_is_a_warning_not_a_silent_success(monkeypatch):
         # last_scanned_at still advances - this isn't "we didn't check",
         # it's "we checked and found the link is dead".
         assert newsletter.last_scanned_at is not None
+
+
+@pytest.mark.anyio
+async def test_losing_a_race_to_a_concurrent_run_does_not_fail_the_scan(monkeypatch):
+    """Regression: a newsletter created with "Run once" scans immediately, and
+    a Run click moments later started a second scan of the same page. Both
+    read "no blocks stored yet", both inserted the same hashes, and the loser
+    died on uq_smore_block_newsletter_hash. Simulated by making the existing-
+    hash read come back empty although the rows are already stored."""
+    blocks = [_block(0, "hash-r1", "Alpha"), _block(1, "hash-r2", "Beta")]
+
+    async def _parse(url: str) -> list[dict]:
+        return blocks
+
+    extracted: list[int] = []
+
+    async def _extract(db, newsletter, new_blocks):
+        extracted.append(len(new_blocks))
+        return "ok"
+
+    monkeypatch.setattr(smore_scan, "fetch_and_parse", _parse)
+    monkeypatch.setattr(smore_scan, "extract_from_newsletter", _extract)
+
+    newsletter = SmoreNewsletter(url=f"https://app.smore.com/n/{uuid.uuid4().hex[:8]}")
+    async with database.SessionLocal() as db:
+        db.add(newsletter)
+        await db.commit()
+        await db.refresh(newsletter)
+
+        first = await smore_scan.run(db, {"newsletter_id": newsletter.id})
+        assert "2 new" in first
+
+        # The second run's hash read predates the first run's commit.
+        monkeypatch.setattr(smore_scan, "select_unseen_blocks", lambda blocks, existing: list(blocks))
+        second = await smore_scan.run(db, {"newsletter_id": newsletter.id})
+
+        assert "0 new" in second
+        # Only the run that inserted the rows extracts them.
+        assert extracted == [2]

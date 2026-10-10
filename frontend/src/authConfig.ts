@@ -12,3 +12,7 @@ export const FARO_URL = import.meta.env.VITE_FARO_URL ?? "";
 // GA4 Measurement ID (G-XXXXXXXXXX) - public by design, ships in the bundle.
 // Empty (local, vitest) means analytics is off entirely - src/lib/analytics.ts.
 export const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID ?? "";
+// Cloudflare Turnstile site key for the upload form's bot check - public by
+// design. Empty (local, vitest) means no widget; the backend then skips the
+// check locally and refuses uploads in prod (services/upload_guard.py).
+export const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "";

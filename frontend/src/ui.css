@@ -1119,6 +1119,63 @@ button.link-card:disabled {
   cursor: pointer;
   text-align: left;
 }
+/* The homepage's way into /upload. A link-card like its neighbours, but
+   outlined in the primary colour: it is the one thing on Today that asks the
+   visitor for something, and it must not read as another reference link. */
+.link-card.upload-cta {
+  margin-top: 10px;
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.link-card.upload-cta .ico {
+  background: var(--primary);
+  color: #fff;
+}
+.link-card.upload-cta small {
+  color: var(--ink-2, var(--ink));
+}
+.upload-pick {
+  width: 100%;
+  padding: 18px 12px;
+  border: 2px dashed var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.upload-more {
+  margin: 4px 0 12px;
+}
+.upload-more summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+.bot-check {
+  margin: 4px 0 8px;
+  min-height: 65px;
+}
+.upload-notice {
+  margin-top: 14px;
+  font-size: 12px;
+}
+/* Who sent a submission (admin). Addresses and hashes wrap anywhere. */
+.sr-origin {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.sr-origin dt {
+  color: var(--ink-3);
+}
+.sr-origin dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.sr-origin code {
+  font-size: 12px;
+}
 .link-card .ico {
   width: 34px;
   height: 34px;

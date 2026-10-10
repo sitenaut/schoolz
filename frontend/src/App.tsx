@@ -49,7 +49,7 @@ import { ChCommsPage } from "./pages/ChCommsPage";
 import { SurveyPage } from "./pages/SurveyPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { SubmissionReviewPage } from "./pages/SubmissionReviewPage";
-import { SubmitSourcePage } from "./pages/SubmitSourcePage";
+import { UploadPage } from "./pages/UploadPage";
 import { InboxPage } from "./pages/InboxPage";
 import { AccountLayout } from "./pages/account/AccountLayout";
 import { ProfileSection } from "./pages/account/ProfileSection";
@@ -179,7 +179,8 @@ function Routed() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/backpack-capture/privacy" element={<BackpackCapturePrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/contact/submit" element={<SubmitSourcePage />} />
+        <Route path="/upload" element={<UploadPage />} />
+        <Route path="/contact/submit" element={<LegacySubmitRedirect />} />
         <Route path="/chcomms" element={<ChCommsPage />} />
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
@@ -220,6 +221,14 @@ function Routed() {
       </Route>
     </FaroRoutes>
   );
+}
+
+// /contact/submit was the upload form's old home, where a link was the
+// default; /upload leads with the file.
+function LegacySubmitRedirect() {
+  const { search } = useLocation();
+  const wantsFile = new URLSearchParams(search).get("kind") === "file";
+  return <Navigate to={wantsFile ? "/upload" : "/upload?kind=link"} replace />;
 }
 
 export default function App() {

@@ -155,6 +155,22 @@ export function PrivacyPage() {
             </td>
           </tr>
           <tr>
+            <td>
+              Where an upload came from: your IP address, which browser sent it, the page it was sent from, the date
+              and time, and a fingerprint (hash) of the file
+            </td>
+            <td>Our database</td>
+            <td>
+              Only if you use the <a href="/upload">upload form</a>, and unlike the survey this is your{" "}
+              <strong>real IP address</strong>. It's the one place a stranger can put a file on this site, so we keep
+              a record of who sent what to protect the families who use it. The record is kept even if the upload is
+              deleted or refused, is seen only by the people who run schoolz, and is handed to law enforcement or
+              the National Center for Missing &amp; Exploited Children if someone uploads illegal content. It isn't
+              used for advertising or to track you around the site. That form also runs Cloudflare Turnstile, a check
+              that you're a person, which is loaded from Cloudflare only on that page.
+            </td>
+          </tr>
+          <tr>
             <td>Gmail read-only access token (only if you choose to connect Gmail)</td>
             <td>Our database, encrypted at rest</td>
             <td>

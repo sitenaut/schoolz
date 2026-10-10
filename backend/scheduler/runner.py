@@ -4,11 +4,11 @@ import logging
 import os
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from croniter import croniter
 from opentelemetry import trace
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from zoneinfo import ZoneInfo
 
@@ -23,6 +23,10 @@ _tracer = trace.get_tracer("schoolz.scheduler")
 logger = logging.getLogger(__name__)
 
 _ADVISORY_LOCK_NAMESPACE = 42
+
+# Same cutoff as entrypoint.STUCK_RUN_THRESHOLD_MINUTES (not imported: that
+# module imports this one).
+STUCK_RUN_THRESHOLD_MINUTES = 45
 
 # Every job that fires opens its own DB session (below, plus another one
 # in _finalize) - with dozens of independent cron jobs able to land in the
@@ -43,17 +47,35 @@ def _get_concurrency_limit() -> asyncio.Semaphore:
     return _concurrency_limit
 
 
-async def _try_advisory_lock(db: AsyncSession, job_id_int: int) -> bool:
-    result = await db.execute(
-        text("SELECT pg_try_advisory_lock(:ns, :job_id)"), {"ns": _ADVISORY_LOCK_NAMESPACE, "job_id": job_id_int}
+async def has_live_run(db: AsyncSession, job_id: str) -> bool:
+    """A `running` row not yet old enough for the reaper. Run-now endpoints use
+    it to answer "already running" instead of queueing a run that would only be
+    recorded as skipped."""
+    live = await db.execute(
+        select(JobRun.id)
+        .where(
+            JobRun.job_id == job_id,
+            JobRun.status == "running",
+            func.coalesce(JobRun.last_progress_at, JobRun.started_at) > func.now() - timedelta(minutes=STUCK_RUN_THRESHOLD_MINUTES),
+        )
+        .limit(1)
     )
-    return bool(result.scalar())
+    return live.first() is not None
 
 
-async def _release_advisory_lock(db: AsyncSession, job_id_int: int) -> None:
-    await db.execute(
-        text("SELECT pg_advisory_unlock(:ns, :job_id)"), {"ns": _ADVISORY_LOCK_NAMESPACE, "job_id": job_id_int}
-    )
+async def _already_running(db: AsyncSession, job_id: str, lock_key: int) -> bool:
+    """True if another run of this job is live; call inside the transaction
+    that will insert this run's own `running` row.
+
+    Serialises on a *transaction*-level advisory lock, so the check and the
+    insert it guards can't interleave. The old session-level lock was tied to
+    one connection, but the session commits (returning that connection to the
+    pool) before the handler runs, and prod's pooler hands each transaction to
+    any backend - so a second run of the same job never saw it held (a
+    create-then-Run click ran one Smore scan twice and the loser hit a unique
+    violation). A run counts as live until the reaper would reap it."""
+    await db.execute(text("SELECT pg_advisory_xact_lock(:ns, :job_id)"), {"ns": _ADVISORY_LOCK_NAMESPACE, "job_id": lock_key})
+    return await has_live_run(db, job_id)
 
 
 def _lock_key(job_id: str) -> int:
@@ -129,13 +151,6 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
     lock_key = _lock_key(job_id)
 
     async with SessionLocal() as db:
-        locked = await _try_advisory_lock(db, lock_key)
-        if not locked:
-            run = JobRun(job_id=job_id, status="skipped", triggered_by=triggered_by, finished_at=datetime.now(timezone.utc))
-            db.add(run)
-            await db.commit()
-            return
-
         try:
             job = (await db.execute(select(ScheduledJob).where(ScheduledJob.id == job_id))).scalar_one_or_none()
             if not job:
@@ -171,6 +186,18 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                 observability.job_runs_total.add(1, {"job.kind": job.kind, "status": "error", "triggered_by": triggered_by})
                 return
 
+            if await _already_running(db, job_id, lock_key):
+                db.add(
+                    JobRun(
+                        job_id=job_id,
+                        status="skipped",
+                        triggered_by=triggered_by,
+                        finished_at=datetime.now(timezone.utc),
+                        log_excerpt="another run of this job is already in progress",
+                    )
+                )
+                await db.commit()
+                return
             run = JobRun(job_id=job_id, status="running", triggered_by=triggered_by, machine_id=os.getenv("FLY_MACHINE_ID"))
             db.add(run)
             job.last_status = "running"
@@ -273,7 +300,6 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                     exc_info=caught_exc,
                 )
         finally:
-            await _release_advisory_lock(db, lock_key)
             await db.commit()
 
 

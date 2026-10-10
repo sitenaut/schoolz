@@ -220,3 +220,37 @@ async def test_job_out_includes_the_url_it_fetches():
         mine = [j for j in jobs if j["params"].get("school_id") == school.json()["id"]]
         assert mine, "setting website_url should have auto-created the documents scan"
         assert {"label": "School website", "value": "https://sources.example"} in mine[0]["sources"]
+
+
+@pytest.mark.anyio
+async def test_run_now_refuses_a_job_that_is_already_running():
+    """A Run click while a scan is in flight (e.g. right after creating a
+    "Run once" newsletter, which scans immediately) says so, instead of
+    queueing a second run."""
+    from models import JobRun
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _register(client, "admin", admin=True)
+        school = await client.post("/schools", json={"name": f"Test Elementary {uuid.uuid4().hex[:6]}"}, headers=admin)
+        created = await client.post(
+            "/scheduled-jobs",
+            json={
+                "kind": "school_info.scan",
+                "name": "Busy scan",
+                "cron_expr": "0 6 * * *",
+                "timezone": "America/New_York",
+                "params": {"school_id": school.json()["id"]},
+                "enabled": False,
+            },
+            headers=admin,
+        )
+        job_id = created.json()["id"]
+        async with database.SessionLocal() as db:
+            db.add(JobRun(job_id=job_id, status="running", triggered_by="manual"))
+            await db.commit()
+
+        res = await client.post(f"/scheduled-jobs/{job_id}/run-now", headers=admin)
+
+        assert res.status_code == 409
+        assert "already running" in res.text

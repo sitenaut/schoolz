@@ -50,7 +50,7 @@ async function refreshCachedToken(): Promise<string | null> {
   }
 }
 
-async function authHeader(): Promise<Record<string, string>> {
+export async function authHeader(): Promise<Record<string, string>> {
   if (IS_SUPABASE_AUTH && supabase) {
     const token = cachedAccessToken === undefined ? await refreshCachedToken() : cachedAccessToken;
     return token ? { Authorization: `Bearer ${token}` } : {};

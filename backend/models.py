@@ -1328,6 +1328,56 @@ class CommunitySubmission(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class SubmissionAttempt(Base):
+    """Who sent each POST /submissions, accepted or not.
+
+    The upload form is the one place a stranger can put a file on this
+    server, so unlike the survey (which keeps only a scrambled address) this
+    keeps the real IP: if someone uploads something illegal, the record has
+    to be usable in a report. It is its own table rather than columns on
+    CommunitySubmission so that deleting the submission - which is exactly
+    what happens to a bad upload - leaves the trail, and so refused attempts
+    (failed bot check, rate limited, not an image/PDF) are kept too. The
+    same rows are what the per-IP rate limit counts.
+    """
+
+    __tablename__ = "submission_attempts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    submission_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("community_submissions.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # "accepted" | "honeypot" | "rate_limited" | "bot_check_failed" |
+    # "bot_check_unavailable" | "invalid" | "too_large" | "bad_file_type"
+    outcome: Mapped[str] = mapped_column(String(30), nullable=False)
+    detail: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    ip: Mapped[str | None] = mapped_column(String(45), nullable=True, index=True)
+    # The whole X-Forwarded-For chain as received: `ip` is the hop the edge
+    # vouches for, the rest is whatever the client claimed before it.
+    forwarded_for: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    accept_language: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    referer: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    origin: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    edge_region: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Set when the sender happened to be signed in.
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Copies, so they outlive the submission row.
+    submitter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    submitter_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # What the browser said the file was, and what its bytes say it is.
+    file_declared_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_detected_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    file_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # The bot check's own answer (hostname, challenge time, error codes).
+    bot_check: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+
+
 class CommunitySubmissionItem(Base):
     """One calendar item proposed from a submission, held as a draft until a
     reviewer publishes it (routers/community_submissions.py).

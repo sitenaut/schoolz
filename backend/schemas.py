@@ -1254,6 +1254,33 @@ class ConfigImportResult(BaseModel):
     results_skipped: list[str] = []
 
 
+class SubmissionAttemptOut(BaseModel):
+    id: str
+    submission_id: str | None
+    outcome: str
+    detail: str | None
+    ip: str | None
+    forwarded_for: str | None
+    user_agent: str | None
+    accept_language: str | None
+    referer: str | None
+    origin: str | None
+    edge_region: str | None
+    user_id: str | None
+    user_email: str | None = None
+    submitter_name: str | None
+    submitter_email: str | None
+    kind: str | None
+    url: str | None
+    file_name: str | None
+    file_declared_type: str | None
+    file_detected_type: str | None
+    file_size: int | None
+    file_sha256: str | None
+    bot_check: dict | None
+    created_at: datetime
+
+
 class CommunitySubmissionOut(BaseModel):
     id: str
     kind: str
@@ -1273,6 +1300,8 @@ class CommunitySubmissionOut(BaseModel):
     reviewed_at: datetime | None
     extracted_at: datetime | None = None
     created_at: datetime
+    # Who sent it. Admin responses only - never echoed back to the sender.
+    source: SubmissionAttemptOut | None = None
 
 
 class CommunitySubmissionUpdate(BaseModel):

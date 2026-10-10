@@ -1,5 +1,5 @@
 import { API_URL } from "../../authConfig";
-import { apiFetch, downloadFile } from "../../api";
+import { apiFetch, authHeader, downloadFile } from "../../api";
 
 export type CommunitySubmission = {
   id: string;
@@ -19,6 +19,37 @@ export type CommunitySubmission = {
   admin_notes: string | null;
   reviewed_at: string | null;
   extracted_at: string | null;
+  created_at: string;
+  // Who sent it - admin responses only.
+  source?: SubmissionAttempt | null;
+};
+
+/** One POST /submissions, accepted or refused, and where it came from. Kept
+ * after its submission is deleted (submission_id goes null). */
+export type SubmissionAttempt = {
+  id: string;
+  submission_id: string | null;
+  outcome: string;
+  detail: string | null;
+  ip: string | null;
+  forwarded_for: string | null;
+  user_agent: string | null;
+  accept_language: string | null;
+  referer: string | null;
+  origin: string | null;
+  edge_region: string | null;
+  user_id: string | null;
+  user_email: string | null;
+  submitter_name: string | null;
+  submitter_email: string | null;
+  kind: string | null;
+  url: string | null;
+  file_name: string | null;
+  file_declared_type: string | null;
+  file_detected_type: string | null;
+  file_size: number | null;
+  file_sha256: string | null;
+  bot_check: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -91,6 +122,9 @@ export type SubmissionInput = {
   submitter_email?: string;
   school_id?: string;
   district_id?: string;
+  bot_token?: string;
+  // Honeypot - only a bot fills it.
+  website?: string;
 };
 
 // No auth on this one by design - the whole point is letting anyone
@@ -106,9 +140,19 @@ export async function submitContent(input: SubmissionInput): Promise<CommunitySu
   if (input.submitter_email) form.set("submitter_email", input.submitter_email);
   if (input.school_id) form.set("school_id", input.school_id);
   if (input.district_id) form.set("district_id", input.district_id);
+  if (input.bot_token) form.set("bot_token", input.bot_token);
+  if (input.website) form.set("website", input.website);
 
-  const res = await fetch(`${API_URL}/submissions`, { method: "POST", body: form });
+  // The token is optional and only adds "who" to the upload's source record
+  // when the sender happens to be signed in.
+  const res = await fetch(`${API_URL}/submissions`, { method: "POST", body: form, headers: await authHeader() });
   if (!res.ok) return fail(res, "Could not submit this - please try again");
+  return res.json();
+}
+
+export async function listAttempts(): Promise<SubmissionAttempt[]> {
+  const res = await apiFetch("/submissions/attempts");
+  if (!res.ok) return fail(res, "Could not load the upload log");
   return res.json();
 }
 

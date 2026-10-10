@@ -66,6 +66,9 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Bot check on file uploads (services/upload_guard.py). Unset = skipped
+      # locally; prod refuses uploads without it.
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       # The chatbot's own keys (services/chat_providers.py) - listed here
       # because only variables named in this block reach the container.
       CHATBOT_ANTHROPIC_API_KEY: ${CHATBOT_ANTHROPIC_API_KEY:-}
@@ -137,6 +140,7 @@ services:
         VITE_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
         VITE_APP_VERSION: local
         VITE_PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:5173}
+        VITE_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
     environment:
       # Lets nginx proxy crawler user-agents straight to the backend's
       # /prerender endpoint instead of the SPA shell - see

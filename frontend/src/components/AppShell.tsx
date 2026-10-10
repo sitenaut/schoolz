@@ -45,12 +45,12 @@ function routeTemplate(pathname: string): string {
 
 // The ribbon's school filter has no meaning on the centrally-managed admin
 // pages (they aren't scoped to "my schools" at all), nor on the contact
-// form, the survey, or the /chcomms write-up (none are school-specific) -
+// form, the upload form, the survey, or the /chcomms write-up (none are school-specific) -
 // hidden there rather than just visually unused clutter.
 // /directory is school-scoped, but through its own in-page school picker
 // (it searches the whole district by default, which the ribbon filter
 // would silently contradict).
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/survey", "/chcomms", "/kids", "/directory", "/local"];
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/upload", "/survey", "/chcomms", "/kids", "/directory", "/local"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 
@@ -368,6 +368,7 @@ export function AppShell() {
         <Outlet />
         <footer className="shell-footer">
           <Link to="/chcomms">{t("About")}</Link>
+          <Link to="/upload">{t("Upload a flyer")}</Link>
           <Link to="/survey">{t("Survey")}</Link>
           <Link to="/contact">{t("Contact")}</Link>
           <Link to="/privacy">{t("Privacy & cookies")}</Link>

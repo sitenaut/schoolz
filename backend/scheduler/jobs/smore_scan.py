@@ -1,6 +1,8 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import SmoreBlock, SmoreNewsletter
@@ -89,21 +91,46 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         ).all()
     }
 
+    # ON CONFLICT DO NOTHING: select_unseen_blocks covers what we already
+    # stored, but a concurrent run of this same scan can insert the same
+    # hashes between that read and this write. Losing that race must not fail
+    # the scan - and only rows this run actually inserted go on to extraction,
+    # so the winner alone extracts them.
+    unseen = select_unseen_blocks(blocks, existing_hashes)
     new_blocks: list[SmoreBlock] = []
-    for block in select_unseen_blocks(blocks, existing_hashes):
-        row = SmoreBlock(
-            newsletter_id=newsletter.id,
-            position=block["position"],
-            block_type=block["block_type"],
-            text_content=block["text_content"],
-            image_url=block["image_url"],
-            link_url=block["link_url"],
-            content_hash=block["content_hash"],
-            pending_vision_extraction=(block["block_type"] == "image"),
-        )
-        db.add(row)
-        new_blocks.append(row)
-    await db.flush()
+    if unseen:
+        inserted_ids = (
+            await db.execute(
+                pg_insert(SmoreBlock)
+                .values(
+                    [
+                        {
+                            "id": str(uuid.uuid4()),
+                            "newsletter_id": newsletter.id,
+                            "position": block["position"],
+                            "block_type": block["block_type"],
+                            "text_content": block["text_content"],
+                            "image_url": block["image_url"],
+                            "link_url": block["link_url"],
+                            "content_hash": block["content_hash"],
+                            "pending_vision_extraction": block["block_type"] == "image",
+                            "first_seen_at": datetime.now(timezone.utc),
+                        }
+                        for block in unseen
+                    ]
+                )
+                .on_conflict_do_nothing(constraint="uq_smore_block_newsletter_hash")
+                .returning(SmoreBlock.id)
+            )
+        ).scalars().all()
+        if inserted_ids:
+            new_blocks = list(
+                (
+                    await db.execute(
+                        select(SmoreBlock).where(SmoreBlock.id.in_(inserted_ids)).order_by(SmoreBlock.position)
+                    )
+                ).scalars()
+            )
 
     newsletter.last_scanned_at = datetime.now(timezone.utc)
     summary = f"fetched {len(blocks)} block(s), {len(new_blocks)} new"

@@ -18,6 +18,9 @@ ARG VITE_GA_MEASUREMENT_ID=
 # correct when the backend's prerender service renders a page via an
 # internal-only URL (see nginx.conf.template + backend/services/prerender.py).
 ARG VITE_PUBLIC_WEB_URL=http://localhost:5173
+# Cloudflare Turnstile site key for the /upload bot check (public). Empty =
+# no widget (src/components/BotCheck.tsx).
+ARG VITE_TURNSTILE_SITE_KEY=
 ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
     VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
     VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY \
@@ -25,7 +28,8 @@ ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
     VITE_APP_VERSION=$VITE_APP_VERSION \
     VITE_FARO_URL=$VITE_FARO_URL \
     VITE_GA_MEASUREMENT_ID=$VITE_GA_MEASUREMENT_ID \
-    VITE_PUBLIC_WEB_URL=$VITE_PUBLIC_WEB_URL
+    VITE_PUBLIC_WEB_URL=$VITE_PUBLIC_WEB_URL \
+    VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
 
 COPY package.json ./
 RUN npm install

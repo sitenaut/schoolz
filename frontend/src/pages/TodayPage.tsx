@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { DayCard } from "../components/today";
-import { IconPin } from "../components/icons";
+import { IconPin, IconUpload } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay } from "../lib/calendar";
@@ -103,6 +103,15 @@ export function TodayPage() {
             <small>{t("Things to do around South Jersey and Philadelphia")} →</small>
           </span>
         </Link>
+        <Link className="link-card upload-cta" to="/upload">
+          <span className="ico">
+            <IconUpload />
+          </span>
+          <span>
+            <b>{t("Upload a newsletter or flyer")}</b>
+            <small>{t("Got one we're missing? Send a photo or PDF")} →</small>
+          </span>
+        </Link>
       </>
     );
 
@@ -160,6 +169,16 @@ export function TodayPage() {
           </section>
         ),
       )}
+
+      <Link className="link-card upload-cta" to="/upload">
+        <span className="ico">
+          <IconUpload />
+        </span>
+        <span>
+          <b>{t("Upload a newsletter or flyer")}</b>
+          <small>{t("Got one we're missing? Send a photo or PDF")} →</small>
+        </span>
+      </Link>
 
       <p className="fine">
         {t("Pulled from each school's newsletter and website, the district calendar, and the district lunch menu.")} <Link to="/schools">{t("All schools")}</Link>
