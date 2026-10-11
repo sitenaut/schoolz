@@ -14,14 +14,16 @@ _WINDOW_PAST_DAYS = 30
 _WINDOW_FUTURE_DAYS = 180
 
 
-# Games are hidden from the general calendar (dozens a week); a school's own
+# Games are hidden from the general calendar (dozens a week). A school's own
 # events on its Arbiter calendar (Gateway: field trips, Financial Aid Night)
-# are real calendar content and shown by default.
+# are shown only when the school is switched on (School.arbiter_events_calendar):
+# elsewhere an Arbiter "event" is team business - open gyms, team dinners,
+# tryouts - which belongs with the games.
 _SOURCES = ("arbiter_athletics", "arbiter_events")
 
 
-def _source(event: dict) -> str:
-    return "arbiter_events" if event.get("kind") == "event" else "arbiter_athletics"
+def _source(event: dict, school: School) -> str:
+    return "arbiter_events" if event.get("kind") == "event" and school.arbiter_events_calendar else "arbiter_athletics"
 
 
 @register_job(
@@ -32,7 +34,7 @@ def _source(event: dict) -> str:
         "Fetches a school's game schedule from ArbiterLive (School.athletics_url, when it's a /m/team/<id> page) - "
         "every sport/level combined. Games are tagged source=arbiter_athletics and off by default in the general calendar "
         "(dozens a week would crowd out real deadlines); visible via the 'Show sports schedule' toggle. A school's own "
-        "events on the same calendar (/m/event/<id>: Gateway's field trips and family nights) are source=arbiter_events and shown."
+        "events on the same calendar (/m/event/<id>: Gateway's field trips and family nights) are source=arbiter_events and shown only for a school with arbiter_events_calendar set."
     ),
     param_schema={"type": "object", "properties": {"school_id": {"type": "string"}}, "required": ["school_id"]},
 )
@@ -116,7 +118,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.start_date = event["start_date"]
             row.end_date = event["end_date"]
             row.is_all_day = event["is_all_day"]
-            row.source = _source(event)
+            row.source = _source(event, school)
             updated += 1
             continue
         db.add(
@@ -129,7 +131,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 start_date=event["start_date"],
                 end_date=event["end_date"],
                 is_all_day=event["is_all_day"],
-                source=_source(event),
+                source=_source(event, school),
                 external_uid=event["external_uid"],
             )
         )

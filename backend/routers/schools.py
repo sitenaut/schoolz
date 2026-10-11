@@ -427,6 +427,8 @@ async def update_school(
         value = getattr(payload, field)
         if value is not None:
             setattr(school, field, value or None)
+    if payload.arbiter_events_calendar is not None:
+        school.arbiter_events_calendar = payload.arbiter_events_calendar
     if payload.bell_periods is not None:
         # Plain dicts for the JSON column - payload.bell_periods is typed
         # BellPeriodEntry objects (so the request body gets validated),

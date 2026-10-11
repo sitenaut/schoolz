@@ -600,6 +600,12 @@ class School(Base):
     # "Sports & band" in the UI: the same ArbiterLive page carries the
     # marching band schedule too (confirmed by the user 2026-09-09).
     athletics_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # True when this school's ArbiterLive calendar is also where it publishes
+    # its own events (Gateway: field trips, Financial Aid Night - /m/event/<id>
+    # beside the /m/game/<id> games). Most schools' Arbiter events are team
+    # business (open gyms, team dinners, tryouts), so events stay hidden with
+    # the games unless the school is switched on.
+    arbiter_events_calendar: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     # School's own logo/seal image, discovered from its homepage header
     # (services/school_info.py) - hotlinked from Finalsite's CDN like every
     # other asset URL in this app (lunch menu PDFs, documents), not
