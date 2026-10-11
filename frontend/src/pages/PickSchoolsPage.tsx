@@ -130,7 +130,7 @@ export function PickSchoolsPage() {
         );
       })}
 
-      <button className="cta" onClick={save} disabled={picked.length === 0}>
+      <button className="cta attention" onClick={save} disabled={picked.length === 0}>
         {picked.length === 0 ? t("Pick at least one school") : t("Show me today ({{n}})", { n: picked.length })}
       </button>
       {!user && (

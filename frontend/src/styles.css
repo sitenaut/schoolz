@@ -23,6 +23,12 @@
   --warn-soft: #fbf0d9;
   --bad: #c2413a;
   --bad-soft: #fae4e2;
+  /* The one thing on a page a first-time visitor should press (the school
+     picker's button). Orange, darker than a pure orange so white text on it
+     clears 4.5:1; --attention-glow is the pulse ring. */
+  --attention: #c2410c;
+  --attention-ink: #fff;
+  --attention-glow: rgba(194, 65, 12, 0.5);
   /* Weekends on the calendar grid: the same "no school" hue as a real
      closure (--bad), but blended into the neutral border gray rather
      than the page background - mixing red straight into --bg just gives
@@ -98,6 +104,9 @@
     --warn-soft: #3b2f18;
     --bad: #e7695f;
     --bad-soft: #3d2321;
+  --attention: #fb923c;
+  --attention-ink: #1c0f05;
+  --attention-glow: rgba(251, 146, 60, 0.55);
     --district: #aab3bd;
     --sch-1: #4fa9c8;
     --sch-2: #a684dc;
@@ -127,6 +136,9 @@
   --warn-soft: #3b2f18;
   --bad: #e7695f;
   --bad-soft: #3d2321;
+  --attention: #fb923c;
+  --attention-ink: #1c0f05;
+  --attention-glow: rgba(251, 146, 60, 0.55);
   --district: #aab3bd;
   --sch-1: #4fa9c8;
   --sch-2: #a684dc;
@@ -760,7 +772,11 @@ h3 {
   /* Shrinkable, not fixed: a long period name ("Period Arrival Choice/Table
      Top Activities") or hours range used to push the pills off the card. */
   flex: 0 1 auto;
-  min-width: 0;
+  /* min-content, not 0: a long label can still wrap (overflow-wrap: anywhere
+     makes its min-content tiny), but a bare .status.short is unwrappable, so
+     the column keeps its width and the pill's background never ends before
+     its text does. */
+  min-width: min-content;
   max-width: 62%;
 }
 .headerPills .status,
@@ -769,6 +785,12 @@ h3 {
   text-align: right;
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+/* A bare label ("No school", "Early dismissal") has nothing to wrap for. With
+   overflow-wrap: anywhere it is the first thing the header squeezes, so beside a
+   long school name ("Cherry Hill High School East") it broke into "No / school". */
+.headerPills .status.short {
+  white-space: nowrap;
 }
 .periodChip {
   flex: none;
@@ -1736,6 +1758,30 @@ details.acc .body {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-ink);
+}
+.attention {
+  background: var(--attention);
+  border-color: var(--attention);
+  color: var(--attention-ink);
+}
+.cta.attention:disabled {
+  opacity: 0.88;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .attention {
+    animation: attention-pulse 2.2s ease-out infinite;
+  }
+}
+@keyframes attention-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--attention-glow);
+  }
+  70% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 .btn-danger {
   color: var(--bad);
