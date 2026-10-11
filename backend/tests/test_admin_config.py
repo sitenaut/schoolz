@@ -163,3 +163,57 @@ async def test_import_skips_smore_newsletter_for_unknown_school_slug():
         body = res.json()
         assert body["smore_created"] == 0
         assert body["smore_skipped"] == [f"https://app.smore.com/n/orphan-{run_id}"]
+
+
+def _school(slug: str, name: str, district: str) -> dict:
+    nulls = {k: None for k in (
+        "address", "main_phone", "website_url", "absence_method", "absence_phone", "absence_portal_name",
+        "absence_portal_url", "absence_instructions", "start_time", "end_time", "early_dismissal_time",
+        "delayed_opening_time", "athletics_url", "logo_url", "bell_periods", "sacc",
+    )}
+    nulls["website_url"] = "https://example.org"  # a website_url is what creates the school's scan jobs
+    return {"slug": slug, "name": name, "short_name": name, "district_name": district, "school_type": "elementary",
+            "absence_emails": [], **nulls}
+
+
+def _district(name: str) -> dict:
+    nulls = {k: None for k in (
+        "marking_period_url", "preschool_locations_url", "preschool_team_url", "hs_rotation_url", "transportation_url",
+    )}
+    return {"name": name, "website_url": "https://example.org", "food_services_menu_url": None, "ics_feeds": [], **nulls}
+
+
+@pytest.mark.anyio
+async def test_import_never_takes_over_another_districts_school():
+    """Two districts can each have a "Parkview Elementary School". A second
+    seed reusing the first one's slug used to rewrite it (Westville's import
+    took Stratford's)."""
+    run_id = uuid.uuid4().hex[:8]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        email = f"admin_{run_id}@example.com"
+        reg = await client.post("/auth/register", json={"email": email, "username": _unique("admin"), "password": "password123"})
+        token = reg.json()["access_token"]
+        await _make_admin(email)
+        headers = {"authorization": f"Bearer {token}"}
+
+        def body(district: str, slug: str) -> dict:
+            return {"exported_at": "2026-01-01T00:00:00Z", "source": "test", "districts": [_district(district)],
+                    "schools": [_school(slug, "Parkview Test School", district)], "smore_newsletters": []}
+
+        first = await client.post("/admin/config/import", json=body(f"North {run_id}", f"parkview-{run_id}"), headers=headers)
+        assert first.status_code == 200, first.text
+
+        clash = await client.post("/admin/config/import", json=body(f"South {run_id}", f"parkview-{run_id}"), headers=headers)
+        assert clash.status_code == 409
+
+        second = await client.post("/admin/config/import", json=body(f"South {run_id}", f"south-parkview-{run_id}"), headers=headers)
+        assert second.status_code == 200
+        assert second.json()["schools_created"] == 1 and second.json()["schools_updated"] == 0
+
+        # Same school name, two districts: each gets its own scan jobs, told apart by district.
+        async with database.SessionLocal() as db:
+            from sqlalchemy import select
+            from models import ScheduledJob
+
+            names = (await db.execute(select(ScheduledJob.name).where(ScheduledJob.kind == "staff_roster.scan", ScheduledJob.name.like(f"%Parkview Test School%({'%'}{run_id})")))).scalars().all()
+        assert sorted(names) == [f"Staff roster scan: Parkview Test School (North {run_id})", f"Staff roster scan: Parkview Test School (South {run_id})"]

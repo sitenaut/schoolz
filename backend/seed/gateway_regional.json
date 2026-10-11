@@ -1,0 +1,81 @@
+{
+  "exported_at": "2026-10-11T12:00:00Z",
+  "source": "onboarding: Gateway Regional School District",
+  "districts": [
+    {
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "marking_period_url": null,
+      "schoolcafe_shortname": null,
+      "ics_feeds": [],
+      "name": "Gateway Regional School District",
+      "website_url": "https://www.gatewayhs.com",
+      "food_services_menu_url": null,
+      "towns": [
+        "Woodbury Heights",
+        "Westville",
+        "National Park",
+        "Wenonah"
+      ]
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": "PowerSchool",
+      "absence_portal_url": null,
+      "delayed_opening_time": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Morning Meeting",
+            "start": "07:45",
+            "end": "08:05"
+          },
+          {
+            "name": "1/5",
+            "start": "08:09",
+            "end": "09:29"
+          },
+          {
+            "name": "2/6",
+            "start": "09:33",
+            "end": "10:53"
+          },
+          {
+            "name": "3/7 (with lunch)",
+            "start": "10:57",
+            "end": "13:13"
+          },
+          {
+            "name": "4/8",
+            "start": "13:17",
+            "end": "14:37"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/8327",
+      "logo_url": "https://cdnsm5-ss16.sharpschool.com/UserFiles/Servers/Server_26559081/Image/logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "slug": "gateway-regional",
+      "name": "Gateway Regional High School",
+      "short_name": "Gateway Regional",
+      "district_name": "Gateway Regional School District",
+      "school_type": "high",
+      "address": "775 Tanyard Rd, Woodbury Heights, NJ 08097",
+      "main_phone": "(856) 848-8200",
+      "website_url": "https://www.gatewayhs.com",
+      "absence_method": "phone",
+      "absence_phone": "(856) 853-1567",
+      "absence_instructions": "Log into PowerSchool or call 856-853-1567 to report an absence; parental notes required for state records (2026-27 Student Handbook).",
+      "start_time": "7:45 AM",
+      "end_time": "2:37 PM",
+      "early_dismissal_time": null,
+      "nutrislice_location": "grsd/gateway-high-school"
+    }
+  ],
+  "smore_newsletters": []
+}

@@ -1,0 +1,66 @@
+{
+  "exported_at": "2026-10-11T12:00:00Z",
+  "source": "onboarding: Woodbury Heights School District",
+  "districts": [
+    {
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "marking_period_url": null,
+      "schoolcafe_shortname": null,
+      "ics_feeds": [
+        {
+          "name": "Woodbury Heights Events Calendar",
+          "url": "https://calendar.google.com/calendar/ical/woodburyhtselem.com_n8kmgjlouteqqkp3qmsajschlg%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "name": "Woodbury Heights School District",
+      "website_url": "https://www.woodburyhtselem.com",
+      "food_services_menu_url": null,
+      "towns": [
+        "Woodbury Heights"
+      ]
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/9487/header_logo_img_e1arm6a4ts33cmeobgm.png",
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Children are picked up by 6:00 PM; each 15 minutes late is a separate late fee, paid on the Kids Choice site (Pay Late Fees).",
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice, not the district. 2026-27 monthly tuition: AM $190, PM $260, AM/PM $360. Book of five day passes $160 (use within the school year); drop-in $40 per day. 10% off for additional siblings and for active military and first responders; NJ assistance programs accepted. Payment is due on the 1st by automatic withdrawal or card. Kids Choice phone 856-316-6375 or 609-617-5310.",
+        "handbook_url": "https://www.kidschoicewt.com/woodbury-heights-elementary/"
+      },
+      "activities_calendar_ics_url": null,
+      "slug": "woodbury-heights",
+      "name": "Woodbury Heights Elementary School",
+      "short_name": "Woodbury Heights",
+      "district_name": "Woodbury Heights School District",
+      "school_type": "elementary",
+      "address": "100 Academy Ave, Woodbury Heights, NJ 08097",
+      "main_phone": "(856) 848-2610",
+      "website_url": "https://www.woodburyhtselem.com",
+      "absence_method": "phone",
+      "absence_phone": "(856) 848-2610",
+      "absence_instructions": "Call the school at 848-2610 and press option 1 before 8:00 AM to report the absence (Parent Handbook). Students arriving after the 8:25 AM bell are marked late; a written note is required for late arrival or early dismissal.",
+      "start_time": "8:25 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "12:45 PM",
+      "nutrislice_location": "grsd/woodbury-heights-elementary-school",
+      "staff_directory_url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSKQtEGwJvJRALBSb2x_0rcOgYuyUZeEZKW-XXbpVZC4NvTZOvh3b_icot6wm0wQXsUNAbsuFIf39oO/pub?gid=0&single=true&output=csv"
+    }
+  ],
+  "smore_newsletters": []
+}

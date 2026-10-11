@@ -105,3 +105,9 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   - **Gaps**: no absence method, hours (GT, BHPRSD), logos for two Bellmawr schools,
     newsletters or PTAs anywhere; Bellmawr's EC Center shares Bellmawr Park's address
     and its phone is unverified.
+
+- **National Park** — `backend/seed/national_park.json`. Calendar id 1 is the
+  real one (`/calendar-f2` widget `data-calendar-ids`; 2 is the sample, 3 empty).
+  Hours and absence method exist only in a Family Handbook Google Doc
+  (`/export?format=txt` works anonymously). Staff list paginates `?const_page=1..3`.
+  Lunch is the shared `grsd` Nutrislice tenant.

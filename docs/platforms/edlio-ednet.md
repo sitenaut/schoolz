@@ -204,3 +204,28 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     its calendar); PTA is Facebook-only (officer list is 2023-24); no
     transportation page; Pre-K / preschool hours aren't stored (one set of flat
     times per school); no Bingham/Downing bell periods.
+
+- **Woodbury City (Educational Networks / DistrictSitePro)** — Evergreen, Walnut,
+  West End, Jr-Sr High; `backend/seed/woodbury.json`. Generator meta reads
+  "DistrictSitePro", same `/apps/` family; schools are `evergreen.`, `walnut.`,
+  `westend.`, `hs.woodburysch.com`, district `www`.
+  - **Calendars**: the homepage embeds one Google Calendar iframe listing the
+    district calendar, four school calendars and an assessment calendar (names
+    in each `basic.ics` `X-WR-CALNAME`; all public, full year). Wired those, not
+    `/servlet/ICalServlet?id=N`: on `www` id 0 is a reworded subset of the Google
+    district calendar and ids 2-5 (Jr-Sr High, West End, Evergreen, Walnut) are
+    copies of it. School subdomains return 0 events.
+  - **Cross links**: school navs pull district pages through
+    `/apps/cross.jsp?wREC_ID=7844&crossPath=...`; resolve the target on `www`.
+  - **Handbooks** are Drive files, a Google Doc (`/document/d/<id>/export?format=txt`
+    works with plain curl), or a plain PDF under `/pdf/`; they are the only source
+    of elementary hours and the absence policy. Walnut's is image-only.
+  - **Bell schedule**: only the Jr-Sr High has one (three tables, Jr and Sr lunch
+    splits stored as separate rows); the elementaries' page exists but is empty.
+  - **Lunch**: SchoolCafé `WOODBURYCITYPSNUTRISERVE`; the high school is listed
+    there as "Woodbury High School" and still matches (4/4).
+  - **Athletics**: the Colonial Conference link is now an Arbiter shell. The real
+    ArbiterLive link is only inside the athletics page body; stored as
+    `arbiterlive.com/School/Calendar/<id>` because `/School/<id>` isn't recognized.
+  - A plain GET of a school subdomain once returned a sibling school's page;
+    retry before trusting it.

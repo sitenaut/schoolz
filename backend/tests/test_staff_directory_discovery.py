@@ -30,3 +30,60 @@ def test_table_with_position_column_and_last_first_names():
 def test_table_without_position_column_still_reads_first_column_as_title():
     html = "<table><tr><td>Grade</td><td>Staff Member</td></tr><tr><td>Kindergarten</td><td>Pat Lee</td></tr></table>"
     assert [(p["full_name"], p["title"]) for p in staff_roster._parse_table_page(html)] == [("Pat Lee", "Kindergarten")]
+
+
+def test_faculty_list_nav_link_is_a_directory():
+    """National Park's Finalsite nav calls its directory "Faculty List"."""
+    home = '<a href="/school-information/faculty-list">Faculty List</a><a href="/athletics">Athletics</a>'
+    assert staff_roster.find_directory_links(home, "https://www.npelem.com") == ["https://www.npelem.com/school-information/faculty-list"]
+
+
+def test_json_directory_reads_name_title_and_extension_and_skips_blank_rows():
+    """Westville's directory feed: no emails, the phone is an extension, and
+    the list is padded with empty rows."""
+    rows = [
+        {"name": "Pat Teacher", "title": "First Grade", "phone": 117},
+        {"name": "Sam Office", "title": "Business Administrator", "phone": "856-848-8203"},
+        {"name": "No Phone", "title": "Aide", "phone": ""},
+        {"name": "", "title": "", "phone": ""},
+    ]
+    people = staff_roster.parse_json_directory(rows)
+    assert [(p["full_name"], p["title"], p["phone"], p["email"]) for p in people] == [
+        ("Pat Teacher", "First Grade", "ext. 117", None),
+        ("Sam Office", "Business Administrator", "856-848-8203", None),
+        ("No Phone", "Aide", None, None),
+    ]
+    assert staff_roster.parse_json_directory({"not": "a list"}) == []
+
+
+def test_json_directory_ids_fit_the_column_for_long_titles():
+    long_title = "Principal / Educational Stability Liaison / McKinney Vento Specialist"
+    [person] = staff_roster.parse_json_directory([{"name": "Pat Principal", "title": long_title, "phone": 117}])
+    assert len(person["constituent_id"]) <= 64
+
+
+_WENONAH = """
+<ul class="pc-list">
+ <li><h5>Chief School Administrator</h5>
+  <a href="mailto:kh@example.org" title="Email">Ms. Kristine Height</a><br> 856-468-6000 ext. 100</li>
+ <li><h5>Interim Business Administrator</h5>
+  <a href="mj@example.org">Mrs. Michelle Jankauskas</a></li>
+ <li><h5>Board Secretary</h5><a href="mailto:lj@example.org"><span>Ms. Lori Jones</span></a></li>
+ <li><h5>Office Staff</h5><a href="mailto:lj@example.org">Ms. Lori Jones</a></li>
+ <li><h5>3rd Grade</h5>
+  <a href="https://app.oncoursesystems.com/school/webpage/1">Ms. Class Page</a></li>
+ <li><h5>Special Services</h5><ul><li><a href="mailto:cst@example.org"><span>Child Study Team</span></a></li>
+  <li><h6>Speech Pathologist</h6><a href="mailto:tt@example.org">Mrs. Tara Timms</a></li></ul></li>
+</ul>
+"""
+
+
+def test_pc_list_page_reads_roles_emails_and_skips_class_pages_and_shared_inboxes():
+    people = {p["full_name"]: p for p in staff_roster._parse_pc_list_page(_WENONAH)}
+    assert set(people) == {"Kristine Height", "Michelle Jankauskas", "Lori Jones", "Class Page", "Tara Timms"}
+    assert people["Kristine Height"]["email"] == "kh@example.org"
+    assert people["Kristine Height"]["phone"] == "856-468-6000 ext. 100"
+    assert people["Michelle Jankauskas"]["email"] == "mj@example.org"  # "mailto:" left off in the page
+    assert people["Class Page"]["email"] is None and people["Class Page"]["title"] == "3rd Grade"
+    assert people["Lori Jones"]["title"] == "Board Secretary / Office Staff"
+    assert people["Tara Timms"]["title"] == "Speech Pathologist"

@@ -255,7 +255,7 @@ export function SchoolDetailPage() {
           )}
           {today.sacc?.site_phone && (
             <a className="action" href={telHref(today.sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
-              {t("SACC late line")}
+              {t("After-care late line")}
             </a>
           )}
           {s.main_phone && (
@@ -395,7 +395,7 @@ export function SchoolDetailPage() {
       {sacc && (
         <>
           <div className="h-row">
-            <h2>{t("After-school care (SACC)")}</h2>
+            <h2>{t("After-care")}</h2>
           </div>
           <div className="sacc">
             <div className="hours">
@@ -419,21 +419,27 @@ export function SchoolDetailPage() {
               )}
             </div>
             <ul className="qa">
-              <li>
-                <b>{t("Kid won't be at PM SACC today?")}</b>
-                <span>{t("Report it by 3:00 PM. Telling the teacher or school office does not count - SACC doesn't cross-check.")}</span>{" "}
-                {sacc.absence_form_url && (
-                  <a href={sacc.absence_form_url} target="_blank" rel="noreferrer">
-                    {t("Report a PM absence")}
-                  </a>
-                )}
-                {sacc.absence_phone && (
-                  <>
-                    {" "}
-                    · <a href={telHref(sacc.absence_phone)}>{t("SACC office {{phone}}", { phone: sacc.absence_phone })}</a>
-                  </>
-                )}
-              </li>
+              {(sacc.absence_form_url || sacc.absence_phone) && (
+                <li>
+                  <b>{t("Kid won't be at after-care today?")}</b>
+                  {/* The 3:00 PM cutoff is Cherry Hill's own policy (the school that has the form). */}
+                  {sacc.absence_form_url && (
+                    <>
+                      <span>{t("Report it by 3:00 PM. Telling the teacher or school office does not count - after-care doesn't cross-check.")}</span>{" "}
+                      <a href={sacc.absence_form_url} target="_blank" rel="noreferrer">
+                        {t("Report a PM absence")}
+                      </a>
+                    </>
+                  )}
+                  {sacc.absence_phone && (
+                    <>
+                      {" "}
+                      {sacc.absence_form_url && "· "}
+                      <a href={telHref(sacc.absence_phone)}>{t("After-care office {{phone}}", { phone: sacc.absence_phone })}</a>
+                    </>
+                  )}
+                </li>
+              )}
               {sacc.pickup_change_procedure && (
                 <li>
                   <b>{t("Someone else picking up?")}</b>
@@ -455,7 +461,7 @@ export function SchoolDetailPage() {
               {sacc.handbook_url && (
                 <li>
                   <a href={sacc.handbook_url} target="_blank" rel="noreferrer">
-                    {t("SACC Family Handbook")}
+                    {t("After-care Family Handbook")}
                   </a>
                 </li>
               )}

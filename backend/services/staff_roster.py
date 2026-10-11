@@ -335,7 +335,66 @@ def _parse_tablepress_directory(html: str) -> list[dict]:
     return list(items.values())
 
 
-_PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/", "/staff-directory/", "/staff-directory-2/")
+_PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/", "/staff-directory/", "/staff-directory-2/", "/staff/")
+
+_HONORIFIC_RE = re.compile(r"^(?:mr|mrs|ms|miss|mx|dr)\.?\s+", re.I)
+_BARE_EMAIL_RE = re.compile(r"^[^@\s/]+@[^@\s/]+\.[a-z]{2,}$", re.I)
+_PC_PHONE_RE = re.compile(r"(?:\d{3}[-. ]\d{3}[-. ]\d{4}(?:\s*(?:ext\.?|x)\s*\d+)?)", re.I)
+
+
+def _parse_pc_list_page(html: str) -> list[dict]:
+    """Wenonah's hand-built `/staff/`: `ul.pc-list`, each entry an h5 (a role
+    or a grade) or, in a nested list, an h6, followed by the people under it.
+    A person is a link whose text starts with an honorific. Only a mailto: (or
+    one with its "mailto:" left off) is an email; every other link goes to
+    the teacher's own class page, which is not an address. "Child Study Team"
+    is a shared inbox, not a person. A person listed under two roles (the
+    board secretary is also office staff) gets both as one title."""
+    soup = BeautifulSoup(html, "lxml")
+    people: dict[str, dict] = {}
+    for a in soup.select("ul.pc-list a"):
+        text = re.sub(r"\s+", " ", a.get_text(" ", strip=True))
+        if not _HONORIFIC_RE.match(text):
+            continue
+        name = _HONORIFIC_RE.sub("", text).strip()
+        heading = a.find_previous(["h5", "h6"])
+        title = re.sub(r"\s+", " ", heading.get_text(" ", strip=True)) if heading else ""
+        href = (a.get("href") or "").strip()
+        email = None
+        if href.lower().startswith("mailto:"):
+            email = href[7:].split("?")[0].strip().lower() or None
+        elif _BARE_EMAIL_RE.match(href):
+            email = href.lower()
+        phone = None
+        trailing = ""
+        for sib in a.next_siblings:
+            if getattr(sib, "name", None) == "br":
+                trailing += " "
+                continue
+            if getattr(sib, "name", None):
+                break
+            trailing += str(sib)
+        m = _PC_PHONE_RE.search(trailing)
+        if m:
+            phone = m.group(0).strip()[:50]
+        key = _slug(name)
+        if key in people:
+            person = people[key]
+            if title and title not in (person["title"] or ""):
+                person["title"] = f"{person['title']} / {title}" if person["title"] else title
+            person["email"] = person["email"] or email
+            person["phone"] = person["phone"] or phone
+            continue
+        cid = f"pc:{key}"
+        people[key] = {
+            "constituent_id": cid[:64],
+            "full_name": name,
+            "title": title or None,
+            "department": None,
+            "email": email,
+            "phone": phone,
+        }
+    return list(people.values())
 
 
 async def _fetch_plain_page_roster(base: str) -> list[dict]:
@@ -348,7 +407,7 @@ async def _fetch_plain_page_roster(base: str) -> list[dict]:
                 resp = await client.get(base + path)
                 if resp.status_code != 200:
                     continue
-                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text)
+                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text) or _parse_pc_list_page(resp.text)
                 if items:
                     return items
     except httpx.HTTPError:
@@ -571,6 +630,37 @@ def parse_slides_directory(text: str) -> list[dict]:
     return list(items.values())
 
 
+def parse_json_directory(rows: object) -> list[dict]:
+    """A directory page's own data feed: a JSON list of {name, title, phone}
+    (Westville's `/resources/directory/directory.php`, which the page loads
+    with a synchronous $.ajax). No emails by design ("excess spam"). `phone`
+    is usually an extension (105-165 on the school's one line), so a bare
+    number is stored as "ext. 117"; a full number is kept as given. Blank
+    rows, which pad the feed, are skipped."""
+    items: dict[str, dict] = {}
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        name = re.sub(r"\s+", " ", str(row.get("name") or "")).strip()
+        if not name:
+            continue
+        title = re.sub(r"\s+", " ", str(row.get("title") or "")).strip()
+        phone = row.get("phone")
+        phone = f"ext. {phone}" if isinstance(phone, int) else (str(phone).strip() or None) if phone else None
+        key = f"doc:{_slug(name)}|{_slug(title)}"
+        if len(key) > 64:  # constituent_id is varchar(64); a long title overflowed it
+            key = f"doc:{hashlib.sha256(key.encode()).hexdigest()[:24]}"
+        items[key] = {
+            "constituent_id": key,
+            "full_name": name,
+            "title": title or None,
+            "department": None,
+            "email": None,
+            "phone": phone[:50] if phone else None,
+        }
+    return list(items.values())
+
+
 async def fetch_directory_document(url: str) -> list[dict]:
     """The school's directory as a document rather than a page. A Google Slides
     deck is read through its public plain-text export and a published Google
@@ -589,6 +679,16 @@ async def fetch_directory_document(url: str) -> list[dict]:
             resp = await client.get(sheet_csv)
             resp.raise_for_status()
         return parse_csv_directory(resp.content.decode("utf-8-sig"))
+    if not urlparse(url).path.lower().endswith((".pdf", ".xlsx")):
+        # A page's own JSON feed answers a plain GET; anything else falls
+        # through to the scraper, which a bot-walled site needs.
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+                resp = await client.get(url, headers={"User-Agent": "schoolz-staff-roster/1.0"})
+            if resp.status_code == 200 and "json" in resp.headers.get("content-type", "").lower():
+                return parse_json_directory(resp.json())
+        except (httpx.HTTPError, ValueError):
+            pass
     data = await scraper_client.fetch_raw_bytes(url)
     if urlparse(url).path.lower().endswith(".xlsx"):
         return parse_xlsx_directory(data)
@@ -602,7 +702,15 @@ _PRESENCE_PATHS = (
     "/School/staff_directory",
     "/for_staff/staff_directory",
     "/for_staff/ues_staff_directory",
+    # Gateway Regional: a district-level page, same React component.
+    "/district/staff_directory",
 )
+# Groups every Presence site has for its own accounts, not for staff:
+# "Registered Users" is everyone with a login. Gateway: 157, of whom 131 are in
+# a real department group; the other 26 have no job title or group, so there
+# is no telling staff from other accounts and they are left out. The rest are
+# portal roles.
+_PRESENCE_SYSTEM_GROUPS = frozenset({"Parents", "Students", "Registered Users", "Pending_Delete_Users"})
 _PRESENCE_WS = "/Common/controls/StaffDirectory/ws/StaffDirectoryWS.asmx/"
 _PRESENCE_PORTLET_RE = re.compile(r'staffDirectoryComponent[^>]*data-portlet-instance-id="(\d+)"')
 
@@ -692,6 +800,8 @@ async def _fetch_presence_roster(base: str) -> list[dict]:
                 settings.raise_for_status()
                 by_id: dict[str, dict] = {}
                 for group in settings.json()["d"]["groups"]:
+                    if group["name"] in _PRESENCE_SYSTEM_GROUPS:
+                        continue
                     search = await client.post(
                         base + _PRESENCE_WS + "Search",
                         json={
@@ -852,7 +962,7 @@ async def _fetch_wp_staff_grid_roster(base: str) -> list[dict]:
     return [dict(item) for item in people]
 
 
-_DIRECTORY_LINK_RE = re.compile(r"staff[\s_-]*directory|faculty[\s_-]*(?:&|and)?[\s_-]*staff|staff[\s_-]*list", re.IGNORECASE)
+_DIRECTORY_LINK_RE = re.compile(r"staff[\s_-]*directory|faculty[\s_-]*(?:&|and)?[\s_-]*staff|(?:staff|faculty)[\s_-]*list", re.IGNORECASE)
 _MAX_DISCOVERED = 3
 
 

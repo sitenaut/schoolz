@@ -17,6 +17,7 @@ from services.school_today import build_today, resolve_lunch_menu
 from services.transportation import late_bus_for_school
 from routers.smore_newsletters import _to_out as _newsletter_to_out
 from scheduler.cron import public_scan_cron
+from scheduler.job_names import school_job_name
 
 router = APIRouter(prefix="/schools", tags=["schools"])
 
@@ -33,7 +34,7 @@ async def _ensure_staff_roster_job(db: AsyncSession, school: School, user: User)
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="staff_roster.scan",
-        name=f"Staff roster scan: {school.name}",
+        name=await school_job_name(db, "Staff roster scan", school),
         cron_expr=public_scan_cron("staff_roster.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -52,7 +53,7 @@ async def _ensure_documents_scan_job(db: AsyncSession, school: School, user: Use
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="documents.scan",
-        name=f"Documents scan: {school.name}",
+        name=await school_job_name(db, "Documents scan", school),
         cron_expr=public_scan_cron("documents.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -70,7 +71,7 @@ async def _ensure_school_info_job(db: AsyncSession, school: School, user: User) 
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="school_info.scan",
-        name=f"School info scan: {school.name}",
+        name=await school_job_name(db, "School info scan", school),
         cron_expr=public_scan_cron("school_info.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -91,7 +92,7 @@ async def _ensure_special_events_job(db: AsyncSession, school: School, user: Use
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="special_events.scan",
-        name=f"Special events scan: {school.name}",
+        name=await school_job_name(db, "Special events scan", school),
         cron_expr="0 8 * * 1",
         params={"school_id": school.id},
         enabled=True,
@@ -111,7 +112,7 @@ async def _ensure_activities_calendar_job(db: AsyncSession, school: School, user
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="hs_class_calendar.scan",
-        name=f"HS activities calendar scan: {school.name}",
+        name=await school_job_name(db, "HS activities calendar scan", school),
         cron_expr=public_scan_cron("hs_class_calendar.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -131,7 +132,7 @@ async def _ensure_athletics_calendar_job(db: AsyncSession, school: School, user:
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="athletics_calendar.scan",
-        name=f"Athletics calendar scan: {school.name}",
+        name=await school_job_name(db, "Athletics calendar scan", school),
         cron_expr=public_scan_cron("athletics_calendar.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -153,7 +154,7 @@ async def _ensure_givebacks_job(db: AsyncSession, school: School, user: User) ->
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="givebacks.scan",
-        name=f"Givebacks PTA scan: {school.name}",
+        name=await school_job_name(db, "Givebacks PTA scan", school),
         cron_expr=public_scan_cron("givebacks.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -171,7 +172,7 @@ async def _ensure_fdmealplanner_job(db: AsyncSession, school: School, user: User
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="fdmealplanner_menu.scan",
-        name=f"FD MealPlanner menu scan: {school.name}",
+        name=await school_job_name(db, "FD MealPlanner menu scan", school),
         cron_expr=public_scan_cron("fdmealplanner_menu.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -189,7 +190,7 @@ async def _ensure_presence_menu_job(db: AsyncSession, school: School, user: User
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="presence_menu.scan",
-        name=f"Presence menu scan: {school.name}",
+        name=await school_job_name(db, "Presence menu scan", school),
         cron_expr=public_scan_cron("presence_menu.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -207,7 +208,7 @@ async def _ensure_healthepro_job(db: AsyncSession, school: School, user: User) -
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="healthepro_menu.scan",
-        name=f"Health-e Pro menu scan: {school.name}",
+        name=await school_job_name(db, "Health-e Pro menu scan", school),
         cron_expr=public_scan_cron("healthepro_menu.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -225,7 +226,7 @@ async def _ensure_myschoolplate_job(db: AsyncSession, school: School, user: User
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="myschoolplate_menu.scan",
-        name=f"MySchoolPlate menu scan: {school.name}",
+        name=await school_job_name(db, "MySchoolPlate menu scan", school),
         cron_expr=public_scan_cron("myschoolplate_menu.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -243,7 +244,7 @@ async def _ensure_nutrislice_job(db: AsyncSession, school: School, user: User) -
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="nutrislice_menu.scan",
-        name=f"Nutrislice menu scan: {school.name}",
+        name=await school_job_name(db, "Nutrislice menu scan", school),
         cron_expr=public_scan_cron("nutrislice_menu.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -264,7 +265,7 @@ async def _ensure_announcements_job(db: AsyncSession, school: School, user: User
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="hs_announcements.scan",
-        name=f"HS announcements scan: {school.name}",
+        name=await school_job_name(db, "HS announcements scan", school),
         cron_expr="0 6-18/2 * * 1-5",
         params={"school_id": school.id},
         enabled=True,
@@ -282,7 +283,7 @@ async def _ensure_activities_site_job(db: AsyncSession, school: School, user: Us
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="hs_activities_site.scan",
-        name=f"HS activities site scan: {school.name}",
+        name=await school_job_name(db, "HS activities site scan", school),
         cron_expr=public_scan_cron("hs_activities_site.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -300,7 +301,7 @@ async def _ensure_events_doc_job(db: AsyncSession, school: School, user: User) -
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="school_events_doc.scan",
-        name=f"School events doc scan: {school.name}",
+        name=await school_job_name(db, "School events doc scan", school),
         cron_expr=public_scan_cron("school_events_doc.scan", school.id),
         params={"school_id": school.id},
         enabled=True,
@@ -318,7 +319,7 @@ async def _ensure_bulletin_job(db: AsyncSession, school: School, user: User) -> 
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="student_bulletin.scan",
-        name=f"Student bulletin scan: {school.name}",
+        name=await school_job_name(db, "Student bulletin scan", school),
         cron_expr=public_scan_cron("student_bulletin.scan", school.id),
         params={"school_id": school.id},
         enabled=True,

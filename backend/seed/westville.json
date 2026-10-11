@@ -1,0 +1,162 @@
+{
+  "exported_at": "2026-10-11T12:00:00Z",
+  "source": "onboarding: Westville Boro Public School District",
+  "districts": [
+    {
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "marking_period_url": null,
+      "schoolcafe_shortname": null,
+      "ics_feeds": [
+        {
+          "name": "Parkview Community Events",
+          "url": "https://calendar.google.com/calendar/ical/westvillesd.com_7caphoolplc6j145i6jcplhhfs%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "westville-parkview"
+        }
+      ],
+      "name": "Westville Boro Public School District",
+      "website_url": "https://www.westvillesd.com",
+      "food_services_menu_url": null,
+      "towns": [
+        "Westville"
+      ]
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "delayed_opening_time": "9:25 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1 (SEL/Morning Meeting)",
+            "start": "08:25",
+            "end": "08:52"
+          },
+          {
+            "name": "2",
+            "start": "08:53",
+            "end": "09:33"
+          },
+          {
+            "name": "3",
+            "start": "09:35",
+            "end": "10:15"
+          },
+          {
+            "name": "4",
+            "start": "10:17",
+            "end": "10:57"
+          },
+          {
+            "name": "5",
+            "start": "11:00",
+            "end": "11:40"
+          },
+          {
+            "name": "6",
+            "start": "11:42",
+            "end": "12:22"
+          },
+          {
+            "name": "7",
+            "start": "12:27",
+            "end": "13:07"
+          },
+          {
+            "name": "8",
+            "start": "13:10",
+            "end": "13:50"
+          },
+          {
+            "name": "9",
+            "start": "13:53",
+            "end": "14:33"
+          },
+          {
+            "name": "10",
+            "start": "14:35",
+            "end": "15:15"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "08:40"
+          },
+          {
+            "name": "2",
+            "start": "08:41",
+            "end": "09:08"
+          },
+          {
+            "name": "3",
+            "start": "09:09",
+            "end": "09:36"
+          },
+          {
+            "name": "4",
+            "start": "09:37",
+            "end": "10:04"
+          },
+          {
+            "name": "5",
+            "start": "10:05",
+            "end": "10:32"
+          },
+          {
+            "name": "6",
+            "start": "10:33",
+            "end": "11:00"
+          },
+          {
+            "name": "7",
+            "start": "11:01",
+            "end": "11:28"
+          },
+          {
+            "name": "8",
+            "start": "11:29",
+            "end": "11:56"
+          },
+          {
+            "name": "9",
+            "start": "11:57",
+            "end": "12:24"
+          },
+          {
+            "name": "10",
+            "start": "12:25",
+            "end": "12:52"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "slug": "westville-parkview",
+      "name": "Parkview Elementary School",
+      "short_name": "Parkview",
+      "district_name": "Westville Boro Public School District",
+      "school_type": "elementary",
+      "address": "101 Birch Avenue, Westville, NJ 08093",
+      "main_phone": "(856) 456-0235",
+      "website_url": "https://www.westvillesd.com",
+      "absence_method": "phone",
+      "absence_phone": "(856) 456-0235",
+      "absence_instructions": "Call the automated student absentee line at (856) 456-0235 before 8:30 AM on the day of the absence; request make-up work in the message. Send a note from a parent/guardian or doctor the day the student returns. A doctor's note is required after the 5th consecutive day (Parent/Student Handbook).",
+      "start_time": "8:25 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "1:00 PM",
+      "nutrislice_location": "grsd/parkside-elementary-school",
+      "staff_directory_url": "https://www.westvillesd.com/resources/directory/directory.php"
+    }
+  ],
+  "smore_newsletters": []
+}

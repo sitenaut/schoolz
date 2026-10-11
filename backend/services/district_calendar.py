@@ -126,6 +126,14 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
             title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
             description = description_text(str(component.get("DESCRIPTION") or ""))
             uid = str(component.get("UID")) if component.get("UID") else None
+            # A moved/edited instance of a recurring series is its own VEVENT
+            # carrying the series' UID plus a RECURRENCE-ID. Keyed on the UID
+            # alone it collides with the master (Woodbury's board meeting
+            # showed twice), so the instance is keyed by the occurrence it
+            # replaces.
+            recurrence_id = component.get("RECURRENCE-ID")
+            if uid and recurrence_id is not None:
+                uid = f"{uid}#{_as_datetime(recurrence_id.dt)[0].isoformat()}"
 
             out.append(
                 {

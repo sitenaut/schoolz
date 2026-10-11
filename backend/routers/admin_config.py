@@ -24,7 +24,7 @@ one environment and pushes it to another.
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -224,10 +224,22 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
 
     # --- Schools, matched by slug (falling back to name) ---
     school_by_slug: dict[str, School] = {s.slug: s for s in (await db.execute(select(School))).scalars().all()}
-    school_by_name: dict[str, School] = {s.name: s for s in school_by_slug.values()}
+    # Names repeat across districts ("Parkview Elementary School" is in both
+    # Stratford and Westville), so the name fallback is per district.
+    school_by_name: dict[tuple[str | None, str], School] = {(s.district_id, s.name): s for s in school_by_slug.values()}
     for s in payload.schools:
-        school = school_by_slug.get(s.slug) or school_by_name.get(s.name)
         district = district_by_name.get(s.district_name) if s.district_name else None
+        school = school_by_slug.get(s.slug)
+        if school is not None and district is not None and school.district_id not in (None, district.id):
+            # Slugs are global, so a seed reusing another district's slug used
+            # to silently take that school over (Westville's Parkview rewrote
+            # Stratford's). Refuse; the seed needs a distinct slug.
+            raise HTTPException(
+                status_code=409,
+                detail=f"School slug '{s.slug}' already belongs to another district; give {s.name} ({s.district_name}) a distinct slug.",
+            )
+        if school is None:
+            school = school_by_name.get((district.id if district else None, s.name))
         if school is None:
             # Use the exported slug directly rather than recomputing one -
             # slugs are meant to be stable, portable identifiers, and a
@@ -249,7 +261,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             db.add(school)
             await db.flush()
             school_by_slug[school.slug] = school
-            school_by_name[school.name] = school
+            school_by_name[(school.district_id, school.name)] = school
             result["schools_created"] += 1
         else:
             result["schools_updated"] += 1

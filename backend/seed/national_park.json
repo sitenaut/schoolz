@@ -1,0 +1,57 @@
+{
+  "exported_at": "2026-10-11T12:00:00Z",
+  "source": "onboarding: National Park Borough School District",
+  "districts": [
+    {
+      "name": "National Park Borough School District",
+      "website_url": "https://www.npelem.com",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "National Park School Calendar",
+          "url": "https://www.npelem.com/fs/calendar-manager/events.ics?calendar_ids[]=1"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "National Park"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "national-park",
+      "name": "National Park School",
+      "short_name": "National Park",
+      "district_name": "National Park Borough School District",
+      "school_type": "elementary",
+      "address": "516 Lakehurst Avenue, National Park, NJ 08063",
+      "main_phone": "(856) 845-6876",
+      "website_url": "https://www.npelem.com",
+      "absence_method": "email",
+      "absence_emails": [
+        "attendance@npelem.com"
+      ],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Report the absence on the day of the absence by calling the school or emailing the attendance address (Family Handbook). No cutoff time is published.",
+      "start_time": "8:25 AM",
+      "end_time": "3:15 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1740135472/npelemcom/feomsoijnwtwekvylop2/NationalParkBoroSchoolDistrictPrimaryLogoImage.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "grsd/national-park-elementary-school"
+    }
+  ],
+  "smore_newsletters": []
+}
