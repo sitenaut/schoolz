@@ -1,3 +1,4 @@
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../components/ui/Badge";
@@ -361,14 +362,7 @@ function AddSubmissionModal({ onClose, onAdded }: { onClose: () => void; onAdded
         </Field>
       )}
       <Field label="School" hint="Optional - you can set it on the next screen. Local events don't need one.">
-        <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
-          <option value="">Not set</option>
-          {schools.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <FilterSelect value={schoolId} onChange={setSchoolId} options={schools.map((s) => ({ value: s.id, label: s.label }))} placeholder="Not set" clearLabel="Not set" />
       </Field>
       <Field label="Note" hint="Optional - shown as the sender's note.">
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={2000} />

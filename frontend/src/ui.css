@@ -2387,6 +2387,248 @@ button.link-card:disabled {
   }
 }
 
+/* ---------- FilterSelect: a dropdown you can type into ---------- */
+.fsel {
+  position: relative;
+  min-width: 0;
+}
+.fsel .fsel-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+}
+.fsel .fsel-trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.fsel.open .fsel-trigger {
+  border-color: var(--primary);
+}
+.fsel-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.fsel-value.placeholder {
+  color: var(--ink-3);
+}
+.fsel-caret {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--ink-3);
+}
+.fsel.open .fsel-caret {
+  transform: rotate(180deg);
+}
+/* Present only so the browser's own "fill this in" bubble has somewhere to
+   point; never seen or focused. */
+.fsel .fsel-required {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.fsel-pop {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 32px));
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink);
+}
+.fsel-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.fsel-filter svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--ink-3);
+}
+.fsel .fsel-filter input {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  margin: 0;
+  padding: 10px 0;
+  width: 100%;
+  font-size: 14px;
+  color: var(--ink);
+}
+.fsel .fsel-filter input:focus-visible {
+  outline: none;
+}
+.fsel-list {
+  max-height: min(320px, 46vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}
+.fsel-list:focus-visible {
+  outline: none;
+}
+.fsel-group {
+  padding: 8px 8px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fsel-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.fsel-opt[data-active="true"] {
+  background: var(--primary-soft);
+}
+.fsel-opt[aria-selected="true"] {
+  font-weight: 700;
+}
+.fsel-opt-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.fsel-opt-text small {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.fsel-count {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.fsel-check {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--primary);
+}
+.fsel-empty {
+  padding: 12px 8px;
+  color: var(--ink-3);
+}
+/* Toolbars and filter rows size a control to its content, as they did the
+   native select. */
+.tb .fsel,
+.dir-filters .fsel {
+  flex: none;
+  max-width: 260px;
+}
+.tb .fsel .fsel-trigger,
+.dir-filters .fsel .fsel-trigger {
+  margin: 0;
+}
+@media (max-width: 420px) {
+  .dir-filters .fsel {
+    max-width: none;
+    flex: 1;
+  }
+}
+
+/* The /start town picker: the one decision on the page, so it is large. */
+.fsel.town-select {
+  margin: 0 0 4px;
+}
+.fsel.town-select .fsel-trigger {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.fsel.town-select .fsel-pop {
+  width: 100%;
+  max-width: none;
+}
+.fsel.town-select .fsel-opt {
+  padding: 11px 10px;
+  font-size: 15px;
+}
+.picked-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+.picked-row .picked-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+  margin-right: 2px;
+}
+.picked-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--primary);
+  background: var(--primary-soft);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 5px 8px 5px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.picked-chip svg {
+  width: 13px;
+  height: 13px;
+  color: var(--ink-3);
+}
+
 /* iOS Safari zooms the whole page when a form field under 16px gets focus,
    and does not zoom back - on the chat panel that pushed the Send button
    off-screen. Every field is at least 16px on touch devices, everywhere.

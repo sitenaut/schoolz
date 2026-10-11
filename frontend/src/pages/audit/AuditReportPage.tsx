@@ -1,3 +1,4 @@
+import { FilterSelect } from "../../components/ui/FilterSelect";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Badge } from "../../components/ui/Badge";
@@ -103,18 +104,16 @@ export function AuditReportPage() {
         <div className="audit-filters no-print">
           <label className="field">
             <span className="lbl">Report for</span>
-            <select
+            <FilterSelect
               value={byFilters ? "__filters" : districtId}
-              onChange={(e) => navigate(e.target.value === "__filters" ? `/admin/audit/report?${params.toString()}` : `/admin/audit/report${e.target.value ? `?district=${e.target.value}` : ""}`)}
-            >
-              <option value="">All districts</option>
-              {data?.districts.map((d) => (
-                <option key={d.id} value={d.id}>
-                  District: {d.name}
-                </option>
-              ))}
-              {byFilters && <option value="__filters">Current audit filters</option>}
-            </select>
+              onChange={(v) => navigate(v === "__filters" ? `/admin/audit/report?${params.toString()}` : `/admin/audit/report${v ? `?district=${v}` : ""}`)}
+              options={[
+                ...(byFilters ? [{ value: "__filters", label: "Current audit filters" }] : []),
+                ...(data?.districts ?? []).map((d) => ({ value: d.id, label: `District: ${d.name}` })),
+              ]}
+              placeholder="All districts"
+              clearLabel="All districts"
+            />
           </label>
           <IncludeBoxes include={include} setInclude={setInclude} />
         </div>

@@ -1,3 +1,4 @@
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
@@ -218,16 +219,7 @@ export function ChildrenPage() {
         </label>
         <label>
           School
-          <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)} required>
-            <option value="" disabled>
-              Select a school…
-            </option>
-            {schools.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          <FilterSelect value={schoolId} onChange={setSchoolId} options={schools.map((s) => ({ value: s.id, label: s.name }))} placeholder="Select a school…" required />
         </label>
         {schools.length === 0 && (
           <p>
