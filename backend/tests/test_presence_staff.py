@@ -68,3 +68,52 @@ def test_presence_footer_both_template_variants():
     )
     out = _parse_presence_footer(delran, "https://dhs.example.org")
     assert out["address"] == "50 Hartford Rd., Delran, NJ 08075" and out["main_phone"] == "856.461.6100"
+
+
+def test_presence_system_groups_are_not_staff(monkeypatch):
+    """Gateway's /district/staff_directory lists every login account under
+    "Registered Users" (and Parents/Students roles) beside the real
+    department groups. Only the department groups are staff."""
+    import asyncio
+
+    import httpx
+
+    from services import staff_roster
+
+    page = '<div class="staffDirectoryComponent" data-portlet-instance-id="42"></div>'
+    groups = [
+        {"groupID": 1, "name": "Registered Users"},
+        {"groupID": 2, "name": "Students"},
+        {"groupID": 3, "name": "Science"},
+    ]
+    people = {
+        1: [{"userID": 9, "firstName": "Login", "lastName": "Only", "jobTitle": "", "email": "x@example.org"}],
+        2: [{"userID": 8, "firstName": "Some", "lastName": "Student", "jobTitle": "", "email": ""}],
+        3: [{"userID": 7, "firstName": "Pat", "lastName": "Teacher", "jobTitle": "Teacher", "email": "pt@example.org"}],
+    }
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, **k):
+            code = 200 if url.endswith("/district/staff_directory") else 404
+            return httpx.Response(code, text=page, request=httpx.Request("GET", url))
+
+        async def post(self, url, json=None, headers=None):
+            if url.endswith("/Settings"):
+                body = {"d": {"groups": groups}}
+            else:
+                body = {"d": {"results": people[json["groupIds"][0]]}}
+            return httpx.Response(200, json=body, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(staff_roster.httpx, "AsyncClient", FakeClient)
+    items = asyncio.run(staff_roster._fetch_presence_roster("https://www.gateway.test"))
+    assert [i["full_name"] for i in items] == ["Pat Teacher"]
+    assert items[0]["department"] == "Science" and items[0]["email"] == "pt@example.org"
