@@ -7,6 +7,7 @@ from database import get_db
 from models import District, DistrictTransportation, ScheduledJob, User
 from schemas import DistrictCreate, DistrictOut, DistrictSummaryOut, DistrictUpdate, ScheduledJobOut, DistrictTransportationOut
 from scheduler.cron import public_scan_cron
+from scheduler.job_names import district_job_name
 
 router = APIRouter(prefix="/districts", tags=["districts"])
 
@@ -20,7 +21,7 @@ async def _ensure_calendar_scan_job(db: AsyncSession, district: District, user: 
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="district_calendar.scan",
-        name=f"District calendar scan: {district.name}",
+        name=district_job_name("District calendar scan", district),
         cron_expr=public_scan_cron("district_calendar.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -38,7 +39,7 @@ async def _ensure_marking_period_job(db: AsyncSession, district: District, user:
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="marking_period.scan",
-        name=f"Marking period dates scan: {district.name}",
+        name=district_job_name("Marking period dates scan", district),
         cron_expr=public_scan_cron("marking_period.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -54,7 +55,7 @@ async def _ensure_preschool_locations_job(db: AsyncSession, district: District, 
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="preschool_locations.scan",
-        name=f"Preschool locations scan: {district.name}",
+        name=district_job_name("Preschool locations scan", district),
         cron_expr=public_scan_cron("preschool_locations.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -70,7 +71,7 @@ async def _ensure_preschool_team_job(db: AsyncSession, district: District, user:
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="preschool_team.scan",
-        name=f"Preschool team scan: {district.name}",
+        name=district_job_name("Preschool team scan", district),
         cron_expr=public_scan_cron("preschool_team.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -86,7 +87,7 @@ async def _ensure_hs_rotation_job(db: AsyncSession, district: District, user: Us
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="hs_rotation.scan",
-        name=f"High school day rotation scan: {district.name}",
+        name=district_job_name("High school day rotation scan", district),
         cron_expr=public_scan_cron("hs_rotation.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -102,7 +103,7 @@ async def _ensure_calendar_pdf_job(db: AsyncSession, district: District, user: U
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="district_calendar_pdf.scan",
-        name=f"District calendar PDF scan: {district.name}",
+        name=district_job_name("District calendar PDF scan", district),
         cron_expr=public_scan_cron("district_calendar_pdf.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -118,7 +119,7 @@ async def _ensure_transportation_job(db: AsyncSession, district: District, user:
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="transportation.scan",
-        name=f"Transportation scan: {district.name}",
+        name=district_job_name("Transportation scan", district),
         cron_expr=public_scan_cron("transportation.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -134,7 +135,7 @@ async def _ensure_schoolcafe_job(db: AsyncSession, district: District, user: Use
     job = ScheduledJob(
         owner_user_id=user.id,
         kind="schoolcafe_menu.scan",
-        name=f"SchoolCafé menu scan: {district.name}",
+        name=district_job_name("SchoolCafé menu scan", district),
         cron_expr=public_scan_cron("schoolcafe_menu.scan", district.id),
         params={"district_id": district.id},
         enabled=True,
@@ -166,6 +167,7 @@ async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
     return DistrictOut(
         id=district.id,
         name=district.name,
+        state=district.state,
         website_url=district.website_url,
         food_services_menu_url=district.food_services_menu_url,
         ics_feeds=district.ics_feeds,
@@ -197,12 +199,13 @@ async def list_districts(db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=DistrictOut, status_code=status.HTTP_201_CREATED)
 async def create_district(payload: DistrictCreate, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(District).where(District.name == payload.name))
+    existing = await db.execute(select(District).where(District.name == payload.name, District.state == payload.state))
     if existing.scalar_one_or_none():
-        raise HTTPException(status.HTTP_409_CONFLICT, "A district with that name already exists")
+        raise HTTPException(status.HTTP_409_CONFLICT, f"A district with that name already exists in {payload.state}")
 
     district = District(
         name=payload.name,
+        state=payload.state,
         website_url=payload.website_url,
         food_services_menu_url=payload.food_services_menu_url,
         ics_feeds=[f.model_dump() for f in payload.ics_feeds],
@@ -222,7 +225,7 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
         job = ScheduledJob(
             owner_user_id=user.id,
             kind="lunch_menu.scan",
-            name=f"Lunch menu scan: {payload.name}",
+            name=district_job_name("Lunch menu scan", district),
             cron_expr=public_scan_cron("lunch_menu.scan", district.id),
             params={"district_id": district.id},
             enabled=True,

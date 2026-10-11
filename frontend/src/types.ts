@@ -34,6 +34,7 @@ export type SchoolContentItem = {
 export type DistrictSummary = {
   id: string;
   name: string;
+  state: string;
   towns: string[];
 };
 

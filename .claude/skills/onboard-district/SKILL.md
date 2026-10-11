@@ -22,6 +22,8 @@ The main session orchestrates; the crawling happens in `district-crawler` subage
 
 The crawl guide says how to *find* each data point; this section is how it gets *in*.
 
+A district is identified by its state and name (`District.state`, NJ when a seed doesn't say). For a non-NJ district put `"state": "PA"` on it, and on any school or newsletter whose district is not in the same file add `"district_state"`; `seed-with-results.sh` passes the seed's state to the results export (one state per seed). School slugs are global: a school whose slug another state's school already has needs a distinct one.
+
 Seed through **Admin → Import/export** (`POST /admin/config/import`) with a JSON file like those in `backend/seed/`: idempotent, admin-only, runs the same `_ensure_*_job` hooks as the forms, identical on local and prod (`scripts/schoolz-api.sh prod POST /admin/config/import <file>`). `IcsFeed.school_slug` (not an id) makes per-school feeds portable. Process fields with no newsletter source (absence method/phone, hours) are typed into the seed from the district's own pages. The optional `local_events` section upserts sources into an existing `local_events.refresh` job by name; it never removes one (that would delete its events) and isn't exported, since prod deliberately runs a different source list than local.
 
 ### Carrying scan results

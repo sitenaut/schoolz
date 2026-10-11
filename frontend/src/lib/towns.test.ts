@@ -3,9 +3,9 @@ import type { DistrictSummary, School } from "../types";
 import { defaultTown, pickerTowns, schoolsInTown, searchSchools } from "./towns";
 
 const districts: DistrictSummary[] = [
-  { id: "ch", name: "Cherry Hill Public Schools", towns: ["Cherry Hill"] },
-  { id: "vt", name: "Voorhees Township Public Schools", towns: ["Voorhees"] },
-  { id: "er", name: "Eastern Camden County Regional School District", towns: ["Voorhees", "Berlin", "Gibbsboro"] },
+  { id: "ch", name: "Cherry Hill Public Schools", state: "NJ", towns: ["Cherry Hill"] },
+  { id: "vt", name: "Voorhees Township Public Schools", state: "NJ", towns: ["Voorhees"] },
+  { id: "er", name: "Eastern Camden County Regional School District", state: "NJ", towns: ["Voorhees", "Berlin", "Gibbsboro"] },
 ];
 const byId = new Map(districts.map((d) => [d.id, d]));
 const s = (slug: string, district_id: string, school_type: string, name = slug) => ({ slug, name, short_name: null, district_id, school_type }) as unknown as School;

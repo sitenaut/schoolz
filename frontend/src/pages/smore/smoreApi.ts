@@ -1,4 +1,5 @@
 import { apiFetch } from "../../api";
+import { districtLabel } from "../../lib/districtLabel";
 import type { SmoreBlock, SmoreNewsletter } from "../../types";
 
 async function fail(res: Response, fallback: string): Promise<never> {
@@ -74,6 +75,6 @@ export async function loadTargets(): Promise<{ schools: TargetOption[]; district
   const byLabel = (a: TargetOption, b: TargetOption) => a.label.localeCompare(b.label);
   return {
     schools: schools.map((s: { id: string; name: string }) => ({ id: s.id, label: s.name })).sort(byLabel),
-    districts: districts.map((d: { id: string; name: string }) => ({ id: d.id, label: d.name })).sort(byLabel),
+    districts: districts.map((d: { id: string; name: string; state?: string }) => ({ id: d.id, label: districtLabel(d) })).sort(byLabel),
   };
 }

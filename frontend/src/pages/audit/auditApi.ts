@@ -1,4 +1,5 @@
 import { apiFetch } from "../../api";
+import { districtLabel } from "../../lib/districtLabel";
 
 export type AuditStatus = "current" | "stale" | "failing" | "not_collecting" | "not_applicable";
 export type Audience = "internal" | "district";
@@ -92,8 +93,8 @@ export async function getAudit<C extends CellSummary = CellSummary>(opts: { dist
 export async function listDistricts(): Promise<{ id: string; name: string }[]> {
   const res = await apiFetch("/districts");
   if (!res.ok) return fail(res, "Could not load districts");
-  const rows: { id: string; name: string }[] = await res.json();
-  return rows.map((d) => ({ id: d.id, name: d.name })).sort((a, b) => a.name.localeCompare(b.name));
+  const rows: { id: string; name: string; state?: string }[] = await res.json();
+  return rows.map((d) => ({ id: d.id, name: districtLabel(d) })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getSchoolAudit(schoolId: string, audience?: Audience): Promise<SchoolAudit> {

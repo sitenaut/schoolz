@@ -464,9 +464,16 @@ class District(Base):
     parent ever needing to know or care that it's shared."""
 
     __tablename__ = "districts"
+    # A district is its state plus its name: "Washington Township School
+    # District" exists in several New Jersey counties and in other states, so
+    # the name alone cannot be the identity. NJ is the default - every district
+    # tracked so far is there - and anywhere a district is matched by name
+    # (seed imports, results export) the state comes with it.
+    __table_args__ = (UniqueConstraint("state", "name", name="uq_districts_state_name"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(2), nullable=False, default="NJ", server_default="NJ")
     website_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Page listing current breakfast/lunch menu PDFs by grade band - the
     # entry point for services/lunch_menu.py's discovery step.
