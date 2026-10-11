@@ -172,6 +172,42 @@ def _classify_pdf_link(url: str) -> dict | None:
     return None
 
 
+# Washington Township (Gloucester): last month's menus are resource-manager
+# PDFs, but the current month's are fixed-name PNGs (/uploaded/Food_Service/
+# ES_L.png, overwritten monthly) with no filename to classify - only the link
+# text says what they are: "Elementary Lunch Menu -- October 2026".
+_IMAGE_MENU_LINK_RE = re.compile(
+    r'<a\b[^>]*href="([^"]+\.(?:png|jpe?g)(?:\?[^"]*)?)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL
+)
+_IMAGE_MENU_TEXT_RE = re.compile(
+    r"(preschool|pre-?k|elementary|middle(?:\s+school)?|high(?:\s+school)?)\s+(breakfast|lunch)\s+menu\W+("
+    + "|".join(_MONTHS)
+    + r")\W+(\d{4})",
+    re.IGNORECASE,
+)
+_IMAGE_BAND = {"pre": "other", "ele": "elementary", "mid": "middle", "hig": "high"}
+
+
+def _classify_image_menu_links(page_url: str, html: str) -> list[dict]:
+    out = []
+    for href, inner in _IMAGE_MENU_LINK_RE.findall(html):
+        text = re.sub(r"<[^>]+>", " ", inner).replace("&nbsp;", " ").replace("\xa0", " ")
+        m = _IMAGE_MENU_TEXT_RE.search(re.sub(r"\s+", " ", text))
+        if not m:
+            continue
+        band, meal, month, year = m.groups()
+        out.append(
+            {
+                "school_type": _IMAGE_BAND[band.lower()[:3]],
+                "meal_type": meal.lower(),
+                "period_label": f"{month.title()} {year}",
+                "pdf_url": urljoin(page_url, href),
+                "_sort": _month_sort(month, year),
+            }
+        )
+    return out
+
+
 async def _resolve_resource_manager_links(page_url: str, html: str) -> set[str]:
     """Follows each Finalsite resource-manager wrapper link to its real
     PDF URL. Non-PDF resources (a handbook, a USDA notice) resolve fine but
@@ -287,8 +323,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         return [{**c, "pdf_url": alias.get(c["pdf_url"], c["pdf_url"])} for c in entries]
 
     by_key: dict[tuple, dict] = {}
-    for url in urls:
-        classified = _classify_pdf_link(url)
+    for url, classified in [(u, _classify_pdf_link(u)) for u in urls] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
         if classified:
             key = (classified["school_type"], classified["meal_type"])
             # The page can list more than one month at once, and `urls` is a
