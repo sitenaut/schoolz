@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -676,6 +676,7 @@ async def list_school_content(
     q: str | None = None,
     include_superseded: bool = False,
     include_class_sources: bool = False,
+    include_past: bool = False,
     school: School = Depends(resolve_school),
     db: AsyncSession = Depends(get_db),
     lang: str = Depends(request_lang),
@@ -690,7 +691,12 @@ async def list_school_content(
     which run to dozens of club-meeting-level items a week) - exactly the
     "too much detail for a general view" case a per-class page
     (/schools/{id}/class-years/{grad_year}/content, which always includes
-    them) exists to absorb instead. See docs/HS_CLASS_PAGES_DESIGN.md."""
+    them) exists to absorb instead. See docs/HS_CLASS_PAGES_DESIGN.md.
+
+    include_past=False (the default) drops items that ended before
+    yesterday. Calendar scans only ever add, so a big school's history ran to
+    thousands of rows (~2 MB) on every page view and tripped the route-p95
+    alert. Undated items (people, programs, reminders) always stay."""
     scope_filter = SchoolContentItem.school_id == school.id
     if school.district_id:
         scope_filter = or_(scope_filter, SchoolContentItem.district_id == school.district_id)
@@ -704,6 +710,15 @@ async def list_school_content(
     # that's decided, so the data can be captured now without dumping
     # dozens of games a week into every family's calendar meanwhile.
     query = query.where(SchoolContentItem.source != "arbiter_athletics")
+    if not include_past:
+        # A day of slack so a timezone edge never hides today's event.
+        cutoff = datetime.now(timezone.utc) - timedelta(days=1)
+        query = query.where(
+            or_(
+                SchoolContentItem.start_date.is_(None),
+                func.coalesce(SchoolContentItem.end_date, SchoolContentItem.start_date) >= cutoff,
+            )
+        )
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:
