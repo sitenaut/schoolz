@@ -91,5 +91,7 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   don't "correct" it, the `parkview-` form 404s) and Woodbury Heights, so match by name.
   Gateway's own events are on its Arbiter calendar (`/School/Calendar/8327`), which
   the athletics scan reads: `/m/game/<id>` items are games (hidden by default),
-  `/m/event/<id>` items are school events (`source=arbiter_events`, shown). No other
-  tracked school has event items on Arbiter yet. Event titles carry HTML entities.
+  `/m/event/<id>` items are events, shown (`source=arbiter_events`) only for a school with
+  `arbiter_events_calendar` set (Gateway). A sweep of all 44 tracked Arbiter ids found events on 12;
+  at most they are team business (open gyms, tryouts, team dinners), which stays hidden
+  with the games. Event titles carry HTML entities.

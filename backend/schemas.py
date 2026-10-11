@@ -467,6 +467,7 @@ class SchoolUpdate(BaseModel):
     early_dismissal_time: str | None = Field(default=None, max_length=20)
     delayed_opening_time: str | None = Field(default=None, max_length=20)
     athletics_url: str | None = Field(default=None, max_length=500)
+    arbiter_events_calendar: bool | None = None
     logo_url: str | None = Field(default=None, max_length=1000)
     special_events_calendar_url: str | None = Field(default=None, max_length=500)
     # High-school class-pages sources - see School.activities_calendar_ics_url
@@ -536,6 +537,7 @@ class SchoolOut(BaseModel):
     early_dismissal_time: str | None
     delayed_opening_time: str | None
     athletics_url: str | None
+    arbiter_events_calendar: bool = False
     logo_url: str | None
     special_events_calendar_url: str | None
     activities_calendar_ics_url: str | None
@@ -1041,6 +1043,7 @@ class ExportSchoolOut(BaseModel):
     early_dismissal_time: str | None
     delayed_opening_time: str | None
     athletics_url: str | None
+    arbiter_events_calendar: bool = False
     logo_url: str | None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     sacc: ExportSaccOut | None
