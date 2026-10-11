@@ -1,3 +1,4 @@
+import { FilterSelect } from "../../components/ui/FilterSelect";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getDataPoints, listDistricts, type DataPointsAudit } from "./auditApi";
@@ -105,20 +106,16 @@ export function AuditCatalogPage() {
         </label>
         <label className="field">
           <span className="lbl">District</span>
-          <select
+          <FilterSelect
             value={district}
-            onChange={(e) => {
-              setParams(e.target.value ? { district: e.target.value } : {}, { replace: true });
+            onChange={(v) => {
+              setParams(v ? { district: v } : {}, { replace: true });
               setPage(0);
             }}
-          >
-            <option value="">All districts</option>
-            {districts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+            options={districts.map((d) => ({ value: d.id, label: d.name }))}
+            placeholder="All districts"
+            clearLabel="All districts"
+          />
         </label>
         <label className="field">
           <span className="lbl">Group</span>

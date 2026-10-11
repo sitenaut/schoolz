@@ -1,3 +1,4 @@
+import { FilterSelect } from "../../components/ui/FilterSelect";
 import { useEffect, useMemo, useState } from "react";
 import { Field } from "../../components/ui/Field";
 import { Modal } from "../../components/ui/Modal";
@@ -190,14 +191,14 @@ export function JobFormModal({ open, onClose, onSaved, kinds, targets, job }: Pr
             return (
               <Field key={key} label={`${TARGET_LABELS[key] ?? key}${required ? "" : " (optional)"}`} className={paramKeys.length === 1 ? "span2" : ""}>
                 {options ? (
-                  <select value={params[key] ?? ""} onChange={(e) => setParams((p) => ({ ...p, [key]: e.target.value }))} required={required}>
-                    <option value="">— choose —</option>
-                    {options.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                  <FilterSelect
+                    value={params[key] ?? ""}
+                    onChange={(v) => setParams((p) => ({ ...p, [key]: v }))}
+                    options={options.map((o) => ({ value: o.id, label: o.label }))}
+                    placeholder="— choose —"
+                    clearLabel={required ? undefined : "— none —"}
+                    required={required}
+                  />
                 ) : (
                   <input value={params[key] ?? ""} onChange={(e) => setParams((p) => ({ ...p, [key]: e.target.value }))} required={required} />
                 )}

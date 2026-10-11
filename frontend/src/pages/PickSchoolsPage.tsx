@@ -1,7 +1,8 @@
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { IconSearch } from "../components/icons";
+import { IconSearch, IconX } from "../components/icons";
 import { logoClass } from "../lib/logos";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { useMySchools } from "../lib/mySchools";
@@ -65,6 +66,9 @@ export function PickSchoolsPage() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   }, [town, allSchools, districtsById]);
 
+  // Picks span towns, and the town list no longer shows them all at once.
+  const pickedSchools = useMemo(() => allSchools.filter((s) => picked.includes(s.slug)), [allSchools, picked]);
+
   const toggle = (s: School) => setPicked((p) => (p.includes(s.slug) ? p.filter((x) => x !== s.slug) : [...p, s.slug]));
 
   const save = () => {
@@ -88,16 +92,26 @@ export function PickSchoolsPage() {
       </label>
 
       {towns.length > 1 && !searching && (
-        <div className="chips town-chips" role="group" aria-label={t("Town")}>
-          {towns.map((tw) => {
-            const n = pickedCountIn(tw);
-            return (
-              <button key={tw} className="chip town-chip" aria-pressed={town === tw} onClick={() => setTown(tw)}>
-                {tw}
-                {n > 0 && <span className="chip-count">{n}</span>}
-              </button>
-            );
-          })}
+        <FilterSelect
+          className="town-select"
+          value={town ?? ""}
+          onChange={(v) => setTown(v || null)}
+          options={towns.map((tw) => ({ value: tw, label: tw, count: pickedCountIn(tw) }))}
+          placeholder={t("Choose your town")}
+          filterPlaceholder={t("Type your town…")}
+          ariaLabel={t("Town")}
+        />
+      )}
+
+      {pickedSchools.length > 0 && (
+        <div className="picked-row" role="group" aria-label={t("Your schools")}>
+          <span className="picked-lbl">{t("Your schools")}</span>
+          {pickedSchools.map((s) => (
+            <button key={s.id} className="picked-chip" onClick={() => toggle(s)} aria-label={t("Remove {{name}}", { name: s.short_name || s.name })}>
+              {s.short_name || s.name}
+              <IconX />
+            </button>
+          ))}
         </div>
       )}
 

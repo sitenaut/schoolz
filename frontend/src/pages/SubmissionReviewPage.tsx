@@ -1,3 +1,4 @@
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Badge } from "../components/ui/Badge";
@@ -410,18 +411,13 @@ export function SubmissionReviewPage() {
 
           <SectionCard title="Filing">
             <Field label="School" hint="School and district items land on this school's page and calendar. Local events don't need one.">
-              <select
+              <FilterSelect
                 value={submission.school_id ?? ""}
                 disabled={!canEdit || busy !== null}
-                onChange={(e) => e.target.value && patchSubmission({ school_id: e.target.value })}
-              >
-                <option value="">Pick a school…</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => v && patchSubmission({ school_id: v })}
+                options={schools.map((s) => ({ value: s.id, label: s.label }))}
+                placeholder="Pick a school…"
+              />
             </Field>
             <Field label="Admin notes">
               <textarea
