@@ -10,6 +10,7 @@ one month at a time, covering every sport/level at that school combined
 (varsity and JV soccer, cross country, volleyball, ... all in one feed).
 """
 
+import html
 import re
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
@@ -93,16 +94,26 @@ async def fetch_events(entity_id: str, start: date, end: date, timeout: float = 
                 if start_dt.date() < start or start_dt.date() > end:
                     continue
 
-                game_id_match = re.search(r"/m/game/(\d+)", event.get("url") or "")
-                game_id = game_id_match.group(1) if game_id_match else f"{year}{month:02d}{day:02d}-{event.get('title')}-{event.get('opponent')}"
+                # A game is /m/game/<id>; Gateway's school events (field trips,
+                # Financial Aid Night) are /m/event/<id> on the same calendar,
+                # which Arbiter is rolling out as a school's own event calendar.
+                url_match = re.search(r"/m/(game|event)/(\d+)", event.get("url") or "")
+                kind = url_match.group(1) if url_match else "game"
+                if url_match:
+                    game_id = url_match.group(2) if kind == "game" else f"event:{url_match.group(2)}"
+                else:
+                    game_id = f"{year}{month:02d}{day:02d}-{event.get('title')}-{event.get('opponent')}"
 
-                title = " ".join(part for part in (event.get("title"), event.get("opponent")) if part)
+                # The JSON carries HTML entities ("Baking &amp; Builders Club").
+                title = html.unescape(" ".join(part for part in (event.get("title"), event.get("opponent")) if part))
+                location = html.unescape(event.get("location") or "")
                 out.append(
                     {
                         "external_uid": game_id,
+                        "kind": kind,
                         "team": event.get("title") or "",
                         "title": title or "(untitled)",
-                        "description": event.get("location") or None,
+                        "description": location or None,
                         "start_date": start_dt,
                         "end_date": None,
                         "is_all_day": is_all_day,

@@ -107,3 +107,23 @@ async def test_fetch_events_no_time_is_all_day(monkeypatch):
 
     events = await fetch_events("4714", date(2026, 9, 1), date(2026, 9, 30))
     assert events[0]["is_all_day"] is True
+
+
+@pytest.mark.anyio
+async def test_school_events_are_marked_apart_from_games_and_unescaped(monkeypatch):
+    """Gateway's Arbiter calendar also carries the school's own events
+    (/m/event/<id>): field trips, Financial Aid Night. They are not games, and
+    the JSON has HTML entities in their titles."""
+    event = {"day": 8, "time": "1:30 PM", "title": "FIELD TRIP: Baking &amp; Builders Club to Ocean City", "opponent": None,
+             "location": "Off Site Event - Off Site Event", "type": "event", "url": "/m/event/901500?entityId=8327"}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_month_payload(2026, 10, [_event(1, "Soccer - Girls Varsity", "vs Pitman High School", game_id=77), event]))
+
+    monkeypatch.setattr(arbiter.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
+
+    game, trip = await fetch_events("8327", date(2026, 10, 1), date(2026, 10, 31))
+    assert (game["kind"], game["external_uid"]) == ("game", "77")
+    assert trip["kind"] == "event"
+    assert trip["external_uid"] == "event:901500"  # cannot collide with a numeric game id
+    assert trip["title"] == "FIELD TRIP: Baking & Builders Club to Ocean City"
