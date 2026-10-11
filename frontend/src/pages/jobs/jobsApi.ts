@@ -1,4 +1,5 @@
 import { apiFetch } from "../../api";
+import { districtLabel } from "../../lib/districtLabel";
 import type { JobKind, JobRun, ScheduledJob, TestFetchResult } from "../../types";
 
 async function fail(res: Response, fallback: string): Promise<never> {
@@ -81,7 +82,7 @@ export async function loadTargetOptions(): Promise<Record<string, { id: string; 
   const byName = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label);
   return {
     school_id: schools.map((s: { id: string; name: string }) => ({ id: s.id, label: s.name })).sort(byName),
-    district_id: districts.map((d: { id: string; name: string }) => ({ id: d.id, label: d.name })).sort(byName),
+    district_id: districts.map((d: { id: string; name: string; state?: string }) => ({ id: d.id, label: districtLabel(d) })).sort(byName),
     newsletter_id: newsletters.map((n: { id: string; label: string | null; url: string }) => ({ id: n.id, label: n.label || n.url })).sort(byName),
     scanner_id: scanners.map((s: { id: string; name: string }) => ({ id: s.id, label: s.name })).sort(byName),
   };

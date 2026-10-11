@@ -28,7 +28,11 @@ names = [d["name"] for d in seed.get("districts", [])] + [s.get("district_name")
 names = list(dict.fromkeys(n for n in names if n))
 if not names:
     sys.exit("seed names no district")
-print(urllib.parse.urlencode([("district", n) for n in names]))
+# A district is its state plus its name; a seed that doesn't say is New Jersey.
+states = {d.get("state", "NJ") for d in seed.get("districts", [])} or {"NJ"}
+if len(states) != 1:
+    sys.exit("seed spans several states; carry results one state at a time")
+print(urllib.parse.urlencode([("district", n) for n in names] + [("state", states.pop())]))
 PY
 )
 

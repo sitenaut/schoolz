@@ -66,6 +66,7 @@ from routers.schools import (
 )
 from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
 from scheduler.cron import public_scan_cron, spread_default_smore_cron
+from scheduler.job_names import district_job_name
 from services.config_results import export_results, import_results
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
@@ -110,6 +111,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 name=s.name,
                 short_name=s.short_name,
                 district_name=district_by_id[s.district_id].name if s.district_id in district_by_id else None,
+                district_state=district_by_id[s.district_id].state if s.district_id in district_by_id else None,
                 school_type=s.school_type,
                 address=s.address,
                 main_phone=s.main_phone,
@@ -149,6 +151,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 label=n.label,
                 school_slug=school_by_id[n.school_id].slug if n.school_id in school_by_id else None,
                 district_name=district_by_id[n.district_id].name if n.district_id in district_by_id else None,
+                district_state=district_by_id[n.district_id].state if n.district_id in district_by_id else None,
                 cron_expr="0 8 * * 1",
                 timezone="America/New_York",
                 enabled=True,
@@ -160,12 +163,12 @@ async def export_config(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/results", response_model=ConfigResults, dependencies=[Depends(require_permission("config.view"))])
-async def export_config_results(district: list[str] = Query(..., min_length=1), db: AsyncSession = Depends(get_db)):
+async def export_config_results(district: list[str] = Query(..., min_length=1), state: str = Query("NJ", pattern=r"^[A-Z]{2}$"), db: AsyncSession = Depends(get_db)):
     """What the model-backed scans have already extracted for the named
     districts, to send along with their config as `results` on import
     (services/config_results.py). Always scoped to named districts: this
     environment's other data may be stale or test rows."""
-    return await export_results(db, district)
+    return await export_results(db, district, state)
 
 
 @router.post("/import", response_model=ConfigImportResult, dependencies=[Depends(require_permission("config.manage"))])
@@ -177,15 +180,33 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         "sacc_created": 0, "sacc_updated": 0,
     }
 
-    # --- Districts, matched by name ---
-    district_by_name: dict[str, District] = {d.name: d for d in (await db.execute(select(District))).scalars().all()}
+    # --- Districts, matched by state and name ---
+    # A district is its state plus its name (District), so a name alone is only
+    # enough to find one within a state: seeds say "NJ" implicitly.
+    district_by_key: dict[tuple[str, str], District] = {(d.state, d.name): d for d in (await db.execute(select(District))).scalars().all()}
+    states_in_file: dict[str, set[str]] = {}
     for d in payload.districts:
-        district = district_by_name.get(d.name)
+        states_in_file.setdefault(d.name, set()).add(d.state)
+
+    file_states = {st for states in states_in_file.values() for st in states} or {"NJ"}
+
+    def find_district(name: str | None, state: str | None) -> District | None:
+        """A school's or newsletter's district: the state it names, else the
+        state of the same-named district in this file, else NJ."""
+        if not name:
+            return None
+        if not state:
+            in_file = states_in_file.get(name, set())
+            state = next(iter(in_file)) if len(in_file) == 1 else ("NJ" if "NJ" in in_file or not in_file else None)
+        return district_by_key.get((state, name)) if state else None
+
+    for d in payload.districts:
+        district = district_by_key.get((d.state, d.name))
         if district is None:
-            district = District(name=d.name)
+            district = District(name=d.name, state=d.state)
             db.add(district)
             await db.flush()
-            district_by_name[d.name] = district
+            district_by_key[(d.state, d.name)] = district
             result["districts_created"] += 1
         else:
             result["districts_updated"] += 1
@@ -215,7 +236,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             job = ScheduledJob(
                 owner_user_id=user.id,
                 kind="lunch_menu.scan",
-                name=f"Lunch menu scan: {district.name}",
+                name=district_job_name("Lunch menu scan", district),
                 cron_expr=public_scan_cron("lunch_menu.scan", district.id),
                 params={"district_id": district.id},
                 enabled=True,
@@ -230,7 +251,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
     # Stratford and Westville), so the name fallback is per district.
     school_by_name: dict[tuple[str | None, str], School] = {(s.district_id, s.name): s for s in school_by_slug.values()}
     for s in payload.schools:
-        district = district_by_name.get(s.district_name) if s.district_name else None
+        district = find_district(s.district_name, s.district_state)
         school = school_by_slug.get(s.slug)
         if school is not None and district is not None and school.district_id not in (None, district.id):
             # Slugs are global, so a seed reusing another district's slug used
@@ -349,7 +370,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
     newsletter_by_url: dict[str, SmoreNewsletter] = {n.url: n for n in (await db.execute(select(SmoreNewsletter))).scalars().all()}
     for n in payload.smore_newsletters:
         school = school_by_slug.get(n.school_slug) if n.school_slug else None
-        district = district_by_name.get(n.district_name) if n.district_name else None
+        district = find_district(n.district_name, n.district_state)
         if (n.school_slug and not school) or (n.district_name and not district):
             result["smore_skipped"].append(n.url)
             continue
@@ -409,7 +430,8 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
     if payload.results:
         await db.flush()
         result["results_applied"], result["results_skipped"] = await import_results(
-            db, payload.results, districts=district_by_name, schools=school_by_slug
+            # Results come from one state's export (GET /results?state=), keyed by name.
+            db, payload.results, districts={d.name: d for (st, _), d in district_by_key.items() if st in file_states}, schools=school_by_slug
         )
 
     await db.commit()

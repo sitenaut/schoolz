@@ -142,11 +142,11 @@ def _blocks_out(rows: list) -> list[ResultBlock]:
     ]
 
 
-async def export_results(db: AsyncSession, district_names: list[str]) -> ConfigResults:
-    found = (await db.execute(select(District).where(District.name.in_(district_names)))).scalars().all()
+async def export_results(db: AsyncSession, district_names: list[str], state: str = "NJ") -> ConfigResults:
+    found = (await db.execute(select(District).where(District.name.in_(district_names), District.state == state))).scalars().all()
     missing = sorted(set(district_names) - {d.name for d in found})
     if missing:
-        raise HTTPException(status_code=404, detail=f"No district named: {', '.join(missing)}")
+        raise HTTPException(status_code=404, detail=f"No district named, in {state}: {', '.join(missing)}")
     districts = {d.id: d for d in found}
     schools = {
         s.id: s for s in (await db.execute(select(School).where(School.district_id.in_(districts)))).scalars().all()

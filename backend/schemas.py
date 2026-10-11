@@ -353,6 +353,8 @@ class IcsFeed(BaseModel):
 
 class DistrictCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
+    # Two-letter US state: a district is its state plus its name, since names repeat across states.
+    state: str = Field(default="NJ", pattern=r"^[A-Z]{2}$")
     website_url: str | None = None
     food_services_menu_url: str | None = None
     ics_feeds: list[IcsFeed] = Field(default_factory=list)
@@ -385,6 +387,7 @@ class DistrictSummaryOut(BaseModel):
 
     id: str
     name: str
+    state: str
     towns: list[str]
 
     model_config = {"from_attributes": True}
@@ -393,6 +396,7 @@ class DistrictSummaryOut(BaseModel):
 class DistrictOut(BaseModel):
     id: str
     name: str
+    state: str
     website_url: str | None
     food_services_menu_url: str | None
     ics_feeds: list[IcsFeed]
@@ -1030,6 +1034,9 @@ class ExportSchoolOut(BaseModel):
     name: str
     short_name: str | None
     district_name: str | None  # relinked by name in the target environment, not by id
+    # The district's state, when it is not the one a same-named district in this
+    # file already says (or NJ): district names repeat across states.
+    district_state: str | None = None
     school_type: str | None
     address: str | None
     main_phone: str | None
@@ -1066,6 +1073,7 @@ class ExportSchoolOut(BaseModel):
 
 class ExportDistrictOut(BaseModel):
     name: str
+    state: str = "NJ"  # defaulted so a seed that predates states still imports
     website_url: str | None
     food_services_menu_url: str | None
     ics_feeds: list[IcsFeed]
@@ -1091,6 +1099,7 @@ class ExportSmoreOut(BaseModel):
     # ExportSchoolOut.district_name, since District has no slug of its own.
     # Ordinarily exactly one of school_slug/district_name is set.
     district_name: str | None = None
+    district_state: str | None = None
     cron_expr: str
     timezone: str
     enabled: bool
