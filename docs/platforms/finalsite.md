@@ -111,3 +111,13 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   Hours and absence method exist only in a Family Handbook Google Doc
   (`/export?format=txt` works anonymously). Staff list paginates `?const_page=1..3`.
   Lunch is the shared `grsd` Nutrislice tenant.
+
+- **Washington Township SD (Gloucester)** — `backend/seed/washington_township_gloucester.json`. Multi-site Finalsite:
+  `www.wtps.org/` serves the WTHS home page and `/calendar`, `/staff-directory-link` serve Bells, so use `www/our-district/...`
+  for district facts and each school's subdomain for school facts. Calendars are Google Sync feeds, one id per school plus
+  district id 3, which is a *union* of every school's events (418) and also carries the closures: the feed carries
+  `skip_title_prefixes` (school names) so the school feeds keep their own events instead of losing them to the district-UID
+  subtraction. Elementary page slugs carry per-school `-clone` suffixes; copy errors carry over (Hurffville's admin page shows Birches'
+  phone), so trust the footer. Bell times are one district PDF (rows per building group: BE-TJ-WH, BI-HU-WW, MS, HS) behind
+  `/our-district/district-bell-schedule`. The calendar PDF is a resource-manager nav link; `calendar_pdf_url` points at that
+  wrapper directly (the directory page did not yield it). Athletics: WTHS is on GoBound but the owner supplied its ArbiterLive team id.

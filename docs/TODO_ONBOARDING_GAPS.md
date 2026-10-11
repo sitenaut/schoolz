@@ -9,7 +9,7 @@ Found while looking at the Kids Choice before/after-care operator (`kidschoicewt
 - [ ] Brooklawn (Alice Costello Elementary), Kids Choice page `brooklawn-alice-costello-elementary-school`.
 - [ ] Clayton (Herma S. Simmons Elementary), page `clayton-school-district`.
 - [ ] Monroe Township (Holly Glenn, Oak Knoll, Radix, Whitehall and others), page `monroe-township`.
-- [ ] Washington Township, Gloucester County (Bells, Hurffville and others), page `washington-township`. Its page carries a notice that Hurffville AM care is full.
+- [x] Washington Township, Gloucester County: onboarded locally (`washington_township_gloucester.json`), after-care included; prod import pending.
 - [ ] Gloucester City: named on the Clayton page as a Kids Choice location, but it has no page of its own in the site nav. Confirm before scoping.
 - Gateway Regional, Woodbury Heights, Westville, National Park and Wenonah are onboarded and imported locally; prod import is pending. Their lunch menus share Gateway's Nutrislice tenant `grsd`.
 

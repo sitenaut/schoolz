@@ -29,6 +29,8 @@ You crawl public school websites for schoolz onboarding and report what you foun
 
 Everything in the guide's field sections that applies to your scope. `school`: basics, bell schedule, absence method, athletics url, newsletter source, staff directory location, PTA, per-school calendar feeds, documents. `district`: calendar feeds (ICS, embedded Google, PDF), lunch vendor and shortname, transportation page, rotation, marking periods, towns, district-wide roster.
 
+- **Athletics/Arbiter, every school including middle schools:** follow the guide's athletics section to the real ArbiterLive entity (`arbiterlive.com/m/team/<id>`, `/Teams?entityId=<id>`, `/School/Calendar/<id>`), through white-label domains and BigTeams too, and report the id and URL form for each school and for its school-events calendar. Search the school's athletics/activities pages *and* the district's; "no athletics link on the home page" is not "none" (a middle school's Arbiter id has come from the owner, not the site). Name GoBound/other vendors explicitly as unsupported.
+
 Rules that cost real time before:
 - Track the stable **page**, not the dated link.
 - Verify a vendor shortname or id against its public API before reporting it; a guess is not a finding.

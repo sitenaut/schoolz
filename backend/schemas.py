@@ -349,6 +349,9 @@ class IcsFeed(BaseModel):
     # Collingswood/Oaklyn/Woodlynne run Apptegy, not Finalsite.
     platform: str | None = None
     org_id: str | None = None
+    # Drop events whose title starts with one of these (case-insensitive) -
+    # for a district-wide feed that is really a union of every school's feed.
+    skip_title_prefixes: list[str] | None = None
 
 
 class DistrictCreate(BaseModel):
