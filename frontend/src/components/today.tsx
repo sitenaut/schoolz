@@ -17,11 +17,12 @@ import { TranslatedNote } from "./TranslatedNote";
 
 export function StatusPill({ status, label, hours }: { status: TodayDay["status"]; label: string | null; hours: string | null }) {
   const { t } = useTranslation();
-  if (status === "closed") return <span className="status bad">{t("Closed")}{label ? ` · ${label}` : ""}</span>;
-  if (status === "early_dismissal") return <span className="status warn">{t("Early dismissal")}{hours ? ` · ${hours}` : ""}</span>;
-  if (status === "delayed") return <span className="status warn">{t("Delayed opening")}{hours ? ` · ${hours}` : ""}</span>;
-  if (status === "weekend") return <span className="status muted">{t("No school")}</span>;
-  return <span className="status ok">{t("Open")}{hours ? ` · ${hours}` : ""}</span>;
+  // "short" = nothing but the status word(s), which must never wrap beside a long school name.
+  if (status === "closed") return <span className={`status bad${label ? "" : " short"}`}>{t("Closed")}{label ? ` · ${label}` : ""}</span>;
+  if (status === "early_dismissal") return <span className={`status warn${hours ? "" : " short"}`}>{t("Early dismissal")}{hours ? ` · ${hours}` : ""}</span>;
+  if (status === "delayed") return <span className={`status warn${hours ? "" : " short"}`}>{t("Delayed opening")}{hours ? ` · ${hours}` : ""}</span>;
+  if (status === "weekend") return <span className="status muted short">{t("No school")}</span>;
+  return <span className={`status ok${hours ? "" : " short"}`}>{t("Open")}{hours ? ` · ${hours}` : ""}</span>;
 }
 
 /** A high school slot is named by its block letter ("A block"), the lunch

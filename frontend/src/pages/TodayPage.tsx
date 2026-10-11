@@ -82,7 +82,7 @@ export function TodayPage() {
             <strong>{t("Pick your kids' schools")}</strong> {t("to see today's status, bell schedules, lunch, and bus info here.")}
           </p>
           <p>
-            <Link to="/start" className="btn btn-primary">
+            <Link to="/start" className="btn btn-primary attention">
               {t("Pick your schools")}
             </Link>
           </p>
