@@ -6,7 +6,7 @@ import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { trackEvent } from "../lib/track";
 import type { CurrentPeriod, DayBlock, NextRotation, SchoolContentItem, SchoolToday, TodayContact, TodayDay, TodayWeather } from "../types";
-import { AbsenceButton } from "./AbsenceButton";
+import { AbsenceButton, AbsenceNote } from "./AbsenceButton";
 import { Modal } from "./ui/Modal";
 import { IconChevronRight, IconPhone } from "./icons";
 import { useTranslation } from "react-i18next";
@@ -398,7 +398,7 @@ function SaccFact({ sacc }: { sacc: NonNullable<SchoolToday["sacc"]> }) {
   return (
     <div className="fact">
       <div className="k">{t("After school")}</div>
-      <div className="v">{sacc.pm_hours ? `${t("SACC")} ${sacc.pm_hours.replace(/\s*-\s*/, "–")}` : t("SACC")}</div>
+      <div className="v">{sacc.pm_hours ? `${t("After-care")} ${sacc.pm_hours.replace(/\s*-\s*/, "–")}` : t("After-care")}</div>
       {sacc.site_phone && (
         <div className="sub">
           {t("Site:")} <a href={telHref(sacc.site_phone)}>{sacc.site_phone}</a>
@@ -537,6 +537,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         </ul>
       )}
 
+      <AbsenceNote school={s} style={{ padding: "10px 14px 0", margin: 0 }} />
       <div className="actions">
         <AbsenceButton school={s} />
         {s.main_phone && (
@@ -557,7 +558,7 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
         )}
         {sacc?.site_phone && (
           <a className="action" href={telHref(sacc.site_phone)} onClick={() => track("sacc_late_line", "tel")}>
-            {t("Running late (SACC)")}
+            {t("Running late (after-care)")}
           </a>
         )}
         {data.transportation?.office_phone && (

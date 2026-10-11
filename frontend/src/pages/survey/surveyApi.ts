@@ -43,7 +43,7 @@ export const PAIN_POINT_GROUPS: { title: string; hint: string; items: { key: str
       { key: "absence", label: "How to report an absence" },
       { key: "transportation", label: "Buses — routes, the late bus, who to call when it's late" },
       { key: "lunch_menu", label: "Lunch menu" },
-      { key: "sacc", label: "Before & after-school care (SACC)" },
+      { key: "sacc", label: "After-care" },
       { key: "contacts", label: "Who to contact — principal, nurse, counselor, front office" },
       { key: "handbook", label: "Handbook & school policies" },
     ],
