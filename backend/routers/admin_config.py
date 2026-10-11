@@ -126,6 +126,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
                 delayed_opening_time=s.delayed_opening_time,
                 athletics_url=s.athletics_url,
                 arbiter_events_calendar=s.arbiter_events_calendar,
+                arbiter_events_district_wide=s.arbiter_events_district_wide,
                 logo_url=s.logo_url,
                 bell_periods=s.bell_periods,
                 sacc=ExportSaccOut.model_validate(saccs[s.id], from_attributes=True) if s.id in saccs else None,
@@ -291,6 +292,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         school.delayed_opening_time = s.delayed_opening_time or school.delayed_opening_time
         school.athletics_url = s.athletics_url or school.athletics_url
         school.arbiter_events_calendar = s.arbiter_events_calendar or school.arbiter_events_calendar
+        school.arbiter_events_district_wide = s.arbiter_events_district_wide or school.arbiter_events_district_wide
         await _ensure_athletics_calendar_job(db, school, user)
         school.logo_url = s.logo_url or school.logo_url
         if s.bell_periods:
