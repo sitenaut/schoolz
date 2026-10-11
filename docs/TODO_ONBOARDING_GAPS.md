@@ -4,6 +4,15 @@ Things the Runnemede, Black Horse Pike, Bellmawr and Gloucester Township
 onboarding could not find. Each is a lookup for a person, not a code bug. Tick
 off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md` or the matching `docs/platforms/` file.
 
+## Districts queued for onboarding
+Found while looking at the Kids Choice before/after-care operator (`kidschoicewt.com`), which runs programs in these districts. Not onboarded; none are in the local DB. Their Kids Choice pages share one template, so each school's after-care (`sacc`) hours and fees can be filled from `https://www.kidschoicewt.com/<district-page>/` once the district is in.
+- [ ] Brooklawn (Alice Costello Elementary), Kids Choice page `brooklawn-alice-costello-elementary-school`.
+- [ ] Clayton (Herma S. Simmons Elementary), page `clayton-school-district`.
+- [ ] Monroe Township (Holly Glenn, Oak Knoll, Radix, Whitehall and others), page `monroe-township`.
+- [ ] Washington Township, Gloucester County (Bells, Hurffville and others), page `washington-township`. Its page carries a notice that Hurffville AM care is full.
+- [ ] Gloucester City: named on the Clayton page as a Kids Choice location, but it has no page of its own in the site nav. Confirm before scoping.
+- Gateway Regional, Woodbury Heights, Westville, National Park and Wenonah are onboarded and imported locally; prod import is pending. Their lunch menus share Gateway's Nutrislice tenant `grsd`.
+
 ## Black Horse Pike Regional (Highland, Timber Creek, Triton)
 - [ ] Timber Creek half-day and 2-hour-delay schedules: its bell-schedule page publishes only the regular schedule (a PNG). Ask the school or look for a handbook.
 - [ ] Absence reporting method for each school.

@@ -1,0 +1,340 @@
+{
+  "exported_at": "2026-10-11T12:00:00Z",
+  "source": "onboarding: Woodbury City Public Schools",
+  "districts": [
+    {
+      "name": "Woodbury City Public School District",
+      "website_url": "https://www.woodburysch.com",
+      "food_services_menu_url": "https://www.woodburysch.com/apps/pages/index.jsp?uREC_ID=552160&type=d",
+      "ics_feeds": [
+        {
+          "name": "Woodbury District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/woodburycitypublicschoolscalendar%40woodburycityschools.us/public/basic.ics"
+        },
+        {
+          "name": "Woodbury Jr/Sr HS Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_62e21d69d9fda7928819d558889d9732850035040f373309aca83acf73de30ce%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "woodbury-jr-sr-high"
+        },
+        {
+          "name": "Evergreen Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_05c5111d063faeb013f728b04837407518495e074b449cb7acaaccd345a71783%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "evergreen"
+        },
+        {
+          "name": "Walnut Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_bad3145ed01536ae1672ac86b611978c347d6f1f0f531fd09739a9433188d0c3%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "walnut"
+        },
+        {
+          "name": "West End Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_5d9031fc7f56c9299d905f52252a61a070f581023f94bf194d48bc364ce9bee7%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "west-end-memorial"
+        },
+        {
+          "name": "Woodbury Assessment Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_ce21d7e9750884e3de65daa456201566fb090e12987ee0672d2bb85f779e8a03%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Woodbury"
+      ],
+      "schoolcafe_shortname": "WOODBURYCITYPSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "evergreen",
+      "name": "Evergreen Avenue Elementary School",
+      "short_name": "Evergreen",
+      "district_name": "Woodbury City Public School District",
+      "school_type": "elementary",
+      "address": "160 North Evergreen Avenue, Woodbury, NJ 08096",
+      "main_phone": "(856) 853-0125",
+      "website_url": "https://evergreen.woodburysch.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 853-0125",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Parent/guardian telephones the school before 9:00 AM each day the child is absent and gives the child's name, teacher, grade and reason (Family Handbook).",
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://evergreen.woodburysch.com/pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "walnut",
+      "name": "Walnut Street School",
+      "short_name": "Walnut",
+      "district_name": "Woodbury City Public School District",
+      "school_type": "elementary",
+      "address": "60 Walnut Street, Woodbury, NJ 08096",
+      "main_phone": "(856) 853-0126",
+      "website_url": "https://walnut.woodburysch.com",
+      "absence_method": "other",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Send a note from home with the student on the day they return, with the student's name, date(s) of absence and a parent/guardian signature. A doctor's note is required after more than 3 consecutive days (Student Handbook).",
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://walnut.woodburysch.com/pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "west-end-memorial",
+      "name": "West End Memorial Elementary School",
+      "short_name": "West End",
+      "district_name": "Woodbury City Public School District",
+      "school_type": "elementary",
+      "address": "215 Queen Street, Woodbury, NJ 08096",
+      "main_phone": "(856) 853-0124",
+      "website_url": "https://westend.woodburysch.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 853-0124",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Parent/guardian telephones the school before 9:00 AM each day the child is absent and gives the child's name, teacher, grade and reason (Family Handbook). Send a note from home the day the child returns.",
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://westend.woodburysch.com/pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "woodbury-jr-sr-high",
+      "name": "Woodbury Junior-Senior High School",
+      "short_name": "Woodbury Jr-Sr High",
+      "district_name": "Woodbury City Public School District",
+      "school_type": "high",
+      "address": "25 N. Broad Street, Woodbury, NJ 08096",
+      "main_phone": "(856) 853-0123",
+      "website_url": "https://hs.woodburysch.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 853-0123",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school office before 8:00 a.m. on the morning of the absence (before 10:00 a.m. for an afternoon-only absence). Written note within 10 days of return.",
+      "start_time": "7:45 AM",
+      "end_time": "2:37 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": "9:45 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "07:45",
+            "end": "07:55"
+          },
+          {
+            "name": "1",
+            "start": "07:59",
+            "end": "08:41"
+          },
+          {
+            "name": "2",
+            "start": "08:45",
+            "end": "09:27"
+          },
+          {
+            "name": "3",
+            "start": "09:31",
+            "end": "10:13"
+          },
+          {
+            "name": "4",
+            "start": "10:17",
+            "end": "10:59"
+          },
+          {
+            "name": "5 Sr High",
+            "start": "11:03",
+            "end": "11:45"
+          },
+          {
+            "name": "Lunch Jr High",
+            "start": "11:03",
+            "end": "11:33"
+          },
+          {
+            "name": "5 Jr High",
+            "start": "11:37",
+            "end": "12:19"
+          },
+          {
+            "name": "Lunch Sr High",
+            "start": "11:49",
+            "end": "12:19"
+          },
+          {
+            "name": "6",
+            "start": "12:23",
+            "end": "13:05"
+          },
+          {
+            "name": "7",
+            "start": "13:09",
+            "end": "13:51"
+          },
+          {
+            "name": "8",
+            "start": "13:55",
+            "end": "14:37"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "07:45",
+            "end": "07:55"
+          },
+          {
+            "name": "1",
+            "start": "07:59",
+            "end": "08:26"
+          },
+          {
+            "name": "2",
+            "start": "08:30",
+            "end": "08:57"
+          },
+          {
+            "name": "3",
+            "start": "09:01",
+            "end": "09:28"
+          },
+          {
+            "name": "4",
+            "start": "09:32",
+            "end": "09:59"
+          },
+          {
+            "name": "5 Sr High",
+            "start": "10:03",
+            "end": "10:30"
+          },
+          {
+            "name": "Lunch Jr High",
+            "start": "10:03",
+            "end": "10:30"
+          },
+          {
+            "name": "Lunch Sr High",
+            "start": "10:34",
+            "end": "11:01"
+          },
+          {
+            "name": "5 Jr High",
+            "start": "10:34",
+            "end": "11:01"
+          },
+          {
+            "name": "6",
+            "start": "11:05",
+            "end": "11:32"
+          },
+          {
+            "name": "7",
+            "start": "11:36",
+            "end": "12:03"
+          },
+          {
+            "name": "8",
+            "start": "12:07",
+            "end": "12:33"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "09:45",
+            "end": "09:55"
+          },
+          {
+            "name": "1",
+            "start": "09:59",
+            "end": "10:26"
+          },
+          {
+            "name": "2",
+            "start": "10:30",
+            "end": "10:57"
+          },
+          {
+            "name": "3",
+            "start": "11:01",
+            "end": "11:28"
+          },
+          {
+            "name": "4",
+            "start": "11:32",
+            "end": "11:59"
+          },
+          {
+            "name": "5 Sr High",
+            "start": "12:03",
+            "end": "12:30"
+          },
+          {
+            "name": "Lunch Jr High",
+            "start": "12:03",
+            "end": "12:30"
+          },
+          {
+            "name": "Lunch Sr High",
+            "start": "12:34",
+            "end": "13:01"
+          },
+          {
+            "name": "5 Jr High",
+            "start": "12:34",
+            "end": "13:01"
+          },
+          {
+            "name": "6",
+            "start": "13:05",
+            "end": "13:32"
+          },
+          {
+            "name": "7",
+            "start": "13:36",
+            "end": "14:03"
+          },
+          {
+            "name": "8",
+            "start": "14:07",
+            "end": "14:37"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/26186",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

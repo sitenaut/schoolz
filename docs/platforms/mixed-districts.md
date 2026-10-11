@@ -135,3 +135,20 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     PDF name carries no month); no handbooks found for Gibbsboro or Berlin
     Township; Clementon's footer isn't parsed, so address and phone live in
     the seed.
+
+- **Westville (Parkview) / Wenonah** — `backend/seed/westville.json`, `wenonah.json`.
+  Both are custom single-school sites on Bootstrap with Google Drive handbooks;
+  the handbook Google Doc (`/export?format=txt`, plain curl) holds hours, the
+  absence line, marking periods and bell tables. Calendars are plain
+  `calendar.google.com/calendar/embed?src=` links whose `src` is the calendar id.
+  Westville's real domain is `westvillesd.com` (`westvillenj.com`, `wvps.org` are
+  parked); Wenonah answers on `wenonahschool.org` and `wenonahsd.org`. Westville
+  lunch is the `grsd` Nutrislice tenant; Wenonah serves no lunch.
+  Westville's `/directory/` page is a client-rendered table fed by
+  `/resources/directory/directory.php` (JSON `{name, title, phone}`; `phone` is an
+  extension on the school's one line, no emails). Set that as `staff_directory_url`;
+  `fetch_directory_document` reads a JSON response before falling back to the scraper.
+  Wenonah's `/staff/` is `ul.pc-list`: an h5 (role or grade; h6 when nested) then
+  honorific-prefixed links. Only `mailto:` links are emails (one has its `mailto:`
+  left off); the rest are class pages. `_parse_pc_list_page`, tried by
+  `_fetch_plain_page_roster` at `/staff/`.

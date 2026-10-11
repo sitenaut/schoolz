@@ -75,3 +75,17 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     preschool's hours (four programs, one set of flat times) and lunch; Rush's
     newsletter page and the preschool's bulletin page are empty; Delran's
     district newsletter is a Presence documents widget nothing scans.
+
+- **Gateway Regional / Woodbury Heights** — `backend/seed/gateway_regional.json`,
+  `woodbury_heights.json`. Gateway is Presence (`/district/staff_directory`,
+  not `/staff_directory`; the "More..." button is only UI, the web service
+  returns every email; its Settings call also lists system groups Parents,
+  Students, Registered Users, Pending_Delete_Users, which the scan skips), and
+  its bell-schedule and calendar pages are PDFs served at a normal page URL.
+  Woodbury Heights is Smart Sites: `/263941_2`-style nav items are redirect
+  stubs to a Google embed, Drive file or PDF; its staff directory is a
+  published Google Sheet CSV. Both lunches are Nutrislice tenant `grsd`
+  (Gateway's), which also lists National Park, Parkview (slug
+  `parkside-elementary-school`: the slug differs from the site's name, probably set
+  when the site was created; it is what the API and Westville's own site use, so
+  don't "correct" it, the `parkview-` form 404s) and Woodbury Heights, so match by name.

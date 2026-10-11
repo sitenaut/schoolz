@@ -1,0 +1,54 @@
+{
+  "exported_at": "2026-10-11T12:00:00Z",
+  "source": "onboarding: Wenonah Boro School District",
+  "districts": [
+    {
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "marking_period_url": null,
+      "schoolcafe_shortname": null,
+      "ics_feeds": [
+        {
+          "name": "Wenonah School District Events",
+          "url": "https://calendar.google.com/calendar/ical/wenonahschool.org_ppcphdnsme8v1lp3lu07lp2m48%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "name": "Wenonah Boro School District",
+      "website_url": "https://www.wenonahschool.org",
+      "towns": [
+        "Wenonah"
+      ],
+      "food_services_menu_url": null
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "slug": "wenonah-elementary",
+      "name": "Wenonah Elementary School",
+      "short_name": "Wenonah",
+      "district_name": "Wenonah Boro School District",
+      "school_type": "elementary",
+      "address": "200 N. Clinton Avenue, Wenonah, NJ 08090",
+      "main_phone": "(856) 468-6000",
+      "website_url": "https://www.wenonahschool.org",
+      "absence_method": "phone",
+      "absence_phone": "(856) 468-6000",
+      "absence_instructions": "Call the absentee line at 856-468-6000: option 2 for non-medical, option 3 for medical absences (Student Handbook).",
+      "start_time": "8:35 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "12:50 PM"
+    }
+  ],
+  "smore_newsletters": []
+}
