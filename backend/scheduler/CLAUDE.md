@@ -12,6 +12,7 @@ Domain-agnostic scheduler (`backend/scheduler/`, ported from billz): `registry.p
 - **Catch-up and first runs start 20s apart** (`runner.launch_staggered`, `JOB_LAUNCH_SPACING_S`). A deploy used to start every swallowed fire at once; 13 rosters together 502'd Beck's scan.
 - **The reconcile only touches jobs whose cron, timezone or enabled flag changed** (`runner.build_apscheduler_job`). Rebuilding all of them every 30s logged two lines per job and recomputed each next fire from "now", so a job that came due mid-loop lost that fire.
 - **Build triggers with `runner.cron_trigger`, never `CronTrigger.from_crontab`.** APScheduler numbers weekdays from Monday, cron and croniter (catch-up, `next_run_at`) from Sunday; passed through, every weekly job fired a day late, and a restart inside that day ran it twice (catch-up, then the late fire).
+- **School-level job names carry the district** (`scheduler/job_names.py:school_job_name`, migration 0093). `scheduled_jobs` is unique on (owner, kind, name) and school names repeat across districts (two "Parkview Elementary School"s), so a bare school name 500'd the second import. A job finds its school through `params["school_id"]` and the school's `*_job_id`, never its name; build new school-level names with the helper.
 - **Deleting a job is safe by schema** — every `*_job_id` FK is `ON DELETE SET NULL`.
 - **`ScheduledJob.next_run_at` is display-only.** APScheduler triggers from `cron_expr`; force runs via `run-now`.
 
