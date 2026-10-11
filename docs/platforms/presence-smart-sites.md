@@ -89,3 +89,7 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   `parkside-elementary-school`: the slug differs from the site's name, probably set
   when the site was created; it is what the API and Westville's own site use, so
   don't "correct" it, the `parkview-` form 404s) and Woodbury Heights, so match by name.
+  Gateway's own events are on its Arbiter calendar (`/School/Calendar/8327`), which
+  the athletics scan reads: `/m/game/<id>` items are games (hidden by default),
+  `/m/event/<id>` items are school events (`source=arbiter_events`, shown). No other
+  tracked school has event items on Arbiter yet. Event titles carry HTML entities.

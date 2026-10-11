@@ -14,14 +14,25 @@ _WINDOW_PAST_DAYS = 30
 _WINDOW_FUTURE_DAYS = 180
 
 
+# Games are hidden from the general calendar (dozens a week); a school's own
+# events on its Arbiter calendar (Gateway: field trips, Financial Aid Night)
+# are real calendar content and shown by default.
+_SOURCES = ("arbiter_athletics", "arbiter_events")
+
+
+def _source(event: dict) -> str:
+    return "arbiter_events" if event.get("kind") == "event" else "arbiter_athletics"
+
+
 @register_job(
     kind="athletics_calendar.scan",
     default_name="Athletics calendar scan",
     default_cron="0 */12 * * *",  # a public-source scan, same cadence as the other calendar scans
     description=(
         "Fetches a school's game schedule from ArbiterLive (School.athletics_url, when it's a /m/team/<id> page) - "
-        "every sport/level combined. Tagged source=arbiter_athletics and off by default in the general calendar "
-        "(dozens of games a week would crowd out real deadlines); visible via the 'Show sports schedule' toggle."
+        "every sport/level combined. Games are tagged source=arbiter_athletics and off by default in the general calendar "
+        "(dozens a week would crowd out real deadlines); visible via the 'Show sports schedule' toggle. A school's own "
+        "events on the same calendar (/m/event/<id>: Gateway's field trips and family nights) are source=arbiter_events and shown."
     ),
     param_schema={"type": "object", "properties": {"school_id": {"type": "string"}}, "required": ["school_id"]},
 )
@@ -55,7 +66,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     sibling_hs_events: list[dict] = []
     if school.school_type == "middle":
         for hs_entity in {entity_id_from_athletics_url(s.athletics_url) for s in siblings if s.school_type == "high"} - {entity_id}:
-            sibling_hs_events += await fetch_events(hs_entity, start, end)
+            sibling_hs_events += [e for e in await fetch_events(hs_entity, start, end) if e.get("kind") != "event"]
     own_uids = {e["external_uid"] for e in events}
     events = games_for_school(school.school_type, events, sibling_hs_events, any(s.school_type == "middle" for s in siblings))
     # Games this school's own entity lists but that now belong to a sibling
@@ -69,6 +80,15 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 SchoolContentItem.external_uid.in_(handed_off),
             )
         )
+    # Before events had their own id, they were stored under a made-up one
+    # ("20261001-Field trip-None"), as hidden games. Real game ids are numeric.
+    await db.execute(
+        delete(SchoolContentItem).where(
+            SchoolContentItem.school_id == school_id,
+            SchoolContentItem.source == "arbiter_athletics",
+            SchoolContentItem.external_uid.op("~")(r"^\d{8}-"),
+        )
+    )
     if not events:
         return "WARNING[no_arbiter_events]: no games found on ArbiterLive for this school"
 
@@ -78,7 +98,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             await db.execute(
                 select(SchoolContentItem).where(
                     SchoolContentItem.school_id == school_id,
-                    SchoolContentItem.source == "arbiter_athletics",
+                    SchoolContentItem.source.in_(_SOURCES),
                     SchoolContentItem.external_uid.is_not(None),
                 )
             )
@@ -96,6 +116,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.start_date = event["start_date"]
             row.end_date = event["end_date"]
             row.is_all_day = event["is_all_day"]
+            row.source = _source(event)
             updated += 1
             continue
         db.add(
@@ -108,7 +129,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 start_date=event["start_date"],
                 end_date=event["end_date"],
                 is_all_day=event["is_all_day"],
-                source="arbiter_athletics",
+                source=_source(event),
                 external_uid=event["external_uid"],
             )
         )
