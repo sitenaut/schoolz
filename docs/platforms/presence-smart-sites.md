@@ -100,3 +100,8 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   which sets the entity in the session): titles carry a badge, `Canceled`, `Postponed` or
   `Rainout`, and the scan prefixes the title ("CANCELED - ..."). That feed also lists
   practices, which the scan does not import.
+  Gateway's district calendar is a one-page PDF at a stable page URL (`calendar_pdf_url`), a
+  two-column year grid (July-December left, January-June right) whose entry lists sit beside
+  each mini-month. `district_calendar_pdf.layout_text_by_month` assigns each entry to its month
+  by position before the model classifies it; read whole, the model moved right-column entries
+  a month early.

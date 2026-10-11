@@ -141,11 +141,101 @@ async def fetch_pdf(page_url: str) -> tuple[str, bytes] | None:
         return pdf_url, pdf.content
 
 
-_PARSER_VERSION = b"1"  # bump when title composition or the prompt changes, so stored rows are rebuilt
+_PARSER_VERSION = b"3"  # bump when title composition or the prompt changes, so stored rows are rebuilt
 
 
 def content_hash(data: bytes) -> str:
     return hashlib.sha256(data + _PARSER_VERSION).hexdigest()[:10]
+
+
+_MONTH_NAMES = ("JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER")
+_MONTH_NUM = {name: i + 1 for i, name in enumerate(_MONTH_NAMES)}
+_ENTRY_START_RE = re.compile(r"^\d{1,2}(?:\s*[-\u2013]\s*\d{1,2})?$")
+
+
+def layout_text_by_month(pdf_bytes: bytes) -> str | None:
+    """A year-at-a-glance calendar laid out as two columns of six mini-month
+    grids (Gateway Regional: July-December down the left, January-June down
+    the right), each month's event list printed beside its grid. Read as a
+    whole the page interleaves the two columns, and the model put right-column
+    entries under the wrong month (Spring Break in February, Memorial Day
+    closing April 28 to May 31). Here each entry is assigned to its month by
+    position: the list sits in its month header's row, in the text lane next
+    to that column's grid. None when the page is not that layout, so any other
+    PDF keeps the plain read."""
+    try:
+        import io
+
+        import pdfplumber
+
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            if len(pdf.pages) != 1:
+                return None
+            page = pdf.pages[0]
+            words = page.extract_words()
+            width = float(page.width)
+    except Exception:  # noqa: BLE001 - not a PDF, or one pdfplumber cannot read
+        return None
+
+    headers = []  # (top, x0, month, year)
+    for w in words:
+        month = _MONTH_NUM.get(w["text"])
+        if not month:
+            continue
+        year = next((x["text"] for x in words if abs(x["top"] - w["top"]) < 3 and 0 < x["x0"] - w["x1"] < 12 and re.fullmatch(r"20\d\d", x["text"])), None)
+        if year:
+            headers.append((w["top"], w["x0"], month, int(year)))
+    left = sorted((h for h in headers if h[1] < width / 2), key=lambda h: h[0])
+    right = sorted((h for h in headers if h[1] >= width / 2), key=lambda h: h[0])
+    if len(left) != 6 or len(right) != 6 or any(abs(a[0] - b[0]) > 4 for a, b in zip(left, right)):
+        return None
+
+    # Text lanes: the left column's list begins just past its grid, the right
+    # column's after the page middle; the right grid starts ~35pt left of its header.
+    mid = width * 0.49
+    lanes = {"left": (left[0][1] + 85, mid), "right": (mid, right[0][1] - 35)}
+    row_tops = [h[0] for h in left]
+    pitch = (row_tops[-1] - row_tops[0]) / 5  # a month row's height; the notes under the last row are not its entries
+    blocks: dict[tuple[str, int], list[list[str]]] = {("left", i): [] for i in range(6)} | {("right", i): [] for i in range(6)}
+
+    last_top: dict[tuple[str, int], float] = {}
+    lines: dict[tuple[str, int], list[dict]] = {}
+    for w in words:
+        for side, (x_from, x_to) in lanes.items():
+            if x_from <= w["x0"] < x_to:
+                lines.setdefault((side, round(w["top"])), []).append(w)
+    for (side, top), ws in sorted(lines.items(), key=lambda kv: (kv[0][1], kv[0][0])):
+        ws.sort(key=lambda w: w["x0"])
+        text = " ".join(w["text"] for w in ws)
+        if re.match(r"^(student|teacher)\b", text, re.I):
+            continue  # the days-in-session table
+        row = max((i for i, t in enumerate(row_tops) if top >= t - 8), default=None)
+        if row is None or top >= row_tops[row] + pitch - 8:
+            continue
+        entries = blocks[(side, row)]
+        if _ENTRY_START_RE.match(ws[0]["text"]):
+            entries.append([text])
+            last_top[(side, row)] = top
+        elif entries and top - last_top[(side, row)] <= 12:
+            entries[-1].append(text)  # a wrapped second line of the entry above
+            last_top[(side, row)] = top
+
+    out = []
+    for side, column in (("left", left), ("right", right)):
+        for i, (_, _, month, year) in enumerate(column):
+            entries = [" ".join(parts) for parts in blocks[(side, i)]]
+            out.append(f"{_MONTH_NAMES[month - 1]} {year}:\n" + ("\n".join(entries) if entries else "(no entries)"))
+    return "\n\n".join(out)
+
+
+_PLAIN_PROMPT = (
+    "This is a school district's school-year calendar. Record every dated entry in the event list "
+    "(closures, recesses, early dismissals, delayed openings, first and last student day, conferences, holidays). "
+    "A range like '26-27 Thu-Fri' is one entry from the 26th to the 27th; a month-header above the list gives the month, "
+    "and the school year in the title gives the year (fall months are the first year, January-June the second). "
+    "Do NOT record the mini month grids, the days-in-session table or the key. Do not record the emergency/snow make-up "
+    "day list. Only mark an entry 'closed' if the printed text says schools are closed."
+)
 
 
 async def extract_events(pdf_bytes: bytes) -> list[dict]:
@@ -153,29 +243,34 @@ async def extract_events(pdf_bytes: bytes) -> list[dict]:
         return []
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     started = time.perf_counter()
+    by_month = layout_text_by_month(pdf_bytes)
+    if by_month:
+        content = [
+            {
+                "type": "text",
+                "text": "This is a school district's school-year calendar, already split by month: each 'MONTH YYYY:' heading is "
+                "followed by that month's printed event list, in the month the heading says (the year is part of the heading). "
+                "Record every dated entry (closures, recesses, early dismissals, delayed openings, first and last student day, "
+                "conferences, holidays, trips). A range like '26-31' is one entry from the 26th to the 31st of THAT heading's month. "
+                "Only mark an entry 'closed' if the printed text says closed. A 'Noon Dismissal' is students going home early: "
+                "kind early_dismissal, even when it is also a staff in-service day.\n\n" + by_month,
+            }
+        ]
+    else:
+        content = [
+            {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": base64.b64encode(pdf_bytes).decode("ascii")}},
+            {
+                "type": "text",
+                "text": _PLAIN_PROMPT,
+            },
+        ]
     response = await client.messages.create(
         model=MODEL,
         max_tokens=8192,
         temperature=0,
         tools=[_CALENDAR_TOOL],
         tool_choice={"type": "tool", "name": "record_calendar"},
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": base64.b64encode(pdf_bytes).decode("ascii")}},
-                    {
-                        "type": "text",
-                        "text": "This is a school district's school-year calendar. Record every dated entry in the event list "
-                        "(closures, recesses, early dismissals, delayed openings, first and last student day, conferences, holidays). "
-                        "A range like '26-27 Thu-Fri' is one entry from the 26th to the 27th; a month-header above the list gives the month, "
-                        "and the school year in the title gives the year (fall months are the first year, January-June the second). "
-                        "Do NOT record the mini month grids, the days-in-session table or the key. Do not record the emergency/snow make-up "
-                        "day list. Only mark an entry 'closed' if the printed text says schools are closed.",
-                    },
-                ],
-            }
-        ],
+        messages=[{"role": "user", "content": content}],
     )
     observability.record_llm_call("district_calendar_pdf", MODEL, response, time.perf_counter() - started)
     tool_use = next((b for b in response.content if b.type == "tool_use"), None)
