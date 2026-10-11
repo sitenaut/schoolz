@@ -606,6 +606,11 @@ class School(Base):
     # business (open gyms, team dinners, tryouts), so events stay hidden with
     # the games unless the school is switched on.
     arbiter_events_calendar: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
+    # ...and when those events are the whole district's, not this school's
+    # (Audubon: one district calendar, kept on the high school's Arbiter account
+    # because one account is cheaper than one per school). They are then stored
+    # district-scoped, so every school in the district shows them.
+    arbiter_events_district_wide: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     # School's own logo/seal image, discovered from its homepage header
     # (services/school_info.py) - hotlinked from Finalsite's CDN like every
     # other asset URL in this app (lunch menu PDFs, documents), not

@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, false, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School, SchoolContentItem
@@ -24,6 +24,15 @@ _SOURCES = ("arbiter_athletics", "arbiter_events")
 
 def _source(event: dict, school: School) -> str:
     return "arbiter_events" if event.get("kind") == "event" and school.arbiter_events_calendar else "arbiter_athletics"
+
+
+def _placement(event: dict, school: School) -> dict:
+    """Whose item it is. A shown event of a school whose Arbiter calendar is its
+    whole district's (Audubon) is district-scoped, so every school in the
+    district shows it; everything else belongs to the school."""
+    if _source(event, school) == "arbiter_events" and school.arbiter_events_district_wide and school.district_id:
+        return {"scope": "district", "district_id": school.district_id, "school_id": None}
+    return {"scope": "school", "district_id": None, "school_id": school.id}
 
 
 @register_job(
@@ -111,7 +120,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         for row in (
             await db.execute(
                 select(SchoolContentItem).where(
-                    SchoolContentItem.school_id == school_id,
+                    or_(
+                        SchoolContentItem.school_id == school_id,
+                        # Events kept district-wide for this school's district
+                        and_(SchoolContentItem.district_id == school.district_id, SchoolContentItem.source == "arbiter_events")
+                        if school.district_id
+                        else false(),
+                    ),
                     SchoolContentItem.source.in_(_SOURCES),
                     SchoolContentItem.external_uid.is_not(None),
                 )
@@ -131,12 +146,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.end_date = event["end_date"]
             row.is_all_day = event["is_all_day"]
             row.source = _source(event, school)
+            for field, value in _placement(event, school).items():
+                setattr(row, field, value)
             updated += 1
             continue
         db.add(
             SchoolContentItem(
-                scope="school",
-                school_id=school_id,
+                **_placement(event, school),
                 category="event",
                 title=event["title"],
                 description=event["description"],

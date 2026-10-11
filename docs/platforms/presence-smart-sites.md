@@ -92,7 +92,7 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   Gateway's own events are on its Arbiter calendar (`/School/Calendar/8327`), which
   the athletics scan reads: `/m/game/<id>` items are games (hidden by default),
   `/m/event/<id>` items are events, shown (`source=arbiter_events`) only for a school with
-  `arbiter_events_calendar` set (Gateway). A sweep of all 44 tracked Arbiter ids found events on 12;
+  `arbiter_events_calendar` set (Gateway, Haddon Heights High, HTHS, Audubon); with `arbiter_events_district_wide` too (Audubon, whose one district calendar sits on its high school's Arbiter account) they are stored district-scoped. A sweep of all 44 tracked Arbiter ids found events on 12;
   at most they are team business (open gyms, tryouts, team dinners), which stays hidden
   with the games. Event titles carry HTML entities.
   The calendarmonth feed has no status, so cancellations come from the school calendar
