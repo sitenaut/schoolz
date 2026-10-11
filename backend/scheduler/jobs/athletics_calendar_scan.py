@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School, SchoolContentItem
 from scheduler.registry import register_job
-from services.arbiter import entity_id_from_athletics_url, fetch_events, games_for_school
+from services.arbiter import entity_id_from_athletics_url, fetch_events, fetch_statuses, games_for_school
 
 # A season runs a few months; wide enough either direction to cover a
 # season already in progress and next season's early games without
@@ -69,6 +69,14 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if school.school_type == "middle":
         for hs_entity in {entity_id_from_athletics_url(s.athletics_url) for s in siblings if s.school_type == "high"} - {entity_id}:
             sibling_hs_events += [e for e in await fetch_events(hs_entity, start, end) if e.get("kind") != "event"]
+    # Cancelled / postponed / rained-out games, from the school calendar page
+    # (the feed above has no status). Sibling entities' games come with theirs.
+    status_entities = {entity_id}
+    if school.school_type == "middle":
+        status_entities |= {entity_id_from_athletics_url(s.athletics_url) for s in siblings if s.school_type == "high"}
+    statuses: dict[str, str] = {}
+    for status_entity in status_entities:
+        statuses.update(await fetch_statuses(status_entity, start, end))
     own_uids = {e["external_uid"] for e in events}
     events = games_for_school(school.school_type, events, sibling_hs_events, any(s.school_type == "middle" for s in siblings))
     # Games this school's own entity lists but that now belong to a sibling
@@ -91,6 +99,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             SchoolContentItem.external_uid.op("~")(r"^\d{8}-"),
         )
     )
+    for event in events:
+        status = statuses.get(event["external_uid"])
+        if status:
+            event["title"] = f"{status.upper()} - {event['title']}"
     if not events:
         return "WARNING[no_arbiter_events]: no games found on ArbiterLive for this school"
 

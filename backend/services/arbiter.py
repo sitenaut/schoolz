@@ -11,6 +11,7 @@ one month at a time, covering every sport/level at that school combined
 """
 
 import html
+import json
 import re
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
@@ -120,6 +121,45 @@ async def fetch_events(entity_id: str, start: date, end: date, timeout: float = 
                     }
                 )
 
+    return out
+
+
+_STATUS_RE = re.compile(r'class="calPopOverGameStatus[^"]*">\s*([^<]+?)\s*</span>', re.I)
+_GAME_URL_RE = re.compile(r"/Teams/Game/(\d+)")
+_EVENT_URL_RE = re.compile(r"uniqueEventId=(\d+)")
+
+
+async def fetch_statuses(entity_id: str, start: date, end: date, timeout: float = 30.0) -> dict[str, str]:
+    """{external_uid: status} for the games and events a school's calendar page
+    marks "Canceled", "Postponed" or "Rainout". The calendarmonth feed our
+    scan reads has no status field at all, so a cancelled game looked like any
+    other; the school calendar page (/School/Calendar/<id>) loads its own feed,
+    /School/GetEventsByEntity/, whose titles carry the status in a badge. That
+    feed takes its entity from the page visit's session, hence the GET first.
+    A status is a nicety, so any failure returns {} and never fails the scan."""
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers={"User-Agent": "schoolz-athletics/1.0"}) as client:
+            await client.get(f"https://www.arbiterlive.com/School/Calendar/{entity_id}")
+            resp = await client.post(
+                "https://www.arbiterlive.com/School/GetEventsByEntity/",
+                data={"startDate": f"{start.year}-{start.month}-{start.day}", "endDate": f"{end.year}-{end.month}-{end.day}"},
+                headers={"X-Requested-With": "XMLHttpRequest"},
+            )
+            resp.raise_for_status()
+            items = json.loads(resp.json()["EventsFilteredDetailString"])
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return {}
+    out: dict[str, str] = {}
+    for item in items:
+        status = _STATUS_RE.search(item.get("title") or "")
+        if not status:
+            continue
+        url = item.get("url") or ""
+        game, event = _GAME_URL_RE.search(url), _EVENT_URL_RE.search(url)
+        if game:
+            out[game.group(1)] = status.group(1)
+        elif event:
+            out[f"event:{event.group(1)}"] = status.group(1)
     return out
 
 

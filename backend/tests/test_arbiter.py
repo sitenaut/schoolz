@@ -127,3 +127,40 @@ async def test_school_events_are_marked_apart_from_games_and_unescaped(monkeypat
     assert trip["kind"] == "event"
     assert trip["external_uid"] == "event:901500"  # cannot collide with a numeric game id
     assert trip["title"] == "FIELD TRIP: Baking & Builders Club to Ocean City"
+
+
+@pytest.mark.anyio
+async def test_fetch_statuses_reads_cancellations_from_the_calendar_page_feed(monkeypatch):
+    """The calendarmonth feed has no status; the school calendar page's own feed
+    carries it in a badge inside the title."""
+    import json as _json
+
+    items = [
+        {"title": 'Junior Varsity Boys Soccer at Woodbury<br />&nbsp;<span class="calPopOverGameStatus btn-danger">Canceled</span>', "url": "/Teams/Game/103400636/8327/7501311/93"},
+        {"title": 'Field Hockey vs. Pitman &nbsp;<span class="calPopOverGameStatus btn-info">Rainout</span>', "url": "/Teams/Game/555/8327/1/93"},
+        {"title": "Football vs. Rival", "url": "/Teams/Game/777/8327/1/93"},
+        {"title": 'Book Club trip <span class="calPopOverGameStatus btn-danger">Postponed</span>', "url": "/School/Event/8327?uniqueEventId=892293"},
+    ]
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.method, request.url.path))
+        if request.method == "GET":
+            return httpx.Response(200, text="<html>calendar</html>")
+        assert b"startDate=2026-10-1" in request.content and b"endDate=2026-10-31" in request.content
+        return httpx.Response(200, json={"EventsFilteredDetailString": _json.dumps(items)})
+
+    monkeypatch.setattr(arbiter.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
+
+    statuses = await arbiter.fetch_statuses("8327", date(2026, 10, 1), date(2026, 10, 31))
+    assert statuses == {"103400636": "Canceled", "555": "Rainout", "event:892293": "Postponed"}
+    assert seen[0] == ("GET", "/School/Calendar/8327")  # the page visit comes first: it sets the entity for the feed
+
+
+@pytest.mark.anyio
+async def test_fetch_statuses_failure_is_empty_not_an_error(monkeypatch):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    monkeypatch.setattr(arbiter.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
+    assert await arbiter.fetch_statuses("8327", date(2026, 10, 1), date(2026, 10, 31)) == {}

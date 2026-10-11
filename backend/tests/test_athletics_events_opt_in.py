@@ -31,7 +31,11 @@ async def test_arbiter_events_are_shown_only_for_a_school_switched_on(monkeypatc
     async def fake_fetch(entity_id, start, end):
         return [dict(e) for e in _feed()]
 
+    async def no_status(entity_id, start, end):
+        return {}
+
     monkeypatch.setattr(athletics_calendar_scan, "fetch_events", fake_fetch)
+    monkeypatch.setattr(athletics_calendar_scan, "fetch_statuses", no_status)
 
     tag = uuid.uuid4().hex[:8]
     async with database.SessionLocal() as db:
@@ -59,3 +63,34 @@ async def test_arbiter_events_are_shown_only_for_a_school_switched_on(monkeypatc
         await athletics_calendar_scan.run(db, {"school_id": school.id})
         await db.flush()
         assert set((await _sources(db, school.id)).values()) == {"arbiter_athletics"}
+
+
+@pytest.mark.anyio
+async def test_cancelled_games_are_marked_in_the_title_and_restored_when_back_on(monkeypatch):
+    state = {"statuses": {"501": "Canceled"}}
+
+    async def fake_fetch(entity_id, start, end):
+        return [dict(e) for e in _feed()]
+
+    async def fake_statuses(entity_id, start, end):
+        return dict(state["statuses"])
+
+    monkeypatch.setattr(athletics_calendar_scan, "fetch_events", fake_fetch)
+    monkeypatch.setattr(athletics_calendar_scan, "fetch_statuses", fake_statuses)
+
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        school = School(name=f"Arb Status {tag}", slug=f"arbs-{tag}", school_type="high", athletics_url="https://www.arbiterlive.com/School/Calendar/8327")
+        db.add(school)
+        await db.commit()
+
+        await athletics_calendar_scan.run(db, {"school_id": school.id})
+        await db.flush()
+        titles = set(await _sources(db, school.id))
+        assert "CANCELED - Soccer - Boys Varsity vs Pitman" in titles
+
+        # The game is back on: the same row loses the mark (no second row).
+        state["statuses"] = {}
+        await athletics_calendar_scan.run(db, {"school_id": school.id})
+        await db.flush()
+        assert set(await _sources(db, school.id)) == {"Soccer - Boys Varsity vs Pitman", "FIELD TRIP: Book Club"}
