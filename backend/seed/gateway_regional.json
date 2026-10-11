@@ -18,7 +18,8 @@
         "Westville",
         "National Park",
         "Wenonah"
-      ]
+      ],
+      "calendar_pdf_url": "https://www.gatewayhs.com/parent_students/26-27_school_year_calendar"
     }
   ],
   "schools": [
@@ -74,7 +75,7 @@
       "absence_instructions": "Log into PowerSchool or call 856-853-1567 to report an absence; parental notes required for state records (2026-27 Student Handbook).",
       "start_time": "7:45 AM",
       "end_time": "2:37 PM",
-      "early_dismissal_time": null,
+      "early_dismissal_time": "12:00 PM",
       "nutrislice_location": "grsd/gateway-high-school"
     }
   ],
