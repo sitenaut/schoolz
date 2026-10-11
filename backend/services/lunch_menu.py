@@ -177,7 +177,7 @@ def _classify_pdf_link(url: str) -> dict | None:
 # ES_L.png, overwritten monthly) with no filename to classify - only the link
 # text says what they are: "Elementary Lunch Menu -- October 2026".
 _IMAGE_MENU_LINK_RE = re.compile(
-    r'<a\b[^>]*href="([^"]+\.(?:png|jpe?g)(?:\?[^"]*)?)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL
+    r'<a\b[^>]*href="([^"]+\.(?:png|jpe?g|webp)(?:\?[^"]*)?)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL
 )
 _IMAGE_MENU_TEXT_RE = re.compile(
     r"(preschool|pre-?k|elementary|middle(?:\s+school)?|high(?:\s+school)?)\s+(breakfast|lunch)\s+menu\W+("
