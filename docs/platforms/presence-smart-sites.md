@@ -95,3 +95,8 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   `arbiter_events_calendar` set (Gateway). A sweep of all 44 tracked Arbiter ids found events on 12;
   at most they are team business (open gyms, tryouts, team dinners), which stays hidden
   with the games. Event titles carry HTML entities.
+  The calendarmonth feed has no status, so cancellations come from the school calendar
+  page's own feed (`POST /School/GetEventsByEntity/` after a GET of `/School/Calendar/<id>`,
+  which sets the entity in the session): titles carry a badge, `Canceled`, `Postponed` or
+  `Rainout`, and the scan prefixes the title ("CANCELED - ..."). That feed also lists
+  practices, which the scan does not import.
