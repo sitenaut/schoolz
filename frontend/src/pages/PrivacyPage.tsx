@@ -23,7 +23,7 @@ export function PrivacyPage() {
         path="/privacy"
       />
       <h2>Privacy &amp; cookies</h2>
-      <p className="note">Last updated September 2026.</p>
+      <p className="note">Last updated October 2026.</p>
 
       <p>
         schoolz ("we", "us") helps parents and guardians in South Jersey school
@@ -57,6 +57,17 @@ export function PrivacyPage() {
             <td>
               So the Today/Calendar/Lunch pages remember your schools without needing an
               account. Never sent to us or any third party — it stays on your device.
+            </td>
+          </tr>
+          <tr>
+            <td>The place and distance you choose on the Local events page</td>
+            <td>Your browser's local storage</td>
+            <td>
+              So the page shows events near you. Your device's location is requested only
+              if you press "Use my current location". The point is rounded to about half a
+              mile and sent with the events request to work out distances; we don't save
+              it. An address or ZIP code you type is passed to the U.S. Census Bureau and
+              OpenStreetMap geocoders to find it on the map, and isn't saved by us either.
             </td>
           </tr>
           <tr>

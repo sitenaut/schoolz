@@ -30,6 +30,7 @@ from models import LocalEvent as Event
 from scheduler import progress
 
 from .deduper import find_duplicate, merge_into
+from .locate import locate_events
 from .normalizer import normalize
 from .school_sync import group_by_school, sync_school_content
 from .sources.base import RawEvent, Source
@@ -435,6 +436,11 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
             ).scalar_one_or_none()
 
             if existing is not None:
+                if normalized["latitude"] is None and (existing.venue_address, existing.venue_name) == (normalized["venue_address"], normalized["venue_name"]):
+                    # The feed gives no coordinates and the venue hasn't
+                    # changed: keep the position locate.py worked out, which
+                    # this would otherwise blank on every refresh.
+                    normalized = {**normalized, "latitude": existing.latitude, "longitude": existing.longitude}
                 for k, v in normalized.items():
                     setattr(existing, k, v)
                 updated += 1
@@ -487,6 +493,13 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         school_sync = await sync_school_content(db, group_by_school(school_tagged_raws))
         await db.commit()
         summary["school_content"] = school_sync
+
+    try:
+        summary["locations"] = await locate_events(db)
+    except Exception as exc:  # noqa: BLE001 - positions are a refinement; the events are already saved
+        await db.rollback()
+        logger.warning("local_events_locate_failed", extra={"error": str(exc)})
+        summary["locations"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
 
     logger.info("events_pipeline_complete", extra=summary)
     return summary
