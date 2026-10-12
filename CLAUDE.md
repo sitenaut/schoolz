@@ -117,6 +117,8 @@ Docs:
 - **`docs/LOCAL_EVENTS_SOURCES.md`** — `/local` community events (`backend/local_events/`, a port of billz's pipeline; public, no auth).
   - **Deleting a job, or removing a source from its params, deletes that source's events.** `prune.SOURCE_KEYS` must list every `*_sources` key.
   - `/local` filters by distance, and an event with no position shows at every radius: a feed that never states a venue needs a `location` on its source entry.
+- **`docs/BACKUPS.md`** — nightly encrypted `pg_dump` to R2 (`.github/workflows/backup.yml`), the restore drill, restoring for real.
+  - The age private key exists only in the `schoolz-prod` vault; lose it and no backup can be restored.
 - `docs/ENV_SETUP.md`, `docs/API_KEYS.md`, `docs/RUNBOOK.md` (one section per alert), `docs/KIDS_VIEW_V2_DESIGN.md`, `docs/HS_CLASS_PAGES_DESIGN.md`.
 
 ## Prod and deployment
