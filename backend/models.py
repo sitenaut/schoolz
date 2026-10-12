@@ -1519,6 +1519,23 @@ class LocalEvent(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class GeocodedPlace(Base):
+    """One geocoder answer, kept so the events refresh asks about each venue
+    once rather than every run (local_events/locate.py). `query` is the text
+    looked up, prefixed with how ("address:", "name:"); null coordinates mean
+    "asked, no match", retried after a while in case the map caught up.
+
+    Event venues and source locations only - what a visitor types into the
+    /local location box is never stored here or anywhere else."""
+
+    __tablename__ = "geocoded_places"
+
+    query: Mapped[str] = mapped_column(Text, primary_key=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    looked_up_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class SeasonalGuide(Base):
     """A link to someone else's seasonal guide (a Halloween house map, a
     fall-festival roundup), shown while its window is open: the top-bar

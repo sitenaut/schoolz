@@ -370,6 +370,8 @@ export type LocalEvent = {
   price_max: number | null;
   is_free: boolean | null;
   categories: string[];
+  /** Straight-line miles from the point asked about; null when we don't know where the event is. */
+  miles: number | null;
 };
 
 export type LocalEventFacets = { categories: { value: string; count: number }[]; sources: { value: string; count: number }[] };

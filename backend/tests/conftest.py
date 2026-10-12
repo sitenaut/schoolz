@@ -29,6 +29,15 @@ def _no_real_scrapers(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_geocoding(monkeypatch):
+    """run_pipeline ends by geocoding the events it saved (local_events/
+    locate.py); with no lookup budget a test never calls Census or
+    Nominatim. A test of locate.py raises the budget and mocks _lookup."""
+    from local_events import locate
+    monkeypatch.setattr(locate, "MAX_LOOKUPS", 0)
+
+
+@pytest.fixture(autouse=True)
 async def _isolated_db_transaction(monkeypatch):
     """Wraps every test in one database transaction that's rolled back at
     the end, so nothing a test does - registering a user, creating a

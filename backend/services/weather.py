@@ -16,7 +16,6 @@ comes home in the backpack, which a "high 70" alone would never suggest.
 
 import asyncio
 import logging
-import os
 import re
 import time as _time
 from datetime import date, datetime, time, timedelta
@@ -25,14 +24,13 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from services import i18n_strings
+from services.geocoding import USER_AGENT, geocode
 from services.kids_view import parse_clock
 
 logger = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("America/New_York")
-# NWS rejects requests without an identifying User-Agent. A URL is an
-# acceptable contact; NWS_CONTACT can add an email without putting one in code.
-_USER_AGENT = f"schoolz/1.0 ({os.getenv('NWS_CONTACT') or 'https://schoolz.sitenaut.com'})"
+_USER_AGENT = USER_AGENT
 _TIMEOUT = 5.0
 _FORECAST_TTL = 60 * 60  # NWS refreshes hourly forecasts about once an hour
 _UV_TTL = 3 * 60 * 60
@@ -82,39 +80,6 @@ async def _cached(key: str, ttl: float, fetch):
 def zip_from_address(address: str | None) -> str | None:
     matches = _ZIP_RE.findall(address or "")
     return matches[-1] if matches else None
-
-
-async def geocode(client: httpx.AsyncClient, address: str) -> tuple[float, float] | None:
-    """Census first (exact street match), then OpenStreetMap's Nominatim for
-    the full address and finally just the town/ZIP. Street precision doesn't
-    matter here - an NWS gridpoint is ~2.5 km - but some real addresses
-    aren't in Census's street ranges at all (confirmed: "300 Old Orchard
-    Road, Cherry Hill") and some scans only captured the town ("Westmont, NJ")."""
-    resp = await client.get(
-        "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
-        params={"address": address, "benchmark": "Public_AR_Current", "format": "json"},
-    )
-    resp.raise_for_status()
-    matches = resp.json().get("result", {}).get("addressMatches") or []
-    if matches:
-        coords = matches[0]["coordinates"]
-        return round(coords["y"], 4), round(coords["x"], 4)
-
-    parts = [p.strip() for p in address.split(",")]
-    # Drop the street only when there's a city left after it - "Westmont, NJ"
-    # minus its first part would be just "NJ", i.e. the middle of the state.
-    town = ", ".join(parts[1:]) if len(parts) >= 3 else address
-    for query in dict.fromkeys((address, town)):
-        resp = await client.get(
-            "https://nominatim.openstreetmap.org/search",
-            params={"q": query, "format": "json", "limit": 1, "countrycodes": "us"},
-            headers={"User-Agent": _USER_AGENT},
-        )
-        resp.raise_for_status()
-        hits = resp.json()
-        if hits:
-            return round(float(hits[0]["lat"]), 4), round(float(hits[0]["lon"]), 4)
-    return None
 
 
 async def resolve_grid(client: httpx.AsyncClient, lat: float, lon: float) -> str | None:

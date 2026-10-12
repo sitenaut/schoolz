@@ -2752,6 +2752,44 @@ select {
   gap: 8px;
 }
 
+/* /local "Within 15 miles of ..." line and its dialog */
+.nearRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.nearRow label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.nearRow select {
+  width: auto;
+  margin-top: 0;
+}
+.nearRow b {
+  color: var(--ink);
+}
+.nearForm {
+  display: flex;
+  flex-direction: column;
+}
+.nearOr {
+  margin: 12px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.nearError {
+  margin: 12px 0 0;
+  color: var(--bad);
+  font-size: 14px;
+}
+
 /* /local list rows are buttons (tap opens the event sheet) */
 .localRow {
   width: 100%;

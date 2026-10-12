@@ -36,13 +36,16 @@ DEFAULT_PARAMS = {
             "base_url": "https://evesham-nj.org",
             "parser": "dpcalendar",
             "default_categories": ["municipal"],
+            # The feed never says where; `location` places its events for
+            # /local's distance filter (local_events/locate.py).
+            "location": "Marlton, NJ",
         }
     ],
     "ical_sources": [
         {"name": "haddonfield_library", "url": "https://haddonfield.librarycalendar.com/events/feed/ical", "venue_name": "Haddonfield Public Library", "venue_address": "60 N Haddon Ave, Haddonfield, NJ 08033", "upcoming_only": True, "default_categories": ["haddonfield", "library"]},
         {"name": "mount_laurel_library", "url": "https://mountlaurel.librarycalendar.com/events/feed/ical", "upcoming_only": True, "default_categories": ["mount-laurel", "library"]},
         {"name": "berlin_borough_library", "url": "https://berlinborolibrary.org/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events", "upcoming_only": True, "default_categories": ["berlin", "library"]},
-        {"name": "clementon_township", "url": "https://clementon-nj.com/?feed=my-calendar-ics", "upcoming_only": True, "default_categories": ["clementon", "municipal"]},
+        {"name": "clementon_township", "url": "https://clementon-nj.com/?feed=my-calendar-ics", "upcoming_only": True, "default_categories": ["clementon", "municipal"], "location": "Clementon, NJ"},
         # Example shape (URL must point to an actual .ics feed, not a calendar landing page):
         # {"name": "cherryhill_township",
         #  "url": "https://www.cherryhill-nj.com/common/modules/iCalendar/iCalendar.aspx?feed=calendar",

@@ -7,7 +7,9 @@ import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
 import { Modal } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
+import { NearControl } from "../components/NearControl";
 import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, timeOfDay } from "../lib/calendar";
+import { type NearChoice, addNearParams, loadNearChoice, saveNearChoice } from "../lib/eventsNear";
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackEvent } from "../lib/track";
@@ -48,6 +50,7 @@ export function LocalPage() {
   const [category, setCategory] = useState("");
   const [source, setSource] = useState("");
   const [freeOnly, setFreeOnly] = useState(false);
+  const [nearChoice, setNearChoice] = useState<NearChoice>(loadNearChoice);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<LocalEvent | null>(null);
   const [scrollToToday, setScrollToToday] = useState(false);
@@ -62,7 +65,15 @@ export function LocalPage() {
     return { start: startOfMonth(viewDate), end: endOfMonth(viewDate) };
   }, [viewDate, viewMode]);
 
-  const queryKey = [range.start.toISOString(), searchTerm, category, source, freeOnly].join("|");
+  const { near, radius } = nearChoice;
+  const nearKey = [near.lat, near.lng, radius].join(",");
+  const queryKey = [range.start.toISOString(), searchTerm, category, source, freeOnly, nearKey].join("|");
+
+  const changeNear = (choice: NearChoice) => {
+    setNearChoice(choice);
+    saveNearChoice(choice);
+    trackEvent("local_near", { method: choice.near.kind, radius: choice.radius ?? "any" });
+  };
 
   useEffect(() => {
     const q = new URLSearchParams({ start: range.start.toISOString(), end: range.end.toISOString(), limit: "3000" });
@@ -70,6 +81,7 @@ export function LocalPage() {
     if (category) q.set("categories", category);
     if (source) q.set("source", source);
     if (freeOnly) q.set("is_free", "true");
+    addNearParams(q, nearChoice);
     let cancelled = false;
     apiFetch(`/local-events?${q}`)
       .then((r) => (r.ok ? r.json() : { items: [], total: 0 }))
@@ -89,10 +101,12 @@ export function LocalPage() {
 
   useEffect(() => {
     const q = new URLSearchParams({ start: range.start.toISOString(), end: range.end.toISOString() });
+    addNearParams(q, nearChoice);
     apiFetch(`/local-events/facets?${q}`)
       .then((r) => (r.ok ? r.json() : { categories: [], sources: [] }))
       .then(setFacets);
-  }, [range]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, nearKey]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, number>();
@@ -173,7 +187,7 @@ export function LocalPage() {
       </div>
       <SeasonalBanner />
       <p className="note" style={{ marginTop: 0 }}>
-        Community events around Cherry Hill - libraries, townships, the Y, concerts and more.
+        Community events around South Jersey - libraries, townships, the Y, concerts and more.
         {isAdmin && (
           <>
             {" "}
@@ -181,6 +195,7 @@ export function LocalPage() {
           </>
         )}
       </p>
+      <NearControl choice={nearChoice} onChange={changeNear} />
 
       <div className={styles.monthNav}>
         <button className={styles.navButton} onClick={() => changeMonth(-1)} aria-label={viewMode === "year" ? "Previous year" : "Previous month"}>
@@ -289,7 +304,11 @@ export function LocalPage() {
 
       {(viewMode === "month" || searchTerm) &&
         (listed.length === 0 ? (
-          <div className="empty">{loadedKey === queryKey ? `Nothing found${selectedDay ? " for this day" : " this month"}.` : "Loading…"}</div>
+          <div className="empty">
+            {loadedKey === queryKey
+              ? `Nothing found${selectedDay ? " for this day" : " this month"}${radius !== null ? ` within ${radius} miles of ${near.label}` : ""}.`
+              : "Loading…"}
+          </div>
         ) : (
           <>
             <div className="list">
@@ -329,7 +348,7 @@ function LocalRow({ event: e, onOpen, rangeStart, rangeEnd }: { event: LocalEven
       </div>
       <div className="what">
         <div className="ttl">{e.title}</div>
-        <div className="desc">{[!e.all_day && timeOfDay(e.start_time), e.venue_name].filter(Boolean).join(" · ")}</div>
+        <div className="desc">{[!e.all_day && timeOfDay(e.start_time), e.venue_name, e.miles != null && `${e.miles} mi`].filter(Boolean).join(" · ")}</div>
         <div className="tagrow">
           {p && <span className={`tag${e.is_free ? " new" : ""}`}>{p}</span>}
           {e.categories.slice(0, 3).map((c) => (
