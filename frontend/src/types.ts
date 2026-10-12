@@ -60,6 +60,7 @@ export type School = {
   delayed_opening_time: string | null;
   athletics_url: string | null;
   logo_url: string | null;
+  logo_backing: "none" | "light" | "dark" | null;
   bell_periods: Partial<Record<"regular" | "delayed_opening" | "early_dismissal", BellPeriod[]>> | null;
   created_at: string;
 };

@@ -142,7 +142,7 @@ export function SchoolsPage() {
               {g.schools.map((s) => (
                 <div key={s.id}>
                   <Link className="sopt" to={`/schools/${s.slug}`}>
-                    {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
+                    {s.logo_url ? <img className={logoClass("sopt-logo", s)} src={s.logo_url} alt="" /> : null}
                     {s.short_name || s.name}
                   </Link>
                   {(classYearsBySlug[s.slug]?.length ?? 0) > 0 && (

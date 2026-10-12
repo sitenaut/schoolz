@@ -418,8 +418,11 @@ async def update_school(
         school.school_type = payload.school_type
     if payload.website_url is not None:
         school.website_url = payload.website_url
+    if payload.logo_url is not None and (payload.logo_url or None) != school.logo_url:
+        # A different image - the old backing says nothing about it.
+        school.logo_backing = None
     for field in (
-        "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url",
+        "start_time", "end_time", "early_dismissal_time", "delayed_opening_time", "athletics_url", "logo_url", "logo_backing",
         "special_events_calendar_url", "activities_calendar_ics_url", "announcements_doc_url", "activities_site_url",
         "events_doc_url", "bulletin_doc_url", "apptegy_org_id", "givebacks_shortname", "fdmealplanner_location",
         "healthepro_location", "myschoolplate_location", "nutrislice_location", "presence_menu_page_url", "staff_directory_url",

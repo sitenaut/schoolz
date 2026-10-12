@@ -175,7 +175,7 @@ export function SurveyPage() {
                     key={s.id}
                   >
                     <span className="box" />
-                    {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
+                    {s.logo_url ? <img className={logoClass("sopt-logo", s)} src={s.logo_url} alt="" /> : null}
                     {s.short_name || s.name}
                   </button>
                 ))}

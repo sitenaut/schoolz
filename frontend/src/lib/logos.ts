@@ -1,24 +1,15 @@
-/** Schools whose logo is a transparent PNG drawn in white/light ink.
- *
- * Those files are made for a dark header on the school's own site, so on
- * this app's light theme they render as an invisible square - the image
- * loads fine, there's just nothing to see. Confirmed for Beck
- * (`Beck_Logo-transparent.png`) and Malberg (`EMCC-logo-sml-transparent.png`).
- *
- * Keyed by slug rather than a database column: this is a property of the
- * image file the district happens to publish, not of the school, and a
- * migration for a cosmetic backing colour would be a lot of ceremony for
- * a two-entry list. If this grows past a handful, move it to a
- * `logo_needs_dark_backing` column on School and set it during
- * school_info.scan instead. */
-const LIGHT_INK_LOGOS = new Set(["beck", "estelle-v-malberg"]);
+import type { School } from "../types";
 
-export function logoNeedsDarkBacking(slug: string | null | undefined): boolean {
-  return !!slug && LIGHT_INK_LOGOS.has(slug);
-}
-
-/** Class list for a school logo <img>, adding the dark backing when the
- * artwork would otherwise disappear on a light background. */
-export function logoClass(base: string, slug: string | null | undefined): string {
-  return logoNeedsDarkBacking(slug) ? `${base} logo-dark` : base;
+/** Class list for a school logo <img>, adding the backing disc its artwork
+ * needs to stay visible.
+ *
+ * Districts publish logos made for their own site's header - a transparent
+ * PNG in white ink for a dark header, or in dark ink for a white one - so on
+ * the wrong theme here the image loads fine and there's just nothing to see.
+ * Which disc a given file needs is worked out from its pixels by the backend
+ * (services/logo_backing.py, during school_info.scan) and arrives as
+ * `logo_backing`; null means not classified yet and renders bare. */
+export function logoClass(base: string, school: Pick<School, "logo_backing"> | null | undefined): string {
+  const backing = school?.logo_backing;
+  return backing === "dark" || backing === "light" ? `${base} logo-${backing}` : base;
 }

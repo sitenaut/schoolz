@@ -2176,12 +2176,21 @@ select {
   color: var(--c);
 }
 
-/* A few schools publish their logo as a transparent PNG drawn in white ink,
-   made for the dark header on their own site - on this app's light theme
-   they render as an invisible square. A black disc behind just those (see
-   lib/logos.ts) makes the artwork readable in both themes. */
-.logo-dark {
+/* Schools publish transparent logos drawn for their own site's header: white
+   ink for a dark one, dark ink for a white one. On the other theme here they
+   render as an invisible square, so each gets the disc its artwork needs (see
+   lib/logos.ts), the same in both themes. Listed per base class because
+   .ribbon-chip .avatar and .dir-avatar set a background of their own. */
+.logo-dark,
+.ribbon-chip .avatar.logo-dark,
+.dir-avatar.logo-dark {
   background: #000;
+  padding: 2px;
+}
+.logo-light,
+.ribbon-chip .avatar.logo-light,
+.dir-avatar.logo-light {
+  background: #fff;
   padding: 2px;
 }
 

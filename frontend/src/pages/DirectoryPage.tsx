@@ -258,7 +258,7 @@ export function DirectoryPage() {
               return (
                 <div className="dir-row" key={m.id}>
                   {logo && only ? (
-                    <img className={logoClass("dir-avatar", only.slug)} src={logo} alt="" />
+                    <img className={logoClass("dir-avatar", schoolsBySlug.get(only.slug))} src={logo} alt="" />
                   ) : (
                     <span className="dir-avatar initials" aria-hidden="true">
                       {initials(m.full_name)}
