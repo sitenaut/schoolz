@@ -14,6 +14,7 @@ from models import ContentTranslation, GuardianStudentLink, School, SchoolConten
 from schemas import SchoolContentItemOut
 from services.content_translation import localize_outs
 from services.i18n import fold, folded, request_lang
+from services.arbiter import ATHLETICS_SOURCES
 from services.class_years import CLASS_PAGE_SOURCES
 from services.response_cache import SingleFlightTTLCache
 
@@ -210,7 +211,7 @@ async def _list_calendar_items(
     if not include_class_sources:
         query = query.where(SchoolContentItem.source.not_in(CLASS_PAGE_SOURCES))
     if not include_athletics:
-        query = query.where(SchoolContentItem.source != "arbiter_athletics")
+        query = query.where(SchoolContentItem.source.not_in(ATHLETICS_SOURCES))
     if category:
         query = query.where(SchoolContentItem.category == category)
     if q:

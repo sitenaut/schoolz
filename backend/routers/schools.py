@@ -9,7 +9,8 @@ from auth import get_current_user, get_optional_user, require_permission
 from database import get_db
 from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreBlock, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
 from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
-from services.arbiter import entity_id_from_athletics_url
+from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
+from services.digitalsports import host_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
 from services.content_translation import localize_outs
 from services.i18n import fold, folded, request_lang
@@ -123,11 +124,12 @@ async def _ensure_activities_calendar_job(db: AsyncSession, school: School, user
 
 
 async def _ensure_athletics_calendar_job(db: AsyncSession, school: School, user: User) -> None:
-    """Auto-creates the recurring ArbiterLive games-calendar scan the first
-    time athletics_url is a real /m/team/<id> page - most schools' link is
-    just a plain outbound site link with nothing to scan, so this checks
-    the URL shape rather than firing on athletics_url alone."""
-    if school.athletics_calendar_job_id or not entity_id_from_athletics_url(school.athletics_url):
+    """Auto-creates the recurring games-calendar scan the first time
+    athletics_url is a real ArbiterLive /m/team/<id> page or a
+    <school>.digitalsports.com site - most schools' link is just a plain
+    outbound site link with nothing to scan, so this checks the URL shape
+    rather than firing on athletics_url alone."""
+    if school.athletics_calendar_job_id or not (entity_id_from_athletics_url(school.athletics_url) or host_from_athletics_url(school.athletics_url)):
         return
     job = ScheduledJob(
         owner_user_id=user.id,
@@ -712,7 +714,7 @@ async def list_school_content(
     # CLASS_PAGE_SOURCES (see services/arbiter.py). Unconditional until
     # that's decided, so the data can be captured now without dumping
     # dozens of games a week into every family's calendar meanwhile.
-    query = query.where(SchoolContentItem.source != "arbiter_athletics")
+    query = query.where(SchoolContentItem.source.not_in(ATHLETICS_SOURCES))
     if not include_past:
         # A day of slack so a timezone edge never hides today's event.
         cutoff = datetime.now(timezone.utc) - timedelta(days=1)

@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember, Student
 from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayCurrentClassOut, TodayKidSpecialOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
+from services.arbiter import ATHLETICS_SOURCES
 from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
@@ -244,7 +245,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
                 # dozens of games a week per school would swamp the day
                 # cards and "upcoming" slots, which have no volume limit of
                 # their own the way the general calendar's toggle does.
-                SchoolContentItem.source != "arbiter_athletics",
+                SchoolContentItem.source.not_in(ATHLETICS_SOURCES),
                 SchoolContentItem.start_date.is_not(None),
                 SchoolContentItem.start_date >= datetime.combine(range_start, datetime.min.time(), LOCAL_TZ),
                 SchoolContentItem.start_date <= datetime.combine(range_end, datetime.max.time(), LOCAL_TZ),
