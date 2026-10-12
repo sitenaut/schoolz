@@ -1,0 +1,438 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Gloucester City Public School District",
+  "districts": [
+    {
+      "name": "Gloucester City Public School District",
+      "state": "NJ",
+      "website_url": "https://www.gcsd.k12.nj.us",
+      "food_services_menu_url": "https://www.gcsd.k12.nj.us/apps/pages/index.jsp?uREC_ID=602937&type=d&termREC_ID=&pREC_ID=1159686",
+      "calendar_pdf_url": "https://www.gcsd.k12.nj.us/apps/pages/index.jsp?uREC_ID=602936&type=d",
+      "ics_feeds": [],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Gloucester City",
+        "Brooklawn"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "district_name": "Gloucester City Public School District",
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(856) 301-0891",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by AlphaBEST, not the district; open on early dismissal days. Rates (2026/2027): before school $120 (3 days) / $172 (5 days) a month; after school $160 / $240; both $224 / $360; drop-in $35 a visit; registration $50 per student or $75 per family; sibling and free/reduced-lunch discounts. Register at https://enroll.kangarootime.com/inquiry/B08DFB1D7E174A01. The phone is the AlphaBEST area manager's. The school also hosts the Early Childhood Center (state-funded preschool, ages 3-4) in the same building.",
+        "handbook_url": "https://www.alphabest.org/gloucesternj/"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": null,
+      "logo_url": "https://css.gcsd.k12.nj.us/_MASTER/common_pics/header_logo.png",
+      "athletics_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Arrival/Breakfast/Morning Work",
+            "start": "08:15",
+            "end": "08:30"
+          },
+          {
+            "name": "Responsive Classroom",
+            "start": "08:30",
+            "end": "08:40"
+          },
+          {
+            "name": "Morning Meeting",
+            "start": "08:40",
+            "end": "08:50"
+          },
+          {
+            "name": "1st Period",
+            "start": "08:50",
+            "end": "09:26"
+          },
+          {
+            "name": "2nd Period",
+            "start": "09:28",
+            "end": "10:04"
+          },
+          {
+            "name": "3rd Period",
+            "start": "10:06",
+            "end": "10:42"
+          },
+          {
+            "name": "4th Period",
+            "start": "10:44",
+            "end": "11:24"
+          },
+          {
+            "name": "5A Period",
+            "start": "11:26",
+            "end": "11:46"
+          },
+          {
+            "name": "5B Period",
+            "start": "11:46",
+            "end": "12:06"
+          },
+          {
+            "name": "6A Period",
+            "start": "12:08",
+            "end": "12:28"
+          },
+          {
+            "name": "6B Period",
+            "start": "12:28",
+            "end": "12:48"
+          },
+          {
+            "name": "7th Period",
+            "start": "12:50",
+            "end": "13:30"
+          },
+          {
+            "name": "8th Period",
+            "start": "13:32",
+            "end": "14:04"
+          },
+          {
+            "name": "9th Period",
+            "start": "14:06",
+            "end": "14:46"
+          },
+          {
+            "name": "Teacher Directed PE",
+            "start": "14:46",
+            "end": "15:05"
+          },
+          {
+            "name": "Dismissal",
+            "start": "15:05",
+            "end": "15:15"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Arrival/Breakfast/Morning Work",
+            "start": "08:15",
+            "end": "08:30"
+          },
+          {
+            "name": "1st Period",
+            "start": "08:30",
+            "end": "09:00"
+          },
+          {
+            "name": "2nd Period",
+            "start": "09:00",
+            "end": "09:30"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:30",
+            "end": "10:00"
+          },
+          {
+            "name": "8th Period",
+            "start": "10:00",
+            "end": "10:30"
+          },
+          {
+            "name": "4A/4B K Lunch",
+            "start": "10:30",
+            "end": "11:00"
+          },
+          {
+            "name": "5A/5B 2nd Lunch",
+            "start": "11:00",
+            "end": "11:30"
+          },
+          {
+            "name": "6A/6B 3rd Lunch",
+            "start": "11:30",
+            "end": "12:00"
+          },
+          {
+            "name": "7A/7B 1st Lunch",
+            "start": "12:00",
+            "end": "12:30"
+          },
+          {
+            "name": "9th Period",
+            "start": "12:30",
+            "end": "13:00"
+          },
+          {
+            "name": "Pack-Up/Transition",
+            "start": "13:00",
+            "end": "13:05"
+          },
+          {
+            "name": "Dismissal",
+            "start": "13:05",
+            "end": "13:15"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Arrival/Breakfast/Morning Work",
+            "start": "10:15",
+            "end": "10:27"
+          },
+          {
+            "name": "1st Period",
+            "start": "10:27",
+            "end": "10:57"
+          },
+          {
+            "name": "2nd Period",
+            "start": "10:57",
+            "end": "11:27"
+          },
+          {
+            "name": "3rd Period",
+            "start": "11:27",
+            "end": "11:57"
+          },
+          {
+            "name": "4A/4B K Lunch",
+            "start": "11:57",
+            "end": "12:27"
+          },
+          {
+            "name": "5A/5B 2nd Lunch",
+            "start": "12:27",
+            "end": "12:57"
+          },
+          {
+            "name": "6A/6B 3rd Lunch",
+            "start": "12:57",
+            "end": "13:27"
+          },
+          {
+            "name": "7A/7B 1st Lunch",
+            "start": "13:27",
+            "end": "13:57"
+          },
+          {
+            "name": "8th Period",
+            "start": "13:57",
+            "end": "14:27"
+          },
+          {
+            "name": "9th Period",
+            "start": "14:27",
+            "end": "14:57"
+          },
+          {
+            "name": "Pack-Up/Transition",
+            "start": "14:57",
+            "end": "15:05"
+          },
+          {
+            "name": "Dismissal",
+            "start": "15:05",
+            "end": "15:15"
+          }
+        ]
+      },
+      "slug": "cold-springs",
+      "name": "Cold Springs School",
+      "short_name": "Cold Springs",
+      "school_type": "elementary",
+      "address": "1194 Market Street, Gloucester City, NJ 08030",
+      "main_phone": "(856) 456-7000",
+      "website_url": "https://css.gcsd.k12.nj.us",
+      "absence_method": "phone",
+      "absence_phone": "(856) 456-7000",
+      "absence_instructions": "Call the school office before 9:00 AM on the day of the absence. A signed note giving the reason is required on return; a physician's statement is required for a non-communicable illness of more than 1 school day.",
+      "start_time": "8:15 AM",
+      "end_time": "3:15 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:15 AM"
+    },
+    {
+      "district_name": "Gloucester City Public School District",
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": null,
+      "logo_url": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=8634",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:53",
+            "end": "07:55"
+          },
+          {
+            "name": "Responsive Class/Morning Meeting",
+            "start": "07:55",
+            "end": "08:13"
+          },
+          {
+            "name": "1st Period",
+            "start": "08:13",
+            "end": "08:53"
+          },
+          {
+            "name": "2nd Period",
+            "start": "08:56",
+            "end": "09:36"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "4th Period",
+            "start": "10:22",
+            "end": "11:02"
+          },
+          {
+            "name": "5th Period",
+            "start": "11:05",
+            "end": "11:45"
+          },
+          {
+            "name": "6th Period",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "7th Period",
+            "start": "12:31",
+            "end": "13:11"
+          },
+          {
+            "name": "8th Period",
+            "start": "13:14",
+            "end": "13:54"
+          },
+          {
+            "name": "9th Period",
+            "start": "13:57",
+            "end": "14:37"
+          }
+        ]
+      },
+      "slug": "gloucester-city-middle",
+      "name": "Gloucester City Middle School",
+      "short_name": "Gloucester City Middle",
+      "school_type": "middle",
+      "address": "500 Market Street, Gloucester City, NJ 08030",
+      "main_phone": "(856) 456-7000",
+      "website_url": "https://gms.gcsd.k12.nj.us",
+      "absence_method": "phone",
+      "absence_phone": "(856) 456-7000",
+      "absence_instructions": "Call the school office before 9:00 AM on the day of the absence; tell the Guidance Office about a future or prolonged absence.",
+      "start_time": "7:53 AM",
+      "end_time": "2:37 PM",
+      "early_dismissal_time": "12:37 PM",
+      "delayed_opening_time": "9:53 AM"
+    },
+    {
+      "district_name": "Gloucester City Public School District",
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": null,
+      "logo_url": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=8634",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "AM Homeroom",
+            "start": "07:50",
+            "end": "07:55"
+          },
+          {
+            "name": "1st Period",
+            "start": "07:58",
+            "end": "08:38"
+          },
+          {
+            "name": "2nd Period",
+            "start": "08:41",
+            "end": "09:21"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:24",
+            "end": "10:04"
+          },
+          {
+            "name": "4th Period",
+            "start": "10:07",
+            "end": "10:47"
+          },
+          {
+            "name": "5th Period",
+            "start": "10:50",
+            "end": "11:30"
+          },
+          {
+            "name": "6th Period",
+            "start": "11:33",
+            "end": "12:13"
+          },
+          {
+            "name": "7th Period",
+            "start": "12:16",
+            "end": "12:56"
+          },
+          {
+            "name": "8th Period",
+            "start": "12:59",
+            "end": "13:39"
+          },
+          {
+            "name": "9th Period",
+            "start": "13:42",
+            "end": "14:22"
+          },
+          {
+            "name": "PM Homeroom",
+            "start": "14:25",
+            "end": "14:30"
+          }
+        ]
+      },
+      "slug": "gloucester-city-high",
+      "name": "Gloucester City High School",
+      "short_name": "Gloucester City High",
+      "school_type": "high",
+      "address": "1300 Market Street, Gloucester City, NJ 08030",
+      "main_phone": "(856) 456-7000",
+      "website_url": "https://ghs.gcsd.k12.nj.us",
+      "absence_method": null,
+      "absence_phone": null,
+      "absence_instructions": null,
+      "start_time": "7:50 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "9:55 AM"
+    }
+  ],
+  "smore_newsletters": []
+}

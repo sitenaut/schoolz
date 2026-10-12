@@ -105,3 +105,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   each mini-month. `district_calendar_pdf.layout_text_by_month` assigns each entry to its month
   by position before the model classifies it; read whole, the model moved right-column entries
   a month early.
+
+## Monroe Township (Gloucester County)
+
+- Nine Google calendars come from `/api/calendars/<calID>/events` (`calIDref`s on each event link): district, BOE, one per school. Non-`@group` ids are plain emails (`mtpsnews@gmail.com`).
+- The directory widget returns a **table** (`tr[data-staff-name]`, Name and sometimes Title columns), one `getOnDemandDirectoryContent` item per grade/department; `smart_sites.parse_directory` reads both this and the card layout. Nav labels vary ("Faculty & Staff", "Oak Knoll Staff Directory"); `find_directory_links` matches both.
+- "Loading document viewer..." pages (handbooks, Kids Choice, specials) hold the file URL as JSON-escaped text (`files.smartsites.parentsquare.com\/<n>\/x.pdf`); a plain href grep misses it.
+- Athletics pages redirect to GoBound; ArbiterLive ids come from `School/Search?searchString=<town>` (other states have same-name schools).
+
