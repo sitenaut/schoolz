@@ -22,7 +22,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from anthropic import AsyncAnthropic
 from sqlalchemy import or_, select
@@ -46,6 +46,12 @@ _TIMEOUT_S = 40.0
 # After a failed call, stop calling for a while so an API outage doesn't add
 # a doomed round trip to every page load.
 _COOLDOWN_S = 60.0
+
+# Items that ended more than this long ago are not translated: nobody reads a
+# past event in another language, and a district feed can hold years of
+# history (one carries events back to 2017) that would be paid for in every
+# language. They are served in English if one is ever asked for.
+_MAX_AGE = timedelta(days=45)
 
 LANGUAGE_NAMES = {
     "es": "US Spanish",
@@ -112,8 +118,19 @@ def source_hash(title: str, description: str | None) -> str:
     return hashlib.sha256(f"{title}\n{description or ''}".encode()).hexdigest()
 
 
+def _too_old(item: SchoolContentItem) -> bool:
+    when = item.end_date or item.start_date
+    if when is None:
+        return False
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when < datetime.now(timezone.utc) - _MAX_AGE
+
+
 def _needs_model(item: SchoolContentItem, lang: str) -> bool:
     if i18n_strings.rotation_title(item.title, lang) is not None:
+        return False
+    if _too_old(item):
         return False
     return any(c.isalpha() for c in item.title)
 
@@ -185,6 +202,32 @@ async def _save(db: AsyncSession, rows: list[dict]) -> None:
     await db.commit()
 
 
+async def _reuse_by_hash(db: AsyncSession, todo: list[SchoolContentItem], lang: str) -> set[str]:
+    """Stores a copy of an existing translation for every todo item whose exact
+    English text (title + description) was already translated for another
+    item. Returns the ids it filled."""
+    hashes = {i.id: source_hash(i.title, i.description) for i in todo}
+    rows = (
+        await db.execute(
+            select(ContentTranslation.source_hash, ContentTranslation.title, ContentTranslation.description, ContentTranslation.model)
+            .where(ContentTranslation.lang == lang, ContentTranslation.source_hash.in_(set(hashes.values())))
+        )
+    ).all()
+    if not rows:
+        return set()
+    by_hash = {r.source_hash: r for r in rows}
+    now = datetime.now(timezone.utc)
+    new_rows = [
+        {"item_id": item_id, "lang": lang, "title": by_hash[h].title, "description": by_hash[h].description, "source_hash": h, "model": by_hash[h].model, "created_at": now}
+        for item_id, h in hashes.items()
+        if h in by_hash
+    ]
+    if not new_rows:
+        return set()
+    await _save(db, new_rows)
+    return {r["item_id"] for r in new_rows}
+
+
 async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang: str, limit: int | None = MAX_ITEMS_PER_REQUEST) -> int:
     """Makes sure every item that needs one has a fresh stored translation,
     calling the model for the missing/stale ones. Returns how many it newly
@@ -198,6 +241,16 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
         todo = [i for i in wanted if not (stored.get(i.id) and stored[i.id].source_hash == source_hash(i.title, i.description))]
         if not todo or time.monotonic() < _cooldown_until:
             return 0
+
+        # The same notice is often several items (a district event repeated in
+        # every school's feed, a recurring item re-created): reuse a
+        # translation already made for identical text instead of paying again.
+        reused = await _reuse_by_hash(db, todo, lang)
+        stale = sum(1 for i in todo if i.id in stored and i.id not in reused)
+        observability.record_translation_items(lang, missing=len(todo) - len(reused) - stale, stale=stale, reused=len(reused))
+        todo = [i for i in todo if i.id not in reused]
+        if not todo:
+            return len(reused)
 
         # Another request is already translating some of these: wait for it
         # rather than paying for the same call twice.
@@ -243,7 +296,7 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
                     fut.set_result(None)
         if theirs:
             await asyncio.wait(theirs, timeout=_TIMEOUT_S)
-        return saved
+        return saved + len(reused)
     except Exception as exc:  # never into the request path
         logger.warning("content_translation_error", extra={"lang": lang, "error": str(exc)})
         try:

@@ -52,6 +52,11 @@ llm_duration_seconds = _meter.create_histogram(
     description="Anthropic API call wall time.",
 )
 
+translation_items_total = _meter.create_counter(
+    "schoolz.translation.items",
+    description="Content items that needed a translation, by lang and reason (missing / stale / reused).",
+)
+
 parse_issues_total = _meter.create_counter(
     "schoolz.parse.issues",
     description="Non-fatal parse problems inside an otherwise-successful scan.",
@@ -66,6 +71,15 @@ user_created_total = _meter.create_counter(
     "schoolz.user.created",
     description="New user rows created, by source (local_register / supabase_autoprovision).",
 )
+
+
+def record_translation_items(lang: str, missing: int, stale: int, reused: int) -> None:
+    """Why translation spend happens: `missing` is new text, `stale` is an item
+    whose English changed after it was translated (churn), `reused` was copied
+    from identical text already translated (no model call)."""
+    for reason, n in (("missing", missing), ("stale", stale), ("reused", reused)):
+        if n > 0:
+            translation_items_total.add(n, {"lang": lang, "reason": reason})
 
 
 def record_llm_call(purpose: str, model: str, response, duration_s: float) -> None:
