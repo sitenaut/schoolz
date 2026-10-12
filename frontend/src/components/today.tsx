@@ -252,6 +252,11 @@ export function ContactGrid({ contacts, mainPhone }: { contacts: TodayContact[];
             ) : (
               <span className="how muted">{t("no contact listed")}</span>
             )}
+            {c.email && c.phone && (
+              <a className="how" href={telHref(c.phone)}>
+                {c.phone}
+              </a>
+            )}
           </div>
         );
       })}

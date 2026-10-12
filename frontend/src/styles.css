@@ -3019,3 +3019,12 @@ select {
   text-decoration: underline;
   cursor: pointer;
 }
+.person-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.person-call svg {
+  width: 13px;
+  height: 13px;
+}
