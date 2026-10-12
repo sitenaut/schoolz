@@ -8,7 +8,7 @@ off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md` or the match
 Found while looking at the Kids Choice before/after-care operator (`kidschoicewt.com`), which runs programs in these districts. Not onboarded; none are in the local DB. Their Kids Choice pages share one template, so each school's after-care (`sacc`) hours and fees can be filled from `https://www.kidschoicewt.com/<district-page>/` once the district is in.
 - [x] Brooklawn (Alice Costello Elementary): onboarded locally (`brooklawn.json`). Its high-school students go to Gloucester City High School, so Gloucester City matters next.
 - [x] Clayton (CHS, CMS, Simmons Elementary): onboarded locally (`clayton.json`); staff and lunch are open gaps.
-- [ ] Monroe Township (Holly Glenn, Oak Knoll, Radix, Whitehall and others), page `monroe-township`.
+- [x] Monroe Township (Holly Glen, Oak Knoll, Radix, Whitehall, Williamstown MS/HS): onboarded locally (`monroe_township.json`); prod import pending.
 - [x] Washington Township, Gloucester County: onboarded locally (`washington_township_gloucester.json`), after-care included; prod import pending.
 - [ ] Gloucester City: named on the Clayton page as a Kids Choice location, but it has no page of its own in the site nav. Confirm before scoping.
 - Gateway Regional, Woodbury Heights, Westville, National Park and Wenonah are onboarded and imported locally; prod import is pending. Their lunch menus share Gateway's Nutrislice tenant `grsd`.

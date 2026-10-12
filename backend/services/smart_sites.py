@@ -34,7 +34,10 @@ _HEADERS = {"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}
 _MARKER = "smartsites.parentsquare.com"
 _DIRECTORY_AJAX = "/includes/ajax/load_stack_staff_directory.php"
 _ITEM_ID_RE = re.compile(r"getOnDemandDirectoryContent\(\s*'(\d+)'")
-_DIRECTORY_LINK_RE = re.compile(r"^\s*(?:staff|teacher|faculty)?\s*directory\s*$", re.I)
+_DIRECTORY_LINK_RE = re.compile(
+    r"^\s*(?:(?:staff|teacher|faculty)?\s*directory|faculty\s*(?:&|and)\s*staff|[\w .'-]{1,40}\s(?:staff|faculty)\s+directory)\s*$",
+    re.I,
+)
 _MAX_DIRECTORY_PAGES = 3
 _MIN_HANDTYPED = 5
 
@@ -111,6 +114,24 @@ def parse_directory(fragment: str) -> list[dict]:
     """Staff cards from the widget's HTML, in the shape staff_roster returns."""
     soup = BeautifulSoup(fragment, "lxml")
     out = []
+    # Table layout (Monroe): one row per person, `data-staff-name`, a Name
+    # column and sometimes a Title one; no emails.
+    for row in soup.select("tr[data-staff-name]"):
+        name = " ".join((row.get("data-staff-name") or "").split())
+        if not name:
+            continue
+        cells = [c.get_text(" ", strip=True) for c in row.find_all("td")]
+        title = cells[1] if len(cells) > 1 and cells[1] else None
+        out.append(
+            {
+                "constituent_id": _constituent_id(name, None),
+                "full_name": name,
+                "title": title,
+                "department": None,
+                "email": None,
+                "phone": None,
+            }
+        )
     for card in soup.select(".staff-item"):
         name_el = card.select_one(".stack-directory-name")
         name = " ".join(name_el.get_text(" ", strip=True).split()) if name_el else ""

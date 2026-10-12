@@ -1,0 +1,319 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Monroe Township Public School District",
+  "districts": [
+    {
+      "name": "Monroe Township Public School District",
+      "state": "NJ",
+      "website_url": "https://monroetwp.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://monroetwp.k12.nj.us/district-calendar",
+      "ics_feeds": [
+        {
+          "name": "MTPS Districtwide Events",
+          "url": "https://calendar.google.com/calendar/ical/mtpsnews%40gmail.com/public/basic.ics"
+        },
+        {
+          "name": "BOE Meetings",
+          "url": "https://calendar.google.com/calendar/ical/l4ldhultri5ha7mo5n5dlist7c%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "Holly Glen Calendar",
+          "url": "https://calendar.google.com/calendar/ical/3fe2983ea564511c427461e9bab54bf99ecb268f033c99dbcf21cde3c67e0644%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "holly-glen-elementary"
+        },
+        {
+          "name": "Oak Knoll Calendar",
+          "url": "https://calendar.google.com/calendar/ical/d5df1c9904cd329d78e64900177110668dde40bfe4355a2100ef1ac19951ca1f%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "oak-knoll-elementary"
+        },
+        {
+          "name": "Radix Calendar",
+          "url": "https://calendar.google.com/calendar/ical/34851490ed289187f2edc2efada2919f19a8fee9b93ec970dd40dcb43be82483%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "radix-elementary"
+        },
+        {
+          "name": "Whitehall Calendar",
+          "url": "https://calendar.google.com/calendar/ical/2be7679e0e5b7830d1e3974fcfa87289db58efbbb8652469e30c346697260d13%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "whitehall-elementary"
+        },
+        {
+          "name": "WMS School Events",
+          "url": "https://calendar.google.com/calendar/ical/733ef76pq386698q8e28i7uet8%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "williamstown-middle"
+        },
+        {
+          "name": "WHS School Events",
+          "url": "https://calendar.google.com/calendar/ical/vd5uptmlcvu118qadgon3h3k0s%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "williamstown-high"
+        },
+        {
+          "name": "WHS Activities",
+          "url": "https://calendar.google.com/calendar/ical/a9dccff674a63f62b9039d09b4a85f4a0eb8f765cf537f3aaa2cca252aa1dc8c%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "williamstown-high"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://monroetwp.k12.nj.us/transportation",
+      "towns": [
+        "Williamstown"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "williamstown-high",
+      "name": "Williamstown High School",
+      "short_name": "Williamstown High",
+      "district_name": "Monroe Township Public School District",
+      "school_type": "high",
+      "address": "700 North Tuckahoe Road, Williamstown, NJ 08094",
+      "main_phone": "(856) 262-8200",
+      "website_url": "https://whs.monroetwp.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:26 AM",
+      "end_time": "2:11 PM",
+      "early_dismissal_time": "12:01 PM",
+      "delayed_opening_time": "9:26 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "07:26",
+            "end": "07:35"
+          },
+          {
+            "name": "1",
+            "start": "07:39",
+            "end": "08:19"
+          },
+          {
+            "name": "2",
+            "start": "08:23",
+            "end": "09:03"
+          },
+          {
+            "name": "3",
+            "start": "09:07",
+            "end": "09:47"
+          },
+          {
+            "name": "4 (Lunch A)",
+            "start": "09:51",
+            "end": "10:31"
+          },
+          {
+            "name": "5 (Lunch B)",
+            "start": "10:35",
+            "end": "11:15"
+          },
+          {
+            "name": "6 (Lunch C)",
+            "start": "11:19",
+            "end": "11:59"
+          },
+          {
+            "name": "7 (Lunch D)",
+            "start": "12:03",
+            "end": "12:43"
+          },
+          {
+            "name": "8",
+            "start": "12:47",
+            "end": "13:27"
+          },
+          {
+            "name": "9",
+            "start": "13:31",
+            "end": "14:11"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=25911",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "monroetwp/williamstown-high-school"
+    },
+    {
+      "slug": "williamstown-middle",
+      "name": "Williamstown Middle School",
+      "short_name": "Williamstown Middle",
+      "district_name": "Monroe Township Public School District",
+      "school_type": "middle",
+      "address": "561 Clayton Road, Williamstown, NJ 08094",
+      "main_phone": "(856) 629-7444",
+      "website_url": "https://wms.monroetwp.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:10 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": "10:10 AM",
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=25914",
+      "logo_url": "https://files.smartsites.parentsquare.com/5623/header_logo_img_tpujwg.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "monroetwp/williamstown-middle-school"
+    },
+    {
+      "slug": "holly-glen-elementary",
+      "name": "Holly Glen Elementary School",
+      "short_name": "Holly Glen",
+      "district_name": "Monroe Township Public School District",
+      "school_type": "elementary",
+      "address": "900 North Main Street, Williamstown, NJ 08094",
+      "main_phone": "(856) 728-8706",
+      "website_url": "https://hges.monroetwp.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:55 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": "10:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice (outside vendor), not the district; cancelled on delayed-opening and early-dismissal days. Vendor phone 856-316-6375. 2026-27 rates not published on the school sites.",
+        "handbook_url": "https://www.kidschoicewt.com/monroe-township/"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "monroetwp/holly-glen"
+    },
+    {
+      "slug": "oak-knoll-elementary",
+      "name": "Oak Knoll Elementary School",
+      "short_name": "Oak Knoll",
+      "district_name": "Monroe Township Public School District",
+      "school_type": "elementary",
+      "address": "23 Bodine Avenue, Williamstown, NJ 08094",
+      "main_phone": "(856) 728-3944",
+      "website_url": "https://okes.monroetwp.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:55 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": "10:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice (outside vendor), not the district; cancelled on delayed-opening and early-dismissal days. Vendor phone 856-316-6375. 2026-27 rates not published on the school sites.",
+        "handbook_url": "https://www.kidschoicewt.com/monroe-township/"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "monroetwp/oak-knoll"
+    },
+    {
+      "slug": "radix-elementary",
+      "name": "Radix Elementary School",
+      "short_name": "Radix",
+      "district_name": "Monroe Township Public School District",
+      "school_type": "elementary",
+      "address": "363 Radix Road, Williamstown, NJ 08094",
+      "main_phone": "(856) 728-8650",
+      "website_url": "https://res.monroetwp.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 728-8650 ext. 6000",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the office at (856) 728-8650, ext. 6000, before 9:30 AM when your child will be absent. Early dismissal needs a written parent note approved by the principal.",
+      "start_time": "8:55 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": "10:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/5620/header_logo_img_0cuv7y.png",
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice (outside vendor), not the district; cancelled on delayed-opening and early-dismissal days. Vendor phone 856-316-6375. 2026-27 rates not published on the school sites.",
+        "handbook_url": "https://www.kidschoicewt.com/monroe-township/"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "monroetwp/radix"
+    },
+    {
+      "slug": "whitehall-elementary",
+      "name": "Whitehall Elementary School",
+      "short_name": "Whitehall",
+      "district_name": "Monroe Township Public School District",
+      "school_type": "elementary",
+      "address": "161 Whitehall Road, Williamstown, NJ 08094",
+      "main_phone": "(856) 728-8782",
+      "website_url": "https://wes.monroetwp.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 728-8782 ext. 7000 or 7001",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the office before 9:30 AM on the day of the absence. Send a written explanation on the day the child returns; a doctor's note is required after more than 3 days.",
+      "start_time": "8:55 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": "10:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice (outside vendor), not the district; cancelled on delayed-opening and early-dismissal days. Vendor phone 856-316-6375. 2026-27 rates not published on the school sites.",
+        "handbook_url": "https://www.kidschoicewt.com/monroe-township/"
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "monroetwp/whitehall"
+    }
+  ],
+  "smore_newsletters": []
+}

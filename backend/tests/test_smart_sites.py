@@ -106,3 +106,15 @@ def test_role_links_come_from_the_nav_and_principals_message_is_the_principal():
 def test_footer_phone_drops_the_country_code():
     html = '<footer><a href="tel:+18568297770" aria-label="Phone +1 856-829-7770">+1 856-829-7770</a></footer>'
     assert smart_sites.parse_footer(html)["main_phone"] == "856-829-7770"
+
+
+def test_table_directory_rows_and_faculty_staff_links():
+    frag = (
+        '<table><tbody><tr data-staff-name="Pat Doe"><td>Pat Doe</td><td>Principal</td></tr>'
+        '<tr data-staff-name="Sam Roe"><td>Sam Roe</td></tr></tbody></table>'
+    )
+    rows = smart_sites.parse_directory(frag)
+    assert [(r["full_name"], r["title"]) for r in rows] == [("Pat Doe", "Principal"), ("Sam Roe", None)]
+    home = '<a href="/1_2">Faculty &amp; Staff</a><a href="/2_2">Oak Knoll Staff Directory</a><a href="/3_2">Staff Only</a>'
+    urls = smart_sites.find_directory_links(home, "https://x.example")
+    assert "https://x.example/1_2" in urls and "https://x.example/2_2" in urls and "https://x.example/3_2" not in urls
