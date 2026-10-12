@@ -1,0 +1,38 @@
+name: Backup
+
+# Nightly encrypted Postgres dump into the schoolz-backup bucket.
+# Restore steps: docs/BACKUPS.md.
+
+on:
+  schedule:
+    - cron: "17 7 * * *"  # 07:17 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: backup-prod
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dump, encrypt, upload
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_ACCESS_KEY: ${{ secrets.BACKUP_S3_ACCESS_KEY }}
+          BACKUP_S3_SECRET_KEY: ${{ secrets.BACKUP_S3_SECRET_KEY }}
+        run: |
+          for name in BACKUP_DATABASE_URL BACKUP_S3_ENDPOINT BACKUP_S3_ACCESS_KEY BACKUP_S3_SECRET_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "$name is not set for the prod environment" >&2
+              exit 1
+            fi
+          done
+          bash scripts/backup.sh --docker
