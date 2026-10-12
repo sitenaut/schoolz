@@ -310,7 +310,7 @@ export function AppShell() {
             >
               {s.logo_url && !brokenLogos.has(s.logo_url) ? (
                 <img
-                  className={logoClass("avatar", s.slug)}
+                  className={logoClass("avatar", s)}
                   src={s.logo_url}
                   alt=""
                   onError={() => setBrokenLogos((prev) => new Set(prev).add(s.logo_url!))}

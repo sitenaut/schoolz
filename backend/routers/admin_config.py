@@ -315,6 +315,8 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         school.arbiter_events_calendar = s.arbiter_events_calendar or school.arbiter_events_calendar
         school.arbiter_events_district_wide = s.arbiter_events_district_wide or school.arbiter_events_district_wide
         await _ensure_athletics_calendar_job(db, school, user)
+        if s.logo_url and s.logo_url != school.logo_url:
+            school.logo_backing = None  # reclassified by the next school_info.scan
         school.logo_url = s.logo_url or school.logo_url
         if s.bell_periods:
             school.bell_periods = {variant: [p.model_dump() for p in periods] for variant, periods in s.bell_periods.items()}

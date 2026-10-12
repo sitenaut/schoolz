@@ -131,7 +131,7 @@ export function PickSchoolsPage() {
                 return (
                   <button className="sopt" aria-pressed={picked.includes(s.slug)} onClick={() => toggle(s)} key={s.id}>
                     <span className="box" />
-                    {s.logo_url ? <img className={logoClass("sopt-logo", s.slug)} src={s.logo_url} alt="" /> : null}
+                    {s.logo_url ? <img className={logoClass("sopt-logo", s)} src={s.logo_url} alt="" /> : null}
                     <span className="sopt-text">
                       {s.short_name || s.name}
                       {showDistrict && district && <small>{searching ? district.towns.join(", ") : district.name}</small>}

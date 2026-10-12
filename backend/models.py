@@ -624,6 +624,11 @@ class School(Base):
     # downloaded and re-hosted. Used in the school picker and the school
     # switcher chips in the top ribbon.
     logo_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Disc the logo needs behind it to be visible in both themes: "none",
+    # "light" or "dark" (services/logo_backing.py), NULL until classified.
+    # school_info.scan fills it in and redoes it when logo_url changes; a
+    # value set by hand via PATCH sticks until then.
+    logo_backing: Mapped[str | None] = mapped_column(String(5), nullable=True)
     # Auto-created (mirrors SmoreNewsletter/District) whenever website_url
     # is set - scans the school's own staff directory page.
     staff_roster_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)

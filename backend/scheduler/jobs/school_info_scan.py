@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import School
 from scheduler.registry import register_job
 from services.apptegy import discover_school_info as discover_apptegy_school_info
+from services.logo_backing import classify_logo_url
 from services.school_info import discover_school_info
 from services.weather import ensure_location
 
@@ -40,7 +41,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         changed.append("main_phone")
     if info["logo_url"] and info["logo_url"] != school.logo_url:
         school.logo_url = info["logo_url"]
+        school.logo_backing = None
         changed.append("logo")
+    if school.logo_url and school.logo_backing is None:
+        school.logo_backing = await classify_logo_url(school.logo_url)
 
     weather_note = await ensure_location(school)
     if weather_note:

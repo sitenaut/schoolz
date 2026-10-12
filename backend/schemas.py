@@ -477,6 +477,9 @@ class SchoolUpdate(BaseModel):
     arbiter_events_calendar: bool | None = None
     arbiter_events_district_wide: bool | None = None
     logo_url: str | None = Field(default=None, max_length=1000)
+    # Manual override of the classified backing; "" clears it so the next
+    # school_info.scan classifies again.
+    logo_backing: str | None = Field(default=None, pattern="^(none|light|dark|)$")
     special_events_calendar_url: str | None = Field(default=None, max_length=500)
     # High-school class-pages sources - see School.activities_calendar_ics_url
     # etc in models.py. Opt-in like special_events_calendar_url; no admin
@@ -548,6 +551,7 @@ class SchoolOut(BaseModel):
     arbiter_events_calendar: bool = False
     arbiter_events_district_wide: bool = False
     logo_url: str | None
+    logo_backing: str | None = None
     special_events_calendar_url: str | None
     activities_calendar_ics_url: str | None
     announcements_doc_url: str | None
