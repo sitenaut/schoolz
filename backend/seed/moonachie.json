@@ -1,0 +1,155 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Moonachie School District (sends grades 9-12 to Wood-Ridge Jr/Sr High)",
+  "districts": [
+    {
+      "name": "Moonachie School District",
+      "website_url": "https://www.moonachieschool.org",
+      "food_services_menu_url": "https://www.moonachieschool.org/lunchmenu",
+      "ics_feeds": [],
+      "calendar_pdf_url": "https://www.moonachieschool.org/school-information/printable-25-26-school-calendars-clone",
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.moonachieschool.org/district/transportation",
+      "towns": [
+        "Moonachie"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:50",
+            "end": "08:55"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:55",
+            "end": "09:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:35",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "10:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:55",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 5A",
+            "start": "11:35",
+            "end": "12:20"
+          },
+          {
+            "name": "Period 5B",
+            "start": "12:20",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:05",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:45",
+            "end": "14:25"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:25",
+            "end": "15:05"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:30",
+            "end": "09:50"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:50",
+            "end": "10:25"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:25",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:00",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:35",
+            "end": "12:10"
+          },
+          {
+            "name": "Period 5A",
+            "start": "12:10",
+            "end": "12:45"
+          },
+          {
+            "name": "Period 5B",
+            "start": "12:45",
+            "end": "13:20"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:20",
+            "end": "13:55"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:55",
+            "end": "14:30"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:30",
+            "end": "15:05"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:30 AM",
+      "start_time": "8:50 AM",
+      "end_time": "3:05 PM",
+      "absence_method": "phone",
+      "absence_phone": "(201) 641-5833 ext. 120",
+      "absence_instructions": "Call the attendance officer at 201-641-5833 ext. 120 by 8:30 AM; voicemail is available 24 hours. Send a signed note explaining the reason after each absence.",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1696507788/moonachieschoolorg/drhmbtzxssqaa9tegfll/MoonachieLogo1.jpg",
+      "slug": "robert-l-craig",
+      "name": "Robert L. Craig School",
+      "short_name": "Robert L. Craig",
+      "district_name": "Moonachie School District",
+      "school_type": "elementary",
+      "address": "20 West Park Street, Moonachie, NJ 07074",
+      "main_phone": "(201) 641-5833",
+      "website_url": "https://www.moonachieschool.org"
+    }
+  ],
+  "smore_newsletters": []
+}

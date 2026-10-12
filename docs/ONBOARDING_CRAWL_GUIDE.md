@@ -501,12 +501,13 @@ Haddon Township off as unsupported based on search snippets alone, without
 actually fetching the site - a five-minute mistake, caught and fixed the
 same session).
 
-**`<id>.digitalsports.com`, seen alongside a BigTeams/Arbiter link for the
-same school, is a genuinely separate, unconfirmed platform** - nothing in
-this codebase reads it, and it wasn't needed once the Arbiter link resolved
-Haddon Township's real schedule. Worth a real look only if a school's
-*only* athletics link is a `digitalsports.com` one with no Arbiter link
-findable anywhere on the branded site.
+**`<school>.digitalsports.com` ("Powered by VantageSportz") is a separate
+platform, supported since Wood-Ridge** (`services/digitalsports.py`): set
+`athletics_url` to the school's own `digitalsports.com` site and
+`athletics_calendar.scan` reads it week by week (`source="digitalsports"`,
+hidden by default like Arbiter games). It was first seen alongside a BigTeams/
+Arbiter link at Haddon Township HS, where the Arbiter link was enough; use
+DigitalSports only when that is the school's real schedule.
 
 ---
 
@@ -573,9 +574,6 @@ If a new district uses one of these, treat it as a genuinely new integration
 decision, not a quick add. **Note the false alarm above: "BigTeams" is NOT
 on this list** - it's ArbiterLive branding, already supported.
 
-- **`<id>.digitalsports.com`** (athletics) — seen alongside a working
-  Arbiter link for the same school (Haddon Township HS), never needed on
-  its own so far. No code in this repo reads it.
 - **MemberHub** (`<school>.memberhub.com`) — **not a separate platform to
   build**: those hostnames (and `.memberhub.store`) 301 to
   `<name>.givebacks.com`, so a MemberHub PTA link is a Givebacks site under
