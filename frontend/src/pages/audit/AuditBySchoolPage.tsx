@@ -1,3 +1,4 @@
+import { FilterSelect } from "../../components/ui/FilterSelect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Badge } from "../../components/ui/Badge";
@@ -129,14 +130,13 @@ export function AuditBySchoolPage() {
         </label>
         <label className="field">
           <span className="lbl">District</span>
-          <select value={filters.district} onChange={(e) => setFilter({ district: e.target.value })}>
-            <option value="">All districts</option>
-            {data?.districts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          <FilterSelect
+            value={filters.district}
+            onChange={(v) => setFilter({ district: v })}
+            options={(data?.districts ?? []).map((d) => ({ value: d.id, label: d.name }))}
+            placeholder="All districts"
+            clearLabel="All districts"
+          />
         </label>
         <label className="field">
           <span className="lbl">School type</span>

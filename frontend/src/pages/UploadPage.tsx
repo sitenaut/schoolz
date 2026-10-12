@@ -1,3 +1,4 @@
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { BOT_CHECK_ENABLED, BotCheck } from "../components/BotCheck";
@@ -173,24 +174,10 @@ export function UploadPage() {
               <option value="local">A local event (not a school)</option>
             </select>
             {targetKind === "school" && (
-              <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
-                <option value="">— choose —</option>
-                {targets.schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+              <FilterSelect value={schoolId} onChange={setSchoolId} options={targets.schools.map((s) => ({ value: s.id, label: s.label }))} placeholder="— choose —" ariaLabel="School" />
             )}
             {targetKind === "district" && (
-              <select value={districtId} onChange={(e) => setDistrictId(e.target.value)}>
-                <option value="">— choose —</option>
-                {targets.districts.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+              <FilterSelect value={districtId} onChange={setDistrictId} options={targets.districts.map((d) => ({ value: d.id, label: d.label }))} placeholder="— choose —" ariaLabel="District" />
             )}
           </Field>
         </details>

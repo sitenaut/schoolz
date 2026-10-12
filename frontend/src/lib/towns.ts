@@ -5,9 +5,9 @@ export function townsForSchool(school: School, districtsById: Map<string, Distri
   return (school.district_id && districtsById.get(school.district_id)?.towns) || [];
 }
 
-/** Picker chips: a town gets one only once it has an elementary school we
- * track, so a town served here only by a shared regional high school
- * (Berlin and Gibbsboro, via Eastern) doesn't get a chip holding one
+/** The picker's town list: a town is on it only once it has an elementary
+ * school we track, so a town served here only by a shared regional high
+ * school (Berlin and Gibbsboro, via Eastern) isn't an entry holding one
  * school - that school is still one search away. */
 export function pickerTowns(schools: School[], districtsById: Map<string, DistrictSummary>): string[] {
   const towns = new Set<string>();
@@ -22,7 +22,7 @@ export function schoolsInTown(town: string, schools: School[], districtsById: Ma
   return schools.filter((s) => townsForSchool(s, districtsById).includes(town));
 }
 
-/** The chip to open on: wherever most already-picked schools are, so a
+/** The town to open on: wherever most already-picked schools are, so a
  * returning visitor lands on their own town. Null when nothing is picked
  * and there's a real choice to make. */
 export function defaultTown(towns: string[], picked: School[], districtsById: Map<string, DistrictSummary>): string | null {

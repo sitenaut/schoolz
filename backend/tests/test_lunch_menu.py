@@ -214,3 +214,21 @@ def test_menu_table_of_drive_links_reads_month_meal_and_k8(monkeypatch):
         ("lunch", "September 2098", "D" * 20),
         ("breakfast", "January 2099", "F" * 20),
     }
+
+
+def test_image_menu_links_are_classified_by_their_link_text():
+    # Washington Township posts the current month as fixed-name PNGs; only the
+    # link text ("... Menu -- October&nbsp;2026") says what each one is.
+    from services.lunch_menu import _classify_image_menu_links
+
+    html = (
+        '<a href="/uploaded/Food_Service/ES_L.png">Elementary Lunch Menu -- October&nbsp;2026</a>'
+        '<a href="/uploaded/Food_Service/HS.png"><span>High School Lunch Menu -- October 2026</span></a>'
+        '<a href="/uploaded/Food_Service/PS_B.png">Preschool Breakfast Menu -- October 2026</a>'
+        '<a href="/uploaded/Food_Service/MS.webp">Middle School Lunch Menu -- October 2026</a>'
+        '<a href="/uploaded/logo.png">Our logo</a>'
+    )
+    got = {(c["school_type"], c["meal_type"]): c for c in _classify_image_menu_links("https://x.org/menus", html)}
+    assert set(got) == {("elementary", "lunch"), ("high", "lunch"), ("other", "breakfast"), ("middle", "lunch")}
+    assert got[("elementary", "lunch")]["pdf_url"] == "https://x.org/uploaded/Food_Service/ES_L.png"
+    assert got[("elementary", "lunch")]["period_label"] == "October 2026"

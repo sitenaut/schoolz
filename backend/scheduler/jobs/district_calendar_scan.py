@@ -62,6 +62,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             missing_schools.append(slug)
             continue
         feed_events = await _fetch_feed(feed)
+        # A union feed (Washington Twp: calendar 3 repeats every school's own
+        # events) names the buildings it should not carry. Dropped before the
+        # district-wide UID set, so the school's own feed keeps those events.
+        skip = tuple(p.lower() for p in feed.get("skip_title_prefixes") or [])
+        if skip:
+            feed_events = [e for e in feed_events if not e["title"].lower().startswith(skip)]
         fetched.append((feed, feed_events))
         if not slug:
             district_wide_uids.update(e["external_uid"] for e in feed_events)

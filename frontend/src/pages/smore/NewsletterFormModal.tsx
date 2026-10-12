@@ -1,3 +1,4 @@
+import { FilterSelect } from "../../components/ui/FilterSelect";
 import { useEffect, useState } from "react";
 import { Field } from "../../components/ui/Field";
 import { Modal } from "../../components/ui/Modal";
@@ -121,25 +122,11 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
 
           {target === "school" ? (
             <Field label="School" className="span2">
-              <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)} required>
-                <option value="">— choose —</option>
-                {targets.schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+              <FilterSelect value={schoolId} onChange={setSchoolId} options={targets.schools.map((s) => ({ value: s.id, label: s.label }))} placeholder="— choose —" required />
             </Field>
           ) : (
             <Field label="District" className="span2" hint="Items extracted from this newsletter will be district-wide, not tied to one school.">
-              <select value={districtId} onChange={(e) => setDistrictId(e.target.value)} required>
-                <option value="">— choose —</option>
-                {targets.districts.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+              <FilterSelect value={districtId} onChange={setDistrictId} options={targets.districts.map((d) => ({ value: d.id, label: d.label }))} placeholder="— choose —" required />
             </Field>
           )}
 

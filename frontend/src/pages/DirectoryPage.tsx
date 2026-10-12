@@ -1,3 +1,4 @@
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -5,7 +6,7 @@ import { apiFetch } from "../api";
 import { telHref } from "../lib/calendar";
 import { logoClass } from "../lib/logos";
 import { useMySchools } from "../lib/mySchools";
-import { townsLabel } from "../lib/towns";
+import { townsForSchool, townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackEvent } from "../lib/track";
 import { SeoHead } from "../components/SeoHead";
@@ -44,7 +45,7 @@ function initials(name: string): string {
  * Nothing picked, or a picked school with no district, shows everyone. */
 export function DirectoryPage() {
   const { t } = useTranslation();
-  const { allSchools, myTowns, mySchools, loading: schoolsLoading } = useMySchools();
+  const { allSchools, districtsById, myTowns, mySchools, loading: schoolsLoading } = useMySchools();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [school, setSchool] = useState("");
@@ -165,25 +166,19 @@ export function DirectoryPage() {
       </div>
 
       <div className="dir-filters">
-        <select
+        <FilterSelect
           value={school}
-          onChange={(e) => {
-            setSchool(e.target.value);
+          onChange={(v) => {
+            setSchool(v);
             setOffset(0);
           }}
-          aria-label={t("Filter by school")}
-        >
-          <option value="">{t("All schools")}</option>
-          {schoolGroups.map((g) => (
-            <optgroup label={g.label} key={g.key}>
-              {g.schools.map((s) => (
-                <option value={s.slug} key={s.id}>
-                  {s.short_name || s.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+          ariaLabel={t("Filter by school")}
+          placeholder={t("All schools")}
+          clearLabel={t("All schools")}
+          options={schoolGroups.flatMap((g) =>
+            g.schools.map((s) => ({ value: s.slug, label: s.short_name || s.name, group: t(g.label), hint: townsForSchool(s, districtsById).join(", ") || undefined })),
+          )}
+        />
         {isFiltered && (
           <button className="dir-clear" onClick={clearAll}>
             <IconX />
