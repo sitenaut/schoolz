@@ -22,3 +22,6 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     date_overwrites`, and entrées are the recipes under a category ending
     "Entree". Preschool menus are skipped, and standing options are dropped
     with `fdmealplanner.day_descriptions`. The `/recipes/` endpoint has no days.
+
+- **Clayton (Gloucester)** — `backend/seed/clayton.json`. Plain GET returns a Finalsite-style "Client Challenge", so use the scraper. School orgs return empty directories; the district org holds the whole roster (department chips ES/MS/HS/ECC). Documents are `aptg.co/<code>` / `5il.co/<code>` short links to expiring signed S3 URLs: track the page, never the target. The athletics entity id came from the VNN/PlayOn athletics site's partner list ("Arbiter API" thirdPartyId), then verified at `arbiterlive.com/School/<id>`.
+  Lunch menus are PDFs in `<iframe src="https://aptg.co/<code>">` on per-level pages (`/o/cpsd/page/*-menus`) that only the nav JSON of the food-service page links to. `lunch_menu._discover_embedded_menus` follows those links, downloads each embed, and classifies it by the PDF's own heading ("HS/MS Lunch Menu October 2026", which serves both the high and middle school); the short link itself is stored and re-fetched. SchoolCafe resolves for this district but lists no schools, so `schoolcafe_shortname` is null.

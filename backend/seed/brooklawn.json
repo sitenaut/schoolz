@@ -1,0 +1,66 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Brooklawn Public School District",
+  "districts": [
+    {
+      "name": "Brooklawn Public School District",
+      "state": "NJ",
+      "website_url": "https://www.alicecostello.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Brooklawn District Calendar",
+          "url": "https://www.alicecostello.com/servlet/ICalServlet?id=0"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Brooklawn"
+      ],
+      "schoolcafe_shortname": "BROOKLAWNPSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "alice-costello",
+      "name": "Alice Costello Elementary School",
+      "short_name": "Alice Costello",
+      "district_name": "Brooklawn Public School District",
+      "school_type": "elementary",
+      "address": "301 Haakon Rd, Brooklawn, NJ 08030",
+      "main_phone": "(856) 456-4039",
+      "website_url": "https://www.alicecostello.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 456-4039 ext. 1",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (856) 456-4039, extension 1, by 8:00 AM. A note with the reason and dates is required on return, and a doctor's note after 5 continuous days.",
+      "start_time": "8:15 AM",
+      "end_time": "2:55 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://www.alicecostello.com/pics/header_logo.png",
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal (3:45 PM) - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice, not the district. 2026-27 monthly tuition: AM $190, PM $260, AM/PM $360. Book of five day passes $160; drop-in $40 per day. 10% off for additional siblings and for active military and first responders. Payment is due on the 1st. Kids Choice phone 856-316-6375 or 609-617-5310. Tuesday school ends 2:20 PM.",
+        "handbook_url": "https://www.kidschoicewt.com/brooklawn-alice-costello-elementary-school/"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

@@ -232,3 +232,17 @@ def test_image_menu_links_are_classified_by_their_link_text():
     assert set(got) == {("elementary", "lunch"), ("high", "lunch"), ("other", "breakfast"), ("middle", "lunch")}
     assert got[("elementary", "lunch")]["pdf_url"] == "https://x.org/uploaded/Food_Service/ES_L.png"
     assert got[("elementary", "lunch")]["period_label"] == "October 2026"
+
+
+def test_embedded_menu_pdfs_are_classified_by_their_own_heading():
+    # Clayton's menus are iframe-embedded PDFs behind aptg.co short links, so
+    # the PDF's heading (not its filename, which may have no month) classifies it.
+    from services.lunch_menu import _MENU_SUBPAGE_RE, _classify_menu_heading
+
+    got = {(c["school_type"], c["meal_type"]) for c in _classify_menu_heading("HS/MS Lunch Menu October 2026\nMONDAY", "https://aptg.co/x")}
+    assert got == {("high", "lunch"), ("middle", "lunch")}
+    herma = _classify_menu_heading("Herma Simmons Breakfast Menu October 2026", "https://aptg.co/y")
+    assert [(c["school_type"], c["meal_type"], c["period_label"]) for c in herma] == [("elementary", "breakfast", "October 2026")]
+    assert _classify_menu_heading("Pre-K BREAKFAST MENU October 2026", "u")[0]["school_type"] == "other"
+    assert _classify_menu_heading("Welcome", "u") == []
+    assert _MENU_SUBPAGE_RE.findall('{"link":"/o/cpsd/page/elementary-school-menus","x":"/o/cpsd/page/food-service"}') == ["/o/cpsd/page/elementary-school-menus"]
