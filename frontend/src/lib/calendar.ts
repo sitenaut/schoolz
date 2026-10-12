@@ -107,9 +107,11 @@ export function timeOfDay(iso: string): string {
 }
 
 export function telHref(phone: string): string {
-  // Keep commas - the tel: scheme treats them as a dial pause, which is how
-  // an extension after the main number ("(856)424-2222,2554") gets dialed.
-  // Stripping them collapsed the number and extension into one run of
-  // digits that dialed nothing real.
-  return `tel:${phone.replace(/[^\d+,]/g, "")}`;
+  // An extension ("ext. 2554", "x2554", "#2554") becomes a comma, which the
+  // tel: scheme treats as a dial pause - that is how an extension after the
+  // main number gets dialed. Stripping the label alone collapsed number and
+  // extension into one run of digits that dialed nothing real.
+  const m = phone.match(/^(.*?)(?:\s*(?:ext\.?|extension|x|#)\s*(\d+))\s*$/i);
+  const [main, ext] = m ? [m[1], m[2]] : [phone, ""];
+  return `tel:${main.replace(/[^\d+,]/g, "")}${ext ? `,${ext}` : ""}`;
 }

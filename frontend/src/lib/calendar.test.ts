@@ -11,6 +11,8 @@ describe("telHref", () => {
 
   it("strips other punctuation from a plain number", () => {
     expect(telHref("(856) 424-2222")).toBe("tel:8564242222");
+    expect(telHref("8564242222 ext. 2554")).toBe("tel:8564242222,2554");
+    expect(telHref("(856) 424-2222 x2554")).toBe("tel:8564242222,2554");
   });
 });
 
