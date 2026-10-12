@@ -6,8 +6,8 @@ off, then move any lasting finding into `ONBOARDING_CRAWL_GUIDE.md` or the match
 
 ## Districts queued for onboarding
 Found while looking at the Kids Choice before/after-care operator (`kidschoicewt.com`), which runs programs in these districts. Not onboarded; none are in the local DB. Their Kids Choice pages share one template, so each school's after-care (`sacc`) hours and fees can be filled from `https://www.kidschoicewt.com/<district-page>/` once the district is in.
-- [ ] Brooklawn (Alice Costello Elementary), Kids Choice page `brooklawn-alice-costello-elementary-school`.
-- [ ] Clayton (Herma S. Simmons Elementary), page `clayton-school-district`.
+- [x] Brooklawn (Alice Costello Elementary): onboarded locally (`brooklawn.json`). Its high-school students go to Gloucester City High School, so Gloucester City matters next.
+- [x] Clayton (CHS, CMS, Simmons Elementary): onboarded locally (`clayton.json`); staff and lunch are open gaps.
 - [ ] Monroe Township (Holly Glenn, Oak Knoll, Radix, Whitehall and others), page `monroe-township`.
 - [x] Washington Township, Gloucester County: onboarded locally (`washington_township_gloucester.json`), after-care included; prod import pending.
 - [ ] Gloucester City: named on the Clayton page as a Kids Choice location, but it has no page of its own in the site nav. Confirm before scoping.

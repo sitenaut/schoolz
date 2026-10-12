@@ -10,6 +10,7 @@ result up - see School.district_id/school_type and LunchMenu.
 """
 
 import base64
+import io
 import logging
 import re
 import time
@@ -18,6 +19,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import quote, urljoin
 
 import httpx
+import pdfplumber
 from bs4 import BeautifulSoup
 from anthropic import AsyncAnthropic
 
@@ -208,6 +210,57 @@ def _classify_image_menu_links(page_url: str, html: str) -> list[dict]:
     return out
 
 
+# Clayton (Apptegy): each month's menu is a PDF in an <iframe src="https://aptg.co/<code>">
+# on a per-level menus page, and the district's food-service page only links
+# to those pages. The short link redirects to a differently-named file whose
+# name says little ("HS-MS-BK.pdf" has no month), so the PDF's own heading
+# ("HS/MS Lunch Menu October 2026") is what classifies it.
+_EMBED_IFRAME_RE = re.compile(r'<iframe[^>]+src=\\*"(https://aptg\.co/[\w-]+)', re.IGNORECASE)
+_MENU_SUBPAGE_RE = re.compile(r'(/o/[\w-]+/page/[\w-]*menus?[\w-]*)', re.IGNORECASE)
+_PDF_HEADING_RE = re.compile(
+    r"(HS/MS|HS|MS|Pre-?K|Elementary|Herma[\w .'-]*?)\s+(breakfast|lunch)\s+menu\s+(" + "|".join(_MONTHS) + r")\s+(\d{4})", re.IGNORECASE
+)
+
+
+def _classify_menu_heading(text: str, pdf_url: str) -> list[dict]:
+    m = _PDF_HEADING_RE.search(re.sub(r"\s+", " ", text or ""))
+    if not m:
+        return []
+    band, meal, month, year = m.groups()
+    b = band.upper().replace("-", "")
+    types = ["high", "middle"] if b == "HS/MS" else ["high"] if b == "HS" else ["middle"] if b == "MS" else ["other"] if b.startswith("PREK") else ["elementary"]
+    return [
+        {"school_type": t, "meal_type": meal.lower(), "period_label": f"{month.title()} {year}", "pdf_url": pdf_url, "_sort": _month_sort(month, year)}
+        for t in types
+    ]
+
+
+async def _discover_embedded_menus(page_url: str, html: str) -> list[dict]:
+    pages = [page_url]
+    unescaped = html.replace('\\"', '"')
+    for path in dict.fromkeys(_MENU_SUBPAGE_RE.findall(unescaped)):
+        url = urljoin(page_url, path)
+        if url not in pages:
+            pages.append(url)
+    codes: dict[str, None] = {}
+    for url in pages[:6]:
+        page_html = html if url == page_url else (await scraper_client.fetch_html(url, wait_for_selector="a", block_assets=True))["html"]
+        for src in _EMBED_IFRAME_RE.findall(page_html.replace('\\"', '"')):
+            codes[src] = None
+    found: list[dict] = []
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as client:
+        for src in list(codes)[:12]:
+            try:
+                resp = await client.get(src)
+                resp.raise_for_status()
+                with pdfplumber.open(io.BytesIO(resp.content)) as pdf:
+                    first_page = pdf.pages[0].extract_text() or ""
+            except Exception:  # noqa: BLE001 - one bad embed shouldn't hide the others
+                continue
+            found += _classify_menu_heading(first_page, src)
+    return found
+
+
 async def _resolve_resource_manager_links(page_url: str, html: str) -> set[str]:
     """Follows each Finalsite resource-manager wrapper link to its real
     PDF URL. Non-PDF resources (a handbook, a USDA notice) resolve fine but
@@ -357,6 +410,11 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
         if unbanded:
             return restore(fan_out(current_or_latest(unbanded)))
+    if not by_key:
+        for c in await _discover_embedded_menus(menu_page_url, result["html"]):
+            key = (c["school_type"], c["meal_type"])
+            if key not in by_key or c["_sort"] > by_key[key]["_sort"]:
+                by_key[key] = c
     return restore([{k: v for k, v in c.items() if k != "_sort"} for c in by_key.values()])
 
 
