@@ -415,3 +415,36 @@ def test_closed_prefix_stripping_in_korean_and_hindi():
     assert strip("स्कूल बंद - श्रम दिवस", "hi") == "श्रम दिवस"
     assert strip("सभी स्कूल बंद: शरद अवकाश", "hi") == "शरद अवकाश"
     assert strip("शरद अवकाश", "hi") == "शरद अवकाश"
+
+
+@pytest.mark.anyio
+async def test_identical_text_is_reused_not_retranslated(monkeypatch):
+    calls: list = []
+    monkeypatch.setattr(ct, "_call_model", _fake_model(calls))
+    _, _, first_id = await _school_with_item(title="Reuse Day", description="Same text everywhere.")
+    _, _, second_id = await _school_with_item(title="Reuse Day", description="Same text everywhere.")
+    async with database.SessionLocal() as db:
+        items = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id.in_([first_id, second_id])).order_by(SchoolContentItem.id))).scalars().all()
+        a, b = [i for i in items if i.id == first_id][0], [i for i in items if i.id == second_id][0]
+        assert await ct.translate_items(db, [a], "es") == 1
+        assert len(calls) == 1
+        assert await ct.translate_items(db, [b], "es") == 1  # copied, no model call
+        assert len(calls) == 1
+        rows = (await db.execute(select(ContentTranslation).where(ContentTranslation.item_id.in_([first_id, second_id])))).scalars().all()
+        assert {r.title for r in rows} == {"ES: Reuse Day"} and len(rows) == 2
+
+
+@pytest.mark.anyio
+async def test_long_past_items_are_not_translated(monkeypatch):
+    calls: list = []
+    monkeypatch.setattr(ct, "_call_model", _fake_model(calls))
+    async with database.SessionLocal() as db:
+        school = School(name="Old School", slug=f"old-{uuid.uuid4().hex[:8]}", school_type="elementary")
+        db.add(school)
+        await db.flush()
+        old = datetime.now(timezone.utc) - timedelta(days=400)
+        item = SchoolContentItem(scope="school", school_id=school.id, category="event", title="Ancient Concert", start_date=old, end_date=old, is_current=True)
+        db.add(item)
+        await db.commit()
+        assert await ct.translate_items(db, [item], "es") == 0
+        assert calls == []
