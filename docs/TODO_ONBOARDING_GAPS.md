@@ -10,7 +10,7 @@ Found while looking at the Kids Choice before/after-care operator (`kidschoicewt
 - [x] Clayton (CHS, CMS, Simmons Elementary): onboarded locally (`clayton.json`); staff and lunch are open gaps.
 - [x] Monroe Township (Holly Glen, Oak Knoll, Radix, Whitehall, Williamstown MS/HS): onboarded locally (`monroe_township.json`); prod import pending.
 - [x] Washington Township, Gloucester County: onboarded locally (`washington_township_gloucester.json`), after-care included; prod import pending.
-- [ ] Gloucester City: named on the Clayton page as a Kids Choice location, but it has no page of its own in the site nav. Confirm before scoping.
+- [x] Gloucester City (Cold Springs, Middle, High): onboarded locally (`gloucester_city.json`); prod import pending. Kids Choice does not serve it (AlphaBEST does).
 - Gateway Regional, Woodbury Heights, Westville, National Park and Wenonah are onboarded and imported locally; prod import is pending. Their lunch menus share Gateway's Nutrislice tenant `grsd`.
 
 ## Black Horse Pike Regional (Highland, Timber Creek, Triton)

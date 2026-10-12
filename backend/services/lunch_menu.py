@@ -16,7 +16,7 @@ import re
 import time
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, unquote, urljoin
 
 import httpx
 import pdfplumber
@@ -131,6 +131,37 @@ def _classify_abbreviated_pdf_link(url: str, school_type: str, today: date | Non
     return {
         "school_type": school_type,
         "meal_type": meal.lower(),
+        "period_label": f"{_MONTHS[month_idx].title()} {year_num}",
+        "pdf_url": url,
+        "_sort": (year_num, month_idx),
+    }
+
+
+# Gloucester City: one PDF per school per meal per month (Chance Light, a program with no school row, is skipped), named with a school
+# code - "Oct 2026 MS Lunch Menu.pdf", and one with the code first and a typo'd
+# year, "CS Sept 27 Lunch Menu.pdf". A year that isn't four digits is inferred
+# (the nearest one to today), since "27" is the 2026-27 school year, not 2027.
+_CODED_MENU_RE = re.compile(
+    r"(?:(?P<m1>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[ _-]*(?P<y1>\d{4}|\d{2})?[ _-]+(?P<c1>CS|ECC|MS|HS)"
+    r"|(?P<c2>CS|ECC|MS|HS)[ _-]+(?P<m2>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[ _-]*(?P<y2>\d{4}|\d{2})?)"
+    r"[ _-]+(?P<meal>Breakfast|Lunch)[ _-]*Menu",
+    re.IGNORECASE,
+)
+_MENU_CODE_TO_SCHOOL_TYPE = {"CS": "elementary", "MS": "middle", "HS": "high", "ECC": "other"}
+
+
+def _classify_coded_pdf_link(url: str, today: date | None = None) -> dict | None:
+    filename = unquote(url.rsplit("/", 1)[-1])
+    match = _CODED_MENU_RE.search(filename)
+    if not match:
+        return None
+    g = match.groupdict()
+    month_abbr, year, code = (g["m1"], g["y1"], g["c1"]) if g["m1"] else (g["m2"], g["y2"], g["c2"])
+    month_idx = next(i for i, m in enumerate(_MONTHS) if m.startswith(month_abbr.lower()))
+    year_num = int(year) if year and len(year) == 4 else _infer_year(month_idx, today or datetime.now(ZoneInfo("America/New_York")).date())
+    return {
+        "school_type": _MENU_CODE_TO_SCHOOL_TYPE[code.upper()],
+        "meal_type": g["meal"].lower(),
         "period_label": f"{_MONTHS[month_idx].title()} {year_num}",
         "pdf_url": url,
         "_sort": (year_num, month_idx),
@@ -376,7 +407,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         return [{**c, "pdf_url": alias.get(c["pdf_url"], c["pdf_url"])} for c in entries]
 
     by_key: dict[tuple, dict] = {}
-    for url, classified in [(u, _classify_pdf_link(u)) for u in urls] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
+    for url, classified in [(u, _classify_pdf_link(u) or _classify_coded_pdf_link(u)) for u in urls] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
         if classified:
             key = (classified["school_type"], classified["meal_type"])
             # The page can list more than one month at once, and `urls` is a

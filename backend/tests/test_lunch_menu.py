@@ -246,3 +246,19 @@ def test_embedded_menu_pdfs_are_classified_by_their_own_heading():
     assert _classify_menu_heading("Pre-K BREAKFAST MENU October 2026", "u")[0]["school_type"] == "other"
     assert _classify_menu_heading("Welcome", "u") == []
     assert _MENU_SUBPAGE_RE.findall('{"link":"/o/cpsd/page/elementary-school-menus","x":"/o/cpsd/page/food-service"}') == ["/o/cpsd/page/elementary-school-menus"]
+
+
+def test_coded_school_menu_filenames():
+    from datetime import date
+
+    from services.lunch_menu import _classify_coded_pdf_link as c
+
+    today = date(2026, 10, 12)
+    base = "https://x.example/ourpages/auto/2025/8/18/1/"
+    a = c(base + "Oct%202026%20MS%20Lunch%20Menu.pdf?rnd=1", today)
+    assert (a["school_type"], a["meal_type"], a["period_label"]) == ("middle", "lunch", "October 2026")
+    b = c(base + "CS%20Sept%2027%20Lunch%20Menu.pdf", today)
+    assert (b["school_type"], b["period_label"]) == ("elementary", "September 2026")
+    assert c(base + "Oct%202026%20ECC%20Breakfast%20Menu.pdf", today)["school_type"] == "other"
+    assert c(base + "October%202026%20Snacks.pdf", today) is None
+    assert c(base + "Middle%20School%20Breakfast%20Menu.pdf", today) is None
