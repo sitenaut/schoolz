@@ -5,7 +5,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
 import { ContactGrid, CurrentPeriodChip, DayBlocks, ItemRow, StatusPill, WeekStrip, contactHref, rotationLine } from "../components/today";
-import { IconChevronLeft } from "../components/icons";
+import { IconChevronLeft, IconPhone } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
 import { useAuth } from "../context/AuthContext";
 import { localDateKey, telHref, todayKey } from "../lib/calendar";
@@ -382,6 +382,18 @@ export function SchoolDetailPage() {
                     {m.email && (
                       <div className="person-title">
                         <a href={`mailto:${m.email}`}>{m.email}</a>
+                      </div>
+                    )}
+                    {m.phone && (
+                      <div className="person-title">
+                        <a
+                          className="person-call"
+                          href={telHref(m.phone)}
+                          aria-label={t("Call {{name}}", { name: m.full_name })}
+                          onClick={() => track("staff_call", "tel")}
+                        >
+                          <IconPhone /> {m.phone}
+                        </a>
                       </div>
                     )}
                   </div>
