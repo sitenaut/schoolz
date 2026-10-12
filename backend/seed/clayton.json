@@ -1,0 +1,422 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Clayton Public School District",
+  "districts": [
+    {
+      "name": "Clayton Public School District",
+      "state": "NJ",
+      "website_url": "https://www.claytonps.org",
+      "food_services_menu_url": "https://www.claytonps.org/o/cpsd/page/food-service",
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Clayton District",
+          "platform": "apptegy",
+          "org_id": "23258"
+        },
+        {
+          "name": "Clayton High School",
+          "platform": "apptegy",
+          "org_id": "23486",
+          "school_slug": "clayton-high"
+        },
+        {
+          "name": "Clayton Middle School",
+          "platform": "apptegy",
+          "org_id": "23487",
+          "school_slug": "clayton-middle"
+        },
+        {
+          "name": "Clayton Simmons Elementary",
+          "platform": "apptegy",
+          "org_id": "23488",
+          "school_slug": "simmons-elementary"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.claytonps.org/o/cpsd/page/registration",
+      "towns": [
+        "Clayton"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "clayton-high",
+      "name": "Clayton High School",
+      "short_name": "Clayton High",
+      "district_name": "Clayton Public School District",
+      "school_type": "high",
+      "address": "55 Pop Kramer Blvd. Suite A, Clayton, NJ 08312",
+      "main_phone": "(856) 881-8701",
+      "website_url": "https://www.claytonps.org/o/chs",
+      "apptegy_org_id": "23486",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:40 AM",
+      "end_time": "2:18 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "9:40 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:31",
+            "end": "07:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:40",
+            "end": "08:22"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:26",
+            "end": "09:08"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:12",
+            "end": "09:54"
+          },
+          {
+            "name": "Period 4 / Lunch",
+            "start": "09:58",
+            "end": "11:14"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:18",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:04",
+            "end": "12:46"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:50",
+            "end": "13:32"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:36",
+            "end": "14:18"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:31",
+            "end": "09:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:40",
+            "end": "10:06"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:10",
+            "end": "10:37"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:41",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 4 / Lunch",
+            "start": "11:12",
+            "end": "12:12"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:16",
+            "end": "12:44"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:48",
+            "end": "13:16"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:20",
+            "end": "13:47"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:51",
+            "end": "14:18"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:31",
+            "end": "07:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:40",
+            "end": "08:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:14",
+            "end": "08:44"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:48",
+            "end": "09:18"
+          },
+          {
+            "name": "Period 4 / Lunch",
+            "start": "09:22",
+            "end": "10:20"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:24",
+            "end": "10:54"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:58",
+            "end": "11:28"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:32",
+            "end": "12:02"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:06",
+            "end": "12:30"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/4468",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/23486/logo/26299/Clayton_Public_Schools_NJ_Logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "clayton-middle",
+      "name": "Clayton Middle School",
+      "short_name": "Clayton Middle",
+      "district_name": "Clayton Public School District",
+      "school_type": "middle",
+      "address": "55 Pop Kramer Blvd. Suite B, Clayton, NJ 08312",
+      "main_phone": "(856) 881-8702",
+      "website_url": "https://www.claytonps.org/o/cms",
+      "apptegy_org_id": "23487",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:40 AM",
+      "end_time": "2:18 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "9:40 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:31",
+            "end": "07:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:40",
+            "end": "08:22"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:26",
+            "end": "09:08"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:12",
+            "end": "09:54"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:58",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:44",
+            "end": "11:26"
+          },
+          {
+            "name": "Period 6 / Lunch",
+            "start": "11:30",
+            "end": "12:46"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:50",
+            "end": "13:32"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:36",
+            "end": "14:18"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:31",
+            "end": "09:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:40",
+            "end": "10:06"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:10",
+            "end": "10:37"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:41",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:12",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:44",
+            "end": "12:12"
+          },
+          {
+            "name": "Period 6 / Lunch",
+            "start": "12:16",
+            "end": "13:16"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:20",
+            "end": "13:47"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:51",
+            "end": "14:18"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:31",
+            "end": "07:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:40",
+            "end": "08:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:14",
+            "end": "08:44"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:48",
+            "end": "09:18"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:22",
+            "end": "09:52"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:56",
+            "end": "10:26"
+          },
+          {
+            "name": "Period 6 / Lunch",
+            "start": "10:30",
+            "end": "11:28"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:32",
+            "end": "12:02"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:06",
+            "end": "12:30"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/4468",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/23487/logo/26300/Clayton_Public_Schools_NJ_Logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "simmons-elementary",
+      "name": "Herma S. Simmons Elementary School",
+      "short_name": "Simmons Elementary",
+      "district_name": "Clayton Public School District",
+      "school_type": "elementary",
+      "address": "300 West Chestnut Street, Clayton, NJ 08312",
+      "main_phone": "(856) 881-8704",
+      "website_url": "https://www.claytonps.org/o/hses",
+      "apptegy_org_id": "23488",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 881-8704 ext. 3000 or 3001",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office (ext. 3000 or 3001) by 8:30 AM to report an absence. The call tells the school you know; the absence is not excused until written documentation is provided.",
+      "start_time": "8:40 AM",
+      "end_time": "3:10 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": "10:40 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/23488/logo/26301/Clayton_Public_Schools_NJ_Logo.png",
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Kids Choice, not the district. 2026-27 monthly tuition: AM $190, PM $260, AM/PM $360. Book of five day passes $160; drop-in $40 per day. 10% off for additional siblings and for active military and first responders. Payment is due on the 1st. Kids Choice phone 856-316-6375 or 609-617-5310.",
+        "handbook_url": "https://www.kidschoicewt.com/clayton-school-district/"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

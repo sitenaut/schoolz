@@ -229,3 +229,5 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     `arbiterlive.com/School/Calendar/<id>` because `/School/<id>` isn't recognized.
   - A plain GET of a school subdomain once returned a sibling school's page;
     retry before trusting it.
+
+- **Brooklawn** — `backend/seed/brooklawn.json`. Single-school district: district and school share one ednet site. `/servlet/ICalServlet?id=0` (old servlet pattern, needs a browser User-Agent) carries the sports games as ordinary events. Hours, the absence line and the sports list are only in the handbook Google Doc (`/export?format=txt`). ArbiterLive `/m/searchsuggest?q=<name>` returns entity ids; an entity can exist with no schedules.
