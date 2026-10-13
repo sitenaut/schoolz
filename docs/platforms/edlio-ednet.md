@@ -231,3 +231,13 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     retry before trusting it.
 
 - **Brooklawn** — `backend/seed/brooklawn.json`. Single-school district: district and school share one ednet site. `/servlet/ICalServlet?id=0` (old servlet pattern, needs a browser User-Agent) carries the sports games as ordinary events. Hours, the absence line and the sports list are only in the handbook Google Doc (`/export?format=txt`). ArbiterLive `/m/searchsuggest?q=<name>` returns entity ids; an entity can exist with no schedules.
+
+## Mount Holly and Burlington City (found onboarding)
+
+- **A `www` host can serve another district's site.** `www.burlington-nj.net` returned Mount Holly's pages; compare the page title to the district and use the apex.
+- **Newsletters:** a pinned `/apps/news/show_news.jsp?REC_ID=N` item holds the one current Smore link and is edited in place; track the item as `smore_archive`.
+- **Lunch without SchoolCafé:** per-school monthly PDFs on one pinned news item under a fixed `/ourpages/auto/<date>/<id>/` path; only the filename month changes.
+- **Calendars:** `/servlet/ICalServlet?id=N` needs a browser User-Agent; id 0 is the district, and school ids may repeat the district's events (Burlington City) or only add a few.
+- **Bulletin board** (`/apps/bbmessages/show_bbm.jsp?REC_ID=N`) is where calendar, bell-schedule and handbook PDFs live.
+- **Logo** is predictably `/_MASTER/common_pics/header_logo.png` on a school subdomain, and these footers aren't read by `school_info.scan`.
+

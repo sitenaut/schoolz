@@ -122,3 +122,5 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   `/our-district/district-bell-schedule`. The calendar PDF is a resource-manager nav link; `calendar_pdf_url` points at that
   wrapper directly (the directory page did not yield it). Athletics: WTHS is on GoBound but the owner supplied its ArbiterLive team id.
   Lunch menus mix resource-manager PDFs (past months) and fixed-name PNGs (current month); the PNG links are classified by link text, since the filename says nothing.
+
+- **Burlington Township (older calendar module):** `/fs/calendar-manager/events.ics` returns an empty VCALENDAR for every id, and the "subscribe" button does nothing. The RSS button opens a popup at `/cf_calendar/cms_calendar_feeds.cfm?element_id=N&calendar_ids=<data-calendar-ids>` whose "Add to Default Calendar App" links are the real feeds, `webcal://<host>/calendar/calendar_<id>.ics` (plus one `cf_calendar/feed.cfm?type=ical&feedID=` for all). Find it by clicking the RSS button in Playwright and watching for a popup, not the clipboard. Plain curl to this host has also been served other districts' pages: check the page title.

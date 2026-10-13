@@ -1,0 +1,570 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Burlington Township School District",
+  "districts": [
+    {
+      "name": "Burlington Township School District",
+      "state": "NJ",
+      "website_url": "https://www.burltwpsch.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Burlington Township District Calendar",
+          "url": "https://www.burltwpsch.org/calendar/calendar_357.ics"
+        },
+        {
+          "name": "B. Bernice Young Calendar",
+          "url": "https://www.burltwpsch.org/calendar/calendar_352.ics",
+          "school_slug": "bbys"
+        },
+        {
+          "name": "Fountain Woods Calendar",
+          "url": "https://www.burltwpsch.org/calendar/calendar_353.ics",
+          "school_slug": "fountain-woods"
+        },
+        {
+          "name": "Burlington Township Middle School Calendar",
+          "url": "https://www.burltwpsch.org/calendar/calendar_358.ics",
+          "school_slug": "burlington-township-middle"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://sites.google.com/burltwpsch.org/burlington-twp-transportation/home",
+      "towns": [
+        "Burlington Township"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "bbys",
+      "name": "B. Bernice Young Elementary School",
+      "short_name": "Young",
+      "district_name": "Burlington Township School District",
+      "school_type": "elementary",
+      "address": "1203 Neck Road, Burlington, NJ 08016",
+      "main_phone": "609-386-3520",
+      "website_url": "https://ys.burltwpsch.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-386-3520",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office when your child will be absent. A doctor's note is required after 3 or more consecutive days.",
+      "start_time": "9:00 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "11:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://sites.google.com/burltwpsch.org/btsd-foodservicewebsite/menus/bernice-young-school-menu"
+    },
+    {
+      "slug": "fountain-woods",
+      "name": "Fountain Woods Elementary School",
+      "short_name": "Fountain Woods",
+      "district_name": "Burlington Township School District",
+      "school_type": "elementary",
+      "address": "601 Fountain Avenue, Burlington, NJ 08016",
+      "main_phone": "609-387-1799",
+      "website_url": "https://fw.burltwpsch.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-387-1799",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school early in the day when your child will be absent and send a written reason.",
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://sites.google.com/burltwpsch.org/btsd-foodservicewebsite/menus/fountain-woods-school-menu"
+    },
+    {
+      "slug": "burlington-township-middle",
+      "name": "Burlington Township Middle School at Springside",
+      "short_name": "Burlington Township Middle",
+      "district_name": "Burlington Township School District",
+      "school_type": "middle",
+      "address": "1600 Burlington Bypass, Burlington, NJ 08016",
+      "main_phone": "609-699-4021",
+      "website_url": "https://ms.burltwpsch.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:00 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": null,
+      "bell_periods": {
+        "regular_grades_6": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:08"
+          },
+          {
+            "name": "1",
+            "start": "08:11",
+            "end": "08:56"
+          },
+          {
+            "name": "2",
+            "start": "08:59",
+            "end": "09:44"
+          },
+          {
+            "name": "3",
+            "start": "09:47",
+            "end": "10:47"
+          },
+          {
+            "name": "4",
+            "start": "10:49",
+            "end": "11:49"
+          },
+          {
+            "name": "5",
+            "start": "11:51",
+            "end": "12:25"
+          },
+          {
+            "name": "6",
+            "start": "12:28",
+            "end": "13:28"
+          },
+          {
+            "name": "7",
+            "start": "13:30",
+            "end": "14:30"
+          }
+        ],
+        "regular_grades_7": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:08"
+          },
+          {
+            "name": "1",
+            "start": "08:08",
+            "end": "09:08"
+          },
+          {
+            "name": "2",
+            "start": "09:10",
+            "end": "10:10"
+          },
+          {
+            "name": "3",
+            "start": "10:14",
+            "end": "10:59"
+          },
+          {
+            "name": "4",
+            "start": "11:02",
+            "end": "11:36"
+          },
+          {
+            "name": "5",
+            "start": "11:40",
+            "end": "12:25"
+          },
+          {
+            "name": "6",
+            "start": "12:28",
+            "end": "13:28"
+          },
+          {
+            "name": "7",
+            "start": "13:30",
+            "end": "14:30"
+          }
+        ],
+        "regular_grades_8": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:08"
+          },
+          {
+            "name": "1",
+            "start": "08:08",
+            "end": "09:08"
+          },
+          {
+            "name": "2",
+            "start": "09:10",
+            "end": "10:10"
+          },
+          {
+            "name": "3",
+            "start": "10:12",
+            "end": "10:46"
+          },
+          {
+            "name": "4",
+            "start": "10:50",
+            "end": "11:50"
+          },
+          {
+            "name": "5",
+            "start": "11:53",
+            "end": "12:53"
+          },
+          {
+            "name": "6",
+            "start": "12:57",
+            "end": "13:42"
+          },
+          {
+            "name": "7",
+            "start": "13:45",
+            "end": "14:30"
+          }
+        ],
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:08"
+          },
+          {
+            "name": "1",
+            "start": "08:08",
+            "end": "09:08"
+          },
+          {
+            "name": "2",
+            "start": "09:10",
+            "end": "10:10"
+          },
+          {
+            "name": "3",
+            "start": "10:14",
+            "end": "10:59"
+          },
+          {
+            "name": "4",
+            "start": "11:02",
+            "end": "11:36"
+          },
+          {
+            "name": "5",
+            "start": "11:40",
+            "end": "12:25"
+          },
+          {
+            "name": "6",
+            "start": "12:28",
+            "end": "13:28"
+          },
+          {
+            "name": "7",
+            "start": "13:30",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal_grades_6": [
+          {
+            "name": "HR",
+            "start": "08:00",
+            "end": "08:05"
+          },
+          {
+            "name": "1",
+            "start": "08:07",
+            "end": "08:37"
+          },
+          {
+            "name": "2",
+            "start": "08:39",
+            "end": "09:09"
+          },
+          {
+            "name": "3",
+            "start": "09:11",
+            "end": "09:46"
+          },
+          {
+            "name": "4",
+            "start": "09:48",
+            "end": "10:23"
+          },
+          {
+            "name": "5",
+            "start": "10:25",
+            "end": "10:45"
+          },
+          {
+            "name": "6",
+            "start": "10:47",
+            "end": "11:24"
+          },
+          {
+            "name": "7",
+            "start": "11:26",
+            "end": "12:00"
+          }
+        ],
+        "early_dismissal_grades_7": [
+          {
+            "name": "HR/1",
+            "start": "08:00",
+            "end": "08:38"
+          },
+          {
+            "name": "2",
+            "start": "08:40",
+            "end": "09:15"
+          },
+          {
+            "name": "3",
+            "start": "09:17",
+            "end": "09:47"
+          },
+          {
+            "name": "4",
+            "start": "09:49",
+            "end": "10:09"
+          },
+          {
+            "name": "5",
+            "start": "10:11",
+            "end": "10:41"
+          },
+          {
+            "name": "6",
+            "start": "10:43",
+            "end": "11:22"
+          },
+          {
+            "name": "7",
+            "start": "11:24",
+            "end": "12:00"
+          }
+        ],
+        "early_dismissal_grades_8": [
+          {
+            "name": "HR/1",
+            "start": "08:00",
+            "end": "08:38"
+          },
+          {
+            "name": "2",
+            "start": "08:40",
+            "end": "09:12"
+          },
+          {
+            "name": "3",
+            "start": "09:15",
+            "end": "09:35"
+          },
+          {
+            "name": "4",
+            "start": "09:37",
+            "end": "10:13"
+          },
+          {
+            "name": "5",
+            "start": "10:15",
+            "end": "10:51"
+          },
+          {
+            "name": "6",
+            "start": "10:53",
+            "end": "11:25"
+          },
+          {
+            "name": "7",
+            "start": "11:27",
+            "end": "12:00"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR/1",
+            "start": "08:00",
+            "end": "08:38"
+          },
+          {
+            "name": "2",
+            "start": "08:40",
+            "end": "09:15"
+          },
+          {
+            "name": "3",
+            "start": "09:17",
+            "end": "09:47"
+          },
+          {
+            "name": "4",
+            "start": "09:49",
+            "end": "10:09"
+          },
+          {
+            "name": "5",
+            "start": "10:11",
+            "end": "10:41"
+          },
+          {
+            "name": "6",
+            "start": "10:43",
+            "end": "11:22"
+          },
+          {
+            "name": "7",
+            "start": "11:24",
+            "end": "12:00"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://sites.google.com/burltwpsch.org/btsd-foodservicewebsite/menus/burlington-township-middle-school-menu"
+    },
+    {
+      "slug": "burlington-township-high",
+      "name": "Burlington Township High School",
+      "short_name": "Burlington Township High",
+      "district_name": "Burlington Township School District",
+      "school_type": "high",
+      "address": "610 Fountain Avenue, Burlington, NJ 08016",
+      "main_phone": "609-387-1713",
+      "website_url": "https://hs.burltwpsch.org",
+      "absence_method": "phone",
+      "absence_emails": [
+        "hsattendance@burltwpsch.org"
+      ],
+      "absence_phone": "609-387-1713 ext. 1036",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "A parent/guardian must call the Attendance Office on the day of the absence (ext. 1036); documentation goes to the Attendance Office within 2 days of return.",
+      "start_time": "8:00 AM",
+      "end_time": "2:06 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Block 1-2",
+            "start": "08:00",
+            "end": "09:10"
+          },
+          {
+            "name": "Block 3-4",
+            "start": "09:14",
+            "end": "10:24"
+          },
+          {
+            "name": "Block 5",
+            "start": "10:28",
+            "end": "11:01"
+          },
+          {
+            "name": "Block 6",
+            "start": "11:05",
+            "end": "11:38"
+          },
+          {
+            "name": "Block 7",
+            "start": "11:42",
+            "end": "12:15"
+          },
+          {
+            "name": "Block 8",
+            "start": "12:19",
+            "end": "12:52"
+          },
+          {
+            "name": "Block 9-10",
+            "start": "12:56",
+            "end": "14:06"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Block 1-2",
+            "start": "08:00",
+            "end": "08:57"
+          },
+          {
+            "name": "Block 3-4",
+            "start": "09:01",
+            "end": "09:58"
+          },
+          {
+            "name": "Block 5-8",
+            "start": "10:02",
+            "end": "10:59"
+          },
+          {
+            "name": "Block 9-10",
+            "start": "11:03",
+            "end": "12:00"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Block 1-2",
+            "start": "10:00",
+            "end": "10:34"
+          },
+          {
+            "name": "Block 3-4",
+            "start": "10:38",
+            "end": "11:12"
+          },
+          {
+            "name": "Block 5",
+            "start": "11:16",
+            "end": "11:46"
+          },
+          {
+            "name": "Block 6",
+            "start": "11:50",
+            "end": "12:20"
+          },
+          {
+            "name": "Block 7",
+            "start": "12:24",
+            "end": "12:54"
+          },
+          {
+            "name": "Block 8",
+            "start": "12:58",
+            "end": "13:28"
+          },
+          {
+            "name": "Block 9-10",
+            "start": "13:32",
+            "end": "14:06"
+          }
+        ]
+      },
+      "athletics_url": "https://bthsathletics.digitalsports.com",
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://sites.google.com/burltwpsch.org/btsd-foodservicewebsite/menus/burlington-township-high-school-menu"
+    }
+  ],
+  "smore_newsletters": []
+}

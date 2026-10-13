@@ -170,9 +170,10 @@ async def fetch_month_entrees(
             _RECIPES_QUERY,
             {"campusUrlKey": CAMPUS, "locationUrlKey": location_key, "date": month_day.isoformat(), "mealPeriod": meal_period, "viewType": "MONTHLY"},
         )
-    )["getLocationRecipes"]
+    )["getLocationRecipes"] or {}
+    # A location with no menu published for the month answers a null map.
     station_ids = sorted(
-        {s["id"] for d in recipes["locationRecipesMap"]["dateSkuMap"] for s in d.get("stations") or []}
+        {s["id"] for d in (recipes.get("locationRecipesMap") or {}).get("dateSkuMap") or [] for s in d.get("stations") or []}
     )
     names: dict[int, str] = {}
     if station_ids:

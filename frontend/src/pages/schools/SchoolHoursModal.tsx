@@ -73,6 +73,11 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
     const nonEmpty = Object.fromEntries(
       VARIANTS.map((v) => v.key).filter((key) => periods[key].length > 0).map((key) => [key, periods[key]]),
     );
+    // The editor only knows three variants; grade-banded ones (regular_grades_6,
+    // early_dismissal_grades_7, ...) ride along untouched, or saving would erase them.
+    const editable = new Set<string>(VARIANTS.map((v) => v.key));
+    const kept = Object.fromEntries(Object.entries(school.bell_periods ?? {}).filter(([key]) => !editable.has(key)));
+    const merged = { ...kept, ...nonEmpty };
     try {
       const res = await apiFetch(`/schools/${school.id}`, {
         method: "PATCH",
@@ -81,7 +86,7 @@ export function SchoolHoursModal({ open, onClose, onSaved, school }: Props) {
           end_time: endTime.trim() || null,
           early_dismissal_time: earlyDismissalTime.trim() || null,
           delayed_opening_time: delayedOpeningTime.trim() || null,
-          bell_periods: Object.keys(nonEmpty).length > 0 ? nonEmpty : null,
+          bell_periods: Object.keys(merged).length > 0 ? merged : null,
         }),
       });
       if (!res.ok) {

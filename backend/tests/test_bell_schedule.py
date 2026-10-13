@@ -211,3 +211,21 @@ def test_period_name_by_start_time_handles_no_banded_variants():
 def test_period_name_by_start_time_handles_missing_table():
     assert period_name_by_start_time(None) == {}
     assert period_name_by_start_time({}) == {}
+
+
+def test_single_grade_bands_are_accepted_and_merge_into_period_names():
+    from schemas import SchoolUpdate
+    from services.bell_schedule import period_name_by_start_time
+
+    def table(*rows):
+        return [{"name": n, "start": a, "end": b} for n, a, b in rows]
+
+    tables = {
+        "regular": table(("HR", "08:00", "08:08"), ("1", "08:08", "09:08")),
+        "regular_grades_6": table(("HR", "08:00", "08:08"), ("1", "08:11", "08:56")),
+        "regular_grades_8": table(("HR", "08:00", "08:08"), ("1", "08:08", "09:08")),
+        "early_dismissal_grades_7": table(("HR/1", "08:00", "08:38")),
+    }
+    assert set(SchoolUpdate(bell_periods=tables).bell_periods) == set(tables)
+    # A student's own captured 08:11 start resolves to period 1 even though only grade 6 starts then.
+    assert period_name_by_start_time(tables)["08:11"] == "1"

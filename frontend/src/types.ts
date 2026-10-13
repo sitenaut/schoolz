@@ -61,7 +61,7 @@ export type School = {
   athletics_url: string | null;
   logo_url: string | null;
   logo_backing: "none" | "light" | "dark" | null;
-  bell_periods: Partial<Record<"regular" | "delayed_opening" | "early_dismissal", BellPeriod[]>> | null;
+  bell_periods: Partial<Record<string, BellPeriod[]>> | null;
   created_at: string;
 };
 

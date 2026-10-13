@@ -9,6 +9,7 @@ district id 4651): one "Lunch" meal type and one "Regular" line per school.
 """
 
 import re
+from difflib import SequenceMatcher
 from datetime import date
 
 import httpx
@@ -53,7 +54,7 @@ def _squash(name: str) -> str:
     return re.sub(r"elem(?!entary)", "elementary", _norm(name).replace(" ", ""))
 
 
-_LEVEL_WORDS = {"elementary", "elem", "middle", "junior", "senior", "high", "primary", "intermediate"}
+_LEVEL_WORDS = {"elementary", "elem", "middle", "junior", "senior", "high", "primary", "intermediate", "ms", "hs"}  # Burlington City's "MS/HS"
 
 
 def _core_tokens(name: str) -> set[str]:
@@ -91,7 +92,24 @@ def match_school(our_name: str, cafe_schools: list[dict]) -> dict | None:
     # Kershaw Elementary" on SchoolCafé). Only when exactly one site is left.
     core = _core_tokens(our_name)
     cored = [s for s in cafe_schools if core and _core_tokens(s["SchoolName"]) == core]
-    return cored[0] if len(cored) == 1 else None
+    if len(cored) == 1:
+        return cored[0]
+    # Hand-typed names carry typos (Burlington City's "Wilber Watts" for
+    # Wilbur): same core, each name token equal or a near-miss.
+    fuzzy = [s for s in cafe_schools if core and _tokens_nearly_equal(core, _core_tokens(s["SchoolName"]))]
+    return fuzzy[0] if len(fuzzy) == 1 else None
+
+
+def _tokens_nearly_equal(a: set[str], b: set[str]) -> bool:
+    if len(a) != len(b):
+        return False
+    remaining = set(b)
+    for token in sorted(a):
+        hit = next((o for o in remaining if o == token or (len(token) >= 5 and SequenceMatcher(None, token, o).ratio() >= 0.8)), None)
+        if hit is None:
+            return False
+        remaining.discard(hit)
+    return True
 
 
 def day_description(categories: dict[str, list[dict]]) -> str | None:

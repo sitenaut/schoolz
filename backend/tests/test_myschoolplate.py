@@ -1,6 +1,7 @@
 """Aramark MySchoolPlate: config discovery, address matching, and picking
 entrées out of a month of serving stations."""
 
+import asyncio
 import json
 from datetime import date
 
@@ -113,3 +114,11 @@ async def test_fetch_month_entrees_resolves_station_names_over_graphql():
         by_day = await m.fetch_month_entrees(client, cfg, "davis-family-school", 25, date(2026, 10, 7))
     assert by_day[date(2026, 10, 5)][0] == "Fish Tacos"
     assert all(r.headers["store"] == "sn_camden_en" for r in seen)
+
+
+def test_a_month_with_no_published_menu_is_empty_not_a_crash(monkeypatch):
+    async def fake_gql(client, cfg, query, variables):
+        return {"getLocationRecipes": {"locationRecipesMap": None, "products": None}}
+
+    monkeypatch.setattr(m, "_gql", fake_gql)
+    assert asyncio.run(m.fetch_month_entrees(None, None, "x/y", 1, date(2026, 10, 1))) == {}
