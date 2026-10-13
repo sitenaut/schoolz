@@ -22,7 +22,7 @@ bucket="${BACKUP_BUCKET:-schoolz-backup}"
 image="${BACKUP_PG_IMAGE:-postgres:17-alpine}"
 
 name="schoolz-restore-drill-$$"
-cleanup() { [[ "${DRILL_KEEP:-}" == "1" ]] || docker rm -f "$name" >/dev/null 2>&1 || true; }
+cleanup() { [[ "${DRILL_KEEP:-}" == "1" ]] || docker rm -fv "$name" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
 docker run -d --name "$name" \
