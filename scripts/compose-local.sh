@@ -70,5 +70,35 @@ fi
 
 export COMPOSE_PROFILES="$(IFS=,; echo "${profiles[*]}")"
 
+# Dump the local database before anything that recreates or removes containers
+# (docs/BACKUPS.md). A failed dump only stops a command that would delete the
+# volume; SCHOOLZ_SKIP_BACKUP=1 turns this off.
+if [ "${SCHOOLZ_SKIP_BACKUP:-0}" != "1" ]; then
+  backup_when=""
+  for arg in "$@"; do
+    case "$arg" in
+      up|rm) [ -n "$backup_when" ] || backup_when=stale ;;
+      down) backup_when=down ;;
+      -v|--volumes) [ "$backup_when" != down ] || backup_when=always ;;
+    esac
+  done
+  case "$backup_when" in
+    always)
+      if ! bash "$ROOT_DIR/scripts/backup-local.sh"; then
+        echo "Local database not backed up, and this command deletes its volume. Start Postgres and retry, or set SCHOOLZ_SKIP_BACKUP=1 to delete it anyway." >&2
+        exit 1
+      fi
+      ;;
+    stale|down)
+      rc=0
+      bash "$ROOT_DIR/scripts/backup-local.sh" --if-stale 2>/dev/null || rc=$?
+      # 3 = Postgres is not running (first start, or already stopped).
+      if [ "$rc" != 0 ] && [ "$rc" != 3 ]; then
+        echo "Warning: local database backup failed - run  bash scripts/backup-local.sh  to see why." >&2
+      fi
+      ;;
+  esac
+fi
+
 cd "$ROOT_DIR"
 exec "${run_prefix[@]}" docker compose -f docker-compose.yml -f docker-compose.local.yml "$@"
