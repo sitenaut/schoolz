@@ -1152,6 +1152,78 @@
           ]
         },
         {
+          "uid": "schoolz-backup-stale",
+          "title": "schoolz: no database backup in 30 hours",
+          "condition": "C",
+          "for": "15m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "backup",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "The last good database backup was {{ humanizeDuration $values.B.Value }} ago",
+            "description": "The nightly backup workflow reports the time of each successful upload. 30 hours is one missed night plus slack for a late GitHub schedule; no report at all in a week also fires.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-backup-stale",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-ops"
+          },
+          "noDataState": "Alerting",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "time() - max(max_over_time(schoolz_backup_last_success_timestamp_seconds{service_namespace=\"schoolz\"}[7d]))",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        108000
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
           "uid": "schoolz-job-stuck",
           "title": "schoolz: a scan has been running for over an hour",
           "condition": "C",

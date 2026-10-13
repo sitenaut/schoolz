@@ -357,6 +357,17 @@ def rules() -> list:
             dashboard="schoolz-scans",
         ),
         prom(
+            "schoolz-backup-stale", "schoolz: no database backup in 30 hours",
+            f"time() - max(max_over_time(schoolz_backup_last_success_timestamp_seconds{sel()}[7d]))",
+            108000, range_s=600,
+            tier="ticket", kind="symptom", component="backup", for_="15m", no_data="Alerting",
+            summary="The last good database backup was {{ humanizeDuration $values.B.Value }} ago",
+            description="The nightly backup workflow reports the time of each successful upload. "
+                        "30 hours is one missed night plus slack for a late GitHub schedule; no "
+                        "report at all in a week also fires.",
+            dashboard="schoolz-ops",
+        ),
+        prom(
             "schoolz-job-stuck", "schoolz: a scan has been running for over an hour",
             f"max by (job_kind) (schoolz_job_in_flight{sel()})", 0, range_s=600,
             tier="ticket", kind="symptom", component="scans", for_="1h",

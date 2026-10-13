@@ -36,3 +36,30 @@ jobs:
             fi
           done
           bash scripts/backup.sh --docker
+
+      # The schoolz-backup-stale alert fires when this stops arriving.
+      - name: Report success to Grafana
+        env:
+          OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+        run: |
+          for name in OTLP_ENDPOINT OTLP_HEADERS; do
+            if [ -z "${!name}" ]; then
+              echo "$name is not set for the prod environment" >&2
+              exit 1
+            fi
+          done
+          # The secret is spelled for the OTel SDK ("Authorization=Basic%20…"); curl wants "Name: value".
+          header="${OTLP_HEADERS/=/: }"
+          header="${header//%20/ }"
+          now="$(date +%s)"
+          curl --fail-with-body -sS -X POST "${OTLP_ENDPOINT%/}/v1/metrics" \
+            -H "$header" -H "Content-Type: application/json" --data-binary @- <<EOF
+          {"resourceMetrics": [{
+            "resource": {"attributes": [
+              {"key": "service.namespace", "value": {"stringValue": "schoolz"}},
+              {"key": "service.name", "value": {"stringValue": "schoolz-backup"}}]},
+            "scopeMetrics": [{"scope": {"name": "backup"}, "metrics": [{
+              "name": "schoolz.backup.last_success_timestamp", "unit": "s",
+              "gauge": {"dataPoints": [{"asInt": "$now", "timeUnixNano": "${now}000000000"}]}}]}]}]}
+          EOF

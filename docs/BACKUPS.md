@@ -31,8 +31,14 @@ Actions tab (`gh workflow run backup.yml`). It reads `DATABASE_URL`,
 GitHub `prod` environment; the R2 key can read and write `schoolz-backup` only.
 
 The run fails, and uploads nothing, if the dump is under 50 kB or lists no table
-data. Nothing alerts on a failed run beyond GitHub's own notification, so check
-`gh run list --workflow backup.yml` now and then.
+data.
+
+After a good upload the workflow pushes the time to Grafana Cloud as
+`schoolz_backup_last_success_timestamp_seconds` (`OTEL_EXPORTER_OTLP_ENDPOINT`
+and `OTEL_EXPORTER_OTLP_HEADERS` on the GitHub `prod` environment, the same
+values the API uses). The `schoolz-backup-stale` alert opens a ticket when that
+is 30 hours old; see its section in `docs/RUNBOOK.md`. A backup run by hand with
+`scripts/backup.sh` does not report.
 
 ## Restore drill
 
