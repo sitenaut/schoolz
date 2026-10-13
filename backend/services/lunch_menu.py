@@ -16,7 +16,8 @@ import re
 import time
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
-from urllib.parse import quote, unquote, urljoin
+from html import unescape
+from urllib.parse import quote, unquote, urljoin, urlparse
 
 import httpx
 import pdfplumber
@@ -382,6 +383,62 @@ def _classify_menu_table(html: str, school_type: str) -> list[dict]:
     return found
 
 
+# Aramark MySchoolPlate (Willingboro's elementary and early-childhood schools):
+# the vendor's menu API is empty for them, but each location page lists the
+# monthly menu PDFs as links ("Elementary Lunch", "Stuart and Garfield
+# Breakfast") that are client-rendered and carry no month in the URL. The month
+# is printed on the PDF itself, and the same asset URL is replaced in place
+# each month, so it rides along as a fragment to make each month a new key.
+_MSP_PDF_LINK_RE = re.compile(r'href="([^"]+\.pdf)"[^<]*?>([^<]*)<', re.IGNORECASE)
+
+
+def _classify_myschoolplate_link(text: str) -> tuple[str, str] | None:
+    """(school_type, meal_type) from a location-page link's text, or None for
+    one the vendor API already covers (middle/high) or a one-off ("Grab & Go")."""
+    lowered = text.lower()
+    meal = "breakfast" if "breakfast" in lowered else "lunch" if "lunch" in lowered else None
+    if not meal or "grab" in lowered:
+        return None
+    if "elementary" in lowered:
+        return "elementary", meal
+    if re.search(r"stuart|garfield|early childhood|ecdc", lowered):
+        return "other", meal
+    return None
+
+
+async def _myschoolplate_pdf_period(pdf_url: str) -> str | None:
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as http_client:
+        resp = await http_client.get(pdf_url)
+        resp.raise_for_status()
+    with pdfplumber.open(io.BytesIO(resp.content)) as pdf:
+        text = (pdf.pages[0].extract_text() or "") if pdf.pages else ""
+    match = _MONTH_YEAR_RE.search(text)
+    return f"{match.group(1).title()} {match.group(2)}" if match else None
+
+
+async def _discover_myschoolplate_menus(menu_page_url: str) -> list[dict]:
+    from services import myschoolplate
+
+    tenant = urlparse(menu_page_url).netloc.split(".")[0]
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as http_client:
+        cfg = await myschoolplate.fetch_config(http_client, tenant)
+        locations = await myschoolplate.fetch_locations(http_client, cfg) if cfg else []
+    found: dict[tuple[str, str], str] = {}
+    for loc in locations:
+        page = await scraper_client.fetch_html(myschoolplate.location_page_url(tenant, loc["key"]), wait_for_selector="main", block_assets=True)
+        for href, text in _MSP_PDF_LINK_RE.findall(page["html"]):
+            key = _classify_myschoolplate_link(unescape(text).strip())
+            if key and key not in found:
+                found[key] = quote(unescape(href), safe=":/")
+    entries = []
+    for (school_type, meal_type), url in found.items():
+        period = await _myschoolplate_pdf_period(url)
+        if period:
+            month, year = period.split()
+            entries.append({"school_type": school_type, "meal_type": meal_type, "period_label": period, "pdf_url": f"{url}#{month}-{year}"})
+    return entries
+
+
 async def discover_current_menus(menu_page_url: str, school_types: list[str] | None = None) -> list[dict]:
     """Returns one entry per (school_type, meal_type) found on the page,
     e.g. {"school_type": "elementary", "meal_type": "lunch",
@@ -391,6 +448,8 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     PDFs carry no grade band (Eastern: one high school; Evesham: one
     all-grades PDF): a bare month+year filename is taken as every listed
     type's lunch menu, latest month winning."""
+    if urlparse(menu_page_url).netloc.endswith(".myschoolplate.com"):
+        return await _discover_myschoolplate_menus(menu_page_url)
     result = await scraper_client.fetch_html(menu_page_url, wait_for_selector="a", block_assets=True)
 
     # Edlio/ednet file links are site-relative and carry a cache-buster
@@ -531,6 +590,28 @@ def pick_presence_menus(items: list[dict], today: date) -> list[dict]:
     return [best[k] for k in sorted(best)]
 
 
+# Burlington Township (Princeton Food Management): a Google Site with one page
+# per school, each embedding that month's and last month's menus as Drive files
+# titled by hand ("October 2026 young school lunch.jpg"). The title carries the
+# month and meal, so the Drive title becomes a Presence-style document item and
+# the same picker applies; the school's own page keeps each school's lunch its own.
+async def list_google_sites_menu_files(page_url: str) -> list[dict]:
+    """[{title, extension, url}] for the Drive files embedded in a Google Sites
+    page, in page order. [] when the page embeds none."""
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as http_client:
+        resp = await http_client.get(page_url)
+        resp.raise_for_status()
+    items = []
+    for url, name in (await _resolve_drive_links(resp.text)).items():
+        stem, dot, ext = name.rpartition(".")
+        items.append({"title": stem if dot else name, "extension": ext.lower() if dot else "", "url": url})
+    return items
+
+
+# A price legend the model sometimes files under a real date ("Lunch Meal Prices: $3.25 ...").
+_PRICE_BOX_RE = re.compile(r"\bmeal prices\b", re.IGNORECASE)
+
+
 async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None = None) -> list[dict]:
     """Returns [{date: datetime, description: str, notes: str|None}, ...].
     Days marked only 'School Closed' with no meal are still included (with
@@ -592,7 +673,7 @@ async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None 
     for day in tool_use.input.get("days", []):
         parsed_date = _parse_date(day.get("date"))
         description = day.get("description")
-        if not parsed_date or not description:
+        if not parsed_date or not description or _PRICE_BOX_RE.search(description):
             continue
         items.append({"date": parsed_date, "description": description[:500], "notes": day.get("notes")})
     return items

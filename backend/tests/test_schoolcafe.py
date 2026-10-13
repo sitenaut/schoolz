@@ -84,3 +84,16 @@ def test_match_school_ignores_middle_initial_and_level_word():
     ]
     assert match_school("Raymond W. Kershaw Middle School", cafe)["SchoolName"] == "Raymond Kershaw Elementary"
     assert match_school("Someone Else Middle School", cafe) is None
+
+
+def test_burlington_city_names_match_despite_ms_hs_and_a_typo():
+    cafe = [
+        {"SchoolName": "Burlington City MS/HS"},
+        {"SchoolName": "Captain James Lawrence Elementary"},
+        {"SchoolName": "Samuel Smith Elementary"},
+        {"SchoolName": "Wilber Watts Intermediate School"},
+    ]
+    assert match_school("Burlington City High School", cafe)["SchoolName"] == "Burlington City MS/HS"
+    assert match_school("Wilbur Watts Intermediate School", cafe)["SchoolName"] == "Wilber Watts Intermediate School"
+    assert match_school("Samuel Smith Elementary School", cafe)["SchoolName"] == "Samuel Smith Elementary"
+    assert match_school("Wilbur Smith Elementary", cafe) is None  # a near-miss on one token isn't enough

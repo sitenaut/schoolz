@@ -262,3 +262,20 @@ def test_coded_school_menu_filenames():
     assert c(base + "Oct%202026%20ECC%20Breakfast%20Menu.pdf", today)["school_type"] == "other"
     assert c(base + "October%202026%20Snacks.pdf", today) is None
     assert c(base + "Middle%20School%20Breakfast%20Menu.pdf", today) is None
+
+
+def test_myschoolplate_location_links_classify_by_their_text():
+    from services.lunch_menu import _classify_myschoolplate_link as c
+
+    assert c("Elementary Lunch") == ("elementary", "lunch")
+    assert c("Elementary Breakfast") == ("elementary", "breakfast")
+    assert c("Stuart and Garfield Lunch") == ("other", "lunch")
+    assert c("Twin Hills Grab & Go Breakfast") is None  # a one-off, not the school's menu
+    assert c("Memorial and Bookbinder Lunch") is None  # the vendor API already covers middle/high
+
+
+def test_price_legends_are_not_menu_days():
+    from services.lunch_menu import _PRICE_BOX_RE
+
+    assert _PRICE_BOX_RE.search("Lunch Meal Prices: $3.25 Elementary, $3.40 MSHS Student")
+    assert not _PRICE_BOX_RE.search("Chicken Parmesan, Side of Pasta, Garden Tossed Salad")

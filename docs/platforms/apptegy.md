@@ -27,3 +27,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   Lunch menus are PDFs in `<iframe src="https://aptg.co/<code>">` on per-level pages (`/o/cpsd/page/*-menus`) that only the nav JSON of the food-service page links to. `lunch_menu._discover_embedded_menus` follows those links, downloads each embed, and classifies it by the PDF's own heading ("HS/MS Lunch Menu October 2026", which serves both the high and middle school); the short link itself is stored and re-fetched. SchoolCafe resolves for this district but lists no schools, so `schoolcafe_shortname` is null.
 
 - **Wood-Ridge (Apptegy, `wood-ridgeschools.org`)** — Doyle, Intermediate, Jr/Sr High, `backend/seed/wood_ridge.json`. Plain GET shows Finalsite's "Client Challenge"; the tell is `cmsv2-assets.apptegy.net/uploads/<id>` and `/o/<code>` paths (`wrsd`, `cede`, `wris`, `wrhs` — read the codes from the district nav, don't guess initials). Org ids 22814 district, 23145/23146/23147 schools. Opposite of Clayton: the school orgs hold the rosters (87/33/72) and the district org holds 9. School orgs carry district items (closures, half days) in their own event feeds, so seed the district feed plus each school's. Nav and body links (handbook, calendar PDF, Smore) live in escaped JSON, not anchors; `aptg.co`/`5il.co` are expiring short links. Athletics is DigitalSports (see the data-sources skill). Lunch is Health-e Pro org 3927 (`3927/<site>`; site ids from `/api/organizations/3927/sites/list`).
+
+## Willingboro (found onboarding)
+
+- Page bodies are client-rendered; `https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/<org>/cms/pages/<slug>?locale=en` returns them without auth. Some pages (start times) are only an image.
+- A district can move domains and leave the NJ DOE and staff emails on the old one (`wboe.net`); check the live domain first.
+- The district food page can link `<tenant>.schooldish.com`, which redirects to `<tenant>.myschoolplate.com` (supported). A location with no menu published for a month answers a null `locationRecipesMap`; Willingboro's elementary menus are PDFs on the location pages (see the `data-sources` skill).
+- The district events org already carries school-prefixed events; check dedup before wiring school orgs too.
+

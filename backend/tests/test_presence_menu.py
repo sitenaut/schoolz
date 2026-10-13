@@ -135,3 +135,19 @@ def test_calendar_pdf_link_is_found_on_a_page_and_spaces_are_encoded():
     html = '<a href="/other.pdf">Lunch</a><a href="https://www.x.org/26-27 New Calendar.pdf">26-27 District Calendar</a>'
     assert find_calendar_pdf(html, "https://www.x.org/") == "https://www.x.org/26-27%20New%20Calendar.pdf"
     assert find_calendar_pdf("<a href='/menu.pdf'>Menu</a>", "https://www.x.org/") is None
+
+
+def test_google_sites_drive_titles_pick_this_months_school_menus():
+    # Drive titles on a Burlington Township school page: hand-typed, a typo'd month, two formats per menu.
+    files = [
+        ("September 2026 elementary lunch", "jpg"),
+        ("October 2026 young school lunch", "jpg"),
+        ("October 2026 young school lunch spreadsheet", "pdf"),
+        ("October 2026 elementary breakfast", "jpg"),
+        ("Octobre 2026 fountain woods lunch spreadsheet", "pdf"),
+        ("October 2026 elementary bk spreadsheet", "pdf"),  # no meal word: ignored
+    ]
+    items = [{"title": t, "extension": e, "url": f"https://d/{i}"} for i, (t, e) in enumerate(files)]
+    picked = pick_presence_menus(items, date(2026, 10, 12))
+    assert [(p["month"], p["meal_type"], p["url"]) for p in picked] == [(10, "breakfast", "https://d/3"), (10, "lunch", "https://d/1")]
+    assert pick_presence_menus(items[4:5], date(2026, 10, 12))[0]["month"] == 10  # "Octobre" still reads as October

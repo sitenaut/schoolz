@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import LunchMenu, LunchMenuItem, School
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
-from services.lunch_menu import parse_menu_pdf, pick_presence_menus
+from services.lunch_menu import list_google_sites_menu_files, parse_menu_pdf, pick_presence_menus
 from services.presence_documents import list_page_documents
 
 
@@ -15,7 +16,7 @@ from services.presence_documents import list_page_documents
     kind="presence_menu.scan",
     default_name="Presence menu scan",
     default_cron="0 */12 * * *",
-    description="Reads a school's breakfast/lunch menu files (PDF or picture) from a Presence site's documents widget.",
+    description="Reads a school's breakfast/lunch menu files (PDF or picture) from a Presence site's documents widget or a Google Site page of Drive files.",
     param_schema={"type": "object", "properties": {"school_id": {"type": "string"}}, "required": ["school_id"]},
 )
 async def run(db: AsyncSession, params: dict) -> str | None:
@@ -28,7 +29,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not school.presence_menu_page_url:
         return "school has no presence_menu_page_url configured"
 
-    documents = await list_page_documents(school.presence_menu_page_url)
+    google_site = urlparse(school.presence_menu_page_url).netloc == "sites.google.com"
+    documents = await (list_google_sites_menu_files if google_site else list_page_documents)(school.presence_menu_page_url)
     if not documents:
         return "WARNING[presence_no_documents]: the page has no documents widget (or isn't a Presence site)"
     picked = pick_presence_menus(documents, datetime.now(ZoneInfo("America/New_York")).date())

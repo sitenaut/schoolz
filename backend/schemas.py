@@ -461,6 +461,16 @@ _BELL_PERIOD_VARIANTS = (
     "delayed_opening_grades_7_8",
     "delayed_opening_grades_9_10",
     "delayed_opening_grades_11_12",
+    # Single-grade bands for a middle school whose 6th, 7th and 8th grades each
+    # keep their own clock (Burlington Township Middle at Springside: lunch and
+    # related arts land at different times per grade). The un-suffixed key holds
+    # the 7th-grade band as the representative one.
+    "regular_grades_6",
+    "regular_grades_7",
+    "regular_grades_8",
+    "early_dismissal_grades_6",
+    "early_dismissal_grades_7",
+    "early_dismissal_grades_8",
 )
 
 

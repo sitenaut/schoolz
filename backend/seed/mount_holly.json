@@ -1,0 +1,206 @@
+{
+  "exported_at": "2026-10-12T12:00:00Z",
+  "source": "onboarding: Mount Holly Township Public School District",
+  "districts": [
+    {
+      "name": "Mount Holly Township Public School District",
+      "state": "NJ",
+      "website_url": "https://www.mtholly.k12.nj.us",
+      "food_services_menu_url": "https://www.mtholly.k12.nj.us/apps/news/show_news.jsp?REC_ID=942016&id=0",
+      "ics_feeds": [
+        {
+          "name": "Mount Holly District Calendar",
+          "url": "https://www.mtholly.k12.nj.us/servlet/ICalServlet?id=0"
+        },
+        {
+          "name": "Brainerd Events",
+          "url": "https://www.mtholly.k12.nj.us/servlet/ICalServlet?id=1",
+          "school_slug": "brainerd"
+        },
+        {
+          "name": "Folwell Events",
+          "url": "https://www.mtholly.k12.nj.us/servlet/ICalServlet?id=2",
+          "school_slug": "folwell"
+        },
+        {
+          "name": "Holbein Events",
+          "url": "https://www.mtholly.k12.nj.us/servlet/ICalServlet?id=3",
+          "school_slug": "holbein"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Mount Holly"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "brainerd",
+      "name": "John Brainerd Elementary School",
+      "short_name": "Brainerd",
+      "district_name": "Mount Holly Township Public School District",
+      "school_type": "elementary",
+      "address": "100 Wollner Drive, Mount Holly, NJ 08060",
+      "main_phone": "(609) 267-3600",
+      "website_url": "https://brainerd.mtholly.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 267-3600",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Main Office, press Option 1, and leave a message on the absentee line before 8:15 AM. Children with a contagious illness are readmitted only after clearance from the nurse.",
+      "start_time": "8:30 AM",
+      "end_time": "3:15 PM",
+      "early_dismissal_time": "12:35 PM",
+      "delayed_opening_time": "10:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://brainerd.mtholly.k12.nj.us/_MASTER/common_pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "folwell",
+      "name": "Gertrude C. Folwell Elementary School",
+      "short_name": "Folwell",
+      "district_name": "Mount Holly Township Public School District",
+      "school_type": "elementary",
+      "address": "455 Jacksonville Road, Mount Holly, NJ 08060",
+      "main_phone": "(609) 267-0071",
+      "website_url": "https://folwell.mtholly.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 267-0071",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the office and press 1 before 8:00 AM to report an absence; a recorder takes messages when the office is closed. Children with a contagious illness are readmitted only after clearance from the nurse.",
+      "start_time": "8:15 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:20 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://folwell.mtholly.k12.nj.us/_MASTER/common_pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "holbein",
+      "name": "F. W. Holbein Middle School",
+      "short_name": "Holbein",
+      "district_name": "Mount Holly Township Public School District",
+      "school_type": "middle",
+      "address": "333 Levis Drive, Mount Holly, NJ 08060",
+      "main_phone": "(609) 267-7200",
+      "website_url": "https://holbein.mtholly.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 267-7200",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school by 8:00 AM at the main number (24-hour answering service; messages can be left at any hour). A written note explaining the absence must be sent on the day the student returns.",
+      "start_time": "7:55 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:05 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:15"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:18",
+            "end": "09:03"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:06",
+            "end": "09:41"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:44",
+            "end": "10:19"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:22",
+            "end": "10:57"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:00",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:38",
+            "end": "12:13"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:16",
+            "end": "12:51"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:54",
+            "end": "13:29"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:32",
+            "end": "14:07"
+          },
+          {
+            "name": "Period 10",
+            "start": "14:10",
+            "end": "14:45"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/7215",
+      "logo_url": "https://holbein.mtholly.k12.nj.us/_MASTER/common_pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://brainerd.mtholly.k12.nj.us/apps/news/show_news.jsp?REC_ID=1030021&id=0",
+      "label": "Brainerd Newsletter",
+      "school_slug": "brainerd",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://folwell.mtholly.k12.nj.us/apps/news/show_news.jsp?REC_ID=1030025&id=0",
+      "label": "Folwell Newsletter",
+      "school_slug": "folwell",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://holbein.mtholly.k12.nj.us/apps/news/show_news.jsp?REC_ID=1030028&id=0",
+      "label": "Holbein Newsletter",
+      "school_slug": "holbein",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}
