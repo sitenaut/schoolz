@@ -74,6 +74,7 @@ DATABASE_NAME=schoolz
 DATABASE_USER=schoolz
 PUBLIC_WEB_URL=http://localhost:5173   # prod: https://schoolz-web.fly.dev (or custom domain)
 PUBLIC_API_URL=http://localhost:8000   # prod: https://schoolz-api.fly.dev - used to build the Gmail OAuth redirect URI
+# POSTGRES_HOST_PORT=5433              # optional, local only: host port for the Postgres container when 5432 is already taken (default 5432)
 ```
 
 ## env/auth.local.env
