@@ -40,6 +40,30 @@ environment, copied from the vault items of the same names). The `schoolz-backup
 is 30 hours old; see its section in `docs/RUNBOOK.md`. A backup run by hand with
 `scripts/backup.sh` does not report.
 
+## Local database
+
+The local compose Postgres volume is not covered by anything above.
+`scripts/backup-local.sh` dumps it (all schemas, custom format) from inside the
+Postgres container, and `scripts/compose-local.sh` runs it before every `up`,
+`down` and `rm`, at most once an hour. `down -v` always takes a fresh dump first
+and refuses to run if that fails.
+
+- Plain dumps: `$HOME/backups/schoolz-local/` (`SCHOOLZ_LOCAL_BACKUP_DIR`), the
+  newest 30 kept. Keep this folder out of any synced directory.
+- Off-machine copy (optional): write the path of a folder that syncs off the
+  machine into `$XDG_CONFIG_HOME/schoolz/backup-offsite-dir` (or set
+  `SCHOOLZ_LOCAL_BACKUP_OFFSITE`). Each dump is then also written there
+  encrypted to `backup/age-recipient.txt`, so reading one back needs
+  `BACKUP_AGE_IDENTITY` from the `schoolz-prod` vault.
+
+Restore a plain dump into the running local database (this replaces its
+contents):
+
+```bash
+docker exec -i schoolz-postgres-local sh -c \
+  'pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < <dump file>
+```
+
 ## Restore drill
 
 Proves the newest backup can be decrypted and restored. It restores into a
