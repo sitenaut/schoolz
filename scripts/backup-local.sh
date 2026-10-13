@@ -62,7 +62,7 @@ trap 'rm -f "$tmp"' EXIT
 tables="$(docker exec -i "$container" pg_restore --list < "$tmp" | grep -c ' TABLE DATA ' || true)"
 (( tables > 0 )) || { echo "[backup-local] dump lists no table data - keeping the older dumps" >&2; exit 1; }
 mv "$tmp" "$dump"
-echo "[backup-local] $dump ($(stat -c %s "$dump") bytes, $tables tables)"
+echo "[backup-local] $dump ($(wc -c < "$dump" | tr -d ' ') bytes, $tables tables)"
 prune "$dest" 'schoolz-local_*.dump'
 
 [[ -n "$offsite" ]] || exit 0
