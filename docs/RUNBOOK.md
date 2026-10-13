@@ -148,6 +148,15 @@ database, LLM provider); one kind is a site that changed.
 The scheduler is alive but nothing has run for 13 hours. Check `/admin` → Jobs:
 are jobs enabled, and does the scheduler log show them being loaded on reconcile?
 
+### schoolz-backup-stale
+The nightly backup has not reported a success in 30 hours, so the newest dump in
+the bucket is at least a night old. `gh run list --workflow backup.yml` shows
+whether it failed or never started (GitHub disables schedules in a repo with no
+commits for 60 days); the failed step's log names the cause. Fix it, then
+`gh workflow run backup.yml` - the alert clears on the next success. If the dump
+step passed and only "Report success to Grafana" failed, the backup exists and
+the problem is the OTLP secrets. `docs/BACKUPS.md` has the rest.
+
 ### schoolz-job-stuck
 A run of this kind has been in flight for over an hour. Don't force-error it on
 a hunch - a long run that checkpoints is healthy. Look at the run's
