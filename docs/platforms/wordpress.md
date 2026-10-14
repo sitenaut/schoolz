@@ -124,3 +124,6 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   - **Handbook**: linked as "Policies and Procedures" to
     `Parent_Student_Policies_<year>.pdf`; the documents scan accepts a
     parent/student-policies filename as the handbook.
+  - **Address and phone** sit in a `#headerinfo` block at the top of every page
+    ("101 Evans Rd. / Marlton, NJ 08053 / 856-983-0774"), not a footer;
+    `_parse_wp_header_info` reads it.
