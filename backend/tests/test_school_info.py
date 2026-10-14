@@ -69,3 +69,16 @@ def test_an_image_with_no_url_anywhere_is_skipped_never_the_page_itself():
     html = '<header><img src=""><img src="data:image/gif;base64,AAAA"><img src="/a/logo.png"></header>'
     assert _find_logo_url(html, "https://x.org") == "https://x.org/a/logo.png"
     assert _find_logo_url('<header><img src=""></header>', "https://x.org") is None
+
+
+def test_wp_header_info_reads_address_and_phone():
+    from services.school_info import _parse_wp_header_info
+
+    html = (
+        '<header><div id="headerinfo"><div class="wg"><div style="height:10px"></div></div>'
+        '<div class="wg"><p>101 Evans Rd. <br>Marlton, NJ 08053<br>856-983-0774</p></div></div></header>'
+    )
+    info = _parse_wp_header_info(html, "https://x.org")
+    assert info["address"] == "101 Evans Rd., Marlton, NJ 08053"
+    assert info["main_phone"] == "856-983-0774"
+    assert _parse_wp_header_info("<p>nothing</p>", "https://x.org") is None

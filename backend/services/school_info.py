@@ -188,6 +188,26 @@ def _parse_edlio_footer(html: str, base_url: str) -> dict | None:
     }
 
 
+_STATE_ZIP_RE = re.compile(r",\s*[A-Z]{2}\s+\d{5}")
+
+
+def _parse_wp_header_info(html: str, base_url: str) -> dict | None:
+    """St. Joan of Arc (WordPress): a header block `#headerinfo` holds
+    "101 Evans Rd. / Marlton, NJ 08053 / 856-983-0774" as `<br>`-separated
+    lines of one paragraph. None unless it has a city/state/zip line."""
+    soup = BeautifulSoup(html, "lxml")
+    box = soup.select_one("#headerinfo")
+    if not box:
+        return None
+    lines = [re.sub(r"\s+", " ", t).strip() for t in box.get_text("\n").split("\n")]
+    lines = [t for t in lines if t]
+    city_at = next((i for i, t in enumerate(lines) if _STATE_ZIP_RE.search(t)), None)
+    if city_at is None or city_at == 0:
+        return None
+    phone = next((m.group(0) for t in lines if (m := _PLAIN_PHONE_RE.search(t))), None)
+    return {"address": f"{lines[city_at - 1].rstrip(',')}, {lines[city_at]}", "main_phone": phone, "logo_url": _find_logo_url(html, base_url)}
+
+
 _PRESENCE_PHONE_RE = re.compile(r"Phone[:\s]{0,20}(\(?\d{3}\)?[-. ]?\d{3}[-. ]\d{4})")
 
 
@@ -251,7 +271,7 @@ async def discover_school_info(school_website_url: str) -> dict:
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
                 resp = await client.get(base + "/")
-            edlio = (_parse_edlio_footer(resp.text, base) or _parse_presence_footer(resp.text, base)) if resp.status_code == 200 else None
+            edlio = (_parse_edlio_footer(resp.text, base) or _parse_presence_footer(resp.text, base) or _parse_wp_header_info(resp.text, base)) if resp.status_code == 200 else None
         except httpx.HTTPError:
             edlio = None
         if edlio:
