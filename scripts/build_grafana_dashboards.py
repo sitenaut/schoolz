@@ -605,7 +605,7 @@ def cost() -> dict:
         panel(2, "Chatbot (selected range)", [loki_instant(chat_cost())],
               {"h": 5, "w": 5, "x": 5, "y": 0}, ptype="stat", extra=usd,
               desc="From chatbot_usage log lines, so it only reaches back as far as log retention. "
-                   "Anthropic models only - other providers are in the unpriced panel."),
+                   "Anthropic models only."),
         panel(3, "Scans run-rate, per 30 days", [instant(f"({llm_cost(window='7d')}) * 30 / 7")],
               {"h": 5, "w": 5, "x": 10, "y": 0}, ptype="stat", extra=usd,
               desc="The last 7 days scaled to a month. A backfill inside those 7 days inflates it."),
@@ -656,8 +656,9 @@ def cost() -> dict:
         panel(15, "Chatbot tokens on unpriced models (selected range)",
               [loki_instant(chat_tokens)],
               {"h": 8, "w": 8, "x": 16, "y": 30}, ptype="bargauge", extra=bars,
-              desc="Input tokens sent to a model with no row in MODEL_PRICES (Gemini and the other "
-                   "non-Anthropic providers). Billed by that provider, absent from every dollar figure here."),
+              desc="Input tokens sent to a model with no row in MODEL_PRICES - a new Anthropic model id, or a "
+                   "non-Anthropic provider if one is ever switched on. Absent from every dollar figure here. "
+                   "Should read zero."),
         # --- what drove it
         panel(16, "Job runs and machine time, by kind (selected range)",
               [sql_target(
@@ -717,7 +718,31 @@ def cost() -> dict:
               desc="The cost report cannot be split by key, so this prices Anthropic's own token counts per key "
                    "with the list prices in MODEL_PRICES. Scans, person-triggered work, public chat and "
                    "signed-in chat each have a key."),
-        panel(19, "Not on this dashboard yet", [], {"h": 8, "w": 24, "x": 0, "y": 66}, ptype="text",
+        # --- coding agent (Claude Code's own OpenTelemetry export; see docs/CLAUDE_CODE_TELEMETRY.md)
+        panel(25, "Claude Code, estimated (selected range)",
+              [instant("sum(increase(claude_code_cost_usage_USD_total[$__range]))")],
+              {"h": 5, "w": 6, "x": 0, "y": 66}, ptype="stat", extra=usd,
+              desc="Coding-agent sessions on every project on this stack, at API list prices. On a subscription "
+                   "this is not what was charged - it is what the same tokens would cost on the API, which is "
+                   "the number to compare against the subscription's price. Empty until the export is on."),
+        panel(26, "Claude Code sessions (selected range)",
+              [instant("sum(increase(claude_code_session_count_total[$__range]))")],
+              {"h": 5, "w": 6, "x": 6, "y": 66}, ptype="stat", unit="short"),
+        panel(27, "Claude Code tokens, by type (selected range)",
+              [instant("sum by (type) (increase(claude_code_token_usage_tokens_total[$__range]))", "{{type}}")],
+              {"h": 5, "w": 12, "x": 12, "y": 66}, ptype="bargauge", unit="short", extra=bars,
+              desc="input, output, cacheRead, cacheCreation. Cache reads dominate long sessions and are billed "
+                   "at a tenth of input."),
+        panel(28, "Claude Code spend per day, by model",
+              [target("sum by (model) (increase(claude_code_cost_usage_USD_total[1d]))", "{{model}}")],
+              {"h": 8, "w": 12, "x": 0, "y": 71}, extra={**stacked, "interval": "1d"}),
+        panel(29, "Claude Code spend, by project (selected range)",
+              [instant("sum by (service_namespace) (increase(claude_code_cost_usage_USD_total[$__range]))",
+                       "{{service_namespace}}")],
+              {"h": 8, "w": 12, "x": 12, "y": 71}, ptype="bargauge", extra={**usd, **bars},
+              desc="Needs OTEL_RESOURCE_ATTRIBUTES=service.namespace=<project> in that project's untracked "
+                   "settings. An unlabelled bar is a project that has not set it."),
+        panel(19, "Not on this dashboard yet", [], {"h": 6, "w": 24, "x": 0, "y": 79}, ptype="text",
               extra={"options": {"mode": "markdown", "content": NOT_METERED}}),
     ]
     d = dashboard(
@@ -738,8 +763,7 @@ def cost() -> dict:
 NOT_METERED = """\
 | Cost centre | Why it is missing | What closes the gap |
 |---|---|---|
-| **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |
-| **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |
+| **Coding-agent sessions on a machine without the export** | Billed to a subscription; only sessions whose settings enable Claude Code's OpenTelemetry export reach this stack (`docs/CLAUDE_CODE_TELEMETRY.md`) | Turn the export on there |
 | **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |
 """
 
