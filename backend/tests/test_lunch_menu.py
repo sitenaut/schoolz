@@ -279,3 +279,11 @@ def test_price_legends_are_not_menu_days():
 
     assert _PRICE_BOX_RE.search("Lunch Meal Prices: $3.25 Elementary, $3.40 MSHS Student")
     assert not _PRICE_BOX_RE.search("Chicken Parmesan, Side of Pasta, Garden Tossed Salad")
+
+
+def test_a_month_year_lunch_forms_pdf_is_the_unbanded_menu():
+    from services.lunch_menu import _classify_unbanded_pdf_link
+
+    found = _classify_unbanded_pdf_link("https://x.org/wp-content/uploads/October-2026-Lunch-Forms.pdf", "elementary")
+    assert found["period_label"] == "October 2026" and found["school_type"] == "elementary"
+    assert _classify_unbanded_pdf_link("https://x.org/wp-content/uploads/Lunch-Token-Form-25.pdf", "elementary") is None

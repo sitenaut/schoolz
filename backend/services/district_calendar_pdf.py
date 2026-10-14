@@ -119,7 +119,10 @@ def find_pdf_link(html: str, page_url: str) -> str | None:
         url = urljoin(base_url, m.group(1))
         if url not in found:
             found.append(url)
-    named = next((u for u in found if "calendar" in u.lower()), None)
+    named_all = [u for u in found if "calendar" in u.lower()]
+    # St. Joan of Arc's homepage links a monthly "2026-10-Calendar.pdf" above
+    # the year's "school-calendar-2026-2027-....pdf": prefer the school-year name.
+    named = next((u for u in named_all if re.search(r"20\d\d[-_.]20\d\d|\b\d\d-\d\d\b", u.rsplit("/", 1)[-1])), None) or (named_all[0] if named_all else None)
     if named:
         return named
     return _drive_calendar_link(text) or (found[0] if found else None)

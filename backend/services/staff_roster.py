@@ -335,7 +335,38 @@ def _parse_tablepress_directory(html: str) -> list[dict]:
     return list(items.values())
 
 
-_PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/", "/staff-directory/", "/staff-directory-2/", "/staff/")
+def _parse_mailto_card_page(html: str) -> list[dict]:
+    """St. Joan of Arc's `/faculty-staff/`: one SiteOrigin text widget per
+    person - a name, a title (a homeroom teacher's is just her class, "3A") and
+    an email, as `<br>`-separated lines of one `<p>` or as separate `<p>`s. The
+    email is the address the page displays: two links' hrefs disagree with
+    their own text (a typo'd domain, another teacher's address), and one
+    person's address is plain text with no link at all."""
+    soup = BeautifulSoup(html, "lxml")
+    items = {}
+    for widget in soup.select(".siteorigin-widget-tinymce"):
+        lines = [re.sub(r"\s+", " ", t).strip() for t in widget.get_text("\n").split("\n")]
+        lines = [t.replace("\xa0", " ").strip() for t in lines]
+        lines = [t for t in lines if t]
+        emails = [t for t in lines if _BARE_EMAIL_RE.match(t)]
+        rest = [t for t in lines if not _BARE_EMAIL_RE.match(t)]
+        if len(emails) != 1 or not 1 <= len(rest) <= 2:
+            continue
+        name = rest[0]
+        title = rest[1] if len(rest) == 2 else None
+        key = f"mc:{_slug(name)[:56]}"
+        items[key] = {
+            "constituent_id": key,
+            "full_name": name,
+            "title": title,
+            "department": None,
+            "email": emails[0].lower(),
+            "phone": None,
+        }
+    return list(items.values())
+
+
+_PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/", "/staff-directory/", "/staff-directory-2/", "/staff/", "/faculty-staff/")
 
 _HONORIFIC_RE = re.compile(r"^(?:mr|mrs|ms|miss|mx|dr)\.?\s+", re.I)
 _BARE_EMAIL_RE = re.compile(r"^[^@\s/]+@[^@\s/]+\.[a-z]{2,}$", re.I)
@@ -407,7 +438,7 @@ async def _fetch_plain_page_roster(base: str) -> list[dict]:
                 resp = await client.get(base + path)
                 if resp.status_code != 200:
                     continue
-                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text) or _parse_pc_list_page(resp.text)
+                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text) or _parse_pc_list_page(resp.text) or _parse_mailto_card_page(resp.text)
                 if items:
                     return items
     except httpx.HTTPError:

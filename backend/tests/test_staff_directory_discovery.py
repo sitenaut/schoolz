@@ -87,3 +87,30 @@ def test_pc_list_page_reads_roles_emails_and_skips_class_pages_and_shared_inboxe
     assert people["Class Page"]["email"] is None and people["Class Page"]["title"] == "3rd Grade"
     assert people["Lori Jones"]["title"] == "Board Secretary / Office Staff"
     assert people["Tara Timms"]["title"] == "Speech Pathologist"
+
+
+_SJA = """
+<div class="siteorigin-widget-tinymce textwidget"><p style="text-align: center;">Sr. Patricia Pycik, SSJ<br />
+School Principal<br />
+<a href="mailto:p.pycik@stjoansk-8.org">p.pycik@stjoansk-8.org</a></p></div>
+<div class="siteorigin-widget-tinymce textwidget"><p>&nbsp;</p><p style="text-align: center;">Kori Budzitowski<br />
+Marketing &amp; Admissions<br />
+<a href="mailto:k.budzitowski@stjoansk-8.org" target="_blank">k.budzitowski@stjoansk-8.org</a></p></div>
+<div class="siteorigin-widget-tinymce textwidget"><p style="text-align: center;">Suzanne Rottler<br />
+1A<br />
+<a href="mailto:s.rottler@stjoansk-8.org">s.rottler@stjoansk-8.org</a></p></div>
+<div class="siteorigin-widget-tinymce textwidget"><p style="text-align: center;">Ellen Nettleton</p><p>KA</p><p><a href="mailto:e.nettleton@stjoansk-8.org">e.nettleton@stjoansk-8.org</a></p></div>
+<div class="siteorigin-widget-tinymce textwidget"><p>&nbsp;</p><p>Becky Lemanowicz<br />5B<br />b.lemanowicz@stjoansk-8.org</p></div>
+<div class="siteorigin-widget-tinymce textwidget"><p>Ciara Rogovich<br />3B<br /><a href="mailto:j.relovsky@stjoansk-8.org">c.rogovich@stjoansk-8.org</a></p></div>
+"""
+
+
+def test_mailto_card_page_reads_name_title_and_email():
+    people = {p["full_name"]: p for p in staff_roster._parse_mailto_card_page(_SJA)}
+    assert people["Sr. Patricia Pycik, SSJ"]["title"] == "School Principal"
+    assert people["Kori Budzitowski"]["title"] == "Marketing & Admissions"
+    assert people["Suzanne Rottler"]["email"] == "s.rottler@stjoansk-8.org"
+    assert people["Ellen Nettleton"]["title"] == "KA"
+    assert people["Becky Lemanowicz"]["email"] == "b.lemanowicz@stjoansk-8.org"
+    assert people["Ciara Rogovich"]["email"] == "c.rogovich@stjoansk-8.org"  # the displayed address, not the link's
+    assert len(people) == 6

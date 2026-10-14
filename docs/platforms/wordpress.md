@@ -101,3 +101,26 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     start/end/early/delay times; absence is an email per school's attendance
     office; shared district logo only; `school_info.scan` warns every run
     (no address/phone in the WordPress footer, seed values are kept).
+
+- **St. Joan of Arc School (Marlton, private; `stjoansk-8.org`)** — WordPress
+  with a SiteOrigin page builder; `backend/seed/st_joan_of_arc.json`, a
+  one-school district named after the school (calendar PDF, ICS and lunch all
+  hang off the district, so a shared "private schools" district could hold one
+  calendar only).
+  - **Firewall**: ModSecurity returns 406 to a bare `Mozilla/5.0` user agent
+    (any fuller or custom one gets 200), so a hand-run `curl -A "Mozilla/5.0"`
+    looks like a blocked site when it is not.
+  - **Staff**: `/faculty-staff/` is one text widget per person (name, title,
+    email as lines); `_parse_mailto_card_page` reads it. The displayed address is
+    kept when it disagrees with the link's `href`.
+  - **Calendar**: the school-year PDF and a monthly PDF are both linked from the
+    homepage, so `find_pdf_link` prefers a calendar name carrying a year range
+    over `2026-10-Calendar.pdf`. Track the homepage, not a PDF.
+  - **Flyer-only pages**: `/pta-1/` is a stack of poster images in SiteOrigin
+    image widgets and no text, so a text read called it empty. Tracked as a
+    `page_flyers` newsletter source (`services/page_flyers_parser.py`): every
+    content image 300px or wider becomes an image block read by vision, deduped
+    by image URL. Stale-year correction is off for it, like the virtual backpack.
+  - **Handbook**: linked as "Policies and Procedures" to
+    `Parent_Student_Policies_<year>.pdf`; the documents scan accepts a
+    parent/student-policies filename as the handbook.

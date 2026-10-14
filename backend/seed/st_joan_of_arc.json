@@ -1,0 +1,62 @@
+{
+  "exported_at": "2026-10-14T12:00:00Z",
+  "source": "onboarding: St. Joan of Arc School (private, Diocese of Trenton)",
+  "districts": [
+    {
+      "name": "St. Joan of Arc School",
+      "website_url": "https://www.stjoansk-8.org",
+      "food_services_menu_url": "https://www.stjoansk-8.org/",
+      "ics_feeds": [],
+      "calendar_pdf_url": "https://www.stjoansk-8.org/",
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Marlton"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "st-joan-of-arc",
+      "name": "St. Joan of Arc School",
+      "short_name": "St. Joan of Arc",
+      "district_name": "St. Joan of Arc School",
+      "school_type": "elementary",
+      "address": "101 Evans Road, Marlton, NJ 08053",
+      "main_phone": "(856) 983-0774",
+      "website_url": "https://www.stjoansk-8.org",
+      "absence_method": "mailto",
+      "absence_emails": [
+        "absent.tardy@stjoansk-8.org"
+      ],
+      "absence_phone": "(856) 983-0078",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the nurse's office (856-983-0078) or email absent.tardy@stjoansk-8.org each day a child is absent or late. Unreported absences trigger an automated alert.",
+      "start_time": "8:20 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://www.stjoansk-8.org/pta-1/",
+      "label": "St. Joan of Arc PTA",
+      "school_slug": "st-joan-of-arc",
+      "source_type": "page_flyers",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

@@ -747,7 +747,7 @@ async def extract_from_newsletter(
             # (a 2024 flyer became an "October 2026" event, "Healthy Kids
             # Running Spring 2025" became "Spring 2027") - so this source
             # type trusts the model's own parsed date/year as-is.
-            correct_stale_years = job_kind != "virtual_backpack.scan"
+            correct_stale_years = job_kind not in ("virtual_backpack.scan", "page_flyers.scan")
             item_start_date = _correct_stale_year(raw_start_date, newsletter_id=newsletter.id) if correct_stale_years else raw_start_date
             # Keep a date range intact: if the start rolled forward a year,
             # the end moves with it rather than being corrected on its own

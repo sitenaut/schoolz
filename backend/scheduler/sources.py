@@ -36,7 +36,7 @@ _DISTRICT_FIELDS: dict[str, list[tuple[str, str]]] = {
     "schoolcafe_menu.scan": [("SchoolCafe shortname", "schoolcafe_shortname")],
 }
 
-_NEWSLETTER_KINDS = {"smore.scan", "ptboard.scan", "virtual_backpack.scan"}
+_NEWSLETTER_KINDS = {"smore.scan", "ptboard.scan", "virtual_backpack.scan", "page_flyers.scan"}
 
 
 def _fields(row, fields: list[tuple[str, str]]) -> list[dict]:

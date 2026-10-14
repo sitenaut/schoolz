@@ -274,3 +274,14 @@ def test_apptegy_menu_payload_yields_published_handbook_link_only():
         + item("Youth Sports", "published", "https://example.com/sports") + "</script>"
     found = _find_doc_anchors(_find_apptegy_nav_anchors(html), "https://x")
     assert [(d["doc_type"], d["url"]) for d in found] == [("handbook", "https://aptg.co/abc")]
+
+
+def test_parent_student_policies_pdf_is_the_handbook_even_though_it_says_policies():
+    from services.school_documents import _find_doc_anchors
+
+    html = (
+        '<a href="https://x.org/wp-content/uploads/Parent_Student_Policies_2025-2026-2.pdf">Policies and Procedures</a>'
+        '<a href="/board-policies/">Board Policies and Handbook</a>'
+    )
+    found = _find_doc_anchors(html, "https://x.org")
+    assert [(a["doc_type"], a["url"]) for a in found] == [("handbook", "https://x.org/wp-content/uploads/Parent_Student_Policies_2025-2026-2.pdf")]

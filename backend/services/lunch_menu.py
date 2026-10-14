@@ -55,6 +55,9 @@ _MONTHS = ("january", "february", "march", "april", "may", "june", "july", "augu
 # no grade band, since the district is one high school.
 # Runnemede's is "OCTOBER  2026  Menu.pdf" (double spaces, so "%20%20" in the href).
 _MONTH_YEAR_RE = re.compile(r"(" + "|".join(_MONTHS) + r")(?:_|%20|\s)*(\d{4})", re.IGNORECASE)
+# St. Joan of Arc (Marlton): "October-2026-Lunch-Forms.pdf", an order form that
+# lists the month's standing choices and weekday specials rather than a calendar.
+_MONTH_YEAR_FORMS_RE = re.compile(r"(" + "|".join(_MONTHS) + r")-(\d{4})-lunch-forms?\b", re.IGNORECASE)
 
 
 # Evesham publishes the menu PDF beside per-band "..._lunch_spreadsheet.pdf" /
@@ -86,7 +89,7 @@ def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
     filename = url.rsplit("/", 1)[-1]
     if _NOT_A_MENU_RE.search(filename):
         return None
-    match = _MONTH_YEAR_RE.search(filename)
+    match = _MONTH_YEAR_RE.search(filename) or _MONTH_YEAR_FORMS_RE.search(filename)
     if not match:
         return None
     month, year = match.groups()
@@ -652,7 +655,10 @@ async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None 
                         "first and last, which are often partial (the month may start on a Thursday): a day "
                         "number in the top-right corner of a cell with a meal in it is an entry even when "
                         "other cells in the same row hold only a notice or are blank. Ignore sidebar legends "
-                        "and notice boxes that carry no day number."
+                        "and notice boxes that carry no day number. If the file is not a calendar at all but a "
+                        "standing daily menu or order form (the same choices every day plus a special for each "
+                        "weekday), record one entry for every Monday to Friday of that month: the description is "
+                        "that weekday's special followed by the daily choices, summarised briefly."
                         + (
                             f" If the file holds more than one meal's calendar (a breakfast page and a lunch "
                             f"page), record only the {meal_type} calendar."
