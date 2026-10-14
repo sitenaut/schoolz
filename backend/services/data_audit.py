@@ -154,7 +154,7 @@ DATA_POINTS: tuple[DataPoint, ...] = (
               "No newsletter URL is tracked for this school.",
               "No newsletter link is known for this school.",
               "Add the school's Smore URL, or connect a Gmail scanner."),
-    DataPoint("pta", "PTA page", "News and events", ALL, "All schools", "givebacks.scan or ptboard.scan", "The PTA website", "Daily or weekly", "3 days or 16 days", False,
+    DataPoint("pta", "PTA page", "News and events", ALL, "All schools", "givebacks.scan, ptboard.scan or page_flyers.scan", "The PTA website", "Daily or weekly", "3 days or 16 days", False,
               "A link to the PTA's website, or confirmation that there isn't one.",
               "No Givebacks shortname or PTBoard page is set for this school.",
               "We don't have a link to this school's PTA page.",
@@ -684,7 +684,7 @@ async def load_context(db: AsyncSession, schools: list[School], now: datetime | 
             by_school[n.school_id].append(n)
         elif n.source_type == "virtual_backpack":
             (backpacks_school[n.school_id] if n.school_id else backpacks_district[n.district_id]).append(n)
-        elif n.source_type == "ptboard" and n.school_id:
+        elif n.source_type in ("ptboard", "page_flyers") and n.school_id:
             ptboards[n.school_id].append(n)
 
     job_ids: set[str] = set()

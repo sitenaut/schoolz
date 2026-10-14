@@ -34,6 +34,10 @@ from models import SmoreBlock, SmoreNewsletter
 from services.presence_documents import list_page_documents
 
 _HANDBOOK_RE = re.compile(r"handbook", re.IGNORECASE)
+# St. Joan of Arc labels its handbook "Policies and Procedures" and names the
+# file Parent_Student_Policies_<year>.pdf: that is the family handbook, not a
+# folder of board policies.
+_PARENT_POLICIES_RE = re.compile(r"(?:parent|family)[\s_-]*(?:and[\s_-]*)?student[\s_-]*polic", re.IGNORECASE)
 _PRESENCE_RE = re.compile(r"sharpschool\.com|SchoolMessenger Presence", re.IGNORECASE)
 # Nav-link keyword -> SchoolDocument.doc_type. Handbooks were the first
 # case; bell schedules were added after confirming both high schools
@@ -44,7 +48,7 @@ _DOC_TYPE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     # Medford's home page links its A-D rotation calendar as "What Day is It?".
     ("letter_day_schedule", re.compile(r"what\s+day\s+is\s+it|\d\s*-?\s*day\s+cycle", re.IGNORECASE)),
     ("bell_schedule", re.compile(r"bell[\s-]*schedule", re.IGNORECASE)),
-    ("handbook", _HANDBOOK_RE),
+    ("handbook", re.compile(_HANDBOOK_RE.pattern + "|" + _PARENT_POLICIES_RE.pattern, re.IGNORECASE)),
 ]
 
 
@@ -101,11 +105,12 @@ def _find_doc_anchors(html: str, base_url: str) -> list[dict]:
             "lunch_ordering" if _ORDERING_PORTAL_RE.match(href)
             else classify_doc_type(text) or classify_doc_type(href) or ("calendar_hub" if _CALENDAR_HUB_RE.match(text) else None)
         )
+        parent_policies = bool(_PARENT_POLICIES_RE.search(href))
         # A "Policy, Procedure and Handbook" nav page is a folder of board policies, not the handbook.
-        if doc_type == "handbook" and _POLICY_NAV_RE.search(text) and not _FAMILY_NAV_RE.search(text):
+        if doc_type == "handbook" and not parent_policies and _POLICY_NAV_RE.search(text) and not _FAMILY_NAV_RE.search(text):
             continue
         # Magnolia nests every policy page under /policieshibhandbook/..., so each child nav link matched on its href alone.
-        if doc_type == "handbook" and not _HANDBOOK_RE.search(text) and _POLICY_NAV_RE.search(href):
+        if doc_type == "handbook" and not parent_policies and not _HANDBOOK_RE.search(text) and _POLICY_NAV_RE.search(href):
             continue
         if doc_type:
             if href.startswith("/"):

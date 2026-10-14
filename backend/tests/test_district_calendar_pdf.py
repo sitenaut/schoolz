@@ -60,3 +60,11 @@ def test_finalsite_resource_manager_calendar_beats_a_direct_school_pdf():
 def test_drive_calendar_label_must_sit_against_the_link():
     nav = '<a href="/cal">Calendar</a> <a href="https://drive.google.com/file/d/AAAAAAAAAAAAAAAAAAAA/view">Referral Services</a>'
     assert find_pdf_link(nav, "https://x.test/") is None
+
+
+def test_find_pdf_link_prefers_the_school_year_calendar_over_a_monthly_one():
+    html = (
+        '<a href="/wp-content/uploads/2026-10-Calendar.pdf">Monthly Calendar</a>'
+        '<a href="/wp-content/uploads/school-calendar-2026-2027-with-activities.pdf">2026.2027 Calendar</a>'
+    )
+    assert find_pdf_link(html, "https://x.test/") == "https://x.test/wp-content/uploads/school-calendar-2026-2027-with-activities.pdf"

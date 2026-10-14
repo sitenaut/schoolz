@@ -19,6 +19,7 @@ from . import marking_period_scan  # noqa: F401
 from . import prerender_warm  # noqa: F401
 from . import preschool_locations_scan  # noqa: F401
 from . import preschool_team_scan  # noqa: F401
+from . import page_flyers_scan  # noqa: F401
 from . import ptboard_scan  # noqa: F401
 from . import school_events_doc_scan  # noqa: F401
 from . import student_bulletin_scan  # noqa: F401

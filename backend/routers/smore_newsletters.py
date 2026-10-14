@@ -21,12 +21,14 @@ _JOB_KIND_BY_SOURCE_TYPE = {
     "smore_archive": "smore.scan",
     "virtual_backpack": "virtual_backpack.scan",
     "ptboard": "ptboard.scan",
+    "page_flyers": "page_flyers.scan",
 }
 _JOB_LABEL_BY_SOURCE_TYPE = {
     "smore": "Smore scan",
     "smore_archive": "Smore archive scan",
     "virtual_backpack": "Virtual backpack scan",
     "ptboard": "PTBoard scan",
+    "page_flyers": "Page flyers scan",
 }
 
 
