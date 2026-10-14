@@ -124,7 +124,7 @@
     {
       "id": 2,
       "title": "Chatbot (selected range)",
-      "description": "From chatbot_usage log lines, so it only reaches back as far as log retention. Anthropic models only - other providers are in the unpriced panel.",
+      "description": "From chatbot_usage log lines, so it only reaches back as far as log retention. Anthropic models only.",
       "type": "stat",
       "gridPos": {
         "h": 5,
@@ -656,7 +656,7 @@
     {
       "id": 15,
       "title": "Chatbot tokens on unpriced models (selected range)",
-      "description": "Input tokens sent to a model with no row in MODEL_PRICES (Gemini and the other non-Anthropic providers). Billed by that provider, absent from every dollar figure here.",
+      "description": "Input tokens sent to a model with no row in MODEL_PRICES - a new Anthropic model id, or a non-Anthropic provider if one is ever switched on. Absent from every dollar figure here. Should read zero.",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -1224,15 +1224,232 @@
       }
     },
     {
+      "id": 25,
+      "title": "Claude Code, estimated (selected range)",
+      "description": "Coding-agent sessions on every project on this stack, at API list prices. On a subscription this is not what was charged - it is what the same tokens would cost on the API, which is the number to compare against the subscription's price. Empty until the export is on.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 66
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(increase(claude_code_cost_usage_USD_total[$__range]))",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 26,
+      "title": "Claude Code sessions (selected range)",
+      "description": "",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 66
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(increase(claude_code_session_count_total[$__range]))",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 27,
+      "title": "Claude Code tokens, by type (selected range)",
+      "description": "input, output, cacheRead, cacheCreation. Cache reads dominate long sessions and are billed at a tenth of input.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 66
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (type) (increase(claude_code_token_usage_tokens_total[$__range]))",
+          "legendFormat": "{{type}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 28,
+      "title": "Claude Code spend per day, by model",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 71
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (model) (increase(claude_code_cost_usage_USD_total[1d]))",
+          "legendFormat": "{{model}}",
+          "range": true,
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {},
+      "interval": "1d"
+    },
+    {
+      "id": 29,
+      "title": "Claude Code spend, by project (selected range)",
+      "description": "Needs OTEL_RESOURCE_ATTRIBUTES=service.namespace=<project> in that project's untracked settings. An unlabelled bar is a project that has not set it.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 71
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum by (service_namespace) (increase(claude_code_cost_usage_USD_total[$__range]))",
+          "legendFormat": "{{service_namespace}}",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
       "id": 19,
       "title": "Not on this dashboard yet",
       "description": "",
       "type": "text",
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 79
       },
       "targets": [],
       "fieldConfig": {
@@ -1243,7 +1460,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "| Cost centre | Why it is missing | What closes the gap |\n|---|---|---|\n| **Coding-agent sessions** (the largest by far) | Billed to a subscription, never touches this stack | Turn on the agent's own OpenTelemetry export to this stack, tagged with the project name |\n| **Gemini and other chat providers** | No price row; billed by that provider | Their own billing export, or a price row in `MODEL_PRICES` |\n| **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |\n"
+        "content": "| Cost centre | Why it is missing | What closes the gap |\n|---|---|---|\n| **Coding-agent sessions on a machine without the export** | Billed to a subscription; only sessions whose settings enable Claude Code's OpenTelemetry export reach this stack (`docs/CLAUDE_CODE_TELEMETRY.md`) | Turn the export on there |\n| **Fly, Supabase, the scraper droplet, domains** | Flat monthly charges with no usage signal | Nothing to meter; enter them once as constants if a single total is wanted |\n"
       }
     }
   ],

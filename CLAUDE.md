@@ -120,6 +120,7 @@ Docs:
 - **`docs/BACKUPS.md`** — nightly encrypted `pg_dump` to R2 (`.github/workflows/backup.yml`), the restore drill, restoring for real.
   - The age private key exists only in the `schoolz-prod` vault; lose it and no backup can be restored.
   - The local database is dumped by `compose-local.sh` before `up`/`down`/`rm` (`scripts/backup-local.sh`); calling `docker compose` directly skips that.
+- **`docs/CLAUDE_CODE_TELEMETRY.md`** — coding-agent usage into the Cost dashboard via Claude Code's own OTel export; per-machine setup, not a repo or deploy change.
 - `docs/ENV_SETUP.md`, `docs/API_KEYS.md`, `docs/RUNBOOK.md` (one section per alert), `docs/KIDS_VIEW_V2_DESIGN.md`, `docs/HS_CLASS_PAGES_DESIGN.md`.
 
 ## Prod and deployment
