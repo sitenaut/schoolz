@@ -74,6 +74,24 @@
         "query": "yesoreyeram-infinity-datasource",
         "refresh": 1,
         "type": "datasource"
+      },
+      {
+        "name": "plan_price",
+        "label": "Plan price ($/month)",
+        "type": "textbox",
+        "hide": 0,
+        "query": "100",
+        "current": {
+          "text": "100",
+          "value": "100"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "100",
+            "value": "100"
+          }
+        ]
       }
     ]
   },
@@ -1226,11 +1244,11 @@
     {
       "id": 25,
       "title": "Claude Code, estimated (selected range)",
-      "description": "Coding-agent sessions on every project on this stack, at API list prices. On a subscription this is not what was charged - it is what the same tokens would cost on the API, which is the number to compare against the subscription's price. Empty until the export is on.",
+      "description": "API-equivalent value, not what was charged. Coding-agent sessions on every project on this stack, priced as if each token were billed on the API. On a subscription the charge is the flat plan price; the next panel sets the two side by side. Empty until the export is on.",
       "type": "stat",
       "gridPos": {
         "h": 5,
-        "w": 6,
+        "w": 5,
         "x": 0,
         "y": 66
       },
@@ -1273,8 +1291,8 @@
       "type": "stat",
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 5,
         "y": 66
       },
       "targets": [
@@ -1309,14 +1327,56 @@
       }
     },
     {
+      "id": 30,
+      "title": "Value vs plan price (selected range)",
+      "description": "API-equivalent value divided by the plan price prorated to the selected range (30-day month). Above 1x the subscription is cheaper than paying per token; below 1x the API would be. Usage limits, not dollars, are what actually cap a subscription, and this does not show them. Set the price in the box at the top.",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 9,
+        "y": 66
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_METRICS}"
+          },
+          "expr": "sum(increase(claude_code_cost_usage_USD_total[$__range])) / ($plan_price * $__range_s / 2592000)",
+          "legendFormat": "",
+          "range": false,
+          "format": "time_series",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "unit": "suffix:x"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
       "id": 27,
       "title": "Claude Code tokens, by type (selected range)",
       "description": "input, output, cacheRead, cacheCreation. Cache reads dominate long sessions and are billed at a tenth of input.",
       "type": "bargauge",
       "gridPos": {
         "h": 5,
-        "w": 12,
-        "x": 12,
+        "w": 10,
+        "x": 14,
         "y": 66
       },
       "targets": [

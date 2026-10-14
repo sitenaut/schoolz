@@ -9,6 +9,11 @@ On a subscription the dollar figure is what the same tokens would cost at API
 list prices, not what was charged. That is the number to weigh against the
 subscription's price.
 
+The dashboard sets that figure against the plan price (`PLAN_PRICE_USD` in
+`scripts/build_grafana_dashboards.py`, also a "Plan price" box on the dashboard):
+above 1x the subscription beats pay-per-token. Change the constant when the plan
+changes. It says nothing about usage limits, which are what cap a subscription.
+
 ## Setup (once per machine)
 
 1. In Grafana Cloud, create an **access policy** with the `metrics:write` scope

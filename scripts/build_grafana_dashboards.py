@@ -471,6 +471,10 @@ def ops() -> dict:
 # model-id regex. Anthropic list prices, looked up 2026-10-07. A model that
 # matches nothing here is counted in tokens but priced at nothing, which is
 # why the dashboard has an "unpriced models" panel instead of a silent zero.
+# The Claude Code subscription's monthly price, the default for the dashboard's
+# "Plan price" box. Change it here when the plan changes, or type a new value in
+# the box for a one-off look; a re-sync resets the box to this.
+PLAN_PRICE_USD = 100
 MODEL_PRICES = {
     "claude-haiku-4-5.*": (1.00, 5.00, 1.25, 0.10),
     "claude-sonnet-5.*": (2.00, 10.00, 2.50, 0.20),
@@ -721,16 +725,24 @@ def cost() -> dict:
         # --- coding agent (Claude Code's own OpenTelemetry export; see docs/CLAUDE_CODE_TELEMETRY.md)
         panel(25, "Claude Code, estimated (selected range)",
               [instant("sum(increase(claude_code_cost_usage_USD_total[$__range]))")],
-              {"h": 5, "w": 6, "x": 0, "y": 66}, ptype="stat", extra=usd,
-              desc="Coding-agent sessions on every project on this stack, at API list prices. On a subscription "
-                   "this is not what was charged - it is what the same tokens would cost on the API, which is "
-                   "the number to compare against the subscription's price. Empty until the export is on."),
+              {"h": 5, "w": 5, "x": 0, "y": 66}, ptype="stat", extra=usd,
+              desc="API-equivalent value, not what was charged. Coding-agent sessions on every project on this "
+                   "stack, priced as if each token were billed on the API. On a subscription the charge is the "
+                   "flat plan price; the next panel sets the two side by side. Empty until the export is on."),
         panel(26, "Claude Code sessions (selected range)",
               [instant("sum(increase(claude_code_session_count_total[$__range]))")],
-              {"h": 5, "w": 6, "x": 6, "y": 66}, ptype="stat", unit="short"),
+              {"h": 5, "w": 4, "x": 5, "y": 66}, ptype="stat", unit="short"),
+        panel(30, "Value vs plan price (selected range)",
+              [instant("sum(increase(claude_code_cost_usage_USD_total[$__range])) / "
+                       "($plan_price * $__range_s / 2592000)")],
+              {"h": 5, "w": 5, "x": 9, "y": 66}, ptype="stat", unit="suffix:x",
+              desc="API-equivalent value divided by the plan price prorated to the selected range (30-day "
+                   "month). Above 1x the subscription is cheaper than paying per token; below 1x the API "
+                   "would be. Usage limits, not dollars, are what actually cap a subscription, and this "
+                   "does not show them. Set the price in the box at the top."),
         panel(27, "Claude Code tokens, by type (selected range)",
               [instant("sum by (type) (increase(claude_code_token_usage_tokens_total[$__range]))", "{{type}}")],
-              {"h": 5, "w": 12, "x": 12, "y": 66}, ptype="bargauge", unit="short", extra=bars,
+              {"h": 5, "w": 10, "x": 14, "y": 66}, ptype="bargauge", unit="short", extra=bars,
               desc="input, output, cacheRead, cacheCreation. Cache reads dominate long sessions and are billed "
                    "at a tenth of input."),
         panel(28, "Claude Code spend per day, by model",
@@ -753,7 +765,10 @@ def cost() -> dict:
          ds_var("DS_LOGS", "loki", "Logs"),
          ds_var("DS_SQL", "grafana-postgresql-datasource", "schoolz database"),
          ds_var("DS_USAGE", "prometheus", "Grafana Cloud usage"),
-         ds_var("DS_ANTHROPIC", "yesoreyeram-infinity-datasource", "Anthropic billing")],
+         ds_var("DS_ANTHROPIC", "yesoreyeram-infinity-datasource", "Anthropic billing"),
+         {"name": "plan_price", "label": "Plan price ($/month)", "type": "textbox", "hide": 0,
+          "query": str(PLAN_PRICE_USD), "current": {"text": str(PLAN_PRICE_USD), "value": str(PLAN_PRICE_USD)},
+          "options": [{"selected": True, "text": str(PLAN_PRICE_USD), "value": str(PLAN_PRICE_USD)}]}],
     )
     d["time"] = {"from": "now-30d", "to": "now"}
     d["refresh"] = "1h"
