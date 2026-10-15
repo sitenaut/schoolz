@@ -37,6 +37,6 @@ anthropic==0.34.2
 icalendar==6.1.0
 pdfplumber==0.11.10
 Pillow==12.3.0
-mcp==1.30.0
+mcp==2.3.0
 rapidfuzz>=3.6.0
 feedparser>=6.0.0
