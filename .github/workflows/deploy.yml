@@ -164,7 +164,13 @@ jobs:
           now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
           if [ "$now" != "${PREV##*@}" ]; then echo "::error::after the rollback $APP runs $now, expected ${PREV##*@}"; exit 1; fi
           echo "Rolled back: every machine runs ${PREV##*@}"
-          curl -fsS --max-time 10 "$URL/health"
+          # --strategy immediate restarts every machine at once, so the API is
+          # down while they boot (the drill's single try timed out at 10s).
+          for _ in $(seq 1 20); do
+            curl -fsS --max-time 10 -o /dev/null "$URL/health" && { echo "ok: /health after the rollback"; exit 0; }
+            sleep 6
+          done
+          echo "::error::/health did not answer after the rollback"; exit 1
 
   frontend:
     name: Deploy frontend (schoolz-web)
