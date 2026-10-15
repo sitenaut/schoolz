@@ -197,6 +197,14 @@ A visitor's auth check never resolved and they saw the Reload fallback. This is
 the supabase-js lock deadlock's signature - see "Supabase auth deadlock" in
 `CLAUDE.md`. Any recent change touching `AuthContext` or `apiFetch` is the suspect.
 
+### schoolz-chatbot-unavailable
+Chat questions are getting "the assistant isn't available right now". The
+`chatbot_provider_unavailable` log line carries the provider's own message.
+"You have reached your specified API usage limits" is the chat key's monthly
+spend limit: raise it in the Anthropic console (public and signed-in chat have
+separate keys - see the `chatbot` skill). Otherwise a revoked key, or the
+provider's status page; /admin → Chatbot can switch providers meanwhile.
+
 ### schoolz-alexa-errors
 The Alexa skill's Lambda is failing invocations. Its CloudWatch log group has
 the traceback; the Operations dashboard shows whether it's every call or a few.

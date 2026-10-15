@@ -33,6 +33,15 @@ comparison is against what is running, not the previous push. By hand:
 only; `scraper` is hand-only). `migrate.yml` is by hand only and offers
 `upgrade head`, `current` and `history`.
 
+**The rollback is proven by a drill**: `gh workflow run deploy.yml -f
+target=backend -f drill=true` (then again with `target=frontend`) deploys,
+fails the smoke check on purpose, rolls back, and checks every machine runs
+the previous image digest. Drill one app per run - with `both`, a failed
+backend skips the frontend. Expect ~30 s of downtime: the rollback restarts
+every machine at once (`--strategy immediate`), which is why `/health` after
+it retries for two minutes. A rolled-back image has no `sha-` label, so the
+next push redeploys that app; that is harmless.
+
 ## Steps
 
 1. **Confirm the work is committed.** `git status --short` - if anything is

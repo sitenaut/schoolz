@@ -432,6 +432,15 @@ def rules() -> list:
                         "in frontend/src/context/AuthContext.tsx. It should be zero.",
             dashboard="schoolz-ux",
         ),
+        loki(
+            "schoolz-chatbot-unavailable", "schoolz: the chatbot's model provider is refusing calls",
+            f'sum(count_over_time({{{API}}} |= "chatbot_provider_unavailable" [15m]))', 2, range_s=900,
+            tier="ticket", kind="symptom", component="llm", for_="0m",
+            summary="{{ printf \"%.0f\" $values.B.Value }} chat question(s) got 'the assistant isn't available' in 15 minutes",
+            description="The provider refused or couldn't be reached - a spend limit, a revoked key or an "
+                        "outage. Visitors get a polite reply, not a 500, so no SLO or 5xx alert sees this.",
+            dashboard="schoolz-cost",
+        ),
         cloudwatch(
             "schoolz-alexa-errors", "schoolz: Alexa skill Lambda is erroring", "Errors", 2,
             tier="ticket", kind="symptom", component="alexa", for_="5m",
