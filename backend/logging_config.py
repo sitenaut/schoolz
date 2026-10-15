@@ -26,7 +26,7 @@ def setup_logging() -> None:
     # them on. Missing on a record (nothing instrumented locally) just
     # serialises as null, which is why this is safe to always request.
     formatter = jsonlogger.JsonFormatter(
-        fmt="%(asctime)s %(name)s %(levelname)s %(message)s %(otelTraceID)s %(otelSpanID)s",
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s %(otelTraceID)s %(otelSpanID)s %(request_id)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
         rename_fields={
             "levelname": "levelname",
@@ -36,6 +36,11 @@ def setup_logging() -> None:
         },
     )
     handler.setFormatter(formatter)
+    # request_id: the X-Request-ID of the request a line was written in
+    # (request_context.py); null in the scheduler and at start-up.
+    from request_context import RequestIdLogFilter
+
+    handler.addFilter(RequestIdLogFilter())
 
     root = logging.getLogger()
     root.handlers.clear()
