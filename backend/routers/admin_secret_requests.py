@@ -17,14 +17,14 @@ unlock key.
 import os
 import re
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, hash_api_key, require_super_admin
+from auth import check_admin_mfa, get_current_user, hash_api_key, require_super_admin
 from database import get_db
 from models import ApiKey, SecretAccessRequest, User
 from routers.admin_api_keys import DEVICE_POLL_INTERVAL_S, _new_user_code, _normalize_user_code
@@ -46,11 +46,12 @@ def _unlock_key() -> str | None:
     return os.environ.get("SECRETS_UNLOCK_KEY") or None
 
 
-async def require_requester(user: User = Depends(get_current_user)) -> User:
+async def require_requester(request: Request, user: User = Depends(get_current_user)) -> User:
     """Whoever asks must be a super admin or a key made by one. A key acts as
     its creator, so a demoted creator's key stops working here too."""
     if not user.is_admin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Super admin access required")
+    check_admin_mfa(request, user)
     return user
 
 
@@ -118,7 +119,7 @@ class SecretRequestOut(BaseModel):
 async def start_secret_request(
     payload: SecretRequestIn, request: Request, requester: User = Depends(require_requester), db: AsyncSession = Depends(get_db)
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     open_count = (
         await db.execute(
             select(func.count())
@@ -173,7 +174,7 @@ async def poll_secret_request(
             .with_for_update()
         )
     ).scalar_one_or_none()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Unknown, someone else's, already collected and timed out all read
     # "expired": the requester's only move in each case is to ask again.
     if (
@@ -202,7 +203,7 @@ async def poll_secret_request(
 
 
 def _effective_status(req: SecretAccessRequest) -> str:
-    if req.status in ("pending", "approved") and req.expires_at <= datetime.now(timezone.utc):
+    if req.status in ("pending", "approved") and req.expires_at <= datetime.now(UTC):
         return "expired"
     return req.status
 
@@ -255,7 +256,7 @@ async def _get_request(db: AsyncSession, user_code: str) -> SecretAccessRequest:
 
 async def _get_pending(db: AsyncSession, user_code: str) -> SecretAccessRequest:
     req = await _get_request(db, user_code)
-    if req.status != "pending" or req.expires_at <= datetime.now(timezone.utc):
+    if req.status != "pending" or req.expires_at <= datetime.now(UTC):
         raise HTTPException(status.HTTP_410_GONE, "This request has expired or was already answered")
     return req
 
@@ -268,7 +269,7 @@ async def get_secret_request(user_code: str, db: AsyncSession = Depends(get_db))
 @router.post("/{user_code}/approve", response_model=SecretRequestOut)
 async def approve_secret_request(user_code: str, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
     req = await _get_pending(db, user_code)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     req.status = "approved"
     req.decided_by_user_id = actor.id
     req.decided_at = now
@@ -282,6 +283,6 @@ async def deny_secret_request(user_code: str, actor: User = Depends(require_supe
     req = await _get_pending(db, user_code)
     req.status = "denied"
     req.decided_by_user_id = actor.id
-    req.decided_at = datetime.now(timezone.utc)
+    req.decided_at = datetime.now(UTC)
     await db.commit()
     return (await _outs(db, [req]))[0]

@@ -34,6 +34,12 @@ class UserOut(BaseModel):
     # OAuth, no password to change) - the settings page uses this to decide
     # whether to show a change-password form at all.
     sign_in_method: str = "password"
+    # Two-step sign-in (SZ-18): required for anyone with admin access on
+    # Supabase auth; passed when this session's token is aal2; enforced when
+    # MFA_ENFORCE is on (otherwise admin pages only log its absence).
+    mfa_required: bool = False
+    mfa_passed: bool = False
+    mfa_enforced: bool = False
     created_at: datetime | None = None
     # Set when this user is a student (Student.user_id points here) - the
     # frontend uses it to send a student straight to their own Kids view
