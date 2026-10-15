@@ -16,7 +16,7 @@ React (Vite/TS) → FastAPI → Postgres. Two environments only: **local** and *
 
 - `backend/` — FastAPI + SQLAlchemy async + Alembic (**Alembic is the schema source of truth**). Dual auth via `AUTH_MODE` (`backend/auth.py`):
   - `local` — email/username/password, self-serve `/auth/register`, bcrypt, HS256 JWTs. No Google SSO.
-  - `supabase` (prod) — Supabase Auth handles Google SSO + password; backend verifies the Supabase JWT against JWKS (slow-path fallback to `/auth/v1/user`) and auto-provisions a `users` row on first sight. No MFA.
+  - `supabase` (prod) — Supabase Auth handles Google SSO + password; backend verifies the Supabase JWT against JWKS (slow-path fallback to `/auth/v1/user`) and auto-provisions a `users` row on first sight. No MFA. On Fly the API refuses to start unless `AUTH_MODE=supabase` (unset means `local`), and serves no `/docs` or `/openapi.json`.
 - `frontend/` — Vite/React/TS. `src/authConfig.ts` reads `VITE_*` at build time; `src/context/AuthContext.tsx` switches between local-JWT and Supabase auth. `frontend/focus/` is the kids' Focus app, served same-origin at `/focus/`.
 - `scraper/` — standalone FastAPI + Playwright (headless Chromium), deliberately generic (`/fetch-html`, `/fetch-paginated`, `/fetch-raw`, `/health`). **No site-specific parsing lives there** — call `backend/scraper_client.py` and parse in the backend, so the scraper stays swappable.
 - Three Fly apps: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`.
