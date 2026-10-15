@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import LocalEvent
+from services.client_ip import client_ip
 from services.geocoding import find_place
 from services.i18n import fold, folded
 
@@ -170,7 +171,7 @@ async def find_a_place(body: PlaceIn, request: Request):
     what someone typed - quite possibly their home address - travels in the
     body, not in a URL that access logs and RUM record. Nothing about the
     lookup is stored; the page keeps the answer in the browser."""
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request) or "unknown"
     now = time.monotonic()
     window = _place_requests_by_ip[ip]
     while window and now - window[0] > _PLACE_WINDOW_SECONDS:

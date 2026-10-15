@@ -16,6 +16,8 @@ import re
 import httpx
 from fastapi import Request
 
+from services.client_ip import client_ip
+
 logger = logging.getLogger(__name__)
 
 _VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
@@ -23,19 +25,6 @@ _VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
 class BotCheckUnavailable(Exception):
     """The check couldn't be run at all (no secret in prod, Cloudflare down)."""
-
-
-def client_ip(request: Request) -> str | None:
-    """Fly puts the real client address in Fly-Client-IP, which a client
-    can't forge. Elsewhere it's the first X-Forwarded-For entry, else the
-    socket peer."""
-    fly_ip = request.headers.get("fly-client-ip")
-    if fly_ip:
-        return fly_ip.strip()[:45]
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()[:45]
-    return request.client.host if request.client else None
 
 
 def request_source(request: Request) -> dict:

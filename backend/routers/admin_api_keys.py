@@ -21,6 +21,7 @@ from auth import generate_api_key, hash_api_key, require_super_admin
 from database import get_db
 from models import ApiKey, ApiKeyRequest, User
 from permissions import PERMISSION_KEYS
+from services.client_ip import client_ip
 
 router = APIRouter(prefix="/admin/api-keys", tags=["admin-api-keys"], dependencies=[Depends(require_super_admin)])
 device_router = APIRouter(prefix="/auth/device", tags=["auth-device"])
@@ -227,7 +228,7 @@ async def device_start(payload: DeviceStartIn, request: Request, db: AsyncSessio
             user_code=user_code,
             device_code_hash=hash_api_key(device_code),
             client_name=payload.client_name.strip(),
-            requested_ip=request.client.host if request.client else None,
+            requested_ip=client_ip(request),
             status="pending",
             created_at=now,
             expires_at=now + DEVICE_REQUEST_TTL,

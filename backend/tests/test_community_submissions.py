@@ -13,6 +13,13 @@ from main import app
 from models import User
 
 
+@pytest.fixture(autouse=True)
+def _on_fly(monkeypatch):
+    # These tests tell callers apart by Fly-Client-IP, which is only believed
+    # on Fly (services/client_ip.py).
+    monkeypatch.setenv("FLY_MACHINE_ID", "test-machine")
+
+
 async def _admin_headers(client: AsyncClient) -> dict[str, str]:
     tag = uuid.uuid4().hex[:8]
     email = f"sub_admin_{tag}@example.com"
