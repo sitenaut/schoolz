@@ -23,6 +23,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+import anthropic
 import httpx
 from anthropic import AsyncAnthropic
 
@@ -45,6 +46,13 @@ _GEMINI_NON_CHAT_RE = re.compile(
 
 def gemini_chat_model(model_id: str) -> bool:
     return model_id.startswith("gemini-") and not _GEMINI_NON_CHAT_RE.search(model_id)
+
+
+class ProviderUnavailable(Exception):
+    """The model provider refused or couldn't be reached (spend limit, rate
+    limit, outage, bad key). The chat answers with a plain "not available"
+    instead of a 500: on 2026-10-15 the public key hit its monthly limit
+    and every visitor's question got "Internal server error"."""
 
 
 @dataclass
@@ -89,13 +97,16 @@ class AnthropicProvider:
         system_blocks: list[dict[str, Any]] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         if dynamic_system:
             system_blocks.append({"type": "text", "text": dynamic_system})
-        response = await self._client.messages.create(
-            model=model,
-            max_tokens=1024,
-            system=system_blocks,
-            tools=tools,
-            messages=_with_tail_breakpoint([{**m, "content": _strip_private(m["content"])} for m in messages]),
-        )
+        try:
+            response = await self._client.messages.create(
+                model=model,
+                max_tokens=1024,
+                system=system_blocks,
+                tools=tools,
+                messages=_with_tail_breakpoint([{**m, "content": _strip_private(m["content"])} for m in messages]),
+            )
+        except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
+            raise ProviderUnavailable(f"anthropic: {exc}") from exc
         # Only text/tool_use blocks are replayed. The newest models can return
         # "thinking" blocks unprompted; the history doesn't need them, and the
         # 0.34 SDK this was written against 400'd replaying one ("thinking.text:
@@ -256,12 +267,15 @@ class OpenAICompatibleProvider:
         }
         if reasoning_effort:
             body["reasoning_effort"] = reasoning_effort
-        async with httpx.AsyncClient(timeout=90) as client:
-            response = await client.post(
-                f"{self.base_url}/chat/completions", json=body, headers={"Authorization": f"Bearer {self.api_key}"},
-            )
+        try:
+            async with httpx.AsyncClient(timeout=90) as client:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions", json=body, headers={"Authorization": f"Bearer {self.api_key}"},
+                )
+        except httpx.HTTPError as exc:
+            raise ProviderUnavailable(f"{self.name}: {type(exc).__name__}: {exc}") from exc
         if response.status_code >= 400:
-            raise RuntimeError(f"{self.name} returned {response.status_code}: {response.text[:500]}")
+            raise ProviderUnavailable(f"{self.name} returned {response.status_code}: {response.text[:500]}")
         data = response.json()
         message = (data.get("choices") or [{}])[0].get("message") or {}
         u = data.get("usage") or {}

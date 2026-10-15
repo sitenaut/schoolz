@@ -15,24 +15,32 @@ this is deliberately not that, to avoid adding a new infra dependency for
 a first version of a feature nobody's used in prod yet.
 """
 
+import logging
 import time
 from collections import defaultdict, deque
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_optional_user, oauth2_scheme
 from database import get_db
 from models import User
+from services.chat_providers import ProviderUnavailable
 from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
-from services.i18n import request_lang
 from services.chatbot_personal import LocalEventTools, PersonalTools
 from services.client_ip import client_ip
+from services.i18n import request_lang
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+UNAVAILABLE_REPLY = (
+    "The assistant isn't available right now - please try again later. Everything else on schoolz "
+    "(school pages, the calendar, lunch menus) works as usual."
+)
 
 _WINDOW_SECONDS = 600
 _MAX_MESSAGES_PER_WINDOW = 20
@@ -96,6 +104,10 @@ async def send_chat_message(
             config=settings.signed_in if personal else settings.anonymous,
             lang=lang,
         )
+    except ProviderUnavailable as exc:
+        logger.error("chatbot_provider_unavailable", extra={"error": str(exc)[:500]})
+        # The visitor's history comes back unchanged, so asking again later just works.
+        return ChatResponse(reply=UNAVAILABLE_REPLY, model=None, history=body.history, escalated=body.escalated)
     finally:
         await local_events.aclose()
         if personal:
