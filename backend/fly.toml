@@ -15,6 +15,10 @@ primary_region = "ewr"
   # Refuse to start with a missing or malformed setting (settings.py). The
   # first deploy of the check logged clean on both processes.
   SETTINGS_ENFORCE = "1"
+  # Every stored credential is encrypted (scripts/encrypt_secrets.py counted
+  # 0 plaintext): a missing key or a plaintext row is now an error, not a
+  # silent fallback (crypto.py).
+  ENCRYPTION_REQUIRE = "1"
   AUTH_MODE = "supabase"
   PORT = "8000"
   # Emit the stable HTTP semantic conventions
