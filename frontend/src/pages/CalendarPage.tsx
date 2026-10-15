@@ -474,7 +474,7 @@ export function CalendarPage() {
             </button>
           )}
         </div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label={t("Filter events")}>
           <option value="">{t("Events, deadlines, grading & initiatives")}</option>
           <option value="event">{t("Events only")}</option>
           <option value="deadline">{t("Deadlines only")}</option>

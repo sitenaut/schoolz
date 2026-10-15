@@ -274,7 +274,9 @@ export function AppShell() {
           </Link>
         )}
         <ThemeToggle />
-        <Link to="/start" className="ghost">
+        {/* On a phone a signed-in header (bell, inbox, admin icons) has no
+            room for this pill, so it moves into the account menu there. */}
+        <Link to="/start" className={`ghost${user ? " mySchoolsSignedIn" : ""}`}>
           {t("My schools")}
         </Link>
         {user ? <UserMenu /> : <AuthPopover />}

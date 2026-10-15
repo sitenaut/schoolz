@@ -5,23 +5,24 @@
   --bg: #f5f7f9;
   --card: #ffffff;
   --ink: #17202a;
-  --ink-2: #5b6672;
-  --ink-3: #8b95a0;
+  --ink-2: #57616d;
+  --ink-3: #697179;
   --line: #e2e7ec;
   --line-2: #cfd6dd;
-  --primary: #1f7f9f;
+  --primary: #1c7390;
   --primary-ink: #ffffff;
   --primary-soft: #e3f1f6;
-  /* Darker than --primary: only for text set directly on --primary-soft
-     (e.g. the active-nav state), where --primary itself falls just short
-     of the 4.5:1 contrast ratio. --primary alone still passes against
-     --bg/--card, so it's left as-is everywhere else. */
+  /* Light-theme text tokens are set to clear WCAG AA (4.5:1) on every
+     surface they're used on, including the -soft tints (an axe run found
+     --ink-3, --primary on --primary-soft, and ok/warn/bad on their tints
+     short). --primary-strong is still the darker choice for emphasis on
+     --primary-soft. */
   --primary-strong: #185a70;
-  --ok: #2f8f5b;
+  --ok: #27794d;
   --ok-soft: #e4f3ea;
-  --warn: #b7791f;
+  --warn: #946219;
   --warn-soft: #fbf0d9;
-  --bad: #c2413a;
+  --bad: #b63d36;
   --bad-soft: #fae4e2;
   /* The one thing on a page a first-time visitor should press (the school
      picker's button). Orange, darker than a pure orange so white text on it
@@ -38,10 +39,10 @@
      automatically against whichever theme's tokens are active. */
   --weekend-tint: color-mix(in srgb, var(--bad) 7%, var(--line));
   --district: #5b6672;
-  --sch-1: #1f7f9f;
+  --sch-1: #1d7998;
   --sch-2: #7a4fb5;
-  --sch-3: #c2601f;
-  --sch-4: #2f8f5b;
+  --sch-3: #b0571c;
+  --sch-4: #297f50;
   --sch-5: #b5336f;
   --sch-6: #4d5fc9;
   --radius: 12px;
@@ -88,7 +89,7 @@
     --card: #1f232a;
     --ink: #eef1f4;
     --ink-2: #aab3bd;
-    --ink-3: #737d88;
+    --ink-3: #838c96;
     --nav-ink: #9aa8b8;
     --line: #2c323a;
     --line-2: #3a424c;
@@ -123,7 +124,7 @@
   --card: #1f232a;
   --ink: #eef1f4;
   --ink-2: #aab3bd;
-  --ink-3: #737d88;
+  --ink-3: #838c96;
   --nav-ink: #9aa8b8;
   --line: #2c323a;
   --line-2: #3a424c;
@@ -327,6 +328,49 @@ h3 {
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  white-space: nowrap;
+}
+.userPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.userPill svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+/* A phone header holds the brand, the season badge, the theme toggle,
+   My schools and Sign in - plus bell, inbox and admin icons when signed
+   in. Without nowrap the pills wrapped onto two lines. On a narrow screen
+   tighten the spacing, shrink the signed-in pill to its icon (the username
+   is the one label of unknown length; the button keeps it as its aria-label
+   and title), and once signed in move My schools into the account menu.
+   With bell, inbox and admin icons the header needed ~430px, wider than
+   most phones; signed out it fits with the pill. */
+.userMenuMySchools {
+  display: none !important;
+}
+@media (max-width: 480px) {
+  .userMenuMySchools {
+    display: flex !important;
+  }
+  .shell-top {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .shell-top .ghost {
+    padding: 6px 10px;
+  }
+  .userPillName {
+    display: none;
+  }
+  .mySchoolsSignedIn {
+    display: none;
+  }
+  .shell-top .userPill {
+    padding: 7px 9px;
+  }
 }
 
 .shell-nav {
@@ -720,8 +764,15 @@ h3 {
   border-style: dashed;
   color: var(--ink-2);
 }
+/* "Off" reads as muted rather than translucent: opacity: 0.5 halved the
+   text contrast below WCAG AA. */
 .chip[aria-pressed="false"] {
-  opacity: 0.5;
+  color: var(--ink-2);
+  background: var(--bg);
+  border-style: dashed;
+}
+.chip[aria-pressed="false"] .dot {
+  opacity: 0.45;
 }
 .chip[aria-pressed="true"] {
   border-color: var(--c, var(--primary));
@@ -1255,6 +1306,10 @@ h3 {
 .school-hd .meta a {
   text-decoration: none;
   font-weight: 600;
+  /* WCAG 2.5.8: a tap target is at least 24px tall. */
+  display: inline-block;
+  min-height: 24px;
+  line-height: 24px;
 }
 .sticky-actions {
   position: sticky;
@@ -1465,6 +1520,9 @@ h3 {
   font-size: 14px;
 }
 .contact .how {
+  display: block;
+  min-height: 24px;
+  line-height: 24px;
   font-size: 12.5px;
   color: var(--primary);
   font-weight: 600;
@@ -2612,7 +2670,9 @@ select {
 }
 .blkNow .blkL,
 .blkNow .blkT {
-  color: #fff;
+  /* Not #fff: dark mode's school colours are light, so the text flips to
+     --primary-ink (white in light mode, near-black in dark). */
+  color: var(--primary-ink);
 }
 .dayBlocksNext {
   margin-top: 6px;

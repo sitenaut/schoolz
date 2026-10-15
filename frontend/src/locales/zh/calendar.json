@@ -35,5 +35,6 @@
   "No events match \"{{term}}\".": "没有与“{{term}}”匹配的活动。",
   "Nothing found for this day.": "这一天没有内容。",
   "Nothing found this month.": "本月没有内容。",
-  "All {{name}}": "{{name}}的所有学校"
+  "All {{name}}": "{{name}}的所有学校",
+  "Filter events": "筛选活动"
 }

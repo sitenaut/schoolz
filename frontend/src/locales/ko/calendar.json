@@ -35,5 +35,6 @@
   "No events match \"{{term}}\".": "\"{{term}}\"와(과) 일치하는 일정이 없습니다.",
   "Nothing found for this day.": "이 날짜에는 일정이 없습니다.",
   "Nothing found this month.": "이번 달에는 일정이 없습니다.",
-  "All {{name}}": "{{name}} 전체"
+  "All {{name}}": "{{name}} 전체",
+  "Filter events": "행사 필터"
 }
