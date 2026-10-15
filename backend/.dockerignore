@@ -1,0 +1,10 @@
+# Only what the app runs goes into the image. Tests run in CI and, locally,
+# against the bind-mounted tree (docker-compose.yml), never from the image.
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+tests/
+*.env
+.env*

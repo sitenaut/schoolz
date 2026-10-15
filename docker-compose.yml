@@ -31,6 +31,8 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
     command: ["alembic", "upgrade", "head"]
     restart: "no"
+    healthcheck:
+      disable: true  # the image's check is for the API; this one exits
 
   backend:
     build: ./backend
@@ -117,6 +119,8 @@ services:
       OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-}
     command: ["python", "-m", "scheduler.entrypoint"]
     restart: unless-stopped
+    healthcheck:
+      disable: true  # the image's check is for the API; the scheduler serves no HTTP
 
   scraper:
     build: ./scraper

@@ -12,6 +12,7 @@ from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
 from scheduler.runner import build_apscheduler_job, forget_apscheduler_job, queue_first_runs, queue_missed_runs
+from settings import check_settings
 
 setup_logging()
 telemetry.setup_telemetry("schoolz-scheduler")
@@ -131,6 +132,7 @@ def _handle_stop_signal(*_args) -> None:
 
 
 async def main() -> None:
+    check_settings("scheduler")
     aps_scheduler = AsyncIOScheduler(timezone="UTC")
     aps_scheduler.start()
     logger.info("scheduler_started")

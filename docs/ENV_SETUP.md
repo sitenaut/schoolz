@@ -61,6 +61,12 @@ as its env var, so its reference is `op://<vault>/<NAME>/credential`.
 - The CLI: install `op` (1Password CLI 2.x) on your PATH. Never echo a value;
   `op run` masks them in output.
 
+**Adding a variable the backend reads?** List it in `backend/settings.py`
+too (its kind, and which deployed processes need it). The API and scheduler
+check every listed variable at start-up and log `settings_validation_failed`
+naming what is missing or malformed; with `SETTINGS_ENFORCE=1` they refuse
+to start instead.
+
 The env files below still hold the **non-secret** config. The secret-holding
 files (`db.local.env`, `secrets.local.env`, `secrets.prod.env`, `db.prod.env`)
 are listed for what each variable means; their values belong in the vault.
