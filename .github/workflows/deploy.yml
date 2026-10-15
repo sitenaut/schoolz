@@ -1,9 +1,16 @@
 name: Deploy
 
+# A push to main deploys what changed, once CI passes on the merged code:
+# backend/** -> schoolz-api, frontend/** -> schoolz-web, nothing else ->
+# nothing. "Changed" means since the commit each app is running, read from
+# its image label (sha-<commit>), so a cancelled or failed run is caught up by
+# the next push. A backend deploy runs "DB migrate" first when a migration
+# could be pending. After each deploy a smoke check runs; if the deploy or the
+# smoke check fails, the image that was running before is put back.
+# By hand: Actions -> Deploy -> Run workflow (main only). The scraper is
+# deployed by hand only (target=scraper).
 on:
-  workflow_run:
-    workflows: ["DB migrate"]
-    types: [completed]
+  push:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -12,57 +19,205 @@ on:
         required: true
         default: "both"
         type: choice
-        options: ["all", "both", "backend", "frontend", "scraper"]
+        options: ["both", "backend", "frontend", "scraper"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-fly
+  cancel-in-progress: false
 
 jobs:
-  deploy-backend:
-    if: >
-      github.event_name == 'workflow_dispatch' &&
-      (github.event.inputs.target == 'backend' || github.event.inputs.target == 'both' || github.event.inputs.target == 'all') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+  ci:
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/ci.yml
+
+  changes:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: prod
+    outputs:
+      backend: ${{ steps.diff.outputs.backend }}
+      frontend: ${{ steps.diff.outputs.frontend }}
+      migrate: ${{ steps.diff.outputs.migrate }}
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+      - name: What changed since each app's running commit
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          if [ "$EVENT" = workflow_dispatch ]; then
+            case "$TARGET" in
+              both)     echo backend=true >> "$GITHUB_OUTPUT"; echo frontend=true >> "$GITHUB_OUTPUT"; echo migrate=true >> "$GITHUB_OUTPUT" ;;
+              backend)  echo backend=true >> "$GITHUB_OUTPUT"; echo migrate=true >> "$GITHUB_OUTPUT" ;;
+              frontend) echo frontend=true >> "$GITHUB_OUTPUT" ;;
+            esac
+            exit 0
+          fi
+          # running_base <fly app>: the commit the app runs, or "" if unknown
+          running_base() {
+            tag=$(flyctl image show -a "$1" --json | jq -r '[.[] | .Tag // empty][0] // ""')
+            base=${tag#sha-}
+            if [[ "$tag" == sha-* ]] && git cat-file -e "$base^{commit}" 2>/dev/null \
+                && git merge-base --is-ancestor "$base" "$GITHUB_SHA"; then
+              echo "$base"
+            else
+              echo "$1 runs '$tag', not a known commit on main" >&2
+            fi
+          }
+          changed() {  # changed <base> <paths...>; an unknown base counts as changed
+            [ -z "$1" ] && return 0
+            ! git diff --quiet "$1" "$GITHUB_SHA" -- "${@:2}"
+          }
+          api=$(running_base schoolz-api)
+          web=$(running_base schoolz-web)
+          if changed "$api" backend/; then
+            echo "backend: deploying (running ${api:-unknown})"; echo backend=true >> "$GITHUB_OUTPUT"
+            # With an unknown base this migrates too: "upgrade head" with nothing pending is a no-op.
+            if changed "$api" backend/alembic backend/models.py; then echo migrate=true >> "$GITHUB_OUTPUT"; fi
+          else
+            echo "backend: nothing in backend/ changed since $api"
+          fi
+          if changed "$web" frontend/; then
+            echo "frontend: deploying (running ${web:-unknown})"; echo frontend=true >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend: nothing in frontend/ changed since $web"
+          fi
+
+  migrate:
+    needs: [ci, changes]
+    if: >
+      always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
+      needs.changes.outputs.migrate == 'true'
+    uses: ./.github/workflows/migrate.yml
+    secrets: inherit
+
+  backend:
+    name: Deploy backend (schoolz-api)
+    needs: [ci, changes, migrate]
+    if: >
+      always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
+      needs.changes.outputs.backend == 'true' &&
+      (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 30
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      APP: schoolz-api
+      URL: https://schoolz-api.sitenaut.com
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+
+      - name: Remember the running image
+        id: prev
+        run: |
+          ref=$(flyctl image show -a "$APP" --json | jq -r '[.[] | select(.Digest != null and .Digest != "")][0] | "\(.Registry)/\(.Repository)@\(.Digest)"')
+          echo "Running now: $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        working-directory: backend
+        run: flyctl deploy --remote-only --image-label "sha-${GITHUB_SHA::12}"
+
+      - name: Smoke
+        # /schools reads the database; /mcp/ is asked with the real public
+        # Host header (an mcp upgrade once refused every prod Host with 421
+        # while 127.0.0.1 still worked).
+        run: |
+          answer() {  # answer <description> <curl args...>
+            for _ in $(seq 1 20); do
+              if curl -fsS --max-time 10 -o /dev/null "${@:2}"; then echo "ok: $1"; return 0; fi
+              sleep 6
+            done
+            echo "::error::$1 did not answer"; return 1
+          }
+          answer "/health" "$URL/health"
+          answer "/schools" "$URL/schools"
+          answer "MCP initialize" -X POST "$URL/mcp/" \
+            -H 'Accept: application/json, text/event-stream' -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"deploy-smoke","version":"0"}}}'
+
+      - name: Roll back to the image that was running
+        if: failure() && steps.prev.outputs.ref != '' && steps.prev.outputs.ref != 'null/null@null'
         working-directory: backend
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          PREV: ${{ steps.prev.outputs.ref }}
+        run: |
+          echo "::warning::Deploy or smoke check failed; putting back $PREV"
+          flyctl deploy --image "$PREV" --strategy immediate
+          curl -fsS --max-time 10 "$URL/health"
 
-  deploy-frontend:
-    needs: deploy-backend
-    # A skipped backend job must NOT skip this one: with `target=frontend`
-    # the backend job is skipped by design, and requiring its result to be
-    # 'success' made "frontend" an option that could never deploy anything
-    # (confirmed 2026-09-18: two frontend-only dispatches both ended
-    # "skipped" in 3s). A FAILED backend still blocks, as before. The
-    # target check keeps `target=backend` from shipping the frontend too.
+  frontend:
+    name: Deploy frontend (schoolz-web)
+    needs: [ci, changes, backend]
+    # After the backend when both changed; on its own when only it did. A
+    # failed backend still blocks it.
     if: >
-      always() &&
-      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
-      (github.event_name != 'workflow_dispatch' ||
-       github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' || github.event.inputs.target == 'all')
+      always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
+      needs.changes.outputs.frontend == 'true' &&
+      (needs.backend.result == 'success' || needs.backend.result == 'skipped')
     runs-on: ubuntu-latest
     environment: prod
+    timeout-minutes: 20
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      APP: schoolz-web
+      URL: https://schoolz.sitenaut.com
     steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --build-arg VITE_APP_VERSION=${GITHUB_SHA::7}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+
+      - name: Remember the running image
+        id: prev
+        run: |
+          ref=$(flyctl image show -a "$APP" --json | jq -r '[.[] | select(.Digest != null and .Digest != "")][0] | "\(.Registry)/\(.Repository)@\(.Digest)"')
+          echo "Running now: $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        working-directory: frontend
+        run: flyctl deploy --remote-only --image-label "sha-${GITHUB_SHA::12}" --build-arg "VITE_APP_VERSION=${GITHUB_SHA::7}"
+
+      - name: Smoke
+        # /focus/ is a separate build in the same image; it once answered 500
+        # while / was fine.
+        run: |
+          for path in / /focus/; do
+            ok=
+            for _ in $(seq 1 20); do
+              if curl -fsS --max-time 10 -o /dev/null "$URL$path"; then ok=1; echo "ok: $path"; break; fi
+              sleep 6
+            done
+            [ -n "$ok" ] || { echo "::error::$URL$path did not answer"; exit 1; }
+          done
+
+      - name: Roll back to the image that was running
+        if: failure() && steps.prev.outputs.ref != '' && steps.prev.outputs.ref != 'null/null@null'
         working-directory: frontend
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          PREV: ${{ steps.prev.outputs.ref }}
+        run: |
+          echo "::warning::Deploy or smoke check failed; putting back $PREV"
+          flyctl deploy --image "$PREV" --strategy immediate
 
-  deploy-scraper:
-    if: >
-      github.event_name == 'workflow_dispatch' &&
-      (github.event.inputs.target == 'scraper' || github.event.inputs.target == 'all')
+  scraper:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'scraper' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
       - run: flyctl deploy --remote-only
         working-directory: scraper
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

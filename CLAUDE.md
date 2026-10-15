@@ -127,7 +127,7 @@ Docs:
 
 Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`. Prod admin changes go through `scripts/schoolz-api.sh`, never a direct DB connection.
 
-**A merge may deploy nothing.** `migrate.yml` runs only when a push to `main` touches `backend/alembic/**` or `backend/models.py`, and `deploy.yml` runs only after migrate or by manual dispatch — so a merge touching neither path runs neither. Deploy with `gh workflow run deploy.yml -f target=both` and check `gh run list --branch main`. Procedure and prod facts: the `deploy-schoolz` skill.
+**A merge deploys what changed, or rolls itself back.** `main` takes only PRs whose `backend` and `frontend` checks pass. Every push to `main` runs `deploy.yml`: CI again on the merged code, then each app whose directory changed since the commit it runs (its `sha-` image label), migrating first when a migration changed, then a smoke check that redeploys the previous image on failure. A migration is never rolled back, so migrations only add. Procedure and prod facts: the `deploy-schoolz` skill.
 
 ## Testing
 

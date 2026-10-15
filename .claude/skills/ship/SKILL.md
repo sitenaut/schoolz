@@ -18,7 +18,6 @@ the deploy. Deploy mechanics and the workflow-chaining gotcha live in
   could hold a secret (`env/`, `.env*`).
 - Run what the change touches, in Docker for the backend:
   - backend: `docker exec schoolz-api-local sh -c 'cd /app && python -m pytest -q'`
-    (known unrelated failure: `test_kids_api.py::test_assignment_suggestion_is_cached_and_shared_across_the_class`)
   - frontend: `cd frontend && npm run test && npm run build`
 - Stop and report if anything new fails. Don't ship red.
 
@@ -42,13 +41,11 @@ more than today's work, say so before merging.
 
 ## 5. Deploy, and confirm what actually ran
 
-`gh run list --branch main --limit 5` after the merge.
-
-- Change touched `backend/alembic/**` or `backend/models.py` (even a comment):
-  "DB migrate" runs on push and chains into "Deploy" by itself. Wait for both.
-- Otherwise nothing fires: `gh workflow run deploy.yml -f target=<backend|frontend|both>`.
-  Pick the target from what changed; `both` when unsure. The scraper is **not**
-  in `deploy.yml` (`fly deploy` from `scraper/`).
+The merge starts "Deploy" by itself: CI on the merged code, then whatever
+changed since each app's running commit, migrating first when a migration
+changed, with a smoke check and automatic rollback (see `deploy-schoolz`).
+Find it with `gh run list --workflow deploy.yml --branch main --limit 3`. The
+scraper deploys by hand only (`-f target=scraper`).
 
 Wait quietly, one background command per run (never `gh run watch` under
 Monitor, and no chained `sleep`):
