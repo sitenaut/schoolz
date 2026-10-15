@@ -41,7 +41,7 @@ admin to review, the same as a submission through the website's own
 
 import os
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -51,6 +51,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from services.app_help import app_help
+from services.school_today import classify_day, local_date, other_grades_only
 
 
 def _env_list(name: str) -> list[str]:
@@ -117,6 +118,38 @@ _MAX_CALENDAR_ITEMS = 80
 
 # What list_schools returns per school: enough to pick one and call its tools.
 _SCHOOL_DIRECTORY_FIELDS = ("id", "slug", "name", "short_name", "school_type", "address", "district_id")
+
+
+_DAY_EFFECTS = {
+    "closed": "no school",
+    "early_dismissal": "early dismissal",
+    "delayed": "delayed opening",
+    "open": "none - not a closing, the school day runs as usual",
+}
+
+
+def _with_day_effect(items: list[Any]) -> list[Any]:
+    """Says on each calendar item whether it changes the school day, by the
+    same rules as the Today view (school_today.classify_day). Haiku read
+    "Board of Education Election Day" as a closing and told a parent there
+    was no school; the item itself now says it isn't one."""
+    return [
+        {**i, "day_effect": _DAY_EFFECTS[classify_day([str(i.get("title") or "")])[0]]} if isinstance(i, dict) else i
+        for i in items
+    ]
+
+
+def _days_covered(item: dict) -> list[date]:
+    """school_today._item_date_range for a /calendar row: an all-day item's
+    end_date is the exclusive day after its last day."""
+    try:
+        start = local_date(datetime.fromisoformat(str(item["start_date"])))
+        end = local_date(datetime.fromisoformat(str(item["end_date"]))) if item.get("end_date") else start
+    except (KeyError, ValueError):
+        return []
+    if item.get("is_all_day") and item.get("end_date"):
+        end -= timedelta(days=1)
+    return [start + timedelta(days=n) for n in range(max((end - start).days, 0) + 1)]
 
 
 def _finalize(data: Any) -> Any:
@@ -363,9 +396,59 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         strip. The single richest call for "what does a parent need to know
         about this school right now." It only looks about a week ahead: for
         "when is the next half day / day off", also search
-        list_calendar_items with q ("half day", "no school").
+        list_calendar_items with q ("half day", "no school"); for "is there
+        school on <a date>", call get_school_day.
         """
         return await _get(f"/schools/{school_id_or_slug}/today")
+
+    @mcp.tool()
+    async def get_school_day(school_id_or_slug: str, date: str) -> Any:
+        """Is there school at one school on one date, any distance ahead or
+        back - the one call for "is there school on Election Day", "closed
+        for Veterans Day?", "is Friday a half day?". `date` is YYYY-MM-DD:
+        work out a named day's date yourself first.
+
+        Returns `school_day` (regular school day / no school / early
+        dismissal / delayed opening / weekend), the `reason` when it isn't a
+        regular day, the rotation day, and that day's other calendar items.
+        Uses the same rules as the Today view: only an item that says closed
+        or no school closes it, so an event like "Board of Education
+        Election Day" leaves it a regular school day.
+        """
+        try:
+            day = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            return {"error": f"date must be YYYY-MM-DD, got '{date}'"}
+        school = await _get(f"/schools/{school_id_or_slug}")
+        if not isinstance(school, dict) or "error" in school:
+            return school
+        found = await _get("/calendar", {
+            "school_id": school["slug"],
+            "start": (day - timedelta(days=1)).isoformat(),
+            "end": (day + timedelta(days=1)).isoformat(),
+        })
+        if not isinstance(found, list):
+            return found
+        titles = [str(i.get("title") or "") for i in found if day in _days_covered(i)]
+        rotation = next((t for t in titles if _ROTATION_TITLE_RE.match(t)), None)
+        events = [t for t in titles if not _ROTATION_TITLE_RE.match(t)]
+        # "K-8 Single Session" is a half day for the K-8 schools only.
+        status, label = classify_day([t for t in events if not other_grades_only(t, school.get("school_type"))])
+        if status == "open":
+            school_day = "weekend" if day.weekday() >= 5 else "regular school day"
+            if school_day == "regular school day" and day.month in (7, 8) and not rotation:
+                school_day = "summer - no school unless a summer program is listed"
+        else:
+            school_day = _DAY_EFFECTS[status]
+        return {
+            "school": f"{school['name']}" + (f" in {where}" if (where := _town(school.get("address"))) else ""),
+            "date": day.isoformat(),
+            "weekday": day.strftime("%A"),
+            "school_day": school_day,
+            "reason": label if status != "open" else None,
+            "rotation_day": rotation,
+            "other_items": [t for t in events if classify_day([t])[0] == "open"],
+        }
 
     @mcp.tool()
     async def list_school_staff(school_id_or_slug: str) -> Any:
@@ -614,6 +697,9 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         q: free-text search across title/description, unbounded by date -
            useful for finding something like "graduation" regardless of when
            start/end would otherwise cut the search off.
+        Each item's day_effect says whether it changes the school day (no
+        school / early dismissal / delayed opening / none) - an event named
+        after a holiday or an election is not a closing unless it says so.
         include_rotation_days: the "Day 1".."Day 6" rotation markers (which
            letter-day it is) are left out by default - there's one on nearly
            every school day, and listed as events they buried the real ones.
@@ -647,6 +733,7 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
             data.sort(key=lambda i: str(i.get("start_date") or ""))
         if not include_rotation_days:
             data = [i for i in data if not _ROTATION_TITLE_RE.match(str(i.get("title", "")))]
+        data = _with_day_effect(data)
         if len(data) > _MAX_CALENDAR_ITEMS:
             # An unfiltered search ("early dismissal" across every school)
             # came back as 750k tokens and the model call failed. Keep what's
