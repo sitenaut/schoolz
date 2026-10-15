@@ -30,6 +30,7 @@ from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
 from services.i18n import request_lang
 from services.chatbot_personal import LocalEventTools, PersonalTools
+from services.client_ip import client_ip
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -75,7 +76,7 @@ async def send_chat_message(
     db: AsyncSession = Depends(get_db),
     lang: str = Depends(request_lang),
 ) -> ChatResponse:
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request) or "unknown"
     _check_rate_limit(ip)
 
     # Only a token get_optional_user actually accepted is forwarded - the

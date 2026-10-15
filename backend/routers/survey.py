@@ -12,21 +12,9 @@ from auth import require_permission
 from database import get_db
 from models import School, SurveyResponse, User
 from schemas import SurveyResponseCreate, SurveyResponseOut, SurveySummaryOut
+from services.client_ip import client_ip
 
 router = APIRouter(prefix="/survey", tags=["survey"])
-
-
-def _client_ip(request: Request) -> str:
-    """Fly puts the real client address in Fly-Client-IP; behind any other
-    proxy it's the first X-Forwarded-For entry. request.client.host alone
-    would just be the proxy in both cases."""
-    fly_ip = request.headers.get("fly-client-ip")
-    if fly_ip:
-        return fly_ip.strip()
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else ""
 
 
 def _ip_hash(request: Request) -> str | None:
@@ -35,7 +23,7 @@ def _ip_hash(request: Request) -> str | None:
     responses from one person, which is the only question this needs to
     answer. Salting with a server-side secret means the hashes can't be
     brute-forced back into addresses from the small IPv4 space."""
-    ip = _client_ip(request)
+    ip = client_ip(request)
     if not ip:
         return None
     salt = os.getenv("JWT_SECRET", "schoolz-survey-salt")

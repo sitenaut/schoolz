@@ -28,6 +28,7 @@ from auth import get_current_user, hash_api_key, require_super_admin
 from database import get_db
 from models import ApiKey, SecretAccessRequest, User
 from routers.admin_api_keys import DEVICE_POLL_INTERVAL_S, _new_user_code, _normalize_user_code
+from services.client_ip import client_ip
 
 router = APIRouter(prefix="/admin/secret-requests", tags=["admin-secret-requests"])
 
@@ -144,7 +145,7 @@ async def start_secret_request(
             reason=payload.reason,
             command=payload.command,
             secret_names=payload.secret_names,
-            requested_ip=request.client.host if request.client else None,
+            requested_ip=client_ip(request),
             requested_by_user_id=requester.id,
             api_key_id=getattr(request.state, "api_key_id", None),
             status="pending",
