@@ -1,0 +1,919 @@
+# Generated. See tests/test_openapi_snapshot.py.
+
+## Routes
+GET /admin/api-keys
+  -> 200: list[ApiKeyOut]
+POST /admin/api-keys
+  body: ApiKeyIn
+  -> 201: ApiKeyCreated
+GET /admin/api-keys/requests/{user_code}
+  path user_code: string
+  -> 200: DeviceRequestOut
+POST /admin/api-keys/requests/{user_code}/approve
+  path user_code: string
+  body: DeviceApproveIn
+  -> 200: DeviceRequestOut
+POST /admin/api-keys/requests/{user_code}/deny
+  path user_code: string
+  -> 200: DeviceRequestOut
+DELETE /admin/api-keys/{key_id}
+  path key_id: string
+  -> 204: -
+PATCH /admin/api-keys/{key_id}
+  path key_id: string
+  body: ApiKeyPatch
+  -> 200: ApiKeyOut
+GET /admin/audit
+  query audience?: string | null
+  query detail?: boolean
+  query district_id?: string | null
+  -> 200: any
+GET /admin/audit/data-points
+  query audience?: string | null
+  query district_id?: string | null
+  -> 200: any
+GET /admin/audit/export.csv
+  query audience?: string | null
+  query district_id?: string | null
+  query school_id?: string | null
+  query statuses?: string | null
+  -> 200: any
+GET /admin/audit/schools/{school_id}
+  path school_id: string
+  query audience?: string | null
+  -> 200: any
+DELETE /admin/audit/schools/{school_id}/data-points/{key}/not-published
+  path key: string
+  path school_id: string
+  -> 200: any
+PUT /admin/audit/schools/{school_id}/data-points/{key}/not-published
+  path key: string
+  path school_id: string
+  body?: NotPublishedIn | null
+  -> 200: any
+POST /admin/audit/schools/{school_id}/data-points/{key}/run
+  path key: string
+  path school_id: string
+  -> 200: any
+POST /admin/audit/schools/{school_id}/run-all
+  path school_id: string
+  -> 200: any
+GET /admin/capture-page-kinds
+  -> 200: list[CapturePageKindOut]
+GET /admin/chatbot
+  -> 200: ChatbotAdminOut
+PUT /admin/chatbot
+  body: ChatbotSettings
+  -> 200: ChatbotAdminOut
+POST /admin/chatbot/compare
+  body: CompareIn
+  -> 200: list[CompareResult]
+GET /admin/chatbot/models
+  query provider: string
+  -> 200: list[string]
+GET /admin/config/export
+  -> 200: ConfigExport
+POST /admin/config/import
+  body: ConfigExport
+  -> 200: ConfigImportResult
+GET /admin/config/results
+  query district: list[string]
+  query state?: string
+  -> 200: ConfigResults
+GET /admin/permissions
+  -> 200: list[PermissionOut]
+GET /admin/roles
+  -> 200: list[RoleOut]
+POST /admin/roles
+  body: RoleIn
+  -> 201: RoleOut
+DELETE /admin/roles/{role_id}
+  path role_id: string
+  -> 204: -
+PUT /admin/roles/{role_id}
+  path role_id: string
+  body: RoleIn
+  -> 200: RoleOut
+GET /admin/secret-requests
+  -> 200: list[SecretRequestOut]
+POST /admin/secret-requests
+  body: SecretRequestIn
+  -> 201: SecretRequestStarted
+POST /admin/secret-requests/poll
+  body: SecretPollIn
+  -> 200: SecretPollOut
+GET /admin/secret-requests/{user_code}
+  path user_code: string
+  -> 200: SecretRequestOut
+POST /admin/secret-requests/{user_code}/approve
+  path user_code: string
+  -> 200: SecretRequestOut
+POST /admin/secret-requests/{user_code}/deny
+  path user_code: string
+  -> 200: SecretRequestOut
+GET /admin/users
+  query access?: string
+  query dir?: string
+  query limit?: integer
+  query offset?: integer
+  query q?: string | null
+  query role_id?: string | null
+  query sort?: string
+  -> 200: UsersPageOut
+PUT /admin/users/{user_id}/roles
+  path user_id: string
+  body: UserRolesIn
+  -> 200: AdminUserOut
+PUT /admin/users/{user_id}/super-admin
+  path user_id: string
+  body: SuperAdminIn
+  -> 200: AdminUserOut
+POST /auth/change-password
+  body: ChangePasswordRequest
+  -> 204: -
+POST /auth/device/start
+  body: DeviceStartIn
+  -> 200: DeviceStartOut
+POST /auth/device/token
+  body: DeviceTokenIn
+  -> 200: DeviceTokenOut
+POST /auth/forgot-password
+  body: ForgotPasswordRequest
+  -> 200: any
+POST /auth/login
+  body: LoginRequest
+  -> 200: TokenResponse
+DELETE /auth/me
+  body: DeleteAccountRequest
+  -> 204: -
+GET /auth/me
+  -> 200: UserOut
+PATCH /auth/me
+  body: UserUpdate
+  -> 200: UserOut
+POST /auth/register
+  body: RegisterRequest
+  -> 201: TokenResponse
+POST /auth/reset-password
+  body: ResetPasswordRequest
+  -> 200: TokenResponse
+GET /calendar
+  query category?: string | null
+  query end?: string(date-time) | null
+  query include_athletics?: boolean
+  query include_class_sources?: boolean
+  query q?: string | null
+  query school_id?: string | null
+  query school_ids?: string | null
+  query start?: string(date-time) | null
+  -> 200: list[SchoolContentItemOut]
+POST /chat
+  body: ChatRequest
+  -> 200: ChatResponse
+GET /contact-messages
+  -> 200: list[ContactMessageOut]
+POST /contact-messages
+  body: ContactMessageCreate
+  -> 201: object
+POST /contact-messages/read-all
+  -> 200: object
+GET /contact-messages/unread-count
+  -> 200: object
+DELETE /contact-messages/{message_id}
+  path message_id: string
+  -> 204: -
+POST /contact-messages/{message_id}/unread
+  path message_id: string
+  -> 200: ContactMessageOut
+GET /course-preferences
+  -> 200: list[CoursePreferenceOut]
+PUT /course-preferences/{course_key}
+  path course_key: string
+  body: CoursePreferenceIn
+  -> 200: CoursePreferenceOut
+GET /directory/staff
+  query category?: string | null
+  query district_id?: list[string]
+  query limit?: integer
+  query offset?: integer
+  query q?: string | null
+  query school_id?: string | null
+  query school_type?: string | null
+  -> 200: DirectoryPageOut
+GET /districts
+  -> 200: list[DistrictOut]
+POST /districts
+  body: DistrictCreate
+  -> 201: DistrictOut
+GET /districts/summary
+  -> 200: list[DistrictSummaryOut]
+PATCH /districts/{district_id}
+  path district_id: string
+  body: DistrictUpdate
+  -> 200: DistrictOut
+POST /districts/{district_id}/calendar-pdf/run-now
+  path district_id: string
+  -> 200: any
+POST /districts/{district_id}/calendar/run-now
+  path district_id: string
+  -> 200: any
+POST /districts/{district_id}/hs-rotation/run-now
+  path district_id: string
+  -> 200: any
+POST /districts/{district_id}/marking-period/run-now
+  path district_id: string
+  -> 200: any
+POST /districts/{district_id}/preschool-locations/run-now
+  path district_id: string
+  -> 200: any
+POST /districts/{district_id}/preschool-team/run-now
+  path district_id: string
+  -> 200: any
+POST /districts/{district_id}/run-now
+  path district_id: string
+  -> 200: any
+GET /districts/{district_id}/transportation
+  path district_id: string
+  -> 200: DistrictTransportationOut | null
+POST /districts/{district_id}/transportation/run-now
+  path district_id: string
+  -> 200: any
+GET /email-scanners
+  -> 200: list[EmailScannerOut]
+POST /email-scanners
+  body: EmailScannerCreate
+  -> 201: EmailScannerOut
+DELETE /email-scanners/{scanner_id}
+  path scanner_id: string
+  -> 204: -
+PATCH /email-scanners/{scanner_id}
+  path scanner_id: string
+  body: EmailScannerUpdate
+  -> 200: EmailScannerOut
+POST /email-scanners/{scanner_id}/run-now
+  path scanner_id: string
+  -> 200: any
+GET /gmail/auth-url
+  -> 200: any
+GET /gmail/callback
+  query code?: string | null
+  query state?: string | null
+  -> 200: any
+GET /gmail/connections
+  -> 200: any
+DELETE /gmail/disconnect
+  query google_email: string
+  -> 204: -
+GET /health
+  -> 200: any
+GET /invites/{token}
+  path token: string
+  -> 200: InvitePreviewOut
+POST /invites/{token}/accept
+  path token: string
+  -> 200: StudentOut
+GET /local-events
+  query categories?: string | null
+  query end?: string(date-time) | null
+  query is_free?: boolean | null
+  query limit?: integer
+  query near_lat?: number | null
+  query near_lng?: number | null
+  query offset?: integer
+  query q?: string | null
+  query radius_miles?: number | null
+  query source?: string | null
+  query start?: string(date-time) | null
+  -> 200: LocalEventListOut
+GET /local-events/facets
+  query end?: string(date-time) | null
+  query near_lat?: number | null
+  query near_lng?: number | null
+  query radius_miles?: number | null
+  query start?: string(date-time) | null
+  -> 200: LocalEventFacetsOut
+POST /local-events/place
+  body: PlaceIn
+  -> 200: PlaceOut
+GET /notifications
+  -> 200: list[NotificationOut]
+POST /notifications/read-all
+  -> 200: object
+GET /notifications/unread-count
+  -> 200: object
+POST /notifications/{notification_id}/read
+  path notification_id: string
+  -> 200: NotificationOut
+GET /page-views
+  query days?: integer
+  -> 200: PageVisitReport
+POST /page-views
+  body: PageViewIn
+  -> 204: -
+GET /page-views/campaign-report
+  -> 200: CampaignReport
+GET /scheduled-jobs
+  query enabled?: boolean | null
+  query kind?: string | null
+  query last_status?: string | null
+  -> 200: list[ScheduledJobOut]
+POST /scheduled-jobs
+  body: ScheduledJobCreate
+  -> 201: ScheduledJobOut
+POST /scheduled-jobs/import-billz
+  body: BillzImportIn
+  -> 200: BillzImportOut
+GET /scheduled-jobs/kinds
+  -> 200: list[JobKindOut]
+GET /scheduled-jobs/runs/summary
+  -> 200: JobRunSummaryOut
+POST /scheduled-jobs/test-fetch
+  body: TestFetchIn
+  -> 200: TestFetchOut
+DELETE /scheduled-jobs/{job_id}
+  path job_id: string
+  -> 204: -
+GET /scheduled-jobs/{job_id}
+  path job_id: string
+  -> 200: ScheduledJobOut
+PATCH /scheduled-jobs/{job_id}
+  path job_id: string
+  body: ScheduledJobUpdate
+  -> 200: ScheduledJobOut
+POST /scheduled-jobs/{job_id}/run-now
+  path job_id: string
+  -> 200: any
+GET /scheduled-jobs/{job_id}/runs
+  path job_id: string
+  query limit?: integer
+  -> 200: list[JobRunOut]
+GET /school-emails
+  -> 200: list[SchoolEmailMessageOut]
+GET /schools
+  -> 200: list[SchoolOut]
+POST /schools
+  body: SchoolCreate
+  -> 201: SchoolOut
+GET /schools/mine
+  -> 200: list[SchoolOut]
+GET /schools/{school_id}
+  path school_id: string
+  -> 200: SchoolOut
+PATCH /schools/{school_id}
+  path school_id: string
+  body: SchoolUpdate
+  -> 200: SchoolOut
+POST /schools/{school_id}/activities-calendar/run-now
+  path school_id: string
+  -> 200: any
+POST /schools/{school_id}/activities-site/run-now
+  path school_id: string
+  -> 200: any
+POST /schools/{school_id}/announcements/run-now
+  path school_id: string
+  -> 200: any
+POST /schools/{school_id}/bulletin/run-now
+  path school_id: string
+  -> 200: any
+GET /schools/{school_id}/class-years
+  path school_id: string
+  -> 200: list[SchoolClassYearOut]
+GET /schools/{school_id}/class-years/{grad_year}
+  path grad_year: integer
+  path school_id: string
+  -> 200: SchoolClassYearOut
+PATCH /schools/{school_id}/class-years/{grad_year}
+  path grad_year: integer
+  path school_id: string
+  body: SchoolClassYearUpdate
+  -> 200: SchoolClassYearOut
+GET /schools/{school_id}/class-years/{grad_year}/content
+  path grad_year: integer
+  path school_id: string
+  query category?: string | null
+  -> 200: list[SchoolContentItemOut]
+GET /schools/{school_id}/class-years/{grad_year}/payments
+  path grad_year: integer
+  path school_id: string
+  -> 200: list[ClassPaymentOut]
+POST /schools/{school_id}/class-years/{grad_year}/payments
+  path grad_year: integer
+  path school_id: string
+  body: ClassPaymentCreate
+  -> 201: ClassPaymentOut
+DELETE /schools/{school_id}/class-years/{grad_year}/payments/{payment_id}
+  path grad_year: integer
+  path payment_id: string
+  path school_id: string
+  -> 204: -
+PATCH /schools/{school_id}/class-years/{grad_year}/payments/{payment_id}
+  path grad_year: integer
+  path payment_id: string
+  path school_id: string
+  body: ClassPaymentUpdate
+  -> 200: ClassPaymentOut
+POST /schools/{school_id}/class-years/{grad_year}/payments/{payment_id}/tick
+  path grad_year: integer
+  path payment_id: string
+  path school_id: string
+  -> 200: ClassPaymentOut
+GET /schools/{school_id}/content
+  path school_id: string
+  query category?: string | null
+  query include_class_sources?: boolean
+  query include_past?: boolean
+  query include_superseded?: boolean
+  query q?: string | null
+  -> 200: list[SchoolContentItemOut]
+GET /schools/{school_id}/documents
+  path school_id: string
+  query include_superseded?: boolean
+  -> 200: list[SchoolDocumentOut]
+POST /schools/{school_id}/documents/run-now
+  path school_id: string
+  -> 200: any
+POST /schools/{school_id}/events-doc/run-now
+  path school_id: string
+  -> 200: any
+POST /schools/{school_id}/info/run-now
+  path school_id: string
+  -> 200: any
+GET /schools/{school_id}/lunch-menu
+  path school_id: string
+  query meal_type?: string
+  -> 200: LunchMenuOut | null
+GET /schools/{school_id}/newsletters
+  path school_id: string
+  -> 200: list[SmoreNewsletterOut]
+GET /schools/{school_id}/sacc
+  path school_id: string
+  -> 200: SaccProgramOut | null
+POST /schools/{school_id}/special-events/run-now
+  path school_id: string
+  -> 200: any
+GET /schools/{school_id}/staff
+  path school_id: string
+  -> 200: list[StaffMemberOut]
+POST /schools/{school_id}/staff/run-now
+  path school_id: string
+  -> 200: any
+GET /schools/{school_id}/today
+  path school_id: string
+  query on?: string(date) | null
+  -> 200: SchoolTodayOut
+GET /schools/{school_id}/transportation
+  path school_id: string
+  -> 200: SchoolTransportationOut | null
+POST /scraper/fetch-html
+  body: FetchHtmlRequest
+  -> 200: any
+GET /seasonal-attractions
+  query kind?: string | null
+  query max_miles?: number | null
+  query near_lat?: number | null
+  query near_lng?: number | null
+  query on?: string(date) | null
+  query open_only?: boolean
+  query scare_level?: string | null
+  query season?: string | null
+  -> 200: list[SeasonalAttractionOut]
+POST /seasonal-attractions
+  body: SeasonalAttractionIn
+  -> 201: SeasonalAttractionOut
+GET /seasonal-attractions/all
+  -> 200: list[SeasonalAttractionOut]
+DELETE /seasonal-attractions/{attraction_id}
+  path attraction_id: string
+  -> 204: -
+PATCH /seasonal-attractions/{attraction_id}
+  path attraction_id: string
+  body: SeasonalAttractionPatch
+  -> 200: SeasonalAttractionOut
+GET /seasonal-guides
+  query season?: string | null
+  -> 200: list[SeasonalGuideOut]
+POST /seasonal-guides
+  body: SeasonalGuideIn
+  -> 201: SeasonalGuideOut
+GET /seasonal-guides/all
+  -> 200: list[SeasonalGuideOut]
+DELETE /seasonal-guides/{guide_id}
+  path guide_id: string
+  -> 204: -
+PATCH /seasonal-guides/{guide_id}
+  path guide_id: string
+  body: SeasonalGuidePatch
+  -> 200: SeasonalGuideOut
+GET /smore-newsletters
+  -> 200: list[SmoreNewsletterOut]
+POST /smore-newsletters
+  body: SmoreNewsletterCreate
+  -> 201: SmoreNewsletterOut
+DELETE /smore-newsletters/{newsletter_id}
+  path newsletter_id: string
+  -> 204: -
+PATCH /smore-newsletters/{newsletter_id}
+  path newsletter_id: string
+  body: SmoreNewsletterUpdate
+  -> 200: SmoreNewsletterOut
+GET /smore-newsletters/{newsletter_id}/blocks
+  path newsletter_id: string
+  -> 200: list[SmoreBlockOut]
+POST /smore-newsletters/{newsletter_id}/reextract-all
+  path newsletter_id: string
+  query block_id?: string | null
+  -> 200: any
+POST /smore-newsletters/{newsletter_id}/run-now
+  path newsletter_id: string
+  -> 200: any
+GET /student-account-invites/{token}
+  path token: string
+  -> 200: StudentAccountInvitePreviewOut
+POST /student-account-invites/{token}/accept
+  path token: string
+  -> 200: StudentAccountStatusOut
+GET /students
+  -> 200: list[StudentOut]
+POST /students
+  body: StudentCreate
+  -> 201: StudentOut
+DELETE /students/{student_id}
+  path student_id: string
+  -> 204: -
+PATCH /students/{student_id}
+  path student_id: string
+  body: StudentUpdate
+  -> 200: StudentOut
+POST /students/{student_id}/account-invites
+  path student_id: string
+  body: StudentAccountInviteCreate
+  -> 201: StudentAccountInviteOut
+GET /students/{student_id}/bucket3/announcements
+  path student_id: string
+  -> 200: list[AnnouncementOut]
+GET /students/{student_id}/bucket3/audit
+  path student_id: string
+  -> 200: Bucket3AuditOut
+POST /students/{student_id}/bucket3/capture-status
+  path student_id: string
+  body: CaptureStatusIn
+  -> 200: CaptureStatusOut
+GET /students/{student_id}/bucket3/grades
+  path student_id: string
+  -> 200: Bucket3GradesOut
+GET /students/{student_id}/bucket3/help-kinds
+  path student_id: string
+  -> 200: list[HelpKindOut]
+POST /students/{student_id}/bucket3/import
+  path student_id: string
+  body: Bucket3ImportRequest
+  -> 200: Bucket3ImportResult
+GET /students/{student_id}/bucket3/late-policies
+  path student_id: string
+  -> 200: list[LatePolicyOut]
+PUT /students/{student_id}/bucket3/late-policies
+  path student_id: string
+  body: LatePolicyIn
+  -> 200: LatePolicyOut
+POST /students/{student_id}/bucket3/late-policies/parse
+  path student_id: string
+  body: LatePolicyParseRequest
+  -> 200: LatePolicyParseOut
+DELETE /students/{student_id}/bucket3/late-policies/{course_key}
+  path course_key: string
+  path student_id: string
+  -> 204: -
+GET /students/{student_id}/bucket3/progress
+  path student_id: string
+  -> 200: list[CourseProgressOut]
+POST /students/{student_id}/bucket3/reprocess
+  path student_id: string
+  -> 200: Bucket3ImportResult
+GET /students/{student_id}/bucket3/right-now
+  path student_id: string
+  -> 200: RightNowOut
+GET /students/{student_id}/bucket3/schedule
+  path student_id: string
+  -> 200: ChildScheduleOut
+GET /students/{student_id}/bucket3/student
+  path student_id: string
+  -> 200: Bucket3StudentOut
+POST /students/{student_id}/bucket3/suggestions/assignment/{work_item_id}
+  path student_id: string
+  path work_item_id: string
+  -> 200: SuggestionOut
+POST /students/{student_id}/bucket3/suggestions/plan
+  path student_id: string
+  -> 200: PlanOut
+GET /students/{student_id}/bucket3/teacher-emails
+  path student_id: string
+  -> 200: dict[list[string]]
+GET /students/{student_id}/bucket3/todo
+  path student_id: string
+  -> 200: TodoOut
+GET /students/{student_id}/bucket3/workitems
+  path student_id: string
+  -> 200: list[ChildWorkItemOut]
+POST /students/{student_id}/bucket3/workitems/{work_item_id}/ask-teacher
+  path student_id: string
+  path work_item_id: string
+  body: HelpDraftRequest
+  -> 200: HelpDraftOut
+POST /students/{student_id}/bucket3/workitems/{work_item_id}/complete
+  path student_id: string
+  path work_item_id: string
+  body: CompleteRequest
+  -> 200: CompleteOut
+DELETE /students/{student_id}/bucket3/workitems/{work_item_id}/late-exception
+  path student_id: string
+  path work_item_id: string
+  -> 204: -
+PUT /students/{student_id}/bucket3/workitems/{work_item_id}/late-exception
+  path student_id: string
+  path work_item_id: string
+  body: LateExceptionIn
+  -> 200: LateExceptionOut
+POST /students/{student_id}/invites
+  path student_id: string
+  body: InviteCreate
+  -> 201: InviteOut
+GET /students/{student_id}/specials
+  path student_id: string
+  -> 200: StudentSpecialsOut
+PUT /students/{student_id}/specials
+  path student_id: string
+  body: list[StudentSpecialIn]
+  -> 200: StudentSpecialsOut
+DELETE /students/{student_id}/student-account
+  path student_id: string
+  -> 204: -
+GET /students/{student_id}/student-account
+  path student_id: string
+  -> 200: StudentAccountStatusOut
+GET /submissions
+  query status_filter?: string | null
+  -> 200: list[CommunitySubmissionOut]
+POST /submissions
+  body?: multipart/form-data: Body_create_submission_submissions_post
+  -> 201: CommunitySubmissionOut
+GET /submissions/attempts
+  query limit?: integer
+  -> 200: list[SubmissionAttemptOut]
+DELETE /submissions/{submission_id}
+  path submission_id: string
+  -> 204: -
+GET /submissions/{submission_id}
+  path submission_id: string
+  -> 200: SubmissionReviewOut
+PATCH /submissions/{submission_id}
+  path submission_id: string
+  body: CommunitySubmissionUpdate
+  -> 200: CommunitySubmissionOut
+POST /submissions/{submission_id}/extract
+  path submission_id: string
+  -> 200: SubmissionReviewOut
+GET /submissions/{submission_id}/file
+  path submission_id: string
+  -> 200: any
+POST /submissions/{submission_id}/items
+  path submission_id: string
+  body: SubmissionItemIn
+  -> 201: SubmissionReviewOut
+DELETE /submissions/{submission_id}/items/{item_id}
+  path item_id: string
+  path submission_id: string
+  -> 200: SubmissionReviewOut
+PATCH /submissions/{submission_id}/items/{item_id}
+  path item_id: string
+  path submission_id: string
+  body: SubmissionItemIn
+  -> 200: SubmissionReviewOut
+POST /submissions/{submission_id}/items/{item_id}/unpublish
+  path item_id: string
+  path submission_id: string
+  -> 200: SubmissionReviewOut
+POST /submissions/{submission_id}/publish
+  path submission_id: string
+  body: SubmissionPublishIn
+  -> 200: SubmissionReviewOut
+POST /survey
+  body: SurveyResponseCreate
+  -> 201: SurveyResponseOut
+GET /survey/responses
+  -> 200: list[SurveyResponseOut]
+GET /survey/summary
+  -> 200: SurveySummaryOut
+
+## Schemas
+AdminUserOut { created_at: string | null, email: string, id: string, is_admin: boolean, role_ids: list[string], username: string }
+AnnouncementOut { body: string | null, course_name: string | null, id: string, link: string | null, posted_date: string | null, posted_raw: string | null, teacher_emails: list[string], teacher_name: string | null, title: string }
+ApiKeyCreated { created_at: string(date-time), created_by_email: string | null, expires_at: string(date-time) | null, id: string, key: string, key_prefix: string, last_used_at: string(date-time) | null, name: string, permissions: list[string] }
+ApiKeyIn { expires_in_days?: integer | null, name: string, permissions: list[string] }
+ApiKeyOut { created_at: string(date-time), created_by_email: string | null, expires_at: string(date-time) | null, id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string, permissions: list[string] }
+ApiKeyPatch { name?: string | null, permissions?: list[string] | null }
+AudienceConfig { escalation_model?: string | null, model?: string, provider?: string, reasoning_effort?: string | null }
+AuditMatchedOut { classroom: ChildWorkItemOut | null, genesis: ChildGradeEntryOut | null, title: string }
+BellPeriodEntry { end: string, name: string, start: string }
+BillzImportIn { text: string }
+BillzImportOut { created: list[ScheduledJobOut], skipped: list[BillzImportSkipOut] }
+BillzImportSkipOut { name: string, reason: string }
+Body_create_submission_submissions_post { bot_token?: string | null, description?: string | null, district_id?: string | null, file?: string | null, school_id?: string | null, submitter_email?: string | null, submitter_name?: string | null, url?: string | null, website?: string | null }
+Bucket3AuditOut { classroom_only: list[ChildWorkItemOut], classroom_only_all_time: list[ChildWorkItemOut], counts: dict[integer], current_marking_period?: string | null, genesis_only: list[ChildGradeEntryOut], matched: list[AuditMatchedOut] }
+Bucket3GradesOut { course_grades: list[ChildCourseGradeOut], entries: list[ChildGradeEntryOut], marking_period_discrepancies?: list[string], marking_periods?: list[ChildMarkingPeriodOut] }
+Bucket3ImportRequest { captures: list[object], exported_at?: string | null }
+Bucket3ImportResult { captures_processed: integer, captures_skipped_duplicate: integer, grade_entries_upserted?: integer, identity_mismatches?: list[string], page_kinds_seen: integer, schedule_blocks_upserted: integer, work_items_upserted: integer }
+Bucket3StudentOut { first_name: string, id: string, last_name: string, school_name: string | null, student_id: string, viewer_role: string }
+CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
+CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
+CaptureStatusIn { detail?: string | null, status: string }
+CaptureStatusOut { notified: boolean }
+ChangePasswordRequest { current_password: string, new_password: string }
+ChatMessage { content: list[object] | string, role: string }
+ChatRequest { escalated?: boolean, history?: list[ChatMessage], message: string }
+ChatResponse { escalated: boolean, history: list[ChatMessage], model: string | null, reply: string }
+ChatbotAdminOut { providers: list[ProviderStatus], settings: ChatbotSettings }
+ChatbotSettings { anonymous?: AudienceConfig, prices?: dict[ModelPrice], signed_in?: AudienceConfig }
+ChildCourseGradeOut { course_code: string, course_name: string | null, course_section: string, grade_percent: number | null, last_grade_posted: string | null, marking_period: string }
+ChildGradeEntryOut { category: string | null, course_code: string, course_name: string | null, course_section: string, description: string | null, external_uid: string, is_updated: boolean, marking_period: string | null, percent: number | null, score_earned: number | null, score_possible: number | null, status: string | null, title: string, weekday_date: string }
+ChildMarkingPeriodOut { end_date: string, label: string, start_date: string }
+ChildScheduleBlockOut { course_name: string, days: string | null, period: string, room: string | null, schedule_date: string | null, source: string, teacher: string | null, term: string | null, time_end: string | null, time_start: string | null }
+ChildScheduleOut { cycle_date: string | null, cycle_label: string | null, daily: list[ChildScheduleBlockOut], days?: list[ScheduleDayOut], list_view: list[ChildScheduleBlockOut] }
+ChildWorkItemOut { course_name: string | null, due_date: string | null, due_raw: string | null, external_uid: string, first_seen_at: string(date-time), id: string, item_type: string, last_seen_at: string(date-time), link: string | null, posted_date?: string | null, posted_raw?: string | null, status: string | null, teacher_name?: string | null, title: string }
+ClassPaymentCreate { amount_cents?: integer | null, kind: string, label: string, methods?: list[string] | null, notes?: string | null, payschools_item_name?: string | null, refundable_until?: string(date-time) | null, sequence: integer, window_closes_at?: string(date-time) | null, window_opens_at?: string(date-time) | null }
+ClassPaymentOut { amount_cents: integer | null, id: string, kind: string, label: string, methods: list[string] | null, notes: string | null, payschools_item_name: string | null, refundable_until: string(date-time) | null, school_class_year_id: string, sequence: integer, ticked?: boolean | null, window_closes_at: string(date-time) | null, window_opens_at: string(date-time) | null }
+ClassPaymentUpdate { amount_cents?: integer | null, kind?: string | null, label?: string | null, methods?: list[string] | null, notes?: string | null, payschools_item_name?: string | null, refundable_until?: string(date-time) | null, sequence?: integer | null, window_closes_at?: string(date-time) | null, window_opens_at?: string(date-time) | null }
+CommunitySubmissionOut { admin_notes: string | null, created_at: string(date-time), description: string | null, district_id: string | null, district_name?: string | null, extracted_at?: string(date-time) | null, file_content_type: string | null, file_name: string | null, file_size: integer | null, id: string, kind: string, reviewed_at: string(date-time) | null, school_id: string | null, school_name?: string | null, source?: SubmissionAttemptOut | null, status: string, submitter_email: string | null, submitter_name: string | null, url: string | null }
+CommunitySubmissionUpdate { admin_notes?: string | null, school_id?: string | null, status?: string | null }
+CompareIn { configs: list[AudienceConfig], message: string, signed_in?: boolean }
+CompareResult { cache_read_tokens?: integer, cache_write_tokens?: integer, cost_usd?: number | null, error?: string | null, escalated?: boolean, escalation_error?: string | null, input_tokens?: integer, latency_ms?: integer, model: string | null, output_tokens?: integer, provider: string, reply?: string | null, requested_model: string, rounds?: integer, tools_called?: list[string] }
+CompleteOut { done: boolean, id: string, marked_by: string | null }
+CompleteRequest { done: boolean }
+ConfigExport { districts: list[ExportDistrictOut], exported_at: string(date-time), local_events?: dict[dict[list[object]]], results?: ConfigResults | null, schools: list[ExportSchoolOut], smore_newsletters: list[ExportSmoreOut], source: string }
+ConfigImportResult { districts_created: integer, districts_updated: integer, local_event_jobs_missing?: list[string], local_event_sources_added?: integer, local_event_sources_updated?: integer, results_applied?: dict[integer], results_skipped?: list[string], sacc_created: integer, sacc_updated: integer, schools_created: integer, schools_updated: integer, smore_created: integer, smore_skipped: list[string], smore_updated: integer }
+ConfigResults { districts?: list[ResultDistrict], exported_at: string(date-time), newsletters?: list[ResultNewsletter], schools?: list[ResultSchool] }
+ContactMessageCreate { email?: string | null, message: string, name?: string | null, website?: string | null }
+ContactMessageOut { created_at: string(date-time), email: string | null, id: string, message: string, name: string | null, read_at: string(date-time) | null, user_id: string | null }
+CoursePreferenceIn { custom_color?: string | null, custom_name?: string | null }
+CoursePreferenceOut { course_key: string, custom_color: string | null, custom_name: string | null }
+CourseProgressOut { completion_pct: integer | null, course_key: string, course_name: string, done: integer, due_soon: integer, grade_percent: number | null, low_grade_entries: list[LowGradeOut], marking_period: string | null, missing: integer, teacher_emails: list[string], teacher_name: string | null, total: integer }
+CurrentPeriodOut { end_label: string, minutes_in: integer, minutes_left: integer, name: string, next_name: string | null, start_label: string }
+DayBlockOut { end_label: string, name: string, start_label: string }
+DayVisits { day: string, visits: integer }
+DeleteAccountRequest { confirm: string, password?: string | null }
+DeviceApproveIn { expires_in_days?: integer | null, name?: string | null, permissions: list[string] }
+DeviceRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), requested_ip: string | null, status: string, user_code: string }
+DeviceStartIn { client_name: string }
+DeviceStartOut { device_code: string, expires_in: integer, interval: integer, user_code: string }
+DeviceTokenIn { device_code: string }
+DeviceTokenOut { key?: string | null, key_prefix?: string | null, permissions?: list[string] | null, status: string }
+DirectoryFacetOut { count: integer, key: string, label: string }
+DirectoryPageOut { categories: list[DirectoryFacetOut], items: list[DirectoryStaffOut], limit: integer, offset: integer, total: integer }
+DirectorySchoolOut { id: string, name: string, school_type: string | null, short_name: string | null, slug: string }
+DirectoryStaffOut { affiliation: string, category: string, department: string | null, email: string | null, full_name: string, id: string, is_district_wide: boolean, phone: string | null, role: string | null, schools: list[DirectorySchoolOut], title: string | null }
+DistrictCreate { calendar_pdf_url?: string | null, food_services_menu_url?: string | null, hs_rotation_url?: string | null, ics_feeds?: list[IcsFeed], marking_period_url?: string | null, name: string, preschool_locations_url?: string | null, preschool_team_url?: string | null, schoolcafe_shortname?: string | null, state?: string, towns?: list[string], transportation_url?: string | null, website_url?: string | null }
+DistrictOut { calendar_pdf_url?: string | null, calendar_scan_job?: ScheduledJobOut | null, created_at: string(date-time), food_services_menu_url: string | null, hs_rotation_url: string | null, ics_feeds: list[IcsFeed], id: string, marking_period_job?: ScheduledJobOut | null, marking_period_url: string | null, name: string, preschool_locations_url: string | null, preschool_team_url: string | null, scheduled_job?: ScheduledJobOut | null, schoolcafe_shortname: string | null, state: string, towns: list[string], transportation_url: string | null, website_url: string | null }
+DistrictSummaryOut { id: string, name: string, state: string, towns: list[string] }
+DistrictTransportationOut { bus_stop_change_deadline: string | null, bus_stop_change_form_url: string | null, bus_stop_change_procedure: string | null, closing_info_url: string | null, contacts: list[TransportationContactOut], delay_policy: string | null, guidelines_url: string | null, late_bus_contractors: list[LateBusContractorOut], late_bus_policy: string | null, late_bus_url: string | null, lost_items_policy: string | null, lost_items_url: string | null, main_url: string | null, office_address: string | null, office_fax: string | null, office_hours: string | null, office_phone: string | null, updated_at: string(date-time) }
+DistrictUpdate { calendar_pdf_url?: string | null, food_services_menu_url?: string | null, hs_rotation_url?: string | null, ics_feeds?: list[IcsFeed] | null, marking_period_url?: string | null, preschool_locations_url?: string | null, preschool_team_url?: string | null, schoolcafe_shortname?: string | null, towns?: list[string] | null, transportation_url?: string | null, website_url?: string | null }
+EmailScannerCreate { body_contains?: list[string], cron_expr?: string, enabled?: boolean, from_contains?: list[string], google_email: string, lookback_days?: integer, name: string, purpose?: string, raw_query?: string | null, school_id?: string | null, subject_contains?: list[string], timezone?: string }
+EmailScannerOut { body_contains: list[string], created_at: string(date-time), enabled: boolean, from_contains: list[string], google_email: string, id: string, lookback_days: integer, name: string, purpose: string, raw_query: string | null, scheduled_job?: ScheduledJobOut | null, school_id: string | null, subject_contains: list[string] }
+EmailScannerUpdate { body_contains?: list[string] | null, cron_expr?: string | null, enabled?: boolean | null, from_contains?: list[string] | null, lookback_days?: integer | null, name?: string | null, raw_query?: string | null, school_id?: string | null, subject_contains?: list[string] | null, timezone?: string | null }
+ExportDistrictOut { calendar_pdf_url?: string | null, food_services_menu_url: string | null, hs_rotation_url: string | null, ics_feeds: list[IcsFeed], marking_period_url: string | null, name: string, preschool_locations_url: string | null, preschool_team_url: string | null, schoolcafe_shortname?: string | null, state?: string, towns?: list[string], transportation_url: string | null, website_url: string | null }
+ExportSaccOut { absence_form_url: string | null, absence_phone: string | null, am_hours: string | null, closures_notes: string | null, handbook_url: string | null, late_pickup_policy: string | null, pickup_change_procedure: string | null, pm_hours: string | null, site_phone: string | null }
+ExportSchoolOut { absence_emails: list[string], absence_instructions: string | null, absence_method: string | null, absence_phone: string | null, absence_portal_name: string | null, absence_portal_url: string | null, activities_calendar_ics_url?: string | null, address: string | null, apptegy_org_id?: string | null, arbiter_events_calendar?: boolean, arbiter_events_district_wide?: boolean, athletics_url: string | null, bell_periods: dict[list[BellPeriodEntry]] | null, bulletin_doc_url?: string | null, delayed_opening_time: string | null, district_name: string | null, district_state?: string | null, early_dismissal_time: string | null, end_time: string | null, fdmealplanner_location?: string | null, givebacks_shortname?: string | null, healthepro_location?: string | null, logo_url: string | null, main_phone: string | null, myschoolplate_location?: string | null, name: string, nutrislice_location?: string | null, presence_menu_page_url?: string | null, sacc: ExportSaccOut | null, school_type: string | null, short_name: string | null, slug: string, staff_directory_url?: string | null, start_time: string | null, website_url: string | null }
+ExportSmoreOut { cron_expr: string, district_name?: string | null, district_state?: string | null, enabled: boolean, label: string | null, school_slug: string | null, source_type?: string, timezone: string, url: string }
+FacetOut { count: integer, value: string }
+FetchHtmlRequest { block_assets?: boolean, url: string, wait_for_selector?: string | null }
+ForgotPasswordRequest { email: string(email) }
+HTTPValidationError { detail?: list[ValidationError] }
+HelpDraftOut { body: string, kind: string, label: string, logged: boolean, subject: string, teacher_email: string | null }
+HelpDraftRequest { kind: string }
+HelpKindOut { kind: string, label: string }
+IcsFeed { name: string, org_id?: string | null, platform?: string | null, school_slug?: string | null, school_types?: list[string] | null, skip_title_prefixes?: list[string] | null, url?: string | null }
+InviteCreate { invitee_email: string(email) }
+InviteOut { accept_url: string, expires_at: string(date-time), id: string, invitee_email: string, status: string, token: string }
+InvitePreviewOut { expires_at: string(date-time), invitee_email_hint?: string | null, inviter_username: string, status: string, student_first_name: string, student_last_initial: string }
+JobKindOut { default_cron: string, default_name: string, default_params?: object, default_timezone: string, description: string, kind: string, param_schema?: object | null }
+JobRunOut { duration_ms: integer | null, error: string | null, error_code: string | null, error_stage: string | null, finished_at: string(date-time) | null, id: string, last_progress_at?: string(date-time) | null, log_excerpt: string | null, machine_id?: string | null, started_at: string(date-time), status: string, trace_id?: string | null, triggered_by: string }
+JobRunSummaryOut { by_status: dict[integer], total: integer }
+JobSourceOut { label: string, value: string }
+LateBusContractorOut { name: string, phone: string, routes: dict[list[string]] }
+LateCreditOut { accepted: boolean, by_exception?: boolean, closes_on: string | null, credit_pct: integer | null, days_left: integer | null, extension_by_request: boolean, is_late: boolean }
+LateExceptionIn { accepted_until: string, credit_pct?: number | null, granted_note?: string | null }
+LateExceptionOut { accepted_until: string, credit_pct: number | null, granted_note: string | null }
+LatePolicyIn { accepted_until?: string | null, applies_to_types?: list[string] | null, course_key: string, course_name?: string | null, extension_by_request?: boolean, floor_pct?: number | null, notes?: string | null, penalty_pct?: number | null, penalty_per_day?: number | null, shape: string, source_text?: string | null, steps?: list[object] | null, window_days?: integer | null }
+LatePolicyOut { accepted_until: string | null, applies_to_types: list[string] | null, course_key: string, course_name: string | null, extension_by_request: boolean, floor_pct: number | null, notes: string | null, penalty_pct: number | null, penalty_per_day: number | null, shape: string, source_text: string | null, steps: list[object] | null, window_days: integer | null }
+LatePolicyParseOut { policy?: object | null, source_sentence?: string | null, summary?: string | null, understood: boolean }
+LatePolicyParseRequest { text: string }
+LocalEventFacetsOut { categories: list[FacetOut], sources: list[FacetOut] }
+LocalEventListOut { items: list[LocalEventOut], total: integer }
+LocalEventOut { all_day: boolean, categories: list[string], description: string | null, end_time: string(date-time) | null, id: string, image_url: string | null, is_free: boolean | null, miles?: number | null, price_max: number | null, price_min: number | null, source: string, start_time: string(date-time), title: string, url: string | null, venue_address: string | null, venue_name: string | null }
+LoginRequest { password: string, username_or_email: string }
+LowGradeOut { percent: number, title: string }
+LunchMenuItemOut { description: string, id: string, menu_date: string(date-time), notes: string | null }
+LunchMenuOut { id: string, items: list[LunchMenuItemOut], meal_type: string, parsed_at: string(date-time), period_label: string, school_type: string | null, source_pdf_url: string }
+ModelPrice { cache_read?: number | null, input: number, output: number }
+NextRotationOut { blocks: list[string] | null, label: string, long_blocks: boolean, rotation_day: string }
+NotPublishedIn { note?: string | null }
+NotificationOut { created_at: string(date-time), id: string, message: string, read_at: string(date-time) | null, student_id: string | null, type: string }
+NowBlockOut { course_name: string, is_current: boolean, minutes_in: integer | null, minutes_left: integer | null, period: string, period_number: string | null, room: string | null, teacher: string | null, teacher_emails?: list[string], time_end: string | null, time_start: string | null }
+PageViewIn { path: string, source?: string | null }
+PageVisitReport { rows: list[PageVisitRow], totals_by_path: dict[integer], totals_by_source: dict[integer] }
+PageVisitRow { count: integer, day: string, path: string, source: string }
+PermissionOut { access: string, description: string, key: string, label: string, sensitive: boolean }
+PlaceIn { q: string }
+PlaceOut { label: string, latitude: number, longitude: number }
+PlanOut { text: string }
+ProgressOut { done: integer, due: integer, missing: integer, percent: integer | null, total: integer }
+ProviderStatus { configured: boolean, name: string }
+RegisterRequest { email: string(email), password: string, username: string }
+ResetPasswordRequest { new_password: string, token: string }
+ResultBlock { block_type: string, content_hash: string, first_seen_at: string(date-time), image_url?: string | null, link_url?: string | null, page_path?: string | null, pending_vision_extraction?: boolean, position: integer, text_content?: string | null, vision_extracted_text?: string | null }
+ResultDistrict { calendar_pdf_items?: list[ResultItem], calendar_pdf_last_run?: ResultRun | null, lunch_last_run?: ResultRun | null, lunch_menus?: list[ResultLunchMenu], name: string }
+ResultItem { applies_to_grad_years?: list[integer] | null, applies_to_school_types?: list[string] | null, category: string, description?: string | null, district_name?: string | null, end_date?: string(date-time) | null, external_uid?: string | null, extracted_at: string(date-time), is_all_day?: boolean, is_current?: boolean, link_url?: string | null, person_name?: string | null, person_title?: string | null, ref: string, school_slug?: string | null, scope: string, source: string, source_block_hash?: string | null, source_excerpt?: string | null, start_date?: string(date-time) | null, superseded_by_ref?: string | null, title: string, translations?: list[ResultTranslation] }
+ResultLunchDay { description: string, menu_date: string(date-time), notes?: string | null }
+ResultLunchMenu { days?: list[ResultLunchDay], meal_type: string, parsed_at: string(date-time), period_label: string, school_type?: string | null, source_pdf_url: string }
+ResultNewsletter { blocks?: list[ResultBlock], items?: list[ResultItem], last_run?: ResultRun | null, latest_summary?: string | null, url: string }
+ResultRun { finished_at?: string(date-time) | null, status: string, summary?: string | null }
+ResultSchool { contact_page_hash?: string | null, contact_staff?: list[ResultStaff], givebacks_blocks?: list[ResultBlock], givebacks_items?: list[ResultItem], givebacks_last_run?: ResultRun | null, lunch_menus?: list[ResultLunchMenu], slug: string }
+ResultStaff { constituent_id: string, department?: string | null, email?: string | null, full_name: string, phone?: string | null, title?: string | null }
+ResultTranslation { description?: string | null, lang: string, model: string, source_hash: string, title: string }
+RightNowOut { blocks: list[NowBlockOut], current: NowBlockOut | null, cycle_label?: string | null, next: NowBlockOut | null, schedule_date: string | null, school_day_over: boolean, stale: boolean }
+RoleIn { description?: string | null, name: string, permissions?: list[string] }
+RoleOut { description: string | null, id: string, name: string, permissions: list[string], user_count: integer }
+SaccProgramOut { absence_form_url: string | null, absence_phone: string | null, am_hours: string | null, closures_notes: string | null, handbook_url: string | null, late_pickup_policy: string | null, pickup_change_procedure: string | null, pm_hours: string | null, site_phone: string | null, updated_at: string(date-time) }
+ScheduleDayBlockOut { course_name: string | null, end_label: string | null, name: string, room: string | null, start_label: string | null, teacher: string | null }
+ScheduleDayOut { blocks: list[ScheduleDayBlockOut], date: string, long_blocks: boolean, rotation_day: string | null, status: string, timed: boolean, weekday: string }
+ScheduledJobCreate { cron_expr: string, description?: string | null, enabled?: boolean, kind: string, name: string, params?: object, run_once?: boolean, timezone?: string }
+ScheduledJobOut { created_at?: string(date-time) | null, cron_expr: string, description?: string | null, enabled: boolean, id: string, kind: string, last_duration_ms?: integer | null, last_error: string | null, last_error_code: string | null, last_run_at: string(date-time) | null, last_status: string | null, name: string, next_run_at: string(date-time) | null, params?: object, run_once?: boolean, sources?: list[JobSourceOut], target_label?: string | null, target_type?: string | null, timezone: string }
+ScheduledJobUpdate { cron_expr?: string | null, description?: string | null, enabled?: boolean | null, name?: string | null, params?: object | null, run_once?: boolean | null, timezone?: string | null }
+SchoolClassYearOut { advisors?: list[StaffMiniOut], grad_year: integer, grade_level_principals?: list[StaffMiniOut], id: string, instagram_url: string | null, label: string, school_id: string, source_page_url: string | null, updated_at: string(date-time) }
+SchoolClassYearUpdate { advisor_staff_ids?: list[string] | null, grade_level_principal_staff_ids?: list[string] | null, instagram_url?: string | null, label?: string | null }
+SchoolContentItemOut { applies_to_grad_years?: list[integer] | null, applies_to_school_types?: list[string] | null, category: string, class_label?: string | null, description: string | null, description_original?: string | null, district_id?: string | null, end_date: string(date-time) | null, extracted_at: string(date-time), id: string, is_all_day: boolean, is_current: boolean, link_url: string | null, person_name: string | null, person_title: string | null, school_name?: string | null, scope: string, source_excerpt: string | null, staff_member_id: string | null, start_date: string(date-time) | null, title: string, title_original?: string | null, translated?: boolean }
+SchoolCreate { address?: string | null, district_id?: string | null, main_phone?: string | null, name: string, school_type?: string | null, short_name?: string | null, website_url?: string | null }
+SchoolDocumentOut { academic_year: string | null, discovered_at: string(date-time), doc_type: string, id: string, is_current: boolean, source: string, title: string, url: string }
+SchoolEmailMessageOut { body_text: string | null, created_at: string(date-time), id: string, newsletter_links: list[object], received_at: string(date-time) | null, scanner_id: string, sender: string | null, subject: string | null }
+SchoolLateBusOut { contractor: string, phone: string, routes: list[string] }
+SchoolOut { absence_emails: list[string], absence_instructions: string | null, absence_method: string | null, absence_phone: string | null, absence_portal_name: string | null, absence_portal_url: string | null, activities_calendar_ics_url: string | null, activities_site_url: string | null, address: string | null, announcements_doc_url: string | null, apptegy_org_id: string | null, arbiter_events_calendar?: boolean, arbiter_events_district_wide?: boolean, athletics_url: string | null, bell_periods: dict[list[BellPeriodEntry]] | null, bulletin_doc_url?: string | null, created_at: string(date-time), delayed_opening_time: string | null, district_id: string | null, early_dismissal_time: string | null, end_time: string | null, events_doc_url: string | null, fdmealplanner_location?: string | null, givebacks_shortname: string | null, healthepro_location?: string | null, id: string, logo_backing?: string | null, logo_url: string | null, main_phone: string | null, myschoolplate_location?: string | null, name: string, nutrislice_location?: string | null, presence_menu_page_url?: string | null, school_type: string | null, short_name: string | null, slug: string, special_events_calendar_url: string | null, staff_directory_url?: string | null, start_time: string | null, website_url: string | null }
+SchoolTodayOut { alerts: list[SchoolContentItemOut], contacts: list[TodayContactOut], current_period: CurrentPeriodOut | null, date: string, day_blocks?: list[DayBlockOut] | null, hours: string | null, is_school_day: boolean, long_blocks?: boolean, lunch: TodayLunchOut, my_current_classes?: list[TodayCurrentClassOut], my_specials?: list[TodayKidSpecialOut], next_rotation?: NextRotationOut | null, rotation_blocks?: list[string] | null, rotation_day: string | null, sacc: TodaySaccOut | null, school: SchoolOut, status: string, status_label: string | null, transportation: TodayTransportationOut | null, upcoming: list[SchoolContentItemOut], weather?: TodayWeatherOut | null, week: list[TodayDayOut] }
+SchoolTransportationOut { district: DistrictTransportationOut, late_bus: SchoolLateBusOut | null }
+SchoolUpdate { activities_calendar_ics_url?: string | null, activities_site_url?: string | null, announcements_doc_url?: string | null, apptegy_org_id?: string | null, arbiter_events_calendar?: boolean | null, arbiter_events_district_wide?: boolean | null, athletics_url?: string | null, bell_periods?: dict[list[BellPeriodEntry]] | null, bulletin_doc_url?: string | null, delayed_opening_time?: string | null, district_id?: string | null, early_dismissal_time?: string | null, end_time?: string | null, events_doc_url?: string | null, fdmealplanner_location?: string | null, givebacks_shortname?: string | null, healthepro_location?: string | null, logo_backing?: string | null, logo_url?: string | null, myschoolplate_location?: string | null, nutrislice_location?: string | null, presence_menu_page_url?: string | null, school_type?: string | null, short_name?: string | null, special_events_calendar_url?: string | null, staff_directory_url?: string | null, start_time?: string | null, website_url?: string | null }
+SeasonalAttractionIn { address: string, ages?: string | null, ends_on: string(date), kind: string, latitude?: number | null, longitude?: number | null, name: string, note?: string | null, open_dates?: list[string(date)] | null, price?: string | null, scare_level?: string | null, schedule?: string | null, season: string, source_url?: string(uri) | null, starts_on: string(date), ticket_url?: string(uri) | null, town: string, url: string(uri), venue?: string | null, verified_on?: string(date) | null }
+SeasonalAttractionOut { address: string, ages: string | null, ends_on: string(date), id: string, kind: string, latitude: number | null, longitude: number | null, miles?: number | null, name: string, note: string | null, open_dates: list[string(date)] | null, open_on_day?: boolean | null, price: string | null, scare_level: string | null, schedule: string | null, season: string, source_url: string | null, starts_on: string(date), ticket_url: string | null, town: string, url: string, venue: string | null, verified_on: string(date) | null }
+SeasonalAttractionPatch { address?: string | null, ages?: string | null, ends_on?: string(date) | null, kind?: string | null, latitude?: number | null, longitude?: number | null, name?: string | null, note?: string | null, open_dates?: list[string(date)] | null, price?: string | null, scare_level?: string | null, schedule?: string | null, season?: string | null, source_url?: string(uri) | null, starts_on?: string(date) | null, ticket_url?: string(uri) | null, town?: string | null, url?: string(uri) | null, venue?: string | null, verified_on?: string(date) | null }
+SeasonalGuideIn { ends_on: string(date), note?: string | null, publisher: string, season: string, sort_order?: integer, starts_on: string(date), title: string, url: string(uri) }
+SeasonalGuideOut { ends_on: string(date), id: string, note: string | null, publisher: string, season: string, sort_order: integer, starts_on: string(date), title: string, url: string }
+SeasonalGuidePatch { ends_on?: string(date) | null, note?: string | null, publisher?: string | null, season?: string | null, sort_order?: integer | null, starts_on?: string(date) | null, title?: string | null, url?: string(uri) | null }
+SecretPollIn { device_code: string }
+SecretPollOut { command?: string | null, secret_names?: list[string] | null, status: string, unlock_key?: string | null }
+SecretRequestIn { client_name: string, command: string, reason: string, secret_names: list[string] }
+SecretRequestOut { api_key_name: string | null, client_name: string, collected_at: string(date-time) | null, command: string, created_at: string(date-time), decided_at: string(date-time) | null, decided_by: string | null, expires_at: string(date-time), reason: string, requested_ip: string | null, secret_names: list[string], status: string, user_code: string }
+SecretRequestStarted { device_code: string, expires_in: integer, interval: integer, user_code: string }
+SmoreBlockOut { block_type: string, first_seen_at: string(date-time), id: string, image_url: string | null, link_url: string | null, pending_vision_extraction: boolean, position: integer, text_content: string | null, vision_extracted_text: string | null }
+SmoreNewsletterCreate { cron_expr?: string, district_id?: string | null, enabled?: boolean, label?: string | null, run_once?: boolean, school_id?: string | null, source_type?: string, timezone?: string, url: string }
+SmoreNewsletterOut { created_at: string(date-time), district_id?: string | null, district_name?: string | null, id: string, label: string | null, last_scanned_at: string(date-time) | null, latest_summary: string | null, scheduled_job?: ScheduledJobOut | null, school_id: string | null, school_name?: string | null, source_type?: string, url: string }
+SmoreNewsletterUpdate { cron_expr?: string | null, district_id?: string | null, enabled?: boolean | null, label?: string | null, run_once?: boolean | null, school_id?: string | null, timezone?: string | null }
+StaffMemberOut { department: string | null, email: string | null, full_name: string, id: string, last_synced_at: string(date-time), phone: string | null, role: string | null, title: string | null }
+StaffMiniOut { email: string | null, full_name: string, id: string, title: string | null }
+StudentAccountInviteCreate { invitee_email: string(email) }
+StudentAccountInviteOut { accept_url: string, expires_at: string(date-time), id: string, invitee_email: string, status: string, token: string }
+StudentAccountInvitePreviewOut { expires_at: string(date-time), invitee_email_hint?: string | null, inviter_username: string, status: string, student_first_name: string, student_last_initial: string }
+StudentAccountStatusOut { account_email: string | null, has_account: boolean, pending_invite_email: string | null }
+StudentCreate { first_name: string, last_name: string, school_id: string, student_id: string }
+StudentOut { first_name: string, grad_year?: integer | null, guardian_count: integer, id: string, last_name: string, linked_via: string, matched_existing?: boolean, school_id?: string | null, school_name: string | null, school_type?: string | null, student_id: string }
+StudentSpecialIn { rotation_day: integer, subject: string, teacher?: string | null }
+StudentSpecialOut { rotation_day: integer, subject: string, teacher?: string | null }
+StudentSpecialsOut { rotation_days: list[integer], specials: list[StudentSpecialOut] }
+StudentUpdate { grad_year?: integer | null }
+SubmissionAttemptOut { accept_language: string | null, bot_check: object | null, created_at: string(date-time), detail: string | null, edge_region: string | null, file_declared_type: string | null, file_detected_type: string | null, file_name: string | null, file_sha256: string | null, file_size: integer | null, forwarded_for: string | null, id: string, ip: string | null, kind: string | null, origin: string | null, outcome: string, referer: string | null, submission_id: string | null, submitter_email: string | null, submitter_name: string | null, url: string | null, user_agent: string | null, user_email?: string | null, user_id: string | null }
+SubmissionFlag { code: string, hold: boolean, item_id?: string | null, text: string }
+SubmissionItemIn { category?: string | null, description?: string | null, end_local?: string | null, local_categories?: list[string] | null, replaces_item_id?: string | null, scope?: string | null, start_local?: string | null, tentative?: boolean | null, title?: string | null, venue_address?: string | null, venue_name?: string | null }
+SubmissionItemOut { category: string, content_item_id: string | null, description: string | null, end_local: string | null, flags: list[SubmissionFlag], id: string, local_categories?: list[string], local_event_id?: string | null, origin: string, replaces_item_id: string | null, scope: string, source_excerpt: string | null, start_local: string | null, stated_weekday: string | null, tentative: boolean, title: string, venue_address?: string | null, venue_name?: string | null }
+SubmissionPublishIn { item_ids: list[string] }
+SubmissionReviewOut { categories: list[string], items: list[SubmissionItemOut], local_categories?: list[string], note_flags: list[string], submission: CommunitySubmissionOut }
+SuggestionOut { cached?: boolean, declined: boolean, text: string | null }
+SuperAdminIn { is_admin: boolean }
+SurveyResponseCreate { comments?: string | null, missing_info?: string | null, pain_points?: list[string], satisfaction?: integer | null, school_ids?: list[string], share_consent?: string, submitter_email?: string | null, submitter_name?: string | null }
+SurveyResponseOut { comments: string | null, created_at: string(date-time), id: string, missing_info: string | null, pain_points: list[string], satisfaction: integer | null, school_ids: list[string], school_names?: list[string], share_consent: string, submitter_email: string | null, submitter_name: string | null }
+SurveySummaryOut { average_satisfaction: number | null, top_pain_points: list[object], total: integer }
+TestFetchIn { kind: string, params: object, verbose?: boolean }
+TestFetchOut { kind: string, sources: list[TestFetchSourceResult] }
+TestFetchSourceResult { error: string | null, event_count: integer, first_entry_fields?: dict[string] | null, name: string, sample_titles: list[string], source_type?: string | null, status: string, url: string | null }
+TodayContactOut { email: string | null, label: string, name: string, phone: string | null, role: string }
+TodayCurrentClassOut { course_name?: string | null, end_label?: string | null, first_name: string, minutes_left?: integer | null, minutes_until_next?: integer | null, next_course_name?: string | null, next_start_label?: string | null, period_name?: string | null, room?: string | null, start_label?: string | null, status: string, student_id: string, teacher?: string | null }
+TodayDayOut { date: string, items: list[SchoolContentItemOut], long_blocks?: boolean, lunch: string | null, rotation_blocks?: list[string] | null, rotation_day: string | null, status: string, status_label: string | null, weekday: string }
+TodayKidSpecialOut { by_date: dict[string], first_name: string, next: string | null, next_label: string | null, student_id: string, today: string | null }
+TodayLunchOut { next: string | null, next_label: string | null, source_pdf_url: string | null, today: string | null }
+TodaySaccOut { absence_form_url: string | null, absence_phone: string | null, am_hours: string | null, pm_hours: string | null, site_phone: string | null }
+TodayTransportationOut { late_bus_contractor: string | null, late_bus_phone: string | null, office_phone: string | null }
+TodayWeatherOut { condition: string, date?: string | null, day_label?: string, dropoff_label: string, dropoff_temp: integer | null, high: integer, items: list[string], low: integer, pickup_label: string, pickup_temp: integer | null, rain_chance: integer, rain_from: string | null, uv_max: integer | null }
+TodoGradeOut { percent: number | null, score_earned: number | null, score_possible: number | null, status: string | null }
+TodoItemOut { asked_kinds?: list[string], category: string, classroom_status: string | null, course_key: string, course_name: string | null, done: boolean, done_source: string | null, due_date: string | null, due_raw: string | null, grade: TodoGradeOut | null, id: string, item_type: string, late_credit?: LateCreditOut | null, late_exception?: LateExceptionOut | null, link: string | null, marked_by: string | null, points_possible?: number | null, suggestion: SuggestionOut | null, teacher_emails: list[string], teacher_name: string | null, title: string }
+TodoOut { current_marking_period: ChildMarkingPeriodOut | null, done: list[TodoItemOut], due: list[TodoItemOut], missing: list[TodoItemOut], next_action: TodoItemOut | null, no_due_date: list[TodoItemOut], progress: ProgressOut }
+TokenResponse { access_token: string, token_type?: string }
+TransportationContactOut { email: string | null, name: string, title: string }
+UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, username: string }
+UserRolesIn { role_ids: list[string] }
+UserUpdate { preferred_language?: string | null, username?: string | null }
+UsersPageOut { items: list[AdminUserOut], total: integer }
+ValidationError { ctx?: object, input?: any, loc: list[string | integer], msg: string, type: string }
