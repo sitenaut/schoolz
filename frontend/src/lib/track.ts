@@ -19,9 +19,10 @@ export function trackEvent(name: string, attrs?: Attrs): void {
 // Product events (actions, searches, sign-up/login, chat...) live in GA4 only,
 // so they aren't collected twice. Faro keeps just the events the Grafana
 // dashboards/alerts query by name: page_view and cta_click (user-experience
-// dashboard) and auth_timeout (alert). Add a name here before pointing a
+// dashboard), auth_timeout (alert) and auth_session_recovery (whether a
+// failed cold-start renewal came back). Add a name here before pointing a
 // Loki query at it.
-const FARO_EVENTS = new Set(["page_view", "cta_click", "auth_timeout"]);
+const FARO_EVENTS = new Set(["page_view", "cta_click", "auth_timeout", "auth_session_recovery"]);
 
 // Not forwarded: page_view is sent to GA by AppShell (it needs the scrubbed
 // location and waits for auth so admin/test traffic can be flagged first);

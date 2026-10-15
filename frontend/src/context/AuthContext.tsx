@@ -5,6 +5,15 @@ import { API_URL, IS_SUPABASE_AUTH } from "../authConfig";
 import { supabase } from "../supabase";
 import { apiFetch, setLocalToken, clearLocalToken, getLocalToken, setCachedAccessToken } from "../api";
 import { ROUTER_BASENAME } from "../lib/i18n";
+import { hasStoredSession, recoverSession } from "../lib/sessionRecovery";
+
+function safeLocalStorage(): Storage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
 
 // How long the app will sit on "Loading…" before offering the visitor a
 // way out. Only reachable if the auth check never resolves at all.
@@ -95,8 +104,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       //
       // So: take the token straight off the session argument this callback
       // is handed, and push the /auth/me call out of the callback entirely.
-      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const client = supabase;
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         setCachedAccessToken(session?.access_token ?? null);
+        // A null INITIAL_SESSION with a session still in storage is a failed
+        // renewal, not a sign-out (lib/sessionRecovery.ts). Stay on "loading"
+        // and retry, outside this callback; a recovered session comes back
+        // through here as TOKEN_REFRESHED.
+        if (event === "INITIAL_SESSION" && !session && hasStoredSession(safeLocalStorage())) {
+          setTimeout(() => {
+            void recoverSession(() => client.auth.refreshSession()).then((outcome) => {
+              trackEvent("auth_session_recovery", { outcome });
+              if (outcome === "gone") void loadUser(false);
+            });
+          }, 0);
+          return;
+        }
         setTimeout(() => void loadUser(Boolean(session)), 0);
       });
       // supabase-js fires INITIAL_SESSION on subscribe, so the first load
