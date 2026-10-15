@@ -131,7 +131,7 @@ async def fetch_contacts(school_website_url: str, known: tuple[str, list[dict]] 
     response = await client.messages.create(
         model=MODEL,
         max_tokens=2000,
-        temperature=0,
+        extra_body={"temperature": 0},
         system=_SYSTEM,
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_contacts"},

@@ -54,7 +54,7 @@ class Usage:
     cache_read_tokens: int = 0
     cache_write_tokens: int = 0
 
-    def add(self, other: "Usage") -> None:
+    def add(self, other: Usage) -> None:
         self.input_tokens += other.input_tokens
         self.output_tokens += other.output_tokens
         self.cache_read_tokens += other.cache_read_tokens
@@ -96,11 +96,10 @@ class AnthropicProvider:
             tools=tools,
             messages=_with_tail_breakpoint([{**m, "content": _strip_private(m["content"])} for m in messages]),
         )
-        # Only text/tool_use blocks are replayed - anthropic==0.34.2 (pinned,
-        # shared with content_extractor.py) predates "thinking" content
-        # blocks, which the newest models can return unprompted. Its
-        # permissive parsing keeps them, but model_dump()'ing one back into
-        # a request 400s ("thinking.text: Extra inputs are not permitted").
+        # Only text/tool_use blocks are replayed. The newest models can return
+        # "thinking" blocks unprompted; the history doesn't need them, and the
+        # 0.34 SDK this was written against 400'd replaying one ("thinking.text:
+        # Extra inputs are not permitted").
         content = [block.model_dump() for block in response.content if block.type in ("text", "tool_use")]
         u = response.usage
         return Completion(
@@ -114,7 +113,8 @@ class AnthropicProvider:
         )
 
     async def list_models(self) -> list[str]:
-        # The pinned SDK predates the Models API, so this one call is raw HTTP.
+        # Raw HTTP, written when the pinned SDK predated the Models API (the
+        # tests stub httpx here); client.models.list() would also do now.
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(
                 ANTHROPIC_MODELS_URL, params={"limit": 100},

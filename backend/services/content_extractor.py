@@ -28,11 +28,20 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
-from models import LunchMenu, LunchMenuItem, School, SchoolContentItem, SmoreBlock, SmoreNewsletter, StaffMember, normalize_name
+from models import (
+    LunchMenu,
+    LunchMenuItem,
+    School,
+    SchoolContentItem,
+    SmoreBlock,
+    SmoreNewsletter,
+    StaffMember,
+    normalize_name,
+)
+from scheduler.errors import record_parse_issue
 from services.links import unwrap_redirect
 from services.school_status import is_status_title, same_status_fact
 from services.tool_output import object_list, recover_spilled_input
-from scheduler.errors import record_parse_issue
 
 logger = logging.getLogger(__name__)
 
@@ -672,7 +681,7 @@ async def extract_from_newsletter(
         response = await client.messages.create(
             model=MODEL,
             max_tokens=8192,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=_SYSTEM_PROMPT,
             tools=[_EXTRACTION_TOOL],
             tool_choice={"type": "tool", "name": "record_extraction"},

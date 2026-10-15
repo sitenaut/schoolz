@@ -234,7 +234,7 @@ class TheatreSiteSource(Source):
         response = await client.messages.create(
             model=MODEL,
             max_tokens=4000,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=_SYSTEM.format(today=date.today().isoformat()),
             tools=[_TOOL],
             tool_choice={"type": "tool", "name": "record_productions"},

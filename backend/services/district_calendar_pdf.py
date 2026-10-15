@@ -19,7 +19,8 @@ import hashlib
 import logging
 import re
 import time
-from datetime import date, datetime, time as dtime, timedelta
+from datetime import date, datetime, timedelta
+from datetime import time as dtime
 from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
@@ -190,7 +191,7 @@ def layout_text_by_month(pdf_bytes: bytes) -> str | None:
             headers.append((w["top"], w["x0"], month, int(year)))
     left = sorted((h for h in headers if h[1] < width / 2), key=lambda h: h[0])
     right = sorted((h for h in headers if h[1] >= width / 2), key=lambda h: h[0])
-    if len(left) != 6 or len(right) != 6 or any(abs(a[0] - b[0]) > 4 for a, b in zip(left, right)):
+    if len(left) != 6 or len(right) != 6 or any(abs(a[0] - b[0]) > 4 for a, b in zip(left, right, strict=True)):
         return None
 
     # Text lanes: the left column's list begins just past its grid, the right
@@ -270,7 +271,7 @@ async def extract_events(pdf_bytes: bytes) -> list[dict]:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=8192,
-        temperature=0,
+        extra_body={"temperature": 0},
         tools=[_CALENDAR_TOOL],
         tool_choice={"type": "tool", "name": "record_calendar"},
         messages=[{"role": "user", "content": content}],

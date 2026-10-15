@@ -123,7 +123,7 @@ async def extract_from_pta_page(
         response = await client.messages.create(
             model=MODEL,
             max_tokens=8192,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=_SYSTEM_PROMPT,
             tools=[_EXTRACTION_TOOL],
             tool_choice={"type": "tool", "name": "record_extraction"},

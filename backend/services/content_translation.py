@@ -22,7 +22,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from anthropic import AsyncAnthropic
 from sqlalchemy import or_, select
@@ -123,8 +123,8 @@ def _too_old(item: SchoolContentItem) -> bool:
     if when is None:
         return False
     if when.tzinfo is None:
-        when = when.replace(tzinfo=timezone.utc)
-    return when < datetime.now(timezone.utc) - _MAX_AGE
+        when = when.replace(tzinfo=UTC)
+    return when < datetime.now(UTC) - _MAX_AGE
 
 
 def _needs_model(item: SchoolContentItem, lang: str) -> bool:
@@ -145,7 +145,7 @@ async def _call_model(payload: list[dict], lang: str) -> dict[int, tuple[str, st
     response = await client.messages.create(
         model=MODEL,
         max_tokens=8192,
-        temperature=0,
+        extra_body={"temperature": 0},
         system=_SYSTEM.format(language=LANGUAGE_NAMES[lang], register=_REGISTER[lang]),
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_translations"},
@@ -216,7 +216,7 @@ async def _reuse_by_hash(db: AsyncSession, todo: list[SchoolContentItem], lang: 
     if not rows:
         return set()
     by_hash = {r.source_hash: r for r in rows}
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     new_rows = [
         {"item_id": item_id, "lang": lang, "title": by_hash[h].title, "description": by_hash[h].description, "source_hash": h, "model": by_hash[h].model, "created_at": now}
         for item_id, h in hashes.items()
@@ -269,7 +269,7 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
             hashes = {i.id: source_hash(i.title, i.description) for i in mine}
             results = await asyncio.gather(*[_translate_chunk(c, lang) for c in chunks], return_exceptions=True)
             rows = []
-            for chunk, result in zip(chunks, results):
+            for chunk, result in zip(chunks, results, strict=True):
                 if isinstance(result, BaseException):
                     _cooldown_until = time.monotonic() + _COOLDOWN_S
                     logger.warning("content_translation_failed", extra={"lang": lang, "items": len(chunk), "error": str(result)})
@@ -283,7 +283,7 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
                             "description": description,
                             "source_hash": hashes[item_id],
                             "model": MODEL,
-                            "created_at": datetime.now(timezone.utc),
+                            "created_at": datetime.now(UTC),
                         }
                     )
             if rows:
@@ -349,7 +349,7 @@ async def localize_outs(db: AsyncSession, items: list[SchoolContentItem], outs: 
     if lang not in LANGUAGE_NAMES or not items:
         return outs
     translations = await apply_translations(db, items, lang)
-    return [localize_out(o, i, translations[i.id]) for i, o in zip(items, outs)]
+    return [localize_out(o, i, translations[i.id]) for i, o in zip(items, outs, strict=False)]
 
 
 async def translate_school_content(db: AsyncSession, school_id: str, lang: str) -> int:

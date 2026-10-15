@@ -83,7 +83,7 @@ async def assignment_suggestion(title: str, course_name: str | None) -> tuple[st
     response = await client.messages.create(
         model=MODEL,
         max_tokens=400,
-        temperature=0,
+        extra_body={"temperature": 0},
         system=_ASSIGNMENT_SYSTEM,
         tools=[_ASSIGNMENT_TOOL],
         tool_choice={"type": "tool", "name": "record_suggestion"},
@@ -167,7 +167,7 @@ async def parse_late_policy(text: str) -> dict:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=700,
-        temperature=0,
+        extra_body={"temperature": 0},
         system=_LATE_POLICY_SYSTEM,
         tools=[_LATE_POLICY_TOOL],
         tool_choice={"type": "tool", "name": "record_late_policy"},
@@ -192,7 +192,7 @@ async def plan(items: list[dict], today_iso: str) -> str:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=500,
-        temperature=0.2,
+        extra_body={"temperature": 0.2},
         system=_PLAN_SYSTEM,
         messages=[{"role": "user", "content": f"Today is {today_iso}.\n\n" + "\n".join(lines)}],
     )
