@@ -192,7 +192,7 @@ async def test_today_endpoint_takes_a_date_and_says_which_day_the_forecast_is_fo
         assert (await client.get(f"/schools/weather-on-{run}/today", params={"on": "tomorrow"})).status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_a_failed_upstream_is_remembered_so_it_is_not_retried_every_request(monkeypatch):
     import services.weather as weather
 
@@ -209,7 +209,7 @@ async def test_a_failed_upstream_is_remembered_so_it_is_not_retried_every_reques
     assert calls == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_hourly_uv_reads_open_meteo_hours_as_local_ints(monkeypatch):
     import services.weather as weather
 
