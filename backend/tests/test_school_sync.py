@@ -5,7 +5,7 @@ import os
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -17,7 +17,7 @@ from local_events.sources.base import RawEvent
 from main import app
 from models import School, SchoolContentItem
 
-UTC = timezone.utc
+UTC = UTC
 
 
 def _event(uid, title, school_slug, when=None):

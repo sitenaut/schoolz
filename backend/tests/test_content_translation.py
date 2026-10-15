@@ -4,7 +4,7 @@ import uuid
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -19,7 +19,7 @@ from services import i18n_strings, weather
 from services.school_today import LOCAL_TZ, build_today
 
 ES = {"X-Schoolz-Lang": "es"}
-FUTURE = datetime.now(timezone.utc) + timedelta(days=3)
+FUTURE = datetime.now(UTC) + timedelta(days=3)
 
 
 @pytest.fixture(autouse=True)
@@ -236,7 +236,9 @@ async def test_today_in_spanish_uses_translated_closure_reason_and_spanish_label
         school = School(name=f"Today ES {run}", slug=f"today-es-{run}", school_type="elementary")
         db.add(school)
         await db.flush()
-        at = lambda d: datetime.combine(d, datetime.min.time(), LOCAL_TZ)
+        def at(d):
+            return datetime.combine(d, datetime.min.time(), LOCAL_TZ)
+
         db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title="SCHOOLS CLOSED - Fall Recess", start_date=at(date(2026, 10, 15)), is_all_day=True, is_current=True))
         db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title="Back to School Night", start_date=at(date(2026, 10, 16)), is_all_day=True, is_current=True))
         db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title="Day 4", start_date=at(today), is_all_day=True, is_current=True))
@@ -262,7 +264,7 @@ async def test_today_in_spanish_uses_translated_closure_reason_and_spanish_label
 
 @pytest.mark.anyio
 async def test_today_hours_and_early_dismissal_labels_in_spanish():
-    async with database.SessionLocal() as db:
+    async with database.SessionLocal():
         school = School(name="x", slug="x", school_type="elementary", early_dismissal_time="12:30 PM")
         from services.school_today import _hours
 
@@ -328,7 +330,7 @@ def test_fold_strips_accents_and_case():
 
 @pytest.mark.anyio
 async def test_search_ignores_accents_in_both_directions():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     import database
     from models import LocalEvent
@@ -336,7 +338,7 @@ async def test_search_ignores_accents_in_both_directions():
     slug, school_id, _ = await _school_with_item(title="Reunión de Padres", description="Salón de música")
     src = f"fold_{uuid.uuid4().hex[:8]}"
     async with database.SessionLocal() as db:
-        db.add(LocalEvent(source=src, source_event_id="1", title="Festival del Niño", start_time=datetime(2031, 6, 7, 14, tzinfo=timezone.utc)))
+        db.add(LocalEvent(source=src, source_event_id="1", title="Festival del Niño", start_time=datetime(2031, 6, 7, 14, tzinfo=UTC)))
         await db.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         for q in ("reunion", "REUNIÓN", "musica", "salon de"):
@@ -387,8 +389,12 @@ def test_closed_prefix_stripping_in_chinese():
 
 
 def test_korean_and_hindi_weather_and_labels():
-    ko = lambda s: i18n_strings.condition_table(s, "ko")
-    hi = lambda s: i18n_strings.condition_table(s, "hi")
+    def ko(s):
+        return i18n_strings.condition_table(s, "ko")
+
+    def hi(s):
+        return i18n_strings.condition_table(s, "hi")
+
     assert ko("Partly Sunny") == "구름 조금"
     assert ko("Slight Chance Rain Showers") == "소나기 가능성 낮음"
     assert ko("Rain Likely") == "비 가능성 높음"
@@ -442,7 +448,7 @@ async def test_long_past_items_are_not_translated(monkeypatch):
         school = School(name="Old School", slug=f"old-{uuid.uuid4().hex[:8]}", school_type="elementary")
         db.add(school)
         await db.flush()
-        old = datetime.now(timezone.utc) - timedelta(days=400)
+        old = datetime.now(UTC) - timedelta(days=400)
         item = SchoolContentItem(scope="school", school_id=school.id, category="event", title="Ancient Concert", start_date=old, end_date=old, is_current=True)
         db.add(item)
         await db.commit()

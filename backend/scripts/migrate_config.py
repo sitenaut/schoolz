@@ -29,7 +29,6 @@ locally only pushes what's different.
 
 import argparse
 import json
-import sys
 import urllib.error
 import urllib.request
 
@@ -44,7 +43,7 @@ def _post(url: str, body: dict | None = None, token: str | None = None) -> dict:
         with urllib.request.urlopen(req) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as exc:
-        raise SystemExit(f"POST {url} failed: {exc.code} {exc.read().decode()[:500]}")
+        raise SystemExit(f"POST {url} failed: {exc.code} {exc.read().decode()[:500]}") from None
 
 
 def _get(url: str, token: str) -> dict:
@@ -53,7 +52,7 @@ def _get(url: str, token: str) -> dict:
         with urllib.request.urlopen(req) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as exc:
-        raise SystemExit(f"GET {url} failed: {exc.code} {exc.read().decode()[:500]}")
+        raise SystemExit(f"GET {url} failed: {exc.code} {exc.read().decode()[:500]}") from None
 
 
 def login(base_url: str, username: str, password: str) -> str:

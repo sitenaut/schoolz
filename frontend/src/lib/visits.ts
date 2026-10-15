@@ -71,9 +71,8 @@ function sanitize(value: string): string {
  * model for why there's deliberately nothing per-visitor in it. */
 export function countVisit(path: string): void {
   if (IS_PRERENDER) return;
-  let seen: string[] = [];
   try {
-    seen = JSON.parse(sessionStorage.getItem(SEEN_KEY) || "[]");
+    const seen: string[] = JSON.parse(sessionStorage.getItem(SEEN_KEY) || "[]");
     if (seen.includes(path)) return;
     sessionStorage.setItem(SEEN_KEY, JSON.stringify([...seen, path]));
   } catch {

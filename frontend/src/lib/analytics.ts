@@ -60,6 +60,7 @@ let ready = false;
 
 function gtag(..._args: unknown[]): void {
   // gtag.js only understands the Arguments object, not a plain array.
+  // eslint-disable-next-line prefer-rest-params
   (window.dataLayer ||= []).push(arguments);
 }
 

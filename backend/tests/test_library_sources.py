@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import httpx
 import pytest
 
-from local_events.sources import bibliocommons, drupal_fullcalendar, ical, libcal, mec, tribe
+from local_events.sources import bibliocommons, drupal_fullcalendar, ical, libcal, mec
 from local_events.sources.bibliocommons import BiblioCommonsSource
 from local_events.sources.drupal_fullcalendar import DrupalFullCalendarSource
 from local_events.sources.ical import ICalSource

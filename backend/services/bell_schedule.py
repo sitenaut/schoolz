@@ -5,7 +5,7 @@ no network call, just comparing the current local time against a static
 table already on the School row).
 """
 
-from datetime import date, datetime, time
+from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
 LOCAL_TZ = ZoneInfo("America/New_York")
