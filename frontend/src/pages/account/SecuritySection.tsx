@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { IS_SUPABASE_AUTH } from "../../authConfig";
 import { IconAlert, IconLock, IconLogout, IconShield } from "../../components/icons";
 import { Badge } from "../../components/ui/Badge";
+import { TwoStepCard } from "../../components/TwoStepCard";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Field } from "../../components/ui/Field";
 import { SectionCard } from "../../components/ui/SectionCard";
@@ -105,6 +106,8 @@ export function SecuritySection() {
           </div>
         )}
       </SectionCard>
+
+      {IS_SUPABASE_AUTH && user.mfa_required && <TwoStepCard />}
 
       <SectionCard title="Sessions" description="Where you're signed in." icon={<IconShield />}>
         <div className="info-row">

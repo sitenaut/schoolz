@@ -914,7 +914,7 @@ TodoItemOut { asked_kinds?: list[string], category: string, classroom_status: st
 TodoOut { current_marking_period: ChildMarkingPeriodOut | null, done: list[TodoItemOut], due: list[TodoItemOut], missing: list[TodoItemOut], next_action: TodoItemOut | null, no_due_date: list[TodoItemOut], progress: ProgressOut }
 TokenResponse { access_token: string, token_type?: string }
 TransportationContactOut { email: string | null, name: string, title: string }
-UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, username: string }
+UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, mfa_enforced?: boolean, mfa_passed?: boolean, mfa_required?: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, username: string }
 UserRolesIn { role_ids: list[string] }
 UserUpdate { preferred_language?: string | null, username?: string | null }
 UsersPageOut { items: list[AdminUserOut], total: integer }

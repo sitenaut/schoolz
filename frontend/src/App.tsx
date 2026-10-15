@@ -51,6 +51,7 @@ import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { SubmissionReviewPage } from "./pages/SubmissionReviewPage";
 import { UploadPage } from "./pages/UploadPage";
 import { InboxPage } from "./pages/InboxPage";
+import { MfaGate } from "./components/MfaGate";
 import { AccountLayout } from "./pages/account/AccountLayout";
 import { ProfileSection } from "./pages/account/ProfileSection";
 import { SecuritySection } from "./pages/account/SecuritySection";
@@ -107,7 +108,7 @@ function RequireAdmin({
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   const allowed = superOnly ? user.is_admin : permission ? can(user, permission) : isStaff(user);
   if (!allowed) return <Navigate to="/" replace />;
-  return children;
+  return <MfaGate>{children}</MfaGate>;
 }
 
 function Routed() {

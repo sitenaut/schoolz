@@ -1,10 +1,10 @@
 import functools
 import hashlib
+import logging
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
-
-import logging
+import time
+from datetime import UTC, datetime, timedelta
 
 import anyio
 import bcrypt
@@ -20,6 +20,7 @@ import observability
 from database import SessionLocal, get_db
 from models import ApiKey, RolePermission, User, UserRole
 from permissions import PERMISSION_KEYS, expand
+from request_context import CodedHTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 def create_local_token(user_id: str) -> str:
     if not JWT_SECRET:
         raise RuntimeError("JWT_SECRET is not set")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {"sub": user_id, "iat": now, "exp": now + timedelta(minutes=JWT_EXPIRES_MINUTES)}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -153,7 +154,7 @@ def _decode_local_token(token: str) -> str:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token") from None
     return payload["sub"]
 
 
@@ -170,7 +171,7 @@ async def _verify_supabase_token(token: str) -> dict:
         # race): ask Supabase directly.
         return await _supabase_user(token)
     except jwt.PyJWTError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token") from None
     try:
         return jwt.decode(
             token,
@@ -181,7 +182,7 @@ async def _verify_supabase_token(token: str) -> dict:
     except jwt.PyJWTError:
         # Expired or forged. These used to fall through to /auth/v1/user too,
         # so any junk bearer token cost a round trip to Supabase.
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token") from None
 
 
 async def _supabase_user(token: str) -> dict:
@@ -262,7 +263,7 @@ def hash_api_key(plaintext: str) -> str:
 
 async def _authenticate_api_key(request: Request, db: AsyncSession, token: str) -> User:
     key = (await db.execute(select(ApiKey).where(ApiKey.key_hash == hash_api_key(token)))).scalar_one_or_none()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if key is None or (key.expires_at is not None and key.expires_at <= now):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired API key")
     user = (await db.execute(select(User).where(User.id == key.created_by_user_id))).scalar_one_or_none()
@@ -293,6 +294,9 @@ async def get_current_user(
     elif AUTH_MODE == "supabase":
         claims = await _verify_supabase_token(token)
         user = await _get_or_create_supabase_user(db, claims)
+        # "aal2" once the session has passed a second factor (SZ-18). The
+        # /auth/v1/user fallback doesn't say, which reads as not passed.
+        request.state.aal = claims.get("aal")
     else:
         user_id = _decode_local_token(token)
         result = await db.execute(select(User).where(User.id == user_id))
@@ -334,6 +338,7 @@ async def require_super_admin(request: Request, user: User = Depends(get_current
         raise HTTPException(status.HTTP_403_FORBIDDEN, "API keys can't manage users, roles or keys")
     if not user.is_admin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Super admin access required")
+    check_admin_mfa(request, user)
     return user
 
 
@@ -359,6 +364,44 @@ async def get_effective_permissions(request: Request, db: AsyncSession, user: Us
     return perms
 
 
+# Two-step sign-in for admins (SZ-18). Super admins and anyone holding a
+# role must have passed a second factor (the Supabase token's aal is
+# "aal2") to use an admin endpoint. Guardians and students are never asked.
+# MFA_ENFORCE unset: only logged (mfa_missing, once an hour per user), so
+# admins can enroll first; MFA_ENFORCE=1: refused with code mfa_required.
+# API keys are exempt: each is approved by a super admin in a browser
+# session, and a script can't answer a code. Local auth mode has no MFA.
+_MFA_LOG_EVERY_S = 3600.0
+_mfa_logged: dict[str, float] = {}
+
+
+def mfa_enforced() -> bool:
+    return os.getenv("MFA_ENFORCE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def mfa_applies(request: Request) -> bool:
+    return AUTH_MODE == "supabase" and not is_api_key_request(request)
+
+
+def mfa_passed(request: Request) -> bool:
+    return getattr(request.state, "aal", None) == "aal2"
+
+
+def check_admin_mfa(request: Request, user: User) -> None:
+    if not mfa_applies(request) or mfa_passed(request):
+        return
+    now = time.monotonic()
+    last = _mfa_logged.get(user.id)
+    if last is None or now - last > _MFA_LOG_EVERY_S:
+        _mfa_logged[user.id] = now
+        logger.warning(
+            "mfa_missing",
+            extra={"user_id": user.id, "path": request.url.path, "enforced": mfa_enforced()},
+        )
+    if mfa_enforced():
+        raise CodedHTTPException(status.HTTP_403_FORBIDDEN, "Two-step sign-in is required for admin pages", "mfa_required")
+
+
 @functools.cache
 def require_permission(permission: str):
     """Dependency factory: the centrally-managed-data-sources gate. Creating
@@ -369,10 +412,10 @@ def require_permission(permission: str):
         raise ValueError(f"Unknown permission {permission!r}")
 
     async def _dep(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
-        if user.is_admin and not is_api_key_request(request):
-            return user
-        if permission not in await get_effective_permissions(request, db, user):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+        if not (user.is_admin and not is_api_key_request(request)):
+            if permission not in await get_effective_permissions(request, db, user):
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+        check_admin_mfa(request, user)
         return user
 
     return _dep

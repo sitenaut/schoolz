@@ -2,7 +2,7 @@ import hashlib
 import logging
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -128,18 +128,30 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     return TokenResponse(access_token=create_local_token(user.id))
 
 
+def _with_mfa(out: UserOut, request: Request) -> UserOut:
+    """Whether this account must use two-step sign-in, and whether this
+    session has (auth.check_admin_mfa)."""
+    out.mfa_required = bool(out.permissions) and auth_module.mfa_applies(request)
+    out.mfa_passed = auth_module.mfa_passed(request)
+    out.mfa_enforced = auth_module.mfa_enforced()
+    return out
+
+
 @router.get("/me", response_model=UserOut)
 async def me(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return _user_out(
+    out = _user_out(
         user,
         await _student_profile_id(db, user),
         await auth_module.get_effective_permissions(request, db, user),
         via_api_key=auth_module.is_api_key_request(request),
     )
+    return _with_mfa(out, request)
 
 
 @router.patch("/me", response_model=UserOut)
-async def update_me(payload: UserUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_me(
+    payload: UserUpdate, request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     if payload.username is not None and payload.username != user.username:
         taken = await db.execute(select(User.id).where(User.username == payload.username, User.id != user.id))
         if taken.scalar_one_or_none():
@@ -149,7 +161,8 @@ async def update_me(payload: UserUpdate, user: User = Depends(get_current_user),
         user.preferred_language = payload.preferred_language
     await db.commit()
     await db.refresh(user)
-    return _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))
+    out = _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))
+    return _with_mfa(out, request)
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -182,7 +195,7 @@ async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Dep
     if user:
         token = secrets.token_urlsafe(32)
         user.password_reset_token = token
-        user.password_reset_expires_at = datetime.now(timezone.utc) + _RESET_TOKEN_TTL
+        user.password_reset_expires_at = datetime.now(UTC) + _RESET_TOKEN_TTL
         await db.commit()
         logger.info("password_reset_token_issued", extra={"user_id": user.id})
     return {"status": "ok", "reset_token": token}
@@ -193,7 +206,7 @@ async def reset_password(payload: ResetPasswordRequest, db: AsyncSession = Depen
     _local_only()
     result = await db.execute(select(User).where(User.password_reset_token == payload.token))
     user = result.scalar_one_or_none()
-    if not user or not user.password_reset_expires_at or user.password_reset_expires_at < datetime.now(timezone.utc):
+    if not user or not user.password_reset_expires_at or user.password_reset_expires_at < datetime.now(UTC):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This reset link is invalid or has expired")
     user.password_hash = await hash_password_async(payload.new_password)
     user.password_reset_token = None

@@ -29,6 +29,10 @@ type CurrentUser = {
   auth_mode: string;
   preferred_language?: string | null;
   sign_in_method: "password" | "google";
+  // Two-step sign-in for admins (SZ-18, components/MfaGate.tsx).
+  mfa_required?: boolean;
+  mfa_passed?: boolean;
+  mfa_enforced?: boolean;
   created_at: string | null;
   // Set when this login belongs to a student (not a guardian) - see
   // backend routers/student_accounts.py.

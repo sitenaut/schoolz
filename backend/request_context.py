@@ -54,6 +54,15 @@ def code_for(status: int) -> str:
     return CODES.get(status, "client_error" if status < 500 else "server_error")
 
 
+class CodedHTTPException(StarletteHTTPException):
+    """An HTTP error whose `code` is more specific than its status's, for a
+    case the UI acts on (e.g. `mfa_required`: ask for the 6-digit code)."""
+
+    def __init__(self, status_code: int, detail: str, code: str) -> None:
+        super().__init__(status_code, detail)
+        self.code = code
+
+
 class RequestIdMiddleware:
     """Pure ASGI, so the ID is set in the request's own context (log lines
     from anywhere inside see it) and the header is added to every response,
@@ -93,10 +102,10 @@ class RequestIdLogFilter(logging.Filter):
         return True
 
 
-def _envelope(request: Request, status: int, detail, headers: dict | None = None) -> JSONResponse:
+def _envelope(request: Request, status: int, detail, headers: dict | None = None, code: str | None = None) -> JSONResponse:
     rid = getattr(request.state, "request_id", None) or request_id_var.get()
     return JSONResponse(
-        {"detail": detail, "code": code_for(status), "request_id": rid},
+        {"detail": detail, "code": code or code_for(status), "request_id": rid},
         status_code=status,
         headers={**(headers or {}), **({HEADER: rid} if rid else {})},
     )
@@ -107,7 +116,7 @@ def install(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        return _envelope(request, exc.status_code, exc.detail, getattr(exc, "headers", None))
+        return _envelope(request, exc.status_code, exc.detail, getattr(exc, "headers", None), getattr(exc, "code", None))
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
