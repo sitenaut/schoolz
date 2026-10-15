@@ -9,7 +9,9 @@ name: Deploy
 # After each deploy a smoke check runs; if the deploy or the smoke check
 # fails, the image that was running before is put back (the schema is not).
 # By hand: Actions -> Deploy -> Run workflow (main only). The scraper is
-# deployed by hand only (target=scraper).
+# deployed by hand only (target=scraper). drill=true proves the rollback:
+# the deploy goes out, the smoke check fails on purpose, and the rollback
+# must leave the previous image running.
 on:
   push:
     branches: [main]
@@ -21,6 +23,10 @@ on:
         default: "both"
         type: choice
         options: ["both", "backend", "frontend", "scraper"]
+      drill:
+        description: "Rollback drill: deploy, then fail the smoke check on purpose so the image that was running is put back"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -119,6 +125,8 @@ jobs:
         run: flyctl deploy --remote-only --image-label "sha-${GITHUB_SHA::12}"
 
       - name: Smoke
+        env:
+          DRILL: ${{ inputs.drill }}
         # /schools reads the database; /mcp/ is asked with the real public
         # Host header (an mcp upgrade once refused every prod Host with 421
         # while 127.0.0.1 still worked).
@@ -139,6 +147,7 @@ jobs:
           # the old image would serve them too.
           code=$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "$URL/openapi.json")
           if [ "$code" = 404 ]; then echo "ok: /openapi.json is not served"; else echo "::warning::/openapi.json answered $code in prod"; fi
+          if [ "$DRILL" = true ]; then echo "::error::Rollback drill: failing the smoke check on purpose"; exit 1; fi
 
       - name: Roll back to the image that was running
         if: failure() && steps.prev.outputs.ref != '' && steps.prev.outputs.ref != 'null/null@null'
@@ -151,6 +160,10 @@ jobs:
           # and an image from before release.py existed has no script to run.
           grep -v '^[[:space:]]*release_command' fly.toml > fly.rollback.toml
           flyctl deploy -c fly.rollback.toml --image "$PREV" --strategy immediate
+          # Every machine must be back on that image, or the rollback didn't take.
+          now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
+          if [ "$now" != "${PREV##*@}" ]; then echo "::error::after the rollback $APP runs $now, expected ${PREV##*@}"; exit 1; fi
+          echo "Rolled back: every machine runs ${PREV##*@}"
           curl -fsS --max-time 10 "$URL/health"
 
   frontend:
@@ -185,6 +198,8 @@ jobs:
         run: flyctl deploy --remote-only --image-label "sha-${GITHUB_SHA::12}" --build-arg "VITE_APP_VERSION=${GITHUB_SHA::7}"
 
       - name: Smoke
+        env:
+          DRILL: ${{ inputs.drill }}
         # /focus/ is a separate build in the same image; it once answered 500
         # while / was fine.
         run: |
@@ -196,6 +211,7 @@ jobs:
             done
             [ -n "$ok" ] || { echo "::error::$URL$path did not answer"; exit 1; }
           done
+          if [ "$DRILL" = true ]; then echo "::error::Rollback drill: failing the smoke check on purpose"; exit 1; fi
 
       - name: Roll back to the image that was running
         if: failure() && steps.prev.outputs.ref != '' && steps.prev.outputs.ref != 'null/null@null'
@@ -208,6 +224,10 @@ jobs:
           # and an image from before release.py existed has no script to run.
           grep -v '^[[:space:]]*release_command' fly.toml > fly.rollback.toml
           flyctl deploy -c fly.rollback.toml --image "$PREV" --strategy immediate
+          # Every machine must be back on that image, or the rollback didn't take.
+          now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
+          if [ "$now" != "${PREV##*@}" ]; then echo "::error::after the rollback $APP runs $now, expected ${PREV##*@}"; exit 1; fi
+          echo "Rolled back: every machine runs ${PREV##*@}"
 
   scraper:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'scraper' && github.ref == 'refs/heads/main'
