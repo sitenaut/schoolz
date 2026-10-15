@@ -73,6 +73,13 @@ def _is_retryable(exc: Exception) -> bool:
     return isinstance(exc, httpx.TransportError)
 
 
+def scraper_hosts() -> set[str]:
+    """Hostnames of every scraper this client can call, configured or not.
+    classify_exception uses it to tell our scraper being down from a
+    source's own server being down."""
+    return {httpx.URL(u).host for u in (SCRAPER_URL, _FALLBACK_URL, _RESIDENTIAL_URL) if u}
+
+
 def _services() -> list[tuple[str, str]]:
     """(base_url, api_key) pairs to try in order, skipping any without a
     key configured. playwright-scraper implements /fetch-paginated with the

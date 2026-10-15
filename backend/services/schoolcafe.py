@@ -8,6 +8,7 @@ Confirmed against Voorhees Township (shortname VOORHEESTWPPSNUTRISERVE,
 district id 4651): one "Lunch" meal type and one "Regular" line per school.
 """
 
+import asyncio
 import re
 from difflib import SequenceMatcher
 from datetime import date
@@ -124,12 +125,24 @@ def day_description(categories: dict[str, list[dict]]) -> str | None:
     return None
 
 
+# SchoolCafé's API answers 503s in bursts: Barrington's scan, then due at
+# 3:00 ET, got one every night for a week on a different endpoint each time,
+# while neighbours at 3:04-3:22 didn't. One scan makes dozens of calls, so a
+# single blip failed the whole district. Retried after these waits, then raised.
+_RETRY_STATUSES = {502, 503, 504}
+_RETRY_DELAYS_S = (5.0, 20.0)
+
+
 class SchoolCafeClient:
     def __init__(self, client: httpx.AsyncClient):
         self._c = client
 
     async def _get(self, path: str, **params):
-        r = await self._c.get(_BASE + path, params=params, headers=_HEADERS)
+        for delay in (*_RETRY_DELAYS_S, None):
+            r = await self._c.get(_BASE + path, params=params, headers=_HEADERS)
+            if r.status_code not in _RETRY_STATUSES or delay is None:
+                break
+            await asyncio.sleep(delay)
         r.raise_for_status()
         return r.json()
 

@@ -352,6 +352,7 @@ _CODE_HINTS = {
     "site_did_not_load": "Re-run off-peak. If it keeps failing, check the site for a bot wall.",
     "scraper_timeout": "Re-run off-peak; the page took too long to render.",
     "scraper_unavailable": "The scraper was down or overloaded; re-run once it's healthy.",
+    "source_unavailable": "The source's own server was down or overloaded; re-run later. If it fails at the same time every day, move the scan to another minute.",
     "smore_no_blocks": "The link has most likely expired. Replace the newsletter URL with a live issue.",
     "source_http_error": "The source returned an HTTP error. Check whether the URL has moved.",
     "llm_rate_limited": "Re-run later; extraction was rate limited.",
