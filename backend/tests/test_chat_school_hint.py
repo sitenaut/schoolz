@@ -23,6 +23,10 @@ SCHOOLS = [
     _s("head-start", "Mosaic Early Learning Center Head Start", "Head Start", "other", "Voorhees"),
     _s("demasi-es", "Marlton DeMasi Elementary", "DeMasi", "elementary", "Marlton"),
     _s("demasi-ms", "DeMasi Middle School", "DeMasi", "middle", "Marlton"),
+    _s("harte", "Bret Harte Elementary", "Bret Harte", "elementary", "Cherry Hill"),
+    _s("cooper", "James F. Cooper Elementary", "James F. Cooper", "elementary", "Cherry Hill"),
+    _s("coles", "The Coles High School Program", "Coles Program", "high", "Camden"),
+    _s("lightbridge", "Lightbridge Academy", "Lightbridge Academy", "other", "Voorhees"),
 ]
 
 
@@ -54,6 +58,17 @@ def test_an_ordinary_word_is_not_a_school_name():
     assert _slugs("When is picture day at Johnson Elementary?") == ["james-johnson", "johnson-es"]
     assert _slugs("When does winter break start in Voorhees?") == []
     assert _slugs("Is there a band concert at Johnson?") == ["james-johnson", "johnson-es"]
+
+
+def test_a_last_name_written_as_a_name():
+    assert _slugs("is there school at Harte today") == ["harte"]
+    assert _slugs("What's the bell schedule for Harte?") == ["harte"]
+    # Capitalised, or it is just a word: lowercase falls to the model's own lookup.
+    assert _slugs("is there school at harte today") == []
+    assert _slugs("How do I sign up for the program?") == []
+    assert _slugs("Can I volunteer at the Academy?") == []
+    # Followed by another name, it is that place, not the school.
+    assert _slugs("Is there a fall festival at Cooper River?") == []
 
 
 def test_the_hint_says_look_it_up_or_ask():
