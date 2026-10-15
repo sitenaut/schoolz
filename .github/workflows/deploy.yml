@@ -160,8 +160,15 @@ jobs:
           # and an image from before release.py existed has no script to run.
           grep -v '^[[:space:]]*release_command' fly.toml > fly.rollback.toml
           flyctl deploy -c fly.rollback.toml --image "$PREV" --strategy immediate
-          # Every machine must be back on that image, or the rollback didn't take.
-          now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
+          # Every machine must be back on that image, or the rollback didn't
+          # take. flyctl returns before the last machine reports its new image
+          # (the first drill read one machine still on the drill's image), so
+          # give it a minute.
+          for _ in $(seq 1 12); do
+            now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
+            [ "$now" = "${PREV##*@}" ] && break
+            sleep 5
+          done
           if [ "$now" != "${PREV##*@}" ]; then echo "::error::after the rollback $APP runs $now, expected ${PREV##*@}"; exit 1; fi
           echo "Rolled back: every machine runs ${PREV##*@}"
           curl -fsS --max-time 10 "$URL/health"
@@ -224,8 +231,15 @@ jobs:
           # and an image from before release.py existed has no script to run.
           grep -v '^[[:space:]]*release_command' fly.toml > fly.rollback.toml
           flyctl deploy -c fly.rollback.toml --image "$PREV" --strategy immediate
-          # Every machine must be back on that image, or the rollback didn't take.
-          now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
+          # Every machine must be back on that image, or the rollback didn't
+          # take. flyctl returns before the last machine reports its new image
+          # (the first drill read one machine still on the drill's image), so
+          # give it a minute.
+          for _ in $(seq 1 12); do
+            now=$(flyctl image show -a "$APP" --json | jq -r '[.[] | .Digest // empty] | unique | join(" ")')
+            [ "$now" = "${PREV##*@}" ] && break
+            sleep 5
+          done
           if [ "$now" != "${PREV##*@}" ]; then echo "::error::after the rollback $APP runs $now, expected ${PREV##*@}"; exit 1; fi
           echo "Rolled back: every machine runs ${PREV##*@}"
 
