@@ -1,6 +1,8 @@
 # Weekly update PRs, grouped so a week's patch and minor bumps arrive as one
 # PR per ecosystem. Each PR goes through the same CI gate as any other, and
-# merging it deploys (deploy.yml). Majors come one PR each, to read first.
+# merging it deploys (deploy.yml). Major versions are never proposed: each is
+# a migration, planned and done by hand. Security fixes still arrive through
+# Dependabot security updates, which this file doesn't limit.
 # The backend's requirements.txt is pip-compiled from requirements.in with
 # hashes; Dependabot regenerates it the same way.
 version: 2
@@ -15,10 +17,15 @@ updates:
     # on its own PR (SZ-14).
     ignore:
       - dependency-name: anthropic
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly, day: monday }
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
     groups:
       frontend-minor:
         update-types: [minor, patch]
@@ -26,6 +33,9 @@ updates:
   - package-ecosystem: npm
     directory: /frontend/focus
     schedule: { interval: weekly, day: monday }
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
     groups:
       focus-minor:
         update-types: [minor, patch]
@@ -44,6 +54,9 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
     groups:
       actions:
         update-types: [minor, patch]
