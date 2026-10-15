@@ -12,6 +12,9 @@ primary_region = "ewr"
 
 [env]
   APP_ENV = "prod"
+  # Refuse to start with a missing or malformed setting (settings.py). The
+  # first deploy of the check logged clean on both processes.
+  SETTINGS_ENFORCE = "1"
   AUTH_MODE = "supabase"
   PORT = "8000"
   # Emit the stable HTTP semantic conventions

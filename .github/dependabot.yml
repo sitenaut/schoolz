@@ -1,0 +1,49 @@
+# Weekly update PRs, grouped so a week's patch and minor bumps arrive as one
+# PR per ecosystem. Each PR goes through the same CI gate as any other, and
+# merging it deploys (deploy.yml). Majors come one PR each, to read first.
+# The backend's requirements.txt is pip-compiled from requirements.in with
+# hashes; Dependabot regenerates it the same way.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      backend-minor:
+        update-types: [minor, patch]
+    # The chatbot's prompt caching depends on this client: upgraded by hand,
+    # on its own PR (SZ-14).
+    ignore:
+      - dependency-name: anthropic
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      frontend-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend/focus
+    schedule: { interval: weekly, day: monday }
+    groups:
+      focus-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directories: [/backend, /frontend]
+    schedule: { interval: weekly, day: monday }
+    # Patch releases only: a new Python or Node line is a deliberate move
+    # (CI's versions in ci.yml move with it).
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions:
+        update-types: [minor, patch]
