@@ -39,14 +39,48 @@ admin to review, the same as a submission through the website's own
 *external* URL, so it uses a real network client, not the in-process one.
 """
 
+import os
 import re
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import FastAPI
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from services.app_help import app_help
+
+
+def _env_list(name: str) -> list[str]:
+    return [v.strip() for v in os.getenv(name, "").split(",") if v.strip()]
+
+
+# Host headers the MCP transport accepts (see build_mcp_server). Fly's own
+# name plus the public API name; localhost for the local stack.
+_MCP_ALLOWED_HOSTS = sorted(
+    {
+        "schoolz-api.sitenaut.com",
+        "schoolz-api.fly.dev",
+        "localhost:*",
+        "127.0.0.1:*",
+        "[::1]:*",
+        *([urlsplit(os.environ["PUBLIC_API_URL"]).netloc] if os.getenv("PUBLIC_API_URL") else []),
+        *_env_list("MCP_ALLOWED_HOSTS"),
+    }
+)
+# Checked only when a request carries an Origin (a browser); connectors such
+# as Claude's call server to server and send none.
+_MCP_ALLOWED_ORIGINS = sorted(
+    {
+        "https://schoolz.sitenaut.com",
+        "https://claude.ai",
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        *([os.environ["PUBLIC_WEB_URL"].rstrip("/")] if os.getenv("PUBLIC_WEB_URL") else []),
+        *_env_list("MCP_ALLOWED_ORIGINS"),
+    }
+)
 
 
 def _is_empty(data: Any) -> bool:
@@ -148,7 +182,22 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     # resend the POST body across the downgrade. Fixed at the actual
     # source - uvicorn needs --proxy-headers to trust Fly's
     # X-Forwarded-Proto - see backend/fly.toml.
-    mcp = FastMCP("schoolz-public", stateless_http=True, streamable_http_path="/")
+    #
+    # transport_security: mcp >= 1.2x checks the Host header against a
+    # localhost-only list whenever FastMCP's (unused here) host is left at
+    # 127.0.0.1, so every prod request got "421 Invalid Host header". The
+    # list is now the API's real names; MCP_ALLOWED_HOSTS adds more (a new
+    # custom domain) without a code change.
+    mcp = FastMCP(
+        "schoolz-public",
+        stateless_http=True,
+        streamable_http_path="/",
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=_MCP_ALLOWED_HOSTS,
+            allowed_origins=_MCP_ALLOWED_ORIGINS,
+        ),
+    )
 
     # In-process only - no real socket, no DNS, no dependency on this
     # app's own public hostname being reachable from itself. Every tool
