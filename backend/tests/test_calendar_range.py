@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -14,7 +14,7 @@ from models import District, School, SchoolContentItem
 
 
 def _utc(*args):
-    return datetime(*args, tzinfo=timezone.utc)
+    return datetime(*args, tzinfo=UTC)
 
 
 @pytest.mark.anyio
@@ -48,3 +48,28 @@ async def test_month_range_excludes_all_day_item_ending_at_the_month_start():
     assert res.status_code == 200, res.text
     titles = {i["title"] for i in res.json()}
     assert titles == {"RANGE two-day", "RANGE timed overnight", "RANGE Sep 1"}
+
+
+@pytest.mark.anyio
+async def test_school_id_accepts_a_slug_as_well_as_an_id():
+    # A slug used to match no school, so the chatbot (which passes slugs) saw
+    # an empty calendar and told a parent there was no half day.
+    async with database.SessionLocal() as db:
+        district = District(name="Slug Test District")
+        db.add(district)
+        await db.flush()
+        school = School(name="Slug Test Elementary", slug="slug-test-elementary", school_type="elementary", district_id=district.id)
+        db.add(school)
+        await db.flush()
+        db.add(SchoolContentItem(title="SLUGTEST Early Dismissal", scope="district", district_id=district.id, category="event",
+                                 is_current=True, source="ics_feed", is_all_day=True, start_date=_utc(2026, 11, 30, 5)))
+        await db.commit()
+        school_id = school.id
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        by_slug = await client.get("/calendar", params={"school_id": "slug-test-elementary", "q": "SLUGTEST"})
+        by_id = await client.get("/calendar", params={"school_id": school_id, "q": "SLUGTEST"})
+        unknown = await client.get("/calendar", params={"school_id": "no-such-school", "q": "SLUGTEST"})
+    assert [i["title"] for i in by_slug.json()] == ["SLUGTEST Early Dismissal"]
+    assert by_id.json() == by_slug.json()
+    assert unknown.json() == []

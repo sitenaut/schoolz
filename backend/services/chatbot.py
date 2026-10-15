@@ -21,14 +21,20 @@ import logging
 import os
 import re
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from mcp.server.fastmcp import FastMCP
 
 from services.chat_providers import Usage, configured_providers
 from services.chat_settings import AudienceConfig
-from services.chatbot_personal import LOCAL_EVENTS_TOOL_NAME, PERSONAL_PROMPT, PERSONAL_TOOL_NAMES, LocalEventTools, PersonalTools
+from services.chatbot_personal import (
+    LOCAL_EVENTS_TOOL_NAME,
+    PERSONAL_PROMPT,
+    PERSONAL_TOOL_NAMES,
+    LocalEventTools,
+    PersonalTools,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +62,8 @@ SYSTEM_PROMPT = (
     "(find_seasonal_attractions), and how to use schoolz itself (get_app_help - for any "
     "'how do I' or 'where is' question about the site or app, give the guide's steps "
     "rather than guessing at buttons or menus). Never invent a fact a tool didn't "
-    "return. If a lookup comes back with a 'note' about missing data, relay that note's "
+    "return. Talk like a person, not a database: never show a field name, key, id or JSON from "
+    "a tool result - say 'no early dismissal time is listed', not 'early_dismissal_time'. If a lookup comes back with a 'note' about missing data, relay that note's "
     "suggestion (ask the school to publish it, or submit a link with "
     "submit_community_content) instead of just saying there's no data. Keep answers "
     "short and concrete - most people are reading this on a phone. Formatting: the chat "

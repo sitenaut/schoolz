@@ -12,10 +12,10 @@ from auth import get_optional_user
 from database import get_db
 from models import ContentTranslation, GuardianStudentLink, School, SchoolContentItem, Student, User
 from schemas import SchoolContentItemOut
-from services.content_translation import localize_outs
-from services.i18n import fold, folded, request_lang
 from services.arbiter import ATHLETICS_SOURCES
 from services.class_years import CLASS_PAGE_SOURCES
+from services.content_translation import localize_outs
+from services.i18n import fold, folded, request_lang
 from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
@@ -185,9 +185,13 @@ async def _list_calendar_items(
         relevant_types = {s.school_type for s in picked if s.school_type}
         filter_by_type = True
     elif school_id:
-        # Narrow to one school - still include its own district's items.
-        school = (await db.execute(select(School).where(School.id == school_id))).scalar_one_or_none()
-        scope_ids = ([school_id], [school.district_id] if school and school.district_id else [])
+        # Narrow to one school (id or slug) - still include its own
+        # district's items. A slug used to match nothing, so the chatbot,
+        # which passes slugs, saw an empty calendar and said "no half day".
+        school = (
+            await db.execute(select(School).where(or_(School.id == school_id, School.slug == school_id)))
+        ).scalar_one_or_none()
+        scope_ids = ([school.id] if school else [], [school.district_id] if school and school.district_id else [])
         relevant_types = {school.school_type} if school and school.school_type else set()
         filter_by_type = True
     elif my_school_ids:
