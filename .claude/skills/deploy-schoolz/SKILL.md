@@ -5,23 +5,31 @@ description: Ship committed schoolz changes to production via GitHub - push the 
 
 # Deploying schoolz to production
 
-schoolz has **no dev/stage tier** - `main` is prod. Deploys are driven by two
-chained GitHub Actions workflows, not a single "on push" pipeline, and that
-chaining has a sharp edge this skill exists to catch.
+schoolz has **no dev/stage tier** - `main` is prod, and `main` only takes
+pull requests whose `backend` and `frontend` checks pass (ruleset `main`).
 
-## The workflow-chaining gotcha (read this first)
+## How a merge deploys (read this first)
 
-- **`.github/workflows/migrate.yml`** ("DB migrate") triggers on push to
-  `main`, but **only if the push touches `backend/alembic/**` or
-  `backend/models.py`** (or via manual `workflow_dispatch`).
-- **`.github/workflows/deploy.yml`** ("Deploy") does **not** trigger on push
-  at all - it only triggers via `workflow_run` when "DB migrate" *completes*
-  (success or failure), or via manual `workflow_dispatch`.
+**`.github/workflows/deploy.yml`** ("Deploy") runs on every push to `main`:
 
-So: a merge to `main` with no migration-relevant file changes runs **neither**
-workflow automatically - migrate's path filter doesn't match, and deploy has
-nothing to chain off of. Always check what actually fired; never assume a
-merge alone shipped anything.
+1. **CI** (`ci.yml`) runs again on the merged code. If it fails, nothing deploys.
+2. **changes** compares `main` with the commit each Fly app is running (its
+   image label `sha-<commit>`): `backend/**` changed -> `schoolz-api`,
+   `frontend/**` changed -> `schoolz-web`, neither -> nothing deploys, which
+   is correct. An image without a `sha-` label counts as changed.
+3. **migrate** ("DB migrate", `migrate.yml` as a called workflow) runs first
+   when `backend/alembic/**` or `backend/models.py` changed since the running
+   commit.
+4. **backend**, then **frontend**: each remembers the running image, deploys,
+   smoke-checks it (API: `/health`, `/schools`, MCP `initialize` with the real
+   Host; web: `/` and `/focus/`), and **redeploys the previous image** if the
+   deploy or smoke check fails.
+
+A run that was cancelled or failed is caught up by the next push, since the
+comparison is against what is running, not the previous push. By hand:
+`gh workflow run deploy.yml -f target=<both|backend|frontend|scraper>` (main
+only; `scraper` is hand-only). `migrate.yml` by hand offers only
+`upgrade head`, `current` and `history`.
 
 ## Steps
 
@@ -57,19 +65,12 @@ merge alone shipped anything.
    delete the PR's own branch, remote and local, with `git branch -d` - see the
    `ship` skill, step 7. Never the long-lived dev branch or `main`.)
 
-5. **Check what actually triggered:**
+5. **Find the Deploy run the merge started:**
    ```
-   gh run list --branch main --limit 5
+   gh run list --workflow deploy.yml --branch main --limit 3
    ```
-   - If "DB migrate" shows `push` as the trigger and is running/queued, wait
-     for it (see step 6), then re-check that "Deploy" appears as a
-     `workflow_run`-triggered run after it completes.
-   - If nothing new appears at all (no migration-relevant files changed),
-     deploy needs a **manual dispatch**:
-     ```
-     gh workflow run deploy.yml -f target=both
-     ```
-     (`target` can be `backend`, `frontend`, or `both`.)
+   Its `changes` job log says what it decided to deploy and why. If a job
+   was skipped, that is usually "nothing in that directory changed".
 
 6. **Watch each run to completion.** Don't use `gh run watch` under the
    Monitor tool - its live-refreshing display repaints the same frame
@@ -87,9 +88,12 @@ merge alone shipped anything.
    ```
    gh run view <run-id> --log-failed
    ```
-   Common prior failure mode here: a "Deploy" run can fail even after
-   "DB migrate" succeeds (seen 2026-09-09) - check the actual flyctl output,
-   don't assume the migrate step is at fault just because it ran first.
+   Check the actual flyctl output; don't assume the migrate step is at fault
+   just because it ran first. A failed smoke check has already put the
+   previous image back (look for the "Roll back" step's warning), so prod is
+   on the old version: fix forward with a new PR. A migration is **not**
+   rolled back - the old image runs against the new schema, which is why
+   migrations must only add.
 
 8. **Report back** with: which workflows ran and their conclusions, and the
    live URLs (`https://schoolz.sitenaut.com`, `https://schoolz-api.sitenaut.com`)
@@ -118,4 +122,3 @@ Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`.
 - **Private preschools' documents/school-info/staff-roster scans are disabled** — chain websites, never one success, just burst load.
 - **Prerender** (`/prerender`, for crawlers) is single-flighted per path, and serves stale cache if a re-render fails.
 - **Supabase auth**: email signup requires the confirmation click first (reads as "login broken"). Google SSO needs the client ID/secret in Supabase *and* the Supabase callback in the client's redirect URIs.
-- `.woodpecker.yml` is supplementary self-hosted CI (test/build only).

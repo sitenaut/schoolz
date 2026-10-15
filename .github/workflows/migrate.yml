@@ -1,20 +1,25 @@
 name: DB migrate
 
+# Run by Deploy before a backend deploy that may carry a migration, or by hand.
+# Upgrade and read-only commands only: a downgrade is a deliberate local act
+# with a backup in hand (docs/BACKUPS.md), not a button.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "backend/alembic/**"
-      - "backend/models.py"
+  workflow_call:
   workflow_dispatch:
     inputs:
       command:
         description: "Alembic command to run"
-        required: false
+        required: true
         default: "upgrade head"
+        type: choice
+        options: ["upgrade head", "current", "history"]
+
+permissions:
+  contents: read
 
 jobs:
   migrate:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: prod
     steps:
@@ -59,4 +64,8 @@ jobs:
           EOF
 
       - name: Run Alembic
-        run: bash scripts/alembic_env.sh prod ${{ github.event.inputs.command || 'upgrade head' }}
+        env:
+          COMMAND: ${{ inputs.command || 'upgrade head' }}
+        run: |
+          read -ra args <<< "$COMMAND"
+          bash scripts/alembic_env.sh prod "${args[@]}"
