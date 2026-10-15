@@ -41,6 +41,7 @@ admin to review, the same as a submission through the website's own
 
 import os
 import re
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -90,6 +91,29 @@ def _is_empty(data: Any) -> bool:
 # Same rule as services/school_today.py:_ROTATION_RE - kept local because this
 # module reaches the app only through its HTTP routes.
 _ROTATION_TITLE_RE = re.compile(r"^\s*Day\s+\d\s*$", re.I)
+
+_SCHOOL_PATH_RE = re.compile(r"^/schools/([^/?]+)")
+# Words that don't tell schools apart, dropped when matching a guessed slug to names.
+_GENERIC_SCHOOL_WORDS = {"school", "schools", "elementary", "middle", "high", "es", "ms", "hs", "the", "of", "and"}
+
+
+def _name_words(text: str) -> set[str]:
+    return {w for w in re.split(r"[^a-z0-9]+", text.lower()) if w and w not in _GENERIC_SCHOOL_WORDS}
+
+
+def _town(address: str | None) -> str | None:
+    """"1 Main St, Cherry Hill, NJ 08002" -> "Cherry Hill"."""
+    parts = [p.strip() for p in (address or "").split(",")]
+    return parts[-2] if len(parts) >= 3 else None
+
+
+# The same day goes by several names in calendars ("EARLY DISMISSAL",
+# "Half Day", "Single Session"); a search for one also runs the others.
+# Same family as services/school_status.py:EARLY_RE.
+_HALF_DAY_TERMS = ("early dismissal", "half day", "single session")
+
+# Calendar items one tool call returns at most (about 18k tokens on prod data).
+_MAX_CALENDAR_ITEMS = 80
 
 # What list_schools returns per school: enough to pick one and call its tools.
 _SCHOOL_DIRECTORY_FIELDS = ("id", "slug", "name", "short_name", "school_type", "address", "district_id")
@@ -222,9 +246,41 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         """
         params = {k: v for k, v in (params or {}).items() if v is not None}
         response = await app_client.get(path, params=params)
+        if response.status_code == 404 and (m := _SCHOOL_PATH_RE.match(path)):
+            # Models guess slugs from names ("bret-harte-elementary" for
+            # "bret-harte"). One school fits the guess: answer for it in this
+            # same call - a retry would be a second tool round, and two rounds
+            # escalate the chat to the expensive model. Several fit: say so,
+            # and the model asks the visitor which one.
+            matches = await _school_matches(m.group(1))
+            if len(matches) == 1:
+                response = await app_client.get(f"/schools/{matches[0]['slug']}{path[m.end():]}", params=params)
+            else:
+                return _unknown_school(m.group(1), matches)
         if response.status_code >= 400:
             return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text}
         return response.json()
+
+    async def _school_matches(ref: str) -> list[dict]:
+        """Schools whose name or slug holds every distinctive word of `ref`."""
+        response = await app_client.get("/schools")
+        schools = response.json() if response.status_code == 200 else []
+        wanted = _name_words(ref)
+        return [s for s in schools if wanted and wanted <= _name_words(f"{s.get('name', '')} {s.get('slug', '')}")]
+
+    def _unknown_school(ref: str, matches: list[dict]) -> dict:
+        """What a tool returns for a school id/slug that fits no school, or several."""
+        return {
+            "error": f"No school has the id or slug '{ref}'.",
+            "did_you_mean": [
+                {"slug": s["slug"], "name": s["name"], "town": _town(s.get("address"))} for s in matches[:8]
+            ],
+            "hint": (
+                "Several schools fit: ask the visitor which one they mean, by name and town, before looking "
+                "anything up. None fit: call list_schools with `town`."
+                if matches else "No school fits: call list_schools with `town` to find its slug."
+            ),
+        }
 
     async def _check_url_is_live(url: str) -> str | None:
         """Reject anything that isn't a real, reachable http(s) page before
@@ -305,7 +361,9 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         lunch, SACC essentials, role-based contacts, the next 5 dated items,
         any closure/early-dismissal alert within 7 days, and a Mon-Fri week
         strip. The single richest call for "what does a parent need to know
-        about this school right now."
+        about this school right now." It only looks about a week ahead: for
+        "when is the next half day / day off", also search
+        list_calendar_items with q ("half day", "no school").
         """
         return await _get(f"/schools/{school_id_or_slug}/today")
 
@@ -561,12 +619,48 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
            every school day, and listed as events they buried the real ones.
            Set true only when asked which rotation day a date is.
         """
-        data = await _get(
-            "/calendar",
-            {"start": start, "end": end, "school_id": school_id, "school_ids": school_ids, "category": category, "q": q},
-        )
-        if not include_rotation_days and isinstance(data, list):
+        if school_id:
+            # /calendar returns [] for a school it doesn't know, which read as
+            # "nothing scheduled": the chatbot guessed "bret-harte-elementary"
+            # (the slug is "bret-harte") and told a parent there was no half
+            # day. Resolve it first, with _get's guessed-slug matching.
+            school = await _get(f"/schools/{school_id}")
+            if not isinstance(school, dict) or "error" in school:
+                return school
+            school_id = school["slug"]
+        params = {"start": start, "end": end, "school_id": school_id, "school_ids": school_ids, "category": category}
+        terms = [q]
+        if q and any(t in q.lower() for t in _HALF_DAY_TERMS):
+            # Asked for "half day", Cherry Hill's calendar says "EARLY DISMISSAL".
+            terms = list(_HALF_DAY_TERMS)
+        data: Any = []
+        seen: set[Any] = set()
+        for term in terms:
+            found = await _get("/calendar", {**params, "q": term})
+            if not isinstance(found, list):
+                return found
+            for item in found:
+                if item.get("id") not in seen:
+                    seen.add(item.get("id"))
+                    data.append(item)
+        if len(terms) > 1:
+            data.sort(key=lambda i: str(i.get("start_date") or ""))
+        if not include_rotation_days:
             data = [i for i in data if not _ROTATION_TITLE_RE.match(str(i.get("title", "")))]
+        if len(data) > _MAX_CALENDAR_ITEMS:
+            # An unfiltered search ("early dismissal" across every school)
+            # came back as 750k tokens and the model call failed. Keep what's
+            # coming up, and say how to narrow it.
+            today = datetime.now(UTC).date().isoformat()
+            upcoming = [i for i in data if str(i.get("start_date") or "") >= today]
+            kept = (upcoming or data)[:_MAX_CALENDAR_ITEMS]
+            return {
+                "count": len(data),
+                "items": kept,
+                "note": f"Too many to list: showing {len(kept)} of {len(data)}"
+                + (", upcoming only" if upcoming else "")
+                + ". Narrow with school_id, school_ids or start/end.",
+            }
         return _finalize(data)
 
     # -----------------------------------------------------------------

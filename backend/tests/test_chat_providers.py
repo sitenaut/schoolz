@@ -351,3 +351,92 @@ async def test_list_schools_is_a_compact_directory_with_a_town_filter():
 
     town = json.loads(await _run_tool(app.state.mcp, "list_schools", {"town": " dirtestville "}))
     assert [i["slug"] for i in town["items"]] == ["dirtest-elementary"]
+
+
+@pytest.mark.anyio
+async def test_guessed_slugs_resolve_or_ask_and_half_day_finds_early_dismissal():
+    # The chatbot guessed "bret-harte-elementary" for "bret-harte": an empty
+    # calendar read as "no half day", and the retry cost a second tool round
+    # (which escalates to the expensive model).
+    from datetime import datetime
+
+    import database
+    from models import District, School, SchoolContentItem
+    from services.chatbot import _run_tool
+
+    async with database.SessionLocal() as db:
+        district = District(name="Guess Test District")
+        db.add(district)
+        await db.flush()
+        db.add_all([
+            School(name="Quillfeather Elementary", slug="quillfeather", school_type="elementary",
+                   district_id=district.id, address="1 Main St, Guessville, NJ 08000"),
+            School(name="Twinbrook Elementary", slug="twinbrook-north", school_type="elementary",
+                   district_id=district.id, address="2 Oak Ave, Northtown, NJ 08001"),
+            School(name="Twinbrook Elementary", slug="twinbrook-south", school_type="elementary",
+                   district_id=district.id, address="3 Elm Rd, Southtown, NJ 08002"),
+        ])
+        db.add(SchoolContentItem(title="GUESSTEST EARLY DISMISSAL", scope="district", district_id=district.id,
+                                 category="event", is_current=True, source="ics_feed", is_all_day=True,
+                                 start_date=datetime(2026, 11, 30, 5, tzinfo=UTC)))
+        await db.commit()
+
+    # One school fits the guess: answered for it in the same call.
+    found = json.loads(await _run_tool(app.state.mcp, "list_calendar_items",
+                                       {"school_id": "quillfeather-elementary", "q": "half day"}))
+    assert [i["title"] for i in found["items"]] == ["GUESSTEST EARLY DISMISSAL"]
+    today = json.loads(await _run_tool(app.state.mcp, "get_school", {"school_id_or_slug": "quillfeather-elementary-school"}))
+    assert today["slug"] == "quillfeather"
+
+    # Two fit: the tool names both, with towns, so the model can ask.
+    both = json.loads(await _run_tool(app.state.mcp, "get_school", {"school_id_or_slug": "twinbrook-elementary"}))
+    assert {(c["slug"], c["town"]) for c in both["did_you_mean"]} == {("twinbrook-north", "Northtown"), ("twinbrook-south", "Southtown")}
+    assert "ask the visitor" in both["hint"]
+
+
+@pytest.mark.anyio
+async def test_calendar_tool_says_so_when_the_school_is_unknown():
+    # An unknown slug used to come back as an empty calendar, which the model
+    # read as "nothing scheduled".
+    import database
+    from models import District, School
+    from services.chatbot import _run_tool
+
+    async with database.SessionLocal() as db:
+        district = District(name="Unknown Slug District")
+        db.add(district)
+        await db.flush()
+        db.add(School(name="Quiet Test Elementary", slug="quiet-test", school_type="elementary", district_id=district.id))
+        await db.commit()
+
+    unknown = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", {"school_id": "loud-test-elementary"}))
+    assert unknown["error"] == "No school has the id or slug 'loud-test-elementary'." and unknown["did_you_mean"] == []
+    known = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", {"school_id": "quiet-test"}))
+    assert known == {"count": 0, "items": []}
+
+
+@pytest.mark.anyio
+async def test_calendar_tool_caps_a_huge_result_upcoming_first():
+    # "early dismissal" across every school once came back as 750k tokens.
+    from datetime import UTC, datetime, timedelta
+
+    import database
+    import mcp_server
+    from models import District, School, SchoolContentItem
+    from services.chatbot import _run_tool
+
+    now = datetime.now(UTC)
+    async with database.SessionLocal() as db:
+        district = District(name="Cap Test District")
+        db.add(district)
+        await db.flush()
+        # The unfiltered calendar covers districts that have a tracked school.
+        db.add(School(name="Cap Test Elementary", slug="cap-test-elementary", school_type="elementary", district_id=district.id))
+        common = dict(scope="district", district_id=district.id, category="event", is_current=True, source="ics_feed")
+        db.add_all([SchoolContentItem(title=f"CAPTEST past {n}", start_date=now - timedelta(days=200 + n), **common) for n in range(60)])
+        db.add_all([SchoolContentItem(title=f"CAPTEST soon {n}", start_date=now + timedelta(days=1 + n), **common) for n in range(60)])
+        await db.commit()
+
+    got = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", {"q": "CAPTEST"}))
+    assert got["count"] == 120 and len(got["items"]) == 60 < mcp_server._MAX_CALENDAR_ITEMS
+    assert all("soon" in i["title"] for i in got["items"]) and "upcoming only" in got["note"]
