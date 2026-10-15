@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import logging
 
+import anyio
 import bcrypt
 import httpx
 import jwt
@@ -123,6 +124,15 @@ async def seed_admin() -> None:
         logger.info("seeded_default_admin_user", extra={"username": admin_username})
 
 
+async def hash_password_async(password: str) -> str:
+    """bcrypt takes ~0.25s of CPU by design; in a worker thread, not on the loop."""
+    return await anyio.to_thread.run_sync(hash_password, password)
+
+
+async def verify_password_async(password: str, password_hash: str) -> bool:
+    return await anyio.to_thread.run_sync(verify_password, password, password_hash)
+
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
@@ -149,27 +159,41 @@ def _decode_local_token(token: str) -> str:
 
 async def _verify_supabase_token(token: str) -> dict:
     global _jwks_client
+    if _jwks_client is None:
+        _jwks_client = PyJWKClient(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json")
     try:
-        if _jwks_client is None:
-            _jwks_client = PyJWKClient(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json")
-        signing_key = _jwks_client.get_signing_key_from_jwt(token)
+        # A cache miss fetches the key set over HTTP, synchronously (PyJWKClient
+        # keeps it five minutes): off the event loop, or every request waits.
+        signing_key = await anyio.to_thread.run_sync(_jwks_client.get_signing_key_from_jwt, token)
+    except jwt.PyJWKClientError:
+        # The key set is unreachable or lacks this token's key (a rotation
+        # race): ask Supabase directly.
+        return await _supabase_user(token)
+    except jwt.PyJWTError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+    try:
         return jwt.decode(
             token,
             signing_key.key,
             algorithms=["RS256", "ES256"],
             audience=SUPABASE_JWT_AUDIENCE,
         )
-    except Exception:
-        # Slow-path fallback: ask Supabase directly (covers key rotation races).
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(
-                f"{SUPABASE_URL}/auth/v1/user",
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        if resp.status_code != 200:
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
-        body = resp.json()
-        return {"sub": body["id"], "email": body.get("email")}
+    except jwt.PyJWTError:
+        # Expired or forged. These used to fall through to /auth/v1/user too,
+        # so any junk bearer token cost a round trip to Supabase.
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+
+
+async def _supabase_user(token: str) -> dict:
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        resp = await client.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
+    body = resp.json()
+    return {"sub": body["id"], "email": body.get("email")}
 
 
 async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:

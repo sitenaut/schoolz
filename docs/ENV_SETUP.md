@@ -141,6 +141,17 @@ LOCAL_EVENTS_SCRAPER_URL=
 # Cloud Console; register <PUBLIC_API_URL>/gmail/callback as the redirect URI.
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+# Encrypts stored Gmail tokens at rest (backend/crypto.py) and signs the Gmail
+# connect state (a key derived from it). Comma-separated Fernet keys, newest
+# first. Unset locally is fine: tokens are stored plain and the state falls back
+# to JWT_SECRET. Deployed, Gmail connect answers 503 until it is set. Prod: run
+# scripts/new-encryption-key.sh yourself (vault first, then the Fly secret),
+# then encrypt existing rows on the scheduler machine:
+#   fly ssh console -a schoolz-api --process-group scheduler -C "python /app/scripts/encrypt_secrets.py --apply"
+# Lose every key and each Gmail connection has to be made again.
+# ENCRYPTION_REQUIRE=1, once nothing is plain any more, makes a missing key or
+# a plaintext row an error instead of a fallback.
+DATA_ENCRYPTION_KEYS=
 
 # Every model call outside the chatbot: newsletter extraction, scans,
 # translation, the kids view. In prod this is the scheduler's key - the API
