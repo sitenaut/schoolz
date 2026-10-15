@@ -8,6 +8,8 @@ from functools import partial
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
+from datetime import UTC
+
 import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -278,7 +280,7 @@ async def test_anonymous_turns_are_told_todays_date():
 
 @pytest.mark.anyio
 async def test_calendar_tool_drops_rotation_markers_unless_asked():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     import database
     from models import District, School, SchoolContentItem
@@ -290,7 +292,7 @@ async def test_calendar_tool_drops_rotation_markers_unless_asked():
         await db.flush()
         db.add(School(name="Rotation Test High", slug="rotation-test-high", school_type="high", district_id=district.id))
         common = dict(scope="district", district_id=district.id, category="event", is_current=True, source="ics_feed",
-                      is_all_day=True, start_date=datetime(2026, 9, 29, 4, tzinfo=timezone.utc))
+                      is_all_day=True, start_date=datetime(2026, 9, 29, 4, tzinfo=UTC))
         db.add_all([SchoolContentItem(title=t, **common) for t in ("Day 2", "Day 5", "ROTTEST Senior Portraits", "Day 2 Field Trip")])
         await db.commit()
 
@@ -321,3 +323,31 @@ async def test_spanish_visitor_gets_spanish_instruction_after_the_cache_breakpoi
     await run_chat_turn(app.state.mcp, lang="en", **kwargs)
     assert "Spanish" in es_dynamic and "Spanish" not in seen["dynamic_system"]
     assert es_system == seen["system"]
+
+
+@pytest.mark.anyio
+async def test_list_schools_is_a_compact_directory_with_a_town_filter():
+    # Full records for every school once ran past 200k tokens and 500'd the
+    # chatbot on "which schools are in X?".
+    import database
+    from models import District, School
+    from services.chatbot import _run_tool
+
+    async with database.SessionLocal() as db:
+        district = District(name="Dirtest District")
+        db.add(district)
+        await db.flush()
+        db.add_all([
+            School(name="Dirtest Elementary", slug="dirtest-elementary", school_type="elementary",
+                   district_id=district.id, address="1 Main St, Dirtestville, NJ 08000"),
+            School(name="Other Dirtest High", slug="other-dirtest-high", school_type="high",
+                   district_id=district.id, address="2 Oak Ave, Elsewhere, NJ 08001"),
+        ])
+        await db.commit()
+
+    everything = json.loads(await _run_tool(app.state.mcp, "list_schools", {}))
+    row = next(i for i in everything["items"] if i["slug"] == "dirtest-elementary")
+    assert set(row) == {"id", "slug", "name", "short_name", "school_type", "address", "district_id"}
+
+    town = json.loads(await _run_tool(app.state.mcp, "list_schools", {"town": " dirtestville "}))
+    assert [i["slug"] for i in town["items"]] == ["dirtest-elementary"]
