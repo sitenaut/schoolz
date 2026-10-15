@@ -45,6 +45,21 @@ def parse_warning(text: str | None) -> str | None:
     return match.group(1) if match else "unspecified"
 
 
+def _from_scraper(exc: httpx.HTTPError) -> bool:
+    """Whether the failed request went to one of our scrapers. Services that
+    call a vendor's API directly (SchoolCafé, Nutrislice, NWS) raise the
+    same httpx errors, and their 503 is the vendor's outage, not ours. With
+    no request attached there is nothing to tell by, so keep the scraper
+    reading."""
+    try:
+        host = exc.request.url.host
+    except RuntimeError:
+        return True
+    import scraper_client
+
+    return host in scraper_client.scraper_hosts()
+
+
 def classify_exception(exc: BaseException) -> tuple[str, str]:
     """Returns (code, stage). Walks __cause__/__context__ since scraper_client
     and httpx re-raise, so the ScanError or classifiable exception isn't
@@ -62,12 +77,12 @@ def classify_exception(exc: BaseException) -> tuple[str, str]:
             if status == 502:
                 return "site_did_not_load", "fetch"
             if status in (503, 504):
-                return "scraper_unavailable", "fetch"
+                return ("scraper_unavailable" if _from_scraper(current) else "source_unavailable"), "fetch"
             return "source_http_error", "fetch"
         if isinstance(current, httpx.TimeoutException):
             return "scraper_timeout", "fetch"
         if isinstance(current, httpx.TransportError):
-            return "scraper_unavailable", "fetch"
+            return ("scraper_unavailable" if _from_scraper(current) else "source_unavailable"), "fetch"
 
         if isinstance(current, anthropic.RateLimitError):
             return "llm_rate_limited", "extract"

@@ -1,3 +1,7 @@
+import httpx
+import pytest
+
+import services.schoolcafe as schoolcafe
 from services.schoolcafe import day_description, match_school
 
 
@@ -97,3 +101,27 @@ def test_burlington_city_names_match_despite_ms_hs_and_a_typo():
     assert match_school("Wilbur Watts Intermediate School", cafe)["SchoolName"] == "Wilber Watts Intermediate School"
     assert match_school("Samuel Smith Elementary School", cafe)["SchoolName"] == "Samuel Smith Elementary"
     assert match_school("Wilbur Smith Elementary", cafe) is None  # a near-miss on one token isn't enough
+
+
+@pytest.mark.anyio
+async def test_client_retries_a_brief_503_then_raises_a_lasting_one(monkeypatch):
+    monkeypatch.setattr(schoolcafe, "_RETRY_DELAYS_S", (0, 0))
+    replies = iter([503, 200])
+
+    def flaky(request):
+        return httpx.Response(next(replies), json=[{"ISDId": 7}])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(flaky)) as c:
+        assert await schoolcafe.SchoolCafeClient(c).district_id("X") == 7
+
+    calls = 0
+
+    def down(request):
+        nonlocal calls
+        calls += 1
+        return httpx.Response(503)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as c:
+        with pytest.raises(httpx.HTTPStatusError):
+            await schoolcafe.SchoolCafeClient(c).district_id("X")
+    assert calls == 3

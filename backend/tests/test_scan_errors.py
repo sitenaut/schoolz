@@ -1,12 +1,20 @@
 import anthropic
 import httpx
+import pytest
 import sqlalchemy.exc
+
+import scraper_client
 
 from scheduler.errors import ScanError, classify_exception, parse_warning
 
 
-def _http_status_error(status_code: int) -> httpx.HTTPStatusError:
-    request = httpx.Request("GET", "https://example.invalid")
+@pytest.fixture(autouse=True)
+def _our_scraper(monkeypatch):
+    monkeypatch.setattr(scraper_client, "SCRAPER_URL", "https://scraper.test")
+
+
+def _http_status_error(status_code: int, url: str = "https://scraper.test/fetch-html") -> httpx.HTTPStatusError:
+    request = httpx.Request("GET", url)
     response = httpx.Response(status_code, request=request)
     return httpx.HTTPStatusError("boom", request=request, response=response)
 
@@ -20,9 +28,19 @@ def test_classify_502_is_site_did_not_load():
     assert classify_exception(_http_status_error(502)) == ("site_did_not_load", "fetch")
 
 
-def test_classify_503_504_is_scraper_unavailable():
+def test_classify_503_504_from_our_scraper_is_scraper_unavailable():
     assert classify_exception(_http_status_error(503)) == ("scraper_unavailable", "fetch")
     assert classify_exception(_http_status_error(504)) == ("scraper_unavailable", "fetch")
+
+
+def test_classify_a_vendors_own_503_as_source_unavailable_not_scraper():
+    """Barrington's SchoolCafé scan called the vendor's API directly and got a
+    503; calling that scraper_unavailable sent the diagnosis to the scraper."""
+    vendor = "https://webapis.schoolcafe.com/api/GetMealType"
+    assert classify_exception(_http_status_error(503, vendor)) == ("source_unavailable", "fetch")
+    assert classify_exception(_http_status_error(504, vendor)) == ("source_unavailable", "fetch")
+    refused = httpx.ConnectError("refused", request=httpx.Request("GET", vendor))
+    assert classify_exception(refused) == ("source_unavailable", "fetch")
 
 
 def test_classify_other_http_status_is_source_http_error():
