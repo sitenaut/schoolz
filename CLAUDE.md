@@ -36,6 +36,8 @@ cd frontend && npm run build && npm run test
 ./scripts/schoolz-api.sh <prod|local> METHOD PATH [body.json]   # authenticated API call (see API keys)
 ```
 
+Backend dependencies: edit `backend/requirements.in` (test and lint tools: `requirements-dev.in`) and regenerate the hashed `requirements.txt` with the command at the top of the `.in` file; never edit `requirements.txt` by hand. Dependabot opens weekly grouped update PRs (`.github/dependabot.yml`); `anthropic` is excluded and upgraded by hand (the chatbot's prompt caching depends on it).
+
 ## Environment files
 
 `env/` is entirely gitignored (not even `.example` variants) because some files hold real secrets. **`docs/ENV_SETUP.md` is the source of truth** — read it before touching env config. Root `.env.example`/`.env.prod.example` are tracked templates.

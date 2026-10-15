@@ -1,0 +1,6 @@
+# Test and lint tools: CI and the local stack, never the prod image.
+# Regenerate requirements-dev.txt the same way as requirements.txt
+# (see requirements.in), with requirements-dev.in as the input.
+-c requirements.txt
+pytest==9.1.1
+ruff==0.14.0

@@ -9,8 +9,12 @@ RUN apt-get update \
 
 RUN python -m venv /venv
 ENV PATH=/venv/bin:$PATH
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Locked with hashes (requirements.in says how to regenerate). DEV=1, set by
+# docker-compose.yml for the local stack, adds the test and lint tools.
+ARG DEV=0
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt \
+    && if [ "$DEV" = 1 ]; then pip install --no-cache-dir --require-hashes -r requirements-dev.txt; fi
 
 
 FROM python:3.12.15-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258

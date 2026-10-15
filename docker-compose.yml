@@ -17,7 +17,10 @@ services:
       retries: 10
 
   migrate:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        DEV: "1"  # pytest in the image, for docker exec ... pytest
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,7 +38,10 @@ services:
       disable: true  # the image's check is for the API; this one exits
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        DEV: "1"  # pytest in the image, for docker exec ... pytest
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -87,7 +93,10 @@ services:
       - ./backend:/app
 
   scheduler:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        DEV: "1"  # pytest in the image, for docker exec ... pytest
     # Opt-in (SCHEDULER=1 scripts/compose-local.sh up): left running, it
     # re-scans every Google Doc/Calendar/Site source from the home IP on the
     # same 12h cron prod already runs, which got that network CAPTCHA'd by
