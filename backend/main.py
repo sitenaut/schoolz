@@ -26,6 +26,7 @@ import models  # noqa: F401,E402  (register tables with Base.metadata)
 import observability  # noqa: E402
 import scheduler.jobs  # noqa: F401,E402  (populate the job registry in this process too - needed for run-now)
 import telemetry  # noqa: E402
+from settings import check_settings  # noqa: E402
 from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
 from routers import admin_users as admin_users_router  # noqa: E402
@@ -95,6 +96,7 @@ _mcp: FastMCP | None = None
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    check_settings("api")
     check_deployed_auth_mode()
     prewarm_supabase_jwks()
     await seed_admin()

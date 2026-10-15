@@ -1,4 +1,6 @@
-FROM node:20-alpine AS build
+# Base images are pinned by version and digest; Dependabot proposes the
+# bumps. Node matches CI (.github/workflows/ci.yml).
+FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
 WORKDIR /app
 
 ARG VITE_AUTH_MODE=local
@@ -31,8 +33,10 @@ ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
     VITE_PUBLIC_WEB_URL=$VITE_PUBLIC_WEB_URL \
     VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
 
-COPY package.json ./
-RUN npm install
+# npm ci installs exactly the lockfile, or fails if it disagrees with
+# package.json.
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
 
@@ -42,7 +46,7 @@ RUN npm run build
 # because fly deploys with this directory as the Docker build context; a
 # sibling would be invisible here. Shares the API/auth build args above so
 # both apps point at the same backend in the same auth mode.
-FROM node:20-alpine AS build-focus
+FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build-focus
 WORKDIR /app
 ARG VITE_AUTH_MODE=local
 ARG VITE_API_URL=http://localhost:8000
@@ -52,12 +56,14 @@ ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
     VITE_API_URL=$VITE_API_URL \
     VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
     VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
-COPY focus/package.json ./
-RUN npm install
+COPY focus/package.json focus/package-lock.json ./
+RUN npm ci
 COPY focus/ .
 RUN npm run build
 
-FROM nginx:alpine
+# nginx-unprivileged runs as uid 101 with its pid file and caches in /tmp;
+# it listens on 3000 (nginx.conf.template), which needs no root either.
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:378d0c32f6562f7fd9629170797f57d2b953aa09be983b3daaf4809bb039ca00
 COPY --from=build /app/dist /usr/share/nginx/html
 # Must land exactly where nginx.conf.template's `location /focus/` looks,
 # or that block's try_files fallback loops on a missing index.html and
@@ -80,3 +86,7 @@ ENV BACKEND_INTERNAL_URL=http://127.0.0.1:1
 # Fly overrides this to its own system resolver (see frontend/fly.toml).
 ENV RESOLVER=127.0.0.11
 EXPOSE 3000
+
+# For the local stack; on Fly the http_service checks in fly.toml count.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1

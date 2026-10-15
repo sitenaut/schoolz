@@ -212,11 +212,13 @@ async def _delete_supabase_user(supabase_user_id: str) -> None:
     if not service_key or not auth_module.SUPABASE_URL:
         logger.warning("supabase_user_delete_skipped_no_service_key", extra={"supabase_user_id": supabase_user_id})
         return
+    headers = {"apikey": service_key}
+    # A legacy service_role key is a JWT and also goes as the bearer token; a
+    # new-style secret key (sb_secret_...) is not a JWT and goes in apikey only.
+    if not service_key.startswith("sb_"):
+        headers["Authorization"] = f"Bearer {service_key}"
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.delete(
-            f"{auth_module.SUPABASE_URL}/auth/v1/admin/users/{supabase_user_id}",
-            headers={"apikey": service_key, "Authorization": f"Bearer {service_key}"},
-        )
+        resp = await client.delete(f"{auth_module.SUPABASE_URL}/auth/v1/admin/users/{supabase_user_id}", headers=headers)
     if resp.status_code not in (200, 204, 404):
         logger.error("supabase_user_delete_failed", extra={"status": resp.status_code, "body": resp.text[:300]})
 
