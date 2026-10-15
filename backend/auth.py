@@ -41,6 +41,25 @@ _API_KEY_TOUCH_INTERVAL = timedelta(minutes=5)
 _jwks_client: PyJWKClient | None = None
 
 
+def is_deployed() -> bool:
+    """Running on Fly (prod), as opposed to the local stack or tests."""
+    return bool(os.getenv("FLY_MACHINE_ID")) or os.getenv("APP_ENV") == "prod"
+
+
+def check_deployed_auth_mode() -> None:
+    """Refuse to start a deployed API in local auth mode. AUTH_MODE defaults
+    to "local" when unset, and local mode means self-serve /auth/register,
+    password logins and HS256 tokens signed with JWT_SECRET - a lost [env]
+    line in fly.toml would quietly switch prod to it."""
+    if not is_deployed():
+        return
+    raw = os.getenv("AUTH_MODE")
+    if raw != "supabase":
+        raise RuntimeError(f"AUTH_MODE must be 'supabase' when deployed, got {raw!r}; refusing to start")
+    if not SUPABASE_URL:
+        raise RuntimeError("SUPABASE_URL is not set; refusing to start with AUTH_MODE=supabase")
+
+
 def prewarm_supabase_jwks() -> None:
     global _jwks_client
     if AUTH_MODE != "supabase" or not SUPABASE_URL:

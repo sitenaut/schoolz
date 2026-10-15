@@ -135,6 +135,10 @@ jobs:
           answer "MCP initialize" -X POST "$URL/mcp/" \
             -H 'Accept: application/json, text/event-stream' -H 'Content-Type: application/json' \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"deploy-smoke","version":"0"}}}'
+          # The API docs are local only (main.py). A warning, not a rollback:
+          # the old image would serve them too.
+          code=$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "$URL/openapi.json")
+          if [ "$code" = 404 ]; then echo "ok: /openapi.json is not served"; else echo "::warning::/openapi.json answered $code in prod"; fi
 
       - name: Roll back to the image that was running
         if: failure() && steps.prev.outputs.ref != '' && steps.prev.outputs.ref != 'null/null@null'

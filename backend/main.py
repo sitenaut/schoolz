@@ -26,7 +26,7 @@ import models  # noqa: F401,E402  (register tables with Base.metadata)
 import observability  # noqa: E402
 import scheduler.jobs  # noqa: F401,E402  (populate the job registry in this process too - needed for run-now)
 import telemetry  # noqa: E402
-from auth import prewarm_supabase_jwks, seed_admin  # noqa: E402
+from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
 from routers import admin_users as admin_users_router  # noqa: E402
 from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
@@ -95,6 +95,7 @@ _mcp: FastMCP | None = None
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    check_deployed_auth_mode()
     prewarm_supabase_jwks()
     await seed_admin()
     assert _mcp is not None, "mcp_server must be mounted before the app starts"
@@ -107,7 +108,16 @@ async def lifespan(_: FastAPI):
     telemetry.shutdown_telemetry()
 
 
-app = FastAPI(title="schoolz-api", lifespan=lifespan)
+# The interactive docs and the schema are for local work only: in prod they
+# hand anyone a map of every admin route and its parameters.
+_api_docs = not is_deployed()
+app = FastAPI(
+    title="schoolz-api",
+    lifespan=lifespan,
+    docs_url="/docs" if _api_docs else None,
+    redoc_url="/redoc" if _api_docs else None,
+    openapi_url="/openapi.json" if _api_docs else None,
+)
 FastAPIInstrumentor.instrument_app(app, excluded_urls="health")
 
 app.add_middleware(
