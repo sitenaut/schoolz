@@ -65,7 +65,9 @@ def test_unparseable_date_is_reported_not_dropped_silently():
 
 @pytest.mark.anyio
 async def test_scan_upserts_prunes_and_shows_on_school_page(monkeypatch):
-    doc = {"text": "West Calendar 2026-27\n\tSept. 10- Back to School Night (7pm)\n\tOct. 9- Football Game (6pm)\n"}
+    # A far-off year: the school page hides past events, so a real one
+    # (2026-27) made this test fail once Sept. 10, 2026 had gone by.
+    doc = {"text": "West Calendar 2098-99\n\tSept. 10- Back to School Night (7pm)\n\tOct. 9- Football Game (6pm)\n"}
 
     async def fake_get(self, url, **kwargs):
         return httpx.Response(200, content=doc["text"].encode("utf-8"), request=httpx.Request("GET", url))
@@ -84,7 +86,7 @@ async def test_scan_upserts_prunes_and_shows_on_school_page(monkeypatch):
             school_id = school.id
 
         # The Football Game line disappears from the doc ("subject to change").
-        doc["text"] = "West Calendar 2026-27\n\tSept. 10- Back to School Night (7pm)\n"
+        doc["text"] = "West Calendar 2098-99\n\tSept. 10- Back to School Night (7pm)\n"
         async with database.SessionLocal() as db:
             school = (await db.execute(select(School).where(School.id == school_id))).scalar_one()
             result = await scan_events_doc(db, school)
