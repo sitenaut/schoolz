@@ -77,6 +77,7 @@ Schema changes go through Alembic, targeting either environment:
 ./scripts/alembic_env.sh local upgrade head
 ./scripts/alembic_env.sh prod upgrade head
 ```
+In prod they run on their own in each backend deploy (Fly's release step, `backend/scripts/release.py`). Migrations must only add; the rules are in `backend/alembic/CLAUDE.md`.
 
 ## Deploying to production
 
@@ -105,9 +106,9 @@ Production is two Fly.io apps (`schoolz-api`, `schoolz-web`) plus a managed Post
 The scraper (`scraper/`) is a long-running headless-Chromium process, which doesn't fit Fly's scale-to-zero model well. It needs a host that stays up: a small VM/droplet, a container platform, or any place you can run `docker build`/`docker run` against `scraper/`'s Dockerfile continuously. Point the backend and scheduler at it via `SCRAPER_URL` + a shared `SCRAPER_API_KEY` (sent as an `X-API-Key` header). It has no district-specific logic in it at all — every site's parsing rules live in `backend/services/`, so the same scraper instance works for any district you point this project at.
 
 ### 5. CI/CD (optional, but this repo ships workflows for it)
-- **`.github/workflows/ci.yml`** — the pull-request gate: backend tests on a fresh Postgres, single Alembic head, frontend and Focus tests and builds, a secrets scan and a dependency audit.
-- **`.github/workflows/deploy.yml`** — on every push to `main`: CI on the merged code, then each app whose directory changed since the commit it runs, with a smoke check and automatic rollback. Needs `FLY_API_TOKEN` in a `prod` GitHub environment.
-- **`.github/workflows/migrate.yml`** — Alembic `upgrade head` against prod, run by Deploy before a backend deploy that changed a migration (or by hand). It materializes `env/secrets.prod.env` from the `prod` environment's secrets: `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`.
+- **`.github/workflows/ci.yml`** — the pull-request gate: backend tests on a fresh Postgres, single Alembic head, no migration that drops data without a `# destructive-ok:` note, frontend and Focus tests and builds, a secrets scan and a dependency audit.
+- **`.github/workflows/deploy.yml`** — on every push to `main`: CI on the merged code, then each app whose directory changed since the commit it runs, with a smoke check and automatic rollback. Migrations run inside the backend deploy, in the Fly release step (`release_command` in `backend/fly.toml`), with the app's own `DATABASE_URL`. Needs `FLY_API_TOKEN` in a `prod` GitHub environment.
+- **`.github/workflows/migrate.yml`** — by hand only: `upgrade head`, `current` or `history` against prod. It materializes `env/secrets.prod.env` from the `prod` environment's secrets: `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`.
 
 ### 6. Gmail OAuth (optional — only needed for the personal email-scanner feature)
 Most of this app needs no Google credentials at all — Smore newsletter scanning, the district calendar feed, lunch menus, transportation, and every other public-data scan are plain HTTP fetches. Gmail OAuth is only for the opt-in "connect your Gmail" feature that lets an individual guardian auto-detect school emails in their own inbox.

@@ -60,6 +60,8 @@ jobs:
         run: ruff check --no-cache --select E9,F63,F7,F82 .
       - name: Alembic has a single head
         run: python scripts/check_alembic_single_head.py
+      - name: Migrations only add (no drop or delete without a destructive-ok note)
+        run: python scripts/check_migrations_additive.py
       - name: Migrations apply to an empty database
         run: alembic upgrade head
       - name: Tests

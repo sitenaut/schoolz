@@ -1,6 +1,6 @@
 ---
 name: deploy-schoolz
-description: Ship committed schoolz changes to production via GitHub - push the branch, open/update a PR, merge it, and make sure the DB-migrate and Fly deploy GitHub Actions actually run to completion. Use when the user asks to deploy, ship, "push to prod", "merge and deploy", or "make sure it went live". Also holds the prod facts (which Supabase project is the prod DB, pooler host, Fly networking, running one-off prod scripts) - load it when diagnosing or changing anything in prod.
+description: Ship committed schoolz changes to production via GitHub - push the branch, open/update a PR, merge it, and make sure the Deploy GitHub Action actually runs to completion. Use when the user asks to deploy, ship, "push to prod", "merge and deploy", or "make sure it went live". Also holds the prod facts (which Supabase project is the prod DB, pooler host, Fly networking, running one-off prod scripts) - load it when diagnosing or changing anything in prod.
 ---
 
 # Deploying schoolz to production
@@ -17,18 +17,20 @@ pull requests whose `backend` and `frontend` checks pass (ruleset `main`).
    image label `sha-<commit>`): `backend/**` changed -> `schoolz-api`,
    `frontend/**` changed -> `schoolz-web`, neither -> nothing deploys, which
    is correct. An image without a `sha-` label counts as changed.
-3. **migrate** ("DB migrate", `migrate.yml` as a called workflow) runs first
-   when `backend/alembic/**` or `backend/models.py` changed since the running
-   commit.
-4. **backend**, then **frontend**: each remembers the running image, deploys,
+3. **backend**, then **frontend**: each remembers the running image, deploys,
    smoke-checks it (API: `/health`, `/schools`, MCP `initialize` with the real
    Host; web: `/` and `/focus/`), and **redeploys the previous image** if the
-   deploy or smoke check fails.
+   deploy or smoke check fails. The backend's `flyctl deploy` migrates first:
+   `release_command` in `backend/fly.toml` runs `scripts/release.py` in a
+   temporary machine with the app's secrets, before any machine is replaced.
+   It only upgrades, waits at most 5 s for a lock, and a failure stops the
+   deploy with the old version still up. It does nothing when the database is
+   ahead of the image, and the rollback deploys without it.
 
 A run that was cancelled or failed is caught up by the next push, since the
 comparison is against what is running, not the previous push. By hand:
 `gh workflow run deploy.yml -f target=<both|backend|frontend|scraper>` (main
-only; `scraper` is hand-only). `migrate.yml` by hand offers only
+only; `scraper` is hand-only). `migrate.yml` is by hand only and offers
 `upgrade head`, `current` and `history`.
 
 ## Steps
@@ -88,8 +90,9 @@ only; `scraper` is hand-only). `migrate.yml` by hand offers only
    ```
    gh run view <run-id> --log-failed
    ```
-   Check the actual flyctl output; don't assume the migrate step is at fault
-   just because it ran first. A failed smoke check has already put the
+   Check the actual flyctl output. A failed release step (migration) prints
+   `release:` lines and the Alembic error in the Deploy step's log; nothing was
+   replaced. A failed smoke check has already put the
    previous image back (look for the "Roll back" step's warning), so prod is
    on the old version: fix forward with a new PR. A migration is **not**
    rolled back - the old image runs against the new schema, which is why

@@ -1,10 +1,10 @@
 name: DB migrate
 
-# Run by Deploy before a backend deploy that may carry a migration, or by hand.
-# Upgrade and read-only commands only: a downgrade is a deliberate local act
-# with a backup in hand (docs/BACKUPS.md), not a button.
+# By hand only. Deploys migrate on their own, in the backend's Fly release
+# step (backend/fly.toml, backend/scripts/release.py). Upgrade and read-only
+# commands only: a downgrade is a deliberate local act with a backup in hand
+# (docs/BACKUPS.md), not a button.
 on:
-  workflow_call:
   workflow_dispatch:
     inputs:
       command:

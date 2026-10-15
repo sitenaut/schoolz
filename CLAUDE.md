@@ -127,7 +127,7 @@ Docs:
 
 Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`. Prod admin changes go through `scripts/schoolz-api.sh`, never a direct DB connection.
 
-**A merge deploys what changed, or rolls itself back.** `main` takes only PRs whose `backend` and `frontend` checks pass. Every push to `main` runs `deploy.yml`: CI again on the merged code, then each app whose directory changed since the commit it runs (its `sha-` image label), migrating first when a migration changed, then a smoke check that redeploys the previous image on failure. A migration is never rolled back, so migrations only add. Procedure and prod facts: the `deploy-schoolz` skill.
+**A merge deploys what changed, or rolls itself back.** `main` takes only PRs whose `backend` and `frontend` checks pass. Every push to `main` runs `deploy.yml`: CI again on the merged code, then each app whose directory changed since the commit it runs (its `sha-` image label), then a smoke check that redeploys the previous image on failure. Migrations run in the backend's Fly release step (`backend/scripts/release.py`) before any machine is replaced, and are never rolled back, so they only add: CI fails one that drops or deletes without a `# destructive-ok:` note. Rules: `backend/alembic/CLAUDE.md`. Procedure and prod facts: the `deploy-schoolz` skill.
 
 ## Testing
 
