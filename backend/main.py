@@ -41,6 +41,7 @@ from routers import chat as chat_router  # noqa: E402
 from routers import class_years as class_years_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
 from routers import contact_messages as contact_messages_router  # noqa: E402
+from routers import csp_report as csp_report_router  # noqa: E402
 from routers import data_audit as data_audit_router  # noqa: E402
 from routers import directory as directory_router  # noqa: E402
 from routers import districts as districts_router  # noqa: E402
@@ -192,6 +193,7 @@ async def log_requests(request: Request, call_next):
 request_context.install(app)
 
 app.include_router(health_router.router)
+app.include_router(csp_report_router.router)
 app.include_router(admin_config_router.router)
 app.include_router(admin_users_router.router)
 app.include_router(admin_api_keys_router.router)

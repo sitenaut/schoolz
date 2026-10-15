@@ -57,6 +57,7 @@ DELETE /contact-messages/{message_id}  perm:inbox.manage
 POST   /contact-messages/{message_id}/unread  perm:inbox.manage
 GET    /course-preferences  login
 PUT    /course-preferences/{course_key}  login
+POST   /csp-report  public
 GET    /directory/staff  public
 GET    /districts  public
 POST   /districts  perm:schools.manage

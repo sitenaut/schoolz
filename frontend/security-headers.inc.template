@@ -1,0 +1,28 @@
+# Security headers (SZ-19), included in every location of
+# nginx.conf.template: nginx drops server-level add_header lines in any
+# location that sets one of its own, so each location includes this
+# instead of relying on inheritance. Rendered by the image's envsubst step
+# to /etc/nginx/conf.d/security-headers.inc (not *.conf, so nginx doesn't
+# also load it at http level).
+#
+# The Content-Security-Policy is REPORT-ONLY: nothing is blocked; browsers
+# post each violation to /csp-report (proxied to the API's
+# routers/csp_report.py, logged as csp_violation). Once a stretch of real
+# traffic reports nothing unexpected, rename the header to
+# Content-Security-Policy to enforce it.
+#   script-src   self; GA4's loader; Cloudflare Turnstile (/upload)
+#   style-src    self; Google Fonts CSS; 'unsafe-inline' for inline styles
+#                some third-party widgets inject
+#   img-src      https: (school logos and newsletter images come from many hosts)
+#   connect-src  self (Faro via /rum/collect); the API and Supabase
+#                (CSP_CONNECT_SRC); GA4 collection
+#   frame-src    Turnstile's challenge
+# The rest are enforced now.
+add_header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' https://www.googletagmanager.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' ${CSP_CONNECT_SRC} https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri ${CSP_REPORT_URL}; report-to csp" always;
+add_header Reporting-Endpoints "csp=\"${CSP_REPORT_URL}\"" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "DENY" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+# geolocation: "events near me" on /local asks for it.
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=(), usb=()" always;
+add_header Strict-Transport-Security "max-age=31536000" always;

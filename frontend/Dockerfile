@@ -71,6 +71,12 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # and this stage existing.
 COPY --from=build-focus /app/dist /usr/share/nginx/html/focus
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY security-headers.inc.template /etc/nginx/templates/security-headers.inc.template
+# What the Content-Security-Policy lets the page connect to besides itself,
+# and where browsers send violation reports. Local defaults; frontend/fly.toml
+# sets prod's.
+ENV CSP_CONNECT_SRC="http://localhost:8000" \
+    CSP_REPORT_URL="/csp-report"
 # Syntactically-valid placeholder so nginx's envsubst-on-templates startup
 # step never produces a broken "proxy_pass ;" when FARO_COLLECTOR_URL isn't
 # set (e.g. local compose, where RUM is off and VITE_FARO_URL is empty too)

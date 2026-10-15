@@ -191,6 +191,8 @@ PUT /course-preferences/{course_key}
   path course_key: string
   body: CoursePreferenceIn
   -> 200: CoursePreferenceOut
+POST /csp-report
+  -> 204: -
 GET /directory/staff
   query category?: string | null
   query district_id?: list[string]

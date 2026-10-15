@@ -62,6 +62,7 @@ server {
     # is templated (not a plain .conf) specifically so FARO_COLLECTOR_URL
     # can be a runtime Fly secret instead of a build arg.
     location = /rum/collect {
+        include /etc/nginx/conf.d/security-headers.inc;
         proxy_pass ${FARO_COLLECTOR_URL};
         proxy_ssl_server_name on;
         proxy_set_header Host $proxy_host;
@@ -75,9 +76,21 @@ server {
     # still starts when the backend isn't up yet (local compose ordering).
     # Exact-match, so it wins over the static-asset regex below (".xml").
     location = /sitemap.xml {
+        include /etc/nginx/conf.d/security-headers.inc;
         set $sitemap_upstream ${BACKEND_INTERNAL_URL};
         proxy_pass $sitemap_upstream/sitemap.xml;
         proxy_ssl_server_name on;
+    }
+
+    # Browsers post Content-Security-Policy violations here (see
+    # security-headers.inc.template); same-origin so the policy needs no API
+    # host, proxied like the sitemap above.
+    location = /csp-report {
+        include /etc/nginx/conf.d/security-headers.inc;
+        set $csp_upstream ${BACKEND_INTERNAL_URL};
+        proxy_pass $csp_upstream/csp-report;
+        proxy_ssl_server_name on;
+        client_max_body_size 16k;
     }
 
     # Static assets are served directly regardless of user agent - a
@@ -86,6 +99,7 @@ server {
     # bot-detection block below from ever intercepting a hashed asset
     # request.
     location ~* \.(?:js|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|map|json|xml|txt|webmanifest)$ {
+        include /etc/nginx/conf.d/security-headers.inc;
         try_files $uri =404;
     }
 
@@ -100,10 +114,12 @@ server {
     # a bot to index, and a prerender pass would spend one of the
     # scraper's three concurrency slots rendering a login wall.
     location /focus/ {
+        include /etc/nginx/conf.d/security-headers.inc;
         try_files $uri $uri/ /focus/index.html;
     }
 
     location / {
+        include /etc/nginx/conf.d/security-headers.inc;
         # proxy_ssl_server_name isn't valid inside an `if` block (nginx:
         # "directive is not allowed here"), so it sits here instead -
         # harmless for the non-crawler case below, which never reaches
@@ -143,6 +159,7 @@ server {
     }
 
     location @spa_for_crawler {
+        include /etc/nginx/conf.d/security-headers.inc;
         try_files /index.html =404;
     }
 }
