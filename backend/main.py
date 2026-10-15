@@ -24,24 +24,24 @@ if os.getenv("ANTHROPIC_API_KEY_INTERACTIVE"):
 import database  # noqa: E402
 import models  # noqa: F401,E402  (register tables with Base.metadata)
 import observability  # noqa: E402
+import request_context  # noqa: E402
 import scheduler.jobs  # noqa: F401,E402  (populate the job registry in this process too - needed for run-now)
 import telemetry  # noqa: E402
-from settings import check_settings  # noqa: E402
 from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
-from routers import admin_config as admin_config_router  # noqa: E402
-from routers import admin_users as admin_users_router  # noqa: E402
 from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
+from routers import admin_chatbot as admin_chatbot_router  # noqa: E402
+from routers import admin_config as admin_config_router  # noqa: E402
 from routers import admin_secret_requests as admin_secret_requests_router  # noqa: E402
+from routers import admin_users as admin_users_router  # noqa: E402
 from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
 from routers import chat as chat_router  # noqa: E402
-from routers import admin_chatbot as admin_chatbot_router  # noqa: E402
-from routers import data_audit as data_audit_router  # noqa: E402
 from routers import class_years as class_years_router  # noqa: E402
 from routers import community_submissions as community_submissions_router  # noqa: E402
 from routers import contact_messages as contact_messages_router  # noqa: E402
+from routers import data_audit as data_audit_router  # noqa: E402
 from routers import directory as directory_router  # noqa: E402
 from routers import districts as districts_router  # noqa: E402
 from routers import email_scanners as email_scanners_router  # noqa: E402
@@ -49,19 +49,20 @@ from routers import gmail as gmail_router  # noqa: E402
 from routers import health as health_router  # noqa: E402
 from routers import invites as invites_router  # noqa: E402
 from routers import local_events as local_events_router  # noqa: E402
-from routers import seasonal_attractions as seasonal_attractions_router  # noqa: E402
-from routers import seasonal_guides as seasonal_guides_router  # noqa: E402
 from routers import notifications as notifications_router  # noqa: E402
 from routers import scheduled_jobs as scheduled_jobs_router  # noqa: E402
 from routers import school_emails as school_emails_router  # noqa: E402
 from routers import schools as schools_router  # noqa: E402
 from routers import scraper as scraper_router  # noqa: E402
+from routers import seasonal_attractions as seasonal_attractions_router  # noqa: E402
+from routers import seasonal_guides as seasonal_guides_router  # noqa: E402
 from routers import seo as seo_router  # noqa: E402
-from routers import survey as survey_router  # noqa: E402
 from routers import smore_newsletters as smore_newsletters_router  # noqa: E402
 from routers import specials as specials_router  # noqa: E402
 from routers import student_accounts as student_accounts_router  # noqa: E402
 from routers import students as students_router  # noqa: E402
+from routers import survey as survey_router  # noqa: E402
+from settings import check_settings  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
     # Every GET currently sends Content-Type: application/json (see
     # apiFetch), which makes it a non-simple request and forces a preflight
     # - and Faro's traceparent header will too, once RUM ships. Browsers
@@ -184,6 +186,10 @@ async def log_requests(request: Request, call_next):
     )
     return response
 
+
+# After every other middleware, so it is the outermost: the ID is set before
+# log_requests runs and is on every response, errors included.
+request_context.install(app)
 
 app.include_router(health_router.router)
 app.include_router(admin_config_router.router)
