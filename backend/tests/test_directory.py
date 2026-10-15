@@ -42,11 +42,17 @@ async def _seed() -> tuple[str, str]:
 
 
 async def _seed_itinerant(tag: str, emails_per_school: list[tuple[str, str | None]]) -> list[str]:
-    """One person written once per school, the way the real scans do it."""
+    """One person written once per school, the way the real scans do it.
+
+    The schools get a type of their own plus one school of that type the
+    person isn't at, so "district-wide" never depends on how many elementary
+    schools the database already holds (an empty CI database has none)."""
     slugs = []
+    school_type = f"itinerant-{tag}"
     async with database.SessionLocal() as db:
+        db.add(School(name=f"Spare {tag}", slug=f"spare-{tag}", school_type=school_type, short_name="Spare"))
         for i, (school_name, title) in enumerate(emails_per_school):
-            school = School(name=f"{school_name} {tag}", slug=f"{school_name.lower()}-{tag}", school_type="elementary", short_name=school_name)
+            school = School(name=f"{school_name} {tag}", slug=f"{school_name.lower()}-{tag}", school_type=school_type, short_name=school_name)
             db.add(school)
             await db.flush()
             slugs.append(school.slug)
@@ -101,7 +107,7 @@ async def test_one_person_at_many_schools_collapses_to_one_row():
         # rather than whichever happened to sort first.
         assert person["title"] == "ESL Teacher"
         assert person["category"] == "teacher"
-        # Not district-wide: three elementary schools out of more than three.
+        # Not district-wide: three schools of the type out of four.
         assert person["is_district_wide"] is False
         assert person["affiliation"] == "Alpha +2"
 

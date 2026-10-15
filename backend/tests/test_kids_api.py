@@ -192,6 +192,9 @@ async def test_progress_flags_low_grades(monkeypatch):
 
 @pytest.mark.anyio
 async def test_assignment_suggestion_is_cached_and_shared_across_the_class(monkeypatch):
+    # The feed's due dates carry no year; unfrozen, they turn "missing" once
+    # the real date passes them and the "due" list below comes back empty.
+    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
     calls = []
 
     async def fake_suggestion(title, course_name):
