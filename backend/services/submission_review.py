@@ -172,7 +172,7 @@ async def read_upload(data: bytes, *, school_name: str | None, submitter_note: s
             max_tokens=16000,
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": [_upload_block(data), {"type": "text", "text": "\n\n".join(context)}]}],
-            # The pinned SDK predates output_config, so it rides in the body.
+            # Written when the pinned SDK predated output_config; the body works either way.
             extra_body={"output_config": {"format": {"type": "json_schema", "schema": _OUTPUT_SCHEMA}}},
         )
     except ReadError:

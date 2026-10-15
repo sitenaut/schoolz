@@ -256,7 +256,7 @@ async def scan_bulletin(db: AsyncSession, school: School) -> str:
 
     today = datetime.now(_ET).date()
     # The date is in the hash: a year-less doc resolves differently across the school-year boundary.
-    digest = hashlib.sha256(f"{text}|{today.year}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(f"{text}|{today.year}".encode()).hexdigest()
     if digest == school.bulletin_content_hash:
         return "bulletin unchanged since last scan"
     if not ANTHROPIC_API_KEY:
@@ -271,7 +271,7 @@ async def scan_bulletin(db: AsyncSession, school: School) -> str:
     response = await client_ai.messages.create(
         model=MODEL,
         max_tokens=8192,
-        temperature=0,
+        extra_body={"temperature": 0},
         system=_SYSTEM_PROMPT.format(today=today.isoformat(), weekday=today.strftime("%A")),
         tools=[_EXTRACTION_TOOL],
         tool_choice={"type": "tool", "name": "record_bulletin_items"},

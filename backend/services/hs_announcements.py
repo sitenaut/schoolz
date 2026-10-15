@@ -167,7 +167,7 @@ def _grades_to_grad_years(audience_grades: list[str] | None) -> list[int] | None
 def _stable_uid(title: str, start_date: date | None) -> str:
     import hashlib
 
-    digest = hashlib.sha1(f"{title.strip().lower()}|{start_date.isoformat() if start_date else ''}".encode("utf-8")).hexdigest()[:20]
+    digest = hashlib.sha1(f"{title.strip().lower()}|{start_date.isoformat() if start_date else ''}".encode()).hexdigest()[:20]
     return f"announcements:{digest}"
 
 
@@ -215,7 +215,7 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
         response = await client_ai.messages.create(
             model=MODEL,
             max_tokens=4096,
-            temperature=0,
+            extra_body={"temperature": 0},
             system=system_prompt,
             tools=[_EXTRACTION_TOOL],
             tool_choice={"type": "tool", "name": "record_announcements_block"},
