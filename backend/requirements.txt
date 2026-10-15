@@ -802,9 +802,9 @@ huggingface-hub==2.2.0 \
     --hash=sha256:1667f145dc56dc210d60966069397df9ecfca9607a5d43db88b308c89dae56b3 \
     --hash=sha256:5d1b47537394e4215cb858aa12fd493d0f7ef7f58990f5dcd24bc173107b2871
     # via tokenizers
-icalendar==6.1.0 \
-    --hash=sha256:43c2db8632959d634f4e48f6e6131e706bf2cdddad488cf0b72fda079b796bad \
-    --hash=sha256:46c09b774a6e6948495dafcb166dc15135c8259d0ae25491f154cbc822714b69
+icalendar==7.3.0 \
+    --hash=sha256:7bd001c8e648205e1bde5c6a5b77096598e8d0893dcf57755c6c597635620132 \
+    --hash=sha256:8355acfe17be81b368f0b1e3740817cea9b56ea889931f8f1a87c62f2d28db0b
     # via -r requirements.in
 idna==3.20 \
     --hash=sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44 \
@@ -2267,6 +2267,7 @@ typing-extensions==4.16.0 \
     #   fastapi
     #   httpx2
     #   huggingface-hub
+    #   icalendar
     #   mcp
     #   opentelemetry-api
     #   opentelemetry-exporter-otlp-proto-http
