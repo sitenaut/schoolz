@@ -1,3 +1,4 @@
+import inspect
 import os
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
@@ -38,7 +39,17 @@ def _no_real_geocoding(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-async def _isolated_db_transaction(monkeypatch):
+def _isolated_db_transaction(request):
+    """Every async test runs inside `_db_transaction` below. A plain sync test
+    can't reach the async database, and pytest 9 refuses a sync test that
+    depends on an async fixture (pytest 8 handed it an un-awaited coroutine,
+    so it never had a transaction either)."""
+    if inspect.iscoroutinefunction(request.function) and request.node.get_closest_marker("anyio"):
+        request.getfixturevalue("_db_transaction")
+
+
+@pytest.fixture
+async def _db_transaction(monkeypatch):
     """Wraps every test in one database transaction that's rolled back at
     the end, so nothing a test does - registering a user, creating a
     school or district, scheduling a job - persists past that test. This
