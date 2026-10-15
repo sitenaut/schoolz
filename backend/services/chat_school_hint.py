@@ -46,8 +46,8 @@ def match_schools(message: str, schools: list[dict[str, Any]]) -> list[dict[str,
     in the message ("cherry hill east", "beck", "kingston"). A name that is
     only its town ("Haddonfield" HS) also needs a type word, so "Haddonfield
     schools" names the district, not the high school. Failing that, the last
-    word of a name alone ("Johnson Elementary" for James Johnson), used as a
-    name and not part of some town's name ("Hill", "East").
+    word of a name alone ("Johnson Elementary" for James Johnson, "at
+    Harte"), used as a name and not part of some town's name ("Hill", "East").
     """
     said = set(_words(message))
     town_words = {w for s in schools for w in _words(town(s.get("address")))}
@@ -70,10 +70,19 @@ def match_schools(message: str, schools: list[dict[str, Any]]) -> list[dict[str,
         last = [w for w in _words(s.get("short_name") or s.get("name")) if w not in _GENERIC and len(w) > 1]
         if not last or len(last[-1]) <= 3 or last[-1] in town_words:
             continue
-        # Used as a school's name: before a type word, or ending the question.
-        # Without this, "picture day" named Big Picture Learning Academy and
-        # "when does winter break start" a Head Start centre.
-        if re.search(rf"\b{re.escape(last[-1])}\b(?:\s+(?:{_TYPE_WORD_RE})\b|\W*$)", message.lower()):
+        # Used as a school's name: before a type word ("johnson elementary"),
+        # or written as a name - capitalised, not after "the", not followed by
+        # another name ("Cooper River") - ending the question or after
+        # at/to/for/from ("school at Harte today"). Without this, "picture
+        # day" named Big Picture Learning Academy, "winter break start" a Head
+        # Start centre, and "at five?" Lindenwold School Five.
+        word = re.escape(last[-1])
+        name = word.capitalize()
+        if (
+            re.search(rf"\b{word}\s+(?:{_TYPE_WORD_RE})\b", message.lower())
+            or re.search(rf"(?<!\bthe )(?<!\bThe )\b{name}\W*$", message)
+            or re.search(rf"\b(?i:at|to|for|from)\s+{name}\b(?!\s+[A-Z])", message)
+        ):
             loose.append(s)
     return loose
 
