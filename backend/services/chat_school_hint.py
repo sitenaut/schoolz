@@ -8,6 +8,7 @@ here and saying so in the turn's context leaves it nothing to ask about;
 when several schools really fit, it gets their names and towns to ask with.
 """
 
+import asyncio
 import re
 import time
 from typing import Any
@@ -106,9 +107,14 @@ class SchoolDirectory:
         self._ttl_s = ttl_s
         self._at = 0.0
         self._rows: list[dict[str, Any]] = []
+        self._lock = asyncio.Lock()
 
     async def rows(self, load) -> list[dict[str, Any]]:
-        if not self._rows or time.monotonic() - self._at > self._ttl_s:
-            self._rows = await load()
-            self._at = time.monotonic()
-        return self._rows
+        # One load at a time: the admin compare panel runs two turns at once,
+        # and both reading /schools together broke the test suite's shared
+        # connection - and would be a wasted second read in prod.
+        async with self._lock:
+            if not self._rows or time.monotonic() - self._at > self._ttl_s:
+                self._rows = await load()
+                self._at = time.monotonic()
+            return self._rows
