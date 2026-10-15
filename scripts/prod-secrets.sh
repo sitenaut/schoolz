@@ -5,6 +5,9 @@
 #   scripts/prod-secrets.sh run --reason "why" --secrets NAME,NAME -- <command...>
 #   scripts/prod-secrets.sh init        # one-time, at an interactive terminal
 #
+# init sets the one unlock key, so running it on a second machine breaks the
+# first: copy the encrypted token file between machines instead.
+#
 # How it works: the prod service-account token sits on this machine only
 # encrypted; the key that decrypts it is a Fly secret on schoolz-api
 # (SECRETS_UNLOCK_KEY). `run` asks the API for access, printing a link and a
@@ -161,7 +164,10 @@ dec = subprocess.run(
     capture_output=True,
 )
 if dec.returncode != 0 or not dec.stdout.strip():
-    sys.exit("Could not decrypt the prod token with the unlock key (was init re-run? ask again).")
+    sys.exit(
+        "Could not decrypt the prod token with the unlock key: init was likely run on another machine. "
+        f"Copy that machine's {token_file} here (docs/ENV_SETUP.md); don't re-run init."
+    )
 
 env = {k: v for k, v in os.environ.items() if k != key_var}
 env["OP_SERVICE_ACCOUNT_TOKEN"] = dec.stdout.decode().strip()

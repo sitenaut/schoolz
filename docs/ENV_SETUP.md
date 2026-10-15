@@ -55,6 +55,12 @@ as its env var, so its reference is `op://<vault>/<NAME>/credential`.
     encrypts it, and sets `SECRETS_UNLOCK_KEY` on `schoolz-api` (restarting its
     machines). Re-run it to rotate the token or the key. Revoke the service
     account at 1password.com to cut access outright.
+  - **A second machine: copy the file, don't re-run `init`.** There is one
+    unlock key, so `init` on one machine leaves every other machine's file
+    undecryptable ("Could not decrypt the prod token with the unlock key").
+    Copy `op-prod-token.enc` from a machine where it works (e.g.
+    `tailscale file cp`) to the same path, mode 600; it is useless without an
+    approval. After a rotation, copy it to every machine again.
   - The approver is only as safe as their reading of the command: it sees prod
     secrets for as long as it runs. A session cannot approve itself — API keys are
     refused by the decision endpoints.
