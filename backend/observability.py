@@ -67,6 +67,11 @@ cold_start_requests_total = _meter.create_counter(
     description="First request handled after a Fly machine start.",
 )
 
+csp_violations_total = _meter.create_counter(
+    "schoolz.csp.violations",
+    description="Content-Security-Policy violation reports received, by directive (routers/csp_report.py).",
+)
+
 user_created_total = _meter.create_counter(
     "schoolz.user.created",
     description="New user rows created, by source (local_register / supabase_autoprovision).",

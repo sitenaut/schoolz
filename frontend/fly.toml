@@ -38,6 +38,11 @@ primary_region = "ewr"
   # Docker's embedded 127.0.0.11 (the image's default) doesn't exist on a
   # Fly machine.
   RESOLVER = "[fdaa::3]:53"
+  # Content-Security-Policy (security-headers.inc.template): the API and
+  # Supabase, which the page calls directly; and the absolute URL browsers
+  # post violation reports to (the Reporting API wants one).
+  CSP_CONNECT_SRC = "https://schoolz-api.sitenaut.com https://lxithuvstfslndvsdnsk.supabase.co wss://lxithuvstfslndvsdnsk.supabase.co"
+  CSP_REPORT_URL = "https://schoolz.sitenaut.com/csp-report"
 
 [http_service]
   internal_port = 3000
