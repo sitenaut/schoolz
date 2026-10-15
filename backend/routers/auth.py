@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth as auth_module
 import observability
-from auth import create_local_token, get_current_user, hash_password, verify_password
+from auth import create_local_token, get_current_user, hash_password_async, verify_password_async
 from database import get_db
 from models import (
     EmailScanner,
@@ -101,7 +101,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     user = User(
         email=payload.email,
         username=payload.username,
-        password_hash=hash_password(payload.password),
+        password_hash=await hash_password_async(payload.password),
     )
     db.add(user)
     await db.commit()
@@ -122,7 +122,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         select(User).where(or_(User.email == payload.username_or_email, User.username == payload.username_or_email))
     )
     user = result.scalar_one_or_none()
-    if not user or not user.password_hash or not verify_password(payload.password, user.password_hash):
+    if not user or not user.password_hash or not await verify_password_async(payload.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect username/email or password")
 
     return TokenResponse(access_token=create_local_token(user.id))
@@ -158,9 +158,9 @@ async def change_password(payload: ChangePasswordRequest, user: User = Depends(g
     Supabase Auth directly (`supabase.auth.updateUser`) - the backend never
     sees a Supabase password."""
     _local_only()
-    if not user.password_hash or not verify_password(payload.current_password, user.password_hash):
+    if not user.password_hash or not await verify_password_async(payload.current_password, user.password_hash):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
-    user.password_hash = hash_password(payload.new_password)
+    user.password_hash = await hash_password_async(payload.new_password)
     user.password_reset_token = None
     user.password_reset_expires_at = None
     await db.commit()
@@ -195,7 +195,7 @@ async def reset_password(payload: ResetPasswordRequest, db: AsyncSession = Depen
     user = result.scalar_one_or_none()
     if not user or not user.password_reset_expires_at or user.password_reset_expires_at < datetime.now(timezone.utc):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "This reset link is invalid or has expired")
-    user.password_hash = hash_password(payload.new_password)
+    user.password_hash = await hash_password_async(payload.new_password)
     user.password_reset_token = None
     user.password_reset_expires_at = None
     await db.commit()
@@ -230,7 +230,7 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
     if payload.confirm != _DELETE_CONFIRMATION:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Type {_DELETE_CONFIRMATION} to confirm')
     if auth_module.AUTH_MODE == "local" and user.password_hash:
-        if not payload.password or not verify_password(payload.password, user.password_hash):
+        if not payload.password or not await verify_password_async(payload.password, user.password_hash):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Password is incorrect")
 
     uid = user.id

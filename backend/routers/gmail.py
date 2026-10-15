@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -5,31 +6,50 @@ import httpx
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import JWT_ALGORITHM, JWT_SECRET, get_user_permissions, require_permission
+from auth import JWT_SECRET, get_user_permissions, is_deployed, require_permission
+from crypto import derived_key
 from database import get_db
 from gmail_client import GMAIL_SCOPES, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, TOKEN_URI
-from models import GmailToken, User
+from models import GmailToken, OAuthState, User
 from oauth_redirect import resolve_redirect_uri
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
 _STATE_EXPIRY_MINUTES = 10
+_STATE_PURPOSE = "gmail-connect"
+
+
+def _state_key() -> bytes | None:
+    """The OAuth state is signed with its own key, derived from
+    DATA_ENCRYPTION_KEYS. JWT_SECRET is only a local fallback: it signs
+    local-mode logins, and prod has none (it once signed states with an
+    empty key, so anyone could have forged one)."""
+    key = derived_key(_STATE_PURPOSE)
+    if key is None and not is_deployed() and len(JWT_SECRET) >= 16:
+        key = JWT_SECRET.encode()
+    return key
 
 
 @router.get("/auth-url")
-async def auth_url(user: User = Depends(require_permission("email.manage"))):
-    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+async def auth_url(user: User = Depends(require_permission("email.manage")), db: AsyncSession = Depends(get_db)):
+    key = _state_key()
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET or key is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Google OAuth is not configured")
 
     redirect_uri = resolve_redirect_uri("/gmail/callback")
     now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=_STATE_EXPIRY_MINUTES)
+    nonce = secrets.token_urlsafe(32)
+    await db.execute(delete(OAuthState).where(OAuthState.expires_at < now))
+    db.add(OAuthState(nonce=nonce, user_id=user.id, expires_at=expires_at))
+    await db.commit()
     state = jwt.encode(
-        {"user_id": user.id, "redirect_uri": redirect_uri, "exp": now + timedelta(minutes=_STATE_EXPIRY_MINUTES)},
-        JWT_SECRET,
-        algorithm=JWT_ALGORITHM,
+        {"purpose": _STATE_PURPOSE, "jti": nonce, "user_id": user.id, "redirect_uri": redirect_uri, "exp": expires_at},
+        key,
+        algorithm="HS256",
     )
 
     params = {
@@ -55,15 +75,34 @@ def _popup_response(message: str) -> HTMLResponse:
 
 @router.get("/callback")
 async def callback(code: str | None = None, state: str | None = None, db: AsyncSession = Depends(get_db)):
-    if not code or not state:
+    key = _state_key()
+    if not code or not state or key is None:
         return _popup_response("gmail:error")
     try:
-        payload = jwt.decode(state, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            state, key, algorithms=["HS256"], options={"require": ["exp", "jti", "purpose", "user_id", "redirect_uri"]}
+        )
     except jwt.PyJWTError:
+        return _popup_response("gmail:error")
+    if payload["purpose"] != _STATE_PURPOSE:
         return _popup_response("gmail:error")
 
     user_id = payload["user_id"]
     redirect_uri = payload["redirect_uri"]
+    # Single use: the first callback with this state deletes its row; a
+    # replay (or a state for a different user) finds nothing.
+    used = await db.execute(
+        delete(OAuthState)
+        .where(
+            OAuthState.nonce == payload["jti"],
+            OAuthState.user_id == user_id,
+            OAuthState.expires_at >= datetime.now(timezone.utc),
+        )
+        .returning(OAuthState.nonce)
+    )
+    if used.scalar_one_or_none() is None:
+        return _popup_response("gmail:error")
+    await db.commit()
     # The state is only ever minted for an admin (auth_url above), but the
     # popup lands here unauthenticated - re-check rather than trust the
     # signed blob alone in case the user was demoted mid-flow.

@@ -7,6 +7,7 @@ from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from crypto import EncryptedText
 from database import Base
 
 
@@ -294,12 +295,25 @@ class GmailToken(Base):
 
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), primary_key=True)
     google_email: Mapped[str] = mapped_column(String(255), primary_key=True)
-    access_token: Mapped[str] = mapped_column(String, nullable=False)
-    refresh_token: Mapped[str] = mapped_column(String, nullable=False)
+    # Encrypted at rest once DATA_ENCRYPTION_KEYS is set (crypto.py).
+    access_token: Mapped[str] = mapped_column(EncryptedText, nullable=False)
+    refresh_token: Mapped[str] = mapped_column(EncryptedText, nullable=False)
     token_expiry: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class OAuthState(Base):
+    """One outstanding Gmail connect: the nonce in the OAuth `state` it was
+    sent with. The callback deletes the row to use it, so a state works once
+    (routers/gmail.py)."""
+
+    __tablename__ = "oauth_states"
+
+    nonce: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class ScheduledJob(Base):
