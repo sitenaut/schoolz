@@ -24,6 +24,18 @@ fly_app=${SCHOOLZ_FLY_APP:-schoolz-api}
 key_var=SCHOOLZ_API_KEY_PROD
 
 die() { echo "$*" >&2; exit 2; }
+
+# The token file is PBKDF2-encrypted. macOS's /usr/bin/openssl is LibreSSL,
+# which has no -pbkdf2, so prefer a real OpenSSL (Homebrew's) when the one on
+# PATH lacks it. Same format everywhere, so a file made on WSL opens here.
+has_pbkdf2() { case "$("$1" enc -help 2>&1)" in *pbkdf2*) return 0 ;; esac; return 1; }
+openssl_bin=${SCHOOLZ_OPENSSL:-openssl}
+if ! has_pbkdf2 "$openssl_bin"; then
+  for c in /opt/homebrew/opt/openssl@3/bin/openssl /usr/local/opt/openssl@3/bin/openssl \
+           /opt/homebrew/opt/openssl/bin/openssl /usr/local/opt/openssl/bin/openssl; do
+    if [ -x "$c" ] && has_pbkdf2 "$c"; then openssl_bin=$c; break; fi
+  done
+fi
 usage() {
   echo "usage: $0 run --reason \"why\" --secrets NAME,NAME -- <command...>" >&2
   echo "       $0 init" >&2
@@ -36,19 +48,19 @@ shift
 
 case "$cmd" in
 init)
-  command -v openssl >/dev/null || die "openssl not found"
+  has_pbkdf2 "$openssl_bin" || die "no openssl with -pbkdf2 (macOS: brew install openssl@3)"
   command -v fly >/dev/null || die "fly not found (needed to set SECRETS_UNLOCK_KEY on $fly_app)"
   [ -t 0 ] || die "run init at an interactive terminal: it asks for the token"
   printf 'Paste the prod service-account token (hidden): ' >&2
   read -rs token
   echo >&2
   [ -n "$token" ] || die "no token entered"
-  unlock=$(openssl rand -hex 32)
+  unlock=$("$openssl_bin" rand -hex 32)
   mkdir -p "$(dirname "$token_file")"
   chmod 700 "$(dirname "$token_file")"
   umask 077
-  printf %s "$token" | openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass fd:3 -out "$token_file.new" 3<<<"$unlock"
-  back=$(openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass fd:3 -in "$token_file.new" 3<<<"$unlock")
+  printf %s "$token" | "$openssl_bin" enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass fd:3 -out "$token_file.new" 3<<<"$unlock"
+  back=$("$openssl_bin" enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass fd:3 -in "$token_file.new" 3<<<"$unlock")
   [ "$back" = "$token" ] || { rm -f "$token_file.new"; die "encrypt/decrypt check failed; nothing changed"; }
   unset token back
   # Setting the secret restarts $fly_app's machines. On failure nothing is
@@ -89,8 +101,8 @@ run)
   read -r -d '' prog <<'PY' || true
 import json, os, shlex, subprocess, sys, time, urllib.error, urllib.request
 
-base_url, web_url, key_var, token_file, reason, secrets_csv = sys.argv[1:7]
-cmd = sys.argv[8:]  # argv[7] is the "--" separator
+base_url, web_url, key_var, token_file, reason, secrets_csv, openssl_bin = sys.argv[1:8]
+cmd = sys.argv[9:]  # argv[8] is the "--" separator
 names = sorted({n.strip() for n in secrets_csv.split(",") if n.strip()})
 command_text = shlex.join(cmd)
 if len(command_text) > 1000:
@@ -144,7 +156,7 @@ if got["command"] != command_text or sorted(got["secret_names"]) != names:
     sys.exit("The approved request doesn't match what was asked. Not running anything.")
 
 dec = subprocess.run(
-    ["openssl", "enc", "-d", "-aes-256-cbc", "-pbkdf2", "-iter", "600000", "-pass", "stdin", "-in", token_file],
+    [openssl_bin, "enc", "-d", "-aes-256-cbc", "-pbkdf2", "-iter", "600000", "-pass", "stdin", "-in", token_file],
     input=(got["unlock_key"] + "\n").encode(),
     capture_output=True,
 )
@@ -159,7 +171,7 @@ try:
 except FileNotFoundError:
     sys.exit(f"{cmd[0]}: command not found")
 PY
-  exec python3 -c "$prog" "$base_url" "$web_url" "$key_var" "$token_file" "$reason" "$secrets" -- "$@"
+  exec python3 -c "$prog" "$base_url" "$web_url" "$key_var" "$token_file" "$reason" "$secrets" "$openssl_bin" -- "$@"
   ;;
 
 *) usage ;;
