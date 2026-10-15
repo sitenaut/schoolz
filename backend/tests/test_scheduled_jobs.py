@@ -140,12 +140,43 @@ async def test_stuck_run_reaper_keys_on_last_progress_not_start():
         silent = JobRun(job_id=job.id, status="running", started_at=now - timedelta(minutes=60))
         db.add_all([alive, dead, silent])
         await db.flush()
-        await db.execute(_REAP_STUCK_RUNS_SQL)
+        await db.execute(_REAP_STUCK_RUNS_SQL, {"machine_id": None, "process_started_at": now})
         for run in (alive, dead, silent):
             await db.refresh(run)
         assert alive.status == "running"
         assert dead.status == "error" and dead.error_code == "abandoned"
         assert silent.status == "error"  # no heartbeat at all: falls back to started_at
+
+
+@pytest.mark.anyio
+async def test_reaper_finalizes_this_machines_runs_from_a_previous_process_at_once():
+    """After a deploy the scheduler's catch-up run was skipped as "already in
+    progress" because the killed run still had a fresh heartbeat. A run this
+    machine started before this process did is reaped straight away; another
+    machine's run, or one this process started, is left alone."""
+    from datetime import datetime, timedelta, timezone
+
+    import database
+    from models import JobRun, ScheduledJob
+    from scheduler.entrypoint import _REAP_STUCK_RUNS_SQL
+
+    now = datetime.now(timezone.utc)
+    process_started_at = now - timedelta(minutes=1)
+    async with database.SessionLocal() as db:
+        job = ScheduledJob(kind="prerender.warm", name="orphan reaper test", cron_expr="40 22 * * *", params={})
+        db.add(job)
+        await db.flush()
+        orphan = JobRun(job_id=job.id, status="running", machine_id="m-sched", started_at=now - timedelta(minutes=20), last_progress_at=now - timedelta(minutes=3))
+        ours = JobRun(job_id=job.id, status="running", machine_id="m-sched", started_at=now - timedelta(seconds=10))
+        elsewhere = JobRun(job_id=job.id, status="running", machine_id="m-api", started_at=now - timedelta(minutes=20), last_progress_at=now - timedelta(minutes=3))
+        db.add_all([orphan, ours, elsewhere])
+        await db.flush()
+        await db.execute(_REAP_STUCK_RUNS_SQL, {"machine_id": "m-sched", "process_started_at": process_started_at})
+        for run in (orphan, ours, elsewhere):
+            await db.refresh(run)
+        assert orphan.status == "error" and orphan.error_code == "abandoned"
+        assert ours.status == "running"
+        assert elsewhere.status == "running"
 
 
 @pytest.mark.anyio
