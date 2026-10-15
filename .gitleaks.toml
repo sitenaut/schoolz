@@ -1,0 +1,8 @@
+# gitleaks config for the CI secrets scan (.github/workflows/ci.yml).
+# (gitleaks v8.24 reads the single [allowlist] table; [[allowlists]] is ignored.)
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build arguments compiled into the public web bundle: client IDs and publishable keys, public by design"
+paths = ['''^frontend/fly\.toml$''']
