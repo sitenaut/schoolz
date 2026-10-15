@@ -177,7 +177,7 @@
 
 .daySelected {
   background: var(--color-primary);
-  color: white;
+  color: var(--primary-ink);
   border-color: var(--color-primary);
 }
 

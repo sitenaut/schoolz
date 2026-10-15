@@ -35,5 +35,6 @@
   "No events match \"{{term}}\".": "\"{{term}}\" से कोई कार्यक्रम मेल नहीं खाता।",
   "Nothing found for this day.": "इस दिन के लिए कुछ नहीं मिला।",
   "Nothing found this month.": "इस महीने कुछ नहीं मिला।",
-  "All {{name}}": "{{name}} के सभी"
+  "All {{name}}": "{{name}} के सभी",
+  "Filter events": "कार्यक्रम फ़िल्टर करें"
 }

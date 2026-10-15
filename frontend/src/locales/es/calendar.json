@@ -35,5 +35,6 @@
   "No events match \"{{term}}\".": "Ningún evento coincide con \"{{term}}\".",
   "Nothing found for this day.": "No se encontró nada para este día.",
   "Nothing found this month.": "No se encontró nada este mes.",
-  "All {{name}}": "Todas las escuelas de {{name}}"
+  "All {{name}}": "Todas las escuelas de {{name}}",
+  "Filter events": "Filtrar eventos"
 }

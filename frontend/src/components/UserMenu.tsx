@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import { IconLogout, IconUser } from "./icons";
+import { IconLogout, IconSchool, IconUser } from "./icons";
 
-/** The signed-in username opens a small menu: Account, and Sign out. Sign-out
- * used to live only at Account > Security > Sessions, which nobody could find;
+/** The signed-in account button (the username; just an icon on phones) opens a
+ * small menu: Account, My schools (phones only, where the header pill is
+ * hidden) and Sign out. Sign-out used to live only at Account > Security > Sessions, which nobody could find;
  * a standalone icon beside the name (#158) replaced an earlier dropdown, and
  * this is the dropdown again by request - a menu item is already a deliberate
  * tap, so there's no separate confirm step. Same anchored-popover pattern as
@@ -37,13 +38,25 @@ export function UserMenu() {
 
   return (
     <div className="authPopoverWrap" ref={ref}>
-      <button className="ghost" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-haspopup="menu">
-        {user.username}
+      <button
+        className="ghost userPill"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={user.username}
+        title={user.username}
+      >
+        <IconUser />
+        <span className="userPillName">{user.username}</span>
       </button>
       {open && (
         <div className="authPopover userMenu" role="menu" aria-label={user.username}>
           <Link to="/account" role="menuitem" onClick={() => setOpen(false)}>
             <IconUser /> {t("Account")}
+          </Link>
+          {/* The header's My schools pill is hidden on phones once signed in. */}
+          <Link to="/start" role="menuitem" className="userMenuMySchools" onClick={() => setOpen(false)}>
+            <IconSchool /> {t("My schools")}
           </Link>
           <button
             role="menuitem"

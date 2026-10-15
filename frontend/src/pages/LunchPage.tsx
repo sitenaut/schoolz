@@ -131,7 +131,8 @@ export function LunchPage() {
         <div className="empty">{t("No days listed for {{period}} yet.", { period: menu.period_label })}</div>
       ) : (
         <>
-          <div className="list scrollList" ref={scrollRef}>
+          {/* tabIndex: a scrolling region has to be reachable from the keyboard (WCAG 2.1.1). */}
+          <div className="list scrollList" ref={scrollRef} tabIndex={0} role="region" aria-label={t("Lunch menu")}>
             {rows.map(({ item, key, md, wd, isToday, isTarget, isPast }) => (
               <div
                 className={`row ${isToday || isTarget ? "rowToday" : ""}`}
