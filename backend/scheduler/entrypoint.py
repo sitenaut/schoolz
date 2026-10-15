@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import signal
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, text
@@ -22,6 +24,11 @@ RECONCILE_INTERVAL_SECONDS = 30
 STUCK_RUN_THRESHOLD_MINUTES = 45
 
 _stop_event = asyncio.Event()
+
+# Runs this machine started before this process did belong to a process that
+# is gone: the scheduler machine runs nothing else. See _REAP_STUCK_RUNS_SQL.
+_MACHINE_ID = os.getenv("FLY_MACHINE_ID")
+_PROCESS_STARTED_AT = datetime.now(timezone.utc)
 
 _REAP_STUCK_RUNS_SQL = text(
     """
@@ -45,7 +52,17 @@ _REAP_STUCK_RUNS_SQL = text(
     -- on prod's 1GB scraper it takes ~50 - and keying on started_at marked
     -- live runs "abandoned" mid-flight. Jobs that never report progress
     -- fall back to started_at, as before.
-    WHERE status = 'running' AND COALESCE(last_progress_at, started_at) < now() - interval '45 minutes'
+    --
+    -- A run this machine started before this process did is reaped at once:
+    -- its process is gone (a deploy restarts the scheduler), and waiting out
+    -- the 45 minutes kept it looking live, so the catch-up run queued at
+    -- startup was recorded "already in progress" and skipped. Two deploys
+    -- that way lost prerender.warm's whole night. machine_id is NULL off Fly,
+    -- where this clause never matches.
+    WHERE status = 'running' AND (
+        COALESCE(last_progress_at, started_at) < now() - interval '45 minutes'
+        OR (machine_id = :machine_id AND started_at < :process_started_at)
+    )
     RETURNING job_id
     """
 )
@@ -68,7 +85,8 @@ async def _reap_stuck_runs() -> None:
     finalized. Without this, an abandoned run stays 'running' forever and
     never counts as the failure it actually was."""
     async with SessionLocal() as db:
-        job_ids = [row[0] for row in (await db.execute(_REAP_STUCK_RUNS_SQL)).all()]
+        params = {"machine_id": _MACHINE_ID, "process_started_at": _PROCESS_STARTED_AT}
+        job_ids = [row[0] for row in (await db.execute(_REAP_STUCK_RUNS_SQL, params)).all()]
         if job_ids:
             await db.execute(_REAP_STUCK_JOBS_SQL, {"job_ids": job_ids})
             logger.warning("reaped_stuck_runs", extra={"job_ids": job_ids, "count": len(job_ids)})
