@@ -27,6 +27,7 @@ from zoneinfo import ZoneInfo
 from mcp.server.fastmcp import FastMCP
 
 from services.chat_providers import Usage, configured_providers
+from services.chat_school_hint import SchoolDirectory, school_hint
 from services.chat_settings import AudienceConfig
 from services.chatbot_personal import (
     LOCAL_EVENTS_TOOL_NAME,
@@ -74,8 +75,11 @@ SYSTEM_PROMPT = (
     "Schools word the same day differently - a 'half day' may be listed as an early dismissal or "
     "single session: treat them as the same thing and answer in the visitor's words, without "
     "remarking on the wording. A dated event is not a closing: call a day closed only when an item "
-    "says closed or no school, and a day with a rotation day ('Day 3') is a school day - so 'closed "
-    "for Election Day?' is answered 'no, it's a regular school day', not 'I can't confirm'. "
+    "says closed or no school (a calendar item's day_effect says which), and a day with a rotation "
+    "day ('Day 3') is a school day. Answer in the question's own terms and stand by it: 'Is there "
+    "school on Election Day?' -> 'Yes, it's a regular school day'; 'Is it closed?' -> 'No, it's a "
+    "regular school day' - no 'I can't confirm' or 'check the district to be sure'. For 'is there "
+    "school on <a date>' call get_school_day once with that date. "
     "Lead with the answer itself - no 'Looking at...' or 'I found...' "
     "opener. If a lookup comes back with a 'note' about missing data, relay that note's "
     "suggestion (ask the school to publish it, or submit a link with "
@@ -115,6 +119,19 @@ def _should_escalate(message: str, tool_rounds_so_far: int, already_escalated: b
 async def _anthropic_tools(mcp: FastMCP) -> list[dict[str, Any]]:
     tools = await mcp.list_tools()
     return [{"name": t.name, "description": t.description, "input_schema": t.inputSchema} for t in tools]
+
+
+_SCHOOLS = SchoolDirectory()
+
+
+async def _school_rows(mcp: FastMCP) -> list[dict[str, Any]]:
+    """The list_schools directory rows, or [] - a hint is never worth failing a turn over."""
+    try:
+        data = json.loads(await _run_tool(mcp, "list_schools", {}))
+    except ValueError:
+        return []
+    rows = data.get("items") if isinstance(data, dict) else data
+    return rows if isinstance(rows, list) else []
 
 
 async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
@@ -216,6 +233,12 @@ async def run_chat_turn(
             "as you answer, but keep school names, people's names, room numbers, times and product "
             "names (schoolz, Gradez, Genesis, Google Classroom) exactly as given."
         )
+
+    # Which school the message names, matched here rather than left to the
+    # model (services/chat_school_hint.py). After the cache breakpoint too.
+    hint = school_hint(message, await _SCHOOLS.rows(lambda: _school_rows(mcp)))
+    if hint:
+        dynamic_system += " " + hint
 
     escalated = already_escalated and bool(config.escalation_model)
     model = config.escalation_model if escalated else config.model
