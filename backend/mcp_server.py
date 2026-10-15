@@ -91,6 +91,9 @@ def _is_empty(data: Any) -> bool:
 # module reaches the app only through its HTTP routes.
 _ROTATION_TITLE_RE = re.compile(r"^\s*Day\s+\d\s*$", re.I)
 
+# What list_schools returns per school: enough to pick one and call its tools.
+_SCHOOL_DIRECTORY_FIELDS = ("id", "slug", "name", "short_name", "school_type", "address", "district_id")
+
 
 def _finalize(data: Any) -> Any:
     """The very last transform on every tool's return value, right before
@@ -265,15 +268,28 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     # -----------------------------------------------------------------
 
     @mcp.tool()
-    async def list_schools() -> Any:
-        """List every tracked school in the district (public, no auth needed).
+    async def list_schools(town: str | None = None) -> Any:
+        """List tracked schools as a directory (public, no auth needed).
 
         Returns each school's id, slug, name, short_name, school_type
-        (elementary/middle/high/alternative/other), address, phone, website,
-        logo, and district_id. Use a school's `slug` (preferred, stable) or
-        `id` as the `school_id_or_slug` argument to every other school tool.
+        (elementary/middle/high/alternative/other), address and district_id.
+        `town` (e.g. "Haddonfield") keeps only schools whose name or address
+        mentions it - pass it whenever the question names a place. For one
+        school's phone, website, hours or bell schedule, call get_school or
+        get_school_today. Use a school's `slug` (preferred, stable) or `id`
+        as the `school_id_or_slug` argument to every other school tool.
         """
-        return _finalize(await _get("/schools"))
+        data = await _get("/schools")
+        if not isinstance(data, list):
+            return data
+        # Full records for every tracked school ran past 200k tokens (bell
+        # periods alone were a fifth of it): prod's chatbot 500'd on "which
+        # schools are in X?", and a Sonnet escalation cached the lot.
+        rows = [{k: s.get(k) for k in _SCHOOL_DIRECTORY_FIELDS} for s in data]
+        if town and town.strip():
+            needle = town.strip().lower()
+            rows = [r for r in rows if needle in (r["name"] or "").lower() or needle in (r["address"] or "").lower()]
+        return _finalize(rows)
 
     @mcp.tool()
     async def get_school(school_id_or_slug: str) -> Any:
