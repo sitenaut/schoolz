@@ -42,8 +42,9 @@ more than today's work, say so before merging.
 ## 5. Deploy, and confirm what actually ran
 
 The merge starts "Deploy" by itself: CI on the merged code, then whatever
-changed since each app's running commit, migrating first when a migration
-changed, with a smoke check and automatic rollback (see `deploy-schoolz`).
+changed since each app's running commit (a backend deploy migrates first, in
+Fly's release step), with a smoke check and automatic rollback (see
+`deploy-schoolz`).
 Find it with `gh run list --workflow deploy.yml --branch main --limit 3`. The
 scraper deploys by hand only (`-f target=scraper`).
 

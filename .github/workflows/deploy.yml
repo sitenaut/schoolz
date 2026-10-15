@@ -4,9 +4,10 @@ name: Deploy
 # backend/** -> schoolz-api, frontend/** -> schoolz-web, nothing else ->
 # nothing. "Changed" means since the commit each app is running, read from
 # its image label (sha-<commit>), so a cancelled or failed run is caught up by
-# the next push. A backend deploy runs "DB migrate" first when a migration
-# could be pending. After each deploy a smoke check runs; if the deploy or the
-# smoke check fails, the image that was running before is put back.
+# the next push. Migrations run inside the backend deploy, in Fly's release
+# step (backend/fly.toml, scripts/release.py), before any machine is replaced.
+# After each deploy a smoke check runs; if the deploy or the smoke check
+# fails, the image that was running before is put back (the schema is not).
 # By hand: Actions -> Deploy -> Run workflow (main only). The scraper is
 # deployed by hand only (target=scraper).
 on:
@@ -40,7 +41,6 @@ jobs:
     outputs:
       backend: ${{ steps.diff.outputs.backend }}
       frontend: ${{ steps.diff.outputs.frontend }}
-      migrate: ${{ steps.diff.outputs.migrate }}
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
@@ -56,8 +56,8 @@ jobs:
         run: |
           if [ "$EVENT" = workflow_dispatch ]; then
             case "$TARGET" in
-              both)     echo backend=true >> "$GITHUB_OUTPUT"; echo frontend=true >> "$GITHUB_OUTPUT"; echo migrate=true >> "$GITHUB_OUTPUT" ;;
-              backend)  echo backend=true >> "$GITHUB_OUTPUT"; echo migrate=true >> "$GITHUB_OUTPUT" ;;
+              both)     echo backend=true >> "$GITHUB_OUTPUT"; echo frontend=true >> "$GITHUB_OUTPUT" ;;
+              backend)  echo backend=true >> "$GITHUB_OUTPUT" ;;
               frontend) echo frontend=true >> "$GITHUB_OUTPUT" ;;
             esac
             exit 0
@@ -81,8 +81,6 @@ jobs:
           web=$(running_base schoolz-web)
           if changed "$api" backend/; then
             echo "backend: deploying (running ${api:-unknown})"; echo backend=true >> "$GITHUB_OUTPUT"
-            # With an unknown base this migrates too: "upgrade head" with nothing pending is a no-op.
-            if changed "$api" backend/alembic backend/models.py; then echo migrate=true >> "$GITHUB_OUTPUT"; fi
           else
             echo "backend: nothing in backend/ changed since $api"
           fi
@@ -92,21 +90,12 @@ jobs:
             echo "frontend: nothing in frontend/ changed since $web"
           fi
 
-  migrate:
+  backend:
+    name: Deploy backend (schoolz-api)
     needs: [ci, changes]
     if: >
       always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
-      needs.changes.outputs.migrate == 'true'
-    uses: ./.github/workflows/migrate.yml
-    secrets: inherit
-
-  backend:
-    name: Deploy backend (schoolz-api)
-    needs: [ci, changes, migrate]
-    if: >
-      always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
-      needs.changes.outputs.backend == 'true' &&
-      (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+      needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     environment: prod
     timeout-minutes: 30
@@ -125,7 +114,7 @@ jobs:
           echo "Running now: $ref"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy
+      - name: Deploy (the release step migrates first)
         working-directory: backend
         run: flyctl deploy --remote-only --image-label "sha-${GITHUB_SHA::12}"
 
@@ -154,7 +143,10 @@ jobs:
           PREV: ${{ steps.prev.outputs.ref }}
         run: |
           echo "::warning::Deploy or smoke check failed; putting back $PREV"
-          flyctl deploy --image "$PREV" --strategy immediate
+          # Without the release step: the old image must not touch the schema,
+          # and an image from before release.py existed has no script to run.
+          grep -v '^[[:space:]]*release_command' fly.toml > fly.rollback.toml
+          flyctl deploy -c fly.rollback.toml --image "$PREV" --strategy immediate
           curl -fsS --max-time 10 "$URL/health"
 
   frontend:
@@ -208,7 +200,10 @@ jobs:
           PREV: ${{ steps.prev.outputs.ref }}
         run: |
           echo "::warning::Deploy or smoke check failed; putting back $PREV"
-          flyctl deploy --image "$PREV" --strategy immediate
+          # Without the release step: the old image must not touch the schema,
+          # and an image from before release.py existed has no script to run.
+          grep -v '^[[:space:]]*release_command' fly.toml > fly.rollback.toml
+          flyctl deploy -c fly.rollback.toml --image "$PREV" --strategy immediate
 
   scraper:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'scraper' && github.ref == 'refs/heads/main'

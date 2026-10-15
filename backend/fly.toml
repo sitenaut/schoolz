@@ -3,6 +3,13 @@ primary_region = "ewr"
 
 [build]
 
+[deploy]
+  # Runs once per deploy in a temporary machine with the app's secrets, before
+  # any app or scheduler machine is replaced. A non-zero exit stops the deploy
+  # and the running version stays up. It only ever upgrades
+  # (scripts/release.py); deploy.yml's rollback strips this line.
+  release_command = "python scripts/release.py"
+
 [env]
   APP_ENV = "prod"
   AUTH_MODE = "supabase"
