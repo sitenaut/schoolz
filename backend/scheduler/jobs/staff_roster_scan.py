@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import School, StaffMember
 from scheduler.registry import register_job
 from services.apptegy import fetch_staff as fetch_apptegy_staff
-from services.staff_roles import classify_role
 from services.contact_page import CONSTITUENT_PREFIX, fetch_contacts
 from services.role_pages import fetch_role_staff_scraped
+from services.staff_roles import classify_role
 from services.staff_roster import drop_sibling_school_staff, fetch_directory_document, fetch_roster
 
 
@@ -72,7 +72,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             roster = roster + extra
             contacts_added = len(extra)
     elif school.website_url:
-        roster = await fetch_roster(school.website_url)
+        roster = await fetch_roster(school.website_url, [school.short_name, school.name])
         # A directory with no titles (Voorhees: teachers' websites only) can't
         # say who the nurse or principal is - read the school's own contact
         # page for those instead.
@@ -109,10 +109,20 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         if row.source_constituent_id in dropped_ids:
             await db.delete(row)
     existing = [row for row in existing if row.source_constituent_id not in dropped_ids]
+    if any(e.get("location_filter") for e in roster):
+        # The directory was narrowed to this school, so a directory person
+        # (a bare numeric id) it no longer lists works elsewhere or has left.
+        # Before the filter, Lenape Regional's four high schools each held
+        # the whole district's staff and named four "principals".
+        seen = {e["constituent_id"] for e in roster}
+        for row in existing:
+            if row.source_constituent_id.isdigit() and row.source_constituent_id not in seen:
+                await db.delete(row)
+        existing = [row for row in existing if not row.source_constituent_id.isdigit() or row.source_constituent_id in seen]
     existing_by_constituent = {s.source_constituent_id: s for s in existing}
 
     created = updated = 0
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for entry in roster:
         row = existing_by_constituent.get(entry["constituent_id"])
         if row:

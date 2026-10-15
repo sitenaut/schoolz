@@ -6,13 +6,12 @@ survives re-scans even if name formatting changes slightly)."""
 import asyncio
 import csv
 import hashlib
-import time
-import re
-from urllib.parse import parse_qs, urljoin, urlparse
-
 import io
-import zipfile
+import re
+import time
 import xml.etree.ElementTree as ET
+import zipfile
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
 import pdfplumber
@@ -500,7 +499,7 @@ def _people_from_rows(tables, key_prefix: str) -> list[dict]:
                 continue
             if not cols or "name" not in cols or "email" not in cols:
                 continue
-            col = lambda field: cells[cols[field]] if field in cols and cols[field] < len(cells) else ""  # noqa: E731
+            col = lambda field, cells=cells, cols=cols: cells[cols[field]] if field in cols and cols[field] < len(cells) else ""  # noqa: E731
             name = _first_last(col("name"))
             if not name or _NOT_A_PERSON_RE.search(name):
                 continue
@@ -1018,7 +1017,63 @@ def find_directory_links(home_html: str, base: str) -> list[str]:
     return sorted(scored, key=lambda u: -scored[u])[:_MAX_DISCOVERED]
 
 
-async def _fetch_discovered_roster(base: str) -> list[dict]:
+_DIRECTORY_TOTAL_RE = re.compile(r"of\s+(\d+)\s+constituents", re.I)
+
+
+def directory_total(pages_html: list[str]) -> int:
+    """How many people a Finalsite directory says it holds ("showing 1 - 20
+    of 241 constituents"); unknown counts as more than any read."""
+    m = _DIRECTORY_TOTAL_RE.search(pages_html[0]) if pages_html else None
+    return int(m.group(1)) if m else 1_000_000
+
+
+def own_location_option(html: str, school_names: list[str | None]) -> tuple[str, str] | None:
+    """(value, label) of the directory's Location option that is this
+    school, or None. A school subsite's "Staff Directory" link can redirect
+    to the district's directory (Lenape Regional: every school's link lands
+    on www.lrhsd.org's 893 people); its Location filter narrows it back."""
+    own = _school_tokens(*school_names)
+    select_el = BeautifulSoup(html, "lxml").select_one("select[name=const_search_location]")
+    if not own or select_el is None:
+        return None
+    fits = []
+    for option in select_el.find_all("option"):
+        label = option.get_text(" ", strip=True)
+        words = _school_tokens(label)
+        if option.get("value") and words and words <= own:
+            fits.append((option["value"], label))
+    return fits[0] if len(fits) == 1 else None
+
+
+async def _read_constituent_directory(url: str, school_names: list[str | None]) -> list[dict]:
+    """Every card in a Finalsite directory, clicked through page by page.
+    A directory that lists the whole district (a school subsite's directory
+    redirecting to the district's) is re-read narrowed to this school's
+    Location; the redirect drops a query string, so the filter goes on the
+    final URL."""
+    pages_html = await scraper_client.fetch_paginated(url, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True)
+    location = own_location_option(pages_html[0], school_names) if pages_html else None
+    if location:
+        try:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
+                final = str((await client.get(url)).url).split("?")[0]
+        except httpx.HTTPError:
+            final = url
+        narrowed = await scraper_client.fetch_paginated(
+            f"{final}?const_search_location={location[0]}", next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True
+        )
+        people = {item["constituent_id"]: item for html in narrowed for item in _parse_page(html)}
+        if people:
+            if len(people) >= directory_total(narrowed):
+                # Read in full as this school's whole staff, so the scan may
+                # drop rows the unfiltered district list left behind.
+                for item in people.values():
+                    item["location_filter"] = location[1]
+            return list(people.values())
+    return list({item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}.values())
+
+
+async def _fetch_discovered_roster(base: str, school_names: list[str | None]) -> list[dict]:
     """Follows the school's own "Staff Directory" link when no known path
     worked: constituent cards are clicked through like any Finalsite
     directory, anything else is read as a plain table page."""
@@ -1032,10 +1087,9 @@ async def _fetch_discovered_roster(base: str) -> list[dict]:
                 if page.status_code != 200:
                     continue
                 if "fsConstituentItem" in page.text:
-                    pages_html = await scraper_client.fetch_paginated(url, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True)
-                    people = {item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}
+                    people = await _read_constituent_directory(url, school_names)
                     if people:
-                        return list(people.values())
+                        return people
                     continue
                 items = _parse_table_page(page.text) or _parse_wp_card_page(page.text) or _parse_tablepress_directory(page.text)
                 if items:
@@ -1045,7 +1099,7 @@ async def _fetch_discovered_roster(base: str) -> list[dict]:
     return []
 
 
-async def fetch_roster(school_website_url: str) -> list[dict]:
+async def fetch_roster(school_website_url: str, school_names: list[str | None] | None = None) -> list[dict]:
     """Paginates by actually clicking the "next page" control in one live
     browser session - confirmed the directory's ?const_page=N query param
     does nothing on its own (client-side/JS pagination, not real
@@ -1081,18 +1135,11 @@ async def fetch_roster(school_website_url: str) -> list[dict]:
     if grid:
         return grid
     for path in _DIRECTORY_PATHS:
-        pages_html = await scraper_client.fetch_paginated(
-            base + path, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True
-        )
-        by_constituent_id: dict[str, dict] = {}
+        people = await _read_constituent_directory(base + path, school_names or [])
+        if people:
+            return people
 
-        for html in pages_html:
-            for item in _parse_page(html):
-                by_constituent_id[item["constituent_id"]] = item
-        if by_constituent_id:
-            return list(by_constituent_id.values())
-
-    return await _fetch_discovered_roster(base)
+    return await _fetch_discovered_roster(base, school_names or [])
 
 
 _SCHOOL_NAME_NOISE = {"the", "school", "schools", "elementary", "middle", "high", "junior", "senior", "jr", "sr", "memorial", "township", "public", "center", "primary", "intermediate"}
