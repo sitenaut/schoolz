@@ -7,9 +7,9 @@ from services.content_extractor import (
     _backfill_from_duplicate,
     _correct_stale_year,
     _current_item_line,
-    _parse_date,
     _infer_lunch_menu_start_date,
     _may_supersede,
+    _parse_date,
     _parse_lunch_menu_days,
     _title_dedup_key,
 )
@@ -103,11 +103,11 @@ def test_falls_back_to_extraction_time_when_no_month_mentioned():
 # PNG with a Content-Type of image/jpeg, another image with a media type the
 # vision API doesn't accept at all, and one flyer big enough to trip the
 # request size limit - all three were logged and then silently dropped.
-import io
+import io  # noqa: E402
 
-from PIL import Image
+from PIL import Image  # noqa: E402
 
-from services.content_extractor import _MAX_IMAGE_EDGE, _prepare_image, _sniff_media_type
+from services.content_extractor import _MAX_IMAGE_EDGE, _prepare_image, _sniff_media_type  # noqa: E402
 
 
 def _image_bytes(fmt: str, size=(40, 30)) -> bytes:

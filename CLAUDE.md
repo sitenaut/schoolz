@@ -32,11 +32,11 @@ SCHEDULER=1 ./scripts/compose-local.sh up --build        # + the cron scheduler 
 ./scripts/verify-local.sh                                # full stack health, live auth, and test suite
 powershell -ExecutionPolicy Bypass -File .\scripts\verify-local.ps1   # Windows equivalent
 docker exec schoolz-api-local sh -c 'cd /app && python -m pytest -q'
-cd frontend && npm run build && npm run test
+cd frontend && npm run lint && npm run build && npm run test
 ./scripts/schoolz-api.sh <prod|local> METHOD PATH [body.json]   # authenticated API call (see API keys)
 ```
 
-Backend dependencies: edit `backend/requirements.in` (test and lint tools: `requirements-dev.in`) and regenerate the hashed `requirements.txt` with the command at the top of the `.in` file; never edit `requirements.txt` by hand. Dependabot opens weekly grouped update PRs (`.github/dependabot.yml`); `anthropic` is excluded and upgraded by hand (the chatbot's prompt caching depends on it).
+Backend dependencies: edit `backend/requirements.in` (test and lint tools: `requirements-dev.in`) and regenerate the hashed `requirements.txt` with the command at the top of the `.in` file; never edit `requirements.txt` by hand. Lint (`backend/ruff.toml`): CI holds the whole backend to a floor and every Python file a PR touches to the full rule set (`ruff check --fix <file>` clears most of it); the frontend's ESLint warning cap in `package.json` only goes down. Dependabot opens weekly grouped update PRs (`.github/dependabot.yml`); `anthropic` is excluded and upgraded by hand (the chatbot's prompt caching depends on it).
 
 ## Environment files
 

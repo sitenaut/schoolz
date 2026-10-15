@@ -5,17 +5,15 @@ Revises: 0033
 Create Date: 2026-09-12 23:00:00
 
 """
-from typing import Sequence, Union
+import json
+from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-import json
-
 
 revision: str = "0034"
-down_revision: Union[str, None] = "0033"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0033"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # Transcribed 2026-09-12 from a "Cherry Hill Public Schools - Office of
 # Preschool" printed schedule (the user's own copy - Site: Chesterbrook,

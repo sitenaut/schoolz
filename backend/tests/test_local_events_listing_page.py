@@ -5,7 +5,6 @@ any network access or a running scraper container.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -172,7 +171,7 @@ async def test_fetch_propagates_default_categories():
     async def _fake_render(url, **_kwargs):
         if "all-events" in url:
             # Only one matching link so we get one event.
-            html = f'<html><body><a href="/the-latest/events/jazz-fest/">Jazz</a></body></html>'
+            html = '<html><body><a href="/the-latest/events/jazz-fest/">Jazz</a></body></html>'
             return html, url
         return _detail_html("Jazz Festival", jazz_url), url
 

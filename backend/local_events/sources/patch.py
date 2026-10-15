@@ -44,7 +44,6 @@ import json
 import math
 import re
 from datetime import datetime
-from typing import Any
 
 import httpx
 

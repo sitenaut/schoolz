@@ -5,17 +5,15 @@ Revises: 0034
 Create Date: 2026-09-13 03:30:00
 
 """
-from typing import Sequence, Union
+import json
+from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-import json
-
 
 revision: str = "0035"
-down_revision: Union[str, None] = "0034"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0034"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # Same table as migration 0033 (Rosa International Middle School), applied
 # to every school_type='middle' row rather than one. This is the owner's

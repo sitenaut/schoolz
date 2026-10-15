@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -7,18 +7,50 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user, get_optional_user, require_permission
 from database import get_db
-from models import District, DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, ScheduledJob, School, SchoolContentItem, SchoolDocument, SmoreBlock, SmoreNewsletter, StaffMember, Student, User, derive_school_short_name, slugify
-from schemas import LunchMenuItemOut, LunchMenuOut, SaccProgramOut, SchoolContentItemOut, SchoolCreate, SchoolDocumentOut, SchoolOut, SchoolTodayOut, SchoolUpdate, SmoreNewsletterOut, StaffMemberOut, DistrictTransportationOut, SchoolLateBusOut, SchoolTransportationOut
-from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
-from services.digitalsports import host_from_athletics_url
-from services.class_years import CLASS_PAGE_SOURCES
-from services.content_translation import localize_outs
-from services.i18n import fold, folded, request_lang
-from services.school_today import build_today, resolve_lunch_menu
-from services.transportation import late_bus_for_school
+from models import (
+    District,
+    DistrictTransportation,
+    GuardianStudentLink,
+    LunchMenuItem,
+    SaccProgram,
+    ScheduledJob,
+    School,
+    SchoolContentItem,
+    SchoolDocument,
+    SmoreBlock,
+    SmoreNewsletter,
+    StaffMember,
+    Student,
+    User,
+    derive_school_short_name,
+    slugify,
+)
 from routers.smore_newsletters import _to_out as _newsletter_to_out
 from scheduler.cron import public_scan_cron
 from scheduler.job_names import school_job_name
+from schemas import (
+    DistrictTransportationOut,
+    LunchMenuItemOut,
+    LunchMenuOut,
+    SaccProgramOut,
+    SchoolContentItemOut,
+    SchoolCreate,
+    SchoolDocumentOut,
+    SchoolLateBusOut,
+    SchoolOut,
+    SchoolTodayOut,
+    SchoolTransportationOut,
+    SchoolUpdate,
+    SmoreNewsletterOut,
+    StaffMemberOut,
+)
+from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
+from services.class_years import CLASS_PAGE_SOURCES
+from services.content_translation import localize_outs
+from services.digitalsports import host_from_athletics_url
+from services.i18n import fold, folded, request_lang
+from services.school_today import build_today, resolve_lunch_menu
+from services.transportation import late_bus_for_school
 
 router = APIRouter(prefix="/schools", tags=["schools"])
 
@@ -717,7 +749,7 @@ async def list_school_content(
     query = query.where(SchoolContentItem.source.not_in(ATHLETICS_SOURCES))
     if not include_past:
         # A day of slack so a timezone edge never hides today's event.
-        cutoff = datetime.now(timezone.utc) - timedelta(days=1)
+        cutoff = datetime.now(UTC) - timedelta(days=1)
         query = query.where(
             or_(
                 SchoolContentItem.start_date.is_(None),

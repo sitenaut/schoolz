@@ -58,8 +58,18 @@ jobs:
             backend/requirements-dev.txt
       - name: Install dependencies
         run: pip install --require-hashes -r requirements.txt -r requirements-dev.txt
-      - name: Lint (hard floor - syntax errors, undefined names)
-        run: ruff check --no-cache --select E9,F63,F7,F82 .
+      - name: Lint floor (whole tree)
+        run: ruff check --no-cache --select E4,E7,E9,F --ignore E741 .
+      - name: Lint, full rule set (Python files this pull request touches)
+        # backend/ruff.toml. `ruff check --fix <file>` clears most of it.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE"
+          mapfile -t files < <(git diff --name-only --relative --diff-filter=AMR "$BASE" HEAD -- '*.py')
+          if [ ${#files[@]} -eq 0 ]; then echo "no Python files touched"; exit 0; fi
+          ruff check --no-cache "${files[@]}"
       - name: Alembic has a single head
         run: python scripts/check_alembic_single_head.py
       - name: Migrations only add (no drop or delete without a destructive-ok note)
@@ -83,7 +93,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # jsdom 30's undici needs Node 22 to load (zstd in zlib). The web
-          # image still builds on node:20-alpine; SZ-13 brings it up.
+          # image builds on the same line (frontend/Dockerfile).
           node-version: "22"
           cache: npm
           cache-dependency-path: |
@@ -91,6 +101,8 @@ jobs:
             frontend/focus/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Lint (no errors; warnings held under the cap in package.json)
+        run: npm run lint
       - name: Tests
         run: npm run test
       - name: Type-check and build

@@ -5,17 +5,15 @@ Revises: 0032
 Create Date: 2026-09-12 22:00:00
 
 """
-from typing import Sequence, Union
+import json
+from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-import json
-
 
 revision: str = "0033"
-down_revision: Union[str, None] = "0032"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0032"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # Transcribed 2026-09-12 from a photo of Rosa's own printed bell schedule
 # (the user's kid's copy, not a district PDF - no auto-parse source exists

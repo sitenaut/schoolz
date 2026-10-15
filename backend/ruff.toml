@@ -1,0 +1,15 @@
+# Two levels (SZ-15). CI holds the whole tree to the floor:
+#   ruff check --select E4,E7,E9,F --ignore E741 .
+# and every .py file a pull request touches to the full set below, so the
+# tree gets cleaner one touched file at a time. `ruff check --fix <file>`
+# clears most of what the full set finds (import order, old-style typing).
+target-version = "py312"
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E501",  # long lines: thousands today; left to a formatter, if one is ever adopted
+    "E741",  # `l` and friends: renaming them churns code for no gain
+    "B008",  # Depends(...) in defaults is how FastAPI works
+]

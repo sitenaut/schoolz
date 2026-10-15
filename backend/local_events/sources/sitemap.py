@@ -54,7 +54,6 @@ async def _fetch_sitemap_urls(sitemap_url: str, timeout: float = SITEMAP_TIMEOUT
     for child in root.iter():
         if _local(child.tag) == "loc" and child.text:
             text = child.text.strip()
-            parent_local = _local(child.getparent().tag) if hasattr(child, "getparent") else None
             # ElementTree doesn't expose parent; classify by sibling structure instead.
             locs.append(text)
 

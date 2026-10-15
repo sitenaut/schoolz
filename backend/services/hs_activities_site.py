@@ -29,7 +29,6 @@ answer into.
 
 import hashlib
 import logging
-import os
 import re
 import time
 from urllib.parse import urljoin, urlsplit
@@ -41,7 +40,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
-from models import School, SchoolClassYear, SchoolContentItem, StaffMember, normalize_name
+from models import School, SchoolContentItem, StaffMember, normalize_name
 from scheduler.errors import record_parse_issue
 from services.class_years import default_label, get_or_create_class_year
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
@@ -253,7 +252,7 @@ own sub-pages (parking, portraits, trip payment schedule, etc), which should onl
 
 
 def _stable_uid(page_path: str, title: str, start_date_iso: str | None) -> str:
-    digest = hashlib.sha1(f"{title}|{start_date_iso or ''}".encode("utf-8")).hexdigest()[:20]
+    digest = hashlib.sha1(f"{title}|{start_date_iso or ''}".encode()).hexdigest()[:20]
     return f"site:{page_path}:{digest}"
 
 

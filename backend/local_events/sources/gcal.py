@@ -25,8 +25,7 @@ Example job-params entry:
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, time, timezone, timedelta
-from typing import Any
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx

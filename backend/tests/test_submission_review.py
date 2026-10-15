@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from types import SimpleNamespace
 
 os.environ.setdefault("JWT_SECRET", "test-secret")

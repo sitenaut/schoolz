@@ -13,7 +13,7 @@ one month at a time, covering every sport/level at that school combined
 import html
 import json
 import re
-from datetime import date, datetime, time
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import httpx
