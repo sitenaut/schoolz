@@ -2901,6 +2901,37 @@ select {
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(23, 32, 42, 0.24);
 }
+/* Stacked above the chat button (56px + a 12px gap) so neither covers the
+   other or the phone's tab bar. */
+.back-to-top {
+  position: fixed;
+  right: 22px;
+  bottom: calc(var(--nav-h) + 16px + 56px + 12px);
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.back-to-top svg {
+  width: 20px;
+  height: 20px;
+}
+.back-to-top:hover {
+  background: var(--bg);
+}
+@media (min-width: 900px) {
+  .back-to-top {
+    right: 30px;
+    bottom: calc(24px + 56px + 12px);
+  }
+}
 .chat-fab:hover {
   box-shadow: 0 8px 20px rgba(23, 32, 42, 0.3);
 }
@@ -3087,4 +3118,450 @@ select {
 .person-call svg {
   width: 13px;
   height: 13px;
+}
+
+/* ---- Localz (pages/localz/) ------------------------------------------
+   Calm on purpose: no red except a real alert, big tap targets, phone
+   numbers as buttons. The Help Now strip stays at the top of every page. */
+.localz-helpnow {
+  margin: 0 0 14px;
+  padding: 8px 10px 10px;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 13px;
+}
+.localz-helpnow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.localz-helpnow-title {
+  font-weight: 600;
+}
+/* Every crisis number stays visible: they wrap, never scroll away. */
+.localz-helpnow-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.localz-helpnow-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.localz-helpnow-line svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--primary);
+}
+.localz-helpnow-line span {
+  color: var(--ink-2);
+}
+@media (max-width: 600px) {
+  .localz-helpnow-lines {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .localz-helpnow-line {
+    flex-wrap: wrap;
+    white-space: normal;
+    border-radius: 10px;
+    line-height: 1.25;
+  }
+  .localz-helpnow-line span {
+    flex-basis: 100%;
+    font-size: 12px;
+  }
+}
+.localz-exit {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+.localz-exit svg {
+  width: 16px;
+  height: 16px;
+}
+.localz-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 6px;
+}
+.localz-nav-row .localz-title {
+  flex: 1 1 auto;
+}
+.localz-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  margin-left: auto;
+}
+.localz-where svg {
+  width: 16px;
+  height: 16px;
+  color: var(--primary);
+}
+.localz-where-modal {
+  display: grid;
+  gap: 4px;
+}
+.localz-where-row {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.localz-where-row label {
+  font-weight: 600;
+  font-size: 14px;
+}
+.localz-where-inline {
+  display: flex;
+  gap: 8px;
+}
+.localz-where-inline input {
+  flex: 1;
+  min-width: 0;
+  max-width: 160px;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+.localz-where-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.localz-where-gps {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.localz-where-gps svg {
+  width: 16px;
+  height: 16px;
+}
+.localz-where-privacy {
+  margin: 10px 0 4px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.localz-title {
+  margin: 4px 0 4px;
+}
+.localz-lede {
+  margin: 0 0 4px;
+  color: var(--ink-2);
+}
+.localz-search {
+  padding-right: 6px;
+}
+.localz-search-go {
+  flex: none;
+  margin: 6px 0;
+}
+.localz-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 8px 0 20px;
+}
+.localz-tile {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  text-decoration: none;
+}
+.localz-tile:hover,
+.localz-tile:focus-visible {
+  border-color: var(--primary);
+}
+.localz-tile svg {
+  grid-row: 1 / span 3;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.localz-tile-label {
+  font-weight: 600;
+  font-size: 16px;
+}
+.localz-tile-blurb {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.localz-tile-count {
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.localz-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 6px;
+}
+.localz-cat-head h2 {
+  margin: 0;
+}
+.localz-cat-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 9px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.localz-filters {
+  display: grid;
+  grid-template-columns: 1fr minmax(180px, 280px);
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+}
+.localz-filters .search {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .localz-filters {
+    grid-template-columns: 1fr;
+  }
+}
+.localz-list {
+  display: grid;
+  gap: 10px;
+}
+.localz-list.busy {
+  opacity: 0.6;
+}
+.localz-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.localz-card-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.localz-card-title:hover {
+  text-decoration: underline;
+}
+.localz-card-org {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.localz-tag {
+  display: inline-block;
+  margin-top: 4px;
+}
+.localz-card-desc {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.localz-card-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 14px;
+}
+.localz-card-facts span {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.localz-card-facts svg,
+.localz-inline-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  color: var(--ink-3);
+}
+.localz-card-facts svg {
+  margin-right: 0;
+}
+.localz-card-actions,
+.localz-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.localz-card-actions .btn,
+.localz-detail-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+.localz-card-actions svg,
+.localz-detail-actions svg {
+  width: 16px;
+  height: 16px;
+}
+.localz-card-note {
+  color: var(--warn);
+  font-size: 13px;
+}
+.localz-more,
+.localz-back {
+  display: block;
+  margin: 14px auto 0;
+}
+.localz-footnote {
+  margin: 24px 0 8px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.localz-detail h2 {
+  margin: 6px 0 2px;
+}
+.localz-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+.localz-back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.localz-alert {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.localz-alert svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.localz-detail-desc {
+  margin: 14px 0;
+  font-size: 15px;
+}
+.localz-detail-section {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.localz-detail-section h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.localz-detail-section p,
+.localz-detail-section ul {
+  margin: 0;
+}
+.localz-muted {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* ---- Localz theme: calm sage, orange for actions ----------------------
+   AppShell sets data-section="localz" on <html> on Localz pages, so the
+   header, tabs, background and modals all take it; schoolz stays blue.
+   Sage reads as calm and safe; orange is kept for the things you *do*
+   (Search, Call, Use this ZIP) so they're found first. Contrast (WCAG AA):
+   light - white on sage 6.22:1, white on orange 4.98:1, sage on the page
+   5.76:1; dark - dark ink on mint 8.13:1, on orange 6.79:1, mint on cards
+   7.51:1. The dark rules repeat every token the light rule sets, so a dark
+   theme never keeps a light background. */
+:root[data-section="localz"] {
+  --primary: #2e6b5c;
+  --primary-ink: #ffffff;
+  --primary-strong: #1f4d42;
+  --primary-soft: #e3f0eb;
+  --bg: #f7f6f2;
+  --card: #ffffff;
+  --localz-action: #b4532f;
+  --localz-action-hover: #973f20;
+  --localz-action-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-section="localz"]:not([data-theme="light"]) {
+    --primary: #6fc2a8;
+    --primary-ink: #0b1f19;
+    --primary-strong: #9ad8c4;
+    --primary-soft: #1b3a31;
+    --bg: #141a18;
+    --card: #1d2421;
+    --localz-action: #e8875f;
+    --localz-action-hover: #f09d7a;
+    --localz-action-ink: #2a1206;
+  }
+}
+:root[data-section="localz"][data-theme="dark"] {
+  --primary: #6fc2a8;
+  --primary-ink: #0b1f19;
+  --primary-strong: #9ad8c4;
+  --primary-soft: #1b3a31;
+  --bg: #141a18;
+  --card: #1d2421;
+  --localz-action: #e8875f;
+  --localz-action-hover: #f09d7a;
+  --localz-action-ink: #2a1206;
+}
+:root[data-section="localz"] .btn-primary,
+:root[data-section="localz"] .btn.localz-call {
+  background: var(--localz-action);
+  border-color: var(--localz-action);
+  color: var(--localz-action-ink);
+}
+:root[data-section="localz"] .btn-primary:hover:not(:disabled),
+:root[data-section="localz"] .btn.localz-call:hover {
+  background: var(--localz-action-hover);
+  border-color: var(--localz-action-hover);
+  color: var(--localz-action-ink);
+}
+:root[data-section="localz"] .btn.localz-call svg {
+  color: var(--localz-action-ink);
 }

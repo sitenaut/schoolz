@@ -5,12 +5,13 @@ import { useTranslation } from "react-i18next";
 import { AuthPopover } from "./AuthPopover";
 import { UserMenu } from "./UserMenu";
 import { LanguageOffer, LanguageSwitcher, useAccountLanguageSync } from "./LanguageSwitcher";
+import { BackToTop } from "./BackToTop";
 import { ChatWidget } from "./ChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
-import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconUsers, IconWrench } from "./icons";
+import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconSearch, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { CURRENT_LANG } from "../lib/i18n";
 import { gaEvent, gaPageView, gaSetUserProperties, schoolViews, setInternalTraffic } from "../lib/analytics";
@@ -20,6 +21,8 @@ import { countVisit, visitSource } from "../lib/visits";
 import { invitePath, loadPendingInvite } from "../lib/pendingInvite";
 import { useKeyboardViewportReset } from "../lib/keyboardReset";
 import { useSeasons } from "../lib/seasonal";
+import { LOCALZ_CATEGORIES, isLocalzPath } from "../lib/localz";
+import { CategoryIcon } from "../pages/localz/CategoryIcon";
 
 // Route templates for the routes registered in App.tsx - used to keep
 // page_view's `route` attribute low-cardinality (a school slug or invite
@@ -30,6 +33,7 @@ const ROUTE_TEMPLATES: [RegExp, string][] = [
   [/^\/invites\/[^/]+$/, "/invites/:token"],
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
   [/^\/seasonal\/[^/]+$/, "/seasonal/:season"],
+  [/^\/localz\/r\/[^/]+$/, "/localz/r/:id"],
 ];
 
 const GA_HOLD_MS = 3000;
@@ -76,6 +80,17 @@ export function AppShell() {
   const { seasons } = useSeasons();
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+  // Localz (community help) swaps the brand and the nav for its own; the
+  // first tab leads back to schoolz.
+  const inLocalz = isLocalzPath(pathname);
+  // Localz's own colors (styles.css, "Localz theme") key off this, on <html>
+  // so the page background, header, tabs and modals all switch together.
+  // Layout effect: set before paint, so there's no blue flash on the way in.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (inLocalz) root.dataset.section = "localz";
+    else delete root.dataset.section;
+  }, [inLocalz]);
   // Calendar only, by explicit product call. That page auto-scrolls ~3000px
   // to today's entry, which parks its "Only <school>" bar off the top of the
   // document - so there the ribbon stacks under the header and the bar under
@@ -166,6 +181,8 @@ export function AppShell() {
   }, []);
   useEffect(() => {
     if (((authLoading && !authTimedOut) || schoolsLoading) && !gaHoldExpired) return;
+    // Nothing about a visit to Localz goes to Google (lib/localz.ts).
+    if (isLocalzPath(pathname)) return;
     const key = pathname + search;
     if (lastGaView.current === key) return;
     const timer = window.setTimeout(() => {
@@ -234,10 +251,17 @@ export function AppShell() {
     <div className="shell">
       <LanguageOffer />
       <header className="shell-top" ref={headerRef}>
-        <Link to="/" className="brand">
-          schoolz
+        <Link to={inLocalz ? "/localz" : "/"} className="brand">
+          {inLocalz ? "localz" : "schoolz"}
         </Link>
         <div className="spacer" />
+        {/* A one-tap way into Localz from anywhere in schoolz, in its own
+            color so it stands out from the gray header controls. */}
+        {!inLocalz && (
+          <Link to="/localz" className="btn icon localz-badge" title={t("Localz: find help near you")} aria-label={t("Localz: find help near you")}>
+            <IconPin />
+          </Link>
+        )}
         {/* Shown only while a season's guides are running (data, not a
             release), so it appears and disappears with no deploy. */}
         {seasons.map((s) => (
@@ -281,9 +305,11 @@ export function AppShell() {
         <ThemeToggle />
         {/* On a phone a signed-in header (bell, inbox, admin icons) has no
             room for this pill, so it moves into the account menu there. */}
-        <Link to="/start" className={`ghost${user ? " mySchoolsSignedIn" : ""}`}>
-          {t("My schools")}
-        </Link>
+        {!inLocalz && (
+          <Link to="/start" className={`ghost${user ? " mySchoolsSignedIn" : ""}`}>
+            {t("My schools")}
+          </Link>
+        )}
         {user ? <UserMenu /> : <AuthPopover />}
       </header>
 
@@ -334,43 +360,68 @@ export function AppShell() {
         </div>
       )}
 
-      <nav className="shell-nav" aria-label={t("Sections")}>
-        <NavLink to="/" end>
-          <IconHome />
-          {t("Today")}
-        </NavLink>
-        <NavLink to="/calendar">
-          <IconCalendar />
-          {t("Calendar")}
-        </NavLink>
-        <NavLink to="/lunch">
-          <IconLunch />
-          {t("Lunch")}
-        </NavLink>
-        <NavLink to="/schools">
-          <IconSchool />
-          {t("Schools")}
-        </NavLink>
-        <NavLink to="/directory">
-          <IconDirectory />
-          {t("Directory")}
-        </NavLink>
-        {user && (
-          // /focus is a separate app (its own Vite build, served from
-          // /focus/ - see nginx.conf.template) sharing only this origin's
-          // session, not a route in this router - a plain <a> forces the
-          // real browser navigation it needs; a <Link>/<NavLink> would try
-          // to client-route to a path this SPA has no match for.
-          <a href="/focus/">
-            <IconUsers />
-            Gradez
-          </a>
-        )}
-        <NavLink to="/local">
-          <IconPin />
-          {t("Local")}
-        </NavLink>
-      </nav>
+      {inLocalz ? (
+        <nav className="shell-nav" aria-label={t("Sections")}>
+          <NavLink to="/" end>
+            <IconSchool />
+            schoolz
+          </NavLink>
+          {/* Localz's own home (search + every kind of help); `end` so it
+              isn't lit on the category pages under it. */}
+          <NavLink to="/localz" end>
+            <IconSearch />
+            {t("Find help")}
+          </NavLink>
+          <NavLink to="/local">
+            <IconCalendar />
+            {t("Events")}
+          </NavLink>
+          {LOCALZ_CATEGORIES.filter((c) => c.inNav).map((c) => (
+            <NavLink to={`/localz/${c.key}`} key={c.key}>
+              <CategoryIcon category={c.key} />
+              {t(c.navLabel)}
+            </NavLink>
+          ))}
+        </nav>
+      ) : (
+        <nav className="shell-nav" aria-label={t("Sections")}>
+          <NavLink to="/" end>
+            <IconHome />
+            {t("Today")}
+          </NavLink>
+          <NavLink to="/calendar">
+            <IconCalendar />
+            {t("Calendar")}
+          </NavLink>
+          <NavLink to="/lunch">
+            <IconLunch />
+            {t("Lunch")}
+          </NavLink>
+          <NavLink to="/schools">
+            <IconSchool />
+            {t("Schools")}
+          </NavLink>
+          <NavLink to="/directory">
+            <IconDirectory />
+            {t("Directory")}
+          </NavLink>
+          {user && (
+            // /focus is a separate app (its own Vite build, served from
+            // /focus/ - see nginx.conf.template) sharing only this origin's
+            // session, not a route in this router - a plain <a> forces the
+            // real browser navigation it needs; a <Link>/<NavLink> would try
+            // to client-route to a path this SPA has no match for.
+            <a href="/focus/">
+              <IconUsers />
+              Gradez
+            </a>
+          )}
+          <NavLink to="/localz">
+            <IconPin />
+            Localz
+          </NavLink>
+        </nav>
+      )}
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
         <Outlet />
         <footer className="shell-footer">
@@ -383,6 +434,7 @@ export function AppShell() {
           <LanguageSwitcher />
         </footer>
       </main>
+      <BackToTop />
       <ChatWidget />
     </div>
   );

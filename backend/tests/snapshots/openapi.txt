@@ -329,6 +329,18 @@ POST /page-views
   -> 204: -
 GET /page-views/campaign-report
   -> 200: CampaignReport
+GET /resources/categories
+  query county?: string | null
+  -> 200: list[CategoryOut]
+POST /resources/search
+  body: ResourceSearchIn
+  -> 200: ResourceSearchOut
+POST /resources/types
+  body: ResourceSearchIn
+  -> 200: list[ResourceTypeOut]
+GET /resources/{resource_id}
+  path resource_id: string
+  -> 200: ResourceDetailOut
 GET /scheduled-jobs
   query enabled?: boolean | null
   query kind?: string | null
@@ -749,6 +761,7 @@ CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_read
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
 CaptureStatusIn { detail?: string | null, status: string }
 CaptureStatusOut { notified: boolean }
+CategoryOut { count: integer, key: string, label: string }
 ChangePasswordRequest { current_password: string, new_password: string }
 ChatMessage { content: list[object] | string, role: string }
 ChatRequest { escalated?: boolean, history?: list[ChatMessage], message: string }
@@ -850,6 +863,11 @@ ProgressOut { done: integer, due: integer, missing: integer, percent: integer | 
 ProviderStatus { configured: boolean, name: string }
 RegisterRequest { email: string(email), password: string, username: string }
 ResetPasswordRequest { new_password: string, token: string }
+ResourceDetailOut { accessibility: string | null, address: string | null, alert: string | null, application_process: string | null, categories: list[string], city: string | null, complete: boolean, description: string | null, eligibility_text: string | null, email: string | null, fees: string | null, hours_text: string | null, id: string, languages: list[string], last_assured_on: string(date) | null, latitude: number | null, location_name: string | null, longitude: number | null, missing_core: list[string], name: string, organization_name: string | null, phone: string | null, postal_code: string | null, required_documents: list[string], service_areas: list[string], source: string, source_url: string | null, statewide: boolean, taxonomy_names: list[string], transportation: string | null, updated_at: string(date-time), website: string | null }
+ResourceSearchIn { category?: string | null, county?: string | null, page?: integer, page_size?: integer, query?: string | null, type?: string | null }
+ResourceSearchOut { items: list[ResourceSummaryOut], total: integer }
+ResourceSummaryOut { address: string | null, categories: list[string], city: string | null, complete: boolean, description: string | null, hours_text: string | null, id: string, last_assured_on: string(date) | null, location_name: string | null, name: string, organization_name: string | null, phone: string | null, statewide: boolean }
+ResourceTypeOut { code: string, count: integer, name: string }
 ResultBlock { block_type: string, content_hash: string, first_seen_at: string(date-time), image_url?: string | null, link_url?: string | null, page_path?: string | null, pending_vision_extraction?: boolean, position: integer, text_content?: string | null, vision_extracted_text?: string | null }
 ResultDistrict { calendar_pdf_items?: list[ResultItem], calendar_pdf_last_run?: ResultRun | null, lunch_last_run?: ResultRun | null, lunch_menus?: list[ResultLunchMenu], name: string }
 ResultItem { applies_to_grad_years?: list[integer] | null, applies_to_school_types?: list[string] | null, category: string, description?: string | null, district_name?: string | null, end_date?: string(date-time) | null, external_uid?: string | null, extracted_at: string(date-time), is_all_day?: boolean, is_current?: boolean, link_url?: string | null, person_name?: string | null, person_title?: string | null, ref: string, school_slug?: string | null, scope: string, source: string, source_block_hash?: string | null, source_excerpt?: string | null, start_date?: string(date-time) | null, superseded_by_ref?: string | null, title: string, translations?: list[ResultTranslation] }

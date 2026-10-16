@@ -246,3 +246,56 @@ export const IconWrench = ({ className }: P) => (
     <path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 18l3 3 6.6-6.3a4 4 0 0 0 5.1-5.4l-2.8 2.8-2.8-.7-.7-2.8 2.8-2.8z" />
   </svg>
 );
+// Localz categories (lib/localz.ts). Simple objects, not people or
+// symbols of need - a basket, a house, a heart.
+export const IconBasket = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M3 10h18l-2 10H5z" />
+    <path d="m8 10 3-6M16 10l-3-6M9 14v3M15 14v3M12 14v3" />
+  </svg>
+);
+export const IconHouseKey = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M3 11 12 3l9 8" />
+    <path d="M5 10v10h14V10" />
+    <circle cx="12" cy="13" r="2" />
+    <path d="M12 15v3" />
+  </svg>
+);
+export const IconHeart = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z" />
+    <path d="M7.5 12h2.5l1.5-2 2 4 1.5-2h1.5" />
+  </svg>
+);
+export const IconFamily = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <circle cx="8" cy="6" r="2.5" />
+    <circle cx="16.5" cy="9" r="2" />
+    <path d="M3.5 20v-4.5A4.5 4.5 0 0 1 12.5 15.5V20M13 20v-3a3.5 3.5 0 0 1 7 0v3" />
+  </svg>
+);
+export const IconCoins = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <ellipse cx="9" cy="7" rx="5" ry="2.5" />
+    <path d="M4 7v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V7" />
+    <path d="M10 15.5c.9 1.2 2.9 2 5 2 2.8 0 5-1.1 5-2.5v-4c0-1.4-2.2-2.5-5-2.5" />
+  </svg>
+);
+export const IconBag = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M5 8h14l-1 12H6z" />
+    <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+  </svg>
+);
+export const IconExit = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M14 4h5v16h-5" />
+    <path d="M10 8l-4 4 4 4M6 12h10" />
+  </svg>
+);
+export const IconArrowUp = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);

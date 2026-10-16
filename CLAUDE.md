@@ -120,6 +120,9 @@ Docs:
 - **`docs/LOCAL_EVENTS_SOURCES.md`** — `/local` community events (`backend/local_events/`, a port of billz's pipeline; public, no auth).
   - **Deleting a job, or removing a source from its params, deletes that source's events.** `prune.SOURCE_KEYS` must list every `*_sources` key.
   - `/local` filters by distance, and an event with no position shows at every radius: a feed that never states a venue needs a `location` on its source entry.
+- **`docs/LOCALZ_DESIGN.md`** — Localz community resources (`backend/resources/`, job `resources.refresh`, public `/resources` API); design, data sources, privacy rules.
+  - The NJ 211 crawl is a guest on their site: robots.txt every run, ≥10 s between requests, never `/api/`, stop on 403/429. Don't speed it up or add retries.
+  - Only a *complete* list crawl may mark records missing; free-text search stays in POST bodies, never URLs.
 - **`docs/BACKUPS.md`** — nightly encrypted `pg_dump` to R2 (`.github/workflows/backup.yml`), the restore drill, restoring for real.
   - The age private key exists only in the `schoolz-prod` vault; lose it and no backup can be restored.
   - The local database is dumped by `compose-local.sh` before `up`/`down`/`rm` (`scripts/backup-local.sh`); calling `docker compose` directly skips that.

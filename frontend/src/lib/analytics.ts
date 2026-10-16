@@ -1,6 +1,7 @@
 import { GA_MEASUREMENT_ID } from "../authConfig";
 import { SITE_URL } from "./site";
-import { CURRENT_LANG, ROUTER_BASENAME } from "./i18n";
+import { CURRENT_LANG, ROUTER_BASENAME, stripLangPrefix } from "./i18n";
+import { isLocalzPath } from "./localzPath";
 
 const INTERNAL_KEY = "schoolz_internal";
 const OPTOUT_KEY = "schoolz_ga_optout";
@@ -170,6 +171,10 @@ export function initAnalytics(): void {
     return;
   }
   if (!shouldTrack({ id: GA_MEASUREMENT_ID, webdriver: !!navigator.webdriver, hostname: window.location.hostname, siteHostname: siteHostname() })) return;
+  // Localz (help with food, housing, ...) never loads GA: someone landing
+  // there gets no third-party script at all. Pages reached later skip their
+  // hits in AppShell.
+  if (isLocalzPath(stripLangPrefix(window.location.pathname))) return;
 
   applyInternalQueryFlag();
   window.dataLayer = window.dataLayer || [];

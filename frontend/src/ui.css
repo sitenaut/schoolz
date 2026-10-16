@@ -1819,6 +1819,25 @@ button.link-card:disabled {
   line-height: 1;
   padding: 4px 6px;
 }
+/* Localz shortcut beside the season badge. #ba5a37 is Claude's orange
+   (#c15f3c) taken a shade darker so the white icon clears 4.5:1 (4.56:1);
+   the button itself is 4.56:1 on the light header and 3.46:1 on the dark
+   one, above the 3:1 WCAG 1.4.11 asks of controls. */
+.btn.icon.localz-badge {
+  background: #ba5a37;
+  border-color: #ba5a37;
+  color: #ffffff;
+}
+.btn.icon.localz-badge:hover,
+.btn.icon.localz-badge:focus-visible {
+  background: #a04a2c;
+  border-color: #a04a2c;
+  color: #ffffff;
+}
+.btn.icon.localz-badge svg {
+  width: 18px;
+  height: 18px;
+}
 .seasonal-banners {
   display: grid;
   gap: 8px;

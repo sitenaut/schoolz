@@ -1,33 +1,36 @@
-from . import district_calendar_scan  # noqa: F401
-from . import athletics_calendar_scan  # noqa: F401
-from . import documents_scan  # noqa: F401
-from . import email_scan  # noqa: F401
-from . import fdmealplanner_menu_scan  # noqa: F401
-from . import healthepro_menu_scan  # noqa: F401
-from . import myschoolplate_menu_scan  # noqa: F401
-from . import nutrislice_menu_scan  # noqa: F401
-from . import presence_menu_scan  # noqa: F401
-from . import givebacks_scan  # noqa: F401
-from . import hs_activities_site_scan  # noqa: F401
-from . import hs_announcements_scan  # noqa: F401
-from . import hs_class_calendar_scan  # noqa: F401
-from . import district_calendar_pdf_scan  # noqa: F401
-from . import hs_rotation_scan  # noqa: F401
-from . import local_events_refresh  # noqa: F401
-from . import lunch_menu_scan  # noqa: F401
-from . import marking_period_scan  # noqa: F401
-from . import prerender_warm  # noqa: F401
-from . import preschool_locations_scan  # noqa: F401
-from . import preschool_team_scan  # noqa: F401
-from . import page_flyers_scan  # noqa: F401
-from . import ptboard_scan  # noqa: F401
-from . import school_events_doc_scan  # noqa: F401
-from . import student_bulletin_scan  # noqa: F401
-from . import school_info_scan  # noqa: F401
-from . import schoolcafe_menu_scan  # noqa: F401
-from . import smore_scan  # noqa: F401
-from . import special_events_scan  # noqa: F401
-from . import staff_roster_scan  # noqa: F401
-from . import transportation_scan  # noqa: F401
-from . import translation_backfill  # noqa: F401
-from . import virtual_backpack_scan  # noqa: F401
+from . import (
+    athletics_calendar_scan,  # noqa: F401
+    district_calendar_pdf_scan,  # noqa: F401
+    district_calendar_scan,  # noqa: F401
+    documents_scan,  # noqa: F401
+    email_scan,  # noqa: F401
+    fdmealplanner_menu_scan,  # noqa: F401
+    givebacks_scan,  # noqa: F401
+    healthepro_menu_scan,  # noqa: F401
+    hs_activities_site_scan,  # noqa: F401
+    hs_announcements_scan,  # noqa: F401
+    hs_class_calendar_scan,  # noqa: F401
+    hs_rotation_scan,  # noqa: F401
+    local_events_refresh,  # noqa: F401
+    lunch_menu_scan,  # noqa: F401
+    marking_period_scan,  # noqa: F401
+    myschoolplate_menu_scan,  # noqa: F401
+    nutrislice_menu_scan,  # noqa: F401
+    page_flyers_scan,  # noqa: F401
+    prerender_warm,  # noqa: F401
+    preschool_locations_scan,  # noqa: F401
+    preschool_team_scan,  # noqa: F401
+    presence_menu_scan,  # noqa: F401
+    ptboard_scan,  # noqa: F401
+    resources_refresh,  # noqa: F401
+    school_events_doc_scan,  # noqa: F401
+    school_info_scan,  # noqa: F401
+    schoolcafe_menu_scan,  # noqa: F401
+    smore_scan,  # noqa: F401
+    special_events_scan,  # noqa: F401
+    staff_roster_scan,  # noqa: F401
+    student_bulletin_scan,  # noqa: F401
+    translation_backfill,  # noqa: F401
+    transportation_scan,  # noqa: F401
+    virtual_backpack_scan,  # noqa: F401
+)
