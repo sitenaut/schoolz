@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 import httpx
@@ -35,7 +35,7 @@ def _et() -> Any:
 
             _TZ_ET = ZoneInfo("America/New_York")
         except Exception:  # noqa: BLE001
-            _TZ_ET = timezone.utc
+            _TZ_ET = UTC
     return _TZ_ET
 
 
@@ -208,6 +208,7 @@ class JsonApiSource(Source):
         parser: str | None = None,
         default_categories: list[str] | None = None,
         timeout: float = 30.0,
+        upcoming_only: bool = False,
     ) -> None:
         self.name = name
         self.url = url
@@ -228,6 +229,9 @@ class JsonApiSource(Source):
             logger.warning("json_api_unknown_parser", extra={"source": name, "parser": parser})
         self.default_categories = default_categories or []
         self.timeout = timeout
+        # Revize's handler returns the town's whole history (Mount Laurel:
+        # 1,821 entries, 24 of them upcoming); drop what's already over.
+        self.upcoming_only = upcoming_only
 
     def request_url(self, today: date | None = None) -> str:
         """DPCalendar's raw events feed returns an empty list unless it's
@@ -256,6 +260,7 @@ class JsonApiSource(Source):
             return []
 
         out: list[RawEvent] = []
+        today = datetime.now(_et()).replace(hour=0, minute=0, second=0, microsecond=0)
         for entry in events_raw:
             if not isinstance(entry, dict):
                 continue
@@ -265,6 +270,8 @@ class JsonApiSource(Source):
                 if start is None:
                     continue
                 end = _parse_dt(entry.get(self.end_field), all_day)
+                if self.upcoming_only and (end or start) < today:
+                    continue
                 title = str(entry.get(self.title_field) or "").strip() or "(untitled)"
                 raw_id = entry.get(self.id_field)
                 source_event_id = _stable_id(raw_id, title, start)

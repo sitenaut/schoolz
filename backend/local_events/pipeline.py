@@ -22,38 +22,42 @@ add/remove feeds from the UI without code changes. Example params:
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import LocalEvent as Event
 from scheduler import progress
 
 from .deduper import find_duplicate, merge_into
+from .filters import apply_filters, filters_by_source, is_excluded
 from .locate import locate_events
 from .normalizer import normalize
 from .school_sync import group_by_school, sync_school_content
 from .sources.base import RawEvent, Source
+from .sources.bibliocommons import BiblioCommonsSource
+from .sources.ccls import DEFAULT_CCLS_PAUSE, CCLSSource
 from .sources.deyra_schedule import DeyraScheduleSource
 from .sources.dostuff import DoStuffSource
-from .sources.ccls import DEFAULT_CCLS_PAUSE, CCLSSource
+from .sources.drupal_fullcalendar import DrupalFullCalendarSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
-from .sources.libcal import LibCalSource
-from .sources.bibliocommons import BiblioCommonsSource
-from .sources.mec import MECSource
-from .sources.drupal_fullcalendar import DrupalFullCalendarSource
 from .sources.json_api import JsonApiSource
+from .sources.libcal import LibCalSource
 from .sources.listing_page import ListingPageSource
 from .sources.ludus import LudusSource
+from .sources.mec import MECSource
 from .sources.patch import PatchSource
 from .sources.placewise import PlacewiseSource
-from .sources.runsignup import RunSignupSource
+from .sources.revize_calendar_app import RevizeCalendarAppSource
 from .sources.rss import RSSSource
+from .sources.runsignup import RunSignupSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
 from .sources.theatre import TheatreSiteSource
+from .sources.thrillshare import ThrillshareSource
 from .sources.tribe import TribeEventsSource
 from .sources.yodel import YodelSource
 
@@ -135,6 +139,7 @@ def _build_sources(params: dict) -> list[Source]:
                 image_field=entry.get("image_field"),
                 location_field=entry.get("location_field"),
                 parser=entry.get("parser"),
+                upcoming_only=bool(entry.get("upcoming_only", False)),
                 default_categories=list(entry.get("default_categories") or []),
             )
         )
@@ -383,7 +388,48 @@ def _build_sources(params: dict) -> list[Source]:
                 school_labels=entry.get("school_labels"),
             )
         )
+    for entry in params.get("revize_calendar_app_sources") or []:
+        if not entry.get("name") or not entry.get("base_url"):
+            continue
+        sources.append(
+            RevizeCalendarAppSource(
+                name=entry["name"],
+                base_url=entry["base_url"],
+                calendar_ids=list(entry.get("calendar_ids") or [1]),
+                months_ahead=int(entry.get("months_ahead", 3)),
+                default_categories=list(entry.get("default_categories") or []),
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+            )
+        )
+    for entry in params.get("thrillshare_sources") or []:
+        if not entry.get("name") or not entry.get("org_id"):
+            continue
+        sources.append(
+            ThrillshareSource(
+                name=entry["name"],
+                org_id=str(entry["org_id"]),
+                site_url=entry.get("site_url"),
+                days_ahead=int(entry.get("days_ahead", 90)),
+                default_categories=list(entry.get("default_categories") or []),
+            )
+        )
     return sources
+
+
+async def _drop_excluded_stored(db: AsyncSession, source_name: str, patterns) -> int:
+    """Deletes this source's upcoming stored events that its filter now
+    excludes. A filter turned on for a feed that already ran would otherwise
+    leave every meeting it had stored until the date passed."""
+    rows = (
+        await db.execute(
+            select(Event.id, Event.title).where(Event.source == source_name, Event.start_time >= datetime.now(UTC))
+        )
+    ).all()
+    ids = [row.id for row in rows if is_excluded((row.title or "").strip(), patterns)]
+    if ids:
+        await db.execute(delete(Event).where(Event.id.in_(ids)))
+    return len(ids)
 
 
 async def run_pipeline(db: AsyncSession, params: dict) -> dict:
@@ -396,6 +442,9 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     updated = 0
     skipped = 0
     per_source: dict[str, int] = {}
+    # Dropped by an entry's skip_meetings / exclude_title_patterns.
+    excluded: dict[str, int] = {}
+    filters = filters_by_source(params)
     partial_failures: dict[str, list[str]] = {}
     school_tagged_raws: list[RawEvent] = []
     # Why each -1 source failed. It used to live only in the logs, so the run
@@ -411,6 +460,12 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
             per_source[source.name] = -1
             source_errors[source.name] = f"{type(exc).__name__}: {exc}"[:300]
             continue
+        patterns = filters.get(source.name)
+        raws, dropped = apply_filters(raws, patterns)
+        if patterns:
+            dropped += await _drop_excluded_stored(db, source.name, patterns)
+        if dropped:
+            excluded[source.name] = dropped
         fetched += len(raws)
         per_source[source.name] = len(raws)
         if getattr(source, "partial_failures", None):
@@ -482,6 +537,8 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         "skipped": skipped,
         "per_source": per_source,
     }
+    if excluded:
+        summary["excluded"] = excluded
     if partial_failures:
         summary["partial_failures"] = partial_failures
     if source_errors:
