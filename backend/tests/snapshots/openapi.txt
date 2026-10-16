@@ -921,7 +921,7 @@ SurveyResponseOut { comments: string | null, created_at: string(date-time), id: 
 SurveySummaryOut { average_satisfaction: number | null, top_pain_points: list[object], total: integer }
 TestFetchIn { kind: string, params: object, verbose?: boolean }
 TestFetchOut { kind: string, sources: list[TestFetchSourceResult] }
-TestFetchSourceResult { error: string | null, event_count: integer, first_entry_fields?: dict[string] | null, name: string, sample_titles: list[string], source_type?: string | null, status: string, url: string | null }
+TestFetchSourceResult { error: string | null, event_count: integer, excluded_count?: integer, first_entry_fields?: dict[string] | null, name: string, sample_titles: list[string], source_type?: string | null, status: string, url: string | null }
 TodayContactOut { email: string | null, label: string, name: string, phone: string | null, role: string }
 TodayCurrentClassOut { course_name?: string | null, end_label?: string | null, first_name: string, minutes_left?: integer | null, minutes_until_next?: integer | null, next_course_name?: string | null, next_start_label?: string | null, period_name?: string | null, room?: string | null, start_label?: string | null, status: string, student_id: string, teacher?: string | null }
 TodayDayOut { date: string, items: list[SchoolContentItemOut], long_blocks?: boolean, lunch: string | null, rotation_blocks?: list[string] | null, rotation_day: string | null, status: string, status_label: string | null, weekday: string }

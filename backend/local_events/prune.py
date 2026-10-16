@@ -38,6 +38,8 @@ SOURCE_KEYS = (
     "patch_sources",
     "dostuff_sources",
     "runsignup_sources",
+    "revize_calendar_app_sources",
+    "thrillshare_sources",
 )
 
 

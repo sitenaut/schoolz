@@ -46,10 +46,16 @@ DEFAULT_PARAMS = {
         {"name": "mount_laurel_library", "url": "https://mountlaurel.librarycalendar.com/events/feed/ical", "upcoming_only": True, "default_categories": ["mount-laurel", "library"]},
         {"name": "berlin_borough_library", "url": "https://berlinborolibrary.org/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events", "upcoming_only": True, "default_categories": ["berlin", "library"]},
         {"name": "clementon_township", "url": "https://clementon-nj.com/?feed=my-calendar-ics", "upcoming_only": True, "default_categories": ["clementon", "municipal"], "location": "Clementon, NJ"},
-        # Example shape (URL must point to an actual .ics feed, not a calendar landing page):
+        # Example shape (URL must point to an actual .ics feed, not a calendar landing page).
+        # Any CivicPlus town site: catID is ONE calendar category, numbered per
+        # site (14 is Cherry Hill's "Main Events" but Haddon Heights' and
+        # Willingboro's federal holidays) - read the site's /iCalendar.aspx for
+        # the list. Prefer this to CivicPlus's RSSFeed.aspx, which only lists
+        # the next ~2 weeks. CivicPlus 429s bursts: don't list two in a row.
         # {"name": "cherryhill_township",
-        #  "url": "https://www.cherryhill-nj.com/common/modules/iCalendar/iCalendar.aspx?feed=calendar",
-        #  "default_categories": ["municipal", "family"]}
+        #  "url": "https://www.chnj.gov/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+        #  "upcoming_only": True, "skip_meetings": True,
+        #  "default_categories": ["cherry-hill", "municipal"], "location": "Cherry Hill, NJ"}
     ],
     "rss_sources": [
         # Example shape. `treat_pubdate_as_start: true` lets blog-style feeds
@@ -238,6 +244,16 @@ _NAMED_SOURCE_COMMON = {
         "items": {"type": "string"},
         "description": "Tags applied to every event from this source.",
     },
+    "skip_meetings": {
+        "type": "boolean",
+        "default": False,
+        "description": "Drop council/board/committee meetings, work sessions, caucuses and court sessions (local_events/filters.py). Set it on every town or county calendar; office closures are kept.",
+    },
+    "exclude_title_patterns": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Case-insensitive regexes over the title; a match drops the event, including ones already stored.",
+    },
 }
 
 EVENTS_REFRESH_PARAM_SCHEMA = {
@@ -286,6 +302,7 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 "required": ["name", "url"],
                 "properties": {
                     **_NAMED_SOURCE_COMMON,
+                    "upcoming_only": {"type": "boolean", "default": False, "description": "Drop events already over. Set it for Revize (parser: revize), whose handler returns the town's whole history."},
                     "url": {"type": "string", "description": "JSON endpoint URL."},
                     "base_url": {
                         "type": "string",
@@ -594,6 +611,34 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "days_ahead": {"type": "integer", "default": 120},
                     "states": {"type": "array", "items": {"type": "string"}, "description": "Keep only these states, e.g. ['NJ']. Omit to keep everything in the radius."},
                     "exclude_patterns": {"type": "array", "items": {"type": "string"}, "description": "Case-insensitive regexes over race title + street; a match drops the race (e.g. 'course map will be emailed' for run-it-yourself race mills)."},
+                },
+            },
+        },
+        "revize_calendar_app_sources": {
+            "type": "array",
+            "description": "Town sites on Revize's older calendar (a /calendar_app/ iframe on calendar.php; the newer Revize JSON handler 404s there). Reads the XML it publishes per calendar per month, plain HTTP.",
+            "items": {
+                "type": "object",
+                "required": ["name", "base_url"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "base_url": {"type": "string", "description": "The site root, e.g. https://collingswood.com."},
+                    "calendar_ids": {"type": "array", "items": {"type": "integer"}, "default": [1], "description": "Calendars to read; calendar_app/db/calendar_db_data.xml lists them (1 is Master)."},
+                    "months_ahead": {"type": "integer", "default": 3},
+                },
+            },
+        },
+        "thrillshare_sources": {
+            "type": "array",
+            "description": "Town sites on Apptegy (Thrillshare), e.g. Mount Ephraim, Oaklyn borough. Public JSON API, keyed by the site's org id.",
+            "items": {
+                "type": "object",
+                "required": ["name", "org_id"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "org_id": {"type": "string", "description": "From the town page's own request to thrillshare.com/api/v4/o/<org_id>/cms/events. Not the school district's org."},
+                    "site_url": {"type": "string", "description": "Link used for every event (the API gives none)."},
+                    "days_ahead": {"type": "integer", "default": 90},
                 },
             },
         },
