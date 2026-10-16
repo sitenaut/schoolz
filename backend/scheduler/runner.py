@@ -4,13 +4,13 @@ import logging
 import os
 import time
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from croniter import croniter
 from opentelemetry import trace
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from zoneinfo import ZoneInfo
 
 import observability
 from database import SessionLocal
@@ -100,12 +100,12 @@ async def _finalize(
     started_at: datetime,
 ) -> None:
     async with SessionLocal() as db:
-        duration_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
+        duration_ms = int((datetime.now(UTC) - started_at).total_seconds() * 1000)
 
         run = (await db.execute(select(JobRun).where(JobRun.id == run_id))).scalar_one_or_none()
         if run:
             run.status = status
-            run.finished_at = datetime.now(timezone.utc)
+            run.finished_at = datetime.now(UTC)
             run.duration_ms = duration_ms
             run.error = error
             run.error_code = error_code
@@ -147,7 +147,7 @@ async def _execute(job_id: str, *, triggered_by: str) -> None:
 
 
 async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float = 0.0) -> None:
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     lock_key = _lock_key(job_id)
 
     async with SessionLocal() as db:
@@ -168,7 +168,7 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
             ] if job.kind in backoff.EMPTY_CODES and triggered_by in backoff.BACKOFF_TRIGGERS else []
             skip_reason = backoff.back_off_reason(job.kind, triggered_by, recent, started_at)
             if skip_reason:
-                db.add(JobRun(job_id=job_id, status="skipped", triggered_by=triggered_by, finished_at=datetime.now(timezone.utc), log_excerpt=skip_reason))
+                db.add(JobRun(job_id=job_id, status="skipped", triggered_by=triggered_by, finished_at=datetime.now(UTC), log_excerpt=skip_reason))
                 await db.commit()
                 observability.job_runs_total.add(1, {"job.kind": job.kind, "status": "skipped", "triggered_by": triggered_by})
                 return
@@ -192,7 +192,7 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                         job_id=job_id,
                         status="skipped",
                         triggered_by=triggered_by,
-                        finished_at=datetime.now(timezone.utc),
+                        finished_at=datetime.now(UTC),
                         log_excerpt="another run of this job is already in progress",
                     )
                 )
@@ -204,6 +204,10 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
             await db.commit()
             await db.refresh(run)
             run_id = run.id
+            # Read now: a failed handler's rollback expires `job`, and a lazy
+            # reload in the finally below raises MissingGreenlet, losing the
+            # error run's metrics and log line.
+            job_kind = job.kind
 
             observability.job_queue_wait_seconds.record(queue_wait_s, {"job.kind": job.kind})
             observability.job_in_flight.add(1, {"job.kind": job.kind})
@@ -264,13 +268,13 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                 )
             finally:
                 progress.unbind(progress_token)
-                observability.job_in_flight.add(-1, {"job.kind": job.kind})
+                observability.job_in_flight.add(-1, {"job.kind": job_kind})
                 duration_s = time.perf_counter() - handler_start
-                observability.job_duration_seconds.record(duration_s, {"job.kind": job.kind, "status": run_status})
+                observability.job_duration_seconds.record(duration_s, {"job.kind": job_kind, "status": run_status})
                 observability.job_runs_total.add(
                     1,
                     {
-                        "job.kind": job.kind,
+                        "job.kind": job_kind,
                         "status": run_status,
                         "error_code": error_code or "",
                         # Carried so the dashboard can group failures by where
@@ -287,9 +291,9 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
                     log_level,
                     "job_finished",
                     extra={
-                        "job_id": job.id,
+                        "job_id": job_id,
                         "run_id": run_id,
-                        "job_kind": job.kind,
+                        "job_kind": job_kind,
                         "status": run_status,
                         "error_code": error_code,
                         "error_stage": error_stage,
@@ -387,7 +391,7 @@ async def queue_missed_runs() -> int:
     started, oldest miss first. Called once when the scheduler starts. Runs
     go through the same concurrency limit and advisory lock as cron runs, so
     a job a run-now already holds is just recorded as skipped."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     async with SessionLocal() as db:
         jobs = (await db.execute(select(ScheduledJob).where(ScheduledJob.enabled.is_(True)))).scalars().all()
         missed = [(fire, job.id) for job in jobs if (fire := missed_fire_time(job, now)) is not None]
@@ -425,7 +429,7 @@ async def queue_first_runs() -> int:
     """Queues one run for every never-run job first_run_due() picks out.
     Called on every reconcile tick, so a job created through the API or an
     import gets its first run within ~30s."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     async with SessionLocal() as db:
         jobs = (
             await db.execute(

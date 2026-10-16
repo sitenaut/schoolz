@@ -691,7 +691,7 @@ def parse_json_directory(rows: object) -> list[dict]:
     return list(items.values())
 
 
-async def fetch_directory_document(url: str) -> list[dict]:
+async def fetch_directory_document(url: str, school_names: list[str | None] | None = None) -> list[dict]:
     """The school's directory as a document rather than a page. A Google Slides
     deck is read through its public plain-text export and a published Google
     Sheet through its CSV export; anything else is taken
@@ -717,6 +717,11 @@ async def fetch_directory_document(url: str) -> list[dict]:
                 resp = await client.get(url, headers={"User-Agent": "schoolz-staff-roster/1.0"})
             if resp.status_code == 200 and "json" in resp.headers.get("content-type", "").lower():
                 return parse_json_directory(resp.json())
+            # A district-wide Finalsite directory a school's own site never
+            # links (Southampton: /district/staff-directory, on www, not the
+            # schoolN subsites) is a page, not a document.
+            if resp.status_code == 200 and "fsConstituentItem" in resp.text:
+                return await _read_constituent_directory(url, school_names or [])
         except (httpx.HTTPError, ValueError):
             pass
     data = await scraper_client.fetch_raw_bytes(url)

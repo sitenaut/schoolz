@@ -1,9 +1,10 @@
+import re
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import School, StaffMember
+from models import District, School, StaffMember
 from scheduler.registry import register_job
 from services.apptegy import fetch_staff as fetch_apptegy_staff
 from services.contact_page import CONSTITUENT_PREFIX, fetch_contacts
@@ -38,6 +39,44 @@ async def _known_contacts(db: AsyncSession, school: School) -> tuple[str, list[d
     return school.contact_page_hash, people
 
 
+_TYPE_DEPARTMENTS = {"elementary": "ES", "middle": "MS", "high": "HS"}
+
+
+def apptegy_school_departments(school: School, same_type_siblings: int) -> set[str]:
+    """Department chips on a district org's directory that mean this school:
+    its own `/o/<alias>` (Shamong: IMS, IMMS), or its type code (Clayton: ES,
+    MS, HS) when no sibling shares the type."""
+    codes = set()
+    alias = re.search(r"/o/([A-Za-z0-9_-]+)", school.website_url or "")
+    if alias:
+        codes.add(alias.group(1).upper())
+    if not same_type_siblings and school.school_type in _TYPE_DEPARTMENTS:
+        codes.add(_TYPE_DEPARTMENTS[school.school_type])
+    return codes
+
+
+async def _apptegy_district_roster(db: AsyncSession, school: School, checked: str) -> tuple[list[dict], str]:
+    """Some districts keep every school's staff on the district org, with a
+    department chip per building, and leave the school orgs empty."""
+    district = await db.get(District, school.district_id) if school.district_id else None
+    org = next(
+        (f.get("org_id") for f in (district.ics_feeds if district else []) if f.get("platform") == "apptegy" and not f.get("school_slug")),
+        None,
+    )
+    if not org or org == school.apptegy_org_id:
+        return [], checked
+    siblings = (
+        await db.execute(
+            select(func.count()).select_from(School).where(
+                School.district_id == school.district_id, School.school_type == school.school_type, School.id != school.id
+            )
+        )
+    ).scalar_one()
+    codes = apptegy_school_departments(school, siblings)
+    roster = [p for p in await fetch_apptegy_staff(org) if (p["department"] or "").upper() in codes]
+    return roster, f"{checked} and district org {org} ({', '.join(sorted(codes))})"
+
+
 @register_job(
     kind="staff_roster.scan",
     default_name="Staff roster scan",
@@ -61,9 +100,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # possible: apptegy.py has no website scraper of its own).
         roster = await fetch_apptegy_staff(school.apptegy_org_id)
         checked = f"Apptegy org {school.apptegy_org_id}"
+        if not roster:
+            roster, checked = await _apptegy_district_roster(db, school, checked)
     elif school.staff_directory_url:
         # A directory the school publishes as a document (PDF table, Google Slides) - there is no page to parse.
-        roster = await fetch_directory_document(school.staff_directory_url)
+        roster = await fetch_directory_document(school.staff_directory_url, [school.short_name, school.name])
         checked = school.staff_directory_url
         # A document rarely carries the nurse; a school's own nurse page does.
         if school.website_url and not any(classify_role(e["title"]) == "nurse" for e in roster):

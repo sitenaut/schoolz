@@ -70,3 +70,29 @@ async def test_a_stale_running_row_does_not_block_a_new_run(monkeypatch):
     await runner._execute_locked(job_id, triggered_by="manual")
 
     assert ran == [1]
+
+
+@pytest.mark.anyio
+async def test_a_failing_handler_is_recorded_without_the_runner_raising(monkeypatch):
+    """Regression: the failed handler's rollback expired `job`, and reading
+    job.kind afterwards raised MissingGreenlet, so error runs lost their
+    metrics and log line and the task died."""
+
+    async def _handler(db, params):
+        raise RuntimeError("boom")
+
+    kind = "test.fails"
+    monkeypatch.setattr(runner, "SessionLocal", database.SessionLocal)
+    monkeypatch.setitem(registry, kind, type("Spec", (), {"handler": staticmethod(_handler)})())
+
+    async with database.SessionLocal() as db:
+        job = ScheduledJob(kind=kind, name="failing test", cron_expr="0 8 * * 1", timezone="America/New_York", params={})
+        db.add(job)
+        await db.commit()
+        job_id = job.id
+
+    await runner._execute_locked(job_id, triggered_by="manual")
+
+    async with database.SessionLocal() as db:
+        statuses = (await db.execute(select(JobRun.status).where(JobRun.job_id == job_id))).scalars().all()
+    assert statuses == ["error"]

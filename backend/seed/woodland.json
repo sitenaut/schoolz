@@ -1,0 +1,57 @@
+{
+  "exported_at": "2026-10-15T12:00:00Z",
+  "source": "onboarding: Woodland Township School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Woodland Township School District",
+      "website_url": "https://www.woodlandboe.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Woodland Township District",
+          "platform": "apptegy",
+          "org_id": "26750"
+        }
+      ],
+      "calendar_pdf_url": null,
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Woodland"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "chatsworth",
+      "name": "Chatsworth Elementary School",
+      "short_name": "Chatsworth",
+      "district_name": "Woodland Township School District",
+      "school_type": "elementary",
+      "address": "2 John Bowker Jr. Blvd, Chatsworth, NJ 08019",
+      "main_phone": "(609) 726-1230",
+      "website_url": "https://www.woodlandboe.org/o/ces",
+      "apptegy_org_id": "26750",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:50 AM",
+      "end_time": "3:10 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/26750/logo/29563/Chatsworth_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ]
+}

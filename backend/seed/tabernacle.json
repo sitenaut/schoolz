@@ -1,0 +1,93 @@
+{
+  "exported_at": "2026-10-15T12:00:00Z",
+  "source": "onboarding: Tabernacle Township School District",
+  "smore_newsletters": [
+    {
+      "url": "https://www.tabschools.org/tiger-paw-prints-archived-editions",
+      "label": "Tiger Paw Prints (Tabernacle)",
+      "school_slug": null,
+      "district_name": "Tabernacle Township School District",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ],
+  "districts": [
+    {
+      "name": "Tabernacle Township School District",
+      "website_url": "https://www.tabschools.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Tabernacle District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_9aa0bij6pqr71l1o66p9vcb3r0%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "calendar_pdf_url": "https://www.tabschools.org/district-calendar",
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Tabernacle"
+      ],
+      "schoolcafe_shortname": "TabernacleTownshipSDNutriServe"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "tabernacle-elementary",
+      "name": "Tabernacle Elementary School",
+      "short_name": "Tabernacle Elementary",
+      "district_name": "Tabernacle Township School District",
+      "school_type": "elementary",
+      "address": "141 New Road, Tabernacle, NJ 08088",
+      "main_phone": "609-268-0150",
+      "website_url": "https://www.tabschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-268-0150 ext. 2000",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school (609-268-0150 ext. 2000) or send a note in ParentSquare each day your child is absent, with your child's name, grade, teacher and the reason (the nurses ask for symptoms, e.g. fever, vomiting, cold symptoms, or a doctor's appointment). A written note is also required for every absence.",
+      "start_time": "8:45 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:45 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/9070/header_logo_img_d1e5ei66cn556ppkndg.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": null
+    },
+    {
+      "slug": "olson-middle",
+      "name": "Kenneth R. Olson Middle School",
+      "short_name": "Olson Middle",
+      "district_name": "Tabernacle Township School District",
+      "school_type": "middle",
+      "address": "132 New Road, Tabernacle, NJ 08088",
+      "main_phone": "609-268-0153",
+      "website_url": "https://www.tabschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "609-268-0153 ext. 1000",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school (609-268-0153 ext. 1000) or send a note in ParentSquare each day your child is absent, with your child's name, grade, teacher and the reason (the nurses ask for symptoms, e.g. fever, vomiting, cold symptoms, or a doctor's appointment). A written note is also required for every absence.",
+      "start_time": "8:00 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=17036",
+      "logo_url": "https://files.smartsites.parentsquare.com/9070/header_logo_img_d1e5ei66cn556ppkndg.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": null
+    }
+  ]
+}

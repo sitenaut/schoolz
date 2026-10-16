@@ -1,6 +1,8 @@
 import base64
 from pathlib import Path
 
+import pytest
+
 from services import smart_sites
 
 FIX = Path(__file__).parent / "fixtures"
@@ -118,3 +120,41 @@ def test_table_directory_rows_and_faculty_staff_links():
     home = '<a href="/1_2">Faculty &amp; Staff</a><a href="/2_2">Oak Knoll Staff Directory</a><a href="/3_2">Staff Only</a>'
     urls = smart_sites.find_directory_links(home, "https://x.example")
     assert "https://x.example/1_2" in urls and "https://x.example/2_2" in urls and "https://x.example/3_2" not in urls
+
+
+_LEGACY_PAGE = """
+<ul class="ss-directory-ppl-list">
+<li class="ss-directory-ppl-list__card">
+  <a class="dir_name" href="/245900_2?personID=1">Pat<br/>Example</a>
+  <div class="dir_title">Principal - TES</div>
+  <button class="react-staff-msg" data-staff-email="" data-staff-name="Pat Example">Send Message</button>
+</li>
+<li class="ss-directory-ppl-list__card">
+  <a class="dir_name" href="/245900_2?personID=2">Sam<br/>Sample</a>
+  <div class="dir_title"></div>
+</li>
+</ul>
+<a href="/245900_2?offset=24&amp;ppl=2">2</a><a href="/245900_2?offset=24&amp;ppl=2"></a>
+"""
+
+
+def test_legacy_directory_cards_are_parsed():
+    people = smart_sites.parse_directory(_LEGACY_PAGE)
+    assert [(p["full_name"], p["title"], p["email"]) for p in people] == [
+        ("Pat Example", "Principal - TES", None),
+        ("Sam Sample", None, None),
+    ]
+
+
+@pytest.mark.anyio
+async def test_legacy_directory_follows_offset_pages_once():
+    fetched = []
+
+    class _Client:
+        async def get(self, url):
+            fetched.append(url)
+            return type("R", (), {"status_code": 200, "text": _LEGACY_PAGE.replace("Pat Example", "Lee Other")})()
+
+    people = await smart_sites._legacy_directory(_Client(), _LEGACY_PAGE, "https://www.example.org/directory")
+    assert fetched == ["https://www.example.org/245900_2?offset=24&ppl=2"]
+    assert {p["full_name"] for p in people} == {"Pat Example", "Sam Sample", "Lee Other"}
