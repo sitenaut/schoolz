@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyticsPath, shouldTrack } from "./analytics";
+import { analyticsPath, schoolViews, shouldTrack } from "./analytics";
 
 describe("analyticsPath", () => {
   it("keeps a public school's real path so landing pages are reportable", () => {
@@ -43,5 +43,36 @@ describe("shouldTrack", () => {
   it("skips any other host: localhost, previews, the internal prerender address", () => {
     expect(shouldTrack({ ...base, hostname: "localhost" })).toBe(false);
     expect(shouldTrack({ ...base, hostname: "schoolz-web.internal" })).toBe(false);
+  });
+});
+
+describe("schoolViews", () => {
+  const harte = { id: "11111111-aaaa", slug: "bret-harte-elementary" };
+  const beck = { id: "22222222-bbbb", slug: "beck-middle" };
+  const all = [harte, beck];
+
+  it("credits every school card shown on Today", () => {
+    expect(schoolViews("/", all, [harte, beck])).toEqual({ path: "/", surface: "today", slugs: ["bret-harte-elementary", "beck-middle"] });
+  });
+
+  it("reports a school opened by id under its slug, so it isn't split in two", () => {
+    expect(schoolViews("/schools/11111111-aaaa", all, [])).toEqual({
+      path: "/schools/bret-harte-elementary",
+      surface: "school_page",
+      slugs: ["bret-harte-elementary"],
+    });
+  });
+
+  it("credits the school for one of its class pages", () => {
+    expect(schoolViews("/schools/beck-middle/class-of-2028", all, [])).toEqual({
+      path: "/schools/beck-middle/class-of-2028",
+      surface: "class_page",
+      slugs: ["beck-middle"],
+    });
+  });
+
+  it("credits no school on pages that aren't per-school", () => {
+    expect(schoolViews("/calendar", all, [harte]).slugs).toEqual([]);
+    expect(schoolViews("/schools", all, [harte]).slugs).toEqual([]);
   });
 });

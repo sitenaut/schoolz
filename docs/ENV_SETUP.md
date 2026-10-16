@@ -314,7 +314,7 @@ and never for automation (`navigator.webdriver`, which covers the prerender pass
 **One-time GA console setup** (dimensions and filters aren't retroactive):
 1. Admin → Data streams → Web → `schoolz.sitenaut.com`. Copy the Measurement ID.
 2. Admin → Data settings → Data retention: set event data retention (2 or 14 months). Data collection: leave Google signals off.
-3. Admin → Custom definitions → create **user-scoped**: `town`, `district`, `school_type`, `auth_state`, `schools_picked`. **Event-scoped**: `school_slug`, `route`, `method`.
+3. Admin → Custom definitions → create **user-scoped**: `town`, `district`, `school_type`, `auth_state`, `schools_picked`. **Event-scoped**: `school_slug`, `route`, `method`, `surface`. Per-school views: Explore → event `school_view` by `school_slug` (and `surface`: today / school_page / class_page).
 4. Admin → Data streams → Configure tag settings → Define internal traffic is not needed (traffic is flagged in-browser as `traffic_type=internal`). Instead: Admin → Data settings → Data filters → the built-in **Internal Traffic** filter → set to **Active** (it starts in Testing and excludes nothing until switched).
 5. Admin → Events → mark as key events: `sign_up`, `schools_picked`, `action_absence`.
 6. Admin → Product links → Search Console links → link the schoolz property, so queries appear beside on-site behavior.
