@@ -113,3 +113,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - "Loading document viewer..." pages (handbooks, Kids Choice, specials) hold the file URL as JSON-escaped text (`files.smartsites.parentsquare.com\/<n>\/x.pdf`); a plain href grep misses it.
 - Athletics pages redirect to GoBound; ArbiterLive ids come from `School/Search?searchString=<town>` (other states have same-name schools).
 
+
+## Tabernacle (found onboarding)
+
+- A district can have **no school subsites at all**: both schools' `website_url` is the district site, whose footer is one building's. `school_info.scan` therefore only fills blanks when another school shares the site (it once gave the elementary the middle school's address).
+- **Legacy directory** (`/directory`, a `/<page>_2` slug): server-rendered `li.ss-directory-ppl-list__card` cards (first `<br>` last name, `div.dir_title` role like "Principal - TES", empty `data-staff-email`), paged by plain `?offset=24&ppl=2` links. There is no `getOnDemandDirectoryContent` widget; `smart_sites.fetch_roster` reads this layout and follows the offset links.
+- Document-list pages (sports schedules, HSA newsletters, district calendar) link `files.smartsites.parentsquare.com` PDFs directly.
+- The home-page calendar widget's `/api/calendars/<id>/events` gives the Google `calIDref`; its public `basic.ics` is the feed.

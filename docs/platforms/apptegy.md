@@ -35,3 +35,12 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - The district food page can link `<tenant>.schooldish.com`, which redirects to `<tenant>.myschoolplate.com` (supported). A location with no menu published for a month answers a null `locationRecipesMap`; Willingboro's elementary menus are PDFs on the location pages (see the `data-sources` skill).
 - The district events org already carries school-prefixed events; check dedup before wiring school orgs too.
 
+
+## Shamong / Woodland (found onboarding)
+
+- **A district can live inside another district's Apptegy tenant** (Woodland's single org 26750 sits in Shamong's: section names `*-ces-shamongtownshipnj`, Shamong's org ids in the embedded org list). Seed only the org ids the site's own `/o/<alias>` and `api/v4/o/<id>` URLs use.
+- **School orgs can be empty while the district org holds every school's staff**, with a department chip per building (Shamong: `IMS`/`IMMS`; Clayton: `ES`/`MS`/`HS`). `staff_roster.scan` falls back to the district org (the district's apptegy `ics_feeds` entry with no `school_slug`) and keeps people whose department is the school's `/o/<alias>` upper-cased, or its type code when no sibling shares the type.
+- **The full calendar can sit on one school org** (Shamong: 2026-27 is on the middle school's org 6548; the district org and the elementary org are nearly empty). Count each org's events for the current year before choosing feeds.
+- Page JSON (`.../cms/pages/<slug>`) holds links with JSON-escaped quotes, and a Drive calendar link can be labelled only "2026-2027", which `district_calendar_pdf.find_pdf_link` doesn't pick up; Shamong's `calendar_pdf_url` is the Drive file's `uc?export=download&id=` URL, so it needs updating each year.
+- `scores_schedules` (`.../cms/scores_schedules`) can be a middle school's only athletics schedule (Shamong); nothing reads it.
+- `cms/documents` and `cms/articles` 404; Drive folders list their files in plain HTML at `drive.google.com/embeddedfolderview?id=<id>`.

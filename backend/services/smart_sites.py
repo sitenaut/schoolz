@@ -39,6 +39,9 @@ _DIRECTORY_LINK_RE = re.compile(
     re.I,
 )
 _MAX_DIRECTORY_PAGES = 3
+_LEGACY_CARD = "ss-directory-ppl-list__card"
+_LEGACY_PAGE_RE = re.compile(r"[?&]offset=\d+&ppl=\d+")
+_MAX_LEGACY_PAGES = 20
 _MIN_HANDTYPED = 5
 
 
@@ -132,6 +135,29 @@ def parse_directory(fragment: str) -> list[dict]:
                 "phone": None,
             }
         )
+    # Legacy directory page (Tabernacle): server-rendered cards, first and
+    # last name split by a <br>, the full name on the message button.
+    for card in soup.select("li.ss-directory-ppl-list__card"):
+        btn = card.select_one("[data-staff-name]")
+        name = " ".join((btn.get("data-staff-name") or "").split()) if btn else ""
+        if not name:
+            name_el = card.select_one(".dir_name")
+            name = " ".join(name_el.get_text(" ", strip=True).split()) if name_el else ""
+        if not name:
+            continue
+        title_el = card.select_one(".dir_title")
+        title = title_el.get_text(" ", strip=True) if title_el else ""
+        email = _decode_email(btn.get("data-staff-email") if btn else None)
+        out.append(
+            {
+                "constituent_id": _constituent_id(name, email),
+                "full_name": name,
+                "title": title or None,
+                "department": None,
+                "email": email,
+                "phone": None,
+            }
+        )
     for card in soup.select(".staff-item"):
         name_el = card.select_one(".stack-directory-name")
         name = " ".join(name_el.get_text(" ", strip=True).split()) if name_el else ""
@@ -156,6 +182,22 @@ def parse_directory(fragment: str) -> list[dict]:
     return out
 
 
+async def _legacy_directory(client: httpx.AsyncClient, first_html: str, page_url: str) -> list[dict]:
+    """Every page of a legacy directory: plain GETs of the `?offset=N&ppl=K`
+    links, which are server-side (each returns the next 24 cards)."""
+    entries = parse_directory(first_html)
+    pages = []
+    for a in BeautifulSoup(first_html, "lxml").find_all("a", href=_LEGACY_PAGE_RE):
+        url = urljoin(page_url, a["href"])
+        if url not in pages:
+            pages.append(url)
+    for url in pages[:_MAX_LEGACY_PAGES]:
+        resp = await client.get(url)
+        if resp.status_code == 200:
+            entries.extend(parse_directory(resp.text))
+    return entries
+
+
 async def fetch_roster(base_url: str, home_html: str) -> list[dict]:
     base = base_url.rstrip("/")
     by_id: dict[str, dict] = {}
@@ -165,7 +207,10 @@ async def fetch_roster(base_url: str, home_html: str) -> list[dict]:
             if resp.status_code != 200:
                 continue
             item_ids = directory_item_ids(resp.text)
-            if not item_ids:
+            if not item_ids and _LEGACY_CARD in resp.text:
+                for entry in await _legacy_directory(client, resp.text, str(resp.url)):
+                    by_id[entry["constituent_id"]] = entry
+            elif not item_ids:
                 typed = handtyped_directory.parse(resp.text)
                 if len(typed) >= _MIN_HANDTYPED:  # fewer is a stray phrase, not a directory
                     for p in typed:

@@ -1,0 +1,136 @@
+{
+  "exported_at": "2026-10-15T12:00:00Z",
+  "source": "onboarding: Shamong Township School District",
+  "smore_newsletters": [],
+  "districts": [
+    {
+      "name": "Shamong Township School District",
+      "website_url": "https://www.shamongschools.org",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Shamong District",
+          "platform": "apptegy",
+          "org_id": "2389"
+        },
+        {
+          "name": "Shamong Indian Mills Elementary",
+          "platform": "apptegy",
+          "org_id": "6547",
+          "school_slug": "indian-mills-elementary"
+        },
+        {
+          "name": "Shamong Indian Mills Memorial",
+          "platform": "apptegy",
+          "org_id": "6548",
+          "school_slug": "indian-mills-memorial"
+        }
+      ],
+      "calendar_pdf_url": "https://drive.google.com/uc?export=download&id=1vN0k9W0r3NrgTYGF3HdeYXf8QEWRLzlj",
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Shamong"
+      ],
+      "schoolcafe_shortname": "ShamongTownshipSDNutriServeMETZ"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "indian-mills-elementary",
+      "name": "Indian Mills Elementary School",
+      "short_name": "Indian Mills",
+      "district_name": "Shamong Township School District",
+      "school_type": "elementary",
+      "address": "112 Indian Mills Road, Shamong, NJ 08088",
+      "main_phone": "(609) 268-0220",
+      "website_url": "https://www.shamongschools.org/o/ims",
+      "apptegy_org_id": "6547",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 268-0220 ext. 1",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before 8:35 AM on the day of the absence, call (609) 268-0220 ext. 1 and leave a message on the 24-hour absentee mailbox. Don't email the teacher instead. On return, send a signed note with the dates and reason.",
+      "start_time": "8:45 AM",
+      "end_time": "3:10 PM",
+      "early_dismissal_time": "1:05 PM",
+      "delayed_opening_time": "10:45 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/6547/logo/7713/logo_indian-mills.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "indian-mills-memorial",
+      "name": "Indian Mills Memorial School",
+      "short_name": "Indian Mills Memorial",
+      "district_name": "Shamong Township School District",
+      "school_type": "middle",
+      "address": "295 Indian Mills Road, Shamong, NJ 08088",
+      "main_phone": "(609) 268-0440",
+      "website_url": "https://www.shamongschools.org/o/imms",
+      "apptegy_org_id": "6548",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 268-0440",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before 8:35 AM on the day of the absence, call (609) 268-0440, press 2 for Indian Mills Memorial, then press 1 for the 24-hour Absence Line.",
+      "start_time": "7:40 AM",
+      "end_time": "2:20 PM",
+      "early_dismissal_time": "12:20 PM",
+      "delayed_opening_time": "9:40 AM",
+      "bell_periods": {
+        "regular": [
+          {"name": "Homeroom", "start": "07:45", "end": "08:00"},
+          {"name": "Period 1", "start": "08:01", "end": "08:41"},
+          {"name": "Period 2", "start": "08:42", "end": "09:42"},
+          {"name": "Period 3", "start": "09:44", "end": "10:29"},
+          {"name": "Period 4", "start": "10:29", "end": "11:29"},
+          {"name": "Period 5", "start": "11:30", "end": "12:30"},
+          {"name": "Lunch", "start": "12:32", "end": "13:17"},
+          {"name": "Period 7", "start": "13:20", "end": "14:20"}
+        ],
+        "regular_grades_6": [
+          {"name": "Homeroom", "start": "07:45", "end": "08:00"},
+          {"name": "Period 1", "start": "08:01", "end": "09:01"},
+          {"name": "Period 2", "start": "09:02", "end": "10:02"},
+          {"name": "Period 3", "start": "10:03", "end": "11:03"},
+          {"name": "Lunch", "start": "11:04", "end": "11:49"},
+          {"name": "Period 5", "start": "11:51", "end": "12:51"},
+          {"name": "Period 6", "start": "12:53", "end": "13:38"},
+          {"name": "Period 7", "start": "13:40", "end": "14:20"}
+        ],
+        "regular_grades_7": [
+          {"name": "Homeroom", "start": "07:45", "end": "08:00"},
+          {"name": "Period 1", "start": "08:01", "end": "08:41"},
+          {"name": "Period 2", "start": "08:42", "end": "09:42"},
+          {"name": "Period 3", "start": "09:44", "end": "10:29"},
+          {"name": "Period 4", "start": "10:29", "end": "11:29"},
+          {"name": "Period 5", "start": "11:30", "end": "12:30"},
+          {"name": "Lunch", "start": "12:32", "end": "13:17"},
+          {"name": "Period 7", "start": "13:20", "end": "14:20"}
+        ],
+        "regular_grades_8": [
+          {"name": "Homeroom", "start": "07:45", "end": "08:00"},
+          {"name": "Period 1", "start": "08:01", "end": "08:41"},
+          {"name": "Period 2", "start": "08:43", "end": "09:28"},
+          {"name": "Period 3", "start": "09:28", "end": "10:28"},
+          {"name": "Period 4", "start": "10:29", "end": "11:29"},
+          {"name": "Period 5", "start": "11:30", "end": "12:30"},
+          {"name": "Lunch", "start": "12:32", "end": "13:17"},
+          {"name": "Period 7", "start": "13:20", "end": "14:20"}
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/6548/logo/7714/logo_indian-mills-memorial.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ]
+}

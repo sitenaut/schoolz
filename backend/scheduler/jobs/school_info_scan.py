@@ -29,6 +29,15 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     info = await (discover_apptegy_school_info(school.website_url) if school.apptegy_org_id else discover_school_info(school.website_url))
 
+    # Schools with no page of their own share the district's site, whose
+    # footer is one building's (Tabernacle Elementary took Olson Middle's
+    # address and phone), so a shared site only fills blanks.
+    shared_site = (
+        await db.execute(select(School.id).where(School.website_url == school.website_url, School.id != school.id).limit(1))
+    ).first() is not None
+    if shared_site:
+        info = {**info, "address": info["address"] if not school.address else None, "main_phone": info["main_phone"] if not school.main_phone else None}
+
     changed = []
     if info["address"] and info["address"] != school.address:
         school.address = info["address"]
@@ -50,7 +59,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if weather_note:
         changed.append(weather_note)
 
-    if not info["address"] or not info["main_phone"]:
+    if not shared_site and (not info["address"] or not info["main_phone"]):
         missing = [f for f in ("address", "main_phone") if not info[f]]
         return f"WARNING[school_info_missing_fields]: could not find {', '.join(missing)} at {school.website_url}"
 
