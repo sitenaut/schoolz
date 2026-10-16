@@ -13,13 +13,14 @@ const WINDOWS: [string, string][] = [
   ["Weekly", "16 days"],
   ["Twice a month", "35 days"],
   ["Monthly", "65 days"],
-  ["No scan", "Not confirmed this school year"],
+  ["No scan", "Not re-checked (entered by hand)"],
+  ["No scan (before and after care)", "Not confirmed this school year"],
 ];
 
 type Sort = "pctAsc" | "pctDesc" | "fail" | "stale" | "none" | "group" | "name";
 
 export function AuditCatalogPage() {
-  const { audience } = useAudit();
+  const { audience, pub } = useAudit();
   const [params, setParams] = useSearchParams();
   const district = params.get("district") ?? "";
   const [data, setData] = useState<DataPointsAudit | null>(null);
@@ -32,13 +33,13 @@ export function AuditCatalogPage() {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    getDataPoints({ districtId: district || undefined, audience })
+    getDataPoints({ districtId: district || undefined, audience, pub })
       .then((d) => {
         setData(d);
         setError("");
       })
       .catch((e: Error) => setError(e.message));
-  }, [district, audience]);
+  }, [district, audience, pub]);
 
   useEffect(() => {
     listDistricts()

@@ -1,16 +1,17 @@
-"""Admin data audit (services/data_audit.py). Read endpoints need
-`audit.view`; anything that changes state needs `audit.manage`.
+"""Data audit (services/data_audit.py). The district wording is public
+(`/audit`, no account needed); under `/admin/audit` the reads need
+`audit.view` and anything that changes state needs `audit.manage`.
 
 A view-only caller always gets the district audience: internal wording,
 error codes, job names and ids are never computed into their response. A
 manager gets the internal audience by default and can ask for
 `audience=district` to preview what a district would see.
 
-The district filter is a convenience, not a permission: the data is public
-and anyone with `audit.view` may read every district."""
+The district filter is a convenience, not a permission: the district
+wording is public, so anyone may read every district."""
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -25,6 +26,7 @@ from scheduler.registry import registry
 from services import data_audit as audit
 
 router = APIRouter(prefix="/admin/audit", tags=["admin-audit"])
+public_router = APIRouter(prefix="/audit", tags=["audit"])
 
 
 async def _audience(request: Request, db: AsyncSession, user: User, requested: str | None) -> str:
@@ -59,18 +61,7 @@ def _school_row(school: School, ctx: audit.AuditContext, audience: str, full: bo
     }
 
 
-@router.get("")
-async def get_audit(
-    request: Request,
-    district_id: str | None = None,
-    audience: str | None = Query(default=None, pattern="^(internal|district)$"),
-    detail: bool = False,
-    user: User = Depends(require_permission("audit.view")),
-    db: AsyncSession = Depends(get_db),
-):
-    """Every school x data point. Cells are just status + tag unless
-    `detail=true` (the printable reports want the why/next for each)."""
-    aud = await _audience(request, db, user, audience)
+async def _grid(db: AsyncSession, aud: str, district_id: str | None, detail: bool) -> dict:
     schools = await _schools(db, district_id)
     ctx = await audit.load_context(db, schools)
     rows = [_school_row(s, ctx, aud, detail) for s in schools]
@@ -85,16 +76,7 @@ async def get_audit(
     }
 
 
-@router.get("/data-points")
-async def get_data_points(
-    request: Request,
-    district_id: str | None = None,
-    audience: str | None = Query(default=None, pattern="^(internal|district)$"),
-    user: User = Depends(require_permission("audit.view")),
-    db: AsyncSession = Depends(get_db),
-):
-    """One row per data point, tallied across the (filtered) schools."""
-    aud = await _audience(request, db, user, audience)
+async def _data_points(db: AsyncSession, aud: str, district_id: str | None) -> dict:
     schools = await _schools(db, district_id)
     ctx = await audit.load_context(db, schools)
     per_school = [audit.audit_school(s, ctx) for s in schools]
@@ -105,32 +87,14 @@ async def get_data_points(
     return {"generated_at": ctx.now.isoformat(), "audience": aud, "school_count": len(schools), "data_points": rows}
 
 
-@router.get("/schools/{school_id}")
-async def get_school_audit(
-    school_id: str,
-    request: Request,
-    audience: str | None = Query(default=None, pattern="^(internal|district)$"),
-    user: User = Depends(require_permission("audit.view")),
-    db: AsyncSession = Depends(get_db),
-):
-    aud = await _audience(request, db, user, audience)
+async def _school_audit(db: AsyncSession, aud: str, school_id: str) -> dict:
     school = await _one_school(db, school_id)
     ctx = await audit.load_context(db, [school])
     return {"generated_at": ctx.now.isoformat(), "audience": aud, "data_points": audit.catalog(aud),
             "school": _school_row(school, ctx, aud, True)}
 
 
-@router.get("/export.csv")
-async def export_csv(
-    request: Request,
-    district_id: str | None = None,
-    school_id: str | None = None,
-    audience: str | None = Query(default=None, pattern="^(internal|district)$"),
-    statuses: str | None = Query(default=None, description="Comma-separated statuses to keep, e.g. failing,stale,not_collecting"),
-    user: User = Depends(require_permission("audit.view")),
-    db: AsyncSession = Depends(get_db),
-):
-    aud = await _audience(request, db, user, audience)
+async def _csv(db: AsyncSession, aud: str, district_id: str | None, school_id: str | None, statuses: str | None) -> StreamingResponse:
     schools = await _schools(db, district_id, school_id)
     keep = set(statuses.split(",")) if statuses else None
     ctx = await audit.load_context(db, schools)
@@ -152,9 +116,86 @@ async def export_csv(
             if aud == "internal":
                 row += [c["error_code"] or "", c["why_district"], c["next_district"]]
             w.writerow(row)
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    stamp = datetime.now(UTC).strftime("%Y-%m-%d")
     return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
                              headers={"Content-Disposition": f'attachment; filename="data-audit-{stamp}.csv"'})
+
+
+_AUDIENCE = Query(default=None, pattern="^(internal|district)$")
+_STATUSES = Query(default=None, description="Comma-separated statuses to keep, e.g. failing,stale,not_collecting")
+
+
+@router.get("")
+async def get_audit(
+    request: Request,
+    district_id: str | None = None,
+    audience: str | None = _AUDIENCE,
+    detail: bool = False,
+    user: User = Depends(require_permission("audit.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every school x data point. Cells are just status + tag unless
+    `detail=true` (the printable reports want the why/next for each)."""
+    return await _grid(db, await _audience(request, db, user, audience), district_id, detail)
+
+
+@router.get("/data-points")
+async def get_data_points(
+    request: Request,
+    district_id: str | None = None,
+    audience: str | None = _AUDIENCE,
+    user: User = Depends(require_permission("audit.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """One row per data point, tallied across the (filtered) schools."""
+    return await _data_points(db, await _audience(request, db, user, audience), district_id)
+
+
+@router.get("/schools/{school_id}")
+async def get_school_audit(
+    school_id: str,
+    request: Request,
+    audience: str | None = _AUDIENCE,
+    user: User = Depends(require_permission("audit.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _school_audit(db, await _audience(request, db, user, audience), school_id)
+
+
+@router.get("/export.csv")
+async def export_csv(
+    request: Request,
+    district_id: str | None = None,
+    school_id: str | None = None,
+    audience: str | None = _AUDIENCE,
+    statuses: str | None = _STATUSES,
+    user: User = Depends(require_permission("audit.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _csv(db, await _audience(request, db, user, audience), district_id, school_id, statuses)
+
+
+# --- public: the district wording, no account needed -------------------------
+
+@public_router.get("")
+async def public_audit(district_id: str | None = None, detail: bool = False, db: AsyncSession = Depends(get_db)):
+    return await _grid(db, "district", district_id, detail)
+
+
+@public_router.get("/data-points")
+async def public_data_points(district_id: str | None = None, db: AsyncSession = Depends(get_db)):
+    return await _data_points(db, "district", district_id)
+
+
+@public_router.get("/schools/{school_id}")
+async def public_school_audit(school_id: str, db: AsyncSession = Depends(get_db)):
+    return await _school_audit(db, "district", school_id)
+
+
+@public_router.get("/export.csv")
+async def public_export_csv(district_id: str | None = None, school_id: str | None = None, statuses: str | None = _STATUSES,
+                            db: AsyncSession = Depends(get_db)):
+    return await _csv(db, "district", district_id, school_id, statuses)
 
 
 # --- mutations: audit.manage -----------------------------------------------

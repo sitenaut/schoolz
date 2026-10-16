@@ -186,6 +186,13 @@ function Routed() {
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/local" element={<LocalPage />} />
+        <Route path="/audit" element={<AuditShell pub />}>
+          <Route index element={<AuditBySchoolPage />} />
+          <Route path="data-points" element={<AuditCatalogPage />} />
+          <Route path="report" element={<AuditReportPage />} />
+          <Route path="schools/:schoolId" element={<AuditSchoolPage />} />
+          <Route path="schools/:schoolId/report" element={<AuditReportPage />} />
+        </Route>
         <Route path="/seasonal/:season" element={<SeasonalPage />} />
         <Route
           path="/admin"

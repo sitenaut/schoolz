@@ -77,6 +77,12 @@ async function fail(res: Response, fallback: string): Promise<never> {
   throw new Error(msg);
 }
 
+/** The public audit (/audit, no account) always gets the district wording;
+ * the admin one (/admin/audit) can ask for either. */
+function root(pub?: boolean): string {
+  return pub ? "/audit" : "/admin/audit";
+}
+
 function qs(params: Record<string, string | boolean | null | undefined>): string {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== "" && v !== false) q.set(k, String(v));
@@ -84,8 +90,8 @@ function qs(params: Record<string, string | boolean | null | undefined>): string
   return s ? `?${s}` : "";
 }
 
-export async function getAudit<C extends CellSummary = CellSummary>(opts: { districtId?: string; audience?: Audience; detail?: boolean }): Promise<AuditGrid<C>> {
-  const res = await apiFetch(`/admin/audit${qs({ district_id: opts.districtId, audience: opts.audience, detail: opts.detail })}`);
+export async function getAudit<C extends CellSummary = CellSummary>(opts: { districtId?: string; audience?: Audience; detail?: boolean; pub?: boolean }): Promise<AuditGrid<C>> {
+  const res = await apiFetch(`${root(opts.pub)}${qs({ district_id: opts.districtId, audience: opts.pub ? undefined : opts.audience, detail: opts.detail })}`);
   if (!res.ok) return fail(res, "Could not load the audit");
   return res.json();
 }
@@ -97,23 +103,23 @@ export async function listDistricts(): Promise<{ id: string; name: string }[]> {
   return rows.map((d) => ({ id: d.id, name: districtLabel(d) })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function getSchoolAudit(schoolId: string, audience?: Audience): Promise<SchoolAudit> {
-  const res = await apiFetch(`/admin/audit/schools/${encodeURIComponent(schoolId)}${qs({ audience })}`);
+export async function getSchoolAudit(schoolId: string, audience?: Audience, pub?: boolean): Promise<SchoolAudit> {
+  const res = await apiFetch(`${root(pub)}/schools/${encodeURIComponent(schoolId)}${qs({ audience: pub ? undefined : audience })}`);
   if (!res.ok) return fail(res, "Could not load this school's audit");
   return res.json();
 }
 
-export async function getDataPoints(opts: { districtId?: string; audience?: Audience }): Promise<DataPointsAudit> {
-  const res = await apiFetch(`/admin/audit/data-points${qs({ district_id: opts.districtId, audience: opts.audience })}`);
+export async function getDataPoints(opts: { districtId?: string; audience?: Audience; pub?: boolean }): Promise<DataPointsAudit> {
+  const res = await apiFetch(`${root(opts.pub)}/data-points${qs({ district_id: opts.districtId, audience: opts.pub ? undefined : opts.audience })}`);
   if (!res.ok) return fail(res, "Could not load the data points");
   return res.json();
 }
 
-/** The CSV needs the auth header, so it's fetched and handed to the browser
- * as a blob rather than linked. */
-export async function downloadCsv(opts: { districtId?: string; schoolId?: string; audience?: Audience; statuses?: AuditStatus[] }): Promise<void> {
+/** The admin CSV needs the auth header, so it's fetched and handed to the
+ * browser as a blob rather than linked. */
+export async function downloadCsv(opts: { districtId?: string; schoolId?: string; audience?: Audience; statuses?: AuditStatus[]; pub?: boolean }): Promise<void> {
   const res = await apiFetch(
-    `/admin/audit/export.csv${qs({ district_id: opts.districtId, school_id: opts.schoolId, audience: opts.audience, statuses: opts.statuses?.join(",") })}`
+    `${root(opts.pub)}/export.csv${qs({ district_id: opts.districtId, school_id: opts.schoolId, audience: opts.pub ? undefined : opts.audience, statuses: opts.statuses?.join(",") })}`
   );
   if (!res.ok) return fail(res, "Could not download the CSV");
   const blob = await res.blob();

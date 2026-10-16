@@ -72,6 +72,7 @@ def classify_doc_type(text: str) -> str | None:
 _YEAR_RE = re.compile(r"(20\d{2})\s*[-–]\s*(20\d{2})")
 _SHORT_YEAR_RE = re.compile(r"(?<!\d)(2\d)\s*[-–]\s*(2\d)(?!\d)")
 _URL_RE = re.compile(r"https?://\S+")
+_GOOGLE_VIEWER_TITLE_RE = re.compile(r" - Google (Drive|Docs|Sheets|Slides)$")
 _DOC_FILE_RE = re.compile(r"\.pdf($|\?)|docs\.google\.com|drive\.google\.com", re.IGNORECASE)
 
 
@@ -373,8 +374,15 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
                     clean = re.sub(r"\.pdf$", "", re.sub(r"\s+", " ", text), flags=re.I).strip(" -")
                     results.append({"title": clean, "url": doc_url, "academic_year": _extract_year(text + " " + doc_url), "doc_type": "letter_day_schedule"})
             continue
-        doc_links = _find_doc_file_links(page_html, base)
-        year = _extract_year(page_title) or _extract_year(page_html[:5000])
+        # A short link that redirects to a Drive file renders the Drive viewer:
+        # the page *is* the document. Its markup carries year ranges that have
+        # nothing to do with the file and its only "file" links are Google
+        # sign-in URLs (Evans Preschool's 2026 handbook was stored dated
+        # 2016-17, linked to a sign-in page). Keep the school's own link and
+        # date it from the file name alone.
+        drive_viewer = bool(_GOOGLE_VIEWER_TITLE_RE.search(page_title))
+        doc_links = [] if drive_viewer else _find_doc_file_links(page_html, base)
+        year = _extract_year(page_title) or (None if drive_viewer else _extract_year(page_html[:5000]))
         if presence and not doc_links:
             # A Presence page's files live in a documents widget the static HTML
             # never contains; use the ones whose own title says what we're after.

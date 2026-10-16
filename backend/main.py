@@ -228,6 +228,7 @@ app.include_router(analytics_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_chatbot_router.router)
 app.include_router(data_audit_router.router)
+app.include_router(data_audit_router.public_router)
 
 from mcp_server import build_mcp_server  # noqa: E402
 

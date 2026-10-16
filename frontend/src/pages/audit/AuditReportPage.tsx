@@ -22,8 +22,8 @@ import {
 
 type Loaded = { generated: string; points: DataPointMeta[]; schools: AuditSchool<CellDetail>[]; districts: { id: string; name: string }[] };
 
-/** Missing-data reports. /admin/audit/schools/:schoolId/report is one
- * school; /admin/audit/report is a district (?district=), or the By school
+/** Missing-data reports. <base>/schools/:schoolId/report is one
+ * school; <base>/report is a district (?district=), or the By school
  * screen's current filters (?scope=filters&...). Same wording toggle as the
  * rest of the audit - a manager previews the district wording before
  * printing it for one. */
@@ -31,7 +31,7 @@ export function AuditReportPage() {
   const { schoolId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { audience } = useAudit();
+  const { audience, pub, base } = useAudit();
   const toast = useToast();
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState("");
@@ -46,17 +46,17 @@ export function AuditReportPage() {
       setError("");
     };
     if (schoolId) {
-      getSchoolAudit(schoolId, audience)
+      getSchoolAudit(schoolId, audience, pub)
         .then((d) => done({ generated: d.generated_at, points: d.data_points, schools: [d.school], districts: [] }))
         .catch((e: Error) => setError(e.message));
     } else {
-      getAudit<CellDetail>({ districtId: districtId || undefined, audience, detail: true })
+      getAudit<CellDetail>({ districtId: districtId || undefined, audience, detail: true, pub })
         .then((d) =>
           done({ generated: d.generated_at, points: d.data_points, schools: byFilters ? filterSchools(d.schools, filtersFromParams(params)) : d.schools, districts: d.districts })
         )
         .catch((e: Error) => setError(e.message));
     }
-  }, [schoolId, districtId, byFilters, audience, params]);
+  }, [schoolId, districtId, byFilters, audience, pub, params]);
 
   const school = schoolId ? data?.schools[0] : undefined;
   const sections = useMemo(() => (data && !schoolId ? buildReportSections(data.schools, data.points, include) : []), [data, include, schoolId]);
@@ -76,11 +76,11 @@ export function AuditReportPage() {
   };
 
   const csv = () =>
-    downloadCsv({ districtId: school ? undefined : districtId || undefined, schoolId: school?.id, audience, statuses: include }).catch((e: Error) =>
+    downloadCsv({ districtId: school ? undefined : districtId || undefined, schoolId: school?.id, audience, statuses: include, pub }).catch((e: Error) =>
       toast({ title: e.message, tone: "bad" })
     );
 
-  const back = school ? { to: `/admin/audit/schools/${school.slug}`, label: `Back to ${school.name}` } : { to: "/admin/audit", label: "Back to audit" };
+  const back = school ? { to: `${base}/schools/${school.slug}`, label: `Back to ${school.name}` } : { to: base, label: "Back to audit" };
 
   return (
     <div className="audit audit-report-page">
@@ -106,7 +106,7 @@ export function AuditReportPage() {
             <span className="lbl">Report for</span>
             <FilterSelect
               value={byFilters ? "__filters" : districtId}
-              onChange={(v) => navigate(v === "__filters" ? `/admin/audit/report?${params.toString()}` : `/admin/audit/report${v ? `?district=${v}` : ""}`)}
+              onChange={(v) => navigate(v === "__filters" ? `${base}/report?${params.toString()}` : `${base}/report${v ? `?district=${v}` : ""}`)}
               options={[
                 ...(byFilters ? [{ value: "__filters", label: "Current audit filters" }] : []),
                 ...(data?.districts ?? []).map((d) => ({ value: d.id, label: `District: ${d.name}` })),

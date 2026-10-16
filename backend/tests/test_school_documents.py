@@ -222,6 +222,7 @@ def test_find_doc_anchors_skips_fragment_and_scheme_links():
 
 def test_dead_url_is_not_retried_or_fallen_back():
     import httpx
+
     from scraper_client import _is_retryable
     req = httpx.Request("POST", "http://s/fetch-html")
     dead = httpx.HTTPStatusError("x", request=req, response=httpx.Response(502, request=req, text="net::ERR_NAME_NOT_RESOLVED at https://x/"))
@@ -285,3 +286,45 @@ def test_parent_student_policies_pdf_is_the_handbook_even_though_it_says_policie
     )
     found = _find_doc_anchors(html, "https://x.org")
     assert [(a["doc_type"], a["url"]) for a in found] == [("handbook", "https://x.org/wp-content/uploads/Parent_Student_Policies_2025-2026-2.pdf")]
+
+
+def test_link_that_redirects_to_a_drive_viewer_is_the_document(monkeypatch):
+    # Evans Preschool: "Student Handbook" is /436309_2, a redirect to a Drive
+    # file. The rendered viewer's markup carried "2016-2017" and only Google
+    # sign-in links, so the 2026 handbook was stored dated 2016-17 and linked
+    # to a sign-in page.
+    import asyncio
+
+    import httpx
+
+    import scraper_client
+    from services import school_documents
+
+    home = '<html><body><a href="/436309_2">Student Handbook</a></body></html>'
+    viewer = (
+        '<html><body><script>var x="2016-2017";</script>'
+        '<a href="https://accounts.google.com/ServiceLogin?continue=https://drive.google.com/file/d/abc/view">Sign in</a></body></html>'
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, html="<html></html>")
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(school_documents.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw))
+
+    async def fake_fetch_html(url, **kw):
+        if url.endswith("/436309_2"):
+            return {"html": viewer, "title": "2026 EPC Orientation.pdf - Google Drive"}
+        return {"html": home, "title": "Home"}
+
+    monkeypatch.setattr(scraper_client, "fetch_html", fake_fetch_html)
+
+    docs = asyncio.run(school_documents.discover_from_website("https://evans.example.org"))
+    assert docs == [
+        {
+            "title": "2026 EPC Orientation.pdf - Google Drive",
+            "url": "https://evans.example.org/436309_2",
+            "academic_year": None,
+            "doc_type": "handbook",
+        }
+    ]

@@ -372,6 +372,7 @@ export function AppShell() {
           <Link to="/chcomms">{t("About")}</Link>
           <Link to="/upload">{t("Upload a flyer")}</Link>
           <Link to="/survey">{t("Survey")}</Link>
+          <Link to="/audit">{t("Data audit")}</Link>
           <Link to="/contact">{t("Contact")}</Link>
           <Link to="/privacy">{t("Privacy & cookies")}</Link>
           <LanguageSwitcher />

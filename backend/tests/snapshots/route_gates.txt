@@ -37,6 +37,10 @@ POST   /admin/secret-requests/{user_code}/deny  super_admin
 GET    /admin/users  super_admin
 PUT    /admin/users/{user_id}/roles  super_admin
 PUT    /admin/users/{user_id}/super-admin  super_admin
+GET    /audit  public
+GET    /audit/data-points  public
+GET    /audit/export.csv  public
+GET    /audit/schools/{school_id}  public
 POST   /auth/change-password  login
 POST   /auth/device/start  public
 POST   /auth/device/token  public
