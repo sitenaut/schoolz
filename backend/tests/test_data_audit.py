@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
@@ -15,7 +15,7 @@ from models import District, JobRun, ScheduledJob, School, SchoolDocument, Smore
 from services import data_audit
 
 pytestmark = pytest.mark.anyio
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 
 
 async def _register(client: AsyncClient, prefix: str, *, super_admin: bool = False) -> dict:
@@ -179,6 +179,36 @@ async def test_view_only_reads_district_audience_and_cannot_mutate(monkeypatch):
         assert (await client.get("/admin/audit", headers=nobody)).status_code == 403
 
 
+async def test_public_audit_needs_no_account_and_is_district_wording_only(monkeypatch):
+    started: list[str] = []
+    monkeypatch.setattr("scheduler.runner.run_job_now", started.append)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        ids = await _seed()
+        boss = await _boss(client)
+        for path, params in (("/audit", {"detail": "true", "audience": "internal"}),
+                             (f"/audit/schools/{ids['high']}", {"audience": "internal"}),
+                             ("/audit/data-points", {"audience": "internal"}),
+                             ("/audit/export.csv", {"audience": "internal"})):
+            # Anonymous, and a super admin too: the public paths only ever speak district.
+            for headers in ({}, boss):
+                res = await client.get(path, headers=headers, params=params)
+                assert res.status_code == 200, res.text
+                text = res.text
+                for leaked in ("site_did_not_load", "smore_no_blocks", "staff_roster.scan", "documents.scan", ids["roster"],
+                               "error_code", "job_ids", "why_district", "next_district", "Error code"):
+                    assert leaked not in text, (path, leaked)
+        body = (await client.get(f"/audit/schools/{ids['high']}")).json()
+        assert body["audience"] == "district" and body["school"]["cells"]["staff"]["status"] == "failing"
+        assert {s["id"] for s in (await client.get("/audit", params={"district_id": ids["d2"]})).json()["schools"]} == {ids["other"]}
+
+        # Nothing that changes state is reachable without audit.manage.
+        for method, path in (("post", f"/audit/schools/{ids['high']}/run-all"),
+                             ("post", f"/admin/audit/schools/{ids['high']}/run-all"),
+                             ("put", f"/admin/audit/schools/{ids['high']}/data-points/periods/not-published")):
+            assert (await client.request(method, path)).status_code in (401, 403, 404, 405), path
+        assert started == []
+
+
 async def test_manage_can_mutate_and_preview_district_audience(monkeypatch):
     started: list[str] = []
     monkeypatch.setattr("scheduler.runner.run_job_now", started.append)
@@ -206,7 +236,7 @@ async def test_manage_can_mutate_and_preview_district_audience(monkeypatch):
         cell = (await client.get(f"/admin/audit/schools/{ids['high']}", headers=manager)).json()["school"]["cells"]["periods"]
         assert cell["status"] == "not_collecting" and cell["tag"] == "not published" and cell["not_published"] is True
         district_cell = (await client.get(f"/admin/audit/schools/{ids['high']}", headers=manager, params={"audience": "district"})).json()["school"]["cells"]["periods"]
-        assert district_cell["tag"] == "not published" and "doesn't publish" in district_cell["why"]
+        assert district_cell["tag"] == "not published" and "isn't published" in district_cell["why"]
 
         assert (await client.delete(f"/admin/audit/schools/{ids['high']}/data-points/periods/not-published", headers=manager)).status_code == 200
         cell = (await client.get(f"/admin/audit/schools/{ids['high']}", headers=manager)).json()["school"]["cells"]["periods"]
@@ -227,3 +257,35 @@ def test_one_school_day_window_skips_weekends():
     friday = datetime(2026, 10, 9, 18, 0, tzinfo=data_audit.TZ)
     assert not data_audit.is_past_window(friday, cadence, datetime(2026, 10, 12, 9, 0, tzinfo=data_audit.TZ))  # Monday
     assert data_audit.is_past_window(friday, cadence, datetime(2026, 10, 14, 9, 0, tzinfo=data_audit.TZ))  # Wednesday
+
+
+async def test_public_wording_never_claims_more_than_we_know():
+    """Each district-wording branch fixed after checking every school in prod."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        ids = await _seed()
+        tag = uuid.uuid4().hex[:6]
+        async with database.SessionLocal() as db:
+            menu = _job("lunch_menu.scan", "17 4 * * *")
+            db.add(menu)
+            await db.flush()
+            await db.execute(update(District).where(District.id == ids["d2"]).values(scheduled_job_id=menu.id))
+            db.add(_run(menu, "success", timedelta(hours=5)))
+            # A preschool with its address entered by hand and no website, so no scans.
+            pre = School(name=f"Hand Preschool {tag}", slug=f"hand-pre-{tag}", district_id=ids["d2"], school_type="other",
+                         address="2 Main St", main_phone="555-0101")
+            db.add(pre)
+            await db.commit()
+        cells = (await client.get(f"/audit/schools/{pre.id}")).json()["school"]["cells"]
+        assert cells["info"]["status"] == "current" and cells["info"]["collected_by"] == "Entered by hand"
+        assert cells["info"]["runs"] == "No scan" and "entered by hand" in cells["info"]["why"]
+        assert cells["geo"]["why"] == "We have the school's address but haven't placed it on a map yet."
+        assert cells["hand"]["why"] == "We don't have a website for this school to look for a handbook on."
+        assert cells["alt"]["why"] == "We don't have this school's early-dismissal and delayed-opening times."
+        # District menus are scanned, but none has ever covered this school: a gap, not stale.
+        assert cells["menu"]["status"] == "not_collecting" and "don't cover this school" in cells["menu"]["why"]
+
+        high = (await client.get(f"/audit/schools/{ids['high']}")).json()["school"]["cells"]
+        # Our own error: nothing asked of the district, nothing promised.
+        assert high["staff"]["why"] == "We couldn't read the published source on our last check."
+        assert high["staff"]["next"] == "Nothing needed from the district for now."
+        assert high["logo"]["why"] == "Our last check of the published source didn't find this."

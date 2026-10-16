@@ -13,6 +13,10 @@ type AuditCtx = {
   /** Show action buttons: a manager looking at the internal view. The
    * district preview hides them, as a view-only user would see it. */
   showActions: boolean;
+  /** The public audit (/audit): district wording, no actions, no account. */
+  pub: boolean;
+  /** Route prefix for links between audit screens. */
+  base: string;
 };
 
 const Ctx = createContext<AuditCtx | null>(null);
@@ -32,9 +36,9 @@ export function useAudit(): AuditCtx {
   return ctx;
 }
 
-export function AuditProvider({ children }: { children: ReactNode }) {
+export function AuditProvider({ children, pub = false }: { children: ReactNode; pub?: boolean }) {
   const { user } = useAuth();
-  const canManage = can(user, "audit.manage");
+  const canManage = !pub && can(user, "audit.manage");
   const [chosen, setChosen] = useState<Audience>(loadAudience);
   const audience: Audience = canManage ? chosen : "district";
   const setAudience = (a: Audience) => {
@@ -45,7 +49,7 @@ export function AuditProvider({ children }: { children: ReactNode }) {
       /* private mode */
     }
   };
-  return <Ctx.Provider value={{ audience, setAudience, canManage, showActions: canManage && audience === "internal" }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ audience, setAudience, canManage, showActions: canManage && audience === "internal", pub, base: pub ? "/audit" : "/admin/audit" }}>{children}</Ctx.Provider>;
 }
 
 export function AudienceToggle() {
@@ -69,16 +73,23 @@ export function AudienceToggle() {
 
 /** Heading + "By school / By data point" tabs shared by the two overview screens. */
 export function AuditTabs({ actions }: { actions?: ReactNode }) {
+  const { pub, base } = useAudit();
   return (
     <div className="audit-hd">
       <div className="audit-hd-l">
-        <div className="ph-upper">Admin</div>
+        <div className="ph-upper">{pub ? "Public" : "Admin"}</div>
         <h1>Data audit</h1>
+        {pub && (
+          <p className="ph-sub">
+            How current our copy of each school&apos;s information is, by school and by data point. A data point is current when we have it and it has been checked
+            recently; anything else says why, and what would fill the gap.
+          </p>
+        )}
         <div className="tabs audit-tabs" role="tablist">
-          <NavLink end to="/admin/audit" className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
+          <NavLink end to={base} className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
             By school
           </NavLink>
-          <NavLink to="/admin/audit/data-points" className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
+          <NavLink to={`${base}/data-points`} className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
             By data point
           </NavLink>
         </div>
@@ -91,9 +102,9 @@ export function AuditTabs({ actions }: { actions?: ReactNode }) {
   );
 }
 
-export function AuditShell() {
+export function AuditShell({ pub = false }: { pub?: boolean }) {
   return (
-    <AuditProvider>
+    <AuditProvider pub={pub}>
       <Outlet />
     </AuditProvider>
   );

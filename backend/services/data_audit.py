@@ -21,9 +21,9 @@ school year.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
-from typing import Callable, Iterable
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from croniter import croniter
@@ -64,6 +64,8 @@ KIND_LABELS = {"elementary": "Elementary", "middle": "Middle", "high": "High", "
 _KIND_NOUN = {"elementary": "an elementary school", "middle": "a middle school", "high": "a high school", "alternative": "an alternative school", "preschool": "a preschool", None: "a school with no type set"}
 
 ALL = None
+# Hand-entered data has no confirmation timestamp, so nothing marks it stale.
+BY_HAND_STALE = "Not re-checked (entered by hand)"
 NOT_PRESCHOOL = frozenset({"elementary", "middle", "high", "alternative"})
 MIDDLE_HIGH = frozenset({"middle", "high", "alternative"})
 HIGH = frozenset({"high"})
@@ -109,30 +111,30 @@ DATA_POINTS: tuple[DataPoint, ...] = (
               "No website or staff directory URL is set, so staff_roster.scan has nothing to read.",
               "We don't have a staff directory for this school.",
               "Set the school's website or staff directory URL."),
-    DataPoint("absence", "Absence method", "People", ALL, "All schools", "Newsletter extraction, or entered by hand", "School newsletters and announcements", "No scan", "Not confirmed this school year", True,
+    DataPoint("absence", "Absence method", "People", ALL, "All schools", "Newsletter extraction, or entered by hand", "School newsletters and announcements", "No scan", BY_HAND_STALE, True,
               "How a parent should report an absence: phone, email or portal.",
               "No tracked newsletter states how to report an absence, so the method was never extracted.",
-              "Nothing we track states how a parent should report an absence.",
+              "We don't know how a parent should report an absence at this school.",
               "Enter it by hand on the school, or track a newsletter that states it."),
     DataPoint("pkteam", "Preschool team", "People", frozenset({"preschool"}), "Preschools", "preschool_team.scan", "The district preschool office page", "Weekly", "16 days", False,
               "The district preschool office's staff page.",
               "No preschool team URL is set on the district.",
               "We don't have the district's preschool office contacts.",
               "Set the district's preschool team URL."),
-    DataPoint("hours", "School hours", "Schedule", ALL, "All schools", "Entered by hand", "The school's bell schedule", "No scan", "Not confirmed this school year", True,
+    DataPoint("hours", "School hours", "Schedule", ALL, "All schools", "Entered by hand", "The school's bell schedule", "No scan", BY_HAND_STALE, True,
               "The school's regular start and end times.",
               "No start and end times have been entered for this school.",
               "We don't have this school's regular start and end times.",
               "Enter the times from the school's bell schedule."),
-    DataPoint("alt", "Early and delayed times", "Schedule", ALL, "All schools", "Entered by hand", "The school's bell schedule", "No scan", "Not confirmed this school year", True,
+    DataPoint("alt", "Early and delayed times", "Schedule", ALL, "All schools", "Entered by hand", "The school's bell schedule", "No scan", BY_HAND_STALE, True,
               "Early-dismissal and delayed-opening times for the school.",
               "Early-dismissal and delayed-opening times are not on file for this school.",
-              "Early-dismissal and delayed-opening times are not published anywhere we found.",
+              "We don't have this school's early-dismissal and delayed-opening times.",
               "Request them from the district, or mark as not published."),
-    DataPoint("periods", "Period table", "Schedule", MIDDLE_HIGH, "Middle and high", "Entered by hand", "The school's bell schedule", "No scan", "Not confirmed this school year", True,
+    DataPoint("periods", "Period table", "Schedule", MIDDLE_HIGH, "Middle and high", "Entered by hand", "The school's bell schedule", "No scan", BY_HAND_STALE, True,
               "A period-by-period bell schedule for the school.",
               "No period-by-period table is on file for this school.",
-              "No period-by-period table is published for this school.",
+              "We don't have a period-by-period bell schedule for this school.",
               "Request it from the school, or mark as not published."),
     DataPoint("cal", "District calendar", "Schedule", ALL, "All schools", "district_calendar.scan or district_calendar_pdf.scan", "The district calendar", "Every 12 hours", "36 hours", False,
               "A link to the district calendar feed or the school-year calendar PDF.",
@@ -202,12 +204,12 @@ DATA_POINTS: tuple[DataPoint, ...] = (
     DataPoint("hand", "Handbook", "Services and documents", ALL, "All schools", "documents.scan", "The school website or newsletter", "Twice a month", "35 days, or dated an earlier school year", False,
               "The current handbook posted on the school site.",
               "No handbook was found on the school site or in a newsletter.",
-              "No handbook was found on the school site or in a newsletter.",
+              "Our search of the school site and its newsletters didn't find a handbook.",
               "Add the document link by hand, or mark as not published."),
     DataPoint("belldoc", "Bell schedule document", "Services and documents", ALL, "All schools", "documents.scan", "The school website", "Twice a month", "35 days, or dated an earlier school year", False,
               "This year's bell schedule posted on the school site.",
               "No bell schedule document was found on the school site.",
-              "No bell schedule document was found on the school site.",
+              "Our search of the school site didn't find a bell schedule.",
               "Find the bell schedule on the school site, or mark as not published."),
     DataPoint("bus", "Transportation", "Services and documents", NOT_PRESCHOOL, "All but preschools", "transportation.scan", "The district transportation pages", "Weekly", "16 days", False,
               "A link to the district's transportation department pages.",
@@ -251,9 +253,9 @@ def cadence_for_cron(cron_expr: str) -> Cadence:
     if cron_expr in _cadence_cache:
         return _cadence_cache[cron_expr]
     try:
-        it = croniter(cron_expr, datetime(2026, 1, 5, tzinfo=timezone.utc))
+        it = croniter(cron_expr, datetime(2026, 1, 5, tzinfo=UTC))
         fires = [it.get_next(datetime) for _ in range(8)]
-        gap = min(b - a for a, b in zip(fires, fires[1:]))
+        gap = min(b - a for a, b in zip(fires, fires[1:], strict=False))
     except (ValueError, KeyError):
         gap = timedelta(days=1)
     cadence = next((c for limit, c in _TIERS if gap <= limit), _MONTHLY)
@@ -361,6 +363,15 @@ _CODE_HINTS = {
 }
 
 
+# District wording when the gap is ours. It promises nothing: a failure can
+# sit for a while before anyone works on it.
+NOTHING_YET = "Nothing needed from the district for now."
+# Failures the district can fix by publishing something. Every other failure
+# is ours (a parser, a vendor match, a timeout): asking the district for a
+# link we already have would be wrong.
+DISTRICT_CAN_FIX = frozenset({"menu_out_of_date"})
+
+
 def _job_finding(point: DataPoint, ctx: AuditContext, job: ScheduledJob, *, has_data: bool | None, warning_ok: bool = False,
                  not_found_codes: frozenset[str] = frozenset(), missing_status: str = FAILING, edit: str = "school") -> Finding:
     """The common rule for a data point backed by one scheduled job.
@@ -383,28 +394,29 @@ def _job_finding(point: DataPoint, ctx: AuditContext, job: ScheduledJob, *, has_
         return Finding(
             FAILING,
             f"{code}: the last {job.kind} run ({run.at.astimezone(TZ):%-d %b}) ended in a {kind}.{never}{last_internal}{paused}",
-            "We couldn't read this from the published source on our last check.",
+            "We couldn't read the published source on our last check." if kind == "error"
+            else "Our last check of the published source didn't return everything we expected.",
             _CODE_HINTS.get(code, "Open the run for its error code, then re-run."),
-            "Nothing needed yet; we're looking into it." if kind == "error" else point.ask,
-            tag=f"{code} ({kind}{stage})", tag_district="couldn't read the source",
+            point.ask if code in DISTRICT_CAN_FIX else NOTHING_YET,
+            tag=f"{code} ({kind}{stage})", tag_district="couldn't read the source" if kind == "error" else "incomplete read",
             last_good=good, error_code=code, internal_only=(kind == "error"), **base)
     if good is None:
         return Finding(STALE, f"{job.kind} is set up but has never completed successfully.{paused}",
                        "We haven't been able to collect this yet.", "Run the scan now and check its result.",
-                       "Nothing needed yet; we're looking into it.", tag="never scanned", tag_district="not collected yet",
+                       NOTHING_YET, tag="never scanned", tag_district="not collected yet",
                        internal_only=True, **base)
     if is_past_window(good, cadence, ctx.now):
         return Finding(STALE, f"The last good {job.kind} run was {_fmt_age(ctx.now - good)} ago, past its {cadence.stale_after} window.{paused}",
                        "Our copy hasn't been refreshed recently.",
                        "Turn the scan back on, or run it now." if not job.enabled else "Check whether the source has moved or stopped updating, then re-run.",
-                       "Nothing needed yet; we're looking into it.", tag="scan paused" if not job.enabled else "",
+                       NOTHING_YET, tag="scan paused" if not job.enabled else "",
                        last_good=good, internal_only=True, **base)
     if has_data is False:
         if missing_status == NONE:
             return Finding(NONE, point.none_why, point.none_why_district, point.none_next, point.ask,
                            tag="not found", tag_district="not found", **base)
         return Finding(FAILING, f"The last {job.kind} run succeeded but found no {point.label.lower()}.",
-                       "The published source didn't contain this when we last checked.",
+                       "Our last check of the published source didn't find this.",
                        "Open the run's log to see what it read.", point.ask, tag="scan found nothing",
                        tag_district="not found in the source", **base)
     return Finding(CURRENT, "The last scan succeeded and the data on file is inside its freshness window.",
@@ -430,9 +442,11 @@ def _no_source(point: DataPoint, edit: str) -> Finding:
 
 def _by_hand(point: DataPoint, present: bool, edit: str = "school", extra: str = "") -> Finding:
     if present:
-        return Finding(CURRENT, f"Entered by hand or extracted once; nothing re-checks it.{extra}", "On file.", "Nothing to do.",
+        # A scanned point that fell back to by-hand data has no scan behind it.
+        return Finding(CURRENT, f"Entered by hand or extracted once; nothing re-checks it.{extra}",
+                       "On file, entered by hand. Nothing re-checks it automatically.", "Nothing to do.",
                        "Nothing needed.", tag="entered by hand", last_label="Entered by hand, not re-checked",
-                       edit=edit, runs=point.runs, stale_after=point.stale_after)
+                       edit=edit, runs="No scan", stale_after=BY_HAND_STALE)
     return _no_source(point, edit)
 
 
@@ -453,7 +467,7 @@ def evaluate(point: DataPoint, school: School, ctx: AuditContext) -> Finding:
         when = mark.created_at.astimezone(TZ)
         note = f" Note: {mark.note}" if mark.note else ""
         return Finding(NONE, f"Marked as not published on {when:%-d %b %Y}.{note}",
-                       f"The school doesn't publish this (confirmed {when:%-d %B %Y}).",
+                       f"We found this isn't published (checked {when:%-d %B %Y}).",
                        "Nothing to do unless it starts being published.", "Nothing needed unless it starts being published.",
                        tag="not published", tag_district="not published", runs=finding.runs, stale_after=finding.stale_after,
                        job_ids=finding.job_ids, edit=finding.edit, not_published=True)
@@ -469,7 +483,12 @@ def _evaluate_applicable(point: DataPoint, school: School, ctx: AuditContext) ->
                    "geo": school.latitude is not None and school.longitude is not None}[k]
         jobs = _jobs(ctx, school.school_info_job_id)
         if not jobs:
-            return _by_hand(point, present)
+            f = _by_hand(point, present)
+            if k == "geo" and not present and school.address:
+                f.why = "The address is on file, but with no school_info scan nothing geocodes it."
+                f.why_district = "We have the school's address but haven't placed it on a map yet."
+                f.next, f.next_district = "Set the school's website URL, or enter its coordinates.", NOTHING_YET
+            return f
         f = _job_finding(point, ctx, jobs[0], has_data=present, warning_ok=True)
         if k == "geo" and not present and not school.address:
             f.why = "No address is on file to geocode. " + f.why
@@ -493,6 +512,7 @@ def _evaluate_applicable(point: DataPoint, school: School, ctx: AuditContext) ->
         if either and not both:
             missing = "delayed-opening" if school.early_dismissal_time else "early-dismissal"
             f.why += f" Only one of the two is on file; the {missing} time is missing."
+            f.why_district = f"Partly on file: we don't have the {missing} time."
         return f
     if k == "periods":
         return _by_hand(point, bool(school.bell_periods))
@@ -631,9 +651,18 @@ def _menu(point: DataPoint, school: School, district: District | None, ctx: Audi
     today = ctx.now.astimezone(TZ).date()
     monday = today - timedelta(days=today.weekday())
     in_school_year = today.month not in (7, 8)
-    if in_school_year and (latest is None or latest.astimezone(TZ).date() < monday):
-        inherited = latest is None or bool(district_jobs) and school.id not in ctx.menu_latest_school
-        on_file = f"The newest menu on file is for {latest.astimezone(TZ):%-d %B}." if latest else "No menu days are on file."
+    if latest is None:
+        # Never had a menu day: the district menus we collect don't cover this
+        # school (a partner daycare, a program with no menu of its own type).
+        # That is a gap in coverage, not a menu that went out of date.
+        return Finding(NONE, "The menu scans succeed, but no menu days have ever been stored for this school or its school type.",
+                       "The menus we collect for this district don't cover this school.",
+                       "Check whether this school has its own menu, or which district menu applies to it.", point.ask,
+                       tag="no menu for this school type" if district_jobs else "no menu days", tag_district="not covered",
+                       runs=f.runs, stale_after=point.stale_after, job_ids=[j.id for j in district_jobs + school_jobs], edit=f.edit)
+    if in_school_year and latest.astimezone(TZ).date() < monday:
+        inherited = bool(district_jobs) and school.id not in ctx.menu_latest_school
+        on_file = f"The newest menu on file is for {latest.astimezone(TZ):%-d %B}."
         return Finding(STALE, f"The scan succeeds, but there is no menu for the current week. {on_file}"
                               + (" Menus come from the district for every school of this type; fix once at district level." if inherited and district_jobs else ""),
                        f"We don't have a menu for the current week. {on_file}",
@@ -651,7 +680,12 @@ def _document(point: DataPoint, school: School, ctx: AuditContext, doc_type: str
     docs = [d for d in ctx.documents.get((school.id, doc_type), []) if d.is_current]
     jobs = _jobs(ctx, school.documents_scan_job_id)
     if not jobs:
-        return _by_hand(point, bool(docs)) if docs else _no_source(point, "school")
+        if docs:
+            return _by_hand(point, True)
+        f = _no_source(point, "school")
+        f.why = f"No documents scan is set up (it needs the school's website), so nothing looks for a {point.label.lower()}."
+        f.why_district = f"We don't have a website for this school to look for a {point.label.lower()} on."
+        return f
     f = _job_finding(point, ctx, jobs[0], has_data=bool(docs), not_found_codes=frozenset({"no_documents_found"}), missing_status=NONE)
     if f.status != CURRENT:
         return f
@@ -660,7 +694,7 @@ def _document(point: DataPoint, school: School, ctx: AuditContext, doc_type: str
     if year is not None and year < current_year:
         label = f"{year}-{str(year + 1)[-2:]}"
         return Finding(STALE, f"The {point.label.lower()} on the school site is dated {label}. The scan reads it fine; the document itself is old.",
-                       f"The {point.label.lower()} posted is dated {label}.", "Ask the school for this year's version.", point.ask,
+                       f"The newest {point.label.lower()} we found is dated {label}.", "Ask the school for this year's version.", point.ask,
                        tag="source is out of date", tag_district="out of date", last_label=f"{label} document",
                        last_good=f.last_good, runs=f.runs, stale_after=f.stale_after, job_ids=f.job_ids, edit="school")
     return f
@@ -669,7 +703,7 @@ def _document(point: DataPoint, school: School, ctx: AuditContext, doc_type: str
 # --- loading ---------------------------------------------------------------
 
 async def load_context(db: AsyncSession, schools: list[School], now: datetime | None = None) -> AuditContext:
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     school_ids = [s.id for s in schools]
     district_ids = {s.district_id for s in schools if s.district_id}
     districts = {d.id: d for d in (await db.execute(select(District).where(District.id.in_(district_ids)))).scalars()} if district_ids else {}
@@ -784,11 +818,13 @@ def render_cell(point: DataPoint, finding: Finding, ctx: AuditContext, audience:
     last_label = finding.last_label or (f"{finding.last_good.astimezone(TZ):%-d %B %Y}" if finding.last_good else
                                         ("None expected" if finding.status == NA else "None on file"))
     if audience == "district":
+        # A scanned point that fell back to hand-entered data didn't come from its usual source.
+        source = "Entered by hand" if finding.tag == "entered by hand" and not point.by_hand else point.source_district
         return {
             "key": point.key, "status": finding.status, "tag": finding.tag_district,
             "why": finding.why_district, "next": finding.next_district,
             "last_good": last, "last_label": last_label,
-            "collected_by": point.source_district, "runs": finding.runs or point.runs, "stale_after": finding.stale_after or point.stale_after,
+            "collected_by": source, "runs": finding.runs or point.runs, "stale_after": finding.stale_after or point.stale_after,
             "internal_only": finding.internal_only,
         }
     return {

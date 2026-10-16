@@ -17,7 +17,7 @@ const RANK: Record<AuditStatus, number> = { failing: 0, stale: 1, not_collecting
 
 export function AuditSchoolPage() {
   const { schoolId = "" } = useParams();
-  const { audience, showActions } = useAudit();
+  const { audience, showActions, pub, base } = useAudit();
   const toast = useToast();
   const [data, setData] = useState<SchoolAudit | null>(null);
   const [error, setError] = useState("");
@@ -25,13 +25,13 @@ export function AuditSchoolPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
-    getSchoolAudit(schoolId, audience)
+    getSchoolAudit(schoolId, audience, pub)
       .then((d) => {
         setData(d);
         setError("");
       })
       .catch((e: Error) => setError(e.message));
-  }, [schoolId, audience]);
+  }, [schoolId, audience, pub]);
   useEffect(load, [load]);
 
   if (error) return <div className="form-error">{error}</div>;
@@ -58,9 +58,9 @@ export function AuditSchoolPage() {
   return (
     <div className="audit">
       <nav className="audit-crumbs" aria-label="Breadcrumb">
-        <Link to="/admin/audit">Audit</Link>
+        <Link to={base}>Audit</Link>
         <span aria-hidden="true">/</span>
-        {s.district_id ? <Link to={`/admin/audit?district=${s.district_id}`}>{s.district_name}</Link> : <span>No district</span>}
+        {s.district_id ? <Link to={`${base}?district=${s.district_id}`}>{s.district_name}</Link> : <span>No district</span>}
         <span aria-hidden="true">/</span>
         <span>{s.name}</span>
       </nav>
@@ -78,7 +78,7 @@ export function AuditSchoolPage() {
               Run all scans
             </button>
           )}
-          <Link className="btn btn-primary" to={`/admin/audit/schools/${s.slug}/report`}>
+          <Link className="btn btn-primary" to={`${base}/schools/${s.slug}/report`}>
             Missing-data report
           </Link>
         </div>
@@ -148,9 +148,7 @@ export function AuditSchoolPage() {
                   <td>{cell.why}</td>
                   <td>
                     <div className={audience === "internal" ? "mono" : ""}>{cell.collected_by}</div>
-                    <div className="cell-sub">
-                      {cell.runs} · stale after {cell.stale_after}
-                    </div>
+                    <div className="cell-sub">{cell.status === "not_collecting" ? "Not collected" : `${cell.runs} · stale after ${cell.stale_after}`}</div>
                   </td>
                   <td>{cell.next}</td>
                   {showActions && (

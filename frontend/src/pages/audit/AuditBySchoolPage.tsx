@@ -11,7 +11,7 @@ import { countCells, filterSchools, filtersFromParams, filtersToParams, GROUPS, 
 type Selected = { schoolId: string; key: string };
 
 export function AuditBySchoolPage() {
-  const { audience } = useAudit();
+  const { audience, pub, base } = useAudit();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
   const paramKey = params.toString();
@@ -26,13 +26,13 @@ export function AuditBySchoolPage() {
 
   const load = useCallback(() => {
     detailCache.current.clear();
-    getAudit({ audience })
+    getAudit({ audience, pub })
       .then((d) => {
         setData(d);
         setError("");
       })
       .catch((e: Error) => setError(e.message));
-  }, [audience]);
+  }, [audience, pub]);
   useEffect(load, [load]);
 
   const setFilter = (patch: Partial<SchoolFilters>) => {
@@ -58,14 +58,14 @@ export function AuditBySchoolPage() {
         return;
       }
       try {
-        const d = await getSchoolAudit(schoolId, audience);
+        const d = await getSchoolAudit(schoolId, audience, pub);
         detailCache.current.set(schoolId, d.school);
         setDetail({ school: d.school });
       } catch (e) {
         toast({ title: (e as Error).message, tone: "bad" });
       }
     },
-    [audience, toast]
+    [audience, pub, toast]
   );
 
   useEffect(() => {
@@ -99,10 +99,10 @@ export function AuditBySchoolPage() {
       <AuditTabs
         actions={
           <>
-            <button className="btn" onClick={() => downloadCsv({ districtId: filters.district || undefined, audience }).catch((e: Error) => toast({ title: e.message, tone: "bad" }))}>
+            <button className="btn" onClick={() => downloadCsv({ districtId: filters.district || undefined, audience, pub }).catch((e: Error) => toast({ title: e.message, tone: "bad" }))}>
               Download CSV
             </button>
-            <Link className="btn btn-primary" to={`/admin/audit/report${filters.district ? `?district=${filters.district}` : ""}`}>
+            <Link className="btn btn-primary" to={`${base}/report${filters.district ? `?district=${filters.district}` : ""}`}>
               Missing-data report
             </Link>
           </>
@@ -190,7 +190,7 @@ export function AuditBySchoolPage() {
       <section className="audit-card" aria-label="Audit by school">
         <div className="audit-card-hd">
           <strong>{data ? resultLabel(cur * size, rows.length, matched.length, data.schools.length) : "Loading…"}</strong>
-          <Link to={`/admin/audit/report?scope=filters${reportParams ? `&${reportParams}` : ""}`}>Missing-data report for these results</Link>
+          <Link to={`${base}/report?scope=filters${reportParams ? `&${reportParams}` : ""}`}>Missing-data report for these results</Link>
         </div>
         <div className="audit-grid-wrap">
           <table className="audit-grid">
@@ -218,7 +218,7 @@ export function AuditBySchoolPage() {
               {rows.map((s) => (
                 <tr key={s.id}>
                   <th scope="row" className="audit-grid-school">
-                    <Link to={`/admin/audit/schools/${s.slug}`}>{s.name}</Link>
+                    <Link to={`${base}/schools/${s.slug}`}>{s.name}</Link>
                     <span className="cell-sub">
                       {s.kind_label} · {s.district_name ?? "No district"}
                     </span>
@@ -243,7 +243,7 @@ export function AuditBySchoolPage() {
                   })}
                   <td className="audit-grid-pct">
                     <span>{pctLabel(s.counts.pct)}</span>
-                    <Link to={`/admin/audit/schools/${s.slug}/report`} className="btn icon sm" aria-label={`Missing-data report for ${s.name}`} title="Missing-data report">
+                    <Link to={`${base}/schools/${s.slug}/report`} className="btn icon sm" aria-label={`Missing-data report for ${s.name}`} title="Missing-data report">
                       <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M4.5 2.5h6l3 3v10h-9z" />
                         <path d="M10.5 2.5v3h3" />
@@ -315,8 +315,14 @@ export function AuditBySchoolPage() {
               <div>
                 <div className="stat-k">Collected by</div>
                 <div className={audience === "internal" ? "mono" : ""}>{selCell.collected_by}</div>
-                <div className="cell-sub">Runs: {selCell.runs}</div>
-                <div className="cell-sub">Stale after: {selCell.stale_after}</div>
+                {selCell.status === "not_collecting" ? (
+                  <div className="cell-sub">Not collected</div>
+                ) : (
+                  <>
+                    <div className="cell-sub">Runs: {selCell.runs}</div>
+                    <div className="cell-sub">Stale after: {selCell.stale_after}</div>
+                  </>
+                )}
               </div>
               <div>
                 <div className="stat-k">Next step</div>
