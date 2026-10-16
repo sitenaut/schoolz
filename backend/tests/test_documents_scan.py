@@ -78,3 +78,56 @@ async def test_stored_google_sign_in_link_is_never_current_and_never_sets_the_ye
         await db.commit()
         rows = {d.url: d.is_current for d in (await db.execute(select(SchoolDocument).where(SchoolDocument.school_id == school.id))).scalars()}
     assert rows == {sign_in: False, own: True}
+
+
+@pytest.mark.anyio
+async def test_dismissed_document_stays_out_and_the_audit_reports_the_handbook_missing(monkeypatch):
+    # Yorkship: the scan took an anti-bullying PDF for the handbook. Dismissing
+    # it must survive the next scan (which finds the same file again).
+    from datetime import UTC, datetime, timedelta
+
+    from httpx import ASGITransport, AsyncClient
+    from sqlalchemy import update
+
+    from main import app
+    from models import JobRun, ScheduledJob, SchoolDocument, User
+
+    school = await _make_school(website_url="https://yorkship.example.org")
+    hib = "https://example.org/HIB-Grades-Official-2023-2024.pdf"
+    async with database.SessionLocal() as db:
+        job = ScheduledJob(kind="documents.scan", name=f"docs {uuid.uuid4().hex[:6]}", cron_expr="5 3 2,16 * *",
+                           params={"school_id": school.id}, enabled=True)
+        db.add(job)
+        await db.flush()
+        await db.execute(update(School).where(School.id == school.id).values(documents_scan_job_id=job.id, school_type="elementary"))
+        doc = SchoolDocument(school_id=school.id, doc_type="handbook", title="Code of Conduct", url=hib,
+                             academic_year="2023-2024", source="website", is_current=True)
+        db.add(doc)
+        db.add(JobRun(job_id=job.id, status="success", started_at=datetime.now(UTC) - timedelta(days=1),
+                      finished_at=datetime.now(UTC) - timedelta(days=1), triggered_by="cron"))
+        await db.commit()
+        doc_id = doc.id
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        email = f"docadmin_{uuid.uuid4().hex[:8]}@example.com"
+        reg = await client.post("/auth/register", json={"email": email, "username": email.split("@")[0], "password": "password123"})
+        headers = {"authorization": f"Bearer {reg.json()['access_token']}"}
+        path = f"/schools/{school.id}/documents/{doc_id}"
+        assert (await client.patch(path, headers=headers, json={"dismissed": True})).status_code == 403
+        async with database.SessionLocal() as db:
+            await db.execute(update(User).where(User.email == email).values(is_admin=True))
+            await db.commit()
+        res = await client.patch(path, headers=headers, json={"dismissed": True})
+        assert res.status_code == 200 and res.json()["is_current"] is False and res.json()["dismissed_at"]
+
+        async def fake_discover(url):
+            return [{"title": "Code of Conduct", "url": hib, "academic_year": "2023-2024", "doc_type": "handbook"}]
+
+        monkeypatch.setattr(documents_scan, "discover_from_website", fake_discover)
+        async with database.SessionLocal() as db:
+            await documents_scan.run(db, {"school_id": school.id})
+            await db.commit()
+
+        assert (await client.get(f"/schools/{school.id}/documents")).json() == []
+        cell = (await client.get(f"/audit/schools/{school.id}")).json()["school"]["cells"]["hand"]
+        assert cell["status"] == "not_collecting", cell

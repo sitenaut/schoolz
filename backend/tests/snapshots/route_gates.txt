@@ -132,6 +132,7 @@ POST   /schools/{school_id}/class-years/{grad_year}/payments/{payment_id}/tick  
 GET    /schools/{school_id}/content  public
 GET    /schools/{school_id}/documents  public
 POST   /schools/{school_id}/documents/run-now  perm:schools.manage
+PATCH  /schools/{school_id}/documents/{document_id}  perm:schools.manage
 POST   /schools/{school_id}/events-doc/run-now  perm:schools.manage
 POST   /schools/{school_id}/info/run-now  perm:schools.manage
 GET    /schools/{school_id}/lunch-menu  public

@@ -122,8 +122,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             await db.execute(select(SchoolDocument).where(SchoolDocument.school_id == school_id, SchoolDocument.doc_type == doc_type))
         ).scalars().all()
         # A Google sign-in URL is never the document (older scans stored the
-        # Drive viewer's sign-in link, with a year read off the viewer page).
-        dead = {d.id for d in docs if urlparse(d.url).hostname == "accounts.google.com"}
+        # Drive viewer's sign-in link, with a year read off the viewer page),
+        # and neither is one an admin dismissed.
+        dead = {d.id for d in docs if d.dismissed_at or urlparse(d.url).hostname == "accounts.google.com"}
         years = [d.academic_year for d in docs if d.academic_year and d.id not in dead]
         max_year = max(years) if years else None
         found_urls = {e["url"] for e in found if e["doc_type"] == doc_type}
