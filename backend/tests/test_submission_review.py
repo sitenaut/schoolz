@@ -185,7 +185,9 @@ async def test_read_then_publish_puts_only_the_chosen_items_on_the_calendar(fake
         assert takeover.end_date.astimezone(_DEFAULT_TZ).hour == 22
 
         # The public school feed now carries them, with no login.
-        content = await client.get(f"/schools/{school_id}/content")
+        # The flyer's dates are fixed in October 2026; once they're past by the
+        # real clock the default view drops them, so ask for past items too.
+        content = await client.get(f"/schools/{school_id}/content", params={"include_past": "true"})
         assert content.status_code == 200 and "PTA Tatem Tap Takeover" in content.text
 
         # Publishing the same ids again adds nothing.
