@@ -38,7 +38,40 @@ export function analyticsPath(pathname: string, search: string): string {
   return pathname + (qs ? `?${qs}` : "");
 }
 
-export type TrackGate = { id: string; webdriver: boolean; hostname: string; siteHostname: string };
+type SchoolRef = { id: string; slug: string };
+
+export type SchoolViews = {
+  /** The path GA should see: a school opened by id is reported under its slug,
+   * so one school isn't split across two page rows. */
+  path: string;
+  surface?: "today" | "school_page" | "class_page";
+  /** Slugs this page view counts toward, one school_view event each. */
+  slugs: string[];
+};
+
+// A feed with more schools than this is someone browsing, not a family.
+const MAX_TODAY_SCHOOLS = 10;
+
+/** Which schools a page view should be credited to, for per-school counts.
+ * Today shows one card per active school, so each gets credit; a school page
+ * (or one of its class pages) credits that school. Everything else credits
+ * none: Calendar and Lunch are per-visitor views, not per-school pages. */
+export function schoolViews(pathname: string, allSchools: SchoolRef[], activeSchools: SchoolRef[]): SchoolViews {
+  if (pathname === "/") {
+    return { path: pathname, surface: "today", slugs: activeSchools.slice(0, MAX_TODAY_SCHOOLS).map((s) => s.slug) };
+  }
+  const m = pathname.match(/^\/schools\/([^/]+)(\/[^/]+)?$/);
+  if (!m) return { path: pathname, slugs: [] };
+  const school = allSchools.find((s) => s.slug === m[1] || s.id === m[1]);
+  const slug = school?.slug ?? m[1];
+  return {
+    path: `/schools/${slug}${m[2] ?? ""}`,
+    surface: m[2] ? "class_page" : "school_page",
+    slugs: [slug],
+  };
+}
+
+export type TrackGate ={ id: string; webdriver: boolean; hostname: string; siteHostname: string };
 
 /** Measurement is on only for a real browser on the real production host.
  * The hostname check keeps a prod build opened on localhost, a Fly preview

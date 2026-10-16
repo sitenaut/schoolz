@@ -13,7 +13,7 @@ import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { CURRENT_LANG } from "../lib/i18n";
-import { gaPageView, gaSetUserProperties, setInternalTraffic } from "../lib/analytics";
+import { gaEvent, gaPageView, gaSetUserProperties, schoolViews, setInternalTraffic } from "../lib/analytics";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
@@ -71,7 +71,7 @@ export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
   const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
-  const { mySchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
+  const { allSchools, mySchools, activeSchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname, search } = useLocation();
   const { seasons } = useSeasons();
   const navigate = useNavigate();
@@ -170,16 +170,21 @@ export function AppShell() {
     if (lastGaView.current === key) return;
     const timer = window.setTimeout(() => {
       lastGaView.current = key;
-      const schoolMatch = pathname.match(/^\/schools\/([^/]+)/);
-      gaPageView(pathname, search, {
+      const views = schoolViews(pathname, allSchools, activeSchools);
+      gaPageView(views.path, search, {
         route: routeTemplate(pathname),
         ...(gaFrom.current ? { page_referrer: gaFrom.current } : {}),
-        ...(schoolMatch ? { school_slug: schoolMatch[1] } : {}),
+        ...(views.surface && views.surface !== "today" ? { school_slug: views.slugs[0] } : {}),
       });
+      // One event per school on screen, so "views per school" counts Today's
+      // cards too, not just visits to a school's own page. Sent after the
+      // page_view, from inside the same auth hold, so admin traffic is
+      // already flagged internal.
+      for (const slug of views.slugs) gaEvent("school_view", { school_slug: slug, surface: views.surface });
       gaFrom.current = window.location.origin + pathname;
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [pathname, search, authLoading, authTimedOut, schoolsLoading, gaHoldExpired]);
+  }, [pathname, search, authLoading, authTimedOut, schoolsLoading, gaHoldExpired, allSchools, activeSchools]);
 
   // Who the visitor is, as dimensions: town/district/school type come from
   // the schools they picked (never IP geography, which for this audience

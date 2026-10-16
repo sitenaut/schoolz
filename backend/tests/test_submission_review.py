@@ -184,8 +184,10 @@ async def test_read_then_publish_puts_only_the_chosen_items_on_the_calendar(fake
         assert takeover.start_date.astimezone(_DEFAULT_TZ).hour == 17
         assert takeover.end_date.astimezone(_DEFAULT_TZ).hour == 22
 
-        # The public school feed now carries them, with no login.
-        content = await client.get(f"/schools/{school_id}/content")
+        # The public school feed now carries them, with no login. include_past
+        # because the fixture's dates are fixed and the feed drops items that
+        # ended before yesterday.
+        content = await client.get(f"/schools/{school_id}/content?include_past=true")
         assert content.status_code == 200 and "PTA Tatem Tap Takeover" in content.text
 
         # Publishing the same ids again adds nothing.
