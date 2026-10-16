@@ -26,6 +26,11 @@ describe("scrubUrl", () => {
     expect(scrubUrl("/invites/a1b2c3d4e5f6?foo=bar")).toBe("/invites/:token?foo=bar");
   });
 
+  it("hides which Localz resource was opened", () => {
+    expect(scrubUrl("https://schoolz.sitenaut.com/es/localz/r/7fa184cb-8cb0")).toBe("https://schoolz.sitenaut.com/es/localz/r/:id");
+    expect(scrubUrl("/localz/food")).toBe("/localz/food");
+  });
+
   it("leaves an ordinary url/path untouched", () => {
     expect(scrubUrl("https://schoolz.sitenaut.com/schools/bret-harte-elementary")).toBe(
       "https://schoolz.sitenaut.com/schools/bret-harte-elementary"

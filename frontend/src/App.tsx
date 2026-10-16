@@ -10,6 +10,10 @@ import { TodayPage } from "./pages/TodayPage";
 import { PickSchoolsPage } from "./pages/PickSchoolsPage";
 import { LunchPage } from "./pages/LunchPage";
 import { LocalPage } from "./pages/LocalPage";
+import { LocalzLayout } from "./pages/localz/LocalzLayout";
+import { LocalzHomePage } from "./pages/localz/LocalzHomePage";
+import { LocalzCategoryPage } from "./pages/localz/LocalzCategoryPage";
+import { LocalzResourcePage } from "./pages/localz/LocalzResourcePage";
 import { SeasonalPage } from "./pages/SeasonalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -185,7 +189,12 @@ function Routed() {
         <Route path="/chcomms" element={<ChCommsPage />} />
         <Route path="/survey" element={<SurveyPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/local" element={<LocalPage />} />
+        <Route element={<LocalzLayout />}>
+          <Route path="/local" element={<LocalPage />} />
+          <Route path="/localz" element={<LocalzHomePage />} />
+          <Route path="/localz/r/:resourceId" element={<LocalzResourcePage />} />
+          <Route path="/localz/:category" element={<LocalzCategoryPage />} />
+        </Route>
         <Route path="/audit" element={<AuditShell pub />}>
           <Route index element={<AuditBySchoolPage />} />
           <Route path="data-points" element={<AuditCatalogPage />} />

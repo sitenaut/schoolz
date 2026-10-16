@@ -1570,6 +1570,90 @@ class GeocodedPlace(Base):
     looked_up_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class ResourceOrganization(Base):
+    """The organization behind one or more community resources (HSDS
+    `organization`). NJ 211 publishes no organization id, so organizations
+    are matched on a normalized name (`name_key`)."""
+
+    __tablename__ = "resource_organizations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    name_key: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    alternate_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ResourceService(Base):
+    """One service at one place (HSDS `service_at_location`): the unit Localz
+    searches and shows - "Food Pantry at St. John's", "LIHEAP at the Camden
+    County office". Filled by the resources.refresh job (resources/), design
+    in docs/LOCALZ_DESIGN.md. Public data, like local_events.
+
+    `missing_core` names the required fields this record lacks (name,
+    address, hours, phone, services); an incomplete record stays searchable
+    but is never presented as a confident match. `status` goes "inactive"
+    when the source stops listing it - never deleted, since a vanished food
+    pantry is worth a human look. `detail_fetched_at` null means the full
+    record is due (new, or its listing summary changed)."""
+
+    __tablename__ = "resource_services"
+    __table_args__ = (UniqueConstraint("source", "source_record_id", name="uq_resource_services_source_record"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    organization_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_organizations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    source_record_id: Mapped[str] = mapped_column(Text, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    organization_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    phone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    website: Mapped[str | None] = mapped_column(Text, nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    city: Mapped[str | None] = mapped_column(Text, nullable=True)
+    postal_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hours_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    eligibility_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    application_process: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fees: Mapped[str | None] = mapped_column(Text, nullable=True)
+    required_documents: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    languages: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    accessibility: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transportation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # "Camden County, NJ", ... - where the service says it serves.
+    service_areas: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    taxonomy_codes: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    taxonomy_names: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    # Counties whose crawl place NJ 211 listed this service for ("serves
+    # this place"), so a record is placed before its detail page says where
+    # it serves - and a service listed for most counties reads as statewide.
+    listed_in_counties: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    # Localz category keys (resources/categories.py), derived from the codes.
+    categories: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    alert: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_assured_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    missing_core: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    summary_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    detail_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Consecutive complete list crawls that didn't include this record.
+    missed_crawls: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
 class SeasonalGuide(Base):
     """A link to someone else's seasonal guide (a Halloween house map, a
     fall-festival roundup), shown while its window is open: the top-bar

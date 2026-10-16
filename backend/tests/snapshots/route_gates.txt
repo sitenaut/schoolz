@@ -99,6 +99,10 @@ GET    /page-views  perm:analytics.view
 POST   /page-views  public
 GET    /page-views/campaign-report  perm:analytics.view
 GET    /prerender  public
+GET    /resources/categories  public
+POST   /resources/search  public
+POST   /resources/types  public
+GET    /resources/{resource_id}  public
 GET    /scheduled-jobs  perm:scans.view
 POST   /scheduled-jobs  perm:scans.manage
 POST   /scheduled-jobs/import-billz  perm:scans.manage

@@ -1,0 +1,181 @@
+import { apiFetch } from "../api";
+import { ROUTER_BASENAME } from "./i18n";
+
+/** Localz: community resources (food, housing, health, ...) for families who
+ * need help. Design: docs/LOCALZ_DESIGN.md. Rules that shape this code:
+ *
+ * - Nothing about what a visitor searches for goes in a URL. Search text is
+ *   POSTed and kept in component state, so it never reaches access logs,
+ *   RUM, browser history or a shared link. Category pages have URLs; typed
+ *   text doesn't.
+ * - No GA on Localz pages (lib/analytics.ts and AppShell check isLocalzPath).
+ * - Labels are neutral ("Help with bills"), never "emergency assistance for
+ *   the needy". */
+
+export type ResourceSummary = {
+  id: string;
+  name: string;
+  organization_name: string | null;
+  location_name: string | null;
+  description: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  hours_text: string | null;
+  categories: string[];
+  complete: boolean;
+  /** Serves all of New Jersey (its own service area, or NJ 211 lists it
+   * for most counties). */
+  statewide: boolean;
+  last_assured_on: string | null;
+};
+
+export type ResourceDetail = ResourceSummary & {
+  email: string | null;
+  website: string | null;
+  postal_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  eligibility_text: string | null;
+  application_process: string | null;
+  fees: string | null;
+  required_documents: string[];
+  languages: string[];
+  accessibility: string | null;
+  transportation: string | null;
+  service_areas: string[];
+  taxonomy_names: string[];
+  alert: string | null;
+  missing_core: string[];
+  source: string;
+  source_url: string | null;
+  updated_at: string;
+};
+
+export type ResourceCategoryCount = { key: string; label: string; count: number };
+
+/** A kind of service within a category ("Food Pantries"), from NJ 211's
+ * taxonomy; `code` is what the search filters on. */
+export type ResourceType = { code: string; name: string; count: number };
+
+export type ResourceSearch = {
+  category?: string;
+  query?: string;
+  county?: string;
+  type?: string;
+  page?: number;
+  page_size?: number;
+};
+
+export type LocalzCategory = {
+  key: string;
+  /** Page heading and tile label. */
+  label: string;
+  /** Bottom-tab label: one short word, so seven tabs fit a phone. */
+  navLabel: string;
+  /** Tile line - what it helps with, in plain words. */
+  blurb: string;
+  /** Shown in the main nav; the rest are reached from the Localz home. */
+  inNav: boolean;
+};
+
+// Keys match backend/resources/categories.py. Labels pass through t().
+export const LOCALZ_CATEGORIES: LocalzCategory[] = [
+  { key: "food", label: "Food", navLabel: "Food", blurb: "Pantries, meals and help with groceries", inNav: true },
+  { key: "housing-bills", label: "Housing & Bills", navLabel: "Housing", blurb: "Rent, utilities and a place to stay", inNav: true },
+  { key: "health", label: "Health", navLabel: "Health", blurb: "Clinics, coverage, counseling and recovery", inNav: true },
+  { key: "kids-family", label: "Kids & Family", navLabel: "Family", blurb: "Child care, early learning and parenting", inNav: true },
+  { key: "money-work", label: "Money & Work", navLabel: "Money", blurb: "Benefits, jobs, taxes and classes", inNav: true },
+  { key: "legal-safety", label: "Legal & Safety", navLabel: "Legal", blurb: "Legal aid and staying safe", inNav: false },
+  { key: "everyday-needs", label: "Everyday Needs", navLabel: "Everyday", blurb: "Clothing, diapers, rides and holiday help", inNav: false },
+];
+
+export const categoryByKey = (key: string | undefined) => LOCALZ_CATEGORIES.find((c) => c.key === key);
+
+/** Every New Jersey county - the crawl asks NJ 211 about each one. */
+export const LOCALZ_COUNTIES = [
+  "Atlantic", "Bergen", "Burlington", "Camden", "Cape May", "Cumberland", "Essex", "Gloucester", "Hudson", "Hunterdon", "Mercer",
+  "Middlesex", "Monmouth", "Morris", "Ocean", "Passaic", "Salem", "Somerset", "Sussex", "Union", "Warren",
+];
+
+/** Always on screen in Localz. Numbers are public statewide lines. */
+export const HELP_NOW = [
+  { label: "Any kind of help", number: "211", tel: "211" },
+  { label: "Crisis or suicide", number: "988", tel: "988" },
+  { label: "Domestic violence", number: "1-800-572-7233", tel: "18005727233" },
+  { label: "Child abuse", number: "1-877-652-2873", tel: "18776522873" },
+];
+
+/** Quick exit lands on the schoolz Today page - school days, lunch and
+ * weather, nothing about getting help. Deliberately not another website:
+ * phones hand outside links to apps (iPhone Chrome opened google.com in the
+ * Google app; weather.com opens The Weather Channel app) and an installed
+ * web app or a desktop browser can open them in a new tab, and in every one
+ * of those cases the Localz tab stayed open behind it. A page on this site
+ * always opens in this same tab. */
+export const QUICK_EXIT_PATH = "/";
+
+/** Leave Localz at once: empty the screen, then reload this tab as the
+ * Today page, replacing the current history entry (a full reload also
+ * drops anything typed into a search or the chat). Earlier Localz pages
+ * stay in Back history - a browser won't let a site erase those. */
+export function quickExit(): void {
+  try {
+    sessionStorage.clear();
+  } catch {
+    /* private mode */
+  }
+  document.title = "schoolz";
+  document.body.replaceChildren();
+  window.location.replace(`${ROUTER_BASENAME}${QUICK_EXIT_PATH}`);
+}
+
+export { isLocalzPath } from "./localzPath";
+
+export async function searchResources(body: ResourceSearch): Promise<{ items: ResourceSummary[]; total: number }> {
+  const r = await apiFetch("/resources/search", { method: "POST", body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`search failed: ${r.status}`);
+  return r.json();
+}
+
+/** Kinds of service in a category, counted for the same county and text
+ * as the list (not the chosen type, so the others never read zero). */
+export async function fetchResourceTypes(body: ResourceSearch): Promise<ResourceType[]> {
+  const r = await apiFetch("/resources/types", { method: "POST", body: JSON.stringify({ ...body, type: undefined, page: undefined, page_size: undefined }) });
+  return r.ok ? r.json() : [];
+}
+
+export async function fetchResource(id: string): Promise<ResourceDetail | null> {
+  const r = await apiFetch(`/resources/${encodeURIComponent(id)}`);
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`resource failed: ${r.status}`);
+  return r.json();
+}
+
+export async function fetchResourceCategories(county?: string): Promise<ResourceCategoryCount[]> {
+  const r = await apiFetch(`/resources/categories${county ? `?county=${encodeURIComponent(county)}` : ""}`);
+  return r.ok ? r.json() : [];
+}
+
+/** "Last confirmed March 2026" - month precision is enough and reads
+ * naturally; a date string from the API is a plain YYYY-MM-DD. */
+export function confirmedLabel(isoDate: string | null, locale: string): string | null {
+  if (!isoDate) return null;
+  const [y, m] = isoDate.split("-").map(Number);
+  if (!y || !m) return null;
+  return new Date(y, m - 1, 1).toLocaleDateString(locale, { month: "long", year: "numeric" });
+}
+
+/** NJ 211 writes "None" for no fee. */
+export function isFree(fees: string | null): boolean {
+  return !!fees && /^\s*(none|free|no fees?|no cost)\b/i.test(fees);
+}
+
+export function telHref(phone: string): string {
+  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+}
+
+export function mapsHref(r: Pick<ResourceDetail, "address" | "city" | "postal_code">): string | null {
+  const text = [r.address, r.city, r.postal_code].filter(Boolean).join(", ");
+  return text ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}` : null;
+}

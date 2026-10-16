@@ -71,11 +71,14 @@ export function scrubUrl(url: string): string {
   }
 
   result = result.replace(/\/invites\/[^/?#]+/, "/invites/:token");
+  // Which Localz resource someone opened (a shelter, a recovery program) is
+  // nobody's business, monitoring included.
+  result = result.replace(/\/localz\/r\/[^/?#]+/, "/localz/r/:id");
   return result;
 }
 
 function scrubValue(value: unknown): unknown {
-  if (typeof value === "string" && (value.startsWith("http") || value.includes("/invites/"))) {
+  if (typeof value === "string" && (value.startsWith("http") || value.includes("/invites/") || value.includes("/localz/r/"))) {
     return scrubUrl(value);
   }
   return value;
