@@ -58,7 +58,9 @@ running every job: a staff directory at a path the scan never tries, a
 SchoolCafe site whose name the matcher couldn't pair, a calendar page whose
 "calendar PDF" was a budget, a calendar page still linking last year's PDF
 first, and a marking-period layout no parser read. **Import locally and
-run-now every job before calling a district onboarded.**
+run-now every job before calling a district onboarded.** That includes the
+town and county calendars for `/local`, which aren't part of the district
+seed. See "Town and county calendars" below.
 
 Don't read filenames out of a whitespace-splitting grep: `[^" ]*\.pdf` turned
 "User Friendly Budget 26-27.pdf" into `26-27.pdf`, which read as a calendar.
@@ -530,6 +532,62 @@ Two platforms confirmed real so far, check for both (grep for `givebacks` and
   Haviland** as of this writing — don't assume it's worth guessing broadly
   for a new district without a specific link to follow, the hit rate was
   near zero.
+
+---
+
+## Town and county calendars (for `/local`)
+
+A district isn't onboarded until **every town in its `towns` list, and the
+county, has been checked for a calendar** and either added to the prod
+"Local events refresh" job or written down as skipped. The town's site is a
+separate site from the district's: find it by searching "<Town> NJ official
+website", not by guessing a domain. Of 56 towns checked in October 2026,
+fewer than half had a calendar worth adding, so a skip is normal. An
+unrecorded one isn't. Before anything else, check whether
+`docs/LOCAL_EVENTS_SOURCES.md` "Town and county calendars" already lists the
+town as added or skipped.
+
+1. Fetch the town homepage and its calendar/events page (plain httpx first,
+   then the droplet: several town sites 403 a plain GET but render fine
+   through it, and some, like Gloucester City and Magnolia, only render from
+   the residential Pi). Grep for the platform, then use the matching source
+   type. All of these are params entries, no code:
+   - **CivicPlus** (`RSSFeed.aspx`, `iCalendar.aspx`, "Official Website" in
+     the title) → `ical_sources` with
+     `/common/modules/iCalendar/iCalendar.aspx?catID=<n>&feed=calendar`.
+     **`catID` is one category, numbered per site.** Read the site's
+     `/iCalendar.aspx` and pick its events category ("Main Events",
+     "Community Events"), not its holidays or meetings. Don't use
+     `RSSFeed.aspx`: it only lists the next ~2 weeks.
+   - **Revize, new** (`_assets_/plugins/revizeCalendar`) → `json_sources`
+     copying the `merchantville` entry, with the `webspace=` from the page,
+     and `upcoming_only: true` (the handler returns years of history).
+   - **Revize, old** (`calendar.php` holding a `calendar_app/` iframe) →
+     `revize_calendar_app_sources`. `calendar_app/db/calendar_db_data.xml`
+     lists its calendar ids.
+   - **Joomla DPCalendar** → `json_sources` copying `evesham_township`.
+   - **WordPress The Events Calendar** (`wp-json/tribe/events/v1/events`
+     answers) → `tribe_sources`.
+   - **Google Calendar embed** (`calendar.google.com/calendar/embed?src=`, or
+     the Simple Calendar plugin `simcal`, whose event links carry the id in
+     a base64 `eid`) → `gcal_sources`, reusing the job's existing `api_key`.
+     Towns often run separate events, meetings and pickup calendars; add
+     only the events one.
+   - **Apptegy / Thrillshare** (`thrillshare.com/api/v4/o/<org>/cms/events`
+     in the page) → `thrillshare_sources` with that org id. It's not the
+     school district's org.
+2. Every town entry gets `default_categories: ["<town-slug>", "municipal"]`
+   (hyphenated), `location: "<Town>, NJ"`, and **`skip_meetings: true`**.
+   Without that, council and board meetings are most of what shows up.
+3. **Test fetch** it (`POST /scheduled-jobs/test-fetch`, a dry run) and read
+   the sample titles, not just the count. Skip a feed that is only meetings,
+   trash/recycling pickups and tax due dates. That's most small towns:
+   Laurel Springs, Bellmawr, Moonachie and Southampton were all skipped for
+   it. Add the feed or the skip to `docs/LOCAL_EVENTS_SOURCES.md` either way.
+4. Prod params are one JSON document, and `PATCH` replaces all of it: read
+   the current params, add the entry, and write back once. Never write from
+   two places at the same time. Don't rename an existing entry, because
+   removing a name deletes its events.
 
 ---
 

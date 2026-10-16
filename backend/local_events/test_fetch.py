@@ -10,25 +10,29 @@ from __future__ import annotations
 from fastapi import HTTPException
 from pydantic import BaseModel
 
+from .filters import apply_filters, filters_by_source
+from .sources.bibliocommons import BiblioCommonsSource
+from .sources.ccls import CCLSSource
 from .sources.deyra_schedule import DeyraScheduleSource
 from .sources.dostuff import DoStuffSource
-from .sources.ccls import CCLSSource
+from .sources.drupal_fullcalendar import DrupalFullCalendarSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
-from .sources.bibliocommons import BiblioCommonsSource
-from .sources.drupal_fullcalendar import DrupalFullCalendarSource
 from .sources.ical import ICalSource
-from .sources.libcal import LibCalSource
-from .sources.mec import MECSource
 from .sources.json_api import JsonApiSource
+from .sources.libcal import LibCalSource
 from .sources.listing_page import ListingPageSource
+from .sources.mec import MECSource
 from .sources.patch import PatchSource
 from .sources.placewise import PlacewiseSource
+from .sources.revize_calendar_app import RevizeCalendarAppSource
 from .sources.rss import RSSSource
-from .sources.runsignup import API_URL as RUNSIGNUP_API_URL, RunSignupSource
+from .sources.runsignup import API_URL as RUNSIGNUP_API_URL
+from .sources.runsignup import RunSignupSource
 from .sources.scraper import ScraperSource
 from .sources.sitemap import SitemapSource
 from .sources.theatre import TheatreSiteSource
+from .sources.thrillshare import ThrillshareSource
 from .sources.tribe import TribeEventsSource
 from .sources.yodel import YodelSource
 
@@ -53,6 +57,9 @@ class TestFetchSourceResult(BaseModel):
     # entry/component, so unknown custom namespaces can be diagnosed.
     first_entry_fields: dict[str, str] | None = None
     source_type: str | None = None  # "ical" | "rss" | "scraper" | "sitemap"
+    # Fetched but dropped by the entry's skip_meetings / exclude_title_patterns;
+    # event_count and sample_titles are what's left.
+    excluded_count: int = 0
 
 
 class TestFetchOut(BaseModel):
@@ -104,6 +111,9 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     patch_sources = body.params.get("patch_sources") or []
     dostuff_sources = body.params.get("dostuff_sources") or []
     runsignup_sources = body.params.get("runsignup_sources") or []
+    revize_calendar_app_sources = body.params.get("revize_calendar_app_sources") or []
+    thrillshare_sources = body.params.get("thrillshare_sources") or []
+    filters = filters_by_source(body.params)
     if not isinstance(ical_sources, list):
         raise HTTPException(status_code=400, detail="params.ical_sources must be a list")
     if not isinstance(listing_page_sources, list):
@@ -175,11 +185,12 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     async def _probe(source_type: str, source) -> TestFetchSourceResult:
         url = getattr(source, "url", None)
         try:
-            raws = await source.fetch()
+            raws, excluded_count = apply_filters(await source.fetch(), filters.get(source.name))
             diag = await _diagnose(source_type, source, url) if (body.verbose and url) else None
             return TestFetchSourceResult(
                 name=source.name, url=url, status="ok",
                 event_count=len(raws),
+                excluded_count=excluded_count,
                 sample_titles=[r.title for r in raws[:5]],
                 # Some feeds of a multi-feed source failed; the rest worked.
                 error="; ".join(source.partial_failures) or None,
@@ -412,6 +423,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             image_field=entry.get("image_field"),
             location_field=entry.get("location_field"),
             parser=entry.get("parser"),
+            upcoming_only=bool(entry.get("upcoming_only", False)),
             default_categories=list(entry.get("default_categories") or []),
         )))
 
@@ -596,6 +608,12 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
         ("drupal_fullcalendar", drupal_fullcalendar_sources, "url", lambda n, e: DrupalFullCalendarSource(
             n, e["url"], venue_name=e.get("venue_name"), venue_address=e.get("venue_address"),
             default_categories=list(e.get("default_categories") or []), days_ahead=int(e.get("days_ahead", 120)))),
+        ("revize_calendar_app", revize_calendar_app_sources, "base_url", lambda n, e: RevizeCalendarAppSource(
+            n, e["base_url"], calendar_ids=list(e.get("calendar_ids") or [1]), months_ahead=1,
+            default_categories=list(e.get("default_categories") or []), venue_name=e.get("venue_name"), venue_address=e.get("venue_address"))),
+        ("thrillshare", thrillshare_sources, "org_id", lambda n, e: ThrillshareSource(
+            n, str(e["org_id"]), site_url=e.get("site_url"), days_ahead=int(e.get("days_ahead", 90)),
+            default_categories=list(e.get("default_categories") or []))),
     ):
         for entry in entries:
             name = (entry or {}).get("name") or f"(unnamed {source_type})"
