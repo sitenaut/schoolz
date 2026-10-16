@@ -117,7 +117,8 @@ export function PrivacyPage() {
           <tr>
             <td>
               Anonymous usage statistics from Google Analytics: which pages are viewed, device type (phone or
-              computer), approximate area, the town and school district of the schools you picked, and how you got
+              computer), approximate area, the town and school district of the schools you picked, which schools'
+              pages and Today cards were shown, and how you got
               here
             </td>
             <td>A first-party analytics cookie, and Google Analytics</td>
