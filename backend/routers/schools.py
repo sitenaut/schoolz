@@ -36,6 +36,7 @@ from schemas import (
     SchoolContentItemOut,
     SchoolCreate,
     SchoolDocumentOut,
+    SchoolDocumentUpdate,
     SchoolLateBusOut,
     SchoolOut,
     SchoolTodayOut,
@@ -532,6 +533,29 @@ async def list_school_documents(
     query = query.order_by(SchoolDocument.doc_type, SchoolDocument.title)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+@router.patch("/{school_id}/documents/{document_id}", response_model=SchoolDocumentOut)
+async def update_school_document(
+    document_id: str,
+    payload: SchoolDocumentUpdate,
+    school: School = Depends(resolve_school),
+    _: User = Depends(require_permission("schools.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Dismiss a file the documents scan got wrong (or undo it). A dismissed
+    document is never current; undoing makes it current until the next
+    scan settles which year wins."""
+    doc = (
+        await db.execute(select(SchoolDocument).where(SchoolDocument.id == document_id, SchoolDocument.school_id == school.id))
+    ).scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
+    doc.dismissed_at = datetime.now(UTC) if payload.dismissed else None
+    doc.is_current = not payload.dismissed
+    await db.commit()
+    await db.refresh(doc)
+    return doc
 
 
 @router.post("/{school_id}/documents/run-now")

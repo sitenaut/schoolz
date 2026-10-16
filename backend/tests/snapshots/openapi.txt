@@ -449,6 +449,11 @@ GET /schools/{school_id}/documents
 POST /schools/{school_id}/documents/run-now
   path school_id: string
   -> 200: any
+PATCH /schools/{school_id}/documents/{document_id}
+  path document_id: string
+  path school_id: string
+  body: SchoolDocumentUpdate
+  -> 200: SchoolDocumentOut
 POST /schools/{school_id}/events-doc/run-now
   path school_id: string
   -> 200: any
@@ -868,7 +873,8 @@ SchoolClassYearOut { advisors?: list[StaffMiniOut], grad_year: integer, grade_le
 SchoolClassYearUpdate { advisor_staff_ids?: list[string] | null, grade_level_principal_staff_ids?: list[string] | null, instagram_url?: string | null, label?: string | null }
 SchoolContentItemOut { applies_to_grad_years?: list[integer] | null, applies_to_school_types?: list[string] | null, category: string, class_label?: string | null, description: string | null, description_original?: string | null, district_id?: string | null, end_date: string(date-time) | null, extracted_at: string(date-time), id: string, is_all_day: boolean, is_current: boolean, link_url: string | null, person_name: string | null, person_title: string | null, school_name?: string | null, scope: string, source_excerpt: string | null, staff_member_id: string | null, start_date: string(date-time) | null, title: string, title_original?: string | null, translated?: boolean }
 SchoolCreate { address?: string | null, district_id?: string | null, main_phone?: string | null, name: string, school_type?: string | null, short_name?: string | null, website_url?: string | null }
-SchoolDocumentOut { academic_year: string | null, discovered_at: string(date-time), doc_type: string, id: string, is_current: boolean, source: string, title: string, url: string }
+SchoolDocumentOut { academic_year: string | null, discovered_at: string(date-time), dismissed_at?: string(date-time) | null, doc_type: string, id: string, is_current: boolean, source: string, title: string, url: string }
+SchoolDocumentUpdate { dismissed: boolean }
 SchoolEmailMessageOut { body_text: string | null, created_at: string(date-time), id: string, newsletter_links: list[object], received_at: string(date-time) | null, scanner_id: string, sender: string | null, subject: string | null }
 SchoolLateBusOut { contractor: string, phone: string, routes: list[string] }
 SchoolOut { absence_emails: list[string], absence_instructions: string | null, absence_method: string | null, absence_phone: string | null, absence_portal_name: string | null, absence_portal_url: string | null, activities_calendar_ics_url: string | null, activities_site_url: string | null, address: string | null, announcements_doc_url: string | null, apptegy_org_id: string | null, arbiter_events_calendar?: boolean, arbiter_events_district_wide?: boolean, athletics_url: string | null, bell_periods: dict[list[BellPeriodEntry]] | null, bulletin_doc_url?: string | null, created_at: string(date-time), delayed_opening_time: string | null, district_id: string | null, early_dismissal_time: string | null, end_time: string | null, events_doc_url: string | null, fdmealplanner_location?: string | null, givebacks_shortname: string | null, healthepro_location?: string | null, id: string, logo_backing?: string | null, logo_url: string | null, main_phone: string | null, myschoolplate_location?: string | null, name: string, nutrislice_location?: string | null, presence_menu_page_url?: string | null, school_type: string | null, short_name: string | null, slug: string, special_events_calendar_url: string | null, staff_directory_url?: string | null, start_time: string | null, website_url: string | null }

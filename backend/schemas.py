@@ -670,8 +670,15 @@ class SchoolDocumentOut(BaseModel):
     source: str
     discovered_at: datetime
     is_current: bool
+    dismissed_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class SchoolDocumentUpdate(BaseModel):
+    """`dismissed: true` takes a file the scan got wrong out for good."""
+
+    dismissed: bool
 
 
 class LunchMenuItemOut(BaseModel):

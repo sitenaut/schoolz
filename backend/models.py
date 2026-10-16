@@ -1,9 +1,22 @@
 import re
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, LargeBinary, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -12,7 +25,7 @@ from database import Base
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _uuid() -> str:
@@ -1242,6 +1255,11 @@ class SchoolDocument(Base):
     # False once a newer-year document of the same doc_type is found for
     # this school - kept (not deleted) for history, excluded from default views.
     is_current: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Set by an admin when the scan picked up the wrong file (Yorkship's
+    # anti-bullying PDF as its handbook, Gateway's Chromebook handbook). The
+    # row stays so the scan, which keys on (doc_type, url), keeps finding it
+    # and keeps it out: a dismissed document is never current.
+    dismissed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class SaccProgram(Base):
