@@ -18,6 +18,8 @@ import {
   type ProviderType,
   type Signup,
   type WaysToHelp,
+  checkVerifyCode,
+  confirmListing,
   deleteDate,
   emptyHours,
   emptyPlace,
@@ -25,6 +27,7 @@ import {
   emptyWaysToHelp,
   fetchDates,
   postDate,
+  sendVerifyCode,
   fetchMyListings,
   fetchProviderTypes,
   updateListing,
@@ -160,7 +163,13 @@ function QuickUpdates({ serviceId }: { serviceId: string }) {
       <p>
         <Link to={`/localz/r/${listing.id}`}>{t("See the public listing")}</Link>
       </p>
-      {!listing.verified && <p className="localz-alert">{t("Until we've confirmed it's you by phone, every change waits for review. We'll call the number on the listing.")}</p>}
+      {!listing.verified &&
+        (listing.verify_by_email ? (
+          <VerifyByEmail listing={listing} onVerified={load} />
+        ) : (
+          <p className="localz-alert">{t("Until we've confirmed it's you by phone, every change waits for review. We'll call the number on the listing.")}</p>
+        ))}
+      {listing.verified && <StillRight listing={listing} onDone={load} />}
       {listing.pending_changes.length > 0 && (
         <p className="note">
           {t("Waiting for review: {{fields}}", {
@@ -184,6 +193,93 @@ function QuickUpdates({ serviceId }: { serviceId: string }) {
       <DetailsCard listing={listing} busy={busy} send={send} />
       <HelpCard listing={listing} busy={busy} send={send} />
       <ReviewedCard listing={listing} types={types} busy={busy} send={send} />
+    </div>
+  );
+}
+
+/** Confirm by a code sent to the address NJ 211 lists for this listing. */
+function VerifyByEmail({ listing, onVerified }: { listing: MyListing; onVerified: () => void }) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const act = async (fn: () => Promise<unknown>, after: () => void) => {
+    setBusy(true);
+    try {
+      await fn();
+      after();
+    } catch (err) {
+      toast({ title: err instanceof Error ? err.message : t("Couldn't save - please try again."), tone: "bad" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="localz-alert provider-verify">
+      <p>{t("Until you confirm it's you, every change waits for review. We can email a code to {{email}}, the address listed for this program.", { email: listing.verify_by_email ?? "" })}</p>
+      {!sent ? (
+        <button className="btn btn-primary" disabled={busy} onClick={() => act(() => sendVerifyCode(listing.id), () => setSent(true))}>
+          {t("Email me a code")}
+        </button>
+      ) : (
+        <div className="provider-actions">
+          <input
+            aria-label={t("Code")}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          />
+          <button
+            className="btn btn-primary"
+            disabled={busy || code.length !== 6}
+            onClick={() => act(() => checkVerifyCode(listing.id, code), () => {
+              toast({ title: t("Confirmed - your changes now go live at once."), tone: "ok" });
+              onVerified();
+            })}
+          >
+            {t("Confirm")}
+          </button>
+          <button className="btn ghost" disabled={busy} onClick={() => act(() => sendVerifyCode(listing.id), () => setCode(""))}>
+            {t("Send another code")}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** "Is this still right?": one tap moves the public "Last confirmed" date. */
+function StillRight({ listing, onDone }: { listing: MyListing; onDone: () => void }) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const last = listing.last_assured_on
+    ? new Date(`${listing.last_assured_on}T12:00:00`).toLocaleDateString(LOCALE, { month: "long", day: "numeric", year: "numeric" })
+    : null;
+  return (
+    <div className="provider-quick-row provider-still-right">
+      <span className="note">{last ? t("Last confirmed {{date}}.", { date: last }) : t("Not confirmed yet.")}</span>
+      <button
+        className="btn"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await confirmListing(listing.id);
+            toast({ title: t("Thanks - marked as confirmed today."), tone: "ok" });
+            onDone();
+          } catch (err) {
+            toast({ title: err instanceof Error ? err.message : t("Couldn't save - please try again."), tone: "bad" });
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {t("Yes, it's all still right")}
+      </button>
     </div>
   );
 }

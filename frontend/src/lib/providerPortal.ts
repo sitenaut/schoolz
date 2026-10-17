@@ -159,6 +159,9 @@ export type MyListing = {
   delivery: Delivery | null;
   signup: Signup | null;
   ways_to_help: WaysToHelp | null;
+  last_assured_on: string | null;
+  /** "h***@maplepantry.org" when an unverified member can confirm with an emailed code. */
+  verify_by_email: string | null;
   types: string[];
   pending_changes: { id: string; fields: string[]; created_at: string }[];
 };
@@ -368,3 +371,7 @@ export async function deleteDate(id: string, dateId: string): Promise<void> {
   const res = await apiFetch(`/provider-portal/listings/${encodeURIComponent(id)}/dates/${encodeURIComponent(dateId)}`, { method: "DELETE" });
   if (!res.ok) throw new PortalError("Couldn't remove that date - please try again.", res.status);
 }
+export const sendVerifyCode = (id: string) => call<{ sent_to: string }>(`/provider-portal/listings/${encodeURIComponent(id)}/verify/send`, { method: "POST" });
+export const checkVerifyCode = (id: string, code: string) =>
+  call<{ verified: boolean }>(`/provider-portal/listings/${encodeURIComponent(id)}/verify`, json("POST", { code }));
+export const confirmListing = (id: string) => call<{ last_assured_on: string }>(`/provider-portal/listings/${encodeURIComponent(id)}/confirm`, { method: "POST" });

@@ -39,6 +39,8 @@ export type Review = OnboardingRequest & {
   account_email: string | null;
   private_address: string | null;
   checklist: Record<string, boolean>;
+  /** The claimed listing's source-published email, masked: the call is optional, they can confirm with a code. */
+  verify_by_email?: string | null;
   duplicates: (ListingBrief & { reasons: string[] })[];
   flags: Flag[];
   log: LogEntry[];

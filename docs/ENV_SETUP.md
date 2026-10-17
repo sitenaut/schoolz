@@ -201,6 +201,19 @@ CHATBOT_MEMBERS_ANTHROPIC_API_KEY=
 CHATBOT_GEMINI_API_KEY=
 CHATBOT_DEEPSEEK_API_KEY=
 CHATBOT_QWEN_API_KEY=
+# Outbound email (services/mailer.py): Localz provider decisions, codes and
+# check-ins. Gmail SMTP with the same Google account that sends sign-up mail
+# (Supabase's SMTP settings); SMTP_PASSWORD is a Google *app password* for it
+# (Google account -> Security -> App passwords; needs 2-Step Verification).
+# Unset, nothing is sent and mail waits in the outbox (the hourly
+# email.outbox job warns email_not_configured). Prod: schoolz-prod vault, then
+#   fly secrets set SMTP_USERNAME=... SMTP_PASSWORD=... -a schoolz-api
+# The scheduler process group reads the same secrets.
+SMTP_USERNAME=
+SMTP_PASSWORD=
+# Optional: SMTP_HOST (smtp.gmail.com), SMTP_PORT (587), MAIL_FROM (defaults
+# to SMTP_USERNAME; another address needs Gmail "Send mail as"),
+# MAIL_FROM_NAME (schoolz), MAIL_REPLY_TO.
 ```
 
 ## env/secrets.prod.env

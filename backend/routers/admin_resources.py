@@ -12,7 +12,7 @@ from __future__ import annotations
 from contextvars import ContextVar
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,9 +28,10 @@ from models import (
     ResourceService,
     User,
 )
-from resources import portal
+from resources import portal, portal_mail
 from resources.portal import Submission
 from routers.provider_portal import ListingBriefOut, RequestOut, request_out
+from services import mailer
 
 _reveal_private: ContextVar[bool] = ContextVar("reveal_private_address", default=False)
 
@@ -98,6 +99,9 @@ class ReviewOut(RequestOut):
     # Plain, for the reviewer verifying it. Never in any other response.
     private_address: str | None
     checklist: dict
+    # The claimed listing's source-published email, masked: when set, the
+    # phone call is optional (they can confirm with a code sent there).
+    verify_by_email: str | None = None
     duplicates: list[DuplicateOut]
     flags: list[FlagOut]
     log: list[LogOut]
@@ -242,6 +246,9 @@ async def _review_out(db: AsyncSession, req: ResourceOnboardingRequest) -> Revie
         account_email=account_email,
         private_address=_private(req.private_address),
         checklist=dict(req.checklist or {}),
+        verify_by_email=_masked_source_email(
+            await db.get(ResourceService, req.claimed_service_id) if req.claimed_service_id and req.status != "approved" else None
+        ),
         duplicates=[DuplicateOut(**d) for d in await portal.duplicates(db, sub, exclude)],
         flags=[FlagOut(**f) for f in await portal.flags(db, req, sub, account_email)],
         log=await _log_outs(db, list(entries)),
@@ -378,10 +385,24 @@ async def save_checklist(request_id: str, body: ChecklistIn, admin: User = Depen
     return await _review_out(db, req)
 
 
-async def _approve(db: AsyncSession, req: ResourceOnboardingRequest, admin: User, body: ApproveIn) -> ReviewOut:
+def _masked_source_email(target: ResourceService | None) -> str | None:
+    email = portal.source_email(target)
+    return portal_mail.mask(email) if email else None
+
+
+async def _approve(db: AsyncSession, req: ResourceOnboardingRequest, admin: User, body: ApproveIn,
+                   background: BackgroundTasks) -> ReviewOut:
     _open(req)
     checklist = _checklist(body.checklist)
-    if not all(checklist.values()):
+    target_id = body.target_service_id or req.claimed_service_id
+    target = await db.get(ResourceService, target_id) if target_id else None
+    if target_id and target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "That listing doesn't exist")
+    # Claiming a listing whose source published an email: the call can be
+    # skipped - they confirm with a code sent there instead, and until they
+    # do, everything they change waits for review.
+    optional = {"connected"} if portal.source_email(target) else set()
+    if not all(v for k, v in checklist.items() if k not in optional):
         raise HTTPException(422, "Tick every checklist item before approving")
     sub = Submission.model_validate(req.submission)
     missing = portal.completeness(sub, bool(req.private_address))["missing_core"]
@@ -393,30 +414,31 @@ async def _approve(db: AsyncSession, req: ResourceOnboardingRequest, admin: User
         raise HTTPException(422, str(exc)) from None
     if req.origin == "admin_assisted" and req.created_by_user_id == admin.id and await portal.reviewer_count(db) > 1:
         raise HTTPException(status.HTTP_409_CONFLICT, "A request you started is approved by another reviewer")
-    target_id = body.target_service_id or req.claimed_service_id
-    target = await db.get(ResourceService, target_id) if target_id else None
-    if target_id and target is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "That listing doesn't exist")
     req.checklist = checklist
     await portal.approve(db, req, admin, target, (body.note or "").strip() or None)
+    await portal_mail.request_decided(db, req)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     await db.refresh(req)
     return await _review_out(db, req)
 
 
 @router.post("/onboarding/{request_id}/approve", response_model=ReviewOut)
-async def approve(request_id: str, body: ApproveIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
-    return await _approve(db, await _request(db, request_id), admin, body)
+async def approve(request_id: str, body: ApproveIn, background: BackgroundTasks, admin: User = Depends(_manage),
+                  db: AsyncSession = Depends(get_db)):
+    return await _approve(db, await _request(db, request_id), admin, body, background)
 
 
 @router.post("/onboarding/{request_id}/merge", response_model=ReviewOut)
-async def merge(request_id: str, body: MergeIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+async def merge(request_id: str, body: MergeIn, background: BackgroundTasks, admin: User = Depends(_manage),
+                db: AsyncSession = Depends(get_db)):
     """Approve into an existing listing instead of creating a second one."""
-    return await _approve(db, await _request(db, request_id), admin, body)
+    return await _approve(db, await _request(db, request_id), admin, body, background)
 
 
 @router.post("/onboarding/{request_id}/request-changes", response_model=ReviewOut)
-async def request_changes(request_id: str, body: ChangesIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+async def request_changes(request_id: str, body: ChangesIn, background: BackgroundTasks, admin: User = Depends(_manage),
+                          db: AsyncSession = Depends(get_db)):
     req = await _request(db, request_id)
     _open(req)
     note = body.note.strip()
@@ -428,13 +450,16 @@ async def request_changes(request_id: str, body: ChangesIn, admin: User = Depend
     req.reviewed_by_user_id, req.reviewed_at = admin.id, portal.now()
     portal.log(db, action="onboarding.decision", actor=admin, actor_kind="reviewer", request_id=req.id,
                after={"status": "changes_requested", "fields": req.fields_to_fix, "checklist": req.checklist}, note=note)
+    await portal_mail.request_decided(db, req)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     await db.refresh(req)
     return await _review_out(db, req)
 
 
 @router.post("/onboarding/{request_id}/reject", response_model=ReviewOut)
-async def reject(request_id: str, body: RejectIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+async def reject(request_id: str, body: RejectIn, background: BackgroundTasks, admin: User = Depends(_manage),
+                 db: AsyncSession = Depends(get_db)):
     req = await _request(db, request_id)
     _open(req)
     if body.reason not in portal.REJECT_REASONS:
@@ -445,7 +470,9 @@ async def reject(request_id: str, body: RejectIn, admin: User = Depends(_manage)
     req.reviewed_by_user_id, req.reviewed_at = admin.id, portal.now()
     portal.log(db, action="onboarding.decision", actor=admin, actor_kind="reviewer", request_id=req.id,
                after={"status": "rejected", "reason": body.reason, "checklist": req.checklist}, note=req.decision_note)
+    await portal_mail.request_decided(db, req)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     await db.refresh(req)
     return await _review_out(db, req)
 
@@ -498,16 +525,20 @@ async def _pending_change(db: AsyncSession, change_id: str) -> ResourceChangeReq
 
 
 @router.post("/changes/{change_id}/approve", response_model=ChangeOut)
-async def approve_change(change_id: str, body: NoteIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+async def approve_change(change_id: str, body: NoteIn, background: BackgroundTasks, admin: User = Depends(_manage),
+                         db: AsyncSession = Depends(get_db)):
     change = await _pending_change(db, change_id)
     await portal.approve_change(db, change, admin, (body.note or "").strip() or None)
+    await portal_mail.change_decided(db, change)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     await db.refresh(change)
     return (await _change_outs(db, [change]))[0]
 
 
 @router.post("/changes/{change_id}/reject", response_model=ChangeOut)
-async def reject_change(change_id: str, body: NoteIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+async def reject_change(change_id: str, body: NoteIn, background: BackgroundTasks, admin: User = Depends(_manage),
+                        db: AsyncSession = Depends(get_db)):
     """The old value simply stays. A refused private address isn't kept."""
     change = await _pending_change(db, change_id)
     change.status, change.reviewed_by_user_id, change.reviewed_at = "rejected", admin.id, portal.now()
@@ -515,7 +546,9 @@ async def reject_change(change_id: str, body: NoteIn, admin: User = Depends(_man
     change.private_address = None
     portal.log(db, action="change.reject", actor=admin, actor_kind="reviewer", service_id=change.service_id,
                change_request_id=change.id, after={"fields": sorted(change.changes)}, note=change.note)
+    await portal_mail.change_decided(db, change)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     await db.refresh(change)
     return (await _change_outs(db, [change]))[0]
 
