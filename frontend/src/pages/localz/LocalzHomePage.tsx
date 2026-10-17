@@ -122,7 +122,8 @@ export function LocalzHomePage() {
 
       <p className="localz-footnote">
         {t("Listings come from NJ 211 and the organizations themselves. Hours change - calling ahead is always a good idea.")}{" "}
-        <Link to="/contact">{t("Something wrong or missing? Tell us.")}</Link>
+        <Link to="/contact">{t("Something wrong or missing? Tell us.")}</Link>{" "}
+        <Link to="/localz/providers">{t("Run a program? List it here.")}</Link>
       </p>
     </div>
   );

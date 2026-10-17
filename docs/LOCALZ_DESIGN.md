@@ -1,7 +1,7 @@
 # Localz — community resources for families in need (design)
 
-Partly built: NJ 211 and ChildCareNJ sources, public search, and the
-on-device eligibility check; the rest is design. Localz is a second "view" alongside
+Partly built: NJ 211 and ChildCareNJ sources, public search, the
+on-device eligibility check and the provider portal (v1); the rest is design. Localz is a second "view" alongside
 Gradez (`frontend/focus/`): a lightweight app that helps people in South
 Jersey find food, housing, utility, health and family help without asking in
 public and without fighting state websites. Resources are ingested and kept
@@ -324,6 +324,78 @@ Pantries, shelters, clinics and other programs can add and maintain their
 own listings at `/localz/providers` ("List your program"). The scrapers
 give breadth; the portal gives accuracy on what changes weekly (hours,
 closures, what's in stock), which no scraped source keeps current.
+
+### What's built (v1)
+
+Migration 0107; rules in `backend/resources/portal.py` and
+`resources/ownership.py`; routers `routers/provider_portal.py`
+(`/provider-portal/*`) and `routers/admin_resources.py`
+(`/admin/resources/*`); pages `frontend/src/pages/localz/providers/` and
+`pages/LocalzReview*Page.tsx`; tests `backend/tests/test_provider_portal.py`.
+
+- **Tables:** `resource_onboarding_requests` (the form as JSON, the private
+  address encrypted beside it, contact person, checklist, decision),
+  `provider_memberships` (**one row per user and listing**, not per
+  organization: NJ 211 organizations are matched by name, so one name can
+  cover unrelated services), `resource_change_requests` (held edits and
+  scraper conflicts), `resource_change_log` (before/after, one-step revert),
+  `resource_private_addresses` (encrypted, its own table so no
+  `select(ResourceService)` ever carries it). New `resource_services`
+  columns: `address_kind`, structured `hours`, `week_hours`, closure dates
+  and note, `cost_kind`, `provider_owned_fields`.
+- **Provider-entered listings** are `source="provider"`, so no scraper's
+  per-source missing-marking touches them. A **claimed** scraped record
+  keeps its source; `provider_owned_fields` names what the provider set, the
+  refresh skips those and files one `source_conflict` change request per
+  disagreement, and a claimed record is never marked inactive when the
+  source drops it.
+- **"Ask to be listed"**: no account, bot check, and at most 3 an hour / 6 a
+  day per connection, counted by a salted one-way hash of the IP stored on
+  the request (never the address itself).
+- **Self-serve form** with the required core, "Is this you?" match and
+  claim, completeness meter (`completeness()` in Python and
+  `lib/providerPortal.ts`, kept in step by a test on each side), draft,
+  submit, edit while changes are requested, withdraw. Bot check on creating
+  a request; 5 new requests a day and 10 open per account.
+- **Review queue** `/admin/resources/onboarding` (tab "Localz" with a badge
+  counting new requests plus held edits): duplicates (name, phone, street,
+  every source), flags (email vs website domain, free email, a phone listed
+  for another organization, short or payment links, a fee on a normally
+  free kind of help, confidential address, already managed), the five-item
+  checklist, approve, merge, request changes (note required), reject
+  (reason + note), edit before approving, held edits, history with revert,
+  members (add by account email, verify). An admin-assisted request needs a
+  second reviewer whenever more than one person holds `resources.manage`.
+- **Quick updates** (`/localz/providers/listings/:id`): Closed today,
+  temporary closure, this week's hours, regular hours, alert, description,
+  languages, documents and eligibility note publish at once for a verified
+  member; name, organization, address, phone, website, email, free -> fee and
+  a new kind of help are held. Everything from an unverified member is held.
+  Public cards and pages show the closure, the alert, this week's hours, and
+  "Location shared after you call" for a confidential listing.
+- **Account deletion** removes the person's memberships, every request that
+  never became a listing and their pending edits; approved requests forget
+  who asked; log rows stay unattributed.
+- **Kinds of help** offered in the form are a fixed list mapped to Inform
+  USA codes (`resources/provider_types.py`), so a provider listing lands
+  under the same category as a scraped one.
+
+### Deferred, and why
+
+- **Email/SMS codes, decision emails, the 90-day "Is this still right?"
+  email and invite links**: the backend has no outbound email or SMS yet
+  (see "Alerts"). Verification in v1 is a reviewer calling the listing's own
+  number (checklist item 2 sets `verified_at`), with the domain match shown
+  as a signal; decisions show in the provider's portal, and the UI says
+  "we'll call the number you listed".
+- **Owner-invites-editor**: a reviewer adds a member by account email
+  instead (unverified until called).
+- **Geocoding and the map confirm**, and the "address outside the service
+  area" flag: provider listings have no coordinates yet.
+- **"Post a distribution"** (a `help` LocalEvent), the 3-business-day
+  Grafana alert and weekly review counts.
+- **Reverting a private address change**: the log never holds the address,
+  so a revert restores public columns only.
 
 ### Required core (a listing can't be submitted without it)
 
@@ -778,7 +850,7 @@ or reconstruct one person's session.
 | 10 | **Analytics re-identification** | A person's needs pieced together from tallies | Marginals only, county not ZIP, day granularity, scrubbed text with k≥5, no session ids. |
 | 11 | **Content poisoning** (a scraped page or a submission with a scam phone number or link; prompt injection into the extraction or chat model) | Not a data leak but the same harm: vulnerable people sent to scammers | Source allowlist; changed phone/URL on an existing record held for review; new organizations from low-trust sources held for review; link domains checked against the org's known domain; never list services that charge up-front "application fees"; extraction output validated against the tool schema; "Something wrong?" report link. |
 | 12 | **Legal demands** (subpoena, immigration enforcement request) | Whatever we hold | Data minimisation is the real defence: immigration status is never collected; profiles are deletable instantly; no search logs tied to people. Publish a short transparency note; have counsel review before launch. |
-| 14 | **Provider portal** (hijacked or fake provider account; confidential shelter address exposure) | Scam listings; a survivor's shelter location | Verification before publishing; contact/address/phone changes held for review; change log with one-step revert; confidential addresses encrypted and excluded from every public schema, tool and export, enforced by a test. |
+| 14 | **Provider portal** (hijacked or fake provider account; confidential shelter address exposure) | Scam listings; a survivor's shelter location | Verification before publishing (v1: a reviewer calls the listed number); contact/address/phone changes held for review; change log with one-step revert; confidential addresses encrypted in their own table, never sent back even to the provider, and excluded from every public schema, search and the change log - `test_no_public_endpoint_ever_returns_a_confidential_address`. |
 | 13 | **Shared students' data model** | Cross-guardian inference via schools/kids | Services profile never reads from or writes to `Student`, `GuardianStudentLink`, or `Notification`; enforced by a test. |
 
 ## Build order
@@ -813,8 +885,8 @@ or reconstruct one person's session.
   coordinates for this, which ChildCareNJ records don't carry yet.
 - **Reviewer role: "Localz reviewer"**, a `Role` holding `resources.view`
   and `resources.manage` (onboarding approvals, change review,
-  verification, merges). Added to `permissions.py` with the first admin
-  endpoint that checks it - the provider portal - not before.
+  verification, merges). Added to `permissions.py` with the provider
+  portal; migration 0107 seeds the role only if none by that name exists.
 - **Alert emails** stay generic by default; a separate opt-in (its own
   consent purpose, `services_alerts_named`) includes program names.
 
