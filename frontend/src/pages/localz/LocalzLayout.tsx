@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { IconExit, IconPhone } from "../../components/icons";
-import { HELP_NOW, quickExit } from "../../lib/localz";
+import { IconExit, IconMessage, IconPhone } from "../../components/icons";
+import { HELP_NOW, helpLineHref, quickExit } from "../../lib/localz";
 
 /** Wraps every Localz page: the "Need help right now?" lines stay on screen,
  * every number visible (they wrap, never scroll out of sight), and Quick
@@ -36,8 +36,8 @@ export function LocalzLayout() {
         </div>
         <div className="localz-helpnow-lines">
           {HELP_NOW.map((line) => (
-            <a key={line.tel} className="localz-helpnow-line" href={`tel:${line.tel}`}>
-              <IconPhone />
+            <a key={helpLineHref(line)} className="localz-helpnow-line" href={helpLineHref(line)}>
+              {line.sms ? <IconMessage /> : <IconPhone />}
               <strong>{line.number}</strong>
               <span>{t(line.label)}</span>
             </a>

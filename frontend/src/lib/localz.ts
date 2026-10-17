@@ -102,13 +102,25 @@ export const LOCALZ_COUNTIES = [
   "Middlesex", "Monmouth", "Morris", "Ocean", "Passaic", "Salem", "Somerset", "Sussex", "Union", "Warren",
 ];
 
-/** Always on screen in Localz. Numbers are public statewide lines. */
-export const HELP_NOW = [
+export type HelpLine = { label: string; number: string; tel?: string; sms?: string; body?: string };
+
+/** Always on screen in Localz. Calls go to public statewide lines; the text
+ * line is the National Domestic Violence Hotline's, for someone who can't
+ * safely be overheard on a call. */
+export const HELP_NOW: HelpLine[] = [
   { label: "Any kind of help", number: "211", tel: "211" },
   { label: "Crisis or suicide", number: "988", tel: "988" },
   { label: "Domestic violence", number: "1-800-572-7233", tel: "18005727233" },
+  { label: "Domestic violence: text BEGIN", number: "88788", sms: "88788", body: "BEGIN" },
   { label: "Child abuse", number: "1-877-652-2873", tel: "18776522873" },
 ];
+
+/** The link for a line: a call, or a text with its keyword filled in.
+ * `sms:N?&body=` is the form both iPhone and Android read. */
+export function helpLineHref(line: HelpLine): string {
+  if (line.sms) return `sms:${line.sms}${line.body ? `?&body=${encodeURIComponent(line.body)}` : ""}`;
+  return `tel:${line.tel}`;
+}
 
 /** Quick exit lands on the schoolz Today page - school days, lunch and
  * weather, nothing about getting help. Deliberately not another website:
