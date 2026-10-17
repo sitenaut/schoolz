@@ -150,9 +150,16 @@ def create_local_token(user_id: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
+# Clock slack when checking a token's times. PyJWT refuses a token whose
+# `iat` is even a second ahead of this machine's clock, and clocks step: the
+# WSL container's after a host sleep (random 401s in tests right after
+# register), and Supabase's versus Fly's in prod.
+JWT_LEEWAY_SECONDS = 30
+
+
 def _decode_local_token(token: str) -> str:
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], leeway=JWT_LEEWAY_SECONDS)
     except jwt.PyJWTError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token") from None
     return payload["sub"]
@@ -178,6 +185,7 @@ async def _verify_supabase_token(token: str) -> dict:
             signing_key.key,
             algorithms=["RS256", "ES256"],
             audience=SUPABASE_JWT_AUDIENCE,
+            leeway=JWT_LEEWAY_SECONDS,
         )
     except jwt.PyJWTError:
         # Expired or forged. These used to fall through to /auth/v1/user too,
