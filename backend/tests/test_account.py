@@ -125,3 +125,55 @@ def test_mask_email():
     assert mask_email("@domain.com") == "*****@domain.com"
 
 
+
+
+@pytest.mark.anyio
+async def test_delete_account_with_published_captures():
+    """Backpack Capture imports name their guardian (owner_user_id, NOT NULL):
+    deleting that guardian's account removes their own capture archive, and
+    the child's record stays for the other guardians."""
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    import database
+    from models import Bucket3Capture, District, School, Student
+
+    run = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Capture District {run}")
+        db.add(district)
+        await db.flush()
+        school = School(name=f"Capture Elementary {run}", slug=f"capture-elem-{run}", school_type="elementary", district_id=district.id)
+        db.add(school)
+        await db.commit()
+        school_id = school.id
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _, _, headers = await _register(client)
+        _, _, other = await _register(client)
+        kid = {"first_name": "Cap", "last_name": "Ture", "student_id": f"c-{run}", "school_id": school_id}
+        student_id = (await client.post("/students", json=kid, headers=headers)).json()["id"]
+        assert (await client.post("/students", json=kid, headers=other)).status_code == 201
+        me = (await client.get("/auth/me", headers=headers)).json()
+        async with database.SessionLocal() as db:
+            db.add(
+                Bucket3Capture(
+                    owner_user_id=me["id"],
+                    student_id=student_id,
+                    adapter="genesis",
+                    source_url="https://example.com/genesis",
+                    captured_at=datetime.now(UTC),
+                    status="imported",
+                    char_count=4,
+                    content_hash="x" * 64,
+                    reduced_text="test",
+                )
+            )
+            await db.commit()
+
+        gone = await client.request("DELETE", "/auth/me", json={"confirm": "DELETE", "password": "password123"}, headers=headers)
+        assert gone.status_code == 204, gone.text
+        async with database.SessionLocal() as db:
+            assert (await db.execute(select(Bucket3Capture).where(Bucket3Capture.owner_user_id == me["id"]))).first() is None
+            assert await db.get(Student, student_id) is not None
