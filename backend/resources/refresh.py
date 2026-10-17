@@ -29,7 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import ResourceOrganization, ResourceService
 from scheduler import progress
 
-from . import nj211
+from . import childcarenj, nj211
 from .categories import categories_for_codes
 
 logger = logging.getLogger(__name__)
@@ -164,11 +164,11 @@ async def _list_crawl_due(db: AsyncSession, every_days: float, now: datetime) ->
     return last is None or last < now - timedelta(days=every_days)
 
 
-async def _mark_missing(db: AsyncSession, crawl_started: datetime) -> int:
+async def _mark_missing(db: AsyncSession, crawl_started: datetime, source: str = nj211.SOURCE) -> int:
     await db.execute(
         update(ResourceService)
         .where(
-            ResourceService.source == nj211.SOURCE,
+            ResourceService.source == source,
             ResourceService.status == "active",
             ResourceService.last_seen_at < crawl_started,
         )
@@ -177,7 +177,7 @@ async def _mark_missing(db: AsyncSession, crawl_started: datetime) -> int:
     result = await db.execute(
         update(ResourceService)
         .where(
-            ResourceService.source == nj211.SOURCE,
+            ResourceService.source == source,
             ResourceService.status == "active",
             ResourceService.missed_crawls >= INACTIVE_AFTER_MISSED_CRAWLS,
         )
@@ -321,6 +321,125 @@ async def refresh_nj211(db: AsyncSession, cfg: dict, client: Any = None) -> dict
             summary["list_crawl"] = "partial"
         logger.warning("nj211_blocked", extra={"reason": str(exc)})
     finally:
+        summary["requests"] = getattr(client, "requests", None)
+        if owns:
+            await client.__aexit__(None, None, None)
+    return summary
+
+
+# ---- ChildCareNJ -----------------------------------------------------------
+
+
+async def _upsert_providers(db: AsyncSession, orgs: _Orgs, records: list[dict], county: str, now: datetime, summary: dict, unknown: set[str]) -> None:
+    ids = [str(r["UniqueProgramID"]) for r in records]
+    existing = {
+        row.source_record_id: row
+        for row in (
+            await db.execute(
+                select(ResourceService).where(ResourceService.source == childcarenj.SOURCE, ResourceService.source_record_id.in_(ids))
+            )
+        ).scalars()
+    }
+    for record in records:
+        record_id = str(record["UniqueProgramID"])
+        digest = childcarenj.record_hash(record)
+        row = existing.get(record_id)
+        if row is not None and row.summary_hash == digest:
+            row.last_seen_at = now
+            row.missed_crawls = 0
+            if row.status != "active":
+                row.status = "active"
+                summary["reactivated"] += 1
+            continue
+        values = childcarenj.fields(record, county, unknown)
+        org = await orgs.get({"name": values["organization_name"], "url": values["website"]})
+        if org is not None and org.id is None:
+            await db.flush()
+        if row is None:
+            row = ResourceService(source=childcarenj.SOURCE, source_record_id=record_id, first_seen_at=now)
+            db.add(row)
+            existing[record_id] = row
+            summary["new"] += 1
+        else:
+            summary["changed"] += 1
+            if row.status != "active":
+                summary["reactivated"] += 1
+        for attr, value in values.items():
+            setattr(row, attr, value)
+        row.organization_id = org.id if org else None
+        row.raw = childcarenj.storable_raw(record)
+        row.summary_hash = digest
+        row.last_seen_at = now
+        row.detail_fetched_at = now  # the list record is the whole record
+        row.missed_crawls = 0
+        row.status = "active"
+        _derive(row)
+
+
+async def refresh_childcarenj(db: AsyncSession, cfg: dict, client: Any = None) -> dict:
+    """One pass over every county in `cfg["counties"]` (all 21 by default).
+    Only a pass that read every county completely may count records as
+    missing; two such passes without a provider make it inactive. `client`
+    is for tests (an object with `providers(county, page)`)."""
+    counties = cfg.get("counties") or childcarenj.NJ_COUNTIES
+    summary: dict[str, Any] = {
+        "counties": 0,
+        "listed": 0,
+        "hidden": 0,
+        "new": 0,
+        "changed": 0,
+        "reactivated": 0,
+        "deactivated": 0,
+        "short_counts": [],
+        "unknown_codes": [],
+        "blocked": None,
+        "errors": [],
+    }
+    unknown: set[str] = set()
+    owns = client is None
+    if owns:
+        client = childcarenj.ChildCareNJClient(delay_seconds=float(cfg.get("delay_seconds", childcarenj.MIN_DELAY_SECONDS)))
+        await client.__aenter__()
+    orgs = _Orgs(db)
+    started = _now()
+    complete = True
+    try:
+        for county in counties:
+            page, records, total = 0, [], 0
+            try:
+                while True:
+                    batch, total = await client.providers(county, page)
+                    records.extend(batch)
+                    if not batch or len(records) >= total or (page + 1) * childcarenj.PAGE_SIZE >= total:
+                        break
+                    page += 1
+            except childcarenj.Blocked:
+                raise
+            except Exception as exc:  # noqa: BLE001 - one county shouldn't sink the run
+                complete = False
+                summary["errors"].append(f"{county}: {type(exc).__name__}: {exc}"[:300])
+                logger.warning("childcarenj_fetch_failed", extra={"county": county, "error": str(exc)[:300]})
+                continue
+            visible = [r for r in records if not r.get("Hidden")]
+            summary["hidden"] += len(records) - len(visible)
+            if len(records) < total:
+                # The source counts a few more than it returns (Camden: 397
+                # counted, 395 sent). Recorded, not an error.
+                summary["short_counts"].append(f"{county}: {len(records)} of {total}")
+            await _upsert_providers(db, orgs, visible, county, _now(), summary, unknown)
+            summary["counties"] += 1
+            summary["listed"] += len(visible)
+            await db.commit()
+            await progress.checkpoint(summary)
+        if complete and summary["listed"]:
+            summary["deactivated"] = await _mark_missing(db, started, childcarenj.SOURCE)
+            await db.commit()
+    except childcarenj.Blocked as exc:
+        await db.commit()
+        summary["blocked"] = str(exc)
+        logger.warning("childcarenj_blocked", extra={"reason": str(exc)})
+    finally:
+        summary["unknown_codes"] = sorted(unknown)
         summary["requests"] = getattr(client, "requests", None)
         if owns:
             await client.__aexit__(None, None, None)

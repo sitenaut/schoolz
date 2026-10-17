@@ -22,6 +22,7 @@ from . import (
     preschool_team_scan,  # noqa: F401
     presence_menu_scan,  # noqa: F401
     ptboard_scan,  # noqa: F401
+    resources_childcare,  # noqa: F401
     resources_refresh,  # noqa: F401
     school_events_doc_scan,  # noqa: F401
     school_info_scan,  # noqa: F401
