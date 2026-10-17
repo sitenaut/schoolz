@@ -887,6 +887,12 @@ or reconstruct one person's session.
   and `resources.manage` (onboarding approvals, change review,
   verification, merges). Added to `permissions.py` with the provider
   portal; migration 0107 seeds the role only if none by that name exists.
+- **Learn English is its own category** and nav button, second after Food:
+  English classes matter to a lot of the families Localz serves. It takes the
+  ESL and literacy codes plus any listing whose own name or description offers
+  ESL (`categories.ENGLISH_TEXT`), and searches in everyday words ("English
+  classes", "clases de inglés", in every Localz language) also match it
+  (`resources/search_terms.py`).
 - **Alert emails** stay generic by default; a separate opt-in (its own
   consent purpose, `services_alerts_named`) includes program names.
 

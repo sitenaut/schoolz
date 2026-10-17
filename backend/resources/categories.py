@@ -6,12 +6,20 @@ matching prefix. A code can feed more than one category (child care
 expense assistance is both money and kids). A code with no matching prefix
 gets no category: the record is still searchable by text, just not listed
 under a tab.
+
+"Learn English" also takes records by their own words: NJ 211 often files a
+centre's ESL classes under a broader code (adult basic education, a Family
+Success Center), so `categories_for` adds it when the name or description
+says ESL. Migration 0108 applied the same rule to rows already stored.
 """
 from __future__ import annotations
+
+import re
 
 # Order is the nav order.
 CATEGORIES: dict[str, str] = {
     "food": "Food",
+    "english": "Learn English",
     "housing-bills": "Housing & Bills",
     "health": "Health",
     "kids-family": "Kids & Family",
@@ -36,6 +44,8 @@ _PREFIXES: dict[str, tuple[str, ...]] = {
     # H - Education
     "HD": ("kids-family",),  # early childhood education, Head Start, preschool
     "HH": ("money-work",),  # adult education: GED, ESL
+    "HH-0500.8000-150": ("english", "money-work"),  # English as a Second Language
+    "HH-4500": ("english", "money-work"),  # literacy programs
     "HL": ("kids-family",),
     # L - Health Care
     "L": ("health",),
@@ -67,4 +77,21 @@ def categories_for_code(code: str) -> tuple[str, ...]:
 
 def categories_for_codes(codes: list[str]) -> list[str]:
     found = {c for code in codes for c in categories_for_code(code)}
+    return [key for key in CATEGORIES if key in found]
+
+
+# Kept in step with the regex in migration 0108 (Postgres word boundaries).
+ENGLISH_TEXT = re.compile(
+    r"\b(ESL|ESOL|English as a (Second|New) Language|English for Speakers of Other Languages|"
+    r"English (Language )?(classes|lessons|instruction|conversation))\b",
+    re.IGNORECASE,
+)
+
+
+def categories_for(codes: list[str], *texts: str | None) -> list[str]:
+    """A record's categories: from its codes, plus Learn English when its
+    own name or description offers English classes."""
+    found = set(categories_for_codes(codes))
+    if any(t and ENGLISH_TEXT.search(t) for t in texts):
+        found.add("english")
     return [key for key in CATEGORIES if key in found]

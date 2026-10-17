@@ -49,6 +49,7 @@ PROVIDER_TYPES: tuple[ProviderType, ...] = (
     ProviderType("recovery", "Substance use counseling", "RX-8450.8000", "Substance Use Disorder Counseling"),
     ProviderType("support_group", "Support group", "PN-8100.5000", "Mental Health Related Support Groups", normally_free=True),
     ProviderType("child_care", "Child care", "PH-1250.1400", "Child Care Centers"),
+    ProviderType("english", "English classes", "HH-0500.8000-150", "English as a Second Language"),
     ProviderType("parenting", "Parenting classes", "PH-6100.6800", "Parenting Skills Classes"),
     ProviderType("job_help", "Help finding a job", "ND-3500.3600", "Job Search/Placement", normally_free=True),
     ProviderType("money_help", "Money and budgeting help", "DM-6500", "Personal Financial Counseling"),

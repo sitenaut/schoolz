@@ -16,8 +16,9 @@ import database
 from main import app
 from models import ResourceService
 from resources import nj211
-from resources.categories import categories_for_code, categories_for_codes
+from resources.categories import categories_for, categories_for_code, categories_for_codes
 from resources.refresh import _rotated, missing_core, refresh_nj211
+from resources.search_terms import categories_meant
 from scheduler.errors import parse_warning
 from scheduler.jobs import resources_refresh
 
@@ -374,6 +375,37 @@ async def _seed(**overrides):
         db.add(row)
         await db.commit()
         return row.id
+
+
+def test_learn_english_comes_from_the_esl_codes_or_the_listings_own_words():
+    assert categories_for_code("HH-0500.8000-150") == ("english", "money-work")
+    assert categories_for_code("HH-4500") == ("english", "money-work")
+    assert categories_for_code("HH-0500.2500-300") == ("money-work",)  # GED stays where it was
+    # NJ 211 often files ESL under a broader code; its own words still count.
+    assert categories_for(["PH-1260"], "Bayside Family Success Center", "Parenting, ESL classes and more") == ["english", "kids-family"]
+    assert categories_for(["HH-0500.0500"], "English as a Second Language / Civics", None) == ["english", "money-work"]
+    assert categories_for(["BD-1800.2000"], "Pantry", "Staff speak English and Spanish") == ["food"]
+    assert categories_for(["BD-1800.2000"], "Wesley pantry", "Tesla drive") == ["food"]
+
+
+def test_everyday_words_for_english_classes_in_every_language():
+    for query in ("English classes", "learn english", "free ESL", "English", "clases de inglés", "Inglés", "学英语", "영어 수업", "अंग्रेज़ी कक्षा"):
+        assert categories_meant(query) == ["english"], query
+    for query in ("English speaking doctor", "Tesla", "food pantry", "lessons", ""):
+        assert categories_meant(query) == [], query
+
+
+@pytest.mark.anyio
+async def test_searching_english_classes_finds_listings_that_say_esl():
+    marker = uuid.uuid4().hex[:10]
+    tag = f"ZZ-{marker}"  # a code only these rows carry, so other rows can't crowd the page
+    esl = await _seed(name="Adult Basic Education", categories=["english", "money-work"], taxonomy_codes=["HH-0500.8000-150", tag])
+    await _seed(name="Saturday Pantry", taxonomy_codes=["BD-1800.2000", tag])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        for query in ("English classes", "clases de inglés", "ESL"):
+            ids = [i["id"] for i in (await client.post("/resources/search", json={"query": query, "type": tag})).json()["items"]]
+            assert ids == [esl], query
+        assert (await client.post("/resources/search", json={"category": "english", "type": tag})).json()["total"] == 1
 
 
 @pytest.mark.anyio

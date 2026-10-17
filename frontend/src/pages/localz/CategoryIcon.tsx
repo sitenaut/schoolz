@@ -1,7 +1,8 @@
-import { IconBag, IconBasket, IconCoins, IconFamily, IconHeart, IconHouseKey, IconShield } from "../../components/icons";
+import { IconBag, IconBasket, IconCoins, IconFamily, IconHeart, IconHouseKey, IconLanguage, IconShield } from "../../components/icons";
 
 const ICONS: Record<string, (p: { className?: string }) => JSX.Element> = {
   food: IconBasket,
+  english: IconLanguage,
   "housing-bills": IconHouseKey,
   health: IconHeart,
   "kids-family": IconFamily,
