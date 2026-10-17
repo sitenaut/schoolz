@@ -395,6 +395,18 @@ Migration 0107; rules in `backend/resources/portal.py` and
   season (`season`, "MM-DD" to "MM-DD", may wrap the new year). Cards and
   pages show the next two dates (`next_open`) only when a plain weekday list
   can't say it: monthly, every other week, or out of season.
+- **Post a date** (migration 0110): a verified member posts a one-time
+  event for a listing (a screening day, a meeting, a mobile pantry stop),
+  at the listing's place or another public one. It is a `local_events` row
+  (`source="localz"`, `resource_service_id`, tagged `community-help`), so it
+  lists on `/local` and under "Coming up" on the listing. It publishes at
+  once, so unverified members can't post, and a confidential listing never
+  can (an event's place would give the location away). A reviewer takes one
+  down with the log's revert; at most 30 upcoming per listing.
+- **How you can help** (`ways_to_help`): volunteer roles, things to donate
+  and a wish-list link, shown last on the listing. No money link on
+  purpose. Roles and items publish at once; a new wish-list link is held for
+  review and gets a reviewer flag; short and payment links are refused.
 
 ### Deferred, and why
 
@@ -407,9 +419,8 @@ Migration 0107; rules in `backend/resources/portal.py` and
 - **Owner-invites-editor**: a reviewer adds a member by account email
   instead (unverified until called).
 - **Geocoding and the map confirm**, and the "address outside the service
-  area" flag: provider listings have no coordinates yet.
-- **"Post a distribution"** (a `help` LocalEvent), the 3-business-day
-  Grafana alert and weekly review counts.
+  area" flag: provider listings are placed at their ZIP's center.
+- The 3-business-day Grafana alert and weekly review counts.
 - **Reverting a private address change**: the log never holds the address,
   so a revert restores public columns only.
 

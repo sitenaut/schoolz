@@ -90,6 +90,19 @@ function Summary({ s, types }: { s: Submission; types: ProviderType[] }) {
     ["Cost", costLine(s.cost)],
     ["Website", s.website || "-"],
     ["Email", s.email || "-"],
+    [
+      "Ways to help",
+      s.ways_to_help
+        ? [
+            s.ways_to_help.volunteer_roles.length ? `Volunteers: ${s.ways_to_help.volunteer_roles.join("; ")}` : "",
+            s.ways_to_help.volunteer_how ?? "",
+            s.ways_to_help.donations.length ? `Donations: ${s.ways_to_help.donations.join("; ")}` : "",
+            s.ways_to_help.wishlist_url ? `Wish list: ${s.ways_to_help.wishlist_url}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n") || "-"
+        : "-",
+    ],
     ["What they provide (inquiry)", s.what_you_provide || "-"],
     ["Town (inquiry)", s.town || "-"],
   ];

@@ -65,6 +65,10 @@ export type ResourceDetail = ResourceSummary & {
   alert: string | null;
   /** "This week only" hours a provider posted, for the current week. */
   week_hours_text?: string | null;
+  /** Dates the provider posted, soonest first. */
+  upcoming_dates?: { id: string; title: string; start_time: string; end_time: string | null; venue_name: string | null; venue_address: string | null; note: string | null }[];
+  /** Volunteer roles, items to donate, a wish-list link. */
+  ways_to_help?: { volunteer_roles: string[]; volunteer_how: string | null; donations: string[]; wishlist_url: string | null } | null;
   missing_core: string[];
   source: string;
   source_url: string | null;

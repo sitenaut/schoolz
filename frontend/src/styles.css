@@ -3863,6 +3863,23 @@ select {
   margin: 0 0 6px;
   font-size: 15px;
 }
+.localz-dates,
+.provider-dates {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.localz-dates li,
+.provider-dates li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.provider-dates li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
 .localz-program-notes {
   margin-top: 6px;
   font-size: 14px;

@@ -42,6 +42,18 @@ export type ServiceEntry = {
   delivery?: Delivery | null;
   signup?: Signup | null;
 };
+/** "How you can help": volunteers and things to donate, never a money link. */
+export type WaysToHelp = { volunteer_roles: string[]; volunteer_how: string | null; donations: string[]; wishlist_url: string | null };
+/** A date a provider posted ("Post a date"): it lists on /local and the listing. */
+export type ProviderDate = {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  note: string | null;
+};
 export type WhoCanCome = {
   open_to_anyone: boolean;
   counties: string[];
@@ -76,6 +88,7 @@ export type Submission = {
   how_to_apply: string | null;
   public_contact_role: string | null;
   what_you_provide?: string | null;
+  ways_to_help?: WaysToHelp | null;
   town?: string | null;
 };
 
@@ -145,6 +158,7 @@ export type MyListing = {
   location_name: string | null;
   delivery: Delivery | null;
   signup: Signup | null;
+  ways_to_help: WaysToHelp | null;
   types: string[];
   pending_changes: { id: string; fields: string[]; created_at: string }[];
 };
@@ -172,6 +186,7 @@ export const emptyWho = (): WhoCanCome => ({
 });
 export const emptyPlace = (): ProgramPlace => ({ place_name: null, address: null, city: null, postal_code: null });
 export const emptySignup = (): Signup => ({ status: null, opens_on: null, how: null });
+export const emptyWaysToHelp = (): WaysToHelp => ({ volunteer_roles: [], volunteer_how: null, donations: [], wishlist_url: null });
 
 export const emptySubmission = (): Submission => ({
   organization_name: "",
@@ -346,3 +361,10 @@ export const withdrawRequest = (id: string) => call<OnboardingRequest>(`/provide
 export const fetchMyListings = () => call<MyListing[]>("/provider-portal/listings");
 export const updateListing = (id: string, body: Record<string, unknown>) =>
   call<{ applied: string[]; held: string[]; change_request_id: string | null }>(`/provider-portal/listings/${encodeURIComponent(id)}`, json("PATCH", body));
+export const fetchDates = (id: string) => call<ProviderDate[]>(`/provider-portal/listings/${encodeURIComponent(id)}/dates`);
+export type DateBody = { title: string; on: string; start: string; end?: string | null; note?: string | null; place?: ProgramPlace | null };
+export const postDate = (id: string, body: DateBody) => call<ProviderDate>(`/provider-portal/listings/${encodeURIComponent(id)}/dates`, json("POST", body));
+export async function deleteDate(id: string, dateId: string): Promise<void> {
+  const res = await apiFetch(`/provider-portal/listings/${encodeURIComponent(id)}/dates/${encodeURIComponent(dateId)}`, { method: "DELETE" });
+  if (!res.ok) throw new PortalError("Couldn't remove that date - please try again.", res.status);
+}

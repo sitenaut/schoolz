@@ -752,3 +752,106 @@ async def test_a_confidential_organizations_programs_never_get_a_public_place():
             for sid in res.json()["service_ids"]:
                 row = await db.get(ResourceService, sid)
                 assert row.address is None and row.city is None and row.latitude is None, row.name
+
+
+# ---- "Post a date" and "How you can help" ------------------------------------------
+
+
+def _soon(days: int = 3) -> str:
+    from datetime import timedelta
+
+    return (portal.today() + timedelta(days=days)).isoformat()
+
+
+async def test_a_verified_provider_posts_a_date_that_lists_on_local_and_the_listing():
+    from local_events.prune import prune_orphaned_events
+    from models import LocalEvent
+
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sid = await _approved_listing(client, provider, reviewer)
+        body = {"title": "Free eye screening", "on": _soon(), "start": "10:00", "end": "13:00", "note": "Glasses fitted on the spot."}
+        r = await client.post(f"/provider-portal/listings/{sid}/dates", json=body, headers=provider)
+        assert r.status_code == 201, r.text
+        date_id = r.json()["id"]
+        async with database.SessionLocal() as db:
+            event = await db.get(LocalEvent, date_id)
+            assert event.source == "localz" and event.resource_service_id == sid
+            assert event.venue_address == "12 Maple St, Cherry Hill, 08002" and event.latitude is not None
+            assert event.url.endswith(f"/localz/r/{sid}") and event.categories == ["community-help"] and event.is_free
+            # A job edit prunes events of sources no job lists - never these.
+            await prune_orphaned_events(db)
+            await db.commit()
+            assert await db.get(LocalEvent, date_id) is not None
+        detail = (await client.get(f"/resources/{sid}")).json()
+        assert [d["title"] for d in detail["upcoming_dates"]] == ["Free eye screening"]
+        listed = (await client.get("/local-events", params={"q": "Free eye screening", "source": "localz"})).json()
+        assert any(e["id"] == date_id for e in listed["items"]), listed
+
+        # Somewhere else, at that place's ZIP.
+        r = await client.post(f"/provider-portal/listings/{sid}/dates", headers=provider, json={
+            "title": "Mobile pantry", "on": _soon(5), "start": "09:00",
+            "place": {"place_name": "Town hall lot", "address": "1 Main St", "city": "Camden", "postal_code": "08102"},
+        })
+        assert r.status_code == 201 and r.json()["venue_name"] == "Town hall lot", r.text
+        assert [d["title"] for d in (await client.get(f"/provider-portal/listings/{sid}/dates", headers=provider)).json()] == [
+            "Free eye screening", "Mobile pantry"]
+
+        # Refused: the past, end before start, a payment link.
+        bad = [{**body, "on": _soon(-1)}, {**body, "end": "09:00"}, {**body, "note": "Pay at https://cash.app/$x"},
+               {**body, "on": _soon(0), "start": "00:00", "end": "00:01"}]
+        for b in bad:
+            assert (await client.post(f"/provider-portal/listings/{sid}/dates", json=b, headers=provider)).status_code == 422, b
+
+        # A reviewer takes one down; the provider deletes the other.
+        log = (await client.get(f"/admin/resources/services/{sid}/log", headers=reviewer)).json()
+        posted = next(e for e in log if e["action"] == "provider.date" and e["after"]["event_id"] == date_id)
+        assert posted["revertible"]
+        assert (await client.post(f"/admin/resources/log/{posted['id']}/revert", headers=reviewer)).status_code == 200
+        async with database.SessionLocal() as db:
+            assert await db.get(LocalEvent, date_id) is None
+        other = (await client.get(f"/provider-portal/listings/{sid}/dates", headers=provider)).json()[0]["id"]
+        assert (await client.delete(f"/provider-portal/listings/{sid}/dates/{other}", headers=provider)).status_code == 204
+        assert (await client.get(f"/resources/{sid}")).json()["upcoming_dates"] == []
+
+
+async def test_dates_need_a_verified_member_and_never_a_confidential_listing():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sid = await _approved_listing(client, provider, reviewer)
+        _, stranger = await _register(client)
+        body = {"title": "Open house", "on": _soon(), "start": "10:00"}
+        assert (await client.post(f"/provider-portal/listings/{sid}/dates", json=body, headers=stranger)).status_code == 404
+        async with database.SessionLocal() as db:
+            await db.execute(update(ProviderMembership).where(ProviderMembership.service_id == sid).values(verified_at=None))
+            await db.commit()
+        assert (await client.post(f"/provider-portal/listings/{sid}/dates", json=body, headers=provider)).status_code == 403
+        async with database.SessionLocal() as db:
+            await db.execute(update(ProviderMembership).where(ProviderMembership.service_id == sid).values(verified_at=datetime.now(UTC)))
+            await db.execute(update(ResourceService).where(ResourceService.id == sid).values(address_kind="confidential"))
+            await db.commit()
+        assert (await client.post(f"/provider-portal/listings/{sid}/dates", json=body, headers=provider)).status_code == 422
+
+
+async def test_ways_to_help_publish_but_a_new_wish_list_link_waits():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sub = _submission(ways_to_help={"volunteer_roles": ["Pantry packing"], "donations": ["Canned beans"],
+                                        "wishlist_url": "www.amazon.com/hz/wishlist/ls/ABC"})
+        rid = (await client.post("/provider-portal/requests", json={"submission": sub}, headers=provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        flags = {f["code"] for f in (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()["flags"]}
+        assert "wishlist" in flags
+        sid = (await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)).json()["service_ids"][0]
+        ways = (await client.get(f"/resources/{sid}")).json()["ways_to_help"]
+        assert ways["volunteer_roles"] == ["Pantry packing"] and ways["wishlist_url"] == "https://www.amazon.com/hz/wishlist/ls/ABC"
+
+        r = await client.patch(f"/provider-portal/listings/{sid}", headers=provider,
+                               json={"ways_to_help": {**ways, "volunteer_roles": ["Pantry packing", "Drivers"]}})
+        assert r.json()["applied"] == ["ways_to_help"], r.text
+        r = await client.patch(f"/provider-portal/listings/{sid}", headers=provider,
+                               json={"ways_to_help": {**ways, "wishlist_url": "https://example.org/wishlist"}})
+        assert r.json()["held"] == ["ways_to_help"], r.text
+        assert (await client.get(f"/resources/{sid}")).json()["ways_to_help"]["wishlist_url"].startswith("https://www.amazon.com")
+        r = await client.patch(f"/provider-portal/listings/{sid}", headers=provider, json={"ways_to_help": {"wishlist_url": "https://paypal.me/x"}})
+        assert r.status_code == 422

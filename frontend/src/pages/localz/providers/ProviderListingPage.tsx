@@ -13,19 +13,34 @@ import {
   type Hours,
   ITEM_LABELS,
   type MyListing,
+  type ProgramPlace,
+  type ProviderDate,
   type ProviderType,
   type Signup,
+  type WaysToHelp,
+  deleteDate,
   emptyHours,
+  emptyPlace,
   emptySignup,
+  emptyWaysToHelp,
+  fetchDates,
+  postDate,
   fetchMyListings,
   fetchProviderTypes,
   updateListing,
 } from "../../../lib/providerPortal";
 import { SignInPrompt } from "./ProviderPortalPage";
-import { AddressFields, type AddressValue, DeliverySelect, HoursEditor, SignupEditor, TypeSelect } from "./ProviderFields";
+import { AddressFields, type AddressValue, DeliverySelect, HoursEditor, PlaceFields, SignupEditor, TypeSelect, WaysToHelpEditor } from "./ProviderFields";
+import { LOCALE } from "../../../lib/i18n";
 
 const today = () => {
   const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const tomorrow = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
@@ -65,6 +80,7 @@ const FIELD_LABELS: Record<string, string> = {
   signup: "How people join",
   delivery: "In person or online",
   location_name: "Name of the place",
+  ways_to_help: "How people can help you",
 };
 
 function Card({ title, children, hint }: { title: string; hint?: string; children: ReactNode }) {
@@ -163,8 +179,10 @@ function QuickUpdates({ serviceId }: { serviceId: string }) {
       <ClosureCard listing={listing} busy={busy} send={send} />
       <AlertCard listing={listing} busy={busy} send={send} />
       <JoiningCard listing={listing} busy={busy} send={send} />
+      <DatesCard listing={listing} />
       <WeekHoursCard listing={listing} busy={busy} send={send} />
       <DetailsCard listing={listing} busy={busy} send={send} />
+      <HelpCard listing={listing} busy={busy} send={send} />
       <ReviewedCard listing={listing} types={types} busy={busy} send={send} />
     </div>
   );
@@ -246,6 +264,126 @@ function JoiningCard({ listing, busy, send }: CardProps) {
         disabled={busy}
         onClick={() => send({ signup: signup.status ? { ...signup, opens_on: signup.status === "closed" ? signup.opens_on : null } : null, delivery })}
       >
+        {t("Save")}
+      </button>
+    </Card>
+  );
+}
+
+const when = (d: ProviderDate) => {
+  const start = new Date(d.start_time);
+  // Always New Jersey time: it's where the event is, whatever the phone says.
+  const day = start.toLocaleDateString(LOCALE, { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" });
+  const time = (x: Date) => x.toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  return `${day}, ${time(start)}${d.end_time ? `–${time(new Date(d.end_time))}` : ""}`;
+};
+
+/** "Post a date": a one-time event on the listing and the /local calendar. */
+function DatesCard({ listing }: { listing: MyListing }) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [dates, setDates] = useState<ProviderDate[] | null>(null);
+  const [title, setTitle] = useState("");
+  const [on, setOn] = useState(tomorrow());
+  const [start, setStart] = useState("10:00");
+  const [end, setEnd] = useState("");
+  const [note, setNote] = useState("");
+  const [place, setPlace] = useState<ProgramPlace | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => {
+    fetchDates(listing.id).then(setDates).catch(() => setDates([]));
+  }, [listing.id]);
+  useEffect(load, [load]);
+  if (listing.address_kind === "confidential") return null;
+
+  const post = async () => {
+    setBusy(true);
+    try {
+      await postDate(listing.id, { title: title.trim(), on, start, end: end || null, note: note.trim() || null, place: place?.address ? place : null });
+      toast({ title: t("Posted"), description: title.trim(), tone: "ok" });
+      setTitle("");
+      setNote("");
+      load();
+    } catch (err) {
+      toast({ title: err instanceof Error ? err.message : t("Couldn't save - please try again."), tone: "bad" });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const remove = async (d: ProviderDate) => {
+    try {
+      await deleteDate(listing.id, d.id);
+      load();
+    } catch (err) {
+      toast({ title: err instanceof Error ? err.message : t("Couldn't save - please try again."), tone: "bad" });
+    }
+  };
+
+  return (
+    <Card title={t("Post a date")} hint={t("A one-time event, like a free screening day or a community meeting. It shows on your listing and on the local events calendar.")}>
+      {!listing.verified ? (
+        <p className="note">{t("Once we've confirmed it's you by phone, you can post dates.")}</p>
+      ) : (
+        <>
+          <Field label={t("What's happening")}>
+            <input value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <div className="fgrid two">
+            <Field label={t("Date")}>
+              <input type="date" value={on} min={today()} onChange={(e) => setOn(e.target.value)} />
+            </Field>
+            <Field label={t("Starts")}>
+              <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
+            </Field>
+            <Field label={t("Ends")} hint={t("Optional")}>
+              <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
+            </Field>
+          </div>
+          <Field label={t("Note")} hint={t("Optional - what to bring, who it's for.")}>
+            <input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+          </Field>
+          <label className={`check ${place ? "on" : ""}`}>
+            <input type="checkbox" checked={!!place} onChange={(e) => setPlace(e.target.checked ? emptyPlace() : null)} />
+            <span>{t("It's somewhere else")}</span>
+          </label>
+          {place && <PlaceFields value={place} onChange={setPlace} />}
+          <button className="btn btn-primary" disabled={busy || title.trim().length < 3 || !on || !start} onClick={post}>
+            {t("Post date")}
+          </button>
+        </>
+      )}
+      {dates && dates.length > 0 && (
+        <ul className="provider-dates">
+          {dates.map((d) => (
+            <li key={d.id}>
+              <span>
+                <strong>{d.title}</strong> · {when(d)}
+                {d.venue_name ? ` · ${d.venue_name}` : ""}
+              </span>
+              <button type="button" className="btn ghost" onClick={() => remove(d)}>
+                {t("Remove")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function HelpCard({ listing, busy, send }: CardProps) {
+  const { t } = useTranslation();
+  const [ways, setWays] = useState<WaysToHelp>(listing.ways_to_help ?? emptyWaysToHelp());
+  const clean = (w: WaysToHelp) => ({
+    ...w,
+    volunteer_roles: w.volunteer_roles.map((x) => x.trim()).filter(Boolean),
+    donations: w.donations.map((x) => x.trim()).filter(Boolean),
+    wishlist_url: (w.wishlist_url ?? "").trim() || null,
+  });
+  return (
+    <Card title={t("How people can help you")} hint={t("Volunteers and things to donate show at once; a new wish-list link is checked first.")}>
+      <WaysToHelpEditor value={ways} onChange={setWays} />
+      <button className="btn btn-primary" disabled={busy} onClick={() => send({ ways_to_help: clean(ways) })}>
         {t("Save")}
       </button>
     </Card>

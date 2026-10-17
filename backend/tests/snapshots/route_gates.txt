@@ -126,6 +126,9 @@ GET    /prerender  public
 POST   /provider-portal/inquiries  public
 GET    /provider-portal/listings  login
 PATCH  /provider-portal/listings/{service_id}  login
+GET    /provider-portal/listings/{service_id}/dates  login
+POST   /provider-portal/listings/{service_id}/dates  login
+DELETE /provider-portal/listings/{service_id}/dates/{event_id}  login
 POST   /provider-portal/match  login
 GET    /provider-portal/requests  login
 POST   /provider-portal/requests  login

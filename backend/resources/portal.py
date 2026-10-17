@@ -28,7 +28,9 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from local_events.prune import LOCALZ_SOURCE
 from models import (
+    LocalEvent,
     ProviderMembership,
     ResourceChangeLog,
     ResourceChangeRequest,
@@ -204,6 +206,48 @@ class Cost(BaseModel):
     amount: str | None = Field(default=None, max_length=100)
 
 
+def _short_list(values: list[str], size: int) -> list[str]:
+    return [v.strip()[:size] for v in values if v and v.strip()]
+
+
+class WaysToHelp(BaseModel):
+    """"How you can help": volunteer roles, items to donate, a wish-list
+    link. Deliberately no money link: Localz is for people looking for
+    help, and a donation link is the first thing a scam would add."""
+
+    volunteer_roles: list[str] = Field(default_factory=list, max_length=10)
+    volunteer_how: str | None = Field(default=None, max_length=300)
+    donations: list[str] = Field(default_factory=list, max_length=20)
+    wishlist_url: str | None = Field(default=None, max_length=300)
+
+    @field_validator("volunteer_roles", "donations")
+    @classmethod
+    def _items(cls, values: list[str]) -> list[str]:
+        return _short_list(values, 100)
+
+    def is_empty(self) -> bool:
+        return not (self.volunteer_roles or (self.volunteer_how or "").strip() or self.donations or (self.wishlist_url or "").strip())
+
+
+def clean_ways_to_help(ways: WaysToHelp | None) -> dict | None:
+    """The column value, or None. Raises ValueError for a link that can't be
+    used (a short link or a payment page)."""
+    if ways is None or ways.is_empty():
+        return None
+    url = (ways.wishlist_url or "").strip() or None
+    reason = bad_link_reason(url)
+    if reason:
+        raise ValueError(reason)
+    if url and not url.lower().startswith(("http://", "https://")):
+        url = "https://" + url
+    return {
+        "volunteer_roles": ways.volunteer_roles,
+        "volunteer_how": (ways.volunteer_how or "").strip() or None,
+        "donations": ways.donations,
+        "wishlist_url": url,
+    }
+
+
 class ServiceEntry(BaseModel):
     """One program. Hours, who can come, cost and place left out (null)
     mean "same as the organization's", so a one-program pantry fills them
@@ -255,6 +299,8 @@ class Submission(BaseModel):
     public_contact_role: str | None = Field(default=None, max_length=100)
     # From "Ask to be listed": what they told us before there was a form.
     what_you_provide: str | None = Field(default=None, max_length=1000)
+    # Volunteers and donations, for every program in the request.
+    ways_to_help: WaysToHelp | None = None
     town: str | None = Field(default=None, max_length=100)
 
     @field_validator("service_area_counties")
@@ -310,7 +356,7 @@ def bad_link_reason(url: str | None) -> str | None:
 
 
 def check_links(sub: Submission) -> None:
-    reason = bad_link_reason(sub.website)
+    reason = bad_link_reason(sub.website) or bad_link_reason(sub.ways_to_help.wishlist_url if sub.ways_to_help else None)
     if reason:
         raise ValueError(reason)
     if sub.website and not sub.website.lower().startswith(("http://", "https://")):
@@ -623,6 +669,7 @@ def service_columns(sub: Submission, entry: ServiceEntry) -> dict:
         "cost_kind": cost.kind,
         "delivery": entry.delivery,
         "signup": entry.signup.model_dump(mode="json") if entry.signup and entry.signup.status else None,
+        "ways_to_help": clean_ways_to_help(sub.ways_to_help),
         "required_documents": list(sub.documents),
         "languages": list(sub.languages),
         "accessibility": (sub.accessibility or "").strip() or None,
@@ -767,7 +814,11 @@ async def flags(db: AsyncSession, req: ResourceOnboardingRequest, sub: Submissio
         others = sorted({org or name for name, org in rows if name_key(org or name or "") != key})
         if others:
             out.append({"code": "phone_other_org", "level": "warn", "message": f"This phone number is listed for another organization: {', '.join(others[:3])}."})
-    texts = [sub.website or "", sub.how_to_apply or "", *[(s.description or "") for s in sub.services], sub.what_you_provide or ""]
+    wishlist = sub.ways_to_help.wishlist_url if sub.ways_to_help else None
+    if wishlist:
+        out.append({"code": "wishlist", "level": "info", "message": f"Wish-list link: {wishlist} - check it's theirs."})
+    texts = [sub.website or "", sub.how_to_apply or "", *[(s.description or "") for s in sub.services], sub.what_you_provide or "",
+             wishlist or ""]
     for url in {m.group(0) for t in texts for m in _URL_RE.finditer(t)} | ({sub.website} if sub.website else set()):
         reason = bad_link_reason(url)
         if reason:
@@ -894,7 +945,7 @@ async def approve(db: AsyncSession, req: ResourceOnboardingRequest, reviewer: Us
 IMMEDIATE_FIELDS = {
     "closure_starts_on", "closure_ends_on", "closure_note", "week_hours", "hours", "hours_text", "alert",
     "description", "languages", "required_documents", "eligibility_text", "application_process",
-    "accessibility", "signup", "delivery",
+    "accessibility", "signup", "delivery", "ways_to_help",
 }
 # Everything else that can be edited waits: name, organization name,
 # address, phone, website, email, categories, and a free -> fee change.
@@ -920,6 +971,12 @@ def split_changes(row: ResourceService, columns: dict, verified: bool) -> tuple[
         for field in ("cost_kind", "fees"):
             if field in columns:
                 target[field] = columns[field]
+    if "ways_to_help" in now_cols:
+        # Volunteer roles and items publish now; a new wish-list link is
+        # looked at first, like a website.
+        new_url = (now_cols["ways_to_help"] or {}).get("wishlist_url")
+        if new_url and new_url != (row.ways_to_help or {}).get("wishlist_url"):
+            held["ways_to_help"] = now_cols.pop("ways_to_help")
     if "taxonomy_codes" in columns:
         adds = set(columns["taxonomy_codes"]) - set(row.taxonomy_codes or [])
         target = held if adds else now_cols
@@ -946,7 +1003,7 @@ async def approve_change(db: AsyncSession, change: ResourceChangeRequest, review
         change_request_id=change.id, before=before, after=after, note=note)
 
 
-REVERTIBLE = {"provider.update", "change.approve", "onboarding.claim", "onboarding.merge", "onboarding.approve"}
+REVERTIBLE = {"provider.update", "change.approve", "onboarding.claim", "onboarding.merge", "onboarding.approve", "provider.date"}
 
 
 async def revert(db: AsyncSession, entry: ResourceChangeLog, reviewer: User) -> ResourceChangeLog:
@@ -955,6 +1012,14 @@ async def revert(db: AsyncSession, entry: ResourceChangeLog, reviewer: User) -> 
     row = await db.get(ResourceService, entry.service_id) if entry.service_id else None
     if row is None:
         raise ValueError("That listing no longer exists")
+    if entry.action == "provider.date":
+        # Taking down a posted date deletes it from /local too.
+        event = await db.get(LocalEvent, entry.after.get("event_id")) if entry.after.get("event_id") else None
+        if event is not None:
+            await db.delete(event)
+        entry.reverted_at, entry.reverted_by_user_id = now(), reviewer.id
+        return log(db, action="revert", actor=reviewer, actor_kind="reviewer", service_id=row.id, before=entry.after,
+                   after={"event_id": None}, note=f"Took down date {entry.id}")
     if entry.action == "onboarding.approve":
         before, after = {"status": row.status}, {"status": "inactive"}
         row.status = "inactive"
@@ -971,6 +1036,28 @@ async def revert(db: AsyncSession, entry: ResourceChangeLog, reviewer: User) -> 
     entry.reverted_at, entry.reverted_by_user_id = now(), reviewer.id
     return log(db, action="revert", actor=reviewer, actor_kind="reviewer", service_id=row.id, before=before,
                after=after, note=f"Reverted change {entry.id}")
+
+
+# ---- posted dates ------------------------------------------------------------------
+
+
+async def upcoming_dates(db: AsyncSession, service_id: str, limit: int) -> list[LocalEvent]:
+    """A listing's posted dates that aren't over yet (until the end time,
+    or the start without one), soonest first."""
+    return list(
+        (
+            await db.execute(
+                select(LocalEvent)
+                .where(
+                    LocalEvent.resource_service_id == service_id,
+                    LocalEvent.source == LOCALZ_SOURCE,
+                    func.coalesce(LocalEvent.end_time, LocalEvent.start_time) >= now(),
+                )
+                .order_by(LocalEvent.start_time)
+                .limit(limit)
+            )
+        ).scalars()
+    )
 
 
 # ---- account deletion ------------------------------------------------------------

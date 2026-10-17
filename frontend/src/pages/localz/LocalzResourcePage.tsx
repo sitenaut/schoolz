@@ -11,6 +11,15 @@ import { FitNote } from "./FitNote";
 import { ClosureNote } from "./ClosureNote";
 import { ProgramNotes, deliveryLabel } from "./ProgramNotes";
 
+/** "Sat, Nov 1, 10:00 AM–1:00 PM" in the visitor's language. */
+const dateLine = (startIso: string, endIso: string | null) => {
+  const start = new Date(startIso);
+  // Always New Jersey time: it's where the event is, whatever the phone says.
+  const time = (x: Date) => x.toLocaleTimeString(LOCALE, { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  const day = start.toLocaleDateString(LOCALE, { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" });
+  return `${day}, ${time(start)}${endIso ? `–${time(new Date(endIso))}` : ""}`;
+};
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="localz-detail-section">
@@ -58,6 +67,8 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
   const map = mapsHref(r);
   const confirmed = confirmedLabel(r.last_assured_on, LOCALE);
   const online = deliveryLabel(r.delivery);
+  const ways = r.ways_to_help;
+  const helps = ways && (ways.volunteer_roles.length || ways.donations.length || ways.wishlist_url) ? ways : null;
 
   return (
     <article className="localz-detail">
@@ -117,6 +128,20 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
         {r.week_hours_text && <p className="localz-alert">{t("This week only: {{hours}}", { hours: r.week_hours_text })}</p>}
         <ProgramNotes r={r} detail />
       </Section>
+      {(r.upcoming_dates ?? []).length > 0 && (
+        <Section title={t("Coming up")}>
+          <ul className="localz-dates">
+            {(r.upcoming_dates ?? []).map((d) => (
+              <li key={d.id}>
+                <strong>{d.title}</strong>
+                <span className="localz-muted"> · {dateLine(d.start_time, d.end_time)}</span>
+                {d.venue_address && d.venue_address !== place && <div className="localz-muted">{[d.venue_name, d.venue_address].filter(Boolean).join(", ")}</div>}
+                {d.note && <div>{d.note}</div>}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
       {r.eligibility_text && (
         <Section title={t("Who can get help")}>
           <p>{r.eligibility_text}</p>
@@ -164,6 +189,40 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
               {r.email}
             </a>
           </p>
+        </Section>
+      )}
+
+      {helps && (
+        <Section title={t("How you can help")}>
+          {helps.volunteer_roles.length > 0 && (
+            <>
+              <p>{t("Volunteers needed:")}</p>
+              <ul>
+                {helps.volunteer_roles.map((v) => (
+                  <li key={v}>{v}</li>
+                ))}
+              </ul>
+              {helps.volunteer_how && <p className="localz-muted">{helps.volunteer_how}</p>}
+            </>
+          )}
+          {helps.donations.length > 0 && (
+            <>
+              <p>{t("They can use:")}</p>
+              <ul>
+                {helps.donations.map((v) => (
+                  <li key={v}>{v}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {helps.wishlist_url && (
+            <p>
+              <a href={helps.wishlist_url} target="_blank" rel="noopener noreferrer nofollow">
+                <IconLink className="localz-inline-icon" />
+                {t("Their wish list")}
+              </a>
+            </p>
+          )}
         </Section>
       )}
 
