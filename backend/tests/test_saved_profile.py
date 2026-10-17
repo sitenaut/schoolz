@@ -7,6 +7,7 @@ os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
 import logging
+import re
 import uuid
 
 import pytest
@@ -217,6 +218,9 @@ async def test_saving_nothing_forgets():
             assert await db.get(ServicesProfile, uid) is None
 
 
+_NOISE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d{4}-\d{2}-\d{2}[T ][\d:.+]*", re.I)
+
+
 async def test_profile_routes_never_log_a_field_or_value(caplog):
     caplog.set_level(logging.DEBUG)
     async with _client() as client:
@@ -234,6 +238,9 @@ async def test_profile_routes_never_log_a_field_or_value(caplog):
     assert [r for r in caplog.records if r.getMessage() == "http_request" and getattr(r, "path", "") == URL]
     for record in caplog.records:
         blob = record.getMessage() + " " + " ".join(f"{k}={v!r}" for k, v in vars(record).items())
+        # Ids and timestamps first: a uuid4's third group always starts with
+        # 4, so about one id in sixteen contains "1-4" by chance.
+        blob = _NOISE.sub("<x>", blob)
         for value in SENSITIVE:
             assert value not in blob, f"{value!r} reached the log via {record.name}: {record.getMessage()}"
 
