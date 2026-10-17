@@ -163,7 +163,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
         {r.source_url ? (
           <>
             <a href={r.source_url} target="_blank" rel="noopener noreferrer">
-              {t("See this listing on NJ 211")}
+              {r.source === "childcarenj" ? t("See this provider on ChildCareNJ") : t("See this listing on NJ 211")}
             </a>{" "}
           </>
         ) : null}

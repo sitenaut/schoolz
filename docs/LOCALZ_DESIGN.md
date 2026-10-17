@@ -1,6 +1,7 @@
 # Localz — community resources for families in need (design)
 
-Design only. Nothing here is built yet. Localz is a second "view" alongside
+Partly built: NJ 211 and ChildCareNJ sources, public search, and the
+on-device eligibility check; the rest is design. Localz is a second "view" alongside
 Gradez (`frontend/focus/`): a lightweight app that helps people in South
 Jersey find food, housing, utility, health and family help without asking in
 public and without fighting state websites. Resources are ingested and kept
@@ -240,25 +241,34 @@ Investigated directly against the live site.
 
 ### ChildCareNJ adapter
 
-Investigated directly against the live site.
+**Built:** `resources/childcarenj.py`, `refresh.refresh_childcarenj`, job
+`resources.childcarenj` (weekly, migration 0105). Investigated directly
+against the live site.
 
 - **Endpoint:** the search page's own JSON call,
-  `GET https://www.childcarenj.gov/Services/GetProviders.aspx` with
-  `county=<Name>` (the dropdown's values: "Camden", "Cape May", …),
-  `center/home/preschool/camp=true|false`, `subsidised`, `rating`,
-  `pageSize`, `currentPage` (0-based). Returns
-  `{"Facilities": [...], "ResultCount": n}`. `pageSize=500` works, so
-  **one request per county**.
-- **Access:** Cloudflare 403s a plain request for the `/Search` HTML page,
-  but the JSON endpoint answered plain httpx with a browser User-Agent
-  (200, `application/json`). Use httpx first; fall back to the scraper's
-  `/fetch-raw` (droplet, residential Pi and schoolz's own scraper all
-  worked); a browser wraps the JSON in Chrome's viewer `<pre>`, so unwrap
-  it. The reCAPTCHA on the page is commented out in its own JS. There's no
-  robots.txt (the site serves its "Uh Oh!" error page).
-- **Volume:** Camden 396, Burlington 233, Gloucester 155 (≈784). The
-  Camden request returned 394 of 396; check whether `Hidden: true` rows
-  account for the gap before trusting counts.
+  `GET https://www.childcarenj.gov/Services/GetProviders.aspx`. **It needs
+  every parameter the page sends** (`zipcode`, `county`, `programName`,
+  `camp/center/home/preschool`, `rating`, `programTypes`, `subsidised`,
+  `mccynplus`, `sortKey`, `sortDirection`, `pageSize`, `currentPage`);
+  with any missing it 302s to its error page. Returns
+  `{"Facilities": [...], "ResultCount": n}`. `pageSize=500`; the biggest
+  counties take two pages (26 requests for all 21).
+- **Access:** Cloudflare 403s curl, but httpx with our honest
+  `schoolz-localz` User-Agent gets 200 JSON. A 403/429 stops the run - no
+  fallback through the scraper or the Pi. The reCAPTCHA on the page is
+  commented out in its own JS. There's no robots.txt (the site serves its
+  "Uh Oh!" error page).
+- **Volume:** 6,214 providers statewide (Oct 2026). `ResultCount` runs a
+  few above what's returned (Camden 397 counted, 395 sent; no `Hidden`
+  rows) - recorded as `short_counts`, not an error.
+- **Types:** centers `PH-1250.1400` Child Care Centers and camps
+  `PL-6400.1500-820` Summer Camps (both codes NJ 211 uses); family child
+  care, which NJ 211 doesn't list, takes the parent `PH-1250` rather than a
+  guessed leaf code. The Type filter matches a code exactly.
+- **No coordinates** in the data, so the 20-mile radius needs these
+  geocoded (town level for family child care).
+- Bump `NORMALIZE_VERSION` when `fields()` changes: unchanged records are
+  skipped by hash, so a normalization fix otherwise never reaches them.
 - **Fields:** `UniqueProgramID`, `ProgramName`, address parts, city, zip,
   county, phone, email, website, `ProgramLicensedCapacityTotal`,
   `AgesLicensedToServe`, `ProgramFacilityType`, `LicenseType`,
@@ -350,8 +360,9 @@ listing").
   If NJ 211 later changes a field the provider set, that's flagged for
   review, not silently applied either way.
 - New reviewer permissions in `permissions.py`: `resources.view` /
-  `resources.manage` (the review queue, verification, merges).
-  Granting a provider membership is `resources.manage`, not super admin.
+  `resources.manage` (the review queue, verification, merges), held by the
+  **Localz reviewer** role. Granting a provider membership is
+  `resources.manage`, not super admin.
 
 ### Onboarding approval (admins approve every new resource)
 
@@ -623,8 +634,10 @@ Two tiers, so "save it" doesn't have to mean "give us your data":
 - **Email content is deliberately generic**: subject "New on schoolz this
   week", sender "schoolz". The body says "There are 3 new programs that
   may fit your saved profile — sign in to see them" and lists no program
-  names. A shared inbox or a lock-screen preview reveals nothing. An option
-  to include names can come later, opt-in.
+  names. A shared inbox or a lock-screen preview reveals nothing. People
+  can opt in to have program names included (a separate consent purpose,
+  `services_alerts_named`, off by default); the subject stays generic
+  either way.
 
 ## Search analytics (anonymous)
 
@@ -717,12 +730,22 @@ or reconstruct one person's session.
 5. **Approach NJ 211** with usage numbers for a formal feed (HSDS via the
    National Data Platform); switch `nj211_sources` to `hsds_sources`.
 
+## Owner decisions
+
+- **Brand:** everyone calls it Localz. It stays at
+  `schoolz.sitenaut.com/localz/` for months to come; its own site comes
+  eventually, and the auth hand-off is planned then, not now.
+- **Service area: 20 miles from the visitor's chosen location.** The radius
+  is measured on the device (the point never leaves it, same as the
+  county), so the server keeps receiving only a county; listings need
+  coordinates for this, which ChildCareNJ records don't carry yet.
+- **Reviewer role: "Localz reviewer"**, a `Role` holding `resources.view`
+  and `resources.manage` (onboarding approvals, change review,
+  verification, merges). Added to `permissions.py` with the first admin
+  endpoint that checks it - the provider portal - not before.
+- **Alert emails** stay generic by default; a separate opt-in (its own
+  consent purpose, `services_alerts_named`) includes program names.
+
 ## Open questions for the owner
 
-- Brand: "Localz" under schoolz.sitenaut.com/localz/, or eventually its own
-  site? (Affects the auth hand-off plan, not phase 1.)
-- Service area: same 50-mile radius as `/local`, or start with Camden,
-  Burlington and Gloucester counties only?
 - Who reviews copy and categories from the community side before launch?
-- Email alert content: generic-only forever, or an opt-in to include
-  program names?

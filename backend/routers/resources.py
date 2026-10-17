@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import ResourceService
-from resources import nj211
+from resources import childcarenj, nj211
 from resources.categories import CATEGORIES, categories_for_code
 from resources.eligibility import criteria_for
 
@@ -193,9 +193,12 @@ def _filters(body: ResourceSearchIn, *, with_type: bool = True) -> list:
 
 
 def _source_url(row: ResourceService) -> str | None:
-    # Attribution: every NJ 211 record links back to NJ 211's own page.
+    # Attribution: every record links back to its source's own page (for
+    # ChildCareNJ, the one with the provider's inspection reports).
     if row.source == nj211.SOURCE:
         return f"{nj211.BASE_URL}/search/{row.source_record_id}"
+    if row.source == childcarenj.SOURCE:
+        return childcarenj.provider_url(row.source_record_id, (row.raw or {}).get("LicenseNumber"))
     return None
 
 
