@@ -6,8 +6,10 @@ import { useSyncExternalStore } from "react";
  * (backend/resources/eligibility.py, the same vocabulary as here) and this
  * file decides which fit.
  *
- * Kept for the visit only (sessionStorage, which Quick exit clears) unless
- * the visitor ticks "Remember on this device".
+ * Kept for the visit only (sessionStorage) unless the visitor ticks
+ * "Remember on this device" (localStorage, 90 days). Quick exit and
+ * "Forget this device" clear both. A signed-in visitor can also save them
+ * to their account (lib/savedProfile.ts), after a consent screen.
  *
  * Deliberately never says "not eligible": the answers are rough and the
  * criteria are read from free text, so a listing that doesn't seem to fit
@@ -191,12 +193,20 @@ export function sortByFit<T extends { eligibility?: Criteria | null }>(items: T[
 
 // ---- storage ------------------------------------------------------------------
 
-const KEY = "localz_fit";
-const CHANGE_EVENT = "localz-fit-change";
+/** Deliberately meaningless names: a shared or seized device's storage
+ * shouldn't say what's in it. Session = for this visit; device = "Remember
+ * on this device", which keeps the save time and expires after 90 days. */
+export const SESSION_KEY = "sz_s1";
+export const DEVICE_KEY = "sz_d1";
+const LEGACY_KEY = "localz_fit";
+export const DEVICE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const CHANGE_EVENT = "sz-s1-change";
+
+type Saved = { answers: FitAnswers; remember: boolean };
 
 let cachedRaw: string | null | undefined;
-let cachedValue: { answers: FitAnswers; remember: boolean } | null = null;
-let memoryOnly: { answers: FitAnswers; remember: boolean } | null = null;
+let cachedValue: Saved | null = null;
+let memoryOnly: Saved | null = null;
 
 function clean(raw: unknown): FitAnswers | null {
   if (!raw || typeof raw !== "object") return null;
@@ -206,13 +216,50 @@ function clean(raw: unknown): FitAnswers | null {
   return { ages: pick(r.ages, AGE_BANDS), has: pick(r.has, FIT_NEEDS), focus: pick(r.focus, FIT_FOCUS), noStatusFirst: r.noStatusFirst === true };
 }
 
-function read(): { answers: FitAnswers; remember: boolean } | null {
+/** Answers saved under the old, descriptive key move to the neutral ones. */
+function migrateLegacy(): void {
+  const dev = localStorage.getItem(LEGACY_KEY);
+  if (dev !== null) {
+    localStorage.removeItem(LEGACY_KEY);
+    if (localStorage.getItem(DEVICE_KEY) === null) {
+      try {
+        localStorage.setItem(DEVICE_KEY, JSON.stringify({ a: JSON.parse(dev), t: Date.now() }));
+      } catch {
+        /* unreadable: dropped */
+      }
+    }
+  }
+  const ses = sessionStorage.getItem(LEGACY_KEY);
+  if (ses !== null) {
+    sessionStorage.removeItem(LEGACY_KEY);
+    if (sessionStorage.getItem(SESSION_KEY) === null) sessionStorage.setItem(SESSION_KEY, ses);
+  }
+}
+
+/** The device save's answers as JSON, or null. An expired or unreadable
+ * one is removed on the way. */
+function readDevice(): string | null {
+  const raw = localStorage.getItem(DEVICE_KEY);
+  if (raw === null) return null;
+  try {
+    const { a, t } = JSON.parse(raw) as { a?: unknown; t?: unknown };
+    const age = typeof t === "number" ? Date.now() - t : NaN;
+    if (age < DEVICE_TTL_MS && age > -60_000) return JSON.stringify(a ?? null);
+  } catch {
+    /* unreadable: forget it */
+  }
+  localStorage.removeItem(DEVICE_KEY);
+  return null;
+}
+
+function read(): Saved | null {
   let raw: string | null;
   let remember = false;
   try {
-    raw = sessionStorage.getItem(KEY);
+    migrateLegacy();
+    raw = sessionStorage.getItem(SESSION_KEY);
     if (raw === null) {
-      raw = localStorage.getItem(KEY);
+      raw = readDevice();
       remember = raw !== null;
     }
   } catch {
@@ -223,7 +270,7 @@ function read(): { answers: FitAnswers; remember: boolean } | null {
     cachedRaw = tagged;
     try {
       const answers = raw ? clean(JSON.parse(raw)) : null;
-      cachedValue = answers ? { answers, remember } : null;
+      cachedValue = answers && hasAnswers(answers) ? { answers, remember } : null;
     } catch {
       cachedValue = null;
     }
@@ -231,16 +278,44 @@ function read(): { answers: FitAnswers; remember: boolean } | null {
   return cachedValue;
 }
 
+/** The current answers, outside React (and for tests). */
+export function readFit(): Saved | null {
+  return read();
+}
+
 /** Save the answers for this visit, or on this device when `remember`;
  * null forgets them everywhere. */
 export function saveFit(answers: FitAnswers | null, remember = false): void {
   const value = answers && hasAnswers(answers) ? JSON.stringify(answers) : null;
   try {
-    sessionStorage.removeItem(KEY);
-    localStorage.removeItem(KEY);
-    if (value) (remember ? localStorage : sessionStorage).setItem(KEY, value);
+    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(DEVICE_KEY);
+    localStorage.removeItem(LEGACY_KEY);
+    if (value) {
+      if (remember) localStorage.setItem(DEVICE_KEY, JSON.stringify({ a: answers, t: Date.now() }));
+      else sessionStorage.setItem(SESSION_KEY, value);
+    }
+    memoryOnly = null;
   } catch {
     memoryOnly = value && answers ? { answers, remember } : null;
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/** "Forget this device", and part of Quick exit: nothing of the answers
+ * stays in this browser, remembered or for the visit. An account save is
+ * untouched (it isn't on the device). */
+export function forgetDevice(): void {
+  memoryOnly = null;
+  for (const store of [() => localStorage, () => sessionStorage]) {
+    try {
+      const s = store();
+      s.removeItem(DEVICE_KEY);
+      s.removeItem(SESSION_KEY);
+      s.removeItem(LEGACY_KEY);
+    } catch {
+      /* blocked: nothing was stored there */
+    }
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
@@ -254,6 +329,6 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-export function useLocalzFit(): { answers: FitAnswers; remember: boolean } | null {
+export function useLocalzFit(): Saved | null {
   return useSyncExternalStore(subscribe, read, () => null);
 }

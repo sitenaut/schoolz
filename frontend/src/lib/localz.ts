@@ -1,5 +1,5 @@
 import { apiFetch } from "../api";
-import type { Criteria } from "./localzFit";
+import { type Criteria, forgetDevice } from "./localzFit";
 import { ROUTER_BASENAME } from "./i18n";
 
 /** Localz: community resources (food, housing, health, ...) for families who
@@ -129,6 +129,9 @@ export function quickExit(): void {
   } catch {
     /* private mode */
   }
+  // "Remember on this device" too: someone who has to leave in a hurry is
+  // better served by losing their answers than by leaving them behind.
+  forgetDevice();
   document.title = "schoolz";
   document.body.replaceChildren();
   window.location.replace(`${ROUTER_BASENAME}${QUICK_EXIT_PATH}`);

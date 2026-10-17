@@ -1,5 +1,6 @@
+import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
-import { IconBell, IconLock, IconShield, IconUser, IconUsers } from "../../components/icons";
+import { IconBell, IconHeart, IconLock, IconShield, IconUser, IconUsers } from "../../components/icons";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 
@@ -7,6 +8,7 @@ import { useAuth } from "../../context/AuthContext";
  * the active section. Mirrors the Katalyst settings layout - one card per
  * concern, nothing buried in accordions. */
 export function AccountLayout() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   if (!user) return null;
 
@@ -29,6 +31,10 @@ export function AccountLayout() {
           </NavLink>
           <NavLink to="/account/notifications">
             <IconBell /> Notifications
+          </NavLink>
+          {/* A neutral path on purpose: it lands in browser history. */}
+          <NavLink to="/account/saved-answers">
+            <IconHeart /> {t("My services profile")}
           </NavLink>
         </nav>
         <div style={{ minWidth: 0 }}>

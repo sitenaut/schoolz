@@ -138,7 +138,8 @@ export function SecuritySection() {
           <div>
             <b>Delete this account</b>
             <small>
-              Removes your profile, your links to your children, invites you sent, notifications, and any connected Gmail account and its scanners.
+              Removes your profile, your links to your children, invites you sent, notifications, your saved Localz answers, and any connected Gmail
+              account and its scanners.
               Shared records (the children themselves, schools, newsletters) stay for other guardians.
             </small>
           </div>
