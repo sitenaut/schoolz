@@ -1654,6 +1654,25 @@ class ResourceService(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class ResourceEligibility(Base):
+    """Structured "who can come" criteria for one distinct eligibility
+    sentence (resources/eligibility.py), keyed on the normalized text so the
+    191 services saying "Open to the public" share one row and one
+    extraction. Services find theirs by `eligibility.text_key(...)`; a
+    changed sentence gets a new key, and a `version` below the extractor's
+    current one is re-extracted. Matching against a visitor's answers happens
+    in their browser - nothing here knows who asked."""
+
+    __tablename__ = "resource_eligibility"
+
+    text_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    criteria: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    model: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extracted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class SeasonalGuide(Base):
     """A link to someone else's seasonal guide (a Halloween house map, a
     fall-festival roundup), shown while its window is open: the top-bar

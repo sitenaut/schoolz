@@ -8,7 +8,8 @@ import { useLocalzWhere } from "../../lib/localzWhere";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import { CategoryIcon } from "./CategoryIcon";
 import { LocationButton } from "./LocationButton";
-import { ResourceCard } from "./ResourceCard";
+import { FitButton } from "./FitButton";
+import { ResourceList } from "./ResourceList";
 import { useResourceSearch } from "./useResourceSearch";
 
 /** /localz - search, or pick a kind of help. Search runs on submit, not per
@@ -56,6 +57,9 @@ export function LocalzHomePage() {
         <LocationButton />
       </div>
       <p className="localz-lede">{t("Food, housing, health and more across New Jersey. Free to use, and nothing here needs an account.")}</p>
+      <div className="localz-fit-row">
+        <FitButton />
+      </div>
 
       <form className="search localz-search" role="search" onSubmit={submit}>
         <IconSearch />
@@ -89,11 +93,7 @@ export function LocalzHomePage() {
           ) : (
             <>
               <div className="dir-count">{results.total === 1 ? t("1 result") : t("{{total}} results", { total: results.total })}</div>
-              <div className="localz-list">
-                {results.items.map((r) => (
-                  <ResourceCard r={r} key={r.id} />
-                ))}
-              </div>
+              <ResourceList items={results.items} />
               {results.hasMore && (
                 <button className="btn localz-more" onClick={results.loadMore} disabled={results.loading}>
                   {t("Show more")}

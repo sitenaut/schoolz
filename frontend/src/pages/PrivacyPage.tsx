@@ -84,6 +84,16 @@ export function PrivacyPage() {
             </td>
           </tr>
           <tr>
+            <td>Your answers to "What am I eligible for?" in Localz (ages in your household, things like being a veteran, and which services you'd like to see first)</td>
+            <td>Your browser's session storage, or its local storage if you tick "Remember on this device"</td>
+            <td>
+              So Localz can put the listings that fit you first. They're matched on your device against what each
+              listing says about who it's for - your answers are never sent to us or anyone else. Without "Remember on
+              this device" they're forgotten when you close the tab or press Quick exit. We never ask about gender,
+              race or immigration status.
+            </td>
+          </tr>
+          <tr>
             <td>Light/dark theme choice</td>
             <td>Your browser's local storage</td>
             <td>Remembers your display preference between visits.</td>

@@ -9,7 +9,8 @@ import { useLocalzWhere } from "../../lib/localzWhere";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import { CategoryIcon } from "./CategoryIcon";
 import { LocationButton } from "./LocationButton";
-import { ResourceCard } from "./ResourceCard";
+import { FitButton } from "./FitButton";
+import { ResourceList } from "./ResourceList";
 import { useResourceSearch } from "./useResourceSearch";
 
 /** /localz/:category - every service of one kind, narrowed by the visitor's
@@ -77,6 +78,9 @@ function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
           <p className="localz-lede">{t(category.blurb)}</p>
         </div>
       </div>
+      <div className="localz-fit-row">
+        <FitButton />
+      </div>
 
       <div className="localz-filters">
         <div className="search">
@@ -125,11 +129,7 @@ function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
       ) : (
         <>
           <div className="dir-count">{results.total === 1 ? t("1 listing") : t("{{total}} listings", { total: results.total })}</div>
-          <div className={`localz-list${results.loading ? " busy" : ""}`}>
-            {results.items.map((r) => (
-              <ResourceCard r={r} key={r.id} />
-            ))}
-          </div>
+          <ResourceList items={results.items} busy={results.loading} />
           {results.hasMore && (
             <button className="btn localz-more" onClick={results.loadMore} disabled={results.loading}>
               {t("Show more")}

@@ -464,6 +464,44 @@ scammers, and a hijacked provider account is the easiest way in.
 
 ## Eligibility check (anonymous)
 
+### What's built (v1): "What am I eligible for?"
+
+A simpler first cut of the flow below, shipped as one sheet rather than
+seven screens, because it works as a filter on the lists people are already
+browsing:
+
+- **Criteria** live in `resource_eligibility` (migration 0104), one row per
+  *distinct* eligibility sentence keyed on its normalized text
+  (`resources/eligibility.py:text_key`), not per service and not the
+  per-criterion table sketched above: ~1,500 sentences cover ~2,200
+  listings, and "Open to the public" is one row. Stock phrases are
+  recognized in code; the rest are read by Haiku in batches of 25 at the end
+  of each `resources.refresh` run (`max_eligibility_per_run`, scheduler
+  Anthropic key). Bump `VERSION` to re-read everything after a prompt change.
+  Vocabulary: ages of the person served, ages of a child for family
+  programs, `requires` (veteran/military, disability, pregnancy or new baby,
+  uninsured, job loss, families with children, low income, homeless),
+  `focus` (women, men, LGBTQ+, survivors), `either` (any one group is
+  enough), `asks_immigration_status`, and `other` (a referral, a diagnosis).
+- **The API** returns each listing's criteria on search and detail
+  (`eligibility`, null until read). Answers never go to the server.
+- **The sheet** (`pages/localz/FitButton.tsx`, matching in
+  `lib/localzFit.ts`): household ages as bands, five "does this apply"
+  chips, "services that focus on…", "programs that don't ask about
+  immigration status first", and "Remember on this device" (off = session
+  storage, which Quick exit clears). **No income question yet**: listings
+  rarely state a number, so asking would collect a sensitive answer that
+  improves nothing until `program_rules` exist.
+- **Labels**: *For you* (a check mark; everything it asks is something you
+  said), *Open to everyone*, *Check if you qualify* (income, a referral, or
+  anything we can't tell), and for a mismatch no pill at all - just "For:
+  ages 60 and up", sorted under "Other programs that might still help".
+  Never red, never "not eligible". Focus only ever adds a match. With
+  `either`, the right age alone only reaches "check" (the model reads
+  "adults with disabilities" as either/or often enough to matter).
+- Sorting covers the listings loaded so far; the server's order is kept
+  within each label.
+
 Runs entirely in the browser. The flow fetches the rules it needs
 (`GET /resources/rules?county=camden`: program rules, poverty guidelines,
 and the structured criteria for services in that county, a few hundred KB

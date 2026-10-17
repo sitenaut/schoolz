@@ -20,6 +20,7 @@ from database import get_db
 from models import ResourceService
 from resources import nj211
 from resources.categories import CATEGORIES, categories_for_code
+from resources.eligibility import criteria_for
 
 router = APIRouter(prefix="/resources", tags=["resources"])
 
@@ -66,6 +67,10 @@ class ResourceSummaryOut(BaseModel):
     complete: bool
     statewide: bool
     last_assured_on: date | None
+    # Structured "who can come" (resources/eligibility.py), null until the
+    # sentence has been read. The browser matches it against the visitor's
+    # own answers, which never come here.
+    eligibility: dict | None = None
 
 
 class ResourceTypeOut(BaseModel):
@@ -105,7 +110,7 @@ def _escape_like(text: str) -> str:
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _summary(row: ResourceService) -> dict:
+def _summary(row: ResourceService, eligibility: dict | None = None) -> dict:
     return {
         "id": row.id,
         "name": row.name,
@@ -120,6 +125,7 @@ def _summary(row: ResourceService) -> dict:
         "complete": not row.missing_core,
         "statewide": _is_statewide(row),
         "last_assured_on": row.last_assured_on,
+        "eligibility": eligibility,
     }
 
 
@@ -263,7 +269,8 @@ async def search_resources(body: ResourceSearchIn, db: AsyncSession = Depends(ge
         .scalars()
         .all()
     )
-    return ResourceSearchOut(items=[ResourceSummaryOut(**_summary(r)) for r in rows], total=total)
+    criteria = await criteria_for(db, list(rows))
+    return ResourceSearchOut(items=[ResourceSummaryOut(**_summary(r, criteria.get(r.id))) for r in rows], total=total)
 
 
 @router.get("/{resource_id}", response_model=ResourceDetailOut)
@@ -271,8 +278,9 @@ async def get_resource(resource_id: str, db: AsyncSession = Depends(get_db)) -> 
     row = await db.get(ResourceService, resource_id)
     if row is None or row.status != "active":
         raise HTTPException(status_code=404, detail="Resource not found")
+    criteria = await criteria_for(db, [row])
     return ResourceDetailOut(
-        **_summary(row),
+        **_summary(row, criteria.get(row.id)),
         email=row.email,
         website=row.website,
         postal_code=row.postal_code,

@@ -5,7 +5,9 @@ import { SeoHead } from "../../components/SeoHead";
 import { IconAlert, IconChevronLeft, IconClock, IconLink, IconMail, IconPhone, IconPin } from "../../components/icons";
 import { LOCALE } from "../../lib/i18n";
 import { type ResourceDetail, categoryByKey, confirmedLabel, fetchResource, isFree, mapsHref, telHref } from "../../lib/localz";
+import { describe, fitFor, useLocalzFit } from "../../lib/localzFit";
 import { usePrerenderReady } from "../../lib/prerenderReady";
+import { FitNote } from "./FitNote";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -27,6 +29,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
   const { t } = useTranslation();
   const [r, setR] = useState<ResourceDetail | null | undefined>(undefined);
   const [error, setError] = useState(false);
+  const answers = useLocalzFit()?.answers ?? null;
 
   useEffect(() => {
     if (!resourceId) return;
@@ -48,6 +51,8 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
   const category = categoryByKey(r.categories[0]);
   const org = r.organization_name && r.organization_name !== r.name ? r.organization_name : null;
   const place = [r.address, r.city, r.postal_code].filter(Boolean).join(", ");
+  const fit = fitFor(r.eligibility, answers);
+  const asks = r.eligibility ? describe(r.eligibility) : [];
   const map = mapsHref(r);
   const confirmed = confirmedLabel(r.last_assured_on, LOCALE);
 
@@ -106,6 +111,11 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
       {r.eligibility_text && (
         <Section title={t("Who can get help")}>
           <p>{r.eligibility_text}</p>
+          {fit ? (
+            <FitNote fit={fit} />
+          ) : (
+            asks.length > 0 && <p className="localz-muted">{t("In short: {{who}}", { who: asks.map((l) => t(l.text, l.vars)).join(" · ") })}</p>
+          )}
         </Section>
       )}
       {r.application_process && (
