@@ -24,6 +24,12 @@ or a plaintext row an error instead of a silent fallback.
 `derived_key(purpose)` gives other code its own key from the same secret
 (HKDF, one key per purpose), so a signing key doesn't need a secret of its
 own and can never be confused with the encryption key.
+
+`EncryptedText(purpose=..., required=True)` encrypts a column with keys
+derived for that purpose (one per configured key, so rotation works the same
+way), and refuses to store or read plaintext whatever ENCRYPTION_REQUIRE
+says. The saved services profile uses it: its ciphertext can't be opened
+with the Gmail tokens' key, and with no key configured it isn't stored at all.
 """
 from __future__ import annotations
 
@@ -69,32 +75,45 @@ def _fernet_for(keys: str) -> MultiFernet | None:
         raise EncryptionError("DATA_ENCRYPTION_KEYS holds a value that is not a Fernet key") from None
 
 
-def fernet() -> MultiFernet | None:
-    return _fernet_for(_keys_env())
+@lru_cache(maxsize=16)
+def _purpose_fernet_for(keys: str, purpose: str) -> MultiFernet | None:
+    parts = split_keys(keys)
+    if not parts:
+        return None
+    _fernet_for(keys)  # same "not a Fernet key" error as everywhere else
+    return MultiFernet([Fernet(base64.urlsafe_b64encode(_derive(k, purpose))) for k in parts])
+
+
+def fernet(purpose: str | None = None) -> MultiFernet | None:
+    if purpose is None:
+        return _fernet_for(_keys_env())
+    return _purpose_fernet_for(_keys_env(), purpose)
 
 
 def is_encrypted(stored: Any) -> bool:
     return isinstance(stored, str) and stored.startswith(PREFIX)
 
 
-def encrypt(plain: str) -> str:
-    """The stored form of `plain`: encrypted when a key is set, else unchanged."""
-    f = fernet()
+def encrypt(plain: str, purpose: str | None = None, required: bool = False) -> str:
+    """The stored form of `plain`: encrypted when a key is set, else unchanged
+    (or an error, when encryption is required)."""
+    f = fernet(purpose)
     if f is None:
-        if _required():
-            raise EncryptionError("ENCRYPTION_REQUIRE is on but DATA_ENCRYPTION_KEYS is not set")
+        if required or _required():
+            raise EncryptionError("encryption is required but DATA_ENCRYPTION_KEYS is not set")
         return plain
     return PREFIX + f.encrypt(plain.encode()).decode()
 
 
-def decrypt(stored: str) -> str:
+def decrypt(stored: str, purpose: str | None = None, required: bool = False) -> str:
     """The plain value of a stored one. A legacy plaintext value is returned
-    as is, unless ENCRYPTION_REQUIRE says every value must be encrypted by now."""
+    as is, unless ENCRYPTION_REQUIRE (or the column) says every value must be
+    encrypted by now."""
     if not is_encrypted(stored):
-        if _required():
-            raise EncryptionError("a credential column holds plaintext and ENCRYPTION_REQUIRE is on")
+        if required or _required():
+            raise EncryptionError("an encrypted column holds plaintext and encryption is required")
         return stored
-    f = fernet()
+    f = fernet(purpose)
     if f is None:
         raise EncryptionError("an encrypted credential was read but DATA_ENCRYPTION_KEYS is not set")
     try:
@@ -110,6 +129,11 @@ def _derive(first_key: str, purpose: str) -> bytes:
     ).derive(base64.urlsafe_b64decode(first_key))
 
 
+def can_encrypt() -> bool:
+    """True when DATA_ENCRYPTION_KEYS is set, so a required column can be written."""
+    return bool(split_keys(_keys_env()))
+
+
 def derived_key(purpose: str) -> bytes | None:
     """A 32-byte key for `purpose`, derived from the first DATA_ENCRYPTION_KEYS
     key; None when no key is set. Rotating that key changes it."""
@@ -123,13 +147,21 @@ def derived_key(purpose: str) -> bytes | None:
 class EncryptedText(TypeDecorator):
     """A String column whose value is encrypted at rest. The database type is
     unchanged (unbounded VARCHAR), so switching a column to it needs no
-    migration."""
+    migration.
+
+    `purpose` encrypts with keys derived for that purpose instead of the
+    configured keys themselves; `required` never stores or reads plaintext."""
 
     impl = String
     cache_ok = True
 
+    def __init__(self, *args: Any, purpose: str | None = None, required: bool = False, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.purpose = purpose
+        self.required = required
+
     def process_bind_param(self, value: str | None, dialect: Any) -> str | None:
-        return None if value is None else encrypt(value)
+        return None if value is None else encrypt(value, self.purpose, self.required)
 
     def process_result_value(self, value: str | None, dialect: Any) -> str | None:
-        return None if value is None else decrypt(value)
+        return None if value is None else decrypt(value, self.purpose, self.required)
