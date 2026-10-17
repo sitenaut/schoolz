@@ -47,6 +47,10 @@ class ScraperNotConfigured(RuntimeError):
     pass
 
 
+class ScraperRefused(RuntimeError):
+    """Every scraper got a refusal (403/429) from the source."""
+
+
 def _get_semaphore() -> asyncio.Semaphore:
     global _semaphore
     if _semaphore is None:
@@ -198,3 +202,34 @@ async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
     if not result.get("body_base64"):
         raise RuntimeError(f"scraper returned no binary body for {url}")
     return base64.b64decode(result["body_base64"])
+
+
+async def fetch_raw_text_from_any(url: str, timeout_ms: int = 45_000, refused: tuple[int, ...] = (403, 429)) -> dict:
+    """A text response (JSON, CSV) from the first scraper the source doesn't
+    refuse. /fetch-raw reports the source's own status inside a 200, so the
+    usual fallback never moves on from a WAF's 403 - but a block is usually
+    per network (datacenter vs residential), so each service is asked in
+    turn. Returns {status, content_type, text, service}; raises
+    ScraperRefused when every service was refused."""
+    services = _services()
+    if not services:
+        raise ScraperNotConfigured("SCRAPER_URL / SCRAPER_API_KEY are not configured")
+    seen: list[str] = []
+    async with _get_semaphore():
+        for service_url, api_key in services:
+            host = httpx.URL(service_url).host
+            try:
+                result = await _post_to(service_url, api_key, "/fetch-raw", {"url": url, "timeout_ms": timeout_ms}, timeout_s=timeout_ms / 1000 * 2 + 10)
+            except Exception as exc:  # noqa: BLE001 - try the next service
+                seen.append(f"{host}: {type(exc).__name__}")
+                continue
+            status = int(result.get("status") or 0)
+            if status in refused:
+                seen.append(f"{host}: HTTP {status}")
+                continue
+            if result.get("body_base64"):
+                text = base64.b64decode(result["body_base64"]).decode("utf-8", "replace")
+            else:
+                text = result.get("body") or ""
+            return {"status": status, "content_type": result.get("content_type") or "", "text": text, "service": host}
+    raise ScraperRefused(f"every scraper was refused or failed for {url}: {'; '.join(seen)}")

@@ -253,9 +253,14 @@ against the live site.
   with any missing it 302s to its error page. Returns
   `{"Facilities": [...], "ResultCount": n}`. `pageSize=500`; the biggest
   counties take two pages (26 requests for all 21).
-- **Access:** Cloudflare 403s curl, but httpx with our honest
-  `schoolz-localz` User-Agent gets 200 JSON. A 403/429 stops the run - no
-  fallback through the scraper or the Pi. The reCAPTCHA on the page is
+- **Access:** Cloudflare 403s datacenter networks: prod on Fly is refused,
+  a home connection gets 200 JSON with our honest `schoolz-localz`
+  User-Agent. So the job goes direct first and, on a 403/429, sends the
+  rest of the run through `/fetch-raw` on each scraper in turn (ours, the
+  droplet, the Pi; `scraper_client.fetch_raw_text_from_any`), which send
+  the scrapers' browser User-Agent - the owner's call. Only when every
+  route is refused does the run stop. `via_scraper: true` in the job's
+  params skips the direct try. The reCAPTCHA on the page is
   commented out in its own JS. There's no robots.txt (the site serves its
   "Uh Oh!" error page).
 - **Volume:** 6,214 providers statewide (Oct 2026). `ResultCount` runs a
