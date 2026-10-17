@@ -92,6 +92,7 @@ export type LocalzCategory = {
 // Keys match backend/resources/categories.py. Labels pass through t().
 export const LOCALZ_CATEGORIES: LocalzCategory[] = [
   { key: "food", label: "Food", navLabel: "Food", blurb: "Pantries, meals and help with groceries", inNav: true },
+  { key: "english", label: "Learn English", navLabel: "English", blurb: "English classes and reading help", inNav: true },
   { key: "housing-bills", label: "Housing & Bills", navLabel: "Housing", blurb: "Rent, utilities and a place to stay", inNav: true },
   { key: "health", label: "Health", navLabel: "Health", blurb: "Clinics, coverage, counseling and recovery", inNav: true },
   { key: "kids-family", label: "Kids & Family", navLabel: "Family", blurb: "Child care, early learning and parenting", inNav: true },

@@ -288,6 +288,12 @@ export const IconCoins = ({ className }: P) => (
     <path d="M10 15.5c.9 1.2 2.9 2 5 2 2.8 0 5-1.1 5-2.5v-4c0-1.4-2.2-2.5-5-2.5" />
   </svg>
 );
+export const IconLanguage = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-4 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" />
+    <path d="M9 13l3-6.5 3 6.5M10.2 10.6h3.6" />
+  </svg>
+);
 export const IconBag = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <path d="M5 8h14l-1 12H6z" />

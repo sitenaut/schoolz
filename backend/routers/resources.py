@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import ResourceService
-from resources import childcarenj, nj211, portal
+from resources import childcarenj, nj211, portal, search_terms
 from resources.categories import CATEGORIES, categories_for_code
 from resources.eligibility import criteria_for
 
@@ -222,6 +222,8 @@ def _filters(body: ResourceSearchIn, *, with_type: bool = True) -> list:
                 ResourceService.location_name.ilike(pattern, escape="\\"),
                 ResourceService.description.ilike(pattern, escape="\\"),
                 func.array_to_string(ResourceService.taxonomy_names, " ").ilike(pattern, escape="\\"),
+                # Everyday words ("English classes") for what listings call ESL.
+                *(ResourceService.categories.contains([c]) for c in search_terms.categories_meant(query)),
             )
         )
     return filters

@@ -36,7 +36,7 @@ describe("resource display helpers", () => {
   });
   it("matches the backend's category keys", () => {
     // backend/resources/categories.py CATEGORIES, in nav order.
-    expect(LOCALZ_CATEGORIES.map((c) => c.key)).toEqual(["food", "housing-bills", "health", "kids-family", "money-work", "legal-safety", "everyday-needs"]);
+    expect(LOCALZ_CATEGORIES.map((c) => c.key)).toEqual(["food", "english", "housing-bills", "health", "kids-family", "money-work", "legal-safety", "everyday-needs"]);
   });
 });
 

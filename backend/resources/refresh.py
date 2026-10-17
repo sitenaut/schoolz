@@ -30,7 +30,7 @@ from models import ResourceOrganization, ResourceService
 from scheduler import progress
 
 from . import childcarenj, nj211, ownership
-from .categories import categories_for_codes
+from .categories import categories_for
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def missing_core(row: ResourceService) -> list[str]:
 
 
 def _derive(row: ResourceService) -> None:
-    row.categories = categories_for_codes(list(row.taxonomy_codes or []))
+    row.categories = categories_for(list(row.taxonomy_codes or []), row.name, row.description)
     row.missing_core = missing_core(row)
 
 
