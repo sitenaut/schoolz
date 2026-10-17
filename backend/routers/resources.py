@@ -128,6 +128,16 @@ class SignupOut(BaseModel):
     how: str | None = None
 
 
+class UpcomingDateOut(BaseModel):
+    id: str
+    title: str
+    start_time: datetime
+    end_time: datetime | None
+    venue_name: str | None
+    venue_address: str | None
+    note: str | None
+
+
 class ResourceSummaryOut(BaseModel):
     id: str
     name: str
@@ -189,6 +199,10 @@ class ResourceDetailOut(ResourceSummaryOut):
     alert: str | None
     # "This week only" hours a provider posted, for the current week.
     week_hours_text: str | None = None
+    # Dates the provider posted ("Post a date"), soonest first.
+    upcoming_dates: list[UpcomingDateOut] = []
+    # Volunteer roles, items to donate, a wish-list link.
+    ways_to_help: dict | None = None
     missing_core: list[str]
     source: str
     source_url: str | None
@@ -461,6 +475,13 @@ async def get_resource(resource_id: str, db: AsyncSession = Depends(get_db)) -> 
         taxonomy_names=list(row.taxonomy_names or []),
         alert=row.alert,
         week_hours_text=_week_hours_text(row),
+        upcoming_dates=[
+            UpcomingDateOut(id=e.id, title=e.title, start_time=e.start_time, end_time=e.end_time,
+                            venue_name=e.venue_name, venue_address=e.venue_address, note=e.description)
+            # A confidential listing can't post dates; this is the second lock.
+            for e in ([] if _confidential(row) else await portal.upcoming_dates(db, row.id, 5))
+        ],
+        ways_to_help=row.ways_to_help,
         missing_core=list(row.missing_core or []),
         source=row.source,
         source_url=_source_url(row),

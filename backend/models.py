@@ -1548,6 +1548,11 @@ class LocalEvent(Base):
     is_free: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     categories: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # A date a Localz provider posted for their listing ("Post a date",
+    # source "localz"); gone with the listing.
+    resource_service_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_services.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
@@ -1673,6 +1678,9 @@ class ResourceService(Base):
     # How it takes people: {"status": "drop_in"|"open"|"waitlist"|"closed",
     # "opens_on": ISO date, "how": ...} (portal.Signup).
     signup: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # "How you can help" (migration 0110, portal.WaysToHelp): volunteer
+    # roles, items to donate, a wish-list link. Never a money link.
+    ways_to_help: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Columns a provider set. A scraper refresh never overwrites these; a
     # differing scraped value becomes a "source_conflict" change request.
     provider_owned_fields: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default="{}")

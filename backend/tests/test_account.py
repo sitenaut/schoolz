@@ -209,3 +209,21 @@ async def test_delete_account_removes_saved_services_profile_and_consent(monkeyp
         # Someone else's profile is untouched.
         kept = (await client.get("/me/saved-answers", headers=other)).json()["answers"]
         assert kept == {"ages": ["18-59"], "has": [], "focus": [], "noStatusFirst": False}
+
+
+def test_a_token_from_a_clock_a_few_seconds_ahead_is_accepted():
+    """The container clock steps back after a host sleep; a token issued
+    "in the future" by a second or two must not 401 (auth.JWT_LEEWAY_SECONDS)."""
+    from datetime import UTC, datetime, timedelta
+
+    import jwt
+
+    import auth
+
+    ahead = datetime.now(UTC) + timedelta(seconds=5)
+    token = jwt.encode({"sub": "u1", "iat": ahead, "exp": ahead + timedelta(minutes=5)}, auth.JWT_SECRET, algorithm=auth.JWT_ALGORITHM)
+    assert auth._decode_local_token(token) == "u1"
+    stale = datetime.now(UTC) - timedelta(minutes=10)
+    token = jwt.encode({"sub": "u1", "iat": stale, "exp": stale + timedelta(minutes=5)}, auth.JWT_SECRET, algorithm=auth.JWT_ALGORITHM)
+    with pytest.raises(auth.HTTPException):
+        auth._decode_local_token(token)

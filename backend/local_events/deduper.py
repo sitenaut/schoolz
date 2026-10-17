@@ -69,8 +69,16 @@ async def find_duplicate(db: AsyncSession, candidate: dict) -> Event | None:
     return None
 
 
+# Rows a person wrote for us: a feed that lists the same event may add a
+# category, never rewrite what they said.
+_PEOPLE_SOURCES = {"community", "localz"}
+
+
 def merge_into(existing: Event, candidate: dict) -> None:
     """Prefer richer data: longer description, has image, has price."""
+    if existing.source in _PEOPLE_SOURCES:
+        existing.categories = list(dict.fromkeys([*(existing.categories or []), *(candidate.get("categories") or [])]))
+        return
     cand_desc = candidate.get("description") or ""
     if len(cand_desc) > len(existing.description or ""):
         existing.description = candidate["description"]

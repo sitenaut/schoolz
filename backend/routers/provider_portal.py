@@ -10,6 +10,7 @@ number, and decisions show here rather than in an email.
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -19,11 +20,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
-from models import ProviderMembership, ResourceChangeRequest, ResourceOnboardingRequest, ResourceService, User
+from local_events.prune import LOCALZ_SOURCE
+from models import (
+    LocalEvent,
+    ProviderMembership,
+    ResourceChangeRequest,
+    ResourceOnboardingRequest,
+    ResourceService,
+    User,
+)
 from resources import portal
-from resources.portal import Cost, Hours, Signup, Submission
+from resources.places import zip_point
+from resources.portal import Cost, Hours, ProgramPlace, Signup, Submission, WaysToHelp
 from resources.provider_types import BY_CODE, PROVIDER_TYPES
 from services import upload_guard
+from services.app_help import SITE
 from services.client_ip import client_ip
 
 logger = logging.getLogger(__name__)
@@ -152,6 +163,7 @@ class ListingUpdateIn(BaseModel):
     types: list[str] | None = Field(default=None, max_length=5)
     signup: Signup | None = None
     delivery: str | None = Field(default=None, pattern=r"^(in_person|online|both)$")
+    ways_to_help: WaysToHelp | None = None
 
 
 class ListingUpdateOut(BaseModel):
@@ -201,6 +213,7 @@ class MyListingOut(BaseModel):
     location_name: str | None
     delivery: str | None
     signup: dict | None
+    ways_to_help: dict | None
     types: list[str]
     pending_changes: list[PendingChangeOut]
 
@@ -516,6 +529,7 @@ async def _listing_out(db: AsyncSession, row: ResourceService, membership: Provi
         location_name=row.location_name,
         delivery=row.delivery,
         signup=row.signup,
+        ways_to_help=row.ways_to_help,
         types=[BY_CODE[c].key for c in (row.taxonomy_codes or []) if c in BY_CODE],
         pending_changes=[PendingChangeOut(id=p.id, fields=sorted(p.changes), created_at=p.created_at) for p in pending],
     )
@@ -626,6 +640,11 @@ def _update_columns(body: ListingUpdateIn, row: ResourceService) -> tuple[dict, 
         cols["signup"] = body.signup.model_dump(mode="json") if body.signup and body.signup.status else None
     if "delivery" in sent:
         cols["delivery"] = body.delivery
+    if "ways_to_help" in sent:
+        try:
+            cols["ways_to_help"] = portal.clean_ways_to_help(body.ways_to_help)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from None
     if "types" in sent and body.types is not None:
         if not body.types:
             raise HTTPException(422, "Pick at least one kind of service")
@@ -671,3 +690,122 @@ async def update_listing(
         change_id = change.id
     await db.commit()
     return ListingUpdateOut(applied=sorted(now_cols), held=sorted(held) + (["private_address"] if private_address else []), change_request_id=change_id)
+
+
+# ---- "Post a date" ------------------------------------------------------------------
+
+# A listing's upcoming dates, at most: enough for a weekly class's term, few
+# enough that /local isn't one provider's calendar.
+MAX_UPCOMING_DATES = 30
+_TIME = r"^([01]\d|2[0-3]):[0-5]\d$"
+
+
+class DateIn(BaseModel):
+    """One dated event for a listing: a free eye screening day, a community
+    meeting, a mobile pantry stop. Listed on /local and on the listing."""
+
+    title: str = Field(min_length=3, max_length=120)
+    on: date
+    start: str = Field(pattern=_TIME)
+    end: str | None = Field(default=None, pattern=_TIME)
+    note: str | None = Field(default=None, max_length=500)
+    # Somewhere other than the listing's own address.
+    place: ProgramPlace | None = None
+
+
+class DateOut(BaseModel):
+    id: str
+    title: str
+    start_time: datetime
+    end_time: datetime | None
+    venue_name: str | None
+    venue_address: str | None
+    note: str | None
+
+
+def date_out(event: LocalEvent) -> DateOut:
+    return DateOut(
+        id=event.id, title=event.title, start_time=event.start_time, end_time=event.end_time,
+        venue_name=event.venue_name, venue_address=event.venue_address, note=event.description,
+    )
+
+
+@router.get("/listings/{service_id}/dates", response_model=list[DateOut])
+async def my_dates(service_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await _membership(db, user, service_id)
+    return [date_out(e) for e in await portal.upcoming_dates(db, service_id, MAX_UPCOMING_DATES)]
+
+
+@router.post("/listings/{service_id}/dates", response_model=DateOut, status_code=201)
+async def post_date(service_id: str, body: DateIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Publishes at once, so only for a verified member: the date goes on
+    the public /local calendar with nothing held. A confidential listing
+    can't post one - an event has a place, and its place is the secret."""
+    row, membership = await _membership(db, user, service_id)
+    if membership.verified_at is None:
+        raise HTTPException(403, "Once we've confirmed it's you by phone, you can post dates.")
+    if row.status != "active":
+        raise HTTPException(409, "This listing isn't live")
+    if row.address_kind == "confidential":
+        raise HTTPException(422, "A confidential listing can't post public dates.")
+    day = portal.today()
+    if body.on < day or body.on > day + timedelta(days=366):
+        raise HTTPException(422, "Pick a date from today to a year ahead")
+    if body.end and body.end <= body.start:
+        raise HTTPException(422, "The end time must be after the start")
+    for text in (body.title, body.note or ""):
+        for match in portal._URL_RE.finditer(text):
+            reason = portal.bad_link_reason(match.group(0))
+            if reason:
+                raise HTTPException(422, reason)
+    if len(await portal.upcoming_dates(db, service_id, MAX_UPCOMING_DATES)) >= MAX_UPCOMING_DATES:
+        raise HTTPException(409, f"A listing can have {MAX_UPCOMING_DATES} upcoming dates at most")
+
+    start = datetime.combine(body.on, datetime.strptime(body.start, "%H:%M").time(), portal.EASTERN)
+    end = datetime.combine(body.on, datetime.strptime(body.end, "%H:%M").time(), portal.EASTERN) if body.end else None
+    if (end or start) < portal.now():
+        raise HTTPException(422, "That time has already passed")
+    place = body.place if body.place and _clean(body.place.address) else None
+    if place:
+        venue_name = _clean(place.place_name) or row.organization_name or row.name
+        venue_address = ", ".join(x for x in [_clean(place.address), _clean(place.city), place.postal_code] if x)
+        point = zip_point(place.postal_code)
+        lat, lon = point if point else (None, None)
+    else:
+        venue_name = row.location_name or row.organization_name or row.name
+        venue_address = ", ".join(x for x in [row.address, row.city, row.postal_code] if x) or None
+        lat, lon = row.latitude, row.longitude
+    event = LocalEvent(
+        source=LOCALZ_SOURCE,
+        source_event_id=f"{row.id}:{uuid.uuid4()}",
+        resource_service_id=row.id,
+        title=body.title.strip(),
+        description=_clean(body.note),
+        start_time=start,
+        end_time=end,
+        venue_name=venue_name,
+        venue_address=venue_address,
+        latitude=lat,
+        longitude=lon,
+        url=f"{SITE}/localz/r/{row.id}",
+        is_free=True if row.cost_kind == "free" else None,
+        categories=["community-help"],
+    )
+    db.add(event)
+    await db.flush()
+    portal.log(db, action="provider.date", actor=user, actor_kind="provider", service_id=row.id,
+               after={"event_id": event.id, "title": event.title, "start_time": start.isoformat()})
+    await db.commit()
+    return date_out(event)
+
+
+@router.delete("/listings/{service_id}/dates/{event_id}", status_code=204)
+async def delete_date(service_id: str, event_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await _membership(db, user, service_id)
+    event = await db.get(LocalEvent, event_id)
+    if event is None or event.resource_service_id != service_id or event.source != LOCALZ_SOURCE:
+        raise HTTPException(404, "Date not found")
+    portal.log(db, action="provider.date_delete", actor=user, actor_kind="provider", service_id=service_id,
+               before={"event_id": event.id, "title": event.title, "start_time": event.start_time.isoformat()})
+    await db.delete(event)
+    await db.commit()

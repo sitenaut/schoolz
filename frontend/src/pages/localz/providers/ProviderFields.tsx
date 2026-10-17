@@ -20,10 +20,12 @@ import {
   type Signup,
   type SignupStatus,
   type Submission,
+  type WaysToHelp,
   type WhoCanCome,
   emptyHours,
   emptyPlace,
   emptySignup,
+  emptyWaysToHelp,
   emptyWho,
 } from "../../../lib/providerPortal";
 
@@ -370,7 +372,7 @@ export function DeliverySelect({ value, onChange }: { value: Delivery | null; on
   );
 }
 
-function PlaceFields({ value, onChange }: { value: ProgramPlace; onChange: (p: ProgramPlace) => void }) {
+export function PlaceFields({ value, onChange }: { value: ProgramPlace; onChange: (p: ProgramPlace) => void }) {
   const { t } = useTranslation();
   return (
     <div className="fgrid two">
@@ -390,6 +392,30 @@ function PlaceFields({ value, onChange }: { value: ProgramPlace; onChange: (p: P
           maxLength={5}
           onChange={(e) => onChange({ ...value, postal_code: e.target.value.replace(/\D/g, "").slice(0, 5) || null })}
         />
+      </Field>
+    </div>
+  );
+}
+
+/** Volunteer roles, things to donate and a wish-list link. No money link:
+ * Localz is for people looking for help. */
+export function WaysToHelpEditor({ value, onChange }: { value: WaysToHelp; onChange: (w: WaysToHelp) => void }) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <Field label={t("Volunteers you need")} hint={t("One per line, for example \"Pantry packing on Wednesdays\".")}>
+        <textarea rows={2} value={listText(value.volunteer_roles)} onChange={(e) => onChange({ ...value, volunteer_roles: lines(e.target.value) })} />
+      </Field>
+      {value.volunteer_roles.length > 0 && (
+        <Field label={t("How to volunteer")} hint={t("Optional - for example \"Call and ask for the volunteer coordinator\".")}>
+          <input value={value.volunteer_how ?? ""} maxLength={300} onChange={(e) => onChange({ ...value, volunteer_how: e.target.value || null })} />
+        </Field>
+      )}
+      <Field label={t("Things people can donate")} hint={t("One per line, for example \"Canned beans\".")}>
+        <textarea rows={2} value={listText(value.donations)} onChange={(e) => onChange({ ...value, donations: lines(e.target.value) })} />
+      </Field>
+      <Field label={t("Wish list link")} hint={t("Optional - an online wish list. We check every new link before it goes up. No payment or donation links.")}>
+        <input type="url" value={value.wishlist_url ?? ""} maxLength={300} onChange={(e) => onChange({ ...value, wishlist_url: e.target.value || null })} />
       </Field>
     </div>
   );
@@ -594,6 +620,7 @@ export function CompletenessMeter({ c }: { c: Completeness }) {
 }
 
 const listText = (v: string[]) => v.join("\n");
+const lines = (v: string) => v.split("\n").map((x) => x.trimStart()).filter((x, i, all) => x || i === all.length - 1);
 const textList = (v: string) =>
   v
     .split(/\n|,/)
@@ -720,6 +747,12 @@ export function ListingForm({
       </section>
 
       <section className="provider-section">
+        <h3>{t("How people can help you")}</h3>
+        <p className="note">{t("Optional. Shown at the end of each of your listings, after the help people came for.")}</p>
+        <WaysToHelpEditor value={value.ways_to_help ?? emptyWaysToHelp()} onChange={(ways_to_help) => set("ways_to_help", ways_to_help)} />
+      </section>
+
+      <section className="provider-section">
         <h3>{t("More details")}</h3>
         <p className="note">{t("Optional, but each one helps people decide to come.")}</p>
         <Field label={t("What to bring")} hint={t("One per line, for example \"Photo ID\".")}>
@@ -781,6 +814,14 @@ export function cleanSubmission(s: Submission): Submission {
     email: blank(s.email),
     services,
     hours: hours(s.hours),
+    ways_to_help: s.ways_to_help
+      ? {
+          volunteer_roles: s.ways_to_help.volunteer_roles.map((x) => x.trim()).filter(Boolean),
+          volunteer_how: blank(s.ways_to_help.volunteer_how),
+          donations: s.ways_to_help.donations.map((x) => x.trim()).filter(Boolean),
+          wishlist_url: blank(s.ways_to_help.wishlist_url),
+        }
+      : null,
     cost: { ...s.cost, amount: blank(s.cost.amount) },
   };
 }

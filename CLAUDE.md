@@ -141,10 +141,10 @@ Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`. P
 
 - **Run backend tests inside Docker, never on the host** (no guaranteed Python/pytest there). `backend/` is bind-mounted into `schoolz-api-local`, so edits are live; same container for `alembic upgrade head`.
 - **pytest never writes to the shared local DB**: `conftest.py`'s autouse `_isolated_db_transaction` wraps each test in a rolled-back transaction (`join_transaction_mode="create_savepoint"`, `database.SessionLocal` monkeypatched). A helper doing `from database import SessionLocal` bypasses the patch and leaks rows — use `import database; database.SessionLocal()`.
-- **Known flake**: `test_account.py::test_delete_account_requires_confirmation_and_password` occasionally 401s (PyJWT rejects a future `iat` if the container clock steps back). Re-run.
 
 ## Bugs whose mechanism is worth remembering
 
 Silent ones — no error, no log line — that cost real time. (Area-specific ones live with their area.)
 
+- **Random 401s right after register/login** (any test, any time): PyJWT refuses a token whose `iat` is a second ahead of the clock, and the WSL container's clock steps back after a host sleep. Tokens are checked with `auth.JWT_LEEWAY_SECONDS` of slack; don't drop it.
 - **`.gitignore` had a bare `lib/`** (Python boilerplate) that excluded `frontend/src/lib/`. Local builds passed; CI's fresh checkout failed.
