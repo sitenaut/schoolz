@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCALZ_CATEGORIES, confirmedLabel, isFree, isLocalzPath, mapsHref, telHref } from "./localz";
+import { HELP_NOW, LOCALZ_CATEGORIES, confirmedLabel, helpLineHref, isFree, isLocalzPath, mapsHref, telHref } from "./localz";
 
 describe("isLocalzPath", () => {
   it("covers Localz and its Events tab, nothing else", () => {
@@ -37,5 +37,14 @@ describe("resource display helpers", () => {
   it("matches the backend's category keys", () => {
     // backend/resources/categories.py CATEGORIES, in nav order.
     expect(LOCALZ_CATEGORIES.map((c) => c.key)).toEqual(["food", "housing-bills", "health", "kids-family", "money-work", "legal-safety", "everyday-needs"]);
+  });
+});
+
+describe("help lines", () => {
+  it("calls the phone lines and texts the text line with its keyword", () => {
+    const hrefs = HELP_NOW.map(helpLineHref);
+    expect(hrefs).toContain("tel:18005727233");
+    expect(hrefs).toContain("sms:88788?&body=BEGIN");
+    expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 });
