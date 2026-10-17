@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 import database
 from main import app
@@ -25,8 +25,10 @@ from models import (
     ResourceService,
     Role,
     RolePermission,
+    User,
     UserRole,
 )
+from permissions import PERMISSION_KEYS
 from resources import nj211, portal
 from resources.provider_types import PROVIDER_TYPES
 from resources.refresh import _apply_detail, _Orgs
@@ -168,6 +170,36 @@ async def test_review_queue_gates():
         reviewer_id, reviewer = await _register(client)
         await _grant(reviewer_id, "resources.view", "resources.manage")
         assert (await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)).status_code == 200
+
+
+async def test_a_confidential_address_is_shown_only_to_a_reviewer_who_can_act_in_a_browser():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sub = _submission(address_kind="confidential", address=None, city=None, postal_code=None, hours={"mode": "24_7"})
+        rid = (
+            await client.post("/provider-portal/requests", json={"submission": sub, "private_address": f"{SECRET_STREET}, Haddonfield"}, headers=provider)
+        ).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        viewer_id, viewer = await _register(client)
+        await _grant(viewer_id, "resources.view")
+        seen = (await client.get(f"/admin/resources/onboarding/{rid}", headers=viewer)).json()
+        assert seen["has_private_address"] is True and SECRET_STREET not in str(seen)
+        assert (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()["private_address"].startswith(SECRET_STREET)
+        sid = (await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)).json()["service_ids"][0]
+        assert (await client.get(f"/admin/resources/services/{sid}/private-address", headers=viewer)).status_code == 403
+        assert (await client.get(f"/admin/resources/services/{sid}/private-address", headers=reviewer)).json()["address"].startswith(SECRET_STREET)
+
+        # A script's API key never sees it, even a super admin's holding every permission.
+        boss_id, boss = await _register(client)
+        async with database.SessionLocal() as db:
+            await db.execute(update(User).where(User.id == boss_id).values(is_admin=True))
+            await db.commit()
+        made = await client.post("/admin/api-keys", headers=boss, json={"name": "portal", "permissions": sorted(PERMISSION_KEYS)})
+        assert made.status_code == 201, made.text
+        key = {"authorization": f"Bearer {made.json()['key']}"}
+        by_key = await client.get(f"/admin/resources/onboarding/{rid}", headers=key)
+        assert by_key.status_code == 200 and SECRET_STREET not in by_key.text
+        assert (await client.get(f"/admin/resources/services/{sid}/private-address", headers=key)).status_code == 403
 
 
 async def test_a_request_is_only_its_owners_and_a_draft_is_not_in_the_queue():

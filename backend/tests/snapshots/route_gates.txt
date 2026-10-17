@@ -42,7 +42,7 @@ POST   /admin/resources/onboarding/{request_id}/request-changes  perm:resources.
 GET    /admin/resources/services/{service_id}/log  perm:resources.view
 GET    /admin/resources/services/{service_id}/members  perm:resources.view
 POST   /admin/resources/services/{service_id}/members  perm:resources.manage
-GET    /admin/resources/services/{service_id}/private-address  perm:resources.view
+GET    /admin/resources/services/{service_id}/private-address  perm:resources.manage
 GET    /admin/roles  super_admin
 POST   /admin/roles  super_admin
 DELETE /admin/roles/{role_id}  super_admin

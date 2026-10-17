@@ -4,18 +4,20 @@ listings. GETs need `resources.view`, every change `resources.manage` (the
 in docs/LOCALZ_DESIGN.md, "Onboarding approval".
 
 This is the only place a confidential address is ever read back, and only
-to a reviewer verifying it.
+to a reviewer who can act on it (`resources.manage`) in a signed-in browser
+session: a view-only role or an API key sees only that one is on file.
 """
 from __future__ import annotations
 
+from contextvars import ContextVar
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_permission
+from auth import get_current_user, get_effective_permissions, is_api_key_request, require_permission
 from database import get_db
 from models import (
     ProviderMembership,
@@ -30,7 +32,23 @@ from resources import portal
 from resources.portal import Submission
 from routers.provider_portal import ListingBriefOut, RequestOut, request_out
 
-router = APIRouter(prefix="/admin/resources", tags=["admin-resources"])
+_reveal_private: ContextVar[bool] = ContextVar("reveal_private_address", default=False)
+
+
+async def _set_reveal(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> None:
+    """Whether this request may see a confidential address (a shelter's
+    location). Async, so the value is visible to the endpoint."""
+    allowed = not is_api_key_request(request) and (
+        user.is_admin or "resources.manage" in await get_effective_permissions(request, db, user)
+    )
+    _reveal_private.set(allowed)
+
+
+def _private(value: str | None) -> str | None:
+    return value if _reveal_private.get() else None
+
+
+router = APIRouter(prefix="/admin/resources", tags=["admin-resources"], dependencies=[Depends(_set_reveal)])
 
 _view = require_permission("resources.view")
 _manage = require_permission("resources.manage")
@@ -222,7 +240,7 @@ async def _review_out(db: AsyncSession, req: ResourceOnboardingRequest) -> Revie
         **data,
         contact_email=req.contact_email,
         account_email=account_email,
-        private_address=req.private_address,
+        private_address=_private(req.private_address),
         checklist=dict(req.checklist or {}),
         duplicates=[DuplicateOut(**d) for d in await portal.duplicates(db, sub, exclude)],
         flags=[FlagOut(**f) for f in await portal.flags(db, req, sub, account_email)],
@@ -449,7 +467,7 @@ async def _change_outs(db: AsyncSession, rows: list[ResourceChangeRequest]) -> l
                 changes=r.changes,
                 before=r.before,
                 has_private_address=bool(r.private_address),
-                private_address=r.private_address,
+                private_address=_private(r.private_address),
                 requested_by=emails.get(r.user_id or ""),
                 status=r.status,
                 note=r.note,
@@ -577,6 +595,8 @@ async def verify_member(membership_id: str, admin: User = Depends(_manage), db: 
 
 
 @router.get("/services/{service_id}/private-address")
-async def private_address(service_id: str, _: User = Depends(_view), db: AsyncSession = Depends(get_db)) -> dict:
+async def private_address(service_id: str, _: User = Depends(_manage), db: AsyncSession = Depends(get_db)) -> dict:
+    if not _reveal_private.get():
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Confidential addresses are shown only in a reviewer's browser session")
     row = await db.get(ResourcePrivateAddress, service_id)
     return {"kind": row.kind if row else None, "address": row.address if row else None}
