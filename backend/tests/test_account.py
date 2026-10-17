@@ -177,3 +177,35 @@ async def test_delete_account_with_published_captures():
         async with database.SessionLocal() as db:
             assert (await db.execute(select(Bucket3Capture).where(Bucket3Capture.owner_user_id == me["id"]))).first() is None
             assert await db.get(Student, student_id) is not None
+
+
+@pytest.mark.anyio
+async def test_delete_account_removes_saved_services_profile_and_consent(monkeypatch):
+    """The Localz saved answers and every consent record go with the account."""
+    from cryptography.fernet import Fernet
+    from sqlalchemy import select
+
+    import database
+    from models import ConsentRecord, ServicesProfile
+    from resources.saved_profile import POLICY_VERSION
+
+    monkeypatch.setenv("DATA_ENCRYPTION_KEYS", Fernet.generate_key().decode())
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _, _, headers = await _register(client)
+        _, _, other = await _register(client)
+        for who in (headers, other):
+            granted = await client.post(
+                "/me/saved-answers/consent", json={"purpose": "services_profile", "policy_version": POLICY_VERSION}, headers=who
+            )
+            assert granted.status_code == 200, granted.text
+            assert (await client.put("/me/saved-answers", json={"ages": ["18-59"]}, headers=who)).status_code == 200
+        me = (await client.get("/auth/me", headers=headers)).json()
+
+        gone = await client.request("DELETE", "/auth/me", json={"confirm": "DELETE", "password": "password123"}, headers=headers)
+        assert gone.status_code == 204, gone.text
+        async with database.SessionLocal() as db:
+            assert await db.get(ServicesProfile, me["id"]) is None
+            assert (await db.execute(select(ConsentRecord).where(ConsentRecord.user_id == me["id"]))).first() is None
+        # Someone else's profile is untouched.
+        kept = (await client.get("/me/saved-answers", headers=other)).json()["answers"]
+        assert kept == {"ages": ["18-59"], "has": [], "focus": [], "noStatusFirst": False}

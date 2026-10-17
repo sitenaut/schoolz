@@ -312,6 +312,18 @@ GET /local-events/facets
 POST /local-events/place
   body: PlaceIn
   -> 200: PlaceOut
+DELETE /me/saved-answers
+  -> 204: -
+GET /me/saved-answers
+  -> 200: SavedAnswersOut
+PUT /me/saved-answers
+  body: SavedAnswers
+  -> 200: SavedAnswersOut
+DELETE /me/saved-answers/consent
+  -> 204: -
+POST /me/saved-answers/consent
+  body: ConsentIn
+  -> 200: SavedAnswersOut
 GET /notifications
   -> 200: list[NotificationOut]
 POST /notifications/read-all
@@ -786,6 +798,8 @@ CompleteRequest { done: boolean }
 ConfigExport { districts: list[ExportDistrictOut], exported_at: string(date-time), local_events?: dict[dict[list[object]]], results?: ConfigResults | null, schools: list[ExportSchoolOut], smore_newsletters: list[ExportSmoreOut], source: string }
 ConfigImportResult { districts_created: integer, districts_updated: integer, local_event_jobs_missing?: list[string], local_event_sources_added?: integer, local_event_sources_updated?: integer, results_applied?: dict[integer], results_skipped?: list[string], sacc_created: integer, sacc_updated: integer, schools_created: integer, schools_updated: integer, smore_created: integer, smore_skipped: list[string], smore_updated: integer }
 ConfigResults { districts?: list[ResultDistrict], exported_at: string(date-time), newsletters?: list[ResultNewsletter], schools?: list[ResultSchool] }
+ConsentIn { policy_version: integer, purpose: enum(services_profile,services_alerts,services_alerts_named) }
+ConsentOut { current: boolean, granted_at: string(date-time), policy_version: integer }
 ContactMessageCreate { email?: string | null, message: string, name?: string | null, website?: string | null }
 ContactMessageOut { created_at: string(date-time), email: string | null, id: string, message: string, name: string | null, read_at: string(date-time) | null, user_id: string | null }
 CoursePreferenceIn { custom_color?: string | null, custom_name?: string | null }
@@ -882,6 +896,8 @@ RightNowOut { blocks: list[NowBlockOut], current: NowBlockOut | null, cycle_labe
 RoleIn { description?: string | null, name: string, permissions?: list[string] }
 RoleOut { description: string | null, id: string, name: string, permissions: list[string], user_count: integer }
 SaccProgramOut { absence_form_url: string | null, absence_phone: string | null, am_hours: string | null, closures_notes: string | null, handbook_url: string | null, late_pickup_policy: string | null, pickup_change_procedure: string | null, pm_hours: string | null, site_phone: string | null, updated_at: string(date-time) }
+SavedAnswers { ages?: list[enum(u1,1-4,5-12,13-17,18-59,60+)], focus?: list[enum(women,men,lgbtq,survivors)], has?: list[enum(veteran_military,disability,pregnant_or_new_baby,uninsured,job_loss)], noStatusFirst?: boolean }
+SavedAnswersOut { answers: SavedAnswers | null, available: boolean, consent: ConsentOut | null, last_used_at: string(date-time) | null, policy_version: integer, saved: boolean, updated_at: string(date-time) | null }
 ScheduleDayBlockOut { course_name: string | null, end_label: string | null, name: string, room: string | null, start_label: string | null, teacher: string | null }
 ScheduleDayOut { blocks: list[ScheduleDayBlockOut], date: string, long_blocks: boolean, rotation_day: string | null, status: string, timed: boolean, weekday: string }
 ScheduledJobCreate { cron_expr: string, description?: string | null, enabled?: boolean, kind: string, name: string, params?: object, run_once?: boolean, timezone?: string }

@@ -91,6 +91,11 @@ POST   /invites/{token}/accept  login
 GET    /local-events  public
 GET    /local-events/facets  public
 POST   /local-events/place  public
+DELETE /me/saved-answers  login
+GET    /me/saved-answers  login
+PUT    /me/saved-answers  login
+DELETE /me/saved-answers/consent  login
+POST   /me/saved-answers/consent  login
 GET    /notifications  login
 POST   /notifications/read-all  login
 GET    /notifications/unread-count  login

@@ -93,8 +93,10 @@ export function PrivacyPage() {
             <td>Your browser's session storage, or its local storage if you tick "Remember on this device"</td>
             <td>
               So Localz can put the listings that fit you first. They're matched on your device against what each
-              listing says about who it's for - your answers are never sent to us or anyone else. Without "Remember
-              on this device" they're forgotten when you close the tab or press Quick exit. We never ask about
+              listing says about who it's for - your answers are never sent to us or anyone else, unless you choose
+              to save them to your account (below). Without "Remember on this device" they're forgotten when you
+              close the tab or press Quick exit. With it, they're kept under a name that doesn't say what they are,
+              for 90 days at most, and "Forget this device" or Quick exit removes them at once. We never ask about
               gender, race or immigration status.
             </td>
           </tr>
@@ -226,6 +228,23 @@ export function PrivacyPage() {
             <td>Kept per account, so another guardian of the same child never sees them.</td>
           </tr>
           <tr>
+            <td>
+              Your saved Localz answers ("My services profile"): the same answers as "What am I eligible for?",
+              and the date you agreed to save them
+            </td>
+            <td>Our database, encrypted with a key of its own</td>
+            <td>
+              Only if you turn on "Save to my account" and agree on a separate screen that explains it first, so
+              you can use the same answers wherever you're signed in. Only you can see them: not other guardians,
+              even ones linked to the same children, not schools, and no page, report or tool in schoolz shows them
+              to the people who run the site. They're stored as one locked block that our server opens only to
+              show it to you, and they're never used for anything else or sent to an AI service. Delete them with
+              one tap in Account, My services profile, or by withdrawing your consent; they're deleted right away,
+              and with your account if you delete it. Like everything else, a deleted copy can remain in our
+              encrypted backups until they're replaced (see "How long we keep it").
+            </td>
+          </tr>
+          <tr>
             <td>A child's own login (email, and which child it belongs to)</td>
             <td>Our database, and Supabase for the sign-in</td>
             <td>
@@ -325,8 +344,8 @@ export function PrivacyPage() {
         listing serves, and for three Kids View helpers. Those three send the least they can: a "how to approach
         this" tip gets only an assignment's title and class name, shared by everyone in that class; "help me plan"
         gets only your child's open assignment titles, class names and due dates, with no name or student ID; and
-        reading a late-work policy gets only the syllabus paragraph you paste. Your Localz answers and location
-        never go to an AI service.
+        reading a late-work policy gets only the syllabus paragraph you paste. Your Localz answers (on your device
+        or saved to your account) and location never go to an AI service.
       </p>
 
       <h3>What we don't do</h3>
@@ -384,6 +403,10 @@ export function PrivacyPage() {
       <ul>
         <li>Account data is kept until you delete your account.</li>
         <li>
+          Saved Localz answers are kept until you delete them, withdraw your consent, or delete your account,
+          whichever comes first. Answers remembered on your device expire after 90 days.
+        </li>
+        <li>
           Our database is backed up every night, and each backup is encrypted before it's stored. Daily backups are kept 35
           days and the first-of-the-month backup 400 days, so something you delete can survive in an encrypted
           backup for up to about 13 months before it's gone for good. Backups are only ever used to recover from a
@@ -397,7 +420,8 @@ export function PrivacyPage() {
         You can clear your browser's storage at any time to remove everything kept on your device. If you have an
         account, you can remove a child from your account on the Children page, and delete your whole account on
         the Account page. Deleting your account removes your login, your links to your children, your invites,
-        your notifications, your own preferences and the Backpack Capture pages you published. A child's record
+        your notifications, your own preferences, your saved Localz answers and your consent records, and the
+        Backpack Capture pages you published. A child's record
         and schoolwork stay for any other guardian still linked to them; if you were the last one, email us and we
         will delete the child's record too. Email us as well to correct inaccurate data or to ask what we hold
         about you.

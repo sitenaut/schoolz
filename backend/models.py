@@ -2266,6 +2266,47 @@ class CourseDisplayPreference(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class ConsentRecord(Base):
+    """One grant of consent by one person for one purpose (Localz saved
+    profile; purposes and the current policy version live in
+    `resources/saved_profile.py`). Withdrawing sets `withdrawn_at`; a grant
+    made under an older `policy_version` doesn't count, so changing what's
+    collected asks again. Keyed on the account, never a Student."""
+
+    __tablename__ = "consent_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    purpose: Mapped[str] = mapped_column(String(40), nullable=False)
+    policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ServicesProfile(Base):
+    """A person's saved Localz answers ("My services profile"), so they can
+    reuse them anywhere they're signed in. The whole profile is one JSON
+    blob encrypted with its own derived key and never stored in plaintext,
+    so nothing in it is queryable in SQL, on purpose.
+
+    Keyed on `user_id`, never a Student or a household: a Student is shared
+    by every linked guardian, and a co-parent must never see or infer
+    another guardian's services profile. Only the owner can read it; no
+    permission, role or API key reaches it. Deleting is a hard delete."""
+
+    __tablename__ = "services_profiles"
+
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    profile: Mapped[str] = mapped_column(EncryptedText(purpose="services_profile", required=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    # For the alerts work (not built): off until then.
+    alerts_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    alert_frequency: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+
 class HelpRequest(Base):
     """A record that the student asked their teacher for help on one item,
     and which *kind* of stuck they picked.

@@ -1,82 +1,87 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { IconCheck } from "../../components/icons";
 import { Modal } from "../../components/ui/Modal";
 import { Switch } from "../../components/ui/Switch";
-import {
-  AGE_BANDS,
-  type AgeBand,
-  FIT_FOCUS,
-  FIT_NEEDS,
-  type FitAnswers,
-  type FitFocus,
-  type FitNeed,
-  saveFit,
-  useLocalzFit,
-} from "../../lib/localzFit";
-
-const AGE_LABELS: Record<AgeBand, string> = {
-  u1: "Under 1",
-  "1-4": "1–4",
-  "5-12": "5–12",
-  "13-17": "13–17",
-  "18-59": "18–59",
-  "60+": "60 or older",
-};
-const NEED_LABELS: Record<FitNeed, string> = {
-  veteran_military: "Veteran or military family",
-  disability: "Someone with a disability",
-  pregnant_or_new_baby: "Pregnant, or a baby under 1",
-  uninsured: "No health insurance",
-  job_loss: "Lost a job or hours",
-};
-const FOCUS_LABELS: Record<FitFocus, string> = {
-  women: "Women",
-  men: "Men",
-  lgbtq: "LGBTQ+",
-  survivors: "Survivors of violence",
-};
-
-const EMPTY: FitAnswers = { ages: [], has: [], focus: [], noStatusFirst: false };
-
-function toggle<T>(list: T[], value: T): T[] {
-  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
-}
+import { useToast } from "../../components/ui/Toast";
+import { useAuth } from "../../context/AuthContext";
+import { type FitAnswers, forgetDevice, hasAnswers, saveFit, useLocalzFit } from "../../lib/localzFit";
+import { consentIsCurrent, fetchSavedProfile, type SavedProfileState, saveSavedProfile } from "../../lib/savedProfile";
+import { EMPTY_ANSWERS, FitQuestions } from "./FitQuestions";
+import { SavedProfileConsent } from "./SavedProfileConsent";
 
 /** "What am I eligible for?" - or, once answered, "Showing what fits you" -
  * and the sheet behind it. Every question is optional, nothing is required
- * to see listings, and the answers stay on this device (lib/localzFit.ts).
- * Gender, race and immigration status are never asked: who a service
- * focuses on is a choice of what to look for, and immigration is only
- * "show programs that don't ask first". */
+ * to see listings, and the answers stay on this device (lib/localzFit.ts)
+ * unless a signed-in visitor chooses to save them to their account, which
+ * takes a consent screen first (SavedProfileConsent). */
 export function FitButton() {
   const { t } = useTranslation();
+  const toast = useToast();
+  const { user } = useAuth();
   const saved = useLocalzFit();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<FitAnswers>(EMPTY);
+  const [draft, setDraft] = useState<FitAnswers>(EMPTY_ANSWERS);
   const [remember, setRemember] = useState(false);
+  const [account, setAccount] = useState<SavedProfileState | null>(null);
+  const [toAccount, setToAccount] = useState(false);
+  const [consentFor, setConsentFor] = useState<FitAnswers | null>(null);
 
   const start = () => {
-    setDraft(saved?.answers ?? EMPTY);
+    setDraft(saved?.answers ?? EMPTY_ANSWERS);
     setRemember(saved?.remember ?? false);
+    setToAccount(false);
     setOpen(true);
   };
+
+  // Only while the sheet is open: a page view never asks for the profile.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!open || !userId) return;
+    let live = true;
+    fetchSavedProfile()
+      .then((s) => {
+        if (!live) return;
+        setAccount(s);
+        setToAccount(s.saved && consentIsCurrent(s));
+      })
+      .catch(() => live && setAccount(null));
+    return () => {
+      live = false;
+    };
+  }, [open, userId]);
+
+  const toAccountNow = async (answers: FitAnswers) => {
+    try {
+      setAccount(await saveSavedProfile(answers));
+      toast({ title: t("Saved to your account"), tone: "ok" });
+    } catch {
+      toast({ title: t("Couldn't save to your account"), description: t("Your answers are still used on this device."), tone: "bad" });
+    }
+  };
+
   const apply = () => {
     saveFit(draft, remember);
     setOpen(false);
+    if (user && account?.available && toAccount && hasAnswers(draft)) {
+      if (consentIsCurrent(account)) void toAccountNow(draft);
+      else setConsentFor(draft);
+    }
   };
   const clear = () => {
     saveFit(null);
-    setDraft(EMPTY);
+    setDraft(EMPTY_ANSWERS);
     setOpen(false);
   };
+  const forget = () => {
+    forgetDevice();
+    setRemember(false);
+    toast({ title: t("Forgotten on this device"), tone: "ok" });
+  };
 
-  const chip = (pressed: boolean, label: string, onClick: () => void, key: string) => (
-    <button type="button" className="chip localz-fit-chip" aria-pressed={pressed} onClick={onClick} key={key}>
-      {pressed && <IconCheck />}
-      {t(label)}
-    </button>
-  );
+  const accountAnswers = account && consentIsCurrent(account) ? account.answers : null;
+  const reconsent = !!account?.saved && !consentIsCurrent(account);
 
   return (
     <>
@@ -103,62 +108,71 @@ export function FitButton() {
         }
       >
         <div className="localz-fit-sheet">
-          <fieldset className="localz-fit-group">
-            <legend>{t("Ages of the people you live with or share money with")}</legend>
-            <p className="localz-muted">{t("Include yourself. Count kids who stay with you at least half the time.")}</p>
-            <div className="localz-fit-chips">
-              {AGE_BANDS.map((b) =>
-                chip(draft.ages.includes(b), AGE_LABELS[b], () => setDraft((d) => ({ ...d, ages: toggle(d.ages, b) })), b),
-              )}
+          {accountAnswers && (
+            <div className="localz-fit-group localz-fit-switch">
+              <div>
+                <div className="localz-fit-switch-label">{t("You have answers saved to your account")}</div>
+                <p className="localz-muted">{t("Use them here instead of starting over.")}</p>
+              </div>
+              <button type="button" className="btn sm" onClick={() => setDraft(accountAnswers)}>
+                {t("Use my saved answers")}
+              </button>
             </div>
-          </fieldset>
+          )}
 
-          <fieldset className="localz-fit-group">
-            <legend>{t("Does any of this apply to you or your household?")}</legend>
-            <div className="localz-fit-chips">
-              {FIT_NEEDS.map((n) =>
-                chip(draft.has.includes(n), NEED_LABELS[n], () => setDraft((d) => ({ ...d, has: toggle(d.has, n) })), n),
-              )}
-            </div>
-          </fieldset>
-
-          <fieldset className="localz-fit-group">
-            <legend>{t("Show services that focus on…")}</legend>
-            <p className="localz-muted">{t("Optional. This only adds matches - it never hides anything.")}</p>
-            <div className="localz-fit-chips">
-              {FIT_FOCUS.map((f) =>
-                chip(draft.focus.includes(f), FOCUS_LABELS[f], () => setDraft((d) => ({ ...d, focus: toggle(d.focus, f) })), f),
-              )}
-            </div>
-          </fieldset>
-
-          <div className="localz-fit-group localz-fit-switch">
-            <div>
-              <div className="localz-fit-switch-label">{t("Show programs that don't ask about immigration status first")}</div>
-              <p className="localz-muted">{t("Many programs don't ask. We never ask about anyone's status.")}</p>
-            </div>
-            <Switch
-              checked={draft.noStatusFirst}
-              onChange={(v) => setDraft((d) => ({ ...d, noStatusFirst: v }))}
-              label={t("Show programs that don't ask about immigration status first")}
-            />
-          </div>
+          <FitQuestions draft={draft} setDraft={setDraft} />
 
           <div className="localz-fit-group localz-fit-switch">
             <div>
               <div className="localz-fit-switch-label">{t("Remember on this device")}</div>
               <p className="localz-muted">
                 {remember
-                  ? t("Kept on this phone or computer until you clear it. Anyone using it could see your answers.")
+                  ? t("Kept on this phone or computer for 90 days, until you forget it here or use Quick exit. Anyone using it could see your answers.")
                   : t("Otherwise your answers are forgotten when you close this tab or use Quick exit.")}
               </p>
+              {saved?.remember && (
+                <button type="button" className="btn sm" onClick={forget}>
+                  {t("Forget this device")}
+                </button>
+              )}
             </div>
             <Switch checked={remember} onChange={setRemember} label={t("Remember on this device")} />
           </div>
 
-          <p className="localz-where-privacy">{t("Your answers never leave this device. Localz matches them here, on your screen.")}</p>
+          {user && account?.available && (
+            <div className="localz-fit-group localz-fit-switch">
+              <div>
+                <div className="localz-fit-switch-label">{t("Save to my account")}</div>
+                <p className="localz-muted">
+                  {reconsent
+                    ? t("We've changed what's saved. Agree again to keep using your saved answers.")
+                    : t("Use them on any device where you're signed in. Only you can see them.")}{" "}
+                  <Link to="/account/saved-answers">{t("Manage")}</Link>
+                </p>
+              </div>
+              <Switch checked={toAccount} onChange={setToAccount} label={t("Save to my account")} />
+            </div>
+          )}
+
+          <p className="localz-where-privacy">
+            {toAccount && user
+              ? t("Localz matches your answers here, on your screen. A copy is kept in your account, encrypted, for you alone.")
+              : t("Your answers never leave this device. Localz matches them here, on your screen.")}
+          </p>
         </div>
       </Modal>
+      {consentFor !== null && (
+        <SavedProfileConsent
+          policyVersion={account?.policy_version ?? 1}
+          onCancel={() => setConsentFor(null)}
+          onAgreed={(s) => {
+            setAccount(s);
+            const answers = consentFor;
+            setConsentFor(null);
+            void toAccountNow(answers);
+          }}
+        />
+      )}
     </>
   );
 }

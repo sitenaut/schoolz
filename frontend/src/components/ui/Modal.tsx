@@ -74,7 +74,12 @@ export function Modal({ open, onClose, title, subtitle, size = "md", footer, chi
     // the body in place at its current offset and restore it on close.
     lockBody();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
+      if (e.key !== "Escape") return;
+      // Handled: Localz's Esc-for-Quick-exit (LocalzLayout, on window) sees
+      // the dialog already unmounted by the time the event reaches it, so
+      // it relies on this to know Esc meant "close".
+      e.preventDefault();
+      onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
     const first = panel.current?.querySelector<HTMLElement>("input, select, textarea, button:not(.modal-x)");

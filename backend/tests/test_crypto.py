@@ -7,7 +7,7 @@ os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from cryptography.fernet import Fernet
@@ -89,6 +89,25 @@ def test_derived_keys_differ_by_purpose_and_follow_the_first_key(keys):
     assert crypto.derived_key("gmail-connect") != a
 
 
+def test_a_purpose_column_uses_its_own_keys_and_never_plaintext(keys):
+    keys(KEY_A)
+    stored = crypto.encrypt("x", purpose="services_profile", required=True)
+    assert stored.startswith("enc:v1:") and crypto.decrypt(stored, purpose="services_profile", required=True) == "x"
+    with pytest.raises(crypto.EncryptionError):
+        crypto.decrypt(stored)  # the configured key itself can't open it
+    with pytest.raises(crypto.EncryptionError):
+        crypto.decrypt(stored, purpose="other")
+    with pytest.raises(crypto.EncryptionError):
+        crypto.decrypt("plain", purpose="services_profile", required=True)
+    # Rotation: reads with the old key's derivation, writes with the first.
+    keys(f"{KEY_B},{KEY_A}")
+    assert crypto.decrypt(stored, purpose="services_profile", required=True) == "x"
+    keys(None)
+    assert crypto.can_encrypt() is False
+    with pytest.raises(crypto.EncryptionError):
+        crypto.encrypt("x", purpose="services_profile", required=True)
+
+
 async def _user(db) -> User:
     run = uuid.uuid4().hex[:8]
     user = User(email=f"crypt_{run}@example.com", username=f"crypt_{run}")
@@ -109,7 +128,7 @@ def _token(user_id: str) -> GmailToken:
         google_email="admin@example.com",
         access_token="ya29.access",
         refresh_token="1//refresh",
-        token_expiry=datetime.now(timezone.utc) + timedelta(hours=1),
+        token_expiry=datetime.now(UTC) + timedelta(hours=1),
     )
 
 

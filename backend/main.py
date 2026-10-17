@@ -52,6 +52,7 @@ from routers import invites as invites_router  # noqa: E402
 from routers import local_events as local_events_router  # noqa: E402
 from routers import notifications as notifications_router  # noqa: E402
 from routers import resources as resources_router  # noqa: E402
+from routers import saved_profile as saved_profile_router  # noqa: E402
 from routers import scheduled_jobs as scheduled_jobs_router  # noqa: E402
 from routers import school_emails as school_emails_router  # noqa: E402
 from routers import schools as schools_router  # noqa: E402
@@ -221,6 +222,7 @@ app.include_router(directory_router.router)
 app.include_router(calendar_router.router)
 app.include_router(local_events_router.router)
 app.include_router(resources_router.router)
+app.include_router(saved_profile_router.router)
 app.include_router(seasonal_guides_router.router)
 app.include_router(seasonal_attractions_router.router)
 app.include_router(community_submissions_router.router)

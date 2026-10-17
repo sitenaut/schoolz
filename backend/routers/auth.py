@@ -15,6 +15,7 @@ from auth import create_local_token, get_current_user, hash_password_async, veri
 from database import get_db
 from models import (
     Bucket3Capture,
+    ConsentRecord,
     EmailScanner,
     GmailToken,
     GuardianInvite,
@@ -23,6 +24,7 @@ from models import (
     ScheduledJob,
     School,
     SchoolEmailMessage,
+    ServicesProfile,
     SmoreNewsletter,
     Student,
     StudentAccountInvite,
@@ -253,6 +255,9 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
 
     # Personal layer: only this user's view of things.
     await db.execute(delete(Notification).where(Notification.user_id == uid))
+    # Localz saved answers and the consent behind them: gone with the account.
+    await db.execute(delete(ServicesProfile).where(ServicesProfile.user_id == uid))
+    await db.execute(delete(ConsentRecord).where(ConsentRecord.user_id == uid))
     await db.execute(delete(GuardianStudentLink).where(GuardianStudentLink.guardian_user_id == uid))
     await db.execute(delete(GuardianInvite).where(GuardianInvite.inviter_user_id == uid))
     await db.execute(update(GuardianInvite).where(GuardianInvite.accepted_by_user_id == uid).values(accepted_by_user_id=None))

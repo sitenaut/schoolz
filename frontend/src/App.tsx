@@ -62,6 +62,7 @@ import { SecuritySection } from "./pages/account/SecuritySection";
 import { NotificationsSection } from "./pages/account/NotificationsSection";
 import { PrivacySection } from "./pages/account/PrivacySection";
 import { FamilySection } from "./pages/account/FamilySection";
+import { SavedProfileSection } from "./pages/account/SavedProfileSection";
 
 // Gates the *optional* personal layer (my kids, my calendar, account
 // settings) - never the public directory/calendar/school pages, which are
@@ -139,6 +140,7 @@ function Routed() {
           <Route path="privacy" element={<PrivacySection />} />
           <Route path="notifications" element={<NotificationsSection />} />
           <Route path="family" element={<FamilySection />} />
+          <Route path="saved-answers" element={<SavedProfileSection />} />
         </Route>
         <Route
           path="/children"

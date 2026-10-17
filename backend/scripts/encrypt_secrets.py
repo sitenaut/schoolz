@@ -28,8 +28,8 @@ from sqlalchemy import select, type_coerce  # noqa: E402
 from sqlalchemy.orm import attributes  # noqa: E402
 
 import crypto  # noqa: E402
-import models  # noqa: E402, F401  (registers every table)
 import database  # noqa: E402
+import models  # noqa: E402, F401  (registers every table)
 from database import Base  # noqa: E402
 
 
@@ -53,7 +53,7 @@ def _wants_rewrite(stored: object, rotate: bool) -> bool:
 
 
 def _plain(column_type: object, stored: str) -> object:
-    return crypto.decrypt(stored)
+    return crypto.decrypt(stored, getattr(column_type, "purpose", None), getattr(column_type, "required", False))
 
 
 async def run(
