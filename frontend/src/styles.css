@@ -3577,14 +3577,15 @@ select {
   align-items: center;
   gap: 6px;
   min-height: 40px;
+  /* Orange outline: the one thing on Localz worth pressing first. */
+  border: 2px solid var(--attention);
 }
 .localz-fit-btn svg {
   width: 16px;
   height: 16px;
-  color: var(--primary);
+  color: var(--attention);
 }
 .localz-fit-btn.on {
-  border-color: var(--primary);
   background: var(--primary-soft, var(--card));
 }
 .localz-fit-sheet {
