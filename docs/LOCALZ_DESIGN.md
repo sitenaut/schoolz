@@ -591,7 +591,7 @@ plain words, no red):
   behind. "Forget this device" sits under the switch in the sheet and on
   the account page.
 - **Account tier**: `consent_records` and `services_profiles` (migration
-  0107). The profile column is `EncryptedText(purpose="services_profile",
+  0106). The profile column is `EncryptedText(purpose="services_profile",
   required=True)`: Fernet keys derived per purpose from every
   `DATA_ENCRYPTION_KEYS` key (so rotation works as for Gmail tokens, and the
   plain key can't open it), and never stored or read as plaintext. **With
