@@ -500,12 +500,13 @@ browsing:
   `focus` (women, men, LGBTQ+, survivors), `either` (any one group is
   enough), `asks_immigration_status`, and `other` (a referral, a diagnosis).
 - **The API** returns each listing's criteria on search and detail
-  (`eligibility`, null until read). Answers never go to the server.
-- **The sheet** (`pages/localz/FitButton.tsx`, matching in
-  `lib/localzFit.ts`): household ages as bands, five "does this apply"
-  chips, "services that focus on…", "programs that don't ask about
-  immigration status first", and "Remember on this device" (off = session
-  storage, which Quick exit clears). **No income question yet**: listings
+  (`eligibility`, null until read). Answers never go to the server
+  unless a signed-in person saves them to their account ("Saved profile").
+- **The sheet** (`pages/localz/FitButton.tsx`, questions in
+  `FitQuestions.tsx`, matching in `lib/localzFit.ts`): household ages as
+  bands, five "does this apply" chips, "services that focus on…",
+  "programs that don't ask about immigration status first", and "Remember
+  on this device" (off = session storage; Quick exit clears both). **No income question yet**: listings
   rarely state a number, so asking would collect a sensitive answer that
   improves nothing until `program_rules` exist.
 - **Labels**: *For you* (a check mark; everything it asks is something you
@@ -579,6 +580,68 @@ plain words, no red):
 
 ## Saved profile ("My services profile")
 
+### What's built (v1)
+
+- **Device tier** (`lib/localzFit.ts`): session answers under `sz_s1`,
+  "Remember on this device" under `sz_d1` as `{a: answers, t: saved-at}`,
+  dropped on read once 90 days old (or dated in the future, or unreadable).
+  The old `localz_fit` key is migrated once and removed. **Quick exit
+  clears the device save too**, not only session storage: someone leaving
+  in a hurry is better served by losing their answers than by leaving them
+  behind. "Forget this device" sits under the switch in the sheet and on
+  the account page.
+- **Account tier**: `consent_records` and `services_profiles` (migration
+  0107). The profile column is `EncryptedText(purpose="services_profile",
+  required=True)`: Fernet keys derived per purpose from every
+  `DATA_ENCRYPTION_KEYS` key (so rotation works as for Gmail tokens, and the
+  plain key can't open it), and never stored or read as plaintext. **With
+  no key configured nothing is saved** (`PUT` answers 503
+  `encryption_unavailable`, the UI hides the option): set a local key to
+  try it locally.
+- **API** `/me/saved-answers` (`routers/saved_profile.py`), a neutral path
+  because paths reach the request log: `GET` (reading is using:
+  `last_used_at`), `PUT`, `DELETE`, `POST /consent`, `DELETE /consent`.
+  Owner only by construction (every query is the caller's own id, nothing
+  takes a user id), **API keys refused outright**, no permission key, no
+  admin count. Saving needs a current `services_profile` consent (409
+  `consent_required`); a grant must quote the current `POLICY_VERSION`
+  (`resources/saved_profile.py`, 409 `policy_changed`). A stale grant
+  withholds the answers until consent is given again. Delete and
+  withdrawal both hard-delete the profile and withdraw every services
+  consent (the consent row keeps `withdrawn_at` as the record). Account
+  deletion removes both tables' rows, and both cascade on `users`.
+- **Validation**: exactly the sheet's vocabulary (ages, `has`, `focus`,
+  `noStatusFirst`), unknown keys and repeats refused, 1 KB cap; a frontend
+  test reads the Python tuples so the two can't drift. Saving nothing
+  deletes the profile.
+- **UI**: in the sheet, signed in, "Use my saved answers" and a "Save to my
+  account" switch (fetches the profile only when the sheet opens); the
+  consent screen (`SavedProfileConsent.tsx`, unticked, its own step);
+  Account → My services profile (`/account/saved-answers`): the answers in
+  plain words, edit (the same questions), one-tap delete with a confirm,
+  consent status and date.
+- **Tests** (`tests/test_saved_profile.py`): owner only (anonymous, another
+  user, a super admin and an all-permission API key), consent and policy
+  bumps, hard delete, ciphertext at rest, validation, no profile value in
+  any captured log record, and no statement touching `students`,
+  `guardian_student_links` or `notifications` while a co-parent of the
+  same child sees nothing.
+
+**Deferred**, and why:
+
+- **Alerts** (no outbound email yet): `alerts_enabled`/`alert_frequency`
+  exist and default off, the `services_alerts` and `services_alerts_named`
+  purposes are defined but can't be granted (400), no job, no toggles.
+- **Inactivity expiry**: only `last_used_at` is kept. The 12-month email
+  and 30-day delete need the email provider and come with the alerts job.
+  The consent screen promises "until you delete it", so adding expiry is a
+  `POLICY_VERSION` bump.
+- **"Your saved info was updated" email** and a short session for the
+  profile page (breach row 2): need email / session work.
+- **Pronouns**: not collected; nothing uses them until alerts email.
+- `/privacy` and the account pages aren't translated yet (English-only
+  pages); the new strings in the Localz sheet and the account section are.
+
 Two tiers, so "save it" doesn't have to mean "give us your data":
 
 1. **On this device** (no account): stored in `localStorage` under a
@@ -622,13 +685,17 @@ Two tiers, so "save it" doesn't have to mean "give us your data":
   `guardian_matched` flow, or the chatbot's personal tools for another
   user.
 - Inactivity: 12 months without use → email asking to keep it; no answer
-  in 30 days → deleted.
+  in 30 days → deleted. (Not built: waits for the email provider; see
+  "What's built".)
 - **Backups:** the nightly `pg_dump` (docs/BACKUPS.md) contains the
   encrypted blob. It's still unreadable without `DATA_ENCRYPTION_KEYS`,
   but a deleted profile persists in old backups until they rotate out,
   and `/privacy` must say so with the retention period.
 
 ### Alerts
+
+Not built yet (no outbound email); the columns and consent purposes exist,
+off.
 
 - A scheduled job (`resources.alerts`) decrypts each opted-in profile in
   memory, runs the same matcher against services first seen since the last

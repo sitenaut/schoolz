@@ -161,6 +161,10 @@ GOOGLE_CLIENT_SECRET=
 # then encrypt existing rows on the scheduler machine:
 #   fly ssh console -a schoolz-api --process-group scheduler -C "python /app/scripts/encrypt_secrets.py --apply"
 # Lose every key and each Gmail connection has to be made again.
+# The Localz saved services profile is encrypted with a key derived from it
+# and is never stored plain: with no key (the local default) "Save to my
+# account" is hidden and PUT /me/saved-answers answers 503. Losing every key
+# makes every saved profile unreadable.
 # ENCRYPTION_REQUIRE=1, once nothing is plain any more, makes a missing key or
 # a plaintext row an error instead of a fallback.
 DATA_ENCRYPTION_KEYS=
