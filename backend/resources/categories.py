@@ -56,6 +56,7 @@ _PREFIXES: dict[str, tuple[str, ...]] = {
     # P - Individual and Family Life
     "PH": ("kids-family",),
     "PH-2950": ("everyday-needs",),  # holiday programs: baskets, toys
+    "PH-0700": ("money-work",),  # benefits screening and application help
     "PL": ("kids-family",),  # recreation, camps
     "PN": ("health",),  # support groups
     # R - Mental Health and Substance Use Disorder Services
@@ -63,6 +64,7 @@ _PREFIXES: dict[str, tuple[str, ...]] = {
     # T - Organizational/Community Services (mostly referral lines; only the
     # codes NJ 211's own topic tiles use are mapped)
     "TH-2600.1880": ("housing-bills",),  # warming centers
+    "TJ-1800.6700": ("everyday-needs",),  # public computers and internet
 }
 
 

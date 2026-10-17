@@ -604,3 +604,151 @@ async def test_delete_account_removes_memberships_and_unfinished_requests():
             assert logs and all(e.actor_user_id != me["id"] for e in logs)
             approved = (await db.execute(select(ResourceOnboardingRequest).where(ResourceOnboardingRequest.service_ids.contains([sid])))).scalar_one()
             assert approved.user_id is None and approved.contact_email is None
+
+
+# ---- programs with their own details (a neighborhood center) -------------------
+
+
+def _center(**overrides) -> dict:
+    """A center running several programs, each on its own schedule: the
+    shape of a parish neighborhood center's programs page."""
+    fields = dict(
+        organization_name="Elm Street Neighborhood Center",
+        address="900 Elm St",
+        city="Camden",
+        postal_code="08105",
+        hours={"mode": "call"},
+        services=[
+            {
+                "type": "food_pantry", "name": "Food Pantry", "description": "Groceries and fresh produce.",
+                "hours": {"mode": "monthly", "monthly": [{"weeks": [3], "day": "wed", "open": "13:00", "close": "17:30"}]},
+                "place": {"place_name": "Christ Church, lower level", "address": "1 Church St", "city": "Camden", "postal_code": "08104"},
+                "signup": {"status": "drop_in"},
+            },
+            {
+                "type": "english", "name": "ESL Classes", "description": "Speak, read and write English.",
+                "hours": {
+                    "mode": "weekly",
+                    "weekly": {"tue": [{"open": "09:30", "close": "11:30"}, {"open": "18:00", "close": "20:00"}]},
+                    "season": {"start": "09-01", "end": "04-30"},
+                },
+                "who": {"open_to_anyone": False, "age_min": 18},
+                "delivery": "both",
+                "signup": {"status": "closed", "opens_on": "2027-05-01", "how": "Interviews for new students"},
+            },
+            {
+                "type": "computer_access", "name": "Computer Help", "description": "Use a computer with internet.",
+                "delivery": "online",
+            },
+        ],
+    )
+    return _submission(**(fields | overrides))
+
+
+async def _approve(client, provider, reviewer, sub: dict) -> list[str]:
+    res = await client.post("/provider-portal/requests", json={"submission": sub}, headers=provider)
+    assert res.status_code == 201, res.text
+    rid = res.json()["id"]
+    res = await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+    assert res.status_code == 200, res.text
+    res = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+    assert res.status_code == 200, res.text
+    return res.json()["service_ids"]
+
+
+def test_a_program_can_carry_the_hours_who_and_cost_the_organization_left_out():
+    sub = _submission(hours={}, who={}, cost={})
+    assert set(portal.completeness(portal.Submission.model_validate(sub), False)["missing_core"]) == {"hours", "who", "cost"}
+    sub["services"][0] |= {"hours": {"mode": "appointment"}, "who": {"seniors": True}, "cost": {"kind": "free"}}
+    assert portal.completeness(portal.Submission.model_validate(sub), False)["missing_core"] == []
+    # A second program without its own: the organization's answer is needed again.
+    sub["services"].append({"type": "clothing", "name": "Closet", "description": "Coats."})
+    assert set(portal.completeness(portal.Submission.model_validate(sub), False)["missing_core"]) == {"hours", "who", "cost"}
+    # A program's own place needs a street and town; its own hours must be real.
+    sub = _submission(services=[{"type": "food_pantry", "name": "P", "description": "D", "place": {"address": "1 Main St"}}])
+    assert portal.completeness(portal.Submission.model_validate(sub), False)["missing_core"] == ["services"]
+    sub = _submission(services=[{"type": "food_pantry", "name": "P", "description": "D", "hours": {"mode": "monthly"}}])
+    assert portal.completeness(portal.Submission.model_validate(sub), False)["missing_core"] == ["services"]
+
+
+def test_schedules_people_cant_work_out_at_a_glance_say_when_next():
+    from datetime import date
+
+    third_wed = portal.Hours(mode="monthly", monthly=[{"weeks": [3], "day": "wed", "open": "13:00", "close": "17:30"}])
+    assert portal.hours_text(third_wed) == "3rd Wed of the month, 1 pm–5:30 pm"
+    assert [d["on"] for d in portal.next_open(third_wed, date(2026, 10, 17))] == [date(2026, 10, 21), date(2026, 11, 18)]
+    # A closure skips its days.
+    assert portal.next_open(third_wed, date(2026, 10, 17), (date(2026, 10, 21), date(2026, 10, 21)))[0]["on"] == date(2026, 11, 18)
+    twice = portal.Hours(mode="monthly", monthly=[{"weeks": [1, 3], "day": "tue", "open": "10:00", "close": "11:00"},
+                                                 {"weeks": [-1], "day": "fri", "open": "09:00", "close": "10:00"}])
+    assert portal.hours_text(twice).startswith("1st and 3rd Tue of the month, 10 am–11 am; Last Fri")
+    assert [d["on"] for d in portal.next_open(twice, date(2026, 10, 17), count=3)] == [date(2026, 10, 20), date(2026, 10, 30), date(2026, 11, 3)]
+    other = portal.Hours(mode="weekly", weekly={"tue": [{"open": "10:00", "close": "12:00"}]}, alternate_weeks_from=date(2026, 10, 20))
+    assert portal.hours_text(other) == "Every other week: Tue 10 am–12 pm"
+    assert [d["on"] for d in portal.next_open(other, date(2026, 10, 21))] == [date(2026, 11, 3), date(2026, 11, 17)]
+    term = portal.Hours(mode="weekly", weekly={"tue": [{"open": "10:00", "close": "12:00"}]}, season={"start": "09-01", "end": "04-30"})
+    assert portal.hours_text(term) == "Tue 10 am–12 pm. Runs September–April"
+    assert portal.next_open(term, date(2026, 10, 17)) == []  # in season, weekly: the hours say it
+    assert portal.next_open(term, date(2026, 6, 1))[0]["on"] == date(2026, 9, 1)
+    assert portal.season_text(portal.Season(start="10-15", end="05-10")) == "Runs Oct 15–May 10"
+
+
+async def test_each_program_lists_with_its_own_schedule_place_and_sign_up():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        pantry_id, esl_id, computers_id = await _approve(client, provider, reviewer, _center())
+        async with database.SessionLocal() as db:
+            pantry = await db.get(ResourceService, pantry_id)
+            assert pantry.location_name == "Christ Church, lower level" and pantry.address == "1 Church St"
+            assert pantry.postal_code == "08104" and pantry.latitude is not None
+            assert pantry.hours_text == "3rd Wed of the month, 1 pm–5:30 pm" and pantry.eligibility_text == "Open to anyone"
+            esl = await db.get(ResourceService, esl_id)
+            assert esl.address == "900 Elm St" and esl.location_name == "Elm Street Neighborhood Center"
+            assert esl.eligibility_text == "Ages 18 and up" and esl.delivery == "both"
+            assert esl.categories == ["english", "money-work"]
+            computers = await db.get(ResourceService, computers_id)
+            assert computers.address is None and computers.latitude is None
+            assert computers.service_areas == ["Camden County, NJ"] and computers.missing_core == []
+            assert computers.hours_text == "Call for hours" and computers.categories == ["everyday-needs"]
+
+        detail = (await client.get(f"/resources/{pantry_id}")).json()
+        assert len(detail["next_open"]) == 2 and detail["next_open"][0]["times"] == "1 pm–5:30 pm"
+        assert detail["signup"] == {"status": "drop_in", "opens_on": None, "how": None}
+        esl = (await client.get(f"/resources/{esl_id}")).json()
+        assert esl["signup"] == {"status": "closed", "opens_on": "2027-05-01", "how": "Interviews for new students"}
+        assert esl["delivery"] == "both"
+
+        # Sign-ups and delivery are quick updates: they publish at once.
+        r = await client.patch(f"/provider-portal/listings/{esl_id}", json={"signup": {"status": "open"}, "delivery": "online"}, headers=provider)
+        assert r.status_code == 200 and set(r.json()["applied"]) == {"signup", "delivery"}, r.text
+        assert (await client.get(f"/resources/{esl_id}")).json()["signup"]["status"] == "open"
+        r = await client.patch(f"/provider-portal/listings/{esl_id}", json={"hours": {"mode": "monthly", "monthly": []}}, headers=provider)
+        assert r.status_code == 422
+        listing = next(x for x in (await client.get("/provider-portal/listings", headers=provider)).json() if x["id"] == pantry_id)
+        assert listing["location_name"] == "Christ Church, lower level" and listing["signup"]["status"] == "drop_in"
+
+
+async def test_a_programs_own_fee_is_flagged_and_its_place_shown_to_the_reviewer():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sub = _center()
+        sub["services"][0]["cost"] = {"kind": "fee", "amount": "$10"}
+        rid = (await client.post("/provider-portal/requests", json={"submission": sub}, headers=provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        flags = {f["code"]: f["message"] for f in (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()["flags"]}
+        assert "Food pantry" in flags["fee_on_free"] and "Christ Church" in flags["program_place"]
+
+
+async def test_a_confidential_organizations_programs_never_get_a_public_place():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sub = _center(address_kind="confidential", address=None, city=None, postal_code=None)
+        res = await client.post("/provider-portal/requests", json={"submission": sub, "private_address": SECRET_STREET}, headers=provider)
+        rid = res.json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        res = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert res.status_code == 200, res.text
+        async with database.SessionLocal() as db:
+            for sid in res.json()["service_ids"]:
+                row = await db.get(ResourceService, sid)
+                assert row.address is None and row.city is None and row.latitude is None, row.name

@@ -380,6 +380,21 @@ Migration 0107; rules in `backend/resources/portal.py` and
 - **Kinds of help** offered in the form are a fixed list mapped to Inform
   USA codes (`resources/provider_types.py`), so a provider listing lands
   under the same category as a scraped one.
+- **Programs with their own details** (migration 0109), for a neighborhood
+  center whose ESL class, monthly pantry and sewing group each run
+  differently. Each program in a request may set its own hours, who can
+  come, cost and place (null = "same as the organization's"), plus in
+  person / online / both (`delivery`) and how it takes people (`signup`:
+  drop in, open, waiting list, closed until a date). The core is met by the
+  organization's answer or by every program's own. A program's own place is
+  always public and is ignored for a confidential organization; an
+  online-only program gets no address and lists in the organization's
+  county. Sign-up and delivery are quick updates.
+- **Schedules beyond weekly**: "Nth weekday of the month" (`monthly`, weeks
+  1-5 or last), every other week (`alternate_weeks_from`), and a yearly
+  season (`season`, "MM-DD" to "MM-DD", may wrap the new year). Cards and
+  pages show the next two dates (`next_open`) only when a plain weekday list
+  can't say it: monthly, every other week, or out of season.
 
 ### Deferred, and why
 
@@ -405,7 +420,7 @@ Migration 0107; rules in `backend/resources/portal.py` and
 | **Organization name** | Required. Matched against existing records ("Is this you?") before a new one is created. |
 | **Program/service name** and **what you provide** | At least one service, each with a category picked from the Localz list (mapped to an Inform USA code; free text alone isn't accepted) and a one-line description. |
 | **Address** | Required, geocoded and confirmed on a map. Three kinds: **public** (shown); **confidential** (collected and verified, **never published, never sent to the chatbot or search index**: domestic violence shelters, safe houses, youth shelters; the public listing shows a phone/hotline and "Location shared after you call"); **service area only** (mobile pantries, home delivery, hotlines: counties/towns served, plus a mailing address for verification). |
-| **Hours** | Structured weekly schedule (day + open/close, several ranges per day), or one explicit choice: 24/7, by appointment, call for hours. "Call for hours" also requires a phone. Seasonal dates optional. Free text is a note *on top of* the schedule, never instead of it. |
+| **Hours** | Structured weekly schedule (day + open/close, several ranges per day, optionally every other week), certain weeks of the month ("3rd Wednesday"), or one explicit choice: 24/7, by appointment, call for hours. "Call for hours" also requires a phone. A yearly season is optional. Free text is a note *on top of* the schedule, never instead of it. Each program may set its own. |
 | **Phone** | Required: one public number people can call. |
 | **Who can come** | Required, but with a one-tap "Open to anyone" option. Otherwise structured choices from the eligibility vocabulary (counties/towns, ages, income, families with children, …) plus a text note. |
 | **Cost** | Required: free / sliding scale / fee (with amount). |

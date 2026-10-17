@@ -3826,6 +3826,50 @@ select {
 .provider-range input[type="time"] {
   width: auto;
 }
+.provider-range {
+  flex-wrap: wrap;
+}
+.provider-range select {
+  width: auto;
+}
+.provider-month-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.provider-month-day {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.provider-month-day legend {
+  width: 100%;
+}
+.provider-month-day select {
+  width: auto;
+}
+.provider-program-details {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--line);
+}
+.provider-subsection {
+  margin-top: 12px;
+}
+.provider-subsection h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.localz-program-notes {
+  margin-top: 6px;
+  font-size: 14px;
+}
+.localz-program-notes p {
+  margin: 2px 0;
+}
 .provider-meter-sticky {
   position: sticky;
   top: 0;

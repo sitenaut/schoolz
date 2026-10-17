@@ -14,13 +14,15 @@ import {
   ITEM_LABELS,
   type MyListing,
   type ProviderType,
+  type Signup,
   emptyHours,
+  emptySignup,
   fetchMyListings,
   fetchProviderTypes,
   updateListing,
 } from "../../../lib/providerPortal";
 import { SignInPrompt } from "./ProviderPortalPage";
-import { AddressFields, type AddressValue, HoursEditor, TypeSelect } from "./ProviderFields";
+import { AddressFields, type AddressValue, DeliverySelect, HoursEditor, SignupEditor, TypeSelect } from "./ProviderFields";
 
 const today = () => {
   const d = new Date();
@@ -60,6 +62,9 @@ const FIELD_LABELS: Record<string, string> = {
   closure_starts_on: "Closure",
   closure_ends_on: "Closure",
   closure_note: "Closure",
+  signup: "How people join",
+  delivery: "In person or online",
+  location_name: "Name of the place",
 };
 
 function Card({ title, children, hint }: { title: string; hint?: string; children: ReactNode }) {
@@ -157,6 +162,7 @@ function QuickUpdates({ serviceId }: { serviceId: string }) {
 
       <ClosureCard listing={listing} busy={busy} send={send} />
       <AlertCard listing={listing} busy={busy} send={send} />
+      <JoiningCard listing={listing} busy={busy} send={send} />
       <WeekHoursCard listing={listing} busy={busy} send={send} />
       <DetailsCard listing={listing} busy={busy} send={send} />
       <ReviewedCard listing={listing} types={types} busy={busy} send={send} />
@@ -223,6 +229,25 @@ function AlertCard({ listing, busy, send }: CardProps) {
           </button>
         )}
       </div>
+    </Card>
+  );
+}
+
+function JoiningCard({ listing, busy, send }: CardProps) {
+  const { t } = useTranslation();
+  const [signup, setSignup] = useState<Signup>(listing.signup ?? emptySignup());
+  const [delivery, setDelivery] = useState(listing.delivery);
+  return (
+    <Card title={t("How people join")} hint={t("Open sign-ups, start a waiting list, or close them until a date.")}>
+      <SignupEditor idPrefix="listing" value={signup} onChange={setSignup} />
+      <DeliverySelect value={delivery} onChange={setDelivery} />
+      <button
+        className="btn btn-primary"
+        disabled={busy}
+        onClick={() => send({ signup: signup.status ? { ...signup, opens_on: signup.status === "closed" ? signup.opens_on : null } : null, delivery })}
+      >
+        {t("Save")}
+      </button>
     </Card>
   );
 }
@@ -312,6 +337,7 @@ function ReviewedCard({ listing, types, busy, send }: CardProps & { types: Provi
     counties: counties(listing.service_areas),
   });
   const [privateAddress, setPrivateAddress] = useState("");
+  const [placeName, setPlaceName] = useState(listing.location_name ?? "");
 
   const submit = () => {
     const body: Record<string, unknown> = {};
@@ -329,8 +355,15 @@ function ReviewedCard({ listing, types, busy, send }: CardProps & { types: Provi
       (address.city ?? "") !== (listing.city ?? "") ||
       (address.postal_code ?? "") !== (listing.postal_code ?? "") ||
       address.counties.join() !== counties(listing.service_areas).join() ||
+      (address.kind === "public" && placeName.trim() !== (listing.location_name ?? "")) ||
       !!privateAddress.trim();
-    if (address.kind && addressChanged) body.address = { ...address, kind: address.kind as AddressKind, private_address: privateAddress.trim() || null };
+    if (address.kind && addressChanged)
+      body.address = {
+        ...address,
+        kind: address.kind as AddressKind,
+        private_address: privateAddress.trim() || null,
+        ...(address.kind === "public" ? { place_name: placeName.trim() || null } : {}),
+      };
     void send(body).then(() => setPrivateAddress(""));
   };
 
@@ -385,6 +418,11 @@ function ReviewedCard({ listing, types, busy, send }: CardProps & { types: Provi
         onPrivateAddress={setPrivateAddress}
         hasPrivateAddress={listing.address_kind !== null && listing.address_kind !== "public"}
       />
+      {address.kind === "public" && (
+        <Field label={t("Name of the place")} hint={t("Optional - for example \"Church hall, lower level\".")}>
+          <input value={placeName} maxLength={200} onChange={(e) => setPlaceName(e.target.value)} />
+        </Field>
+      )}
       <button className="btn btn-primary" disabled={busy} onClick={submit}>
         {t("Send for review")}
       </button>

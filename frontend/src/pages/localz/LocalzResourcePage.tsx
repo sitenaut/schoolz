@@ -9,6 +9,7 @@ import { describe, fitFor, useLocalzFit } from "../../lib/localzFit";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import { FitNote } from "./FitNote";
 import { ClosureNote } from "./ClosureNote";
+import { ProgramNotes, deliveryLabel } from "./ProgramNotes";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -56,6 +57,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
   const asks = r.eligibility ? describe(r.eligibility) : [];
   const map = mapsHref(r);
   const confirmed = confirmedLabel(r.last_assured_on, LOCALE);
+  const online = deliveryLabel(r.delivery);
 
   return (
     <article className="localz-detail">
@@ -98,10 +100,12 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
 
       {r.description && <p className="localz-detail-desc">{r.description}</p>}
 
-      {(place || r.service_areas.length > 0 || r.location_confidential) && (
+      {(place || r.service_areas.length > 0 || r.location_confidential || online) && (
         <Section title={t("Where")}>
           {r.location_confidential && <p>{t("Location shared after you call")}</p>}
+          {r.location_name && r.location_name !== r.organization_name && place && <p>{r.location_name}</p>}
           {place && <p>{place}</p>}
+          {online && <p>{t(online)}</p>}
           {r.service_areas.length > 0 && <p className="localz-muted">{t("Serves: {{areas}}", { areas: r.service_areas.join(", ") })}</p>}
         </Section>
       )}
@@ -111,6 +115,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
           {r.hours_text || t("Call for hours")}
         </p>
         {r.week_hours_text && <p className="localz-alert">{t("This week only: {{hours}}", { hours: r.week_hours_text })}</p>}
+        <ProgramNotes r={r} detail />
       </Section>
       {r.eligibility_text && (
         <Section title={t("Who can get help")}>

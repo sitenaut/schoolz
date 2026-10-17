@@ -31,9 +31,13 @@ import {
   CORE_ITEMS,
   ITEM_LABELS,
   OPTIONAL_ITEMS,
+  type Cost,
+  type Hours,
   type ProviderType,
   STATUS_LABELS,
+  type ServiceEntry,
   type Submission,
+  type WhoCanCome,
   fetchProviderTypes,
   withDefaults,
 } from "../lib/providerPortal";
@@ -43,17 +47,47 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "-"
 const ORIGINS: Record<string, string> = { self_serve: "Portal", inquiry: "Ask to be listed", admin_assisted: "Admin-assisted" };
 const TONE = { ok: "ok", info: "info", warn: "warn" } as const;
 
+const WEEK_NAMES: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
+
+/** A schedule in a reviewer's shorthand (the public text comes from the server). */
+function schedule(h: Hours): string {
+  const parts =
+    h.mode === "weekly"
+      ? [Object.entries(h.weekly).map(([d, r]) => `${d} ${(r ?? []).map((x) => `${x.open}-${x.close}`).join(", ")}`).join("; ")]
+      : h.mode === "monthly"
+        ? [(h.monthly ?? []).map((m) => `${m.weeks.map((w) => WEEK_NAMES[w]).join("+")} ${m.day} ${m.open}-${m.close}`).join("; ")]
+        : [h.mode ?? "-"];
+  if (h.alternate_weeks_from) parts.push(`every other week from ${h.alternate_weeks_from}`);
+  if (h.season) parts.push(`season ${h.season.start} to ${h.season.end}`);
+  if (h.note) parts.push(h.note);
+  return parts.filter(Boolean).join(" · ") || "-";
+}
+
+const whoLine = (w: WhoCanCome) => (w.open_to_anyone ? "Open to anyone" : JSON.stringify(w));
+const costLine = (c: Cost) => [c.kind, c.amount].filter(Boolean).join(" ") || "-";
+
+function programLine(x: ServiceEntry, label: (key: string | null) => string): string {
+  const lines = [`${label(x.type)}: ${x.name || "-"} - ${x.description || "-"}`];
+  if (x.hours) lines.push(`  Own hours: ${schedule(x.hours)}`);
+  if (x.place) lines.push(`  Meets at: ${[x.place.place_name, x.place.address, x.place.city, x.place.postal_code].filter(Boolean).join(", ")}`);
+  if (x.who) lines.push(`  Own who can come: ${whoLine(x.who)}`);
+  if (x.cost) lines.push(`  Own cost: ${costLine(x.cost)}`);
+  if (x.delivery) lines.push(`  Delivery: ${x.delivery}`);
+  if (x.signup?.status) lines.push(`  Sign-up: ${[x.signup.status, x.signup.opens_on, x.signup.how].filter(Boolean).join(" · ")}`);
+  return lines.join("\n");
+}
+
 function Summary({ s, types }: { s: Submission; types: ProviderType[] }) {
   const label = (key: string | null) => types.find((t) => t.key === key)?.label ?? key ?? "-";
   const rows: [string, string][] = [
     ["Organization", s.organization_name || "-"],
-    ["Programs", s.services.map((x) => `${label(x.type)}: ${x.name || "-"} - ${x.description || "-"}`).join("\n") || "-"],
+    ["Programs", s.services.map((x) => programLine(x, label)).join("\n") || "-"],
     ["Address", s.address_kind === "public" ? [s.address, s.city, s.postal_code].filter(Boolean).join(", ") || "-" : s.address_kind ?? "-"],
     ["Counties served", s.service_area_counties.join(", ") || "-"],
-    ["Hours", s.hours.mode === "weekly" ? Object.entries(s.hours.weekly).map(([d, r]) => `${d} ${(r ?? []).map((x) => `${x.open}-${x.close}`).join(", ")}`).join("; ") : s.hours.mode ?? "-"],
+    ["Hours", schedule(s.hours)],
     ["Phone", s.phone || "-"],
-    ["Who can come", s.who.open_to_anyone ? "Open to anyone" : JSON.stringify(s.who)],
-    ["Cost", [s.cost.kind, s.cost.amount].filter(Boolean).join(" ") || "-"],
+    ["Who can come", whoLine(s.who)],
+    ["Cost", costLine(s.cost)],
     ["Website", s.website || "-"],
     ["Email", s.email || "-"],
     ["What they provide (inquiry)", s.what_you_provide || "-"],

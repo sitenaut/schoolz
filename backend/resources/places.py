@@ -22,3 +22,9 @@ def zip_point(postal_code: str | None) -> tuple[float, float] | None:
     """(lat, lon) of a New Jersey ZIP's center, or None if it isn't one."""
     row = _zips().get((postal_code or "").strip()[:5])
     return (row[1], row[2]) if row else None
+
+
+def zip_county(postal_code: str | None) -> str | None:
+    """The county a New Jersey ZIP is in ("Camden"), or None."""
+    row = _zips().get((postal_code or "").strip()[:5])
+    return row[0] if row else None

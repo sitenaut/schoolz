@@ -9,9 +9,39 @@ import { apiFetch } from "../api";
 
 export type HoursRange = { open: string; close: string };
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
-export type HoursMode = "weekly" | "24_7" | "appointment" | "call";
-export type Hours = { mode: HoursMode | null; weekly: Partial<Record<DayKey, HoursRange[]>>; note?: string | null; seasonal?: string | null };
-export type ServiceEntry = { type: string | null; name: string | null; description: string | null };
+export type HoursMode = "weekly" | "monthly" | "24_7" | "appointment" | "call";
+/** "The 3rd Wednesday": weeks 1-5, or -1 for the last one in the month. */
+export type MonthWeek = 1 | 2 | 3 | 4 | 5 | -1;
+export type MonthlyRule = { weeks: MonthWeek[]; day: DayKey; open: string; close: string };
+/** Runs every year between two days, "MM-DD" ("09-01" to "04-30" wraps the new year). */
+export type Season = { start: string; end: string };
+export type Hours = {
+  mode: HoursMode | null;
+  weekly: Partial<Record<DayKey, HoursRange[]>>;
+  /** Weekly, but every other week, including the week of this date. */
+  alternate_weeks_from?: string | null;
+  monthly?: MonthlyRule[];
+  season?: Season | null;
+  note?: string | null;
+  seasonal?: string | null;
+};
+export type Delivery = "in_person" | "online" | "both";
+export type SignupStatus = "drop_in" | "open" | "waitlist" | "closed";
+export type Signup = { status: SignupStatus | null; opens_on: string | null; how: string | null };
+export type ProgramPlace = { place_name: string | null; address: string | null; city: string | null; postal_code: string | null };
+export type Cost = { kind: CostKind | null; amount: string | null };
+/** One program. A null hours/who/cost/place means "same as the organization's". */
+export type ServiceEntry = {
+  type: string | null;
+  name: string | null;
+  description: string | null;
+  hours?: Hours | null;
+  who?: WhoCanCome | null;
+  cost?: Cost | null;
+  place?: ProgramPlace | null;
+  delivery?: Delivery | null;
+  signup?: Signup | null;
+};
 export type WhoCanCome = {
   open_to_anyone: boolean;
   counties: string[];
@@ -36,7 +66,7 @@ export type Submission = {
   hours: Hours;
   phone: string | null;
   who: WhoCanCome;
-  cost: { kind: CostKind | null; amount: string | null };
+  cost: Cost;
   documents: string[];
   languages: string[];
   accessibility: string | null;
@@ -112,6 +142,9 @@ export type MyListing = {
   eligibility_text: string | null;
   fees: string | null;
   cost_kind: CostKind | null;
+  location_name: string | null;
+  delivery: Delivery | null;
+  signup: Signup | null;
   types: string[];
   pending_changes: { id: string; fields: string[]; created_at: string }[];
 };
@@ -126,7 +159,19 @@ export const DAYS: { key: DayKey; label: string }[] = [
   { key: "sun", label: "Sunday" },
 ];
 
-export const emptyHours = (): Hours => ({ mode: null, weekly: {}, note: null, seasonal: null });
+export const emptyHours = (): Hours => ({ mode: null, weekly: {}, monthly: [], season: null, alternate_weeks_from: null, note: null, seasonal: null });
+export const emptyWho = (): WhoCanCome => ({
+  open_to_anyone: false,
+  counties: [],
+  age_min: null,
+  age_max: null,
+  families_with_children: false,
+  low_income: false,
+  seniors: false,
+  note: null,
+});
+export const emptyPlace = (): ProgramPlace => ({ place_name: null, address: null, city: null, postal_code: null });
+export const emptySignup = (): Signup => ({ status: null, opens_on: null, how: null });
 
 export const emptySubmission = (): Submission => ({
   organization_name: "",
@@ -138,7 +183,7 @@ export const emptySubmission = (): Submission => ({
   service_area_counties: [],
   hours: emptyHours(),
   phone: "",
-  who: { open_to_anyone: false, counties: [], age_min: null, age_max: null, families_with_children: false, low_income: false, seniors: false, note: null },
+  who: emptyWho(),
   cost: { kind: null, amount: null },
   documents: [],
   languages: [],
@@ -169,27 +214,48 @@ export const phoneDigits = (p: string | null | undefined) => {
 export const validPhone = (p: string | null | undefined) => phoneDigits(p).length === 10;
 const filled = (v: string | null | undefined) => !!(v ?? "").trim();
 
+const hoursDone = (h: Hours, phone: string | null) =>
+  h.mode === "weekly"
+    ? DAYS.some((d) => (h.weekly[d.key] ?? []).length > 0)
+    : h.mode === "monthly"
+      ? (h.monthly ?? []).length > 0
+      : h.mode === "call"
+        ? validPhone(phone)
+        : h.mode === "24_7" || h.mode === "appointment";
+const whoDone = (w: WhoCanCome) =>
+  w.open_to_anyone || w.counties.length > 0 || w.age_min != null || w.age_max != null || w.families_with_children || w.low_income || w.seniors || filled(w.note);
+const costDone = (c: Cost) => c.kind != null && (c.kind !== "fee" || filled(c.amount));
+
+function programDone(x: ServiceEntry, s: Submission): boolean {
+  if (!(x.type && filled(x.name) && filled(x.description))) return false;
+  if (x.hours && !hoursDone(x.hours, s.phone)) return false;
+  if (x.who && !whoDone(x.who)) return false;
+  if (x.cost && !costDone(x.cost)) return false;
+  return !x.place || (filled(x.place.address) && filled(x.place.city));
+}
+
+/** The organization's answer, or every program's own one. */
+function everywhere<K extends "hours" | "who" | "cost">(s: Submission, key: K, done: (v: NonNullable<ServiceEntry[K]>) => boolean): boolean {
+  if (done(s[key] as NonNullable<ServiceEntry[K]>)) return true;
+  return s.services.length > 0 && s.services.every((x) => x[key] != null && done(x[key] as NonNullable<ServiceEntry[K]>));
+}
+
 export const CORE_ITEMS = ["organization_name", "services", "address", "hours", "phone", "who", "cost"] as const;
 export const OPTIONAL_ITEMS = ["documents", "languages", "accessibility", "website", "email", "access", "how_to_apply"] as const;
 
 /** Mirrors backend resources/portal.py `completeness()` - keep them in step.
  * The server's answer is the one that counts on submit. */
 export function completeness(s: Submission, hasPrivateAddress: boolean): Completeness {
-  const h = s.hours;
-  const hoursDone =
-    h.mode === "weekly" ? DAYS.some((d) => (h.weekly[d.key] ?? []).length > 0) : h.mode === "call" ? validPhone(s.phone) : h.mode === "24_7" || h.mode === "appointment";
-  const w = s.who;
-  const whoDone = w.open_to_anyone || w.counties.length > 0 || w.age_min != null || w.age_max != null || w.families_with_children || w.low_income || w.seniors || filled(w.note);
   const addressDone =
     s.address_kind === "public" ? filled(s.address) && filled(s.city) : s.address_kind ? hasPrivateAddress && s.service_area_counties.length > 0 : false;
   const done: Record<string, boolean> = {
     organization_name: filled(s.organization_name),
-    services: s.services.length > 0 && s.services.every((x) => !!x.type && filled(x.name) && filled(x.description)),
+    services: s.services.length > 0 && s.services.every((x) => programDone(x, s)),
     address: addressDone,
-    hours: hoursDone,
+    hours: everywhere(s, "hours", (h) => hoursDone(h, s.phone)),
     phone: validPhone(s.phone),
-    who: whoDone,
-    cost: s.cost.kind != null && (s.cost.kind !== "fee" || filled(s.cost.amount)),
+    who: everywhere(s, "who", whoDone),
+    cost: everywhere(s, "cost", costDone),
     documents: s.documents.length > 0,
     languages: s.languages.length > 0,
     accessibility: filled(s.accessibility),

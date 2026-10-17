@@ -54,6 +54,17 @@ PROVIDER_TYPES: tuple[ProviderType, ...] = (
     ProviderType("job_help", "Help finding a job", "ND-3500.3600", "Job Search/Placement", normally_free=True),
     ProviderType("money_help", "Money and budgeting help", "DM-6500", "Personal Financial Counseling"),
     ProviderType("legal_aid", "Free legal help", "FT-3200", "General Legal Aid", normally_free=True),
+    # Immigration help is where "notario" fraud lives, so a fee is a flag.
+    ProviderType(
+        "immigration", "Immigration help", "FT-3600.1500", "Comprehensive Immigration/Naturalization Services", normally_free=True,
+    ),
+    ProviderType("benefits_help", "Help applying for benefits", "PH-0700", "Benefits Screening", normally_free=True),
+    ProviderType("notary", "Notary", "FT-6100", "Notary Public Services"),
+    ProviderType("adult_education", "Reading, writing and GED classes", "HH-0500", "Adult Basic Education"),
+    ProviderType("computer_access", "Computers and internet to use", "TJ-1800.6700", "Public Internet Access Sites", normally_free=True),
+    ProviderType("vision", "Eye screening and glasses", "LF-4900.2000", "Eye Screening"),
+    ProviderType("garden", "Community garden", "BD-2600.1500", "Community Gardening", normally_free=True),
+    ProviderType("activities", "Social groups and activities", "PL-7000.4360", "General Recreational Activities/Sports"),
 )
 
 BY_KEY: dict[str, ProviderType] = {t.key: t for t in PROVIDER_TYPES}

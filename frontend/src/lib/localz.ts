@@ -39,6 +39,12 @@ export type ResourceSummary = {
   location_confidential?: boolean;
   /** Miles from the visitor's point, measured on the device (closest first). */
   distance_miles?: number;
+  /** The next days it meets, for a monthly, every-other-week or seasonal schedule. */
+  next_open?: { on: string; times: string }[];
+  /** "online" or "both" (in person or online), when a provider said. */
+  delivery?: "in_person" | "online" | "both" | null;
+  /** How a program takes people; `opens_on` only for a closed one. */
+  signup?: { status: "drop_in" | "open" | "waitlist" | "closed"; opens_on: string | null; how: string | null } | null;
 };
 
 export type ResourceDetail = ResourceSummary & {
