@@ -14,6 +14,7 @@ import observability
 from auth import create_local_token, get_current_user, hash_password_async, verify_password_async
 from database import get_db
 from models import (
+    Bucket3Capture,
     EmailScanner,
     GmailToken,
     GuardianInvite,
@@ -262,6 +263,11 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
     await db.execute(
         update(StudentAccountInvite).where(StudentAccountInvite.accepted_by_user_id == uid).values(accepted_by_user_id=None)
     )
+
+    # Pages this guardian imported from Backpack Capture: their own archive.
+    # What was read from them (assignments, grades) belongs to the child's
+    # record and stays for the other guardians.
+    await db.execute(delete(Bucket3Capture).where(Bucket3Capture.owner_user_id == uid))
 
     # Gmail: the token, every scanner, and the scanners' own jobs/captures.
     scanners = (await db.execute(select(EmailScanner).where(EmailScanner.owner_user_id == uid))).scalars().all()
