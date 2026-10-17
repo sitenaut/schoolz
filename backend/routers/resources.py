@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import ResourceService
-from resources import childcarenj, nj211
+from resources import childcarenj, nj211, portal
 from resources.categories import CATEGORIES, categories_for_code
 from resources.eligibility import criteria_for
 
@@ -53,6 +53,12 @@ class ResourceSearchIn(BaseModel):
     page_size: int = Field(default=20, ge=1, le=50)
 
 
+class ClosureOut(BaseModel):
+    starts_on: date
+    ends_on: date
+    note: str | None
+
+
 class ResourceSummaryOut(BaseModel):
     id: str
     name: str
@@ -71,6 +77,11 @@ class ResourceSummaryOut(BaseModel):
     # sentence has been read. The browser matches it against the visitor's
     # own answers, which never come here.
     eligibility: dict | None = None
+    # A provider's "Closed today" / temporary closure, while it lasts.
+    closure: ClosureOut | None = None
+    # A confidential location (a shelter): no address, town or pin is ever
+    # sent; the page says "Location shared after you call".
+    location_confidential: bool = False
 
 
 class ResourceTypeOut(BaseModel):
@@ -100,6 +111,8 @@ class ResourceDetailOut(ResourceSummaryOut):
     service_areas: list[str]
     taxonomy_names: list[str]
     alert: str | None
+    # "This week only" hours a provider posted, for the current week.
+    week_hours_text: str | None = None
     missing_core: list[str]
     source: str
     source_url: str | None
@@ -110,7 +123,27 @@ def _escape_like(text: str) -> str:
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _confidential(row: ResourceService) -> bool:
+    return row.address_kind == "confidential"
+
+
+def _closure(row: ResourceService) -> ClosureOut | None:
+    if row.closure_starts_on and row.closure_ends_on and row.closure_ends_on >= portal.today():
+        return ClosureOut(starts_on=row.closure_starts_on, ends_on=row.closure_ends_on, note=row.closure_note)
+    return None
+
+
+def _week_hours_text(row: ResourceService) -> str | None:
+    week = row.week_hours or {}
+    if week.get("week_of") == portal.week_of(portal.today()).isoformat():
+        return week.get("text")
+    return None
+
+
 def _summary(row: ResourceService, eligibility: dict | None = None) -> dict:
+    # A confidential row has no location columns in the first place
+    # (resources/portal.py); this is the second lock on the same door.
+    hidden = _confidential(row)
     return {
         "id": row.id,
         "name": row.name,
@@ -118,9 +151,11 @@ def _summary(row: ResourceService, eligibility: dict | None = None) -> dict:
         "location_name": row.location_name,
         "description": row.description,
         "phone": row.phone,
-        "address": row.address,
-        "city": row.city,
+        "address": None if hidden else row.address,
+        "city": None if hidden else row.city,
         "hours_text": row.hours_text,
+        "closure": _closure(row),
+        "location_confidential": hidden,
         "categories": list(row.categories or []),
         "complete": not row.missing_core,
         "statewide": _is_statewide(row),
@@ -286,9 +321,9 @@ async def get_resource(resource_id: str, db: AsyncSession = Depends(get_db)) -> 
         **_summary(row, criteria.get(row.id)),
         email=row.email,
         website=row.website,
-        postal_code=row.postal_code,
-        latitude=row.latitude,
-        longitude=row.longitude,
+        postal_code=None if _confidential(row) else row.postal_code,
+        latitude=None if _confidential(row) else row.latitude,
+        longitude=None if _confidential(row) else row.longitude,
         eligibility_text=row.eligibility_text,
         application_process=row.application_process,
         fees=row.fees,
@@ -299,6 +334,7 @@ async def get_resource(resource_id: str, db: AsyncSession = Depends(get_db)) -> 
         service_areas=list(row.service_areas or []),
         taxonomy_names=list(row.taxonomy_names or []),
         alert=row.alert,
+        week_hours_text=_week_hours_text(row),
         missing_core=list(row.missing_core or []),
         source=row.source,
         source_url=_source_url(row),

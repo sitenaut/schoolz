@@ -1650,8 +1650,165 @@ class ResourceService(Base):
     # Consecutive complete list crawls that didn't include this record.
     missed_crawls: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # ---- provider portal (migration 0106, resources/portal.py) ----------
+    # "public" | "confidential" | "service_area"; null = whatever the source
+    # gave. A confidential listing keeps no street, town, ZIP or pin in this
+    # row at all: the address lives encrypted in resource_private_addresses.
+    address_kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Structured weekly schedule ({"mode": "weekly"|"24_7"|"appointment"|"call",
+    # "weekly": {"mon": [{"open": "09:00", "close": "12:00"}]}, "note": ...});
+    # hours_text is derived from it for display and search.
+    hours: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # "This week only" hours: {"week_of": <Monday ISO date>, "hours": {...}}.
+    week_hours: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # A temporary closure ("Closed today" sets both to today, Eastern).
+    closure_starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    closure_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    closure_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # "free" | "sliding" | "fee" (fees holds the wording and amount).
+    cost_kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Columns a provider set. A scraper refresh never overwrites these; a
+    # differing scraped value becomes a "source_conflict" change request.
+    provider_owned_fields: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ResourcePrivateAddress(Base):
+    """A listing's address that is never published: a confidential location
+    (domestic violence shelter, safe house, youth shelter) or the mailing
+    address a service-area-only program gave for verification. Encrypted at
+    rest, its own table so no `select(ResourceService)` ever carries it, and
+    read only by the resources.view review screens. No public schema, search,
+    tally, chatbot tool or export reads this table (tests/test_provider_portal.py)."""
+
+    __tablename__ = "resource_private_addresses"
+
+    service_id: Mapped[str] = mapped_column(String(36), ForeignKey("resource_services.id", ondelete="CASCADE"), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)  # "confidential" | "mailing"
+    address: Mapped[str] = mapped_column(EncryptedText, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ResourceOnboardingRequest(Base):
+    """Someone asking for a listing in Localz (docs/LOCALZ_DESIGN.md,
+    "Onboarding approval"). draft -> submitted -> in_review -> approved |
+    changes_requested | rejected, plus withdrawn. Nothing here is public:
+    only approval creates or links resource_services rows and memberships.
+
+    `submission` is the form as structured data, minus the private address
+    (encrypted in its own column). `contact_*` are the person to call for
+    verification - never shown publicly. `ip_hash` (salted, one-way) is only
+    for the "Ask to be listed" per-connection limit."""
+
+    __tablename__ = "resource_onboarding_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft", index=True)
+    origin: Mapped[str] = mapped_column(String(20), nullable=False)  # self_serve | inquiry | admin_assisted
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # A claim of an existing (usually scraped) record.
+    claimed_service_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_services.id", ondelete="SET NULL"), nullable=True
+    )
+    submission: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    private_address: Mapped[str | None] = mapped_column(EncryptedText, nullable=True)
+    contact_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    contact_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    # {"exists": true, "connected": true, ...} - the five reviewer items.
+    checklist: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reject_reason: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Fields the reviewer asked the provider to fix.
+    fields_to_fix: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default="{}")
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    # The resource_services rows approval created or linked.
+    service_ids: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class ProviderMembership(Base):
+    """A person who may maintain one listing. One row per (user, service):
+    a scraped organization name can cover many unrelated services, so
+    access is granted per listing, never per organization. Quick updates
+    publish only for a verified member (`verified_at`); everything an
+    unverified member changes is held for review."""
+
+    __tablename__ = "provider_memberships"
+    __table_args__ = (UniqueConstraint("user_id", "service_id", name="uq_provider_memberships_user_service"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    service_id: Mapped[str] = mapped_column(String(36), ForeignKey("resource_services.id", ondelete="CASCADE"), nullable=False, index=True)
+    organization_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_organizations.id", ondelete="SET NULL"), nullable=True
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="owner")  # owner | editor
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    request_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_onboarding_requests.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class ResourceChangeRequest(Base):
+    """An edit to a live listing that waits for a reviewer: a provider
+    changing name/address/phone/website/email, free -> fee or adding a
+    category (or anything from an unverified member), or a scraper refresh
+    disagreeing with a field the provider owns (`kind="source_conflict"`).
+    The old value stays live until a reviewer approves."""
+
+    __tablename__ = "resource_change_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    service_id: Mapped[str] = mapped_column(String(36), ForeignKey("resource_services.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)  # provider_edit | source_conflict
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    source: Mapped[str | None] = mapped_column(Text, nullable=True)
+    changes: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    before: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    private_address: Mapped[str | None] = mapped_column(EncryptedText, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class ResourceChangeLog(Base):
+    """Every change to a listing from the portal or its review, and every
+    review decision: who, when, before, after - so a bad edit is reverted in
+    one step. `before`/`after` hold public columns only; a private address
+    change is recorded as {"private_address": "changed"}, never its value."""
+
+    __tablename__ = "resource_change_log"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    service_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_services.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    request_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_onboarding_requests.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    change_request_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_change_requests.id", ondelete="SET NULL"), nullable=True
+    )
+    actor_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    actor_kind: Mapped[str] = mapped_column(String(20), nullable=False)  # provider | reviewer | system
+    action: Mapped[str] = mapped_column(String(40), nullable=False)
+    before: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    after: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reverted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reverted_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
 
 
 class ResourceEligibility(Base):

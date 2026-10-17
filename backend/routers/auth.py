@@ -30,6 +30,7 @@ from models import (
     StudentAccountInvite,
     User,
 )
+from resources import portal as provider_portal_data
 from schemas import (
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -283,6 +284,10 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
     if scanner_job_ids:
         await db.execute(delete(ScheduledJob).where(ScheduledJob.id.in_(scanner_job_ids)))
     await db.execute(delete(GmailToken).where(GmailToken.user_id == uid))
+
+    # Localz provider portal: memberships and unfinished requests go; an
+    # approved listing stays, no longer pointing at this person.
+    await provider_portal_data.delete_user_data(db, uid)
 
     # Centrally-managed data this user happened to create stays; only the
     # "who created it" pointer goes.

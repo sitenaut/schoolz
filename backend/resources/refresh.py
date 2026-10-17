@@ -29,7 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import ResourceOrganization, ResourceService
 from scheduler import progress
 
-from . import childcarenj, nj211
+from . import childcarenj, nj211, ownership
 from .categories import categories_for_codes
 
 logger = logging.getLogger(__name__)
@@ -174,12 +174,15 @@ async def _mark_missing(db: AsyncSession, crawl_started: datetime, source: str =
         )
         .values(missed_crawls=ResourceService.missed_crawls + 1)
     )
+    # A listing a provider has claimed stays up when the source drops it:
+    # the provider keeps it current now (missed_crawls still counts).
     result = await db.execute(
         update(ResourceService)
         .where(
             ResourceService.source == source,
             ResourceService.status == "active",
             ResourceService.missed_crawls >= INACTIVE_AFTER_MISSED_CRAWLS,
+            func.cardinality(ResourceService.provider_owned_fields) == 0,
         )
         .values(status="inactive")
     )
@@ -234,14 +237,17 @@ async def _list_crawl(db: AsyncSession, client: nj211.NJ211Client, cfg: dict, su
 
 
 async def _apply_detail(db: AsyncSession, orgs: _Orgs, row: ResourceService, record: dict, now: datetime) -> None:
-    for attr, value in nj211.detail_fields(record).items():
-        setattr(row, attr, value)
-    org = await orgs.get(nj211.organization_fields(record))
-    if org is not None:
-        if org.id is None:
-            await db.flush()
-        row.organization_id = org.id
-    row.raw = nj211.storable_raw(record)
+    managed = ownership.is_managed(row)
+    # Provider-owned fields are held for review instead of overwritten.
+    await ownership.apply_source_fields(db, row, nj211.detail_fields(record), nj211.SOURCE)
+    if not managed:
+        org = await orgs.get(nj211.organization_fields(record))
+        if org is not None:
+            if org.id is None:
+                await db.flush()
+            row.organization_id = org.id
+    if row.address_kind != "confidential":
+        row.raw = nj211.storable_raw(record)
     row.detail_fetched_at = now
     _derive(row)
 
@@ -364,10 +370,12 @@ async def _upsert_providers(db: AsyncSession, orgs: _Orgs, records: list[dict], 
             summary["changed"] += 1
             if row.status != "active":
                 summary["reactivated"] += 1
-        for attr, value in values.items():
-            setattr(row, attr, value)
-        row.organization_id = org.id if org else None
-        row.raw = childcarenj.storable_raw(record)
+        managed = ownership.is_managed(row)
+        await ownership.apply_source_fields(db, row, values, childcarenj.SOURCE)
+        if not managed:
+            row.organization_id = org.id if org else None
+        if row.address_kind != "confidential":
+            row.raw = childcarenj.storable_raw(record)
         row.summary_hash = digest
         row.last_seen_at = now
         row.detail_fetched_at = now  # the list record is the whole record
