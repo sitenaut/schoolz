@@ -13,6 +13,7 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from resources.eligibility import extract_pending
 from resources.refresh import DEFAULT_TAXONOMY_ROOTS, refresh_nj211
 from scheduler.registry import register_job
 
@@ -50,7 +51,9 @@ DEFAULT_PARAMS = {
         "max_details_per_run": 300,
         "detail_refresh_days": 30,
         "delay_seconds": 10,
-    }
+    },
+    # Distinct "who can come" sentences read by Claude per run (25 a call).
+    "max_eligibility_per_run": 1500,
 }
 
 
@@ -66,11 +69,16 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not cfg:
         return "WARNING[resources_no_sources]: no nj211 params"
     summary = await refresh_nj211(db, cfg)
+    # After the crawl, and even when NJ 211 refused us: it only reads what's
+    # already stored, and never touches their site.
+    await extract_pending(db, int(params.get("max_eligibility_per_run", 1500)), summary=summary)
     text = json.dumps(summary, default=str)
     if summary["blocked"]:
         return f"WARNING[resource_source_blocked]: NJ 211 refused or disallowed us - stopped: {text}"
     if summary["errors"] or summary["detail_failures"]:
         return f"WARNING[resource_source_partial]: {len(summary['errors'])} error(s): {text}"
+    if summary["eligibility_errors"]:
+        return f"WARNING[resource_eligibility_partial]: {summary['eligibility_errors'][0]}: {text}"
     if summary["list_crawl"] == "complete" and summary["listed"] == 0:
         return f"WARNING[resource_source_empty]: the list crawl found nothing - layout change? {text}"
     return text

@@ -1,4 +1,5 @@
 import { apiFetch } from "../api";
+import type { Criteria } from "./localzFit";
 import { ROUTER_BASENAME } from "./i18n";
 
 /** Localz: community resources (food, housing, health, ...) for families who
@@ -28,6 +29,9 @@ export type ResourceSummary = {
    * for most counties). */
   statewide: boolean;
   last_assured_on: string | null;
+  /** Who it's for, structured from its eligibility sentence; null until
+   * that's been read. Matched on the device (lib/localzFit.ts). */
+  eligibility: Criteria | null;
 };
 
 export type ResourceDetail = ResourceSummary & {

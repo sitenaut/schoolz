@@ -3565,3 +3565,130 @@ select {
 :root[data-section="localz"] .btn.localz-call svg {
   color: var(--localz-action-ink);
 }
+
+/* Localz "What am I eligible for?" (pages/localz/FitButton.tsx, FitNote.tsx).
+   A check mark for "For you", neutral for the rest - never red: the match is
+   rough, and "not for you" is the message Localz exists to avoid. */
+.localz-fit-row {
+  margin: 10px 0 2px;
+}
+.localz-fit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+.localz-fit-btn svg {
+  width: 16px;
+  height: 16px;
+  color: var(--primary);
+}
+.localz-fit-btn.on {
+  border-color: var(--primary);
+  background: var(--primary-soft, var(--card));
+}
+.localz-fit-sheet {
+  display: grid;
+  gap: 4px;
+}
+.localz-fit-group {
+  border: 0;
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.localz-fit-group legend,
+.localz-fit-switch-label {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0;
+  margin-bottom: 6px;
+}
+.localz-fit-group .localz-muted {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.localz-fit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.localz-fit-chip {
+  min-height: 38px;
+}
+.localz-fit-chip svg {
+  width: 14px;
+  height: 14px;
+}
+.localz-fit-chip[aria-pressed="true"] {
+  background: var(--primary-soft, var(--card));
+  color: var(--ink);
+}
+.localz-fit-switch {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.localz-fit-switch .sw {
+  flex: none;
+  margin-top: 2px;
+}
+.localz-fit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.localz-fit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.localz-fit-pill svg {
+  width: 13px;
+  height: 13px;
+}
+.localz-fit-yes .localz-fit-pill {
+  background: var(--fit-yes-bg);
+  border-color: var(--fit-yes-bg);
+  color: var(--fit-yes-ink);
+}
+.localz-fit-open .localz-fit-pill {
+  border-color: var(--primary);
+  color: var(--primary-strong, var(--primary));
+}
+.localz-fit-asks {
+  color: var(--ink-3);
+}
+.localz-card.fits {
+  border-color: var(--fit-yes-bg);
+  box-shadow: inset 4px 0 0 var(--fit-yes-bg);
+}
+.localz-list-divider {
+  margin: 14px 0 4px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+:root {
+  --fit-yes-bg: #2e6b5c;
+  --fit-yes-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fit-yes-bg: #6fc2a8;
+    --fit-yes-ink: #0b1f19;
+  }
+}
+:root[data-theme="dark"] {
+  --fit-yes-bg: #6fc2a8;
+  --fit-yes-ink: #0b1f19;
+}

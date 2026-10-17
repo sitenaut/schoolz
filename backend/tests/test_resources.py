@@ -326,6 +326,13 @@ async def test_job_reports_blocks_and_partial_runs_as_coded_warnings(monkeypatch
 
         return fake
 
+    eligibility_errors: list[str] = []
+
+    async def fake_extract(db, limit, summary):
+        summary["eligibility_errors"] = list(eligibility_errors)
+        return summary
+
+    monkeypatch.setattr(resources_refresh, "extract_pending", fake_extract)
     for outcome, code in [
         ({"blocked": "NJ 211 answered 403"}, "resource_source_blocked"),
         ({"errors": ["Cherry Hill B p2: timeout"]}, "resource_source_partial"),
@@ -334,6 +341,8 @@ async def test_job_reports_blocks_and_partial_runs_as_coded_warnings(monkeypatch
     ]:
         monkeypatch.setattr(resources_refresh, "refresh_nj211", returning(dict(base, **outcome)))
         assert parse_warning(await resources_refresh.run(None, {"nj211": {"places": [PLACE]}})) == code
+    eligibility_errors.append("RateLimitError: slow down")
+    assert parse_warning(await resources_refresh.run(None, {"nj211": {"places": [PLACE]}})) == "resource_eligibility_partial"
     assert parse_warning(await resources_refresh.run(None, {})) == "resources_no_sources"
 
 
