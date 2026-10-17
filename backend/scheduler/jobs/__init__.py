@@ -3,6 +3,7 @@ from . import (
     district_calendar_pdf_scan,  # noqa: F401
     district_calendar_scan,  # noqa: F401
     documents_scan,  # noqa: F401
+    email_outbox,  # noqa: F401
     email_scan,  # noqa: F401
     fdmealplanner_menu_scan,  # noqa: F401
     givebacks_scan,  # noqa: F401
@@ -22,6 +23,7 @@ from . import (
     preschool_team_scan,  # noqa: F401
     presence_menu_scan,  # noqa: F401
     ptboard_scan,  # noqa: F401
+    resources_checkin,  # noqa: F401
     resources_childcare,  # noqa: F401
     resources_refresh,  # noqa: F401
     school_events_doc_scan,  # noqa: F401

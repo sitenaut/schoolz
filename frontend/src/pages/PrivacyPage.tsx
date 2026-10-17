@@ -262,6 +262,15 @@ export function PrivacyPage() {
               pages current. We never send, delete, or modify email. Guardians aren't offered this.
             </td>
           </tr>
+          <tr>
+            <td>If you list a program on Localz: your account email, the contact person you give us, and the emails we send you</td>
+            <td>Our database; the emails go out through Google (Gmail)</td>
+            <td>
+              Seen by our reviewers, to check the listing is really yours. We email you about your request, codes to confirm it's
+              you, and a reminder every few months to check your listing. Our copy of each email is erased once it's sent; Gmail keeps
+              one in our sent mail. People looking for help are never emailed.
+            </td>
+          </tr>
         </tbody>
       </table>
 

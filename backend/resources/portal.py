@@ -874,6 +874,16 @@ async def _organization(db: AsyncSession, name: str) -> ResourceOrganization | N
     return org
 
 
+def source_email(target: ResourceService | None) -> str | None:
+    """The email a source (not a provider) published for a listing - an
+    address the requester didn't choose, so a code sent there means
+    something. Read before a claim's own values replace it."""
+    if target is None or target.source == SOURCE or "email" in (target.provider_owned_fields or []):
+        return None
+    email = (target.email or "").strip()
+    return email if "@" in email else None
+
+
 async def approve(db: AsyncSession, req: ResourceOnboardingRequest, reviewer: User, target: ResourceService | None,
                   note: str | None) -> list[ResourceService]:
     """Create (or, for a claim/merge, take over) the listing rows and the
@@ -882,6 +892,9 @@ async def approve(db: AsyncSession, req: ResourceOnboardingRequest, reviewer: Us
     org = await _organization(db, sub.organization_name or "")
     stamp, day = now(), today()
     rows: list[ResourceService] = []
+    # The address a source published for a claimed listing, read before the
+    # provider's own values replace it: a code sent there proves something.
+    code_email = source_email(target)
     for i, entry in enumerate(sub.services):
         columns = service_columns(sub, entry)
         if i == 0 and target is not None:
@@ -925,6 +938,8 @@ async def approve(db: AsyncSession, req: ResourceOnboardingRequest, reviewer: Us
             if membership is None:
                 membership = ProviderMembership(user_id=req.user_id, service_id=row.id, organization_id=row.organization_id, role="owner", request_id=req.id)
                 db.add(membership)
+            if i == 0 and code_email:
+                membership.verify_email = code_email
             if req.checklist.get("connected"):
                 # v1 verification: the reviewer called the listed number.
                 membership.verified_at, membership.verified_by_user_id = stamp, reviewer.id

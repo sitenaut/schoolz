@@ -1681,6 +1681,9 @@ class ResourceService(Base):
     # "How you can help" (migration 0110, portal.WaysToHelp): volunteer
     # roles, items to donate, a wish-list link. Never a money link.
     ways_to_help: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # When the last "Is this still right?" email went to its members
+    # (resources.provider_checkin, migration 0111).
+    checkin_sent_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     # Columns a provider set. A scraper refresh never overwrites these; a
     # differing scraped value becomes a "source_conflict" change request.
     provider_owned_fields: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default="{}")
@@ -1769,6 +1772,13 @@ class ProviderMembership(Base):
     request_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("resource_onboarding_requests.id", ondelete="SET NULL"), nullable=True
     )
+    # Verify-by-email (migration 0111): the address a *source* published for
+    # a claimed listing (NJ 211's email for it), set at approval. Never one
+    # the requester typed - a code sent there would prove nothing.
+    verify_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    code_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    code_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    code_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
@@ -2559,3 +2569,30 @@ class AuditNotPublished(Base):
     note: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class OutboundEmail(Base):
+    """One email schoolz sends (services/mailer.py): queued in the request
+    that causes it, sent right after, retried by the hourly email.outbox
+    job. The address and body are encrypted while queued and erased once
+    sent, failed or expired; the row (kind, status, times) stays 30 days
+    for counts, then goes."""
+
+    __tablename__ = "outbound_emails"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    # What it's about, for rate limits (a membership id for a code).
+    ref: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    to_address: Mapped[str | None] = mapped_column(EncryptedText(purpose="outbound_email"), nullable=True)
+    subject: Mapped[str | None] = mapped_column(Text, nullable=True)
+    body: Mapped[str | None] = mapped_column(EncryptedText(purpose="outbound_email"), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="queued")  # queued|sent|failed|expired
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    # A code is useless after its 15 minutes: never send it late.
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

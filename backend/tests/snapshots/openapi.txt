@@ -415,6 +415,9 @@ PATCH /provider-portal/listings/{service_id}
   path service_id: string
   body: ListingUpdateIn
   -> 200: ListingUpdateOut
+POST /provider-portal/listings/{service_id}/confirm
+  path service_id: string
+  -> 200: object
 GET /provider-portal/listings/{service_id}/dates
   path service_id: string
   -> 200: list[DateOut]
@@ -426,6 +429,13 @@ DELETE /provider-portal/listings/{service_id}/dates/{event_id}
   path event_id: string
   path service_id: string
   -> 204: -
+POST /provider-portal/listings/{service_id}/verify
+  path service_id: string
+  body: CodeIn
+  -> 200: object
+POST /provider-portal/listings/{service_id}/verify/send
+  path service_id: string
+  -> 202: object
 POST /provider-portal/match
   body: MatchIn
   -> 200: list[ListingBriefOut]
@@ -913,6 +923,7 @@ ClassPaymentOut { amount_cents: integer | null, id: string, kind: string, label:
 ClassPaymentUpdate { amount_cents?: integer | null, kind?: string | null, label?: string | null, methods?: list[string] | null, notes?: string | null, payschools_item_name?: string | null, refundable_until?: string(date-time) | null, sequence?: integer | null, window_closes_at?: string(date-time) | null, window_opens_at?: string(date-time) | null }
 ClosureIn { ends_on: string(date), note?: string | null, starts_on: string(date) }
 ClosureOut { ends_on: string(date), note: string | null, starts_on: string(date) }
+CodeIn { code: string }
 CommunitySubmissionOut { admin_notes: string | null, created_at: string(date-time), description: string | null, district_id: string | null, district_name?: string | null, extracted_at?: string(date-time) | null, file_content_type: string | null, file_name: string | null, file_size: integer | null, id: string, kind: string, reviewed_at: string(date-time) | null, school_id: string | null, school_name?: string | null, source?: SubmissionAttemptOut | null, status: string, submitter_email: string | null, submitter_name: string | null, url: string | null }
 CommunitySubmissionUpdate { admin_notes?: string | null, school_id?: string | null, status?: string | null }
 CompareIn { configs: list[AudienceConfig], message: string, signed_in?: boolean }
@@ -1006,7 +1017,7 @@ MemberOut { created_at: string(date-time), email: string | null, id: string, rol
 MergeIn { checklist: dict[boolean], note?: string | null, target_service_id: string }
 ModelPrice { cache_read?: number | null, input: number, output: number }
 MonthlyRule { close: string, day: enum(mon,tue,wed,thu,fri,sat,sun), open: string, weeks: list[enum(1,2,3,4,5,-1)] }
-MyListingOut { address: string | null, address_kind: string | null, alert: string | null, city: string | null, closure: ClosureOut | null, cost_kind: string | null, delivery: string | null, description: string | null, eligibility_text: string | null, email: string | null, fees: string | null, hours: object | null, hours_text: string | null, id: string, languages: list[string], location_name: string | null, name: string, organization_name: string | null, pending_changes: list[PendingChangeOut], phone: string | null, postal_code: string | null, required_documents: list[string], role: string, service_areas: list[string], signup: object | null, status: string, types: list[string], verified: boolean, ways_to_help: object | null, website: string | null, week_hours: object | null }
+MyListingOut { address: string | null, address_kind: string | null, alert: string | null, city: string | null, closure: ClosureOut | null, cost_kind: string | null, delivery: string | null, description: string | null, eligibility_text: string | null, email: string | null, fees: string | null, hours: object | null, hours_text: string | null, id: string, languages: list[string], last_assured_on: string(date) | null, location_name: string | null, name: string, organization_name: string | null, pending_changes: list[PendingChangeOut], phone: string | null, postal_code: string | null, required_documents: list[string], role: string, service_areas: list[string], signup: object | null, status: string, types: list[string], verified: boolean, verify_by_email: string | null, ways_to_help: object | null, website: string | null, week_hours: object | null }
 NearbyIn { box: Box, category?: string | null, query?: string | null, type?: string | null }
 NearbyOut { points: list[list[any]] }
 NextOpenOut { on: string(date), times: string }
@@ -1048,7 +1059,7 @@ ResultRun { finished_at?: string(date-time) | null, status: string, summary?: st
 ResultSchool { contact_page_hash?: string | null, contact_staff?: list[ResultStaff], givebacks_blocks?: list[ResultBlock], givebacks_items?: list[ResultItem], givebacks_last_run?: ResultRun | null, lunch_menus?: list[ResultLunchMenu], slug: string }
 ResultStaff { constituent_id: string, department?: string | null, email?: string | null, full_name: string, phone?: string | null, title?: string | null }
 ResultTranslation { description?: string | null, lang: string, model: string, source_hash: string, title: string }
-ReviewOut { account_email: string | null, checklist: object, claimed_service: ListingBriefOut | null, completeness: CompletenessOut, contact_email: string | null, contact_name: string | null, contact_phone: string | null, created_at: string(date-time), decision_note: string | null, duplicates: list[DuplicateOut], fields_to_fix: list[string], flags: list[FlagOut], has_private_address: boolean, id: string, log: list[LogOut], origin: string, private_address: string | null, reject_reason: string | null, reviewed_at: string(date-time) | null, service_ids: list[string], status: string, submission: object, submitted_at: string(date-time) | null, updated_at: string(date-time) }
+ReviewOut { account_email: string | null, checklist: object, claimed_service: ListingBriefOut | null, completeness: CompletenessOut, contact_email: string | null, contact_name: string | null, contact_phone: string | null, created_at: string(date-time), decision_note: string | null, duplicates: list[DuplicateOut], fields_to_fix: list[string], flags: list[FlagOut], has_private_address: boolean, id: string, log: list[LogOut], origin: string, private_address: string | null, reject_reason: string | null, reviewed_at: string(date-time) | null, service_ids: list[string], status: string, submission: object, submitted_at: string(date-time) | null, updated_at: string(date-time), verify_by_email?: string | null }
 RightNowOut { blocks: list[NowBlockOut], current: NowBlockOut | null, cycle_label?: string | null, next: NowBlockOut | null, schedule_date: string | null, school_day_over: boolean, stale: boolean }
 RoleIn { description?: string | null, name: string, permissions?: list[string] }
 RoleOut { description: string | null, id: string, name: string, permissions: list[string], user_count: integer }

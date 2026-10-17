@@ -403,6 +403,20 @@ Migration 0107; rules in `backend/resources/portal.py` and
   once, so unverified members can't post, and a confidential listing never
   can (an event's place would give the location away). A reviewer takes one
   down with the log's revert; at most 30 upcoming per listing.
+- **Email** (migration 0111, `services/mailer.py`, `resources/portal_mail.py`):
+  Gmail SMTP (docs/ENV_SETUP.md), an encrypted outbox sent right after the
+  request and retried by the hourly `email.outbox` job; a message's address
+  and body are erased once sent. Decision emails for requests and held
+  edits go to the requester's account email. **Verify by email**: a claim of
+  a listing whose *source* published an email (NJ 211) can be approved
+  without the call; the member starts unverified (everything held) and
+  confirms with a 6-digit code sent to that address - never to one the
+  requester typed (15 minutes, 5 tries, 3 codes an hour, only the hash
+  kept). **"Is this still right?"**: the weekly `resources.provider_checkin`
+  job emails members of listings not confirmed in 90 days (at most every
+  30); "Yes, it's all still right" or any published quick update moves
+  `last_assured_on`. Provider-facing and English; people looking for help
+  are never emailed (alerts are still deferred).
 - **How you can help** (`ways_to_help`): volunteer roles, things to donate
   and a wish-list link, shown last on the listing. No money link on
   purpose. Roles and items publish at once; a new wish-list link is held for
@@ -410,12 +424,9 @@ Migration 0107; rules in `backend/resources/portal.py` and
 
 ### Deferred, and why
 
-- **Email/SMS codes, decision emails, the 90-day "Is this still right?"
-  email and invite links**: the backend has no outbound email or SMS yet
-  (see "Alerts"). Verification in v1 is a reviewer calling the listing's own
-  number (checklist item 2 sets `verified_at`), with the domain match shown
-  as a signal; decisions show in the provider's portal, and the UI says
-  "we'll call the number you listed".
+- **SMS codes and invite links.** Email is built (below); a brand-new
+  listing is still verified by a reviewer calling its number, since every
+  address on it was typed by the requester.
 - **Owner-invites-editor**: a reviewer adds a member by account email
   instead (unverified until called).
 - **Geocoding and the map confirm**, and the "address outside the service

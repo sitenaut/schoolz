@@ -200,6 +200,9 @@ export function LocalzReviewDetailPage() {
   if (!review) return <p className="note">Loading…</p>;
   const open = review.status === "submitted" || review.status === "in_review";
   const allTicked = CHECKLIST.every((c) => checklist[c.key]);
+  // A claim of a listing whose source published an email can skip the call:
+  // the provider confirms with a code sent there (their edits wait until then).
+  const approveReady = CHECKLIST.every((c) => checklist[c.key] || (c.key === "connected" && !!review.verify_by_email));
   const sub = withDefaults(review.submission);
 
   const revert = async (e: LogEntry) => {
@@ -327,6 +330,12 @@ export function LocalzReviewDetailPage() {
               </label>
             ))}
           </div>
+          {review.verify_by_email && !checklist.connected && (
+            <p className="note">
+              No call needed: NJ 211 lists {review.verify_by_email} for this listing. After approval they can confirm with a code sent there; until
+              then every change they make waits for review.
+            </p>
+          )}
           {manage && (
             <>
               <Field label="Note" hint="Optional for Approve, required for Request changes. The provider sees it.">
@@ -336,7 +345,7 @@ export function LocalzReviewDetailPage() {
                 <button className="btn" disabled={busy} onClick={() => run(() => saveChecklist(review.id, checklist), "Checklist saved")}>
                   Save checklist
                 </button>
-                <button className="btn btn-primary" disabled={busy || !allTicked} onClick={() => run(() => approveRequest(review.id, checklist, note), "Approved - it's live")}>
+                <button className="btn btn-primary" disabled={busy || !approveReady} onClick={() => run(() => approveRequest(review.id, checklist, note), "Approved - it's live")}>
                   Approve
                 </button>
                 <button className="btn" disabled={busy} onClick={() => setChangesOpen(true)}>

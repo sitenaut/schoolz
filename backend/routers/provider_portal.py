@@ -13,7 +13,7 @@ import logging
 import uuid
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,11 +29,11 @@ from models import (
     ResourceService,
     User,
 )
-from resources import portal
+from resources import portal, portal_mail
 from resources.places import zip_point
 from resources.portal import Cost, Hours, ProgramPlace, Signup, Submission, WaysToHelp
 from resources.provider_types import BY_CODE, PROVIDER_TYPES
-from services import upload_guard
+from services import mailer, upload_guard
 from services.app_help import SITE
 from services.client_ip import client_ip
 
@@ -214,6 +214,10 @@ class MyListingOut(BaseModel):
     delivery: str | None
     signup: dict | None
     ways_to_help: dict | None
+    last_assured_on: date | None
+    # "h***@maplepantry.org" when this unverified member can get a code
+    # at the address the listing's source published.
+    verify_by_email: str | None
     types: list[str]
     pending_changes: list[PendingChangeOut]
 
@@ -530,6 +534,8 @@ async def _listing_out(db: AsyncSession, row: ResourceService, membership: Provi
         delivery=row.delivery,
         signup=row.signup,
         ways_to_help=row.ways_to_help,
+        last_assured_on=row.last_assured_on,
+        verify_by_email=portal_mail.mask(membership.verify_email) if membership.verify_email and membership.verified_at is None else None,
         types=[BY_CODE[c].key for c in (row.taxonomy_codes or []) if c in BY_CODE],
         pending_changes=[PendingChangeOut(id=p.id, fields=sorted(p.changes), created_at=p.created_at) for p in pending],
     )
@@ -674,6 +680,7 @@ async def update_listing(
     if now_cols:
         before = portal.snapshot(row, now_cols)
         portal.apply_columns(row, now_cols)
+        row.last_assured_on = portal.today()  # they just looked at it
         portal.log(db, action="provider.update", actor=user, actor_kind="provider", service_id=row.id, before=before, after=now_cols)
     change_id = None
     if held:
@@ -809,3 +816,58 @@ async def delete_date(service_id: str, event_id: str, user: User = Depends(get_c
                before={"event_id": event.id, "title": event.title, "start_time": event.start_time.isoformat()})
     await db.delete(event)
     await db.commit()
+
+
+# ---- verify by email, and "Is this still right?" ----------------------------------------
+
+
+class CodeIn(BaseModel):
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+@router.post("/listings/{service_id}/verify/send", status_code=202)
+async def send_verify_code(service_id: str, background: BackgroundTasks, user: User = Depends(get_current_user),
+                           db: AsyncSession = Depends(get_db)) -> dict:
+    """A code to the address the listing's source (NJ 211) published -
+    never one the requester typed. Three an hour."""
+    row, membership = await _membership(db, user, service_id)
+    if membership.verified_at is not None:
+        raise HTTPException(409, "You're already confirmed")
+    if not membership.verify_email:
+        raise HTTPException(409, "We'll confirm this one by phone")
+    if await portal_mail.codes_sent_lately(db, membership) >= portal_mail.CODES_PER_HOUR:
+        raise HTTPException(429, "That's a lot of codes - try again in an hour, or wait for our call.")
+    portal_mail.send_code(db, membership, row)
+    await db.commit()
+    background.add_task(mailer.send_pending_quietly)
+    return {"sent_to": portal_mail.mask(membership.verify_email)}
+
+
+@router.post("/listings/{service_id}/verify")
+async def check_verify_code(service_id: str, body: CodeIn, user: User = Depends(get_current_user),
+                            db: AsyncSession = Depends(get_db)) -> dict:
+    row, membership = await _membership(db, user, service_id)
+    if membership.verified_at is not None:
+        return {"verified": True}
+    problem = portal_mail.check_code(membership, body.code)
+    if problem:
+        await db.commit()  # the try counts
+        raise HTTPException(422, problem)
+    membership.verified_at = portal.now()
+    portal.log(db, action="membership.verify_email", actor=user, actor_kind="provider", service_id=row.id,
+               after={"user_id": user.id, "by": "email code"})
+    await db.commit()
+    return {"verified": True}
+
+
+@router.post("/listings/{service_id}/confirm")
+async def confirm_listing(service_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> dict:
+    """"Yes, it's all still right": the public "Last confirmed" date moves."""
+    row, membership = await _membership(db, user, service_id)
+    if membership.verified_at is None:
+        raise HTTPException(403, "Once we've confirmed it's you, you can confirm the listing.")
+    row.last_assured_on = portal.today()
+    portal.log(db, action="provider.confirm", actor=user, actor_kind="provider", service_id=row.id,
+               after={"last_assured_on": row.last_assured_on.isoformat()})
+    await db.commit()
+    return {"last_assured_on": row.last_assured_on.isoformat()}
