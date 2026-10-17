@@ -398,7 +398,9 @@ async def refresh_childcarenj(db: AsyncSession, cfg: dict, client: Any = None) -
     unknown: set[str] = set()
     owns = client is None
     if owns:
-        client = childcarenj.ChildCareNJClient(delay_seconds=float(cfg.get("delay_seconds", childcarenj.MIN_DELAY_SECONDS)))
+        client = childcarenj.ChildCareNJClient(
+            delay_seconds=float(cfg.get("delay_seconds", childcarenj.MIN_DELAY_SECONDS)), via_scraper=bool(cfg.get("via_scraper"))
+        )
         await client.__aenter__()
     orgs = _Orgs(db)
     started = _now()
@@ -441,6 +443,7 @@ async def refresh_childcarenj(db: AsyncSession, cfg: dict, client: Any = None) -
     finally:
         summary["unknown_codes"] = sorted(unknown)
         summary["requests"] = getattr(client, "requests", None)
+        summary["route"] = getattr(client, "route", None)
         if owns:
             await client.__aexit__(None, None, None)
     return summary

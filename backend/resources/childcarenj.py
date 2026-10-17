@@ -12,7 +12,7 @@ county (500 a page is accepted, and no county has more). The endpoint
 redirects to an error page unless it gets the full parameter set the page
 sends - sortKey and all. There's no robots.txt; one request at a time,
 `delay_seconds` apart, the same honest User-Agent as the NJ 211 adapter,
-and a 403/429 stops the run.
+and a refusal moves the run to our scrapers (see ChildCareNJClient).
 
 **Registered family child care is someone's home.** The state already
 leaves those street addresses blank; this adapter never stores one, never
@@ -28,8 +28,11 @@ import logging
 import re
 import time
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
+
+import scraper_client
 
 from .nj211 import USER_AGENT
 
@@ -345,12 +348,21 @@ def parse_response(body: bytes | str) -> tuple[list[dict], int]:
 
 
 class ChildCareNJClient:
-    """One request at a time, `delay_seconds` apart."""
+    """One request at a time, `delay_seconds` apart.
 
-    def __init__(self, delay_seconds: float = MIN_DELAY_SECONDS, timeout: float = 90.0):
+    Direct first, with our own User-Agent. ChildCareNJ's Cloudflare 403s
+    datacenter networks (prod on Fly) while answering a home connection, so
+    on a refusal the rest of the run goes through our scrapers, each tried
+    in turn (scraper_client.fetch_raw_text_from_any) - those send the
+    scrapers' browser User-Agent. Only when every route is refused does the
+    run stop (`Blocked`)."""
+
+    def __init__(self, delay_seconds: float = MIN_DELAY_SECONDS, timeout: float = 90.0, via_scraper: bool = False):
         self.delay = max(float(delay_seconds), MIN_DELAY_SECONDS)
         self.timeout = timeout
+        self.via_scraper = via_scraper
         self.requests = 0
+        self.route: str | None = None
         self._last = 0.0
         self._http: httpx.AsyncClient | None = None
 
@@ -376,13 +388,30 @@ class ChildCareNJClient:
             await asyncio.sleep(wait)
         self._last = time.monotonic()
 
+    async def _via_scraper(self, county: str, page: int) -> tuple[list[dict], int]:
+        url = f"{BASE_URL}/Services/GetProviders.aspx?{urlencode(search_params(county, page))}"
+        try:
+            result = await scraper_client.fetch_raw_text_from_any(url, timeout_ms=60_000)
+        except scraper_client.ScraperRefused as exc:
+            raise Blocked(str(exc)) from exc
+        self.route = f"scraper:{result['service']}"
+        if result["status"] != 200 or "json" not in result["content_type"]:
+            raise ValueError(f"HTTP {result['status']} {result['content_type']} for {county} via {result['service']} - endpoint changed?")
+        return parse_response(result["text"])
+
     async def providers(self, county: str, page: int = 0) -> tuple[list[dict], int]:
         assert self._http is not None
         await self._wait()
         self.requests += 1
+        if self.via_scraper:
+            return await self._via_scraper(county, page)
         response = await self._http.get(f"{BASE_URL}/Services/GetProviders.aspx", params=search_params(county, page))
         if response.status_code in (403, 429):
-            raise Blocked(f"HTTP {response.status_code} for {county}")
+            # A network-level block, not an answer about this county: the
+            # rest of the run goes through the scrapers.
+            self.via_scraper = True
+            return await self._via_scraper(county, page)
         if response.status_code != 200 or "json" not in response.headers.get("content-type", ""):
             raise ValueError(f"HTTP {response.status_code} {response.headers.get('content-type', '')} for {county} - endpoint changed?")
+        self.route = "direct"
         return parse_response(response.content)

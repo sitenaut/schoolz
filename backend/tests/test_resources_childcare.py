@@ -7,11 +7,13 @@ import copy
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select, update
 
 import database
+import scraper_client
 from main import app
 from models import ResourceService
 from resources import childcarenj
@@ -209,3 +211,66 @@ async def test_detail_links_back_to_the_providers_childcarenj_page(only_test_rec
         assert body["source_url"] == "https://www.childcarenj.gov/providerdetails.aspx?uniqueProgramID=900001&licenseNumber=08000001"
         home = (await client.get(f"/resources/{rows['900002'].id}")).json()
         assert home["address"] is None and home["email"] is None
+
+
+# ---- routes: direct, then the scrapers --------------------------------------
+
+
+def _client_with(handler):
+    client = childcarenj.ChildCareNJClient()
+    client._http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    return client
+
+
+@pytest.mark.anyio
+async def test_a_direct_refusal_moves_the_run_to_the_scrapers(monkeypatch):
+    asked = []
+
+    async def fake_any(url, timeout_ms=45_000, refused=(403, 429)):
+        asked.append(url)
+        return {"status": 200, "content_type": "application/json", "text": json.dumps(FIXTURE), "service": "scraper.example"}
+
+    monkeypatch.setattr(scraper_client, "fetch_raw_text_from_any", fake_any)
+    direct = []
+    client = _client_with(lambda request: direct.append(request) or httpx.Response(403, text="Cloudflare"))
+    records, total = await client.providers("Cape May")
+    assert len(records) == 3 and total == 4
+    assert len(direct) == 1 and client.via_scraper and client.route == "scraper:scraper.example"
+    assert "county=Cape+May" in asked[0] and "sortKey=ProgramName" in asked[0]
+
+
+@pytest.mark.anyio
+async def test_every_route_refused_is_a_block(monkeypatch):
+    async def refused(url, timeout_ms=45_000, refused=(403, 429)):
+        raise scraper_client.ScraperRefused("every scraper was refused")
+
+    monkeypatch.setattr(scraper_client, "fetch_raw_text_from_any", refused)
+    client = _client_with(lambda request: httpx.Response(403))
+    with pytest.raises(childcarenj.Blocked):
+        await client.providers("Camden")
+
+
+@pytest.mark.anyio
+async def test_the_scraper_walk_skips_refusing_services(monkeypatch):
+    services = [("https://own.example", "k1"), ("https://droplet.example", "k2"), ("https://pi.example", "k3")]
+    calls = []
+
+    async def fake_post(service_url, api_key, path, payload, timeout_s):
+        calls.append(service_url)
+        if service_url == "https://own.example":
+            return {"status": 403, "content_type": "text/html", "body_base64": ""}
+        if service_url == "https://droplet.example":
+            raise httpx.ConnectError("down")
+        return {"status": 200, "content_type": "application/json", "body": '{"Facilities": [], "ResultCount": 0}'}
+
+    monkeypatch.setattr(scraper_client, "_services", lambda: services)
+    monkeypatch.setattr(scraper_client, "_post_to", fake_post)
+    result = await scraper_client.fetch_raw_text_from_any("https://www.childcarenj.gov/Services/GetProviders.aspx?county=Salem")
+    assert calls == [s for s, _ in services] and result["service"] == "pi.example" and result["text"].startswith('{"Facilities"')
+
+    async def all_refuse(service_url, api_key, path, payload, timeout_s):
+        return {"status": 403, "content_type": "text/html", "body_base64": ""}
+
+    monkeypatch.setattr(scraper_client, "_post_to", all_refuse)
+    with pytest.raises(scraper_client.ScraperRefused):
+        await scraper_client.fetch_raw_text_from_any("https://www.childcarenj.gov/x")
