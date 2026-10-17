@@ -21,7 +21,7 @@ from auth import get_current_user
 from database import get_db
 from models import ProviderMembership, ResourceChangeRequest, ResourceOnboardingRequest, ResourceService, User
 from resources import portal
-from resources.portal import Cost, Hours, Submission
+from resources.portal import Cost, Hours, Signup, Submission
 from resources.provider_types import BY_CODE, PROVIDER_TYPES
 from services import upload_guard
 from services.client_ip import client_ip
@@ -119,6 +119,9 @@ class AddressIn(BaseModel):
     postal_code: str | None = Field(default=None, pattern=r"^\d{5}$")
     counties: list[str] = Field(default_factory=list, max_length=21)
     private_address: str | None = Field(default=None, max_length=300)
+    # What the place is called, when it isn't the organization ("Christus
+    # Church, lower level"). Public addresses only.
+    place_name: str | None = Field(default=None, max_length=200)
 
     @field_validator("counties")
     @classmethod
@@ -147,6 +150,8 @@ class ListingUpdateIn(BaseModel):
     email: str | None = Field(default=None, max_length=255)
     address: AddressIn | None = None
     types: list[str] | None = Field(default=None, max_length=5)
+    signup: Signup | None = None
+    delivery: str | None = Field(default=None, pattern=r"^(in_person|online|both)$")
 
 
 class ListingUpdateOut(BaseModel):
@@ -193,6 +198,9 @@ class MyListingOut(BaseModel):
     eligibility_text: str | None
     fees: str | None
     cost_kind: str | None
+    location_name: str | None
+    delivery: str | None
+    signup: dict | None
     types: list[str]
     pending_changes: list[PendingChangeOut]
 
@@ -505,6 +513,9 @@ async def _listing_out(db: AsyncSession, row: ResourceService, membership: Provi
         eligibility_text=row.eligibility_text,
         fees=row.fees,
         cost_kind=row.cost_kind,
+        location_name=row.location_name,
+        delivery=row.delivery,
+        signup=row.signup,
         types=[BY_CODE[c].key for c in (row.taxonomy_codes or []) if c in BY_CODE],
         pending_changes=[PendingChangeOut(id=p.id, fields=sorted(p.changes), created_at=p.created_at) for p in pending],
     )
@@ -566,6 +577,8 @@ def _update_columns(body: ListingUpdateIn, row: ResourceService) -> tuple[dict, 
     if "hours" in sent and body.hours is not None:
         if body.hours.mode == "call" and not portal.valid_phone(row.phone):
             raise HTTPException(422, "\"Call for hours\" needs a phone number on the listing")
+        if body.hours.mode in ("weekly", "monthly") and not portal._hours_done(body.hours, row.phone):
+            raise HTTPException(422, "Add at least one day and time")
         cols |= {"hours": body.hours.model_dump(mode="json"), "hours_text": portal.hours_text(body.hours)}
     if "alert" in sent:
         cols["alert"] = _clean(body.alert)
@@ -606,7 +619,13 @@ def _update_columns(body: ListingUpdateIn, row: ResourceService) -> tuple[dict, 
         if a.kind != "public" and not a.counties:
             raise HTTPException(422, "Pick the counties you serve")
         cols |= portal.address_columns(a.kind, a.address, a.city, a.postal_code, a.counties)
+        if a.kind == "public" and "place_name" in a.model_fields_set:
+            cols["location_name"] = _clean(a.place_name) or row.organization_name
         private_address = _clean(a.private_address)
+    if "signup" in sent:
+        cols["signup"] = body.signup.model_dump(mode="json") if body.signup and body.signup.status else None
+    if "delivery" in sent:
+        cols["delivery"] = body.delivery
     if "types" in sent and body.types is not None:
         if not body.types:
             raise HTTPException(422, "Pick at least one kind of service")

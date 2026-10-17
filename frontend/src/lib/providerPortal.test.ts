@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completeness, emptySubmission, withDefaults } from "./providerPortal";
+import { completeness, emptyHours, emptyPlace, emptySubmission, withDefaults } from "./providerPortal";
 
 // Mirrors backend resources/portal.py completeness(); the same form scores
 // the same on both sides (tests/test_provider_portal.py uses this one).
@@ -39,5 +39,22 @@ describe("provider form completeness", () => {
 
   it("wants an amount when there's a fee", () => {
     expect(completeness({ ...full(), cost: { kind: "fee", amount: null } }, false).missing_core).toEqual(["cost"]);
+  });
+
+  // Same cases as test_a_program_can_carry_the_hours_who_and_cost_the_organization_left_out.
+  it("lets programs carry the hours, who and cost the organization left out", () => {
+    const blank = { ...full(), hours: emptyHours(), who: emptySubmission().who, cost: { kind: null, amount: null } };
+    expect(completeness(blank, false).missing_core).toEqual(["hours", "who", "cost"]);
+    const own = {
+      ...blank,
+      services: [{ ...blank.services[0], hours: { mode: "appointment" as const, weekly: {} }, who: { ...emptySubmission().who, seniors: true }, cost: { kind: "free" as const, amount: null } }],
+    };
+    expect(completeness(own, false).missing_core).toEqual([]);
+    const second = { ...own, services: [...own.services, { type: "clothing", name: "Closet", description: "Coats." }] };
+    expect(completeness(second, false).missing_core).toEqual(["hours", "who", "cost"]);
+    const place = { ...full(), services: [{ type: "food_pantry", name: "P", description: "D", place: { ...emptyPlace(), address: "1 Main St" } }] };
+    expect(completeness(place, false).missing_core).toEqual(["services"]);
+    const monthly = { ...full(), services: [{ type: "food_pantry", name: "P", description: "D", hours: { ...emptyHours(), mode: "monthly" as const } }] };
+    expect(completeness(monthly, false).missing_core).toEqual(["services"]);
   });
 });

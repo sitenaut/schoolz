@@ -117,6 +117,17 @@ class ClosureOut(BaseModel):
     note: str | None
 
 
+class NextOpenOut(BaseModel):
+    on: date
+    times: str
+
+
+class SignupOut(BaseModel):
+    status: str
+    opens_on: date | None = None
+    how: str | None = None
+
+
 class ResourceSummaryOut(BaseModel):
     id: str
     name: str
@@ -137,6 +148,13 @@ class ResourceSummaryOut(BaseModel):
     eligibility: dict | None = None
     # A provider's "Closed today" / temporary closure, while it lasts.
     closure: ClosureOut | None = None
+    # The next days it's open, for a schedule that isn't plain weekly
+    # ("3rd Wednesday of the month", every other week, out of season).
+    next_open: list[NextOpenOut] = []
+    # "in_person" | "online" | "both", when a provider said.
+    delivery: str | None = None
+    # How a program takes people (drop in, sign up, waitlist, closed until).
+    signup: SignupOut | None = None
     # A confidential location (a shelter): no address, town or pin is ever
     # sent; the page says "Location shared after you call".
     location_confidential: bool = False
@@ -191,6 +209,16 @@ def _closure(row: ResourceService) -> ClosureOut | None:
     return None
 
 
+def _next_open(row: ResourceService) -> list[dict]:
+    if not row.hours:
+        return []
+    closed = (row.closure_starts_on, row.closure_ends_on) if row.closure_starts_on and row.closure_ends_on else None
+    try:
+        return portal.next_open(row.hours, portal.today(), closed)
+    except ValueError:  # a schedule this code no longer reads
+        return []
+
+
 def _week_hours_text(row: ResourceService) -> str | None:
     week = row.week_hours or {}
     if week.get("week_of") == portal.week_of(portal.today()).isoformat():
@@ -213,6 +241,9 @@ def _summary(row: ResourceService, eligibility: dict | None = None) -> dict:
         "city": None if hidden else row.city,
         "hours_text": row.hours_text,
         "closure": _closure(row),
+        "next_open": _next_open(row),
+        "delivery": row.delivery,
+        "signup": row.signup if row.signup and row.signup.get("status") else None,
         "location_confidential": hidden,
         "categories": list(row.categories or []),
         "complete": not row.missing_core,

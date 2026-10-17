@@ -1667,6 +1667,12 @@ class ResourceService(Base):
     closure_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     # "free" | "sliding" | "fee" (fees holds the wording and amount).
     cost_kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # ---- program details (migration 0109) --------------------------------
+    # "in_person" | "online" | "both"; null = not said (in person).
+    delivery: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # How it takes people: {"status": "drop_in"|"open"|"waitlist"|"closed",
+    # "opens_on": ISO date, "how": ...} (portal.Signup).
+    signup: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Columns a provider set. A scraper refresh never overwrites these; a
     # differing scraped value becomes a "source_conflict" change request.
     provider_owned_fields: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default="{}")
