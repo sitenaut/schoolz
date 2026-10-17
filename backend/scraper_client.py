@@ -1,6 +1,8 @@
 import asyncio
 import base64
+import html
 import os
+import re
 
 import httpx
 
@@ -24,9 +26,9 @@ SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY", "")
 #     as the droplet's; defaults to it as a reasonable guess for a
 #     same-owner service, but set RESIDENTIAL_SCRAPER_KEY explicitly once
 #     its real key is known.
-_FALLBACK_URL = os.getenv("LOCAL_EVENTS_SCRAPER_URL", "https://scraper-droplet.profitnaut.com")
+_FALLBACK_URL = os.getenv("LOCAL_EVENTS_SCRAPER_URL") or "https://scraper-droplet.profitnaut.com"
 _FALLBACK_API_KEY = os.getenv("LOCAL_EVENTS_SCRAPER_KEY", "")
-_RESIDENTIAL_URL = os.getenv("RESIDENTIAL_SCRAPER_URL", "https://scraper.profitnaut.com")
+_RESIDENTIAL_URL = os.getenv("RESIDENTIAL_SCRAPER_URL") or "https://scraper.profitnaut.com"
 _RESIDENTIAL_API_KEY = os.getenv("RESIDENTIAL_SCRAPER_KEY", "") or _FALLBACK_API_KEY
 
 # The scraper is one small headless Chromium, and every 12h cron fires
@@ -204,6 +206,22 @@ async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
     return base64.b64decode(result["body_base64"])
 
 
+_TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)
+_PRE_RE = re.compile(r"<pre[^>]*>(.*?)</pre>", re.S | re.I)
+
+
+def _json_viewer_text(text: str) -> str | None:
+    """The JSON inside a browser's JSON viewer page, or None. playwright-
+    scraper's raw mode loads the URL in Chromium and, when no download
+    starts, returns the rendered page labelled text/html: the JSON escaped
+    inside a lone <pre>. A Cloudflare block page has no such <pre>."""
+    match = _PRE_RE.search(text) if text.lstrip().startswith("<") else None
+    if not match:
+        return None
+    inner = html.unescape(match.group(1)).strip()
+    return inner if inner[:1] in ("{", "[") else None
+
+
 async def fetch_raw_text_from_any(
     url: str,
     timeout_ms: int = 45_000,
@@ -218,7 +236,9 @@ async def fetch_raw_text_from_any(
     answer counts only if its status is 200 and, with
     `expect_content_type`, its content type contains it: playwright-scraper
     (droplet, Pi) sends no status at all, so a Cloudflare page shows up only
-    as the wrong content type. Returns {status, content_type, text,
+    as the wrong content type - except that its browser labels good JSON
+    text/html too, so for "json" a JSON viewer page counts (unwrapped), and
+    a refusal records the page's title. Returns {status, content_type, text,
     service}; raises ScraperRefused when no service got a usable answer."""
     services = _services()
     if not services:
@@ -239,12 +259,17 @@ async def fetch_raw_text_from_any(
             if status is not None and int(status) != 200:
                 seen.append(f"{host}: HTTP {status}")
                 continue
-            if expect_content_type and expect_content_type not in content_type.lower():
-                seen.append(f"{host}: {content_type or 'no content type'}")
-                continue
             if result.get("body_base64"):
                 text = base64.b64decode(result["body_base64"]).decode("utf-8", "replace")
             else:
                 text = result.get("body") or ""
+            if expect_content_type and expect_content_type not in content_type.lower():
+                viewer = _json_viewer_text(text) if expect_content_type == "json" else None
+                if viewer is None:
+                    title = _TITLE_RE.search(text)
+                    page = f' "{html.unescape(title.group(1)).strip()[:80]}"' if title else ""
+                    seen.append(f"{host}: {content_type or 'no content type'}{page}")
+                    continue
+                text = viewer
             return {"status": int(status or 200), "content_type": content_type, "text": text, "service": host}
     raise ScraperRefused(f"no scraper got a usable answer for {url}: {'; '.join(seen)}")

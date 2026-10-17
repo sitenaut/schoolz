@@ -291,3 +291,28 @@ async def test_the_scraper_walk_skips_refusals_and_wrong_content(monkeypatch):
     monkeypatch.setattr(scraper_client, "_post_to", all_refuse)
     with pytest.raises(scraper_client.ScraperRefused):
         await scraper_client.fetch_raw_text_from_any(url, expect_content_type="json")
+
+
+@pytest.mark.anyio
+async def test_the_droplets_json_viewer_page_counts_and_a_block_page_is_named(monkeypatch):
+    # The droplet's Chromium renders good JSON as a viewer page labelled
+    # text/html; that is an answer. A Cloudflare page is not, and its title
+    # goes into the refusal so the run log says what came back.
+    viewer = '<html><head><meta charset="utf-8"></head><body><pre>{"Facilities": [], "ResultCount": 0, "Note": "a &amp; b"}</pre></body></html>'
+
+    async def droplet(service_url, api_key, path, payload, timeout_s):
+        if service_url == "https://own.example":
+            return {"content_type": "text/html", "body": "<html><head><title>Attention Required! | Cloudflare</title></head><body><pre>nope</pre></body></html>"}
+        return {"content_type": "text/html", "body": viewer}
+
+    monkeypatch.setattr(scraper_client, "_services", lambda: [("https://own.example", "k1"), ("https://droplet.example", "k2")])
+    monkeypatch.setattr(scraper_client, "_post_to", droplet)
+    url = "https://www.childcarenj.gov/Services/GetProviders.aspx?county=Salem"
+    result = await scraper_client.fetch_raw_text_from_any(url, expect_content_type="json")
+    assert result["service"] == "droplet.example"
+    assert result["text"] == '{"Facilities": [], "ResultCount": 0, "Note": "a & b"}'
+    assert childcarenj.parse_response(result["text"]) == ([], 0)
+
+    monkeypatch.setattr(scraper_client, "_services", lambda: [("https://own.example", "k1")])
+    with pytest.raises(scraper_client.ScraperRefused, match=r'own\.example: text/html "Attention Required! \| Cloudflare"'):
+        await scraper_client.fetch_raw_text_from_any(url, expect_content_type="json")
