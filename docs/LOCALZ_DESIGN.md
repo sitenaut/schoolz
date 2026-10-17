@@ -270,8 +270,9 @@ against the live site.
   `PL-6400.1500-820` Summer Camps (both codes NJ 211 uses); family child
   care, which NJ 211 doesn't list, takes the parent `PH-1250` rather than a
   guessed leaf code. The Type filter matches a code exactly.
-- **No coordinates** in the data, so the 20-mile radius needs these
-  geocoded (town level for family child care).
+- **No coordinates** in the data: each listing is placed at its ZIP's
+  center (`resources/places.py`), which for family child care is
+  deliberately not the home.
 - Bump `NORMALIZE_VERSION` when `fields()` changes: unchanged records are
   skipped by hash, so a normalization fix otherwise never reaches them.
 - **Fields:** `UniqueProgramID`, `ProgramName`, address parts, city, zip,
@@ -879,10 +880,17 @@ or reconstruct one person's session.
 - **Brand:** everyone calls it Localz. It stays at
   `schoolz.sitenaut.com/localz/` for months to come; its own site comes
   eventually, and the auth hand-off is planned then, not now.
-- **Service area: 20 miles from the visitor's chosen location.** The radius
-  is measured on the device (the point never leaves it, same as the
-  county), so the server keeps receiving only a county; listings need
-  coordinates for this, which ChildCareNJ records don't carry yet.
+- **Closest first, within a radius the visitor picks** (2, 5, 10, 20 or 50
+  miles; 20 by default), or **Statewide** for no limit. A county is too broad
+  for someone without a car. Distances are measured on the device: the point
+  never leaves it. The server hears the county and a box around the radius
+  snapped outward to whole half-degrees (`routers/resources.py` `GRID`,
+  `/resources/nearby`), returns every match placed in that box, and the
+  phone sorts them; listings with no place (hotlines, statewide programs,
+  confidential shelters) follow, via `/resources/search` with `outside`.
+  Category and type counts stay county-wide. ChildCareNJ listings, and
+  addresses a provider types, are placed at their ZIP's center
+  (`resources/places.py`): never the home of a family child care provider.
 - **Reviewer role: "Localz reviewer"**, a `Role` holding `resources.view`
   and `resources.manage` (onboarding approvals, change review,
   verification, merges). Added to `permissions.py` with the provider

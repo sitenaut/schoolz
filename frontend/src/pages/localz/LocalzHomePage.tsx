@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 import { SeoHead } from "../../components/SeoHead";
 import { IconSearch, IconX } from "../../components/icons";
 import { LOCALZ_CATEGORIES, type ResourceCategoryCount, fetchResourceCategories } from "../../lib/localz";
-import { useLocalzWhere } from "../../lib/localzWhere";
+import { useLocalzScope } from "../../lib/localzWhere";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import { CategoryIcon } from "./CategoryIcon";
 import { LocationButton } from "./LocationButton";
+import { RadiusChips, RadiusNote } from "./RadiusChips";
 import { FitButton } from "./FitButton";
 import { ResourceList } from "./ResourceList";
 import { useResourceSearch } from "./useResourceSearch";
@@ -20,8 +21,9 @@ export function LocalzHomePage() {
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [counts, setCounts] = useState<Map<string, number> | null>(null);
-  const county = useLocalzWhere()?.county ?? "";
-  const results = useResourceSearch({ query, county, enabled: !!query });
+  const scope = useLocalzScope();
+  const county = scope.county;
+  const results = useResourceSearch({ query, scope, enabled: !!query });
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +54,7 @@ export function LocalzHomePage() {
       />
       <div className="localz-nav-row">
         <h2 className="localz-title">
-          {county ? t("Find help in {{county}} County", { county }) : t("Find help in New Jersey")}
+          {scope.near ? t("Find help near you") : county ? t("Find help in {{county}} County", { county }) : t("Find help in New Jersey")}
         </h2>
         <LocationButton />
       </div>
@@ -81,6 +83,7 @@ export function LocalzHomePage() {
           {t("Search")}
         </button>
       </form>
+      <RadiusChips />
 
       {query ? (
         <section aria-live="polite">
@@ -93,6 +96,7 @@ export function LocalzHomePage() {
           ) : (
             <>
               <div className="dir-count">{results.total === 1 ? t("1 result") : t("{{total}} results", { total: results.total })}</div>
+              {scope.near && <RadiusNote miles={scope.near.miles} />}
               <ResourceList items={results.items} />
               {results.hasMore && (
                 <button className="btn localz-more" onClick={results.loadMore} disabled={results.loading}>

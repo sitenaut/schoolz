@@ -6,13 +6,21 @@ violence shelter") goes in the body, never a URL, so it doesn't land in
 access logs, RUM, browser history or a shared link (docs/LOCALZ_DESIGN.md,
 "Search analytics"). Categories and counties are not sensitive and could be
 GET params, but they share the one search call to keep the client simple.
+
+"Closest first" is worked out on the visitor's device: the visitor's point
+never comes here. The device asks /nearby for every match inside a box
+around the radius the visitor chose, snapped outward to a GRID-degree grid
+(so it says no more than "somewhere in here"), measures and sorts them,
+fetches the ones it shows with /by-ids, and then pages /search with
+`outside` for what has no place to measure (hotlines, statewide programs,
+confidential shelters). "Statewide" skips all of this: plain /search.
 """
 from __future__ import annotations
 
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +45,35 @@ STATEWIDE_MIN_COUNTIES = 10
 STATEWIDE_AREAS = ["NJ", "New Jersey", "Statewide"]
 
 
+# "Closest first" boxes snap to this grid (degrees), so a box says no more
+# about where someone is than "somewhere in this ~30-mile square".
+GRID = 0.5
+# Big enough for the widest radius the device offers (50 miles).
+MAX_LAT_SPAN, MAX_LON_SPAN = 2.0, 2.5
+
+
+class Box(BaseModel):
+    south: float = Field(ge=38.5, le=41.5)
+    west: float = Field(ge=-76.0, le=-73.5)
+    north: float = Field(ge=38.5, le=41.5)
+    east: float = Field(ge=-76.0, le=-73.5)
+
+    @model_validator(mode="after")
+    def _coarse(self) -> Box:
+        edges = (self.south, self.west, self.north, self.east)
+        if any(abs(e / GRID - round(e / GRID)) > 1e-9 for e in edges):
+            raise ValueError(f"box edges must be multiples of {GRID}")
+        if not (0 < self.north - self.south <= MAX_LAT_SPAN and 0 < self.east - self.west <= MAX_LON_SPAN):
+            raise ValueError("box is empty or too big")
+        return self
+
+    def contains(self):
+        return and_(
+            ResourceService.latitude.between(self.south, self.north),
+            ResourceService.longitude.between(self.west, self.east),
+        )
+
+
 class CategoryOut(BaseModel):
     key: str
     label: str
@@ -49,8 +86,29 @@ class ResourceSearchIn(BaseModel):
     county: str | None = Field(default=None, max_length=40)
     # A taxonomy code from POST /resources/types ("BD-1800.2000").
     type: str | None = Field(default=None, max_length=40)
+    # The rest of a "closest first" list: only what /nearby couldn't place
+    # in this box (no location, or statewide and located elsewhere).
+    outside: Box | None = None
     page: int = Field(default=1, ge=1, le=200)
+    # Overrides `page` - the rest of a closest-first list starts mid-page.
+    offset: int | None = Field(default=None, ge=0, le=10000)
     page_size: int = Field(default=20, ge=1, le=50)
+
+
+class NearbyIn(BaseModel):
+    category: str | None = Field(default=None, max_length=40)
+    query: str | None = Field(default=None, max_length=100)
+    type: str | None = Field(default=None, max_length=40)
+    box: Box
+
+
+class NearbyOut(BaseModel):
+    # [id, lat, lon, statewide] per listing, compact: a box can hold thousands.
+    points: list[tuple[str, float, float, bool]]
+
+
+class ByIdsIn(BaseModel):
+    ids: list[str] = Field(max_length=50)
 
 
 class ClosureOut(BaseModel):
@@ -210,6 +268,8 @@ def _filters(body: ResourceSearchIn, *, with_type: bool = True) -> list:
                 ),
             )
         )
+    if body.outside:
+        filters.append(or_(ResourceService.latitude.is_(None), and_(_statewide_sql(), ~body.outside.contains())))
     if with_type and body.type:
         filters.append(ResourceService.taxonomy_codes.contains([body.type]))
     query = (body.query or "").strip()
@@ -302,7 +362,7 @@ async def search_resources(body: ResourceSearchIn, db: AsyncSession = Depends(ge
                 select(ResourceService)
                 .where(*filters)
                 .order_by(*order)
-                .offset((body.page - 1) * body.page_size)
+                .offset(body.offset if body.offset is not None else (body.page - 1) * body.page_size)
                 .limit(body.page_size)
             )
         )
@@ -311,6 +371,39 @@ async def search_resources(body: ResourceSearchIn, db: AsyncSession = Depends(ge
     )
     criteria = await criteria_for(db, list(rows))
     return ResourceSearchOut(items=[ResourceSummaryOut(**_summary(r, criteria.get(r.id))) for r in rows], total=total)
+
+
+@router.post("/nearby", response_model=NearbyOut)
+async def nearby_resources(body: NearbyIn, db: AsyncSession = Depends(get_db)) -> NearbyOut:
+    """Every match with a place inside the box, for the device to measure.
+    No county filter: distance decides what's near, not a county line."""
+    filters = _filters(ResourceSearchIn(category=body.category, query=body.query, type=body.type))
+    rows = (
+        await db.execute(
+            select(ResourceService.id, ResourceService.latitude, ResourceService.longitude, _statewide_sql())
+            .where(
+                *filters,
+                body.box.contains(),
+                or_(ResourceService.address_kind.is_(None), ResourceService.address_kind != "confidential"),
+            )
+            .order_by(ResourceService.id)
+        )
+    ).all()
+    return NearbyOut(points=[(r[0], round(r[1], 3), round(r[2], 3), bool(r[3])) for r in rows])
+
+
+@router.post("/by-ids", response_model=list[ResourceSummaryOut])
+async def resources_by_ids(body: ByIdsIn, db: AsyncSession = Depends(get_db)) -> list[ResourceSummaryOut]:
+    """The listings the device chose to show, in its order."""
+    if not body.ids:
+        return []
+    found = {
+        r.id: r
+        for r in (await db.execute(select(ResourceService).where(ResourceService.id.in_(body.ids), ResourceService.status == "active"))).scalars()
+    }
+    rows = [found[i] for i in dict.fromkeys(body.ids) if i in found]
+    criteria = await criteria_for(db, rows)
+    return [ResourceSummaryOut(**_summary(r, criteria.get(r.id))) for r in rows]
 
 
 @router.get("/{resource_id}", response_model=ResourceDetailOut)

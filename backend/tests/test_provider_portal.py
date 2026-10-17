@@ -541,7 +541,7 @@ async def test_no_public_endpoint_ever_returns_a_confidential_address():
         detail = responses[0].json()
         assert detail["location_confidential"] is True
         assert (detail["address"], detail["city"], detail["postal_code"], detail["latitude"]) == (None, None, None, None)
-        assert responses[1].json()["items"][0]["id"] == sid
+        assert sid in [i["id"] for i in responses[1].json()["items"]]
         assert responses[3].json()["total"] == 0  # not searchable by its secret street either
 
         # Every other public GET the API has, for good measure.

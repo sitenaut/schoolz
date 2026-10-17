@@ -5,16 +5,18 @@ import { SeoHead } from "../../components/SeoHead";
 import { IconChevronLeft, IconSearch, IconX } from "../../components/icons";
 import { FilterSelect } from "../../components/ui/FilterSelect";
 import { type ResourceType, categoryByKey, fetchResourceTypes } from "../../lib/localz";
-import { useLocalzWhere } from "../../lib/localzWhere";
+import { useLocalzScope } from "../../lib/localzWhere";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import { CategoryIcon } from "./CategoryIcon";
 import { LocationButton } from "./LocationButton";
+import { RadiusChips, RadiusNote } from "./RadiusChips";
 import { FitButton } from "./FitButton";
 import { ResourceList } from "./ResourceList";
 import { useResourceSearch } from "./useResourceSearch";
 
 /** /localz/:category - every service of one kind, narrowed by the visitor's
- * location (Set my location: a county, kept on the device), kind of service
+ * location (Set my location, kept on the device: closest first within the
+ * chosen miles, or a county, or Statewide), kind of service
  * ("Food Pantries") and, optionally, a word. Keyed by category so switching
  * tabs starts with an empty search box. */
 export function LocalzCategoryPage() {
@@ -25,7 +27,8 @@ export function LocalzCategoryPage() {
 function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
   const { t } = useTranslation();
   const category = categoryByKey(categoryKey);
-  const county = useLocalzWhere()?.county ?? "";
+  const scope = useLocalzScope();
+  const county = scope.county;
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [type, setType] = useState("");
@@ -34,7 +37,7 @@ function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
   // soup kitchens listed in Sussex) stops filtering rather than showing an
   // empty list for a choice the dropdown no longer offers.
   const activeType = types === null || types.some((x) => x.code === type) ? type : "";
-  const results = useResourceSearch({ category: category?.key, county, query, type: activeType, enabled: !!category });
+  const results = useResourceSearch({ category: category?.key, scope, query, type: activeType, enabled: !!category });
 
   useEffect(() => {
     if (!category) return;
@@ -82,6 +85,7 @@ function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
         <FitButton />
       </div>
 
+      <RadiusChips />
       <div className="localz-filters">
         <div className="search">
           <IconSearch />
@@ -129,6 +133,7 @@ function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
       ) : (
         <>
           <div className="dir-count">{results.total === 1 ? t("1 listing") : t("{{total}} listings", { total: results.total })}</div>
+          {scope.near && <RadiusNote miles={scope.near.miles} />}
           <ResourceList items={results.items} busy={results.loading} />
           {results.hasMore && (
             <button className="btn localz-more" onClick={results.loadMore} disabled={results.loading}>

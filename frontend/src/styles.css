@@ -3572,6 +3572,21 @@ select {
 .localz-fit-row {
   margin: 10px 0 2px;
 }
+/* How far: 2-50 mi or Statewide; wraps on a phone, never scrolls sideways. */
+.localz-radius {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+.localz-radius .chip {
+  min-height: 34px;
+}
+.localz-radius-note {
+  margin: -4px 0 8px;
+  font-size: 13px;
+}
 .localz-fit-btn {
   display: inline-flex;
   align-items: center;

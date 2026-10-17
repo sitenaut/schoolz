@@ -42,6 +42,7 @@ from models import (
 )
 
 from .ownership import jsonable
+from .places import zip_point
 from .provider_types import BY_CODE, BY_KEY
 from .refresh import _derive, name_key
 
@@ -391,13 +392,15 @@ _ACCESS = {"walk_in": "Walk-ins welcome.", "appointment": "By appointment.", "bo
 
 def address_columns(kind: str | None, address: str | None, city: str | None, postal_code: str | None, counties: list[str]) -> dict:
     public = kind == "public"
+    point = zip_point(postal_code) if public else None
     return {
         "address_kind": kind,
         "address": ((address or "").strip() or None) if public else None,
         "city": ((city or "").strip() or None) if public else None,
         "postal_code": postal_code if public else None,
-        "latitude": None,
-        "longitude": None,
+        # The ZIP's center, so "closest first" can place it (resources/places.py).
+        "latitude": point[0] if point else None,
+        "longitude": point[1] if point else None,
         "service_areas": [f"{c} County, NJ" for c in counties],
     }
 

@@ -72,15 +72,17 @@ export function PrivacyPage() {
           </tr>
           <tr>
             <td>
-              Your location in Localz: the county, and the ZIP code, area code or rounded point you set it from
+              Your location in Localz: the county, and the ZIP code, area code or rounded point you set it from, and
+              how far you want to look
             </td>
             <td>Your browser's local storage</td>
             <td>
               So Localz shows help that serves where you are. A ZIP code, area code or your device's location is
               turned into a county on your device, using a list of New Jersey ZIP codes built into the site - none
               of them is sent to us or anyone else. Your device's location is requested only if you press "Use my
-              current location", and is rounded to about half a mile before it's kept. Only the county name goes
-              with a search. What you type into Localz search is sent to us only to find matching listings - in the
+              current location", and is rounded to about half a mile before it's kept. A search sends only the
+              county name and, to list help closest first, a wide box around you (whole half-degrees of latitude
+              and longitude, tens of miles across); your device measures the distances itself. What you type into Localz search is sent to us only to find matching listings - in the
               request body, never in the page address - and we don't save it. Localz pages never load Google
               Analytics, and which listing you open is stripped from our performance data.
             </td>

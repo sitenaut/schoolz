@@ -134,7 +134,6 @@
   "That isn't a New Jersey ZIP code we know. Try a nearby one, or pick your county below.": "这不是我们已知的新泽西州邮政编码。请尝试附近的邮编，或在下方选择您的县。",
   "That isn't a New Jersey area code. Try your ZIP code, or pick your county below.": "这不是新泽西州的区号。请尝试输入邮政编码，或在下方选择您的县。",
   "This listing isn't available any more.": "此资源已不再提供。",
-  "This stays on your device. Your ZIP code and location are never sent to us - Localz only uses the county to search.": "此信息仅保存在您的设备上。您的邮政编码和位置绝不会发送给我们——Localz 只用县名进行搜索。",
   "Type of service": "服务类型",
   "Under 1": "1 岁以下",
   "Use my current location": "使用我的当前位置",
@@ -157,5 +156,14 @@
   "{{category}} help in New Jersey · Localz": "新泽西州的{{category}}帮助 · Localz",
   "{{county}} County": "{{county}} 县",
   "{{total}} listings": "{{total}} 项资源",
-  "{{total}} results": "{{total}} 个结果"
+  "{{total}} results": "{{total}} 个结果",
+  "{{miles}} mi": "{{miles}} 英里",
+  "How far to look": "搜索范围",
+  "How far:": "范围：",
+  "Closest first, within {{miles}} miles. Phone, online and statewide help follows.": "由近到远，{{miles}} 英里以内。之后是电话、在线和全州范围的帮助。",
+  "under 1 mi": "不到 1 英里",
+  "Near {{zip}}": "{{zip}} 附近",
+  "Near my location": "我的位置附近",
+  "Find help near you": "查找您附近的帮助",
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "这些信息只保存在您的设备上。您的邮政编码和位置绝不会发送给我们：距离在您的手机上计算，我们只能看到您所在的县和周围的大片区域。"
 }

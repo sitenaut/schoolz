@@ -1,5 +1,6 @@
 import { apiFetch } from "../api";
 import { type Criteria, forgetDevice } from "./localzFit";
+import type { Box } from "./localzWhere";
 import { ROUTER_BASENAME } from "./i18n";
 
 /** Localz: community resources (food, housing, health, ...) for families who
@@ -36,6 +37,8 @@ export type ResourceSummary = {
   closure?: { starts_on: string; ends_on: string; note: string | null } | null;
   /** A confidential location (a shelter): no address is ever sent. */
   location_confidential?: boolean;
+  /** Miles from the visitor's point, measured on the device (closest first). */
+  distance_miles?: number;
 };
 
 export type ResourceDetail = ResourceSummary & {
@@ -73,9 +76,15 @@ export type ResourceSearch = {
   query?: string;
   county?: string;
   type?: string;
+  /** Only what a closest-first list couldn't place inside this box. */
+  outside?: Box;
   page?: number;
+  offset?: number;
   page_size?: number;
 };
+
+/** [id, lat, lon, statewide] for every match placed inside a box. */
+export type NearbyPoint = [string, number, number, boolean];
 
 export type LocalzCategory = {
   key: string;
@@ -161,6 +170,21 @@ export { isLocalzPath } from "./localzPath";
 export async function searchResources(body: ResourceSearch): Promise<{ items: ResourceSummary[]; total: number }> {
   const r = await apiFetch("/resources/search", { method: "POST", body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`search failed: ${r.status}`);
+  return r.json();
+}
+
+/** Every match with a place inside a coarse box, for the device to
+ * measure - the visitor's own point is never sent. */
+export async function fetchNearby(body: { category?: string; query?: string; type?: string; box: Box }): Promise<NearbyPoint[]> {
+  const r = await apiFetch("/resources/nearby", { method: "POST", body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`nearby failed: ${r.status}`);
+  return (await r.json()).points;
+}
+
+export async function fetchResourcesByIds(ids: string[]): Promise<ResourceSummary[]> {
+  if (ids.length === 0) return [];
+  const r = await apiFetch("/resources/by-ids", { method: "POST", body: JSON.stringify({ ids }) });
+  if (!r.ok) throw new Error(`by-ids failed: ${r.status}`);
   return r.json();
 }
 

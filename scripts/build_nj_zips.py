@@ -1,4 +1,5 @@
-"""Build frontend/src/lib/njZips.json: every New Jersey ZIP (Census ZCTA) with
+"""Build frontend/src/lib/njZips.json (and its backend copy,
+backend/resources/nj_zips.json): every New Jersey ZIP (Census ZCTA) with
 its county and center point, for Localz's "Set my location" - so a typed ZIP
 or the phone's own location is turned into a county on the phone itself and
 never sent anywhere (docs/LOCALZ_DESIGN.md).
@@ -65,8 +66,14 @@ def main() -> None:
     counties = sorted({v[0] for v in data.values()})
     if len(counties) != 21:
         sys.exit(f"expected 21 NJ counties, got {len(counties)}: {counties}")
-    out_path.write_text(json.dumps(data, separators=(",", ":")) + "\n", encoding="utf-8")
+    text = json.dumps(data, separators=(",", ":")) + "\n"
+    out_path.write_text(text, encoding="utf-8")
     print(f"{len(data)} ZIPs across {len(counties)} counties -> {out_path}")
+    if len(sys.argv) <= 3:
+        # The backend places ZIP-only listings with the same table (resources/places.py).
+        backend_copy = Path(__file__).resolve().parent.parent / "backend" / "resources" / "nj_zips.json"
+        backend_copy.write_text(text, encoding="utf-8")
+        print(f"  and {backend_copy}")
 
 
 if __name__ == "__main__":

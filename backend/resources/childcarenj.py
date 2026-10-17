@@ -36,6 +36,7 @@ import httpx
 import scraper_client
 
 from .nj211 import USER_AGENT
+from .places import zip_point
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ BASE_URL = "https://www.childcarenj.gov"
 PAGE_SIZE = 500
 # Part of every record's hash: bump it when `fields()` changes, so the next
 # run rewrites providers whose source record didn't change.
-NORMALIZE_VERSION = 2
+NORMALIZE_VERSION = 3
 MIN_DELAY_SECONDS = 5.0
 
 NJ_COUNTIES = [
@@ -286,6 +287,7 @@ def fields(record: dict, county: str, unknown: set[str]) -> dict:
     whole record: there's no separate detail fetch."""
     code, type_name = TYPE_TAXONOMY[kind(record)]
     name = display_name(record.get("ProgramName")) or "Child care provider"
+    point = zip_point(_clean(record.get("ProgramZipCode")))
     return {
         "name": name,
         "organization_name": name,
@@ -297,8 +299,9 @@ def fields(record: dict, county: str, unknown: set[str]) -> dict:
         "address": _address(record),
         "city": _clean(record.get("ProgramCity")),
         "postal_code": _clean(record.get("ProgramZipCode")),
-        "latitude": None,
-        "longitude": None,
+        # The ZIP's center, for "closest first" (resources/places.py).
+        "latitude": point[0] if point else None,
+        "longitude": point[1] if point else None,
         "hours_text": hours_text(record),
         "eligibility_text": eligibility_text(record, unknown),
         "application_process": "Call the provider to ask about openings and to arrange a visit.",
