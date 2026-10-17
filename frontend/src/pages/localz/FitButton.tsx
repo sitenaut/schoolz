@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { IconCheck } from "../../components/icons";
@@ -33,16 +33,24 @@ export function FitButton() {
     setRemember(saved?.remember ?? false);
     setToAccount(false);
     setOpen(true);
-    if (user) {
-      // Only when the sheet opens: a page view never asks for the profile.
-      fetchSavedProfile()
-        .then((s) => {
-          setAccount(s);
-          setToAccount(s.saved && consentIsCurrent(s));
-        })
-        .catch(() => setAccount(null));
-    }
   };
+
+  // Only while the sheet is open: a page view never asks for the profile.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!open || !userId) return;
+    let live = true;
+    fetchSavedProfile()
+      .then((s) => {
+        if (!live) return;
+        setAccount(s);
+        setToAccount(s.saved && consentIsCurrent(s));
+      })
+      .catch(() => live && setAccount(null));
+    return () => {
+      live = false;
+    };
+  }, [open, userId]);
 
   const toAccountNow = async (answers: FitAnswers) => {
     try {

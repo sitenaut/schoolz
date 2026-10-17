@@ -79,7 +79,7 @@ export function SavedProfileSection() {
         ["Ages in your household", answers.ages.map((b) => t(AGE_LABELS[b])).join(", ")],
         ["Applies to you or your household", answers.has.map((n) => t(NEED_LABELS[n])).join(", ")],
         ["Services that focus on", answers.focus.map((f) => t(FOCUS_LABELS[f])).join(", ")],
-        ["Programs that don't ask about immigration status", answers.noStatusFirst ? t("Shown first") : ""],
+        ["Programs that don't ask about immigration status", answers.noStatusFirst ? t("Shown first") : t("Not turned on")],
       ]
     : [];
 
