@@ -4,6 +4,7 @@ import { IconClock, IconPhone, IconPin } from "../../components/icons";
 import { type ResourceSummary, telHref } from "../../lib/localz";
 import type { Fit } from "../../lib/localzFit";
 import { FitNote } from "./FitNote";
+import { ClosureNote } from "./ClosureNote";
 
 /** One service in a list: what it is, who runs it, where, when, and a phone
  * number you can tap. The details page has the rest. */
@@ -19,8 +20,15 @@ export function ResourceCard({ r, fit }: { r: ResourceSummary; fit?: Fit | null 
       {org && <div className="localz-card-org">{org}</div>}
       {fit && <FitNote fit={fit} />}
       {r.statewide && <span className="tag localz-tag">{t("Statewide")}</span>}
+      {r.closure && <ClosureNote closure={r.closure} />}
       {r.description && <p className="localz-card-desc">{r.description}</p>}
       <div className="localz-card-facts">
+        {r.location_confidential && (
+          <span>
+            <IconPin />
+            {t("Location shared after you call")}
+          </span>
+        )}
         {where && (
           <span>
             <IconPin />

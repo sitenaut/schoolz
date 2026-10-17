@@ -412,6 +412,12 @@ async def save_request(request_id: str, body: RequestIn, user: User = Depends(ge
     if req.status not in portal.EDITABLE_STATUSES:
         raise HTTPException(status.HTTP_409_CONFLICT, "This request can't be edited right now")
     _check_links(body.submission)
+    if req.status == "draft" and body.claimed_service_id != req.claimed_service_id:
+        if body.claimed_service_id:
+            claimed = await db.get(ResourceService, body.claimed_service_id)
+            if claimed is None or claimed.status != "active":
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "That listing isn't available")
+        req.claimed_service_id = body.claimed_service_id
     req.submission = body.submission.model_dump(mode="json")
     if body.private_address is not None:
         req.private_address = _clean(body.private_address)

@@ -1,7 +1,7 @@
 """Localz provider portal: onboarding requests, memberships, change requests, change log, private addresses + the "Localz reviewer" role
 
-Revision ID: 0106
-Revises: 0105
+Revision ID: 0107
+Revises: 0106
 Create Date: 2026-10-17 14:00:00
 
 """
@@ -13,8 +13,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "0106"
-down_revision: str | None = "0105"
+revision: str = "0107"
+down_revision: str | None = "0106"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

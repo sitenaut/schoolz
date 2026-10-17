@@ -123,6 +123,16 @@ def test_every_provider_type_has_a_localz_category():
         assert t.category, t.key
 
 
+def test_completeness_matches_the_frontend_meter():
+    # frontend/src/lib/providerPortal.test.ts scores the same form 76.
+    sub = portal.Submission.model_validate(_submission())
+    assert portal.completeness(sub, False) == {
+        "missing_core": [],
+        "missing_optional": ["documents", "languages", "accessibility", "access", "how_to_apply"],
+        "percent": 76,
+    }
+
+
 def test_reviewer_permissions_exist_and_manage_implies_view():
     from permissions import PERMISSION_KEYS, expand
 

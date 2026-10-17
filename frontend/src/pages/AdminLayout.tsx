@@ -1,6 +1,28 @@
-import { NavLink, Navigate, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { visibleAdminTabs } from "../lib/permissions";
+import { fetchCounts } from "../lib/localzReview";
+import { can, visibleAdminTabs } from "../lib/permissions";
+
+/** Localz listings waiting for a reviewer (new + held edits), for the tab
+ * badge. Re-read on every admin navigation, so a decision clears it. */
+function useLocalzPending(enabled: boolean): number {
+  const { pathname } = useLocation();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    fetchCounts()
+      .then((c) => {
+        if (!cancelled) setCount(c.onboarding + c.changes);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, pathname]);
+  return enabled ? count : 0;
+}
 
 /** Shell for the centrally-managed admin tooling - one page with tabs
  * instead of separate nav entries, to cut down on nav clutter. Each tab
@@ -16,12 +38,18 @@ import { visibleAdminTabs } from "../lib/permissions";
 export function AdminLayout() {
   const { user } = useAuth();
   const tabs = visibleAdminTabs(user);
+  const localzPending = useLocalzPending(can(user, "resources.view"));
   return (
     <div>
       <div className="tabs admin-tabs" role="tablist" style={{ marginBottom: 20 }}>
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} className={({ isActive }) => `tab ${isActive ? "active" : ""}`}>
             {t.label}
+            {t.to === "/admin/resources/onboarding" && localzPending > 0 && (
+              <span className="tab-badge" aria-label={`${localzPending} waiting`}>
+                {localzPending}
+              </span>
+            )}
           </NavLink>
         ))}
       </div>

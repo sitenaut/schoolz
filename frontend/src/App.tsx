@@ -14,6 +14,12 @@ import { LocalzLayout } from "./pages/localz/LocalzLayout";
 import { LocalzHomePage } from "./pages/localz/LocalzHomePage";
 import { LocalzCategoryPage } from "./pages/localz/LocalzCategoryPage";
 import { LocalzResourcePage } from "./pages/localz/LocalzResourcePage";
+import { ProvidersPage } from "./pages/localz/providers/ProvidersPage";
+import { ProviderPortalPage } from "./pages/localz/providers/ProviderPortalPage";
+import { ProviderRequestPage } from "./pages/localz/providers/ProviderRequestPage";
+import { ProviderListingPage } from "./pages/localz/providers/ProviderListingPage";
+import { LocalzReviewPage } from "./pages/LocalzReviewPage";
+import { LocalzReviewDetailPage } from "./pages/LocalzReviewDetailPage";
 import { SeasonalPage } from "./pages/SeasonalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -195,6 +201,10 @@ function Routed() {
           <Route path="/local" element={<LocalPage />} />
           <Route path="/localz" element={<LocalzHomePage />} />
           <Route path="/localz/r/:resourceId" element={<LocalzResourcePage />} />
+          <Route path="/localz/providers" element={<ProvidersPage />} />
+          <Route path="/localz/providers/portal" element={<ProviderPortalPage />} />
+          <Route path="/localz/providers/requests/:requestId" element={<ProviderRequestPage />} />
+          <Route path="/localz/providers/listings/:serviceId" element={<ProviderListingPage />} />
           <Route path="/localz/:category" element={<LocalzCategoryPage />} />
         </Route>
         <Route path="/audit" element={<AuditShell pub />}>
@@ -231,6 +241,8 @@ function Routed() {
           <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
+          <Route path="resources/onboarding" element={<RequireAdmin permission="resources.view"><LocalzReviewPage /></RequireAdmin>} />
+          <Route path="resources/onboarding/:requestId" element={<RequireAdmin permission="resources.view"><LocalzReviewDetailPage /></RequireAdmin>} />
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
           <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
           <Route path="api-keys/approve" element={<RequireAdmin superOnly><ApproveApiKeyPage /></RequireAdmin>} />

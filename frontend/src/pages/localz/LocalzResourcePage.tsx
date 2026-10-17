@@ -8,6 +8,7 @@ import { type ResourceDetail, categoryByKey, confirmedLabel, fetchResource, isFr
 import { describe, fitFor, useLocalzFit } from "../../lib/localzFit";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import { FitNote } from "./FitNote";
+import { ClosureNote } from "./ClosureNote";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -66,6 +67,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
       <h2>{r.name}</h2>
       {org && <div className="localz-card-org">{org}</div>}
 
+      {r.closure && <ClosureNote closure={r.closure} />}
       {r.alert && (
         <p className="localz-alert" role="note">
           <IconAlert />
@@ -96,8 +98,9 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
 
       {r.description && <p className="localz-detail-desc">{r.description}</p>}
 
-      {(place || r.service_areas.length > 0) && (
+      {(place || r.service_areas.length > 0 || r.location_confidential) && (
         <Section title={t("Where")}>
+          {r.location_confidential && <p>{t("Location shared after you call")}</p>}
           {place && <p>{place}</p>}
           {r.service_areas.length > 0 && <p className="localz-muted">{t("Serves: {{areas}}", { areas: r.service_areas.join(", ") })}</p>}
         </Section>
@@ -107,6 +110,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
           <IconClock className="localz-inline-icon" />
           {r.hours_text || t("Call for hours")}
         </p>
+        {r.week_hours_text && <p className="localz-alert">{t("This week only: {{hours}}", { hours: r.week_hours_text })}</p>}
       </Section>
       {r.eligibility_text && (
         <Section title={t("Who can get help")}>

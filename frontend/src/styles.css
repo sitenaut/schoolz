@@ -3712,3 +3712,146 @@ select {
   --fit-yes-bg: #6fc2a8;
   --fit-yes-ink: #0b1f19;
 }
+
+/* ---------- Localz provider portal (pages/localz/providers/) ---------- */
+.tab-badge {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.provider-page {
+  max-width: 760px;
+}
+.provider-steps {
+  padding-left: 20px;
+  line-height: 1.5;
+}
+.provider-steps li {
+  margin-bottom: 6px;
+}
+.provider-cta,
+.provider-actions,
+.provider-quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+.provider-inquiry,
+.provider-signin,
+.provider-quick {
+  margin: 18px 0;
+}
+.provider-subhead {
+  margin-top: 24px;
+}
+.provider-section {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.provider-section h3 {
+  margin: 0 0 10px;
+}
+.provider-section.provider-fix {
+  border-left: 3px solid var(--warn);
+  padding-left: 12px;
+}
+.provider-service {
+  padding: 10px 0;
+}
+.provider-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.provider-chips {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+.provider-radio-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.provider-days {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.provider-day {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+.provider-day-name {
+  flex: 0 0 96px;
+  font-weight: 600;
+}
+.provider-day-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  flex: 1 1 240px;
+}
+.provider-range {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.provider-range input[type="time"] {
+  width: auto;
+}
+.provider-meter-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 8px 0;
+}
+.provider-meter-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.provider-meter-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.provider-meter-bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.provider-matches,
+.provider-claim {
+  margin-top: 10px;
+}
+.provider-match {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.provider-log {
+  padding-left: 18px;
+  font-size: 14px;
+}
+.provider-log li {
+  margin-bottom: 6px;
+}

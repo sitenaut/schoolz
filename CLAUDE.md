@@ -121,6 +121,7 @@ Docs:
   - **Deleting a job, or removing a source from its params, deletes that source's events.** `prune.SOURCE_KEYS` must list every `*_sources` key.
   - `/local` filters by distance, and an event with no position shows at every radius: a feed that never states a venue needs a `location` on its source entry.
 - **`docs/LOCALZ_DESIGN.md`** — Localz community resources (`backend/resources/`, jobs `resources.refresh` and `resources.childcarenj`, public `/resources` API); design, data sources, privacy rules.
+  - A scraper adapter writes listing fields only through `resources/ownership.apply_source_fields`: a plain `setattr` silently overwrites what a provider set on a claimed record (and refills a confidential listing's address).
   - The NJ 211 crawl is a guest on their site: robots.txt every run, ≥10 s between requests, never `/api/`, stop on 403/429. Don't speed it up or add retries.
   - Only a *complete* list crawl may mark records missing; free-text search stays in POST bodies, never URLs.
   - ChildCareNJ (job `resources.childcarenj`): a family child care listing is someone's home - never store its street address or any provider email. Bump `childcarenj.NORMALIZE_VERSION` when `fields()` changes, or stored rows never pick it up.

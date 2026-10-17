@@ -32,6 +32,10 @@ export type ResourceSummary = {
   /** Who it's for, structured from its eligibility sentence; null until
    * that's been read. Matched on the device (lib/localzFit.ts). */
   eligibility: Criteria | null;
+  /** A provider's "Closed today" or temporary closure, while it lasts. */
+  closure?: { starts_on: string; ends_on: string; note: string | null } | null;
+  /** A confidential location (a shelter): no address is ever sent. */
+  location_confidential?: boolean;
 };
 
 export type ResourceDetail = ResourceSummary & {
@@ -50,6 +54,8 @@ export type ResourceDetail = ResourceSummary & {
   service_areas: string[];
   taxonomy_names: string[];
   alert: string | null;
+  /** "This week only" hours a provider posted, for the current week. */
+  week_hours_text?: string | null;
   missing_core: string[];
   source: string;
   source_url: string | null;
