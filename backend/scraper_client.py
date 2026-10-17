@@ -204,16 +204,27 @@ async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
     return base64.b64decode(result["body_base64"])
 
 
-async def fetch_raw_text_from_any(url: str, timeout_ms: int = 45_000, refused: tuple[int, ...] = (403, 429)) -> dict:
+async def fetch_raw_text_from_any(
+    url: str,
+    timeout_ms: int = 45_000,
+    expect_content_type: str | None = None,
+    prefer: str | None = None,
+) -> dict:
     """A text response (JSON, CSV) from the first scraper the source doesn't
-    refuse. /fetch-raw reports the source's own status inside a 200, so the
-    usual fallback never moves on from a WAF's 403 - but a block is usually
-    per network (datacenter vs residential), so each service is asked in
-    turn. Returns {status, content_type, text, service}; raises
-    ScraperRefused when every service was refused."""
+    refuse. A WAF block is usually per network (datacenter vs residential),
+    and /fetch-raw reports the source's answer inside its own 200 - so the
+    usual fallback never moves on from a refusal. Here each service is asked
+    in turn (`prefer`, a host that worked earlier in the run, first) and an
+    answer counts only if its status is 200 and, with
+    `expect_content_type`, its content type contains it: playwright-scraper
+    (droplet, Pi) sends no status at all, so a Cloudflare page shows up only
+    as the wrong content type. Returns {status, content_type, text,
+    service}; raises ScraperRefused when no service got a usable answer."""
     services = _services()
     if not services:
         raise ScraperNotConfigured("SCRAPER_URL / SCRAPER_API_KEY are not configured")
+    if prefer:
+        services = sorted(services, key=lambda s: httpx.URL(s[0]).host != prefer)
     seen: list[str] = []
     async with _get_semaphore():
         for service_url, api_key in services:
@@ -223,13 +234,17 @@ async def fetch_raw_text_from_any(url: str, timeout_ms: int = 45_000, refused: t
             except Exception as exc:  # noqa: BLE001 - try the next service
                 seen.append(f"{host}: {type(exc).__name__}")
                 continue
-            status = int(result.get("status") or 0)
-            if status in refused:
+            status = result.get("status")
+            content_type = result.get("content_type") or ""
+            if status is not None and int(status) != 200:
                 seen.append(f"{host}: HTTP {status}")
+                continue
+            if expect_content_type and expect_content_type not in content_type.lower():
+                seen.append(f"{host}: {content_type or 'no content type'}")
                 continue
             if result.get("body_base64"):
                 text = base64.b64decode(result["body_base64"]).decode("utf-8", "replace")
             else:
                 text = result.get("body") or ""
-            return {"status": status, "content_type": result.get("content_type") or "", "text": text, "service": host}
-    raise ScraperRefused(f"every scraper was refused or failed for {url}: {'; '.join(seen)}")
+            return {"status": int(status or 200), "content_type": content_type, "text": text, "service": host}
+    raise ScraperRefused(f"no scraper got a usable answer for {url}: {'; '.join(seen)}")
