@@ -86,6 +86,12 @@ def test_the_endpoint_gets_every_parameter_the_search_page_sends():
     assert {"sortKey", "sortDirection", "mccynplus", "programTypes", "zipcode"} <= set(params)
 
 
+def test_json_wrapped_in_chromes_viewer_is_unwrapped():
+    wrapped = '<html><head></head><body><pre style="word-wrap: break-word;">{"Facilities": [{"UniqueProgramID": "1", "ProgramName": "A &amp; B"}], "ResultCount": 1}</pre></body></html>'
+    records, total = childcarenj.parse_response(wrapped)
+    assert total == 1 and records[0]["ProgramName"] == "A & B"
+
+
 def test_a_non_json_answer_is_an_error_not_an_empty_county():
     with pytest.raises(ValueError):
         childcarenj.parse_response(b'{"Something": []}')
@@ -226,8 +232,8 @@ def _client_with(handler):
 async def test_a_direct_refusal_moves_the_run_to_the_scrapers(monkeypatch):
     asked = []
 
-    async def fake_any(url, timeout_ms=45_000, refused=(403, 429)):
-        asked.append(url)
+    async def fake_any(url, timeout_ms=45_000, expect_content_type=None, prefer=None):
+        asked.append((url, prefer))
         return {"status": 200, "content_type": "application/json", "text": json.dumps(FIXTURE), "service": "scraper.example"}
 
     monkeypatch.setattr(scraper_client, "fetch_raw_text_from_any", fake_any)
@@ -236,12 +242,15 @@ async def test_a_direct_refusal_moves_the_run_to_the_scrapers(monkeypatch):
     records, total = await client.providers("Cape May")
     assert len(records) == 3 and total == 4
     assert len(direct) == 1 and client.via_scraper and client.route == "scraper:scraper.example"
-    assert "county=Cape+May" in asked[0] and "sortKey=ProgramName" in asked[0]
+    assert "county=Cape+May" in asked[0][0] and "sortKey=ProgramName" in asked[0][0] and asked[0][1] is None
+    client._last = 0
+    await client.providers("Salem")
+    assert len(direct) == 1 and asked[1][1] == "scraper.example"  # no new direct try; the working scraper first
 
 
 @pytest.mark.anyio
 async def test_every_route_refused_is_a_block(monkeypatch):
-    async def refused(url, timeout_ms=45_000, refused=(403, 429)):
+    async def refused(url, timeout_ms=45_000, expect_content_type=None, prefer=None):
         raise scraper_client.ScraperRefused("every scraper was refused")
 
     monkeypatch.setattr(scraper_client, "fetch_raw_text_from_any", refused)
@@ -251,8 +260,8 @@ async def test_every_route_refused_is_a_block(monkeypatch):
 
 
 @pytest.mark.anyio
-async def test_the_scraper_walk_skips_refusing_services(monkeypatch):
-    services = [("https://own.example", "k1"), ("https://droplet.example", "k2"), ("https://pi.example", "k3")]
+async def test_the_scraper_walk_skips_refusals_and_wrong_content(monkeypatch):
+    services = [("https://own.example", "k1"), ("https://droplet.example", "k2"), ("https://down.example", "k3"), ("https://pi.example", "k4")]
     calls = []
 
     async def fake_post(service_url, api_key, path, payload, timeout_s):
@@ -260,17 +269,25 @@ async def test_the_scraper_walk_skips_refusing_services(monkeypatch):
         if service_url == "https://own.example":
             return {"status": 403, "content_type": "text/html", "body_base64": ""}
         if service_url == "https://droplet.example":
+            # playwright-scraper sends no status: a Cloudflare page is only
+            # visible as the wrong content type.
+            return {"content_type": "text/html; charset=UTF-8", "body": "<html>Attention Required</html>"}
+        if service_url == "https://down.example":
             raise httpx.ConnectError("down")
-        return {"status": 200, "content_type": "application/json", "body": '{"Facilities": [], "ResultCount": 0}'}
+        return {"content_type": "application/json; charset=utf-8", "body": '{"Facilities": [], "ResultCount": 0}'}
 
     monkeypatch.setattr(scraper_client, "_services", lambda: services)
     monkeypatch.setattr(scraper_client, "_post_to", fake_post)
-    result = await scraper_client.fetch_raw_text_from_any("https://www.childcarenj.gov/Services/GetProviders.aspx?county=Salem")
-    assert calls == [s for s, _ in services] and result["service"] == "pi.example" and result["text"].startswith('{"Facilities"')
+    url = "https://www.childcarenj.gov/Services/GetProviders.aspx?county=Salem"
+    result = await scraper_client.fetch_raw_text_from_any(url, expect_content_type="json")
+    assert calls == [s for s, _ in services] and result["service"] == "pi.example" and result["status"] == 200
+    calls.clear()
+    await scraper_client.fetch_raw_text_from_any(url, expect_content_type="json", prefer="pi.example")
+    assert calls == ["https://pi.example"]
 
     async def all_refuse(service_url, api_key, path, payload, timeout_s):
-        return {"status": 403, "content_type": "text/html", "body_base64": ""}
+        return {"content_type": "text/html", "body": "blocked"}
 
     monkeypatch.setattr(scraper_client, "_post_to", all_refuse)
     with pytest.raises(scraper_client.ScraperRefused):
-        await scraper_client.fetch_raw_text_from_any("https://www.childcarenj.gov/x")
+        await scraper_client.fetch_raw_text_from_any(url, expect_content_type="json")

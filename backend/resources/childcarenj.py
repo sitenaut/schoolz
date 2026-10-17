@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import html
 import json
 import logging
 import re
@@ -341,7 +342,13 @@ def search_params(county: str, page: int) -> dict:
 
 
 def parse_response(body: bytes | str) -> tuple[list[dict], int]:
-    data = json.loads(body)
+    text = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    # playwright-scraper (droplet, Pi) returns the rendered page when no
+    # download starts: Chrome's JSON viewer, the JSON escaped inside a <pre>.
+    match = re.search(r"<pre[^>]*>(.*?)</pre>", text, re.S) if text.lstrip().startswith("<") else None
+    if match:
+        text = html.unescape(match.group(1))
+    data = json.loads(text)
     if not isinstance(data, dict) or not isinstance(data.get("Facilities"), list):
         raise ValueError("no Facilities list in the response - endpoint changed?")
     return [f for f in data["Facilities"] if isinstance(f, dict) and f.get("UniqueProgramID")], int(data.get("ResultCount") or 0)
@@ -363,6 +370,7 @@ class ChildCareNJClient:
         self.via_scraper = via_scraper
         self.requests = 0
         self.route: str | None = None
+        self._scraper: str | None = None
         self._last = 0.0
         self._http: httpx.AsyncClient | None = None
 
@@ -391,12 +399,12 @@ class ChildCareNJClient:
     async def _via_scraper(self, county: str, page: int) -> tuple[list[dict], int]:
         url = f"{BASE_URL}/Services/GetProviders.aspx?{urlencode(search_params(county, page))}"
         try:
-            result = await scraper_client.fetch_raw_text_from_any(url, timeout_ms=60_000)
+            result = await scraper_client.fetch_raw_text_from_any(url, timeout_ms=60_000, expect_content_type="json", prefer=self._scraper)
         except scraper_client.ScraperRefused as exc:
             raise Blocked(str(exc)) from exc
+        # The rest of the run asks this one first.
+        self._scraper = result["service"]
         self.route = f"scraper:{result['service']}"
-        if result["status"] != 200 or "json" not in result["content_type"]:
-            raise ValueError(f"HTTP {result['status']} {result['content_type']} for {county} via {result['service']} - endpoint changed?")
         return parse_response(result["text"])
 
     async def providers(self, county: str, page: int = 0) -> tuple[list[dict], int]:
