@@ -69,7 +69,13 @@ export function LocationButton() {
   };
 
   const countyLabel = (c: string) => t("{{county}} County", { county: c });
-  const label = where ? countyLabel(where.county) : t("Set my location");
+  const label = !where
+    ? t("Set my location")
+    : where.how === "zip" && where.zip
+      ? t("Near {{zip}}", { zip: where.zip })
+      : where.how === "gps"
+        ? t("Near my location")
+        : countyLabel(where.county);
 
   return (
     <>
@@ -156,7 +162,7 @@ export function LocationButton() {
           </div>
 
           <p className="localz-where-privacy">
-            {t("This stays on your device. Your ZIP code and location are never sent to us - Localz only uses the county to search.")}
+            {t("This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.")}
           </p>
           {where && (
             <button type="button" className="btn ghost" onClick={() => choose(null)}>

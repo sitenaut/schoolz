@@ -134,7 +134,6 @@
   "That isn't a New Jersey ZIP code we know. Try a nearby one, or pick your county below.": "Ese no es un código postal de Nueva Jersey que conozcamos. Pruebe uno cercano o elija su condado abajo.",
   "That isn't a New Jersey area code. Try your ZIP code, or pick your county below.": "Ese no es un código de área de Nueva Jersey. Pruebe con su código postal o elija su condado abajo.",
   "This listing isn't available any more.": "Este recurso ya no está disponible.",
-  "This stays on your device. Your ZIP code and location are never sent to us - Localz only uses the county to search.": "Esto se guarda solo en su dispositivo. Su código postal y su ubicación nunca se nos envían; Localz solo usa el condado para buscar.",
   "Type of service": "Tipo de servicio",
   "Under 1": "Menos de 1",
   "Use my current location": "Usar mi ubicación actual",
@@ -157,5 +156,14 @@
   "{{category}} help in New Jersey · Localz": "Ayuda de {{category}} en Nueva Jersey · Localz",
   "{{county}} County": "Condado de {{county}}",
   "{{total}} listings": "{{total}} recursos",
-  "{{total}} results": "{{total}} resultados"
+  "{{total}} results": "{{total}} resultados",
+  "{{miles}} mi": "{{miles}} mi",
+  "How far to look": "Qué tan lejos buscar",
+  "How far:": "Distancia:",
+  "Closest first, within {{miles}} miles. Phone, online and statewide help follows.": "Lo más cercano primero, a menos de {{miles}} millas. Después, la ayuda por teléfono, en línea y estatal.",
+  "under 1 mi": "a menos de 1 mi",
+  "Near {{zip}}": "Cerca de {{zip}}",
+  "Near my location": "Cerca de mí",
+  "Find help near you": "Encuentre ayuda cerca de usted",
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "Esto se queda en su dispositivo. Su código postal y su ubicación nunca se nos envían: las distancias se miden en su teléfono, y solo vemos su condado y una zona amplia a su alrededor."
 }

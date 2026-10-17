@@ -11,7 +11,9 @@ import { ClosureNote } from "./ClosureNote";
 export function ResourceCard({ r, fit }: { r: ResourceSummary; fit?: Fit | null }) {
   const { t } = useTranslation();
   const org = r.organization_name && r.organization_name !== r.name ? r.organization_name : null;
-  const where = r.city || r.address;
+  const place = r.city || r.address;
+  const away = r.distance_miles === undefined ? null : r.distance_miles < 1 ? t("under 1 mi") : t("{{miles}} mi", { miles: Math.round(r.distance_miles) });
+  const where = place && away ? `${place} · ${away}` : place || away;
   return (
     <article className={`localz-card${fit?.level === "yes" ? " fits" : ""}`}>
       <Link className="localz-card-title" to={`/localz/r/${r.id}`}>

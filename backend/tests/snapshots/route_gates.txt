@@ -134,7 +134,9 @@ PUT    /provider-portal/requests/{request_id}  login
 POST   /provider-portal/requests/{request_id}/submit  login
 POST   /provider-portal/requests/{request_id}/withdraw  login
 GET    /provider-portal/types  public
+POST   /resources/by-ids  public
 GET    /resources/categories  public
+POST   /resources/nearby  public
 POST   /resources/search  public
 POST   /resources/types  public
 GET    /resources/{resource_id}  public

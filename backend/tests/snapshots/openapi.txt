@@ -438,9 +438,15 @@ POST /provider-portal/requests/{request_id}/withdraw
   -> 200: RequestOut
 GET /provider-portal/types
   -> 200: list[ProviderTypeOut]
+POST /resources/by-ids
+  body: ByIdsIn
+  -> 200: list[ResourceSummaryOut]
 GET /resources/categories
   query county?: string | null
   -> 200: list[CategoryOut]
+POST /resources/nearby
+  body: NearbyIn
+  -> 200: NearbyOut
 POST /resources/search
   body: ResourceSearchIn
   -> 200: ResourceSearchOut
@@ -864,11 +870,13 @@ BillzImportIn { text: string }
 BillzImportOut { created: list[ScheduledJobOut], skipped: list[BillzImportSkipOut] }
 BillzImportSkipOut { name: string, reason: string }
 Body_create_submission_submissions_post { bot_token?: string | null, description?: string | null, district_id?: string | null, file?: string | null, school_id?: string | null, submitter_email?: string | null, submitter_name?: string | null, url?: string | null, website?: string | null }
+Box { east: number, north: number, south: number, west: number }
 Bucket3AuditOut { classroom_only: list[ChildWorkItemOut], classroom_only_all_time: list[ChildWorkItemOut], counts: dict[integer], current_marking_period?: string | null, genesis_only: list[ChildGradeEntryOut], matched: list[AuditMatchedOut] }
 Bucket3GradesOut { course_grades: list[ChildCourseGradeOut], entries: list[ChildGradeEntryOut], marking_period_discrepancies?: list[string], marking_periods?: list[ChildMarkingPeriodOut] }
 Bucket3ImportRequest { captures: list[object], exported_at?: string | null }
 Bucket3ImportResult { captures_processed: integer, captures_skipped_duplicate: integer, grade_entries_upserted?: integer, identity_mismatches?: list[string], page_kinds_seen: integer, schedule_blocks_upserted: integer, work_items_upserted: integer }
 Bucket3StudentOut { first_name: string, id: string, last_name: string, school_name: string | null, student_id: string, viewer_role: string }
+ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
 CaptureStatusIn { detail?: string | null, status: string }
@@ -985,6 +993,8 @@ MemberOut { created_at: string(date-time), email: string | null, id: string, rol
 MergeIn { checklist: dict[boolean], note?: string | null, target_service_id: string }
 ModelPrice { cache_read?: number | null, input: number, output: number }
 MyListingOut { address: string | null, address_kind: string | null, alert: string | null, city: string | null, closure: ClosureOut | null, cost_kind: string | null, description: string | null, eligibility_text: string | null, email: string | null, fees: string | null, hours: object | null, hours_text: string | null, id: string, languages: list[string], name: string, organization_name: string | null, pending_changes: list[PendingChangeOut], phone: string | null, postal_code: string | null, required_documents: list[string], role: string, service_areas: list[string], status: string, types: list[string], verified: boolean, website: string | null, week_hours: object | null }
+NearbyIn { box: Box, category?: string | null, query?: string | null, type?: string | null }
+NearbyOut { points: list[list[any]] }
 NextRotationOut { blocks: list[string] | null, label: string, long_blocks: boolean, rotation_day: string }
 NotPublishedIn { note?: string | null }
 NoteIn { note?: string | null }
@@ -1008,7 +1018,7 @@ RequestIn { bot_token?: string | null, claimed_service_id?: string | null, conta
 RequestOut { claimed_service: ListingBriefOut | null, completeness: CompletenessOut, contact_name: string | null, contact_phone: string | null, created_at: string(date-time), decision_note: string | null, fields_to_fix: list[string], has_private_address: boolean, id: string, origin: string, reject_reason: string | null, service_ids: list[string], status: string, submission: object, submitted_at: string(date-time) | null, updated_at: string(date-time) }
 ResetPasswordRequest { new_password: string, token: string }
 ResourceDetailOut { accessibility: string | null, address: string | null, alert: string | null, application_process: string | null, categories: list[string], city: string | null, closure?: ClosureOut | null, complete: boolean, description: string | null, eligibility?: object | null, eligibility_text: string | null, email: string | null, fees: string | null, hours_text: string | null, id: string, languages: list[string], last_assured_on: string(date) | null, latitude: number | null, location_confidential?: boolean, location_name: string | null, longitude: number | null, missing_core: list[string], name: string, organization_name: string | null, phone: string | null, postal_code: string | null, required_documents: list[string], service_areas: list[string], source: string, source_url: string | null, statewide: boolean, taxonomy_names: list[string], transportation: string | null, updated_at: string(date-time), website: string | null, week_hours_text?: string | null }
-ResourceSearchIn { category?: string | null, county?: string | null, page?: integer, page_size?: integer, query?: string | null, type?: string | null }
+ResourceSearchIn { category?: string | null, county?: string | null, offset?: integer | null, outside?: Box | null, page?: integer, page_size?: integer, query?: string | null, type?: string | null }
 ResourceSearchOut { items: list[ResourceSummaryOut], total: integer }
 ResourceSummaryOut { address: string | null, categories: list[string], city: string | null, closure?: ClosureOut | null, complete: boolean, description: string | null, eligibility?: object | null, hours_text: string | null, id: string, last_assured_on: string(date) | null, location_confidential?: boolean, location_name: string | null, name: string, organization_name: string | null, phone: string | null, statewide: boolean }
 ResourceTypeOut { code: string, count: integer, name: string }

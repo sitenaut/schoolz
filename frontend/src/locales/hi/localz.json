@@ -134,7 +134,6 @@
   "That isn't a New Jersey ZIP code we know. Try a nearby one, or pick your county below.": "यह न्यू जर्सी का कोई ज्ञात ZIP कोड नहीं है। पास का कोई ZIP आज़माएँ, या नीचे अपनी काउंटी चुनें।",
   "That isn't a New Jersey area code. Try your ZIP code, or pick your county below.": "यह न्यू जर्सी का एरिया कोड नहीं है। अपना ZIP कोड आज़माएँ, या नीचे अपनी काउंटी चुनें।",
   "This listing isn't available any more.": "यह जानकारी अब उपलब्ध नहीं है।",
-  "This stays on your device. Your ZIP code and location are never sent to us - Localz only uses the county to search.": "यह जानकारी सिर्फ़ आपके डिवाइस पर रहती है। आपका ZIP कोड और स्थान हमें कभी नहीं भेजा जाता - Localz खोज के लिए सिर्फ़ काउंटी का इस्तेमाल करता है।",
   "Type of service": "सेवा का प्रकार",
   "Under 1": "1 से कम",
   "Use my current location": "मेरा मौजूदा स्थान इस्तेमाल करें",
@@ -157,5 +156,14 @@
   "{{category}} help in New Jersey · Localz": "न्यू जर्सी में {{category}} मदद · Localz",
   "{{county}} County": "{{county}} काउंटी",
   "{{total}} listings": "{{total}} संसाधन",
-  "{{total}} results": "{{total}} परिणाम"
+  "{{total}} results": "{{total}} परिणाम",
+  "{{miles}} mi": "{{miles}} मील",
+  "How far to look": "कितनी दूर तक देखें",
+  "How far:": "दूरी:",
+  "Closest first, within {{miles}} miles. Phone, online and statewide help follows.": "सबसे पास वाले पहले, {{miles}} मील के भीतर। इसके बाद फ़ोन, ऑनलाइन और पूरे राज्य की मदद।",
+  "under 1 mi": "1 मील से कम",
+  "Near {{zip}}": "{{zip}} के पास",
+  "Near my location": "मेरी जगह के पास",
+  "Find help near you": "अपने पास मदद खोजें",
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "यह आपके डिवाइस पर ही रहता है। आपका ZIP कोड और स्थान हमें कभी नहीं भेजा जाता: दूरी आपके फ़ोन पर मापी जाती है, और हमें सिर्फ़ आपकी काउंटी और उसके आसपास का बड़ा इलाका दिखता है।"
 }

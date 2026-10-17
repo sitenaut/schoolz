@@ -136,3 +136,90 @@ function subscribe(onChange: () => void): () => void {
 export function useLocalzWhere(): LocalzWhere | null {
   return useSyncExternalStore(subscribe, read, () => null);
 }
+
+/** How far a visitor will go: miles, or "all" for all of New Jersey. A
+ * preference of its own, so changing location keeps it. */
+export type LocalzRadius = number | "all";
+export const RADIUS_CHOICES: LocalzRadius[] = [2, 5, 10, 20, 50, "all"];
+export const DEFAULT_RADIUS = 20;
+const RADIUS_KEY = "localz_radius";
+
+let radiusFallback: LocalzRadius = DEFAULT_RADIUS;
+
+function readRadius(): LocalzRadius {
+  try {
+    const raw = localStorage.getItem(RADIUS_KEY);
+    if (raw === "all") return "all";
+    const n = Number(raw);
+    return raw && RADIUS_CHOICES.includes(n) ? n : DEFAULT_RADIUS;
+  } catch {
+    return radiusFallback;
+  }
+}
+
+export function saveRadius(radius: LocalzRadius): void {
+  radiusFallback = radius;
+  try {
+    localStorage.setItem(RADIUS_KEY, String(radius));
+  } catch {
+    /* private mode: kept for this page only */
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+export function useLocalzRadius(): LocalzRadius {
+  return useSyncExternalStore(subscribe, readRadius, () => DEFAULT_RADIUS);
+}
+
+export function milesBetween(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  return km(lat1, lon1, lat2, lon2) / 1.609344;
+}
+
+/** A grid box the server may hear about: the circle's bounding box, snapped
+ * outward to whole half-degrees (backend routers/resources.py GRID), so it
+ * says only "somewhere in here" - never the point itself. */
+export type Box = { south: number; west: number; north: number; east: number };
+const GRID = 0.5;
+
+export function boxAround(lat: number, lon: number, miles: number): Box {
+  const dLat = miles / 69.0;
+  const dLon = miles / (69.17 * Math.cos((lat * Math.PI) / 180));
+  const down = (x: number) => Math.floor(x / GRID) * GRID;
+  const up = (x: number) => Math.ceil(x / GRID) * GRID;
+  const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+  return {
+    south: clamp(down(lat - dLat), 38.5, 41),
+    north: clamp(up(lat + dLat), 39, 41.5),
+    west: clamp(down(lon - dLon), -76, -74),
+    east: clamp(up(lon + dLon), -75.5, -73.5),
+  };
+}
+
+/** What a Localz list should search: closest first within `near.miles` of
+ * the saved point, the saved county when there's no point, or all of New
+ * Jersey ("Statewide", or nothing set). */
+export type LocalzScope = {
+  where: LocalzWhere | null;
+  radius: LocalzRadius;
+  county: string;
+  near: { lat: number; lon: number; miles: number } | null;
+};
+
+export function useLocalzScope(): LocalzScope {
+  const where = useLocalzWhere();
+  const radius = useLocalzRadius();
+  if (!where || radius === "all") return { where, radius, county: "", near: null };
+  const near = where.lat !== undefined && where.lon !== undefined ? { lat: where.lat, lon: where.lon, miles: radius } : null;
+  return { where, radius, county: where.county, near };
+}
+
+/** /nearby's points, closest first: everything within `miles`, then
+ * statewide programs whose office is farther (they serve you anyway).
+ * Anything else farther is left out - that's what the radius is for. */
+export function orderNearby(points: [string, number, number, boolean][], lat: number, lon: number, miles: number): { id: string; miles: number }[] {
+  const measured = points.map(([id, plat, plon, statewide]) => ({ id, miles: milesBetween(lat, lon, plat, plon), statewide }));
+  const within = measured.filter((p) => p.miles <= miles);
+  const farStatewide = measured.filter((p) => p.miles > miles && p.statewide);
+  const byMiles = (a: { miles: number; id: string }, b: { miles: number; id: string }) => a.miles - b.miles || a.id.localeCompare(b.id);
+  return [...within.sort(byMiles), ...farStatewide.sort(byMiles)].map(({ id, miles: m }) => ({ id, miles: m }));
+}

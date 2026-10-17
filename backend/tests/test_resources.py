@@ -1,3 +1,4 @@
+import json
 import os
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
@@ -17,6 +18,7 @@ from main import app
 from models import ResourceService
 from resources import nj211
 from resources.categories import categories_for, categories_for_code, categories_for_codes
+from resources.places import zip_point
 from resources.refresh import _rotated, missing_core, refresh_nj211
 from resources.search_terms import categories_meant
 from scheduler.errors import parse_warning
@@ -522,3 +524,44 @@ async def test_category_counts_follow_the_chosen_county():
     # The Bergen-only listing counts everywhere and in Bergen, not in Sussex.
     assert bergen["everyday-needs"] >= 1
     assert sussex["everyday-needs"] < everywhere["everyday-needs"]
+
+
+@pytest.mark.anyio
+async def test_closest_first_points_stay_coarse_and_the_rest_comes_from_search():
+    marker = uuid.uuid4().hex[:10]
+    tag = f"ZZ-{marker}"
+    near = await _seed(name="Near pantry", taxonomy_codes=[tag], latitude=39.9312, longitude=-75.0123)
+    statewide_near = await _seed(name="State office", taxonomy_codes=[tag], service_areas=["NJ"], latitude=40.1, longitude=-74.9)
+    far = await _seed(name="Far pantry", taxonomy_codes=[tag], latitude=40.9, longitude=-74.1)
+    statewide_far = await _seed(name="State office far", taxonomy_codes=[tag], service_areas=["NJ"], latitude=40.9, longitude=-74.2)
+    hotline = await _seed(name="Hotline", taxonomy_codes=[tag])
+    shelter = await _seed(name="Shelter", taxonomy_codes=[tag], address_kind="confidential", address=None)
+    box = {"south": 39.5, "west": -75.5, "north": 40.5, "east": -74.5}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        points = (await client.post("/resources/nearby", json={"type": tag, "box": box})).json()["points"]
+        assert sorted(points) == sorted([[near, 39.931, -75.012, False], [statewide_near, 40.1, -74.9, True]])
+        # A box finer than the grid would say where someone is.
+        for bad in ({**box, "south": 39.93}, {**box, "north": 42.5}, {**box, "north": 41.0, "south": 38.5}):
+            assert (await client.post("/resources/nearby", json={"type": tag, "box": bad})).status_code == 422
+        rest = (await client.post("/resources/search", json={"type": tag, "county": "Camden", "outside": box})).json()
+        ids = {i["id"] for i in rest["items"]}
+        # Unplaced and statewide-elsewhere fill out the list; what /nearby
+        # placed is never repeated, and a far local pantry isn't "near".
+        assert ids == {hotline, shelter, statewide_far} and rest["total"] == 3
+        page = (await client.post("/resources/search", json={"type": tag, "county": "Camden", "outside": box, "offset": 2})).json()
+        assert len(page["items"]) == 1
+        got = (await client.post("/resources/by-ids", json={"ids": [statewide_near, near, "nope", near]})).json()
+        assert [i["id"] for i in got] == [statewide_near, near]
+        assert far not in {p[0] for p in points}
+
+
+def test_a_child_care_listing_is_placed_at_its_zips_center_never_the_home():
+    from resources import childcarenj
+
+    rows = json.loads((FIXTURES / "childcarenj_providers.json").read_text())["Facilities"]
+    home = next(r for r in rows if childcarenj.is_home(r))
+    home = {**home, "ProgramZipCode": "08002"}
+    out = childcarenj.fields(home, "Camden", set())
+    assert out["address"] is None
+    assert (out["latitude"], out["longitude"]) == tuple(zip_point("08002")[:2])
+    assert zip_point("99999") is None and zip_point(None) is None
