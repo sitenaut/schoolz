@@ -654,6 +654,7 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "org_id": {"type": "string", "description": "From the town page's own request to thrillshare.com/api/v4/o/<org_id>/cms/events. Not the school district's org."},
                     "site_url": {"type": "string", "description": "Link used for every event (the API gives none)."},
                     "days_ahead": {"type": "integer", "default": 90},
+                    "live_feed": {"type": "boolean", "default": False, "description": "Also read the site's Live Feed posts for events (a town that announces its picnic there, not on the calendar). Haiku reads each post once ever; notices and work schedules are skipped. Needs ANTHROPIC_API_KEY."},
                 },
             },
         },

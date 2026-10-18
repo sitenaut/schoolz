@@ -95,3 +95,56 @@ async def test_a_page_read_once_is_not_paid_for_again_after_a_restart(monkeypatc
     theatre._CACHE.clear()  # what a deploy does to the in-process cache
     second = await src._extract(text)
     assert first == second and len(calls) == 1
+
+
+@pytest.mark.anyio
+async def test_live_feed_posts_keep_events_honour_moves_and_ignore_the_posting_date(monkeypatch):
+    from local_events.sources import thrillshare
+
+    posts = [
+        {"id": 3, "time": "2026-10-09T08:44:16-04:00", "status": "The Civic Association moved the Town Picnic to next Sunday, October 18th, 12 to 3 p.m."},
+        {"id": 2, "time": "2026-10-06T10:48:57-04:00", "status": "Green Team Movie Night flyer attached"},
+        {"id": 1, "time": "2026-10-06T10:22:45-04:00", "status": "<p>Oaklyn Town Picnic - Sunday, October 25 - 12 p.m. to 3 p.m.</p>"},
+        {"id": 0, "time": "2026-10-05T09:00:00-04:00", "status": "PSE&G gas main work Monday 10/19 on Landis Ave, 7am to 5pm"},
+    ]
+    answers = {
+        3: [{"title": "Town Picnic", "start_date": "2026-10-18", "start_time": "12:00", "weekday": "Sunday", "year_written": False, "moved_from": "2026-10-25"}],
+        2: [{"title": "Green Team Movie Night", "start_date": "2026-10-06", "year_written": False}],
+        1: [{"title": "Oaklyn Town Picnic", "start_date": "2026-10-25", "weekday": "Sunday", "year_written": False}],
+        0: [],
+    }
+
+    class Resp:
+        def __init__(self, page):
+            self.page = page
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"live_feeds": posts if self.page == 1 else []}
+
+    class Client:
+        def __init__(self, **_):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+        async def get(self, url, params):
+            return Resp(params["page_no"])
+
+    async def extract(self, text):
+        return next(answers[p["id"]] for p in posts if thrillshare.page_text(p["status"], "") in text)
+
+    monkeypatch.setattr(thrillshare.httpx, "AsyncClient", Client)
+    monkeypatch.setattr(EventPageSource, "_extract", extract)
+    monkeypatch.setattr(thrillshare, "datetime", type("D", (datetime,), {"now": staticmethod(lambda tz=None: datetime(2026, 10, 12, 9, tzinfo=tz))}))
+    src = thrillshare.ThrillshareSource("oaklyn", "1", site_url="https://oaklyn.example/", live_feed=True, location="Oaklyn, NJ")
+    events = await src._live_feed()
+    # Oct 25 was taken back by the later post; the movie night had no date of its own.
+    assert [(e.title, e.start_time.date().isoformat()) for e in events] == [("Town Picnic", "2026-10-18")]
+    assert events[0].url == "https://oaklyn.example/live-feed" and events[0].source_event_id.startswith("post:")

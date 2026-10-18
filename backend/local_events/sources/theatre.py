@@ -21,6 +21,7 @@ the scraper service.
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import re
@@ -190,7 +191,7 @@ def to_raw_events(
         start_day = _parse_day(p.get("start_date"))
         if not title or not start_day or _norm(title) not in haystack:
             continue
-        if _BACKSTAGE_ONLY.search(title):
+        if _BACKSTAGE_ONLY.search(title) or p.get("cancelled") is True:
             continue
         end_day = _parse_day(p.get("end_date"))
         if end_day and end_day < start_day:
@@ -301,7 +302,10 @@ class TheatreSiteSource(Source):
         return text[:_MAX_CHARS]
 
     async def _extract(self, text: str) -> list[dict]:
-        key = hashlib.sha256(f"{self.ID_PREFIX}\n{text}".encode()).hexdigest()
+        # The prompt is part of the key: an answer to an older prompt was
+        # accepted under rules that have since changed, so it's re-read once.
+        prompt = hashlib.sha256((self.SYSTEM + json.dumps(self.TOOL, sort_keys=True)).encode()).hexdigest()
+        key = hashlib.sha256(f"{self.ID_PREFIX}\n{prompt}\n{text}".encode()).hexdigest()
         if key in _CACHE:
             return _CACHE[key]
         stored = await _stored(key)
