@@ -23,8 +23,8 @@ Only GETs - the assistant can read, never change, anything through either.
 import json
 import logging
 import re
-from collections import defaultdict
 import time
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 from datetime import time as time_of_day
 from typing import Any
@@ -32,6 +32,8 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import FastAPI
+
+from services.geocoding import geocode_name
 
 logger = logging.getLogger(__name__)
 
@@ -133,10 +135,11 @@ _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
     "workshops, courses) are usually paid, so an open-ended search only includes them when the listing "
     "explicitly says they're free; pass a place or class as `query` (e.g. 'YMCA', 'swim') to get all of them. "
     "With a `query`, events matching ANY of its words come back best match first (title hits, then "
-    "description; 'fall' also finds 'autumn' and 'harvest'), so pass the visitor's own key words "
-    "('fall festival'), and a town they name as `town` rather than in `query`. "
-    "Returns at most 40 events (without a query, spread across the days in the range), "
-    "plus the total that matched.",
+    "description; 'fall' also finds 'autumn' and 'harvest'), nearest first among equal matches, so pass "
+    "the visitor's own key words ('fall festival'), and a town as `town` rather than in `query`. Each "
+    "event has `miles` from that town when its place is known; keep that order and prefer the nearer "
+    "ones. Returns at most 40 events (without a query, the nearest, spread across the days in the "
+    "range), plus the total that matched.",
     {
         "type": "object",
         "properties": {
@@ -144,7 +147,7 @@ _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
             "end_date": {"type": "string", "description": "Last day, inclusive, YYYY-MM-DD. Same as start_date for one day."},
             "categories": {"type": "string", "description": "Optional comma-separated categories; any match."},
             "query": {"type": "string", "description": "Optional text search over title, description and venue - e.g. 'pumpkin', or a place like 'YMCA' or 'library' to see what's on there."},
-            "town": {"type": "string", "description": "Optional town the visitor named (e.g. 'Cherry Hill'). Events there rank first; others still come back."},
+            "town": {"type": "string", "description": "Optional town the visitor named, now or earlier in the conversation (e.g. 'Collingswood'). Distances are measured from it - from Cherry Hill without one; farther events still come back."},
             "free_only": {"type": "boolean", "description": "Only events known to be free."},
         },
         "required": ["start_date", "end_date"],
@@ -174,6 +177,12 @@ _QUERY_STOPWORDS = {"the", "and", "for", "are", "any", "what", "whats", "when", 
 _QUERY_SYNONYMS = {"fall": ("autumn", "harvest"), "autumn": ("fall", "harvest"), "harvest": ("fall", "autumn")}
 _MAX_QUERY_WORDS = 5
 _MAX_RANGE_DAYS = 31
+# Distances are measured from the town the visitor named, else from Cherry
+# Hill (the centre of what schoolz covers, same default as /local). A named
+# town is looked up once per process, only within about 70 miles of here,
+# since "Washington Township" also exists three counties north.
+_DEFAULT_POINT = (39.93, -75.02)
+_town_points: dict[str, tuple[float, float] | None] = {}
 
 PERSONAL_TOOL_NAMES = frozenset(_TOOLS)
 
@@ -351,6 +360,8 @@ class LocalEventTools:
         if args.get("free_only"):
             params["is_free"] = "true"
         town = " ".join(str(args.get("town") or "").lower().split())[:60]
+        point = await _town_point(town) or _DEFAULT_POINT
+        params["near_lat"], params["near_lng"] = point
         town_words = set(town.split())
         words = [w for w in dict.fromkeys(str(args.get("query") or "").lower().split()) if len(w) >= 3 and w not in _QUERY_STOPWORDS]
         # A town typed into the query anyway still ranks (via `town`), it just doesn't search.
@@ -391,13 +402,13 @@ class LocalEventTools:
 
         matched = len(events)
         # Round-robin across days so Sunday isn't cut off by Saturday
-        # morning's volume; within a day, events in the named town first, then
+        # morning's volume; within a day, the nearest first, then
         # family/kids-tagged ones.
         by_day: dict[str, list[dict]] = defaultdict(list)
         for e in events:
             by_day[datetime.fromisoformat(e["start_time"]).astimezone(ET).date().isoformat()].append(e)
         for day_events in by_day.values():
-            day_events.sort(key=lambda e: (not (town and _in_town(e, town)), not set(e["categories"]) & _KID_CATEGORIES))
+            day_events.sort(key=lambda e: (_distance(e, town), not set(e["categories"]) & _KID_CATEGORIES))
         picked: list[dict] = []
         queues = [by_day[d] for d in sorted(by_day)]
         while len(picked) < _MAX_EVENTS and any(queues):
@@ -421,11 +432,35 @@ def _in_town(e: dict, town: str) -> bool:
     return town in f"{e['title']} {e['venue_name'] or ''} {e['venue_address'] or ''}".lower()
 
 
+def _distance(e: dict, town: str) -> float:
+    """Miles for ranking. An event we couldn't place goes last, unless its
+    address names the town - then it's as near as anything."""
+    if e.get("miles") is not None:
+        return e["miles"]
+    return 0.0 if town and _in_town(e, town) else float("inf")
+
+
+async def _town_point(town: str) -> tuple[float, float] | None:
+    if not town:
+        return None
+    if town not in _town_points:
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                _town_points[town] = await geocode_name(client, town, _DEFAULT_POINT)
+        except httpx.HTTPError:
+            # Not cached: an outage shouldn't pin the town to Cherry Hill for good.
+            logger.warning("chatbot_town_lookup_failed", extra={"town": town})
+            return None
+    return _town_points[town]
+
+
 def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str, Any]:
     """Best match first: each query word (or a synonym) scores 2 in the title,
-    1 elsewhere; being in the named town adds 2. A series listed once per day
-    (a month-long festival) collapses to its first date so it can't crowd out
-    one-day events."""
+    1 elsewhere; among equal scores, the nearest first - a festival 3 miles
+    away came after one 30 miles away that started earlier. The result keeps
+    that order. A series listed once per day (a month-long festival)
+    collapses to its first date so it can't crowd out one-day events, and the
+    same event listed by two sources counts once."""
 
     def score(e: dict) -> tuple[int, int]:
         title = e["title"].lower()
@@ -437,19 +472,21 @@ def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str,
                 points, covered = points + 2, covered + 1
             elif any(_word_in(t, rest) for t in terms):
                 points, covered = points + 1, covered + 1
-        if town and _in_town(e, town):
-            points += 2
         return points, covered
 
+    # Same title at the same time from two feeds: keep the copy we could place.
+    unique: dict[tuple[str, str], dict] = {}
+    for e in sorted(events, key=lambda e: e.get("miles") is None):
+        unique.setdefault((e["title"].strip().lower(), e["start_time"]), e)
     series: dict[tuple[str, str], list[dict]] = defaultdict(list)
-    for e in sorted(events, key=lambda e: e["start_time"]):
+    for e in sorted(unique.values(), key=lambda e: e["start_time"]):
         series[(e["source"], e["title"].strip().lower())].append(e)
-    ranked = sorted(series.values(), key=lambda runs: (-score(runs[0])[0], runs[0]["start_time"]))
+    ranked = sorted(series.values(), key=lambda runs: (-score(runs[0])[0], _distance(runs[0], town), runs[0]["start_time"]))
 
     # Fill best-first within the tool-result budget, so it's the weakest
     # matches that don't fit - not whichever events fall last by date.
     top: list[list[dict]] = []
-    picked: list[tuple[str, dict]] = []
+    items: list[dict] = []
     size = 0
     for runs in ranked[:_MAX_EVENTS]:
         item = _compact_event(runs[0])
@@ -460,8 +497,7 @@ def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str,
         if size > _MAX_RESULT_CHARS - 1_000:
             break
         top.append(runs)
-        picked.append((runs[0]["start_time"], item))
-    items = [item for _, item in sorted(picked, key=lambda p: p[0])]
+        items.append(item)
 
     result: dict[str, Any] = {"matched": len(series), "returned": len(items), "items": items}
     if top and score(top[0][0])[1] < len(words):
@@ -491,6 +527,7 @@ def _compact_event(e: dict) -> dict:
         "when": start.strftime("%a %b %-d") + ("" if e["all_day"] else start.strftime(" %-I:%M %p")),
         "where": e["venue_name"] or e["venue_address"],
         "categories": e["categories"],
+        **({"miles": round(e["miles"], 1)} if e.get("miles") is not None else {}),
         "url": e["url"],
     }
     if e["end_time"] and not e["all_day"]:

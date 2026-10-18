@@ -8,6 +8,8 @@ import uuid
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
+from datetime import UTC
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -87,7 +89,7 @@ async def test_chat_offers_personal_tools_only_when_signed_in(monkeypatch):
 
 @pytest.mark.anyio
 async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     import database
     from models import LocalEvent
@@ -95,7 +97,7 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
     src = f"chat_{uuid.uuid4().hex[:8]}"
 
     def utc(day, hour):  # 2031-06-07 (Sat) / 08 (Sun); hour in UTC, EDT = UTC-4
-        return datetime(2031, 6, day, hour, tzinfo=timezone.utc)
+        return datetime(2031, 6, day, hour, tzinfo=UTC)
 
     async with database.SessionLocal() as db:
         # Saturday alone overflows the 40-event cap.
@@ -136,14 +138,17 @@ async def test_find_local_events_keeps_only_free_classes_and_spreads_days():
 
 
 @pytest.mark.anyio
-async def test_find_local_events_ranks_loosely_named_events():
-    from datetime import datetime, timedelta, timezone
+async def test_find_local_events_ranks_loosely_named_events(monkeypatch):
+    from datetime import datetime, timedelta
 
     import database
     from models import LocalEvent
+    from services import chatbot_personal
+
+    monkeypatch.setattr(chatbot_personal, "_town_points", {"cherry hill": (39.93, -75.02)})
 
     src = f"chatrank_{uuid.uuid4().hex[:8]}"
-    day = datetime(2031, 10, 18, 16, tzinfo=timezone.utc)
+    day = datetime(2031, 10, 18, 16, tzinfo=UTC)
     async with database.SessionLocal() as db:
         # The prod shape that hid Cherry Hill's event: plenty of exact "fall festival"
         # hits elsewhere (more than the 40 shown) and one festival listed every day.
@@ -175,8 +180,41 @@ async def test_find_local_events_ranks_loosely_named_events():
 
 
 @pytest.mark.anyio
+async def test_find_local_events_puts_the_nearer_match_first(monkeypatch):
+    from datetime import datetime
+
+    import database
+    from models import LocalEvent
+    from services import chatbot_personal
+
+    # Prod: asked from Collingswood, Chatsworth's 9 AM festival (~30 miles)
+    # came before Cherry Hill's noon one (3 miles), because results were in
+    # time order.
+    monkeypatch.setattr(chatbot_personal, "_town_points", {"collingswood": (39.918, -75.072)})
+    src = f"chatnear_{uuid.uuid4().hex[:8]}"
+    nine, noon = datetime(2031, 10, 18, 13, tzinfo=UTC), datetime(2031, 10, 18, 16, tzinfo=UTC)
+    async with database.SessionLocal() as db:
+        db.add(LocalEvent(source=src, source_event_id="far", title="Cranberry Fall Festival", start_time=nine, latitude=39.82, longitude=-74.54))
+        db.add(LocalEvent(source=src, source_event_id="near", title="Harvest Festival", start_time=noon, venue_name="Croft Farm", latitude=39.906, longitude=-75.016))
+        db.add(LocalEvent(source=f"{src}b", source_event_id="dup", title="Harvest Festival", start_time=noon, venue_address="100 Bortons Mill Road"))
+        db.add(LocalEvent(source=src, source_event_id="lost", title="Pumpkin Fall Festival", start_time=nine))
+        await db.commit()
+
+    tools = LocalEventTools(app)
+    try:
+        args = {"start_date": "2031-10-18", "end_date": "2031-10-18", "query": "fall festival"}
+        res = json.loads(await tools.run("find_local_events", {**args, "town": "Collingswood"}))
+        mine = [e for e in res["items"] if e["title"] in {"Cranberry Fall Festival", "Harvest Festival", "Pumpkin Fall Festival"}]
+        assert [e["title"] for e in mine] == ["Harvest Festival", "Cranberry Fall Festival", "Pumpkin Fall Festival"]
+        assert mine[0]["miles"] < 5 < mine[1]["miles"]  # the placed copy of the duplicate was kept
+        assert "miles" not in mine[2]  # unplaced goes last, never as 0 miles
+    finally:
+        await tools.aclose()
+
+
+@pytest.mark.anyio
 async def test_category_list_is_live_sorted_and_cached(monkeypatch):
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import database
     from models import LocalEvent
@@ -185,7 +223,7 @@ async def test_category_list_is_live_sorted_and_cached(monkeypatch):
     monkeypatch.setattr(chatbot_personal, "_category_cache", {"text": None, "at": 0.0})
     monkeypatch.setattr(chatbot_personal, "_MAX_CATEGORIES", 10_000)  # the dev DB has real tags too
     src = f"chatcat_{uuid.uuid4().hex[:8]}"
-    soon = datetime.now(timezone.utc) + timedelta(days=2)
+    soon = datetime.now(UTC) + timedelta(days=2)
     async with database.SessionLocal() as db:
         for i in range(3):
             db.add(LocalEvent(source=src, source_event_id=f"z{i}", title="z", start_time=soon, categories=["zzz-test-tag"]))
@@ -212,7 +250,7 @@ async def test_category_list_is_live_sorted_and_cached(monkeypatch):
 
 @pytest.mark.anyio
 async def test_routine_class_tags_stay_out_of_the_category_list(monkeypatch):
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import database
     from models import LocalEvent
@@ -221,7 +259,7 @@ async def test_routine_class_tags_stay_out_of_the_category_list(monkeypatch):
     monkeypatch.setattr(chatbot_personal, "_category_cache", {"text": None, "at": 0.0})
     monkeypatch.setattr(chatbot_personal, "_MAX_CATEGORIES", 10_000)
     src = f"chaty_{uuid.uuid4().hex[:8]}"
-    soon = datetime.now(timezone.utc) + timedelta(days=1)
+    soon = datetime.now(UTC) + timedelta(days=1)
     async with database.SessionLocal() as db:
         for i in range(5):
             db.add(LocalEvent(source=src, source_event_id=f"y{i}", title="Aqua Fit", start_time=soon, categories=["ymca", "pool"]))
@@ -236,14 +274,14 @@ async def test_routine_class_tags_stay_out_of_the_category_list(monkeypatch):
 
 @pytest.mark.anyio
 async def test_naming_a_place_includes_its_paid_classes():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     import database
     from models import LocalEvent
 
     src = f"chatplace_{uuid.uuid4().hex[:8]}"
     async with database.SessionLocal() as db:
-        db.add(LocalEvent(source=src, source_event_id="swim", title="Lap Swimming", start_time=datetime(2031, 6, 7, 12, tzinfo=timezone.utc),
+        db.add(LocalEvent(source=src, source_event_id="swim", title="Lap Swimming", start_time=datetime(2031, 6, 7, 12, tzinfo=UTC),
                           venue_name="Mt. Laurel YMCA", categories=["pool", "swim", "ymca"]))
         await db.commit()
     tools = LocalEventTools(app)
