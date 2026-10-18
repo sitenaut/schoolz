@@ -235,3 +235,26 @@ async def test_a_flyer_is_transcribed_once_ever_and_non_flyers_come_back_empty(m
     assert await flyers.flyer_text(Client(), "https://x/flyer.png") == "MOVIE NIGHT\nFRIDAY, OCTOBER 9"
     assert await flyers.flyer_text(Client(), "https://x/agenda.png") == ""
     assert len(calls) == 2
+
+
+@pytest.mark.anyio
+async def test_a_dead_flyer_link_is_skipped_without_a_warning(monkeypatch):
+    import httpx
+
+    from local_events.sources import event_pages
+    from local_events.sources.event_pages import Post, read_posts
+
+    async def flyer(client, url):
+        request = httpx.Request("GET", url)
+        raise httpx.HTTPStatusError("x", request=request, response=httpx.Response(403 if "dead" in url else 503, request=request))
+
+    async def extract(self, text):
+        return []
+
+    monkeypatch.setattr(event_pages, "flyer_text", flyer)
+    monkeypatch.setattr(EventPageSource, "_extract", extract)
+    failures = []
+    post = Post(ref="r", posted=datetime(2026, 10, 14, tzinfo=ZoneInfo("America/New_York")), body="Borough news post text",
+                url="https://town.example/n", images=["https://town.example/dead.png", "https://town.example/busy.png"])
+    await read_posts(EventPageSource(name="cw", urls=["https://town.example"]), [post], default_categories=[], id_prefix="news", today=date(2026, 10, 18), failures=failures)
+    assert failures == ["flyer https://town.example/busy.png: HTTP 503"]
