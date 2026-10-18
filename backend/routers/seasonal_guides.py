@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from models import SeasonalGuide, User
+from services import content_translation
+from services.i18n import request_lang
 
 router = APIRouter(prefix="/seasonal-guides", tags=["seasonal-guides"])
 
@@ -79,9 +81,37 @@ async def active_guides(db: AsyncSession, season: str | None = None, on: date | 
     return list((await db.execute(stmt)).scalars().all())
 
 
+def _hash(guide: SeasonalGuide) -> str:
+    return content_translation.source_hash(guide.title, guide.note)
+
+
+async def localized(db: AsyncSession, guides: list[SeasonalGuide], lang: str) -> list[SeasonalGuideOut]:
+    """The guides with title and note in `lang`. A guide with no fresh stored
+    translation is translated now (one Haiku call for all of them) and kept
+    on the row, so only the first visitor in a language waits. Anything that
+    fails is served in English."""
+    outs = [SeasonalGuideOut.model_validate(g) for g in guides]
+    if lang == "en" or not guides:
+        return outs
+    todo = [g for g in guides if ((g.translations or {}).get(lang) or {}).get("hash") != _hash(g)]
+    if todo:
+        got = await content_translation.translate_texts([(g.title, g.note) for g in todo], lang)
+        for n, (title, note) in got.items():
+            g = todo[n]
+            g.translations = {**(g.translations or {}), lang: {"hash": _hash(g), "title": title, "note": note}}
+        if got:
+            await db.commit()
+    for g, out in zip(guides, outs, strict=True):
+        t = (g.translations or {}).get(lang)
+        if t and t.get("hash") == _hash(g):
+            out.title = t["title"]
+            out.note = t.get("note") if g.note else None
+    return outs
+
+
 @router.get("", response_model=list[SeasonalGuideOut])
-async def list_active(season: str | None = Query(None), db: AsyncSession = Depends(get_db)):
-    return await active_guides(db, season)
+async def list_active(season: str | None = Query(None), lang: str = Depends(request_lang), db: AsyncSession = Depends(get_db)):
+    return await localized(db, await active_guides(db, season), lang)
 
 
 @router.get("/all", response_model=list[SeasonalGuideOut])

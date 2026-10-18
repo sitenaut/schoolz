@@ -2834,6 +2834,20 @@ select {
 .nearRow b {
   color: var(--ink);
 }
+/* Still on the assumed Cherry Hill: styled like Localz's "What am I
+   eligible for?" (.localz-fit-btn), the one thing on the line to press. */
+.nearRow .nearSet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 2px solid var(--attention);
+}
+.nearRow .nearSet svg {
+  width: 16px;
+  height: 16px;
+  color: var(--attention);
+}
 .nearForm {
   display: flex;
   flex-direction: column;

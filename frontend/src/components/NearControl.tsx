@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { apiFetch } from "../api";
 import { DEFAULT_NEAR, DEFAULT_RADIUS, type Near, type NearChoice, RADII, deviceNear, makeNear } from "../lib/eventsNear";
+import { IconPin } from "./icons";
 import { Modal } from "./ui/Modal";
 
 /** "Within 15 miles of Cherry Hill, NJ" on /local: how far out the list
@@ -32,9 +33,17 @@ export function NearControl({ choice, onChange }: { choice: NearChoice; onChange
         of <b>{near.label}</b>
         {assumed && " (assumed)"}
       </span>
-      <button type="button" className="ghost" onClick={() => setOpen(true)}>
-        {assumed ? "Set my location" : "Change location"}
-      </button>
+      {assumed ? (
+        // Same look as Localz's "What am I eligible for?": the thing to press first.
+        <button type="button" className="btn nearSet" onClick={() => setOpen(true)}>
+          <IconPin />
+          Set my location
+        </button>
+      ) : (
+        <button type="button" className="ghost" onClick={() => setOpen(true)}>
+          Change location
+        </button>
+      )}
       {open && (
         <NearDialog
           near={near}
