@@ -33,7 +33,9 @@ import httpx
 from anthropic import AsyncAnthropic
 from bs4 import BeautifulSoup
 
+import database
 import observability
+from models import PageExtraction
 
 from .base import RawEvent, Source
 from .scraper import fetch_rendered_html
@@ -46,8 +48,28 @@ _MAX_CHARS = 14_000
 _MIN_TEXT_CHARS = 400
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
-# page-text hash -> productions extracted from it.
+# page-text hash -> productions extracted from it. In front of the
+# page_extractions table, which is what survives a deploy.
 _CACHE: dict[str, list[dict]] = {}
+
+
+async def _stored(key: str) -> list[dict] | None:
+    try:
+        async with database.SessionLocal() as db:
+            row = await db.get(PageExtraction, key)
+            return list(row.items) if row else None
+    except Exception:  # noqa: BLE001 - a cache miss costs one model call, never the run
+        logger.warning("page_extraction_cache_read_failed", exc_info=True)
+        return None
+
+
+async def _store(key: str, items: list[dict]) -> None:
+    try:
+        async with database.SessionLocal() as db:
+            await db.merge(PageExtraction(key=key, items=items))
+            await db.commit()
+    except Exception:  # noqa: BLE001
+        logger.warning("page_extraction_cache_write_failed", exc_info=True)
 
 _TOOL = {
     "name": "record_productions",
@@ -282,6 +304,10 @@ class TheatreSiteSource(Source):
         key = hashlib.sha256(f"{self.ID_PREFIX}\n{text}".encode()).hexdigest()
         if key in _CACHE:
             return _CACHE[key]
+        stored = await _stored(key)
+        if stored is not None:
+            _CACHE[key] = stored
+            return stored
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise RuntimeError("ANTHROPIC_API_KEY is not set")
@@ -301,6 +327,7 @@ class TheatreSiteSource(Source):
         productions = [p for p in ((tool_use.input.get(self.ITEMS_KEY) if tool_use else None) or []) if isinstance(p, dict)]
         if response.stop_reason != "max_tokens":
             _CACHE[key] = productions
+            await _store(key, productions)
         return productions
 
     async def fetch(self) -> list[RawEvent]:

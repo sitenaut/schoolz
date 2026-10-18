@@ -1558,6 +1558,20 @@ class LocalEvent(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class PageExtraction(Base):
+    """What Haiku read off one page of prose (local_events/sources/theatre.py,
+    event_pages.py), keyed by a hash of the reader kind and the page text, so
+    a page that hasn't changed is never paid for twice. It was an in-process
+    dict, which every deploy emptied: ~40 model calls re-bought each time.
+    Only the extracted items are kept, never the page itself."""
+
+    __tablename__ = "page_extractions"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    items: Mapped[list] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class GeocodedPlace(Base):
     """One geocoder answer, kept so the events refresh asks about each venue
     once rather than every run (local_events/locate.py). `query` is the text

@@ -21,6 +21,8 @@ React (Vite/TS) → FastAPI → Postgres. Two environments only: **local** and *
 - `scraper/` — standalone FastAPI + Playwright (headless Chromium), deliberately generic (`/fetch-html`, `/fetch-paginated`, `/fetch-raw`, `/health`). **No site-specific parsing lives there** — call `backend/scraper_client.py` and parse in the backend, so the scraper stays swappable.
 - Three Fly apps: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`.
 
+**A model's answer is paid-for data; never buy it twice.** Once a model pass over some input is accepted as correct, store the result keyed by that input (a hash of the prompt kind + input) and reuse it wherever the same pass would run again: the next scheduled run, after a deploy, in another job, for another visitor. An in-process dict doesn't count — every deploy empties it (`page_extractions` replaced exactly that). Re-run only when the input changes or the result was rejected.
+
 ## Commands
 
 ```
