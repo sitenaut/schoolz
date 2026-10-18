@@ -1,10 +1,9 @@
 """Where browsers send Content-Security-Policy violation reports (SZ-19).
 
-The web app's policy (frontend/security-headers.inc.template) runs in
-report-only mode first: nothing is blocked, and each violation a visitor's
-browser sees is posted here. One `csp_violation` log line per report, plus
-the `schoolz.csp.violations` counter by directive, so the policy can be
-tightened, then enforced, on evidence.
+The web app's policy (frontend/security-headers.inc.template) is enforced,
+and each violation a visitor's browser blocks is posted here. One
+`csp_violation` log line per report, plus the `schoolz.csp.violations`
+counter by directive, so a host missing from the policy shows up fast.
 
 Public by necessity (browsers post without credentials), so it stores
 nothing, logs only origins and paths (never query strings, which can carry
