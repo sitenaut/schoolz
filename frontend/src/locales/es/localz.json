@@ -165,5 +165,7 @@
   "Near {{zip}}": "Cerca de {{zip}}",
   "Near my location": "Cerca de mí",
   "Find help near you": "Encuentre ayuda cerca de usted",
-  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "Esto se queda en su dispositivo. Su código postal y su ubicación nunca se nos envían: las distancias se miden en su teléfono, y solo vemos su condado y una zona amplia a su alrededor."
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "Esto se queda en su dispositivo. Su código postal y su ubicación nunca se nos envían: las distancias se miden en su teléfono, y solo vemos su condado y una zona amplia a su alrededor.",
+  "Near {{town}}": "Cerca de {{town}}",
+  "your location": "su ubicación"
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boxAround, countiesForAreaCode, milesBetween, orderNearby, whereForPoint, whereForZip } from "./localzWhere";
+import { boxAround, countiesForAreaCode, milesBetween, orderNearby, townForPoint, whereForPoint, whereForZip } from "./localzWhere";
 
 describe("Set my location, worked out on the device", () => {
   it("turns a New Jersey ZIP into its county", async () => {
@@ -52,5 +52,14 @@ describe("Closest first, measured on the device", () => {
     expect(rows.map((r) => r.id)).toEqual(["one", "two", "state"]);
     expect(rows[0].miles).toBeLessThan(0.2);
     expect(milesBetween(39.93, -75.01, 40.22, -74.76)).toBeGreaterThan(20);
+  });
+});
+
+describe("townForPoint", () => {
+  it("names the nearest municipality, and nothing outside New Jersey", async () => {
+    expect(await townForPoint(39.92, -75.0)).toBe("Cherry Hill");
+    expect(await townForPoint(39.895, -75.035)).toBe("Haddonfield");
+    expect((await whereForPoint(39.92, -75.0))?.town).toBe("Cherry Hill");
+    expect(await townForPoint(40.0, -77.5)).toBeNull();
   });
 });
