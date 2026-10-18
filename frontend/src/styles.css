@@ -3213,6 +3213,11 @@ select {
   min-height: 38px;
   margin-left: auto;
 }
+.localz-where-how {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
 .localz-where svg {
   width: 16px;
   height: 16px;

@@ -165,5 +165,7 @@
   "Near {{zip}}": "{{zip}} 근처",
   "Near my location": "내 위치 근처",
   "Find help near you": "가까운 곳에서 도움 찾기",
-  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "이 정보는 기기에만 저장됩니다. 우편번호와 위치는 저희에게 전송되지 않습니다. 거리는 휴대폰에서 계산되며, 저희는 카운티와 그 주변의 넓은 지역만 알 수 있습니다."
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "이 정보는 기기에만 저장됩니다. 우편번호와 위치는 저희에게 전송되지 않습니다. 거리는 휴대폰에서 계산되며, 저희는 카운티와 그 주변의 넓은 지역만 알 수 있습니다.",
+  "Near {{town}}": "{{town}} 근처",
+  "your location": "내 위치"
 }

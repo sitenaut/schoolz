@@ -1,4 +1,6 @@
-"""Writes frontend/src/lib/njTowns.json: New Jersey's towns, each with its county.
+"""Writes frontend/src/lib/njTowns.json: New Jersey's towns, each with its county,
+and frontend/src/lib/njTownPoints.json: each municipality's center point, so
+"Use my location" can say "Near Cherry Hill" (worked out on the device).
 
 Two Census lists (public domain), so the list has both what a town
 legally is and what people call it:
@@ -45,11 +47,13 @@ def rows(url: str, delimiter: str = "\t") -> list[dict]:
 
 def main() -> None:
     towns: set[tuple[str, str]] = set()
+    points: list[list] = []
     for row in rows(BASE.format("cousubs")):
         county = COUNTIES.get(row["GEOID"][2:5])
         name = SUFFIX.sub("", row["NAME"])
         if county and not name.startswith("County subdivisions"):
             towns.add((name, county))
+            points.append([name, county, round(float(row["INTPTLAT"]), 3), round(float(row["INTPTLONG"]), 3)])
     for row in rows(PLACE_BY_COUNTY, delimiter="|"):
         county = COUNTIES.get(row["COUNTYFP"])
         if county:
@@ -59,6 +63,10 @@ def main() -> None:
     path = ROOT / "frontend/src/lib/njTowns.json"
     path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"{len(out)} towns -> {path.relative_to(ROOT)}")
+    path = ROOT / "frontend/src/lib/njTownPoints.json"
+    points.sort(key=lambda p: (p[0].lower(), p[1]))
+    path.write_text(json.dumps(points, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    print(f"{len(points)} municipality points -> {path.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

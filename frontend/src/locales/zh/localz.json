@@ -165,5 +165,7 @@
   "Near {{zip}}": "{{zip}} 附近",
   "Near my location": "我的位置附近",
   "Find help near you": "查找您附近的帮助",
-  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "这些信息只保存在您的设备上。您的邮政编码和位置绝不会发送给我们：距离在您的手机上计算，我们只能看到您所在的县和周围的大片区域。"
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "这些信息只保存在您的设备上。您的邮政编码和位置绝不会发送给我们：距离在您的手机上计算，我们只能看到您所在的县和周围的大片区域。",
+  "Near {{town}}": "{{town}}附近",
+  "your location": "您的位置"
 }

@@ -1,10 +1,10 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconPin } from "../../components/icons";
 import { FilterSelect } from "../../components/ui/FilterSelect";
 import { Modal } from "../../components/ui/Modal";
 import { LOCALZ_COUNTIES } from "../../lib/localz";
-import { type LocalzWhere, countiesForAreaCode, saveWhere, useLocalzWhere, whereForPoint, whereForZip } from "../../lib/localzWhere";
+import { type LocalzWhere, countiesForAreaCode, saveWhere, townForPoint, useLocalzWhere, whereForPoint, whereForZip } from "../../lib/localzWhere";
 
 type GpsState = "idle" | "locating" | "denied" | "outside" | "unavailable";
 
@@ -21,6 +21,18 @@ export function LocationButton() {
   const [areaCounties, setAreaCounties] = useState<string[] | null>(null);
   const [areaError, setAreaError] = useState(false);
   const [gps, setGps] = useState<GpsState>("idle");
+
+  // A phone location saved before towns were named: name it once.
+  useEffect(() => {
+    if (where?.how !== "gps" || where.town || where.lat === undefined || where.lon === undefined) return;
+    let stale = false;
+    townForPoint(where.lat, where.lon).then((town) => {
+      if (town && !stale) saveWhere({ ...where, town });
+    });
+    return () => {
+      stale = true;
+    };
+  }, [where]);
 
   const reset = () => {
     setZip("");
@@ -74,7 +86,9 @@ export function LocationButton() {
     : where.how === "zip" && where.zip
       ? t("Near {{zip}}", { zip: where.zip })
       : where.how === "gps"
-        ? t("Near my location")
+        ? where.town
+          ? t("Near {{town}}", { town: where.town })
+          : t("Near my location")
         : countyLabel(where.county);
 
   return (
@@ -82,6 +96,7 @@ export function LocationButton() {
       <button className="btn localz-where" onClick={() => setOpen(true)} aria-label={where ? t("Location: {{place}}. Change", { place: label }) : label}>
         <IconPin />
         {label}
+        {where?.how === "gps" && where.town && <span className="localz-where-how">{t("your location")}</span>}
       </button>
       <Modal open={open} onClose={close} title={t("Set my location")} subtitle={t("So Localz shows help that serves where you are.")}>
         <div className="localz-where-modal">

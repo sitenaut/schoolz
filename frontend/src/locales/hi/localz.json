@@ -165,5 +165,7 @@
   "Near {{zip}}": "{{zip}} के पास",
   "Near my location": "मेरी जगह के पास",
   "Find help near you": "अपने पास मदद खोजें",
-  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "यह आपके डिवाइस पर ही रहता है। आपका ZIP कोड और स्थान हमें कभी नहीं भेजा जाता: दूरी आपके फ़ोन पर मापी जाती है, और हमें सिर्फ़ आपकी काउंटी और उसके आसपास का बड़ा इलाका दिखता है।"
+  "This stays on your device. Your ZIP code and location are never sent to us: distances are measured on your phone, and we only see your county and a wide area around it.": "यह आपके डिवाइस पर ही रहता है। आपका ZIP कोड और स्थान हमें कभी नहीं भेजा जाता: दूरी आपके फ़ोन पर मापी जाती है, और हमें सिर्फ़ आपकी काउंटी और उसके आसपास का बड़ा इलाका दिखता है।",
+  "Near {{town}}": "{{town}} के पास",
+  "your location": "आपकी लोकेशन"
 }

@@ -18,6 +18,9 @@ export type LocalzWhere = {
   /** Rounded to 2 decimals (~half a mile) before it's ever stored. */
   lat?: number;
   lon?: number;
+  /** For a phone location: the nearest municipality, so the button can say
+   * "Near Cherry Hill" rather than an unexplained "Near my location". */
+  town?: string;
 };
 
 const KEY = "localz_where";
@@ -80,7 +83,23 @@ export async function whereForPoint(lat: number, lon: number): Promise<LocalzWhe
     if (!best || d < best.d) best = { zip, county, d };
   }
   if (!best || best.d > MAX_KM) return null;
-  return { county: best.county, how: "gps", lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 };
+  const town = (await townForPoint(lat, lon)) ?? undefined;
+  return { county: best.county, how: "gps", lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100, town };
+}
+
+type TownPoint = [string, string, number, number];
+let townPoints: Promise<TownPoint[]> | null = null;
+
+/** The municipality whose center is nearest (scripts/build_nj_towns.py).
+ * Nearest center, not the boundary, hence "Near ...". */
+export async function townForPoint(lat: number, lon: number): Promise<string | null> {
+  townPoints ??= import("./njTownPoints.json").then((m) => m.default as unknown as TownPoint[]);
+  let best: { name: string; d: number } | null = null;
+  for (const [name, , tlat, tlon] of await townPoints) {
+    const d = km(lat, lon, tlat, tlon);
+    if (!best || d < best.d) best = { name, d };
+  }
+  return best && best.d <= MAX_KM ? best.name : null;
 }
 
 let cachedRaw: string | null | undefined;
