@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { SeoHead } from "../../../components/SeoHead";
 import { ClosureNote } from "../ClosureNote";
 import { Field } from "../../../components/ui/Field";
+import { PhoneInput } from "../../../components/ui/PhoneInput";
 import { useToast } from "../../../components/ui/Toast";
 import { useAuth } from "../../../context/AuthContext";
 import { usePrerenderReady } from "../../../lib/prerenderReady";
@@ -611,7 +612,7 @@ function ReviewedCard({ listing, types, busy, send }: CardProps & { types: Provi
           <input value={org} maxLength={200} onChange={(e) => setOrg(e.target.value)} />
         </Field>
         <Field label={t("Phone")}>
-          <input type="tel" value={phone} maxLength={40} onChange={(e) => setPhone(e.target.value)} />
+          <PhoneInput value={phone} onChange={setPhone} />
         </Field>
         <Field label={t("Website")}>
           <input type="url" value={website} maxLength={300} onChange={(e) => setWebsite(e.target.value)} />

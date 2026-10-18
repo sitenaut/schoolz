@@ -855,3 +855,9 @@ async def test_ways_to_help_publish_but_a_new_wish_list_link_waits():
         assert (await client.get(f"/resources/{sid}")).json()["ways_to_help"]["wishlist_url"].startswith("https://www.amazon.com")
         r = await client.patch(f"/provider-portal/listings/{sid}", headers=provider, json={"ways_to_help": {"wishlist_url": "https://paypal.me/x"}})
         assert r.status_code == 422
+
+
+def test_a_phone_extension_is_not_part_of_the_number():
+    for phone in ("(856) 555-0101, 12", "856-555-0101 x12", "1 856 555 0101 ext. 4", "(856) 555-0101"):
+        assert portal.phone_digits(phone) == "8565550101" and portal.valid_phone(phone)
+    assert not portal.valid_phone("(856) 555-010, 12")

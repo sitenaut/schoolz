@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { BOT_CHECK_ENABLED, BotCheck } from "../../../components/BotCheck";
 import { SeoHead } from "../../../components/SeoHead";
 import { Field } from "../../../components/ui/Field";
+import { PhoneInput } from "../../../components/ui/PhoneInput";
 import { useToast } from "../../../components/ui/Toast";
 import { useAuth } from "../../../context/AuthContext";
 import { usePrerenderReady } from "../../../lib/prerenderReady";
@@ -220,7 +221,7 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
                 <input value={contactName} maxLength={200} autoComplete="name" onChange={(e) => setContactName(e.target.value)} />
               </Field>
               <Field label={t("Best number for you")} hint={t("Optional")}>
-                <input type="tel" value={contactPhone} maxLength={40} onChange={(e) => setContactPhone(e.target.value)} />
+                <PhoneInput value={contactPhone} onChange={setContactPhone} />
               </Field>
             </div>
           </section>
