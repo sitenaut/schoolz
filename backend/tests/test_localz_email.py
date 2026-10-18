@@ -74,8 +74,9 @@ async def test_a_decision_is_emailed_and_the_sent_copy_is_erased(outbox):
         await _approved_listing(client, provider, reviewer)
         await mailer.send_pending()
         me = (await client.get("/auth/me", headers=provider)).json()
-        mine = [m for m in outbox if m["To"] == me["email"]]
-        assert len(mine) == 1 and mine[0]["Subject"] == "Maple Street Pantry is on Localz"
+        mine = [m["Subject"] for m in outbox if m["To"] == me["email"]]
+        assert mine == ["Localz: we have Maple Street Pantry", "Maple Street Pantry is on Localz"]
+        mine = [m for m in outbox if m["Subject"] == "Maple Street Pantry is on Localz"]
         assert "/localz/providers/portal" in mine[0].get_content()
         assert mine[0]["From"] == "schoolz <localz@example.org>"
         row = next(r for r in await _rows("portal.request_approved") if r.user_id == me["id"])
@@ -213,3 +214,30 @@ async def test_the_checkin_emails_stale_listings_once_and_confirming_resets_it(o
         r = await client.post(f"/provider-portal/listings/{sid}/confirm", headers=provider)
         assert r.json()["last_assured_on"] == portal.today().isoformat()
         assert (await client.get(f"/resources/{sid}")).json()["last_assured_on"] == portal.today().isoformat()
+
+
+async def test_sending_a_request_says_we_have_it_and_an_inquiry_echoes_nothing_typed(outbox):
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        me = (await client.get("/auth/me", headers=provider)).json()
+        rid = (await client.post("/provider-portal/requests", json={"submission": _submission()}, headers=provider)).json()["id"]
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+        await mailer.send_pending()
+        assert outbox[-1]["To"] == me["email"] and outbox[-1]["Subject"] == "Localz: we have Maple Street Pantry"
+
+        # No account: anyone could type a stranger's address, so the
+        # confirmation carries none of what they typed.
+        lure = "Visit spam.example now"
+        body = {"organization_name": lure, "contact_name": lure, "phone": "609-555-0101", "email": "pat@example.org",
+                "what_you_provide": lure, "town": "Pennsauken"}
+        assert (await client.post("/provider-portal/inquiries", json=body)).status_code == 201
+        await mailer.send_pending()
+        msg = outbox[-1]
+        assert msg["To"] == "pat@example.org" and msg["Subject"] == "Localz: we have your request"
+        assert lure not in msg.get_content() and lure not in msg["Subject"]
+
+        # No email given: nothing to send.
+        sent = len(outbox)
+        assert (await client.post("/provider-portal/inquiries", json={**body, "email": ""})).status_code == 201
+        await mailer.send_pending()
+        assert len(outbox) == sent
