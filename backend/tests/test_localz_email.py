@@ -63,6 +63,14 @@ def no_smtp(monkeypatch):
     monkeypatch.delenv("SMTP_PASSWORD", raising=False)
 
 
+def _text(msg) -> str:
+    return msg.get_body(("plain",)).get_content()
+
+
+def _html(msg) -> str:
+    return msg.get_body(("html",)).get_content()
+
+
 async def _rows(kind: str) -> list[OutboundEmail]:
     async with database.SessionLocal() as db:
         return list((await db.execute(select(OutboundEmail).where(OutboundEmail.kind == kind))).scalars())
@@ -74,9 +82,10 @@ async def test_a_decision_is_emailed_and_the_sent_copy_is_erased(outbox):
         await _approved_listing(client, provider, reviewer)
         await mailer.send_pending()
         me = (await client.get("/auth/me", headers=provider)).json()
-        mine = [m for m in outbox if m["To"] == me["email"]]
-        assert len(mine) == 1 and mine[0]["Subject"] == "Maple Street Pantry is on Localz"
-        assert "/localz/providers/portal" in mine[0].get_content()
+        mine = [m["Subject"] for m in outbox if m["To"] == me["email"]]
+        assert mine == ["Localz: we have Maple Street Pantry", "Maple Street Pantry is on Localz"]
+        mine = [m for m in outbox if m["Subject"] == "Maple Street Pantry is on Localz"]
+        assert "/localz/providers/portal" in _text(mine[0])
         assert mine[0]["From"] == "schoolz <localz@example.org>"
         row = next(r for r in await _rows("portal.request_approved") if r.user_id == me["id"])
         assert row.status == "sent" and row.to_address is None and row.body is None
@@ -90,7 +99,7 @@ async def test_a_decision_is_emailed_and_the_sent_copy_is_erased(outbox):
             await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
             assert (await client.post(f"/admin/resources/onboarding/{rid}/{action}", json=body, headers=reviewer)).status_code == 200
             await mailer.send_pending()
-            assert kind in outbox[-1].get_content() or kind in outbox[-1]["Subject"]
+            assert kind in _text(outbox[-1]) or kind in outbox[-1]["Subject"]
 
 
 async def test_without_smtp_mail_waits_and_the_job_says_so(no_smtp):
@@ -154,7 +163,7 @@ async def test_a_claim_can_skip_the_call_and_verify_with_a_code_from_the_source_
         await mailer.send_pending()
         msg = outbox[-1]
         assert msg["To"] == "director@oakhill.org"
-        code = re.search(r"Code: (\d{6})", msg.get_content()).group(1)
+        code = re.search(r"Code: (\d{6})", _text(msg)).group(1)
 
         wrong = "000000" if code != "000000" else "111111"
         assert (await client.post(f"/provider-portal/listings/{sid}/verify", json={"code": wrong}, headers=provider)).status_code == 422
@@ -171,7 +180,7 @@ async def test_codes_are_limited_expire_and_never_go_to_a_typed_address(outbox):
             assert (await client.post(f"/provider-portal/listings/{sid}/verify/send", headers=provider)).status_code == 202
         assert (await client.post(f"/provider-portal/listings/{sid}/verify/send", headers=provider)).status_code == 429
         await mailer.send_pending()
-        code = re.search(r"Code: (\d{6})", outbox[-1].get_content()).group(1)
+        code = re.search(r"Code: (\d{6})", _text(outbox[-1])).group(1)
         async with database.SessionLocal() as db:
             await db.execute(update(ProviderMembership).where(ProviderMembership.service_id == sid)
                              .values(code_expires_at=mailer._now() - timedelta(minutes=1)))
@@ -204,7 +213,7 @@ async def test_the_checkin_emails_stale_listings_once_and_confirming_resets_it(o
             await resources_checkin.run(db, resources_checkin.DEFAULT_PARAMS)
         me = (await client.get("/auth/me", headers=provider)).json()
         mine = [m for m in outbox if m["To"] == me["email"] and "still right" in m["Subject"]]
-        assert len(mine) == 1 and f"/localz/providers/listings/{sid}" in mine[0].get_content()
+        assert len(mine) == 1 and f"/localz/providers/listings/{sid}" in _text(mine[0])
 
         async with database.SessionLocal() as db:  # not again within 30 days
             await resources_checkin.run(db, resources_checkin.DEFAULT_PARAMS)
@@ -213,3 +222,48 @@ async def test_the_checkin_emails_stale_listings_once_and_confirming_resets_it(o
         r = await client.post(f"/provider-portal/listings/{sid}/confirm", headers=provider)
         assert r.json()["last_assured_on"] == portal.today().isoformat()
         assert (await client.get(f"/resources/{sid}")).json()["last_assured_on"] == portal.today().isoformat()
+
+
+async def test_sending_a_request_says_we_have_it_and_an_inquiry_echoes_nothing_typed(outbox):
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        me = (await client.get("/auth/me", headers=provider)).json()
+        rid = (await client.post("/provider-portal/requests", json={"submission": _submission()}, headers=provider)).json()["id"]
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+        await mailer.send_pending()
+        assert outbox[-1]["To"] == me["email"] and outbox[-1]["Subject"] == "Localz: we have Maple Street Pantry"
+
+        # No account: anyone could type a stranger's address, so the
+        # confirmation carries none of what they typed.
+        lure = "Visit spam.example now"
+        body = {"organization_name": lure, "contact_name": lure, "phone": "609-555-0101", "email": "pat@example.org",
+                "what_you_provide": lure, "town": "Pennsauken"}
+        assert (await client.post("/provider-portal/inquiries", json=body)).status_code == 201
+        await mailer.send_pending()
+        msg = outbox[-1]
+        assert msg["To"] == "pat@example.org" and msg["Subject"] == "Localz: we have your request"
+        assert lure not in _text(msg) and lure not in msg["Subject"] and lure not in _html(msg)
+
+        # No email given: nothing to send.
+        sent = len(outbox)
+        assert (await client.post("/provider-portal/inquiries", json={**body, "email": ""})).status_code == 201
+        await mailer.send_pending()
+        assert len(outbox) == sent
+
+
+def test_the_html_part_is_the_same_words_in_the_dark_theme():
+    from services import mail_html
+
+    text = (
+        'Thanks for sending <b>"Tom & Jerry\'s"</b>.\n\nCode: 123456\n\n'
+        "- Pantry (not confirmed yet): https://example.org/l/1\n- Clinic: https://example.org/l/2\n\n"
+        "Open your request:\nhttps://example.org/portal\n\n-- \nLocalz, from schoolz\nQuestions? https://example.org/contact\n"
+    )
+    out = mail_html.render("Subject <x>", text)
+    assert "<b>" not in out and "&lt;b&gt;" in out and "Tom &amp; Jerry" in out
+    assert mail_html.BG in out and mail_html.CARD in out
+    assert ">123456</td>" in out
+    assert '<a href="https://example.org/l/1"' in out and ">Pantry (not confirmed yet)</a>" in out
+    assert ">Open your request</a>" in out and "Open your request:" not in out
+    assert out.index("Localz, from schoolz") > out.index("Open your request")
+    assert "<img" not in out and "<title>Subject &lt;x&gt;</title>" in out

@@ -287,7 +287,8 @@ async def list_types() -> list[ProviderTypeOut]:
 
 
 @router.post("/inquiries", status_code=status.HTTP_201_CREATED)
-async def ask_to_be_listed(body: InquiryIn, request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+async def ask_to_be_listed(body: InquiryIn, request: Request, background: BackgroundTasks,
+                           db: AsyncSession = Depends(get_db)) -> dict:
     """"Ask to be listed": no account. Lands in the review queue as a
     `submitted` request with origin "inquiry"; a reviewer calls back."""
     # A filled honeypot gets the same answer a person would.
@@ -326,19 +327,21 @@ async def ask_to_be_listed(body: InquiryIn, request: Request, db: AsyncSession =
         town=body.town.strip(),
         email=_clean(body.email),
     )
-    db.add(
-        ResourceOnboardingRequest(
-            status="submitted",
-            origin="inquiry",
-            submission=sub.model_dump(mode="json"),
-            contact_name=body.contact_name.strip(),
-            contact_phone=body.phone.strip(),
-            contact_email=_clean(body.email),
-            ip_hash=hashed,
-            submitted_at=portal.now(),
-        )
+    req = ResourceOnboardingRequest(
+        status="submitted",
+        origin="inquiry",
+        submission=sub.model_dump(mode="json"),
+        contact_name=body.contact_name.strip(),
+        contact_phone=body.phone.strip(),
+        contact_email=_clean(body.email),
+        ip_hash=hashed,
+        submitted_at=portal.now(),
     )
+    db.add(req)
+    await db.flush()
+    await portal_mail.request_received(db, req)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     return {"ok": True}
 
 
@@ -454,7 +457,8 @@ async def save_request(request_id: str, body: RequestIn, user: User = Depends(ge
 
 
 @router.post("/requests/{request_id}/submit", response_model=RequestOut)
-async def submit_request(request_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def submit_request(request_id: str, background: BackgroundTasks, user: User = Depends(get_current_user),
+                         db: AsyncSession = Depends(get_db)):
     req = await _own_request(db, request_id, user)
     if req.status not in portal.EDITABLE_STATUSES:
         raise HTTPException(status.HTTP_409_CONFLICT, "This request has already been sent")
@@ -466,7 +470,9 @@ async def submit_request(request_id: str, user: User = Depends(get_current_user)
     req.submitted_at = portal.now()
     req.fields_to_fix = []
     portal.log(db, action="onboarding.submit", actor=user, actor_kind="provider", request_id=req.id)
+    await portal_mail.request_received(db, req)
     await db.commit()
+    background.add_task(mailer.send_pending_quietly)
     await db.refresh(req)
     return await request_out(db, req)
 

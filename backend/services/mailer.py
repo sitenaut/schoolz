@@ -15,10 +15,14 @@ How a message travels:
 3. The hourly `email.outbox` job retries what failed (5 tries, backing off)
    and tidies up.
 
+The text is the message; an HTML version in Localz's dark theme is drawn
+from it at send time (`mail_html.py`), so a client that blocks HTML
+still gets every word.
+
 Privacy: the address and body are encrypted while queued and erased the
 moment a message is sent, fails for good or expires; only kind, status and
-times remain, for 30 days. No tracking pixels or rewritten links - this is
-plain text.
+times remain, for 30 days. No tracking pixels, remote images or rewritten
+links.
 """
 from __future__ import annotations
 
@@ -36,6 +40,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import database
 from models import OutboundEmail
+from services import mail_html
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +108,7 @@ def _message(row: OutboundEmail, s: dict) -> EmailMessage:
     if s["reply_to"]:
         msg["Reply-To"] = s["reply_to"]
     msg.set_content(row.body)
+    msg.add_alternative(mail_html.render(row.subject, row.body), subtype="html")
     return msg
 
 

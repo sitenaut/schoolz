@@ -34,7 +34,7 @@ REJECT_TEXT = {
     "other": "of the note below",
 }
 
-SIGN_OFF = "\n\n- Localz, from schoolz\nQuestions? Reply to this email or use " + f"{SITE}/contact"
+SIGN_OFF = "\n\n-- \nLocalz, from schoolz\nQuestions? Reply to this email or use " + f"{SITE}/contact"
 
 
 async def _account_email(db: AsyncSession, user_id: str | None) -> str | None:
@@ -51,6 +51,36 @@ async def _request_recipient(db: AsyncSession, req: ResourceOnboardingRequest) -
 
 def _name(req: ResourceOnboardingRequest) -> str:
     return ((req.submission or {}).get("organization_name") or "your listing").strip()
+
+
+async def request_received(db: AsyncSession, req: ResourceOnboardingRequest) -> None:
+    """"We have it" when a request is sent. An "Ask to be listed" inquiry
+    needs no account, so anyone could type someone else's address: that
+    email repeats nothing they typed (no name, no note), so it can't carry
+    their text to a stranger."""
+    if req.origin == "inquiry":
+        to, user_id = req.contact_email, None
+        if not to:
+            return
+        subject = "Localz: we have your request"
+        body = (
+            "Thanks for asking to be listed on Localz, where people in South Jersey look for help.\n\n"
+            "We'll call the number you gave to set up your listing, usually within 3 business days. "
+            "Nothing is public until we've checked it with you.\n\n"
+            "If you didn't ask for this, ignore this email - nothing happens."
+        )
+    else:
+        to, user_id = await _request_recipient(db, req)
+        if not to:
+            return
+        name = _name(req)
+        subject = f"Localz: we have {name}"
+        body = (
+            f"Thanks for sending {name}. We check every listing before it goes live and usually review within "
+            "3 business days. We'll call the program's number to confirm it's you.\n\n"
+            f"You can see where it stands here:\n{SITE}/localz/providers/portal"
+        )
+    mailer.queue(db, kind="portal.request_received", to=to, subject=subject, body=body + SIGN_OFF, user_id=user_id, ref=req.id)
 
 
 async def request_decided(db: AsyncSession, req: ResourceOnboardingRequest) -> None:
