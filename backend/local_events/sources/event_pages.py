@@ -127,6 +127,12 @@ async def read_posts(
             for image in post.images[:_FLYERS_PER_POST]:
                 try:
                     words = await flyer_text(client, image)
+                except httpx.HTTPStatusError as exc:
+                    # A dead image link on the town's own page (Collingswood has
+                    # one that 403s) would otherwise warn on every run forever.
+                    if exc.response.status_code >= 500:
+                        failures.append(f"flyer {image}: HTTP {exc.response.status_code}"[:200])
+                    continue
                 except Exception as exc:  # noqa: BLE001 - the post's own text still counts
                     failures.append(f"flyer {image}: {type(exc).__name__}: {exc}"[:200])
                     continue
