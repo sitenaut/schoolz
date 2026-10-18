@@ -17,6 +17,11 @@ or multi-day events - `dates`, every occurrence as MM-DD-YYYY, where a
 trailing "+" marks a continuation day of a multi-day event rather than a new
 occurrence. A repeating event appears whole in every month file it touches,
 so occurrences dedupe on (event id, date).
+
+`news_feed` also reads the site's news list (`newslist.php`), which carries
+announcements that never reach the calendar, often as a title over a flyer
+image. Recent posts and their flyers go through the event-page reader
+(event_pages.read_posts), each read once ever.
 """
 from __future__ import annotations
 
@@ -24,12 +29,15 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, time, timedelta
+from urllib.parse import quote, urljoin
 from zoneinfo import ZoneInfo
 
 import httpx
 from bs4 import BeautifulSoup
 
 from .base import RawEvent, Source
+from .event_pages import EventPageSource, Post, read_posts
+from .theatre import page_text
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +153,45 @@ def parse_month(xml_text: str, *, source: str, base_url: str, default_categories
     return out
 
 
+def parse_news(html: str, base_url: str, *, since: datetime) -> list[Post]:
+    """`newslist.php` -> posts newer than `since`. The page is every post the
+    town ever made (Collingswood's runs to ~2 MB), newest first; each is a
+    thumbnail column, then a column with the date line, `h3.news-title`,
+    `.news-desc` (where a flyer is an inline <img>) and a Read More link."""
+    base = base_url.rstrip("/") + "/"
+    soup = BeautifulSoup(html, "lxml")
+    out: list[Post] = []
+    for h3 in soup.select("h3.news-title"):
+        col = h3.parent
+        dated = next((s.strip() for s in col.find_all(string=True, recursive=False) if s.strip()), "")
+        try:
+            posted = datetime.strptime(dated, "%B %d, %Y").replace(tzinfo=_ET)
+        except ValueError:
+            continue
+        if posted < since:
+            continue
+        desc = col.select_one(".news-desc")
+        thumb = col.find_previous_sibling("div")
+        imgs = [*(thumb.select("img") if thumb else []), *(desc.select("img") if desc else [])]
+        images: list[str] = []
+        for img in imgs:
+            src = (img.get("src") or "").strip()
+            if src and not src.startswith("data:"):
+                url = quote(urljoin(base, src), safe=":/?=&%")
+                if url not in images:
+                    images.append(url)
+        more = col.select_one("a.readmore[href]")
+        title = h3.get_text(" ", strip=True)
+        out.append(Post(
+            ref=more["href"] if more else title,
+            posted=posted,
+            body="\n".join(filter(None, [title, page_text(str(desc), base_url) if desc else ""])),
+            url=urljoin(base, more["href"]) if more else base + "newslist.php",
+            images=images,
+        ))
+    return out
+
+
 class RevizeCalendarAppSource(Source):
     def __init__(
         self,
@@ -156,6 +203,9 @@ class RevizeCalendarAppSource(Source):
         venue_name: str | None = None,
         venue_address: str | None = None,
         timeout: float = 30.0,
+        news_feed: bool = False,
+        news_days: int = 45,
+        location: str | None = None,
     ):
         self.name = name
         self.base_url = base_url.rstrip("/")
@@ -166,9 +216,39 @@ class RevizeCalendarAppSource(Source):
         self.venue_name = venue_name
         self.venue_address = venue_address
         self.timeout = timeout
+        self.news_feed = news_feed
+        self.news_days = news_days
+        self.location = location
         self.partial_failures = []
 
     async def fetch(self) -> list[RawEvent]:
+        calendar = await self._calendar()
+        if not self.news_feed:
+            return calendar
+        failures = list(self.partial_failures)
+        try:
+            posted = await self._news(failures)
+        except Exception as exc:  # noqa: BLE001 - the calendar still counts
+            failures.append(f"news: {type(exc).__name__}: {exc}"[:200])
+            posted = []
+        self.partial_failures = failures
+        return calendar + posted
+
+    async def _news(self, failures: list[str]) -> list[RawEvent]:
+        now = datetime.now(_ET)
+        url = f"{self.base_url}/newslist.php"
+        # The whole archive in one page, from a slow server.
+        async with httpx.AsyncClient(timeout=120, follow_redirects=True, headers={"User-Agent": _UA}) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+        posts = parse_news(resp.text, self.base_url, since=now - timedelta(days=self.news_days))
+        reader = EventPageSource(name=self.name, urls=[url], town=self.location)
+        return await read_posts(
+            reader, posts, default_categories=list(self.default_categories), id_prefix="news",
+            today=now.date(), failures=failures,
+        )
+
+    async def _calendar(self) -> list[RawEvent]:
         today = datetime.now(_ET).date()
         horizon = today + timedelta(days=31 * self.months_ahead)
         seen: set[str] = set()

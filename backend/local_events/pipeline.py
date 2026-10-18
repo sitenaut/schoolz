@@ -414,6 +414,8 @@ def _build_sources(params: dict) -> list[Source]:
                 default_categories=list(entry.get("default_categories") or []),
                 venue_name=entry.get("venue_name"),
                 venue_address=entry.get("venue_address"),
+                news_feed=bool(entry.get("news_feed")),
+                location=entry.get("location"),
             )
         )
     for entry in params.get("thrillshare_sources") or []:

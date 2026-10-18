@@ -614,7 +614,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             default_categories=list(e.get("default_categories") or []), days_ahead=int(e.get("days_ahead", 120)))),
         ("revize_calendar_app", revize_calendar_app_sources, "base_url", lambda n, e: RevizeCalendarAppSource(
             n, e["base_url"], calendar_ids=list(e.get("calendar_ids") or [1]), months_ahead=1,
-            default_categories=list(e.get("default_categories") or []), venue_name=e.get("venue_name"), venue_address=e.get("venue_address"))),
+            default_categories=list(e.get("default_categories") or []), venue_name=e.get("venue_name"), venue_address=e.get("venue_address"),
+            news_feed=bool(e.get("news_feed")), location=e.get("location"))),
         ("thrillshare", thrillshare_sources, "org_id", lambda n, e: ThrillshareSource(
             n, str(e["org_id"]), site_url=e.get("site_url"), days_ahead=int(e.get("days_ahead", 90)),
             default_categories=list(e.get("default_categories") or []), live_feed=bool(e.get("live_feed")),

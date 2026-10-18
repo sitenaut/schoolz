@@ -12,12 +12,12 @@ calendar - mixed in with gas-main work schedules, spraying notices and
 agendas. Each post goes through the event-page reader (event_pages.py),
 which skips the notices; a post's text is read once ever (page_extractions).
 A post that moves or cancels an event takes back the date an earlier post
-gave. A flyer posted as an image with a bare title isn't read.
+gave. A post's images are transcribed first (flyers.py), so a flyer posted
+under a bare title is read too.
 """
 from __future__ import annotations
 
 import logging
-import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -26,18 +26,10 @@ import httpx
 from services import apptegy
 
 from .base import RawEvent, Source
-from .event_pages import EventPageSource, drop_withdrawn, one_per_start, withdrawn
-from .theatre import page_text, to_raw_events
+from .event_pages import EventPageSource, Post, read_posts
+from .theatre import page_text
 
 logger = logging.getLogger(__name__)
-
-# Words that put a date in a post's own text. Without one, an event dated the
-# day it was posted is the posting date misread as the event's: the
-# image-flyer post "Green Team Movie Night" came back dated the day it went up.
-_DATE_WORDS = re.compile(
-    r"\b(today|tonight|tomorrow|(mon|tues|wednes|thurs|fri|satur|sun)day|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\b|\d{1,2}/\d{1,2}",
-    re.I,
-)
 
 _ET = ZoneInfo("America/New_York")
 
@@ -92,29 +84,21 @@ class ThrillshareSource(Source):
                     break
         reader = EventPageSource(name=self.name, urls=[self.site_url or url], town=self.location)
         feed_url = (self.site_url or "").rstrip("/") + "/live-feed" if self.site_url else None
-        events: list[RawEvent] = []
-        gone = []
-        for post in posts:
-            when = datetime.fromisoformat(post["time"]).astimezone(_ET)
-            body = page_text(post.get("status") or "", self.site_url or "")
-            if when < cutoff or len(body) < 20:
-                continue
-            # The posting date lets the reader place "Sunday, October 18th".
-            text = f"Posted {when:%A, %B %-d, %Y}\n{body}"
-            try:
-                items = await reader._extract(text)
-            except Exception as exc:  # noqa: BLE001 - one post shouldn't sink the feed
-                self.partial_failures.append(f"post {post.get('id')}: {type(exc).__name__}: {exc}"[:200])
-                continue
-            gone += withdrawn(items)
-            if not _DATE_WORDS.search(body):
-                items = [i for i in items if str(i.get("start_date") or "")[:10] != when.date().isoformat()]
-            events += to_raw_events(
-                items, text, source=self.name, venue_name=None, venue_address=None,
-                default_categories=list(self.default_categories), page_url=feed_url or url, today=now.date(),
-                id_prefix="post", town=self.location,
+        kept = [
+            Post(
+                ref=str(p.get("id")),
+                posted=datetime.fromisoformat(p["time"]),
+                body=page_text(p.get("status") or "", self.site_url or ""),
+                url=feed_url or url,
+                images=[i["url"] for i in p.get("live_feed_images") or [] if isinstance(i, dict) and i.get("url")],
             )
-        return one_per_start(drop_withdrawn(events, gone))
+            for p in posts
+            if datetime.fromisoformat(p["time"]) >= cutoff
+        ]
+        return await read_posts(
+            reader, kept, default_categories=list(self.default_categories), id_prefix="post",
+            today=now.date(), failures=self.partial_failures,
+        )
 
     async def _calendar(self) -> list[RawEvent]:
         today = datetime.now(_ET).date()
