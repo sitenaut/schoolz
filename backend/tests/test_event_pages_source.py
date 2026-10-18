@@ -68,3 +68,30 @@ async def test_the_same_event_on_two_pages_is_kept_once(monkeypatch):
     monkeypatch.setattr(TheatreSiteSource, "fetch", both)
     kept = await EventPageSource(name="cw", urls=["https://town.example"]).fetch()
     assert sorted(e.source_event_id for e in kept) == ["b", "c"]  # the copy naming a venue wins
+
+
+@pytest.mark.anyio
+async def test_a_page_read_once_is_not_paid_for_again_after_a_restart(monkeypatch):
+    import uuid
+
+    from local_events.sources import theatre
+
+    calls = []
+
+    class FakeMessages:
+        async def create(self, **kwargs):
+            calls.append(kwargs)
+            block = type("B", (), {"type": "tool_use", "input": {"events": [{"title": "Holiday Parade", "start_date": "2026-11-28"}]}})()
+            return type("R", (), {"content": [block], "stop_reason": "tool_use", "usage": None})()
+
+    monkeypatch.setattr(theatre, "AsyncAnthropic", lambda **_: type("C", (), {"messages": FakeMessages()})())
+    monkeypatch.setattr(theatre.observability, "record_llm_call", lambda *a, **k: None)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.setattr(theatre, "_CACHE", {})
+    src = EventPageSource(name="cw", urls=["https://town.example"])
+    text = f"Holiday Parade, Saturday November 28 {uuid.uuid4()}"
+
+    first = await src._extract(text)
+    theatre._CACHE.clear()  # what a deploy does to the in-process cache
+    second = await src._extract(text)
+    assert first == second and len(calls) == 1
