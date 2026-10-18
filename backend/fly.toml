@@ -19,6 +19,11 @@ primary_region = "ewr"
   # 0 plaintext): a missing key or a plaintext row is now an error, not a
   # silent fallback (crypto.py).
   ENCRYPTION_REQUIRE = "1"
+  # Admin endpoints refuse a session without a second factor (auth.py,
+  # check_admin_mfa). Three days of log mode showed one source only: an
+  # admin's not-yet-verified session polling the inbox badge, which reads
+  # a refusal as 0.
+  MFA_ENFORCE = "1"
   AUTH_MODE = "supabase"
   PORT = "8000"
   # Emit the stable HTTP semantic conventions
