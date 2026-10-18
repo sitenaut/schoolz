@@ -350,8 +350,11 @@ class ScheduledJob(Base):
     params: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # "success" | "error" | "running" | "skipped"
+    # "success" | "warning" | "error" | "running" | "skipped" | "queued"
     last_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Set by a run-now when runs go through the scheduler process
+    # (runner.run_job_now); the scheduler clears it as it starts the run.
+    run_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_error: Mapped[str | None] = mapped_column(String, nullable=True)
     # Stable, groupable reason for the last run's failure/warning - see
     # scheduler/errors.py. Null for a success (or a warning with no

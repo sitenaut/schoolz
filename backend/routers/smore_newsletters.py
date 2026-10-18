@@ -150,7 +150,7 @@ async def create_newsletter(
         # moment this run finishes (scheduler/runner.py:_finalize).
         from scheduler.runner import run_job_now
 
-        run_job_now(job.id)
+        await run_job_now(job.id)
 
     return await _to_out(db, newsletter)
 
@@ -232,7 +232,7 @@ async def run_now(newsletter_id: str, user: User = Depends(require_permission("n
 
     if await has_live_run(db, newsletter.scheduled_job_id):
         raise HTTPException(status.HTTP_409_CONFLICT, "This scan is already running")
-    run_job_now(newsletter.scheduled_job_id)
+    await run_job_now(newsletter.scheduled_job_id)
     return {"status": "started"}
 
 

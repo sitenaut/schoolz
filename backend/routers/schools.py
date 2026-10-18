@@ -508,7 +508,7 @@ async def run_staff_roster_now(school: School = Depends(resolve_school), _: User
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.staff_roster_job_id)
+    await run_job_now(school.staff_roster_job_id)
     return {"status": "started"}
 
 
@@ -519,7 +519,7 @@ async def run_school_info_now(school: School = Depends(resolve_school), _: User 
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.school_info_job_id)
+    await run_job_now(school.school_info_job_id)
     return {"status": "started"}
 
 
@@ -565,7 +565,7 @@ async def run_documents_scan_now(school: School = Depends(resolve_school), _: Us
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.documents_scan_job_id)
+    await run_job_now(school.documents_scan_job_id)
     return {"status": "started"}
 
 
@@ -576,7 +576,7 @@ async def run_special_events_scan_now(school: School = Depends(resolve_school), 
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.special_events_scan_job_id)
+    await run_job_now(school.special_events_scan_job_id)
     return {"status": "started"}
 
 
@@ -587,7 +587,7 @@ async def run_activities_calendar_scan_now(school: School = Depends(resolve_scho
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.activities_calendar_job_id)
+    await run_job_now(school.activities_calendar_job_id)
     return {"status": "started"}
 
 
@@ -598,7 +598,7 @@ async def run_announcements_scan_now(school: School = Depends(resolve_school), _
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.announcements_job_id)
+    await run_job_now(school.announcements_job_id)
     return {"status": "started"}
 
 
@@ -609,7 +609,7 @@ async def run_events_doc_scan_now(school: School = Depends(resolve_school), _: U
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.events_doc_job_id)
+    await run_job_now(school.events_doc_job_id)
     return {"status": "started"}
 
 
@@ -620,7 +620,7 @@ async def run_bulletin_scan_now(school: School = Depends(resolve_school), _: Use
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.bulletin_doc_job_id)
+    await run_job_now(school.bulletin_doc_job_id)
     return {"status": "started"}
 
 
@@ -631,7 +631,7 @@ async def run_activities_site_scan_now(school: School = Depends(resolve_school),
 
     from scheduler.runner import run_job_now
 
-    run_job_now(school.activities_site_job_id)
+    await run_job_now(school.activities_site_job_id)
     return {"status": "started"}
 
 

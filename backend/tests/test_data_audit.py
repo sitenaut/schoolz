@@ -139,9 +139,15 @@ async def test_district_filter_narrows_results():
         assert "Other Elementary" in csv_text and "Audit High" not in csv_text
 
 
+def _recorder(started: list[str]):
+    async def run_job_now(job_id: str) -> None:
+        started.append(job_id)
+    return run_job_now
+
+
 async def test_view_only_reads_district_audience_and_cannot_mutate(monkeypatch):
     started: list[str] = []
-    monkeypatch.setattr("scheduler.runner.run_job_now", started.append)
+    monkeypatch.setattr("scheduler.runner.run_job_now", _recorder(started))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         ids = await _seed()
         boss = await _boss(client)
@@ -181,7 +187,7 @@ async def test_view_only_reads_district_audience_and_cannot_mutate(monkeypatch):
 
 async def test_public_audit_needs_no_account_and_is_district_wording_only(monkeypatch):
     started: list[str] = []
-    monkeypatch.setattr("scheduler.runner.run_job_now", started.append)
+    monkeypatch.setattr("scheduler.runner.run_job_now", _recorder(started))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         ids = await _seed()
         boss = await _boss(client)
@@ -211,7 +217,7 @@ async def test_public_audit_needs_no_account_and_is_district_wording_only(monkey
 
 async def test_manage_can_mutate_and_preview_district_audience(monkeypatch):
     started: list[str] = []
-    monkeypatch.setattr("scheduler.runner.run_job_now", started.append)
+    monkeypatch.setattr("scheduler.runner.run_job_now", _recorder(started))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         ids = await _seed()
         boss = await _boss(client)

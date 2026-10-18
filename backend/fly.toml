@@ -15,6 +15,10 @@ primary_region = "ewr"
   # Refuse to start with a missing or malformed setting (settings.py). The
   # first deploy of the check logged clean on both processes.
   SETTINGS_ENFORCE = "1"
+  # A run-now is started by the scheduler machine, not the API machine that
+  # took the click: Fly auto-stops idle API machines and killed runs mid-way
+  # (scheduler/runner.py, RUN_NOW_VIA_SCHEDULER).
+  RUN_NOW_VIA_SCHEDULER = "1"
   # Every stored credential is encrypted (scripts/encrypt_secrets.py counted
   # 0 plaintext): a missing key or a plaintext row is now an error, not a
   # silent fallback (crypto.py).

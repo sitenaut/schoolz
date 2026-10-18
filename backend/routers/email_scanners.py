@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from models import EmailScanner, GmailToken, ScheduledJob, User
-from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, ScheduledJobOut
 from scheduler.registry import registry as job_registry
+from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, ScheduledJobOut
 
 # Admin-only for now (2026-09-11): connecting a Gmail account and scanning it
 # is a data-source management task, not part of the guardian personal layer.
@@ -161,5 +161,5 @@ async def run_scanner_now(scanner_id: str, user: User = Depends(require_permissi
 
     from scheduler.runner import run_job_now
 
-    run_job_now(scanner.scheduled_job_id)
+    await run_job_now(scanner.scheduled_job_id)
     return {"status": "started"}

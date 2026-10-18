@@ -49,6 +49,7 @@ SETTINGS: tuple[Setting, ...] = (
     Setting("FRONTEND_INTERNAL_URL", "url"),
     Setting("DATA_ENCRYPTION_KEYS", "fernet", BOTH),
     Setting("ENCRYPTION_REQUIRE", "bool"),
+    Setting("RUN_NOW_VIA_SCHEDULER", "bool"),
     Setting("SECRETS_UNLOCK_KEY", required_in=(API,)),
     Setting("TURNSTILE_SECRET_KEY", required_in=(API,)),
     Setting("SCRAPER_URL", "url", BOTH),

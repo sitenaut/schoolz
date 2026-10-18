@@ -5,9 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from models import District, DistrictTransportation, ScheduledJob, User
-from schemas import DistrictCreate, DistrictOut, DistrictSummaryOut, DistrictUpdate, ScheduledJobOut, DistrictTransportationOut
 from scheduler.cron import public_scan_cron
 from scheduler.job_names import district_job_name
+from schemas import (
+    DistrictCreate,
+    DistrictOut,
+    DistrictSummaryOut,
+    DistrictTransportationOut,
+    DistrictUpdate,
+    ScheduledJobOut,
+)
 
 router = APIRouter(prefix="/districts", tags=["districts"])
 
@@ -299,7 +306,7 @@ async def run_district_menu_scan_now(district_id: str, user: User = Depends(requ
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.scheduled_job_id)
+    await run_job_now(district.scheduled_job_id)
     return {"status": "started"}
 
 
@@ -312,7 +319,7 @@ async def run_district_calendar_scan_now(district_id: str, user: User = Depends(
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.calendar_scan_job_id)
+    await run_job_now(district.calendar_scan_job_id)
     return {"status": "started"}
 
 
@@ -325,7 +332,7 @@ async def run_marking_period_scan_now(district_id: str, user: User = Depends(req
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.marking_period_job_id)
+    await run_job_now(district.marking_period_job_id)
     return {"status": "started"}
 
 
@@ -338,7 +345,7 @@ async def run_preschool_locations_scan_now(district_id: str, user: User = Depend
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.preschool_locations_job_id)
+    await run_job_now(district.preschool_locations_job_id)
     return {"status": "started"}
 
 
@@ -351,7 +358,7 @@ async def run_preschool_team_scan_now(district_id: str, user: User = Depends(req
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.preschool_team_job_id)
+    await run_job_now(district.preschool_team_job_id)
     return {"status": "started"}
 
 
@@ -364,7 +371,7 @@ async def run_hs_rotation_scan_now(district_id: str, user: User = Depends(requir
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.hs_rotation_job_id)
+    await run_job_now(district.hs_rotation_job_id)
     return {"status": "started"}
 
 
@@ -377,7 +384,7 @@ async def run_calendar_pdf_scan_now(district_id: str, user: User = Depends(requi
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.calendar_pdf_job_id)
+    await run_job_now(district.calendar_pdf_job_id)
     return {"status": "started"}
 
 
@@ -390,7 +397,7 @@ async def run_transportation_scan_now(district_id: str, user: User = Depends(req
 
     from scheduler.runner import run_job_now
 
-    run_job_now(district.transportation_job_id)
+    await run_job_now(district.transportation_job_id)
     return {"status": "started"}
 
 
