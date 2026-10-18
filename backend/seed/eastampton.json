@@ -1,0 +1,67 @@
+{
+  "exported_at": "2026-10-18T12:00:00Z",
+  "source": "onboarding: Eastampton Township School District",
+  "districts": [
+    {
+      "name": "Eastampton Township School District",
+      "state": "NJ",
+      "website_url": "https://www.etsdnj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Eastampton Community School Public Events",
+          "url": "https://www.etsdnj.us/calendar/calendar_351.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Eastampton"
+      ],
+      "schoolcafe_shortname": "EastamptonTownshipNutriServe"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "eastampton-community",
+      "name": "Eastampton Township Community School",
+      "short_name": "Eastampton",
+      "district_name": "Eastampton Township School District",
+      "school_type": "elementary",
+      "address": "1 Student Drive, Eastampton, NJ 08060",
+      "main_phone": "(609) 267-9172",
+      "website_url": "https://www.etsdnj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/6533",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1716579229/eastamptonk12njus/eaqasdxgjtv9i4sfcvnf/ECSShieldLogo.png",
+      "staff_directory_url": "https://www.etsdnj.us/about-us/staff-directory",
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal (3:00 PM) - 6:00 PM",
+        "site_phone": "(609) 405-4660",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run on site by Kidz Space Enrichment Programs (formerly Wee Kids), not the district, for grades PreK-8. Kidz Space office (609) 384-3881.",
+        "handbook_url": "https://www.kidzspacenj.com/eastampton-community-school/"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

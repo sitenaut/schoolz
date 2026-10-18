@@ -25,6 +25,10 @@ async def _fetch_feed(feed: dict) -> list[dict]:
     return await fetch_district_calendar(feed["url"])
 
 
+def _same_event_key(event: dict) -> tuple:
+    return (event["start_date"], " ".join(event["title"].lower().split()))
+
+
 @register_job(
     kind="district_calendar.scan",
     default_name="District calendar scan",
@@ -50,6 +54,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     fetched = []
     district_wide_uids: set[str] = set()
+    district_wide_keys: set[tuple] = set()
     missing_schools: list[str] = []
     for feed in district.ics_feeds:
         is_apptegy = feed.get("platform") == "apptegy"
@@ -71,6 +76,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         fetched.append((feed, feed_events))
         if not slug:
             district_wide_uids.update(e["external_uid"] for e in feed_events)
+            district_wide_keys.update(_same_event_key(e) for e in feed_events)
 
     events = []
     for feed, feed_events in fetched:
@@ -85,7 +91,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             # A Finalsite per-school feed repeats every district event
             # under the same UID (Voorhees: 63 of Kresson's 65 are the
             # district's), so only the school's own remainder is kept.
-            if school_id and event["external_uid"] in district_wide_uids:
+            # Older Finalsite calendars (Lumberton) copy them under new UIDs
+            # instead, so a same-day, same-title event counts too.
+            if school_id and (event["external_uid"] in district_wide_uids or _same_event_key(event) in district_wide_keys):
                 continue
             # Namespace the uid by feed - two different feeds could
             # otherwise coincidentally produce the same hash-based uid.

@@ -29,6 +29,7 @@ _SMORE_ISSUE_HREF_RE = re.compile(
 # links directly - contrast Cooper Elementary's archive page, which lists
 # per-issue links itself with no author-profile hop needed).
 _SMORE_AUTHOR_HREF_RE = re.compile(r"^https?://(?:www\.|app\.|secure\.)?smore\.com/u/", re.IGNORECASE)
+_DAY_PERIOD_RE = re.compile(r"(\d{1,2})\.\s*(\d{4})")
 _ARCHIVE_DATE_FORMATS = ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y", "%m/%d/%y", "%B %Y", "%b %Y")
 # Confirmed real: a Smore author profile shows each newsletter as a
 # thumbnail card with no date in the link text itself - the date only
@@ -157,7 +158,8 @@ async def fetch_and_parse(url: str) -> list[dict]:
 
 
 def _parse_archive_date(text: str) -> datetime | None:
-    text = text.strip()
+    # Lumberton Middle's newest issue reads "October 9. 2026".
+    text = _DAY_PERIOD_RE.sub(r"\1, \2", text.strip())
     for fmt in _ARCHIVE_DATE_FORMATS:
         try:
             return datetime.strptime(text, fmt)
@@ -236,7 +238,7 @@ def _pick_current_issue_link(html: str) -> str | None:
     # Confirmed real (Jennings Elementary): a page can embed the current
     # issue directly as an <iframe src="...">, no <a href> anywhere at all.
     for anchor in soup.select("a[href], iframe[src]"):
-        href = anchor.get("href") or anchor.get("src")
+        href = (anchor.get("href") or anchor.get("src") or "").strip()
         if href and _SMORE_ISSUE_HREF_RE.match(href):
             candidates.append((href, anchor))
     if not candidates:

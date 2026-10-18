@@ -1,0 +1,62 @@
+{
+  "exported_at": "2026-10-18T12:00:00Z",
+  "source": "onboarding: Rancocas Valley Regional High School District",
+  "districts": [
+    {
+      "name": "Rancocas Valley Regional High School District",
+      "state": "NJ",
+      "website_url": "https://www.rvrhs.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Rancocas Valley District Calendar",
+          "url": "https://www.rvrhs.com/servlet/ICalServlet?id=0"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Eastampton",
+        "Hainesport",
+        "Lumberton",
+        "Mount Holly",
+        "Westampton"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "rancocas-valley",
+      "name": "Rancocas Valley Regional High School",
+      "short_name": "Rancocas Valley",
+      "district_name": "Rancocas Valley Regional High School District",
+      "school_type": "high",
+      "address": "520 Jacksonville Road, Mount Holly, NJ 08060",
+      "main_phone": "(609) 267-0830",
+      "website_url": "https://www.rvrhs.com",
+      "absence_method": "phone",
+      "absence_emails": [
+        "attendance@rvrhs.com"
+      ],
+      "absence_phone": "(609) 267-0830 ext. 3243",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call or email the Attendance Office (ext. 3243 or attendance@rvrhs.com) as soon as possible on the day of the absence or lateness. Unverified absences get an automatic call and email after 9:50 AM. Medical notes authorize an absence or late and must be emailed, faxed to (609) 702-0631 or hand-delivered within 2 school days of return.",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": "12:09 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/18846",
+      "logo_url": "https://www.rvrhs.com/pics/header_logo.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

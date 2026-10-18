@@ -227,6 +227,11 @@ site named after the district itself rather than one per school; when
 `GetSchoolsList` returns exactly one site the scan applies it to all the
 district's schools.
 
+**A shortname that resolves is not proof of menus.** Rancocas Valley's
+resolves to a deactivated ISD (`ZZZRANCOCAS VALLEY`, `Status` false);
+Hainesport's and Lumberton's resolve but `GetSchoolsList` returns `[]` (a
+payments account, menus elsewhere). Check the schools list before wiring one.
+
 ---
 
 ## District/school calendar (closures, early dismissals, holidays)
@@ -485,6 +490,12 @@ branded domain itself — fetch the branded site's own homepage and grep its
 links for `arbiterlive.com`; it reliably links back to one of the three real
 shapes above (its own "Calendar" or "Schedule" link).
 
+**When the site links nothing,** `POST https://www.arbiterlive.com/School/Search`
+(form field `searchString`) finds entities by name or address. Middle-school
+ids often come from the owner instead (all four Rancocas Valley feeders'
+were). An entity can hold only the games opponents entered (Eastampton 6533:
+4 of about 14), so count its events against the school's own schedule.
+
 **Band coverage:** confirmed real — when a school's real ArbiterLive entity
 resolves, band events already come through the *same* combined calendar feed
 as every sport (`"title":"Band - Coed Varsity"`, its own `sportId`). No
@@ -703,6 +714,7 @@ file for the platform you identified in step 2 of "How to actually do a crawl"
 | Apptegy (`cmsv2-assets.apptegy.net`) | `docs/platforms/apptegy.md` |
 | eSchoolView / LINQ (`*_home.aspx`) | `docs/platforms/eschoolview.md` |
 | WordPress (Beaver Builder, TablePress, multisite) | `docs/platforms/wordpress.md` |
+| Catapult CMS (`catapultcms`, `/<Section>/<Page>/index.html`) | `docs/platforms/catapult.md` |
 | Sterling group, Eastern/Overbrook group (several platforms each) | `docs/platforms/mixed-districts.md` |
 
 A platform not in this table is new: create `docs/platforms/<name>.md` and add a

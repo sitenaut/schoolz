@@ -139,6 +139,15 @@ def test_picks_latest_even_when_archive_lists_newest_first():
     assert _pick_current_issue_link(html) == "https://app.smore.com/n/0mhat"
 
 
+def test_period_after_the_day_still_reads_as_a_date():
+    # Lumberton Middle's newest link: "October 9. 2026", href with a trailing space.
+    html = """
+    <a href="https://app.smore.com/n/ba580s-latest-lms-updates ">October 9. 2026</a>
+    <a href="https://app.smore.com/n/xk2nd-lms-updates">September 25, 2026</a>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/ba580s-latest-lms-updates"
+
+
 def test_falls_back_to_last_link_in_document_order_when_no_date_parses():
     html = """
     <a href="https://app.smore.com/n/dz5ck">Read now</a>

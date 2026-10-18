@@ -6,7 +6,7 @@ from sqlalchemy import select
 import database
 from models import School, StaffMember
 from scheduler.jobs import staff_roster_scan
-from services.staff_roster import directory_total, own_location_option
+from services.staff_roster import _keep_own_location, _parse_page, directory_total, own_location_option
 
 _DIRECTORY = """
 <form><select name="const_search_location">
@@ -27,6 +27,29 @@ def test_picks_the_schools_own_location():
 def test_no_location_when_none_or_several_fit():
     assert own_location_option(_DIRECTORY, ["Medford Memorial", "Medford Memorial Middle School"]) is None
     assert own_location_option("<div class='fsConstituentItem'></div>", ["Lenape High School"]) is None
+
+
+def _card(cid: str, name: str, locations: str | None) -> str:
+    loc = f'<div class="fsLocations"> {locations} </div>' if locations else ""
+    return f'<div class="fsConstituentItem" data-constituent-id="{cid}"><h3 class="fsFullName">{name}</h3>{loc}</div>'
+
+
+def test_cards_naming_their_buildings_keep_this_schools_people():
+    # Lumberton: one district list, no Location filter, buildings on each card.
+    html = (
+        _card("1", "Case Manager", "Lumberton Middle School, Bobby's Run Elementary School")
+        + _card("2", "Secretary", "Ashbrook Elementary School, Ashbrool Elementary School")
+        + _card("3", "Superintendent", None)
+    )
+    people = _parse_page(html)
+    kept = _keep_own_location(people, ["Bobby's Run", "Bobby's Run Elementary School"], complete=True)
+    assert [p["constituent_id"] for p in kept] == ["1", "3"]
+    assert all(p["location_filter"] for p in kept)
+
+
+def test_locations_that_never_name_the_school_change_nothing():
+    people = _parse_page(_card("1", "Teacher", "HS") + _card("2", "Nurse", "MS"))
+    assert len(_keep_own_location(people, ["Haddonfield Memorial High School"], complete=True)) == 2
 
 
 def test_directory_total_reads_the_pagination_label():
