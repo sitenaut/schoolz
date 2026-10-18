@@ -200,11 +200,11 @@ async def public_export_csv(district_id: str | None = None, school_id: str | Non
 
 # --- mutations: audit.manage -----------------------------------------------
 
-def _start(jobs) -> dict:
+async def _start(jobs) -> dict:
     from scheduler.runner import run_job_now
 
     for job in jobs:
-        run_job_now(job.id)
+        await run_job_now(job.id)
     return {"started": [{"id": j.id, "kind": j.kind, "name": j.name} for j in jobs]}
 
 
@@ -220,7 +220,7 @@ async def run_data_point(school_id: str, key: str, db: AsyncSession = Depends(ge
     jobs = audit.jobs_to_run([audit.evaluate(point, school, ctx)], ctx, lambda kind: kind in registry)
     if not jobs:
         raise HTTPException(status.HTTP_409_CONFLICT, "No scan collects this data point for this school")
-    return _start(jobs)
+    return await _start(jobs)
 
 
 @router.post("/schools/{school_id}/run-all", dependencies=[Depends(require_permission("audit.manage"))])
@@ -230,7 +230,7 @@ async def run_all(school_id: str, db: AsyncSession = Depends(get_db)):
     jobs = audit.jobs_to_run(audit.audit_school(school, ctx).values(), ctx, lambda kind: kind in registry)
     if not jobs:
         raise HTTPException(status.HTTP_409_CONFLICT, "No scans are set up for this school")
-    return _start(jobs)
+    return await _start(jobs)
 
 
 class NotPublishedIn(BaseModel):

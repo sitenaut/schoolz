@@ -136,17 +136,19 @@ async def _finalize(
         await db.commit()
 
 
-async def _execute(job_id: str, *, triggered_by: str) -> None:
+async def _execute(job_id: str, *, triggered_by: str, requested_at: datetime | None = None) -> None:
     # job_kind isn't known yet (needs a DB lookup), so the queue-wait metric
     # is recorded with no job.kind attribute for the wait itself - fine,
     # since the point is the aggregate burst-queueing picture.
     wait_start = time.perf_counter()
     async with _get_concurrency_limit():
         queue_wait_s = time.perf_counter() - wait_start
-        await _execute_locked(job_id, triggered_by=triggered_by, queue_wait_s=queue_wait_s)
+        await _execute_locked(job_id, triggered_by=triggered_by, queue_wait_s=queue_wait_s, requested_at=requested_at)
 
 
-async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float = 0.0) -> None:
+async def _execute_locked(
+    job_id: str, *, triggered_by: str, queue_wait_s: float = 0.0, requested_at: datetime | None = None,
+) -> None:
     started_at = datetime.now(UTC)
     lock_key = _lock_key(job_id)
 
@@ -155,6 +157,10 @@ async def _execute_locked(job_id: str, *, triggered_by: str, queue_wait_s: float
             job = (await db.execute(select(ScheduledJob).where(ScheduledJob.id == job_id))).scalar_one_or_none()
             if not job:
                 return
+            # The request this run answers is done; a newer click stays set.
+            # Every path below commits, which saves it.
+            if requested_at is not None and job.run_requested_at is not None and job.run_requested_at <= requested_at:
+                job.run_requested_at = None
             recent = [
                 (status, code, started)
                 for status, code, started in (
@@ -342,12 +348,66 @@ def launch_staggered(job_ids: list[str], triggered_by: str, spacing_s: float | N
     _spawn(_launch())
 
 
-def run_job_now(job_id: str) -> None:
-    """Fire-and-forget: schedules the run on the current event loop and
-    returns immediately. Result shows up later via GET .../runs."""
-    task = asyncio.create_task(_execute(job_id, triggered_by="manual"))
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+# On Fly, a run-now started inside the API process died with no error
+# whenever Fly auto-stopped that idle web machine mid-run (a local-events
+# refresh, 2026-10-18, stopped at 54 of 65 sources and then blocked every
+# retry as "already running" for 45 minutes). With this set, a run-now only
+# records the request and the scheduler process - its own machine, never
+# auto-stopped - starts it (claim_requested_runs). Off, the run starts here,
+# as it always did: locally the scheduler is opt-in and would never claim it.
+RUN_NOW_VIA_SCHEDULER = os.getenv("RUN_NOW_VIA_SCHEDULER", "").strip().lower() in ("1", "true", "yes", "on")
+
+_REQUEST_RUN_SQL = text(
+    """
+    UPDATE scheduled_jobs SET
+        run_requested_at = now(),
+        last_status = CASE WHEN last_status = 'running' THEN last_status ELSE 'queued' END
+    WHERE id = :job_id
+    """
+)
+
+# Job ids this process has started a requested run for and not finished.
+_requested_in_flight: set[str] = set()
+
+
+async def run_job_now(job_id: str) -> None:
+    """Starts a manual run and returns immediately; the result shows up later
+    via GET .../runs. See RUN_NOW_VIA_SCHEDULER for where it runs."""
+    if not RUN_NOW_VIA_SCHEDULER:
+        _spawn(_execute(job_id, triggered_by="manual"))
+        return
+    async with SessionLocal() as db:
+        await db.execute(_REQUEST_RUN_SQL, {"job_id": job_id})
+        await db.commit()
+
+
+async def claim_requested_runs() -> int:
+    """Scheduler side: starts every requested run-now, oldest request first.
+
+    The request stays set until _execute_locked actually starts the run, not
+    just until it's queued here: a run waiting behind the concurrency limit
+    when a deploy restarts this process is picked up again by the next one.
+    Two processes starting the same request (a deploy overlap) is harmless -
+    the advisory lock records the second as skipped."""
+    async with SessionLocal() as db:
+        rows = (
+            await db.execute(
+                select(ScheduledJob.id, ScheduledJob.run_requested_at)
+                .where(ScheduledJob.run_requested_at.is_not(None))
+                .order_by(ScheduledJob.run_requested_at)
+            )
+        ).all()
+    started = 0
+    for job_id, requested_at in rows:
+        if job_id in _requested_in_flight:
+            continue
+        _requested_in_flight.add(job_id)
+        task = asyncio.create_task(_execute(job_id, triggered_by="manual", requested_at=requested_at))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
+        task.add_done_callback(lambda _t, job_id=job_id: _requested_in_flight.discard(job_id))
+        started += 1
+    return started
 
 
 # A fire this close to now will happen on schedule anyway; catching it up

@@ -11,6 +11,7 @@ const STATUS: Record<string, { tone: Tone; label: string; extra?: string }> = {
   warning: { tone: "warn", label: "Warning" },
   error: { tone: "bad", label: "Failed" },
   running: { tone: "info", label: "Running", extra: "running" },
+  queued: { tone: "info", label: "Queued" },
   skipped: { tone: "muted", label: "Skipped" },
 };
 

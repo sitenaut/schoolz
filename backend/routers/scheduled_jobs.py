@@ -9,12 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from local_events.billz_import import plan_import
-from local_events.prune import KIND as LOCAL_EVENTS_KIND, prune_orphaned_events
+from local_events.prune import KIND as LOCAL_EVENTS_KIND
+from local_events.prune import prune_orphaned_events
 from local_events.test_fetch import TestFetchIn, TestFetchOut, run_test_fetch
 from models import District, EmailScanner, JobRun, ScheduledJob, School, SmoreNewsletter, User
-from schemas import JobKindOut, JobRunOut, JobSourceOut, JobRunSummaryOut, ScheduledJobCreate, ScheduledJobOut, ScheduledJobUpdate
 from scheduler.registry import registry
 from scheduler.sources import job_sources
+from schemas import (
+    JobKindOut,
+    JobRunOut,
+    JobRunSummaryOut,
+    JobSourceOut,
+    ScheduledJobCreate,
+    ScheduledJobOut,
+    ScheduledJobUpdate,
+)
 
 router = APIRouter(prefix="/scheduled-jobs", tags=["scheduled-jobs"])
 
@@ -33,7 +42,7 @@ def _validate_timezone(tz: str) -> None:
     try:
         ZoneInfo(tz)
     except (ZoneInfoNotFoundError, ValueError):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown timezone: {tz}")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown timezone: {tz}") from None
 
 
 def _validate_params(kind: str, params: dict) -> None:
@@ -217,7 +226,7 @@ async def import_billz_jobs(body: BillzImportIn, user: User = Depends(require_pe
     try:
         planned, skipped = plan_import(body.text)
     except ValueError as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     existing = (await db.execute(select(ScheduledJob.params).where(ScheduledJob.kind == "local_events.refresh"))).scalars().all()
     created: list[ScheduledJob] = []
     for item in planned:
@@ -313,9 +322,9 @@ async def run_now(job_id: str, db: AsyncSession = Depends(get_db)):
     if job.kind not in registry:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Job kind {job.kind} is not registered in this process")
 
-    from scheduler.runner import has_live_run, run_job_now
+    from scheduler import runner
 
-    if await has_live_run(db, job.id):
+    if await runner.has_live_run(db, job.id):
         raise HTTPException(status.HTTP_409_CONFLICT, "This job is already running")
-    run_job_now(job.id)
-    return {"status": "started"}
+    await runner.run_job_now(job.id)
+    return {"status": "queued" if runner.RUN_NOW_VIA_SCHEDULER else "started"}

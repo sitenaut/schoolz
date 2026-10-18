@@ -2,18 +2,24 @@ import asyncio
 import logging
 import os
 import signal
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, text
 
+import observability
 import scheduler.jobs  # noqa: F401  (registers all job kinds via decorators)
 import telemetry
-import observability
 from database import SessionLocal, engine
 from logging_config import setup_logging
 from models import ScheduledJob
-from scheduler.runner import build_apscheduler_job, forget_apscheduler_job, queue_first_runs, queue_missed_runs
+from scheduler.runner import (
+    build_apscheduler_job,
+    claim_requested_runs,
+    forget_apscheduler_job,
+    queue_first_runs,
+    queue_missed_runs,
+)
 from settings import check_settings
 
 setup_logging()
@@ -22,14 +28,19 @@ telemetry.instrument_sqlalchemy_engine(engine)
 logger = logging.getLogger(__name__)
 
 RECONCILE_INTERVAL_SECONDS = 30
+# How soon a run-now (runner.run_job_now) starts; one cheap SELECT per tick.
+REQUESTED_RUNS_INTERVAL_SECONDS = 5
 STUCK_RUN_THRESHOLD_MINUTES = 45
 
 _stop_event = asyncio.Event()
+# Set after the first reap, so a requested run never meets the dead
+# previous process's 'running' row and gets recorded skipped.
+_first_reap_done = asyncio.Event()
 
 # Runs this machine started before this process did belong to a process that
 # is gone: the scheduler machine runs nothing else. See _REAP_STUCK_RUNS_SQL.
 _MACHINE_ID = os.getenv("FLY_MACHINE_ID")
-_PROCESS_STARTED_AT = datetime.now(timezone.utc)
+_PROCESS_STARTED_AT = datetime.now(UTC)
 
 _REAP_STUCK_RUNS_SQL = text(
     """
@@ -115,6 +126,7 @@ async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
             await _reap_stuck_runs()
         except Exception:
             logger.exception("stuck_run_reap_failed")
+        _first_reap_done.set()
         try:
             await _reconcile(aps_scheduler)
             # Heartbeat. Nothing else proves this process is alive: with no
@@ -141,7 +153,22 @@ async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
             logger.exception("first_runs_failed")
         try:
             await asyncio.wait_for(_stop_event.wait(), timeout=RECONCILE_INTERVAL_SECONDS)
-        except asyncio.TimeoutError:
+        except TimeoutError:
+            pass
+
+
+async def _requested_runs_loop() -> None:
+    await _first_reap_done.wait()
+    while not _stop_event.is_set():
+        try:
+            count = await claim_requested_runs()
+            if count:
+                logger.info("started_requested_runs", extra={"count": count})
+        except Exception:
+            logger.exception("requested_runs_failed")
+        try:
+            await asyncio.wait_for(_stop_event.wait(), timeout=REQUESTED_RUNS_INTERVAL_SECONDS)
+        except TimeoutError:
             pass
 
 
@@ -159,7 +186,7 @@ async def main() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, _handle_stop_signal)
 
-    await _reconcile_loop(aps_scheduler)
+    await asyncio.gather(_reconcile_loop(aps_scheduler), _requested_runs_loop())
 
     logger.info("scheduler_stopping")
     aps_scheduler.shutdown(wait=False)
