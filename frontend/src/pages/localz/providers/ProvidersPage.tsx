@@ -42,7 +42,7 @@ export function ProvidersPage() {
       <div className="provider-cta">
         {user ? (
           <>
-            <Link className="btn btn-primary" to="/localz/providers/requests/new">
+            <Link className="btn btn-primary" to={NEW_LISTING}>
               {t("Start your listing")}
             </Link>
             <Link className="btn" to="/localz/providers/portal">
@@ -62,9 +62,11 @@ export function ProvidersPage() {
 }
 
 const OTHER_TOWN = "__other__";
+const NEW_LISTING = "/localz/providers/requests/new";
 
 function InquiryForm() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [form, setForm] = useState({ organization_name: "", first_name: "", last_name: "", phone: "", email: "", what_you_provide: "", town: "" });
   // Town is picked from New Jersey's towns (scripts/build_nj_towns.py),
   // loaded on this page only; "not listed" opens a box to type it.
@@ -134,6 +136,10 @@ function InquiryForm() {
       <section className="card provider-inquiry">
         <h3>{t("Thanks - we have your request")}</h3>
         <p>{t("We'll call you at {{phone}} to set up your listing.", { phone: form.phone })}</p>
+        <p className="note">{t("Rather add the details yourself? Start your listing now and we'll review it instead of calling for everything.")}</p>
+        <Link className="btn" to={user ? NEW_LISTING : `/login?next=${encodeURIComponent(NEW_LISTING)}`}>
+          {user ? t("Start your listing") : t("Create an account and start your listing")}
+        </Link>
       </section>
     );
   }
