@@ -462,9 +462,13 @@ def _current_item_line(item: SchoolContentItem) -> str:
 # forward-looking surface (Coming up, Today, the September calendar)
 # rather than merely showing a wrong date. Rolling the year forward to the
 # next plausible occurrence beats storing a date we already know is stale;
-# the grace window keeps a genuinely just-passed event (still being
-# reported a week or two after the fact) from being shoved a year ahead.
-_STALE_DATE_GRACE = timedelta(days=30)
+# the grace window keeps a genuinely past event from being shoved a year
+# ahead. Reused artwork is about twelve months stale; anything within six
+# months is a late mention. A 30-day window rolled real September events
+# into next September when an issue was first read a few weeks late
+# (Bobby's Run, onboarded Oct 2026, and the same district PTA's July
+# spiritwear drop on Givebacks).
+_STALE_DATE_GRACE = timedelta(days=180)
 _MAX_YEAR_ROLL = 5
 
 

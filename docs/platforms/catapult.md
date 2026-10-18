@@ -1,0 +1,13 @@
+# Catapult CMS
+
+Hainesport Township (`hainesport.k12.nj.us`, `backend/seed/hainesport.json`). Same rules as the other platform files: when you confirm a new shape, add it here in the same PR.
+
+- **Tells:** a footer "CatapultCMS" link, scripts from `d3ffxp65uv2cda.cloudfront.net/catapultcms-support-scripts/...` and `announcements.catapultcms.com/catapultv2/...`, `<meta name="catapult-flags">`, admin login at `edu.catapultcms.com`.
+- **Pages are static, server-rendered HTML** at `/<Section>/<Page>/index.html` with `<base href>` set to the site root, so every href is relative. Plain curl works. The site map is `/A-Z/`. Quick-link URLs under `/__catapult_pages/<uuid>/<Name>.html` are meta-refresh stubs: follow the refresh and track the canonical path.
+- Content blocks are `div.ccms-contentelement.ccms-contentelement-<Type>` (Editor, Announcement, GoogleCalendar, Banner, HTMLComponent, Picture, ImageGallery, ContentTitle).
+- **Calendar: no native ICS.** The GoogleCalendar element calls `ccmsGCalendarInitializeCalendar(..., [{googleCalendarId: '<id>@group.calendar.google.com', ...}], ...)` inline, with the id in plain text (not a base64 iframe `src`): grep `googleCalendarId` and use the public `basic.ics`. Hainesport's holds years of history (about 3,400 events) and a "Day N" specials rotation on every school day.
+- **Files** go to a per-site CloudFront host with UUID paths (`d16k74nzx9emoe.cloudfront.net/<uuid>/<name>.pdf`) or a relative `documents/` path, linked straight from the nav with no wrapper page: track the HTML page that lists them. Menu filenames are hand-typed ("October 2026-Hainesport Lunch.pdf", "Sepyember 2026 -1.pdf").
+- **Emails are obfuscated:** `href="javascript:ccms_O('c1&c2&...', n, d)"` decodes as RSA, `chr(pow(c, d, n))` per code giving `mailto:<address>`. No staff or contact parser reads it yet, and Hainesport publishes no roster anyway.
+- **Announcements are client-rendered** from `announcements.catapultcms.com` (`ccmsAnnouncementsLoadEdmbed('FeedView', ..., ["<feedId>"], ...)`); through the scraper, wait on `#catapultannounce-postList li`. Items are `li.catapultannounce-item` with a `data-id`; the slick carousel adds `slick-cloned` duplicates. Nothing scans them.
+- **Footer:** `div.footer-tagline` (district name), `a.footer-address` wrapping one div per line, then a `tel:` link; logo is `header img.main-logo`. `school_info.scan` has no parser for it, so address and phone are typed into the seed.
+- Google Doc handbooks can carry the bell schedule only as images; `export?format=html` embeds them as `data:image/png;base64`, so they can be read without a browser (Hainesport's were transcribed by hand).

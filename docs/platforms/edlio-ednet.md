@@ -241,3 +241,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - **Bulletin board** (`/apps/bbmessages/show_bbm.jsp?REC_ID=N`) is where calendar, bell-schedule and handbook PDFs live.
 - **Logo** is predictably `/_MASTER/common_pics/header_logo.png` on a school subdomain, and these footers aren't read by `school_info.scan`.
 
+
+## Rancocas Valley (found onboarding)
+
+- One site for district and school (`rvrhs.com`, no subdomain). The Calendar page links only stale 2020-2023 PDFs; the current calendar and handbook are on a publications page (`/apps/publications/index.jsp?parentREC_ID=219`). The ICS (`ICalServlet?id=0`) carries the closures, so no calendar PDF is wired.
+- `/apps/bell_schedules/` can exist and say "No Bell Schedule found": an empty app is not a source.
+- The `.enf-address` footer can hold the street and town as one text node broken by a newline; `school_info` collapses whitespace inside each part.
+- An old league site link (`burlingtoncountyscholasticleague.org/public/genie/...`) now redirects to Arbiter's marketing page; use the school's own arbiterlive.com link.

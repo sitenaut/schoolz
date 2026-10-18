@@ -47,6 +47,7 @@ def _parse_page(html: str) -> list[dict]:
 
         title_el = el.select_one(".fsTitles")
         department_el = el.select_one(".fsDepartments")
+        locations_el = el.select_one(".fsLocations")
         email_el = el.select_one(".fsEmail a[href^='mailto:']")
         phone_el = el.select_one(".fsPhones a[href^='tel:']")
 
@@ -58,6 +59,7 @@ def _parse_page(html: str) -> list[dict]:
                 "department": _text_after_label(department_el, "Departments:") if department_el else None,
                 "email": email_el["href"].replace("mailto:", "").strip() if email_el else None,
                 "phone": phone_el.get_text(strip=True) if phone_el else None,
+                "locations": [p.strip() for p in locations_el.get_text(" ", strip=True).split(",") if p.strip()] if locations_el else [],
             }
         )
     return items
@@ -1075,7 +1077,25 @@ async def _read_constituent_directory(url: str, school_names: list[str | None]) 
                 for item in people.values():
                     item["location_filter"] = location[1]
             return list(people.values())
-    return list({item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}.values())
+    people = list({item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}.values())
+    return _keep_own_location(people, school_names, complete=len(people) >= directory_total(pages_html))
+
+
+def _keep_own_location(people: list[dict], school_names: list[str | None], complete: bool) -> list[dict]:
+    """A district list with no Location filter that still names each card's
+    buildings (Lumberton: "Lumberton Middle School, Bobby's Run Elementary
+    School") keeps the cards naming this school and the ones naming none."""
+    own = _school_tokens(*school_names)
+    if not own or not any(p["locations"] for p in people):
+        return people
+    kept = [p for p in people if not p["locations"] or own & _school_tokens(*p["locations"])]
+    # Labels that never name this school ("HS") say nothing about it.
+    if not any(p["locations"] for p in kept):
+        return people
+    if complete:
+        for p in kept:
+            p["location_filter"] = " ".join(n for n in school_names if n)
+    return kept
 
 
 async def _fetch_discovered_roster(base: str, school_names: list[str | None]) -> list[dict]:

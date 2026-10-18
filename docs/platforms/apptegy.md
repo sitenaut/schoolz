@@ -44,3 +44,9 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - Page JSON (`.../cms/pages/<slug>`) holds links with JSON-escaped quotes, and a Drive calendar link can be labelled only "2026-2027", which `district_calendar_pdf.find_pdf_link` doesn't pick up; Shamong's `calendar_pdf_url` is the Drive file's `uc?export=download&id=` URL, so it needs updating each year.
 - `scores_schedules` (`.../cms/scores_schedules`) can be a middle school's only athletics schedule (Shamong); nothing reads it.
 - `cms/documents` and `cms/articles` 404; Drive folders list their files in plain HTML at `drive.google.com/embeddedfolderview?id=<id>`.
+
+## Westampton (found onboarding)
+
+- **District and school orgs can each hold a full copy of the same event list under different event ids** (Westampton 4387/4388/4390, 49 events each). Seed the district org only, or every item appears three times; school orgs still go in `apptegy_org_id` for their rosters.
+- The current calendar PDF can be linked only from the header as an `aptg.co` short link to an unsigned thrillshare asset, while the "Dismissal Times/Calendar" page still lists a prior year. The feed carries the same closures, so `calendar_pdf_url` stays null.
+- A plain GET gets a "Client Challenge" page; page bodies come from `thrillshare-cmsv2.services.thrillshare.com/api/v4/o/<org>/cms/pages/<slug>` without auth.

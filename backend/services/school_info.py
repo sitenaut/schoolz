@@ -177,7 +177,9 @@ def _parse_edlio_footer(html: str, base_url: str) -> dict | None:
         maps = soup.select_one(".enf-address a[href$='/apps/maps']")
         if not maps:
             return None
-        address = ", ".join(maps.stripped_strings)
+        # A single text node can hold a line break (Rancocas Valley), so the
+        # whitespace inside each part is collapsed too.
+        address = ", ".join(" ".join(s.split()) for s in maps.stripped_strings)
         contact = soup.select_one(".enf-address a[href$='/apps/contact']")
         match = _PLAIN_PHONE_RE.search(contact.get_text(" ", strip=True)) if contact else None
         phone_text = match.group(0) if match else None

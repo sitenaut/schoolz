@@ -1,0 +1,106 @@
+{
+  "exported_at": "2026-10-18T12:00:00Z",
+  "source": "onboarding: Westampton Township Public School District",
+  "districts": [
+    {
+      "name": "Westampton Township Public School District",
+      "state": "NJ",
+      "website_url": "https://www.westamptonschools.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Westampton District",
+          "platform": "apptegy",
+          "org_id": "4387"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Westampton"
+      ],
+      "schoolcafe_shortname": "WestamptonTownshipSDNutriServe"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "holly-hills",
+      "name": "Holly Hills Elementary School",
+      "short_name": "Holly Hills",
+      "district_name": "Westampton Township Public School District",
+      "school_type": "elementary",
+      "address": "500 Ogden Drive, Westampton, NJ 08060",
+      "main_phone": "(609) 267-8565",
+      "website_url": "https://www.westamptonschools.org/o/hhes",
+      "apptegy_org_id": "4390",
+      "absence_method": "mailto",
+      "absence_emails": [
+        "hhsattendance@westamptonschools.org"
+      ],
+      "absence_phone": "(609) 267-8565",
+      "absence_instructions": "Before 9:00 AM, email hhsattendance@westamptonschools.org or call the main office at (609) 267-8565 to report an absence or lateness. Students arriving after 8:45 AM sign in at the main office with a parent. Bring a doctor's or parent note on return for the absence to be excused.",
+      "start_time": "8:35 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:05 PM",
+      "delayed_opening_time": "10:35 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/4390/logo/1106/hhes.png",
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM (after care at Holly Hills; middle-school students are bused there)",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Westampton Township Recreation, not the school district. Before care is at Holly Hills for grades K-3 and at the middle school for grades 4-6; registration through the township's MyRec site.",
+        "handbook_url": "https://www.westamptonschools.org/o/hhes/page/before-after-care"
+      },
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "bell_periods": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "westampton-middle",
+      "name": "Westampton Township Middle School",
+      "short_name": "Westampton Middle",
+      "district_name": "Westampton Township Public School District",
+      "school_type": "middle",
+      "address": "700 Rancocas Road, Westampton, NJ 08060",
+      "main_phone": "(609) 267-2722",
+      "website_url": "https://www.westamptonschools.org/o/wms",
+      "apptegy_org_id": "4388",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 267-2722",
+      "absence_instructions": "Call the Main Office at (609) 267-2722 as early as possible on the day of the absence, and send a note explaining the absence (and a doctor's note when applicable) within one week of the student's return.",
+      "start_time": "8:05 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:35 PM",
+      "delayed_opening_time": null,
+      "athletics_url": "https://www.arbiterlive.com/m/team/25421",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/4388/logo/6547/wms.png",
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "Dismissal - 6:00 PM (after care at Holly Hills; middle-school students are bused there)",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Westampton Township Recreation, not the school district. Before care is at Holly Hills for grades K-3 and at the middle school for grades 4-6; registration through the township's MyRec site.",
+        "handbook_url": "https://www.westamptonschools.org/o/hhes/page/before-after-care"
+      },
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "bell_periods": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

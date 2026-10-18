@@ -1,0 +1,673 @@
+{
+  "exported_at": "2026-10-18T12:00:00Z",
+  "source": "onboarding: Lumberton Township School District",
+  "districts": [
+    {
+      "name": "Lumberton Township School District",
+      "state": "NJ",
+      "website_url": "https://www.lumberton.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Lumberton District Calendar",
+          "url": "https://www.lumberton.k12.nj.us/calendar/calendar_361.ics",
+          "skip_title_prefixes": [
+            "AES ",
+            "BRS ",
+            "LMS "
+          ]
+        },
+        {
+          "name": "Ashbrook Calendar",
+          "url": "https://www.lumberton.k12.nj.us/calendar/calendar_358.ics",
+          "school_slug": "ashbrook"
+        },
+        {
+          "name": "Bobby's Run Calendar",
+          "url": "https://www.lumberton.k12.nj.us/calendar/calendar_359.ics",
+          "school_slug": "bobbys-run"
+        },
+        {
+          "name": "Lumberton Middle Calendar",
+          "url": "https://www.lumberton.k12.nj.us/calendar/calendar_360.ics",
+          "school_slug": "lumberton-middle"
+        },
+        {
+          "name": "Lumberton Middle Athletics",
+          "url": "https://www.lumberton.k12.nj.us/calendar/calendar_365.ics",
+          "school_slug": "lumberton-middle"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Lumberton"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "ashbrook",
+      "name": "Ashbrook Elementary School",
+      "short_name": "Ashbrook",
+      "school_type": "elementary",
+      "address": "33 Municipal Drive, Lumberton, NJ 08048",
+      "main_phone": "(609) 518-0030",
+      "website_url": "https://aes.lumberton.k12.nj.us",
+      "absence_phone": "(609) 518-0030",
+      "absence_instructions": "Call the school at (609) 518-0030 before 8:00 AM (an answering machine takes calls; you may call the night before) with your child's name, grade and teacher. Send a note with the dates and reason when your child returns; 5 or more days needs a doctor's note.",
+      "start_time": "8:50 AM",
+      "end_time": "3:19 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "10:50 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Breakfast/STAR Time",
+            "start": "08:51",
+            "end": "09:39"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:39",
+            "end": "10:27"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:27",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:15",
+            "end": "12:03"
+          },
+          {
+            "name": "Period 4",
+            "start": "12:03",
+            "end": "12:51"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:55",
+            "end": "13:43"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:43",
+            "end": "14:31"
+          },
+          {
+            "name": "Period 7",
+            "start": "14:31",
+            "end": "15:19"
+          },
+          {
+            "name": "Dismissal",
+            "start": "15:19",
+            "end": "15:39"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Breakfast/STAR Time",
+            "start": "08:50",
+            "end": "09:16"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:16",
+            "end": "09:43"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:43",
+            "end": "10:10"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:10",
+            "end": "10:37"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:37",
+            "end": "11:04"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:04",
+            "end": "11:31"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:31",
+            "end": "11:58"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:58",
+            "end": "12:25"
+          },
+          {
+            "name": "Dismissal",
+            "start": "12:25",
+            "end": "12:44"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Breakfast/STAR Time",
+            "start": "10:50",
+            "end": "11:19"
+          },
+          {
+            "name": "Period 1",
+            "start": "11:19",
+            "end": "11:48"
+          },
+          {
+            "name": "Period 2",
+            "start": "11:48",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 4",
+            "start": "12:17",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "13:05",
+            "end": "13:53"
+          },
+          {
+            "name": "Period 3",
+            "start": "13:53",
+            "end": "14:22"
+          },
+          {
+            "name": "Period 6",
+            "start": "14:22",
+            "end": "14:51"
+          },
+          {
+            "name": "Period 7",
+            "start": "14:51",
+            "end": "15:20"
+          },
+          {
+            "name": "Dismissal",
+            "start": "15:20",
+            "end": "15:39"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "nutrislice_location": "lumberton/ashbrook-elementary-school",
+      "givebacks_shortname": "lumbertonpta",
+      "sacc": {
+        "am_hours": "6:35 AM - start of school (8:35 AM on delayed openings)",
+        "pm_hours": "Dismissal (3:19 PM) - 6:00 PM",
+        "site_phone": "(609) 267-1406 ext. 2004",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "EDC closes at 6:00 PM. On an early dismissal, pick up within two hours of school closing to avoid late charges.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run Extended Day Care (EDC), tuition-based, PreK-8; register and book weekly through EZChildTrack ($60 per family registration fee). No PM EDC on the Thanksgiving, winter-break and last-day half days; closed on extended holidays, full snow days and weather early dismissals. Emergency drop-in $25 per day.",
+        "handbook_url": "https://www.lumberton.k12.nj.us/academics/extended-day-care/home"
+      },
+      "district_name": "Lumberton Township School District",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "activities_calendar_ics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1715966344/lumbertonk12njus/e2fulc0rmzfcmw2m46ks/Lumberton_Wildcat_RGB-1.png",
+      "staff_directory_url": "https://www.lumberton.k12.nj.us/for-families/home"
+    },
+    {
+      "slug": "bobbys-run",
+      "name": "Bobby's Run Elementary School",
+      "short_name": "Bobby's Run",
+      "school_type": "elementary",
+      "address": "32 Dimsdale Drive, Lumberton, NJ 08048",
+      "main_phone": "(609) 702-5555",
+      "website_url": "https://brs.lumberton.k12.nj.us",
+      "absence_phone": "(609) 702-5555",
+      "absence_instructions": "Call the school at (609) 702-5555 and press 2 for student absence (press 3 for the nurse) before 8:00 AM. An answering machine takes the call, and you can call the night before. Give your child's name, grade and teacher. When your child returns, send a signed note with the dates and reason (a doctor's note for illness or 5 or more days). Early dismissals must be requested in writing by email to the school secretary; phone requests are only honored in emergencies.",
+      "start_time": "8:00 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:15 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom/Breakfast",
+            "start": "07:45",
+            "end": "08:05"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:07",
+            "end": "08:55"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:57",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:47",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:37",
+            "end": "11:25"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:27",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:20",
+            "end": "13:08"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:10",
+            "end": "13:58"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:48"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom/Breakfast",
+            "start": "07:45",
+            "end": "08:00"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:00",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:32",
+            "end": "09:02"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:04",
+            "end": "09:34"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:36",
+            "end": "10:06"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:08",
+            "end": "10:38"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:40",
+            "end": "11:10"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:12",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:44",
+            "end": "12:14"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom/Breakfast",
+            "start": "09:45",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:00",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:32",
+            "end": "11:02"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:04",
+            "end": "11:34"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:36",
+            "end": "12:06"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:08",
+            "end": "12:56"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:58",
+            "end": "13:46"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:48",
+            "end": "14:18"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "14:50"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "nutrislice_location": "lumberton/bobbys-run-school",
+      "sacc": {
+        "am_hours": "6:35 AM - start of school (8:35 AM on delayed openings)",
+        "pm_hours": "Dismissal (2:50 PM) - 6:00 PM",
+        "site_phone": "(609) 267-1406 ext. 2004",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "EDC closes at 6:00 PM. On an early dismissal, pick up within two hours of school closing to avoid late charges.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run Extended Day Care (EDC), tuition-based, PreK-8; register and book weekly through EZChildTrack ($60 per family registration fee). No PM EDC on the Thanksgiving, winter-break and last-day half days; closed on extended holidays, full snow days and weather early dismissals. Emergency drop-in $25 per day.",
+        "handbook_url": "https://www.lumberton.k12.nj.us/academics/extended-day-care/home"
+      },
+      "district_name": "Lumberton Township School District",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "activities_calendar_ics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1715966344/lumbertonk12njus/e2fulc0rmzfcmw2m46ks/Lumberton_Wildcat_RGB-1.png",
+      "staff_directory_url": "https://www.lumberton.k12.nj.us/for-families/home"
+    },
+    {
+      "slug": "lumberton-middle",
+      "name": "Lumberton Middle School",
+      "short_name": "Lumberton Middle",
+      "school_type": "middle",
+      "address": "30 Dimsdale Drive, Lumberton, NJ 08048",
+      "main_phone": "(609) 265-0123",
+      "website_url": "https://lms.lumberton.k12.nj.us",
+      "absence_phone": "(609) 265-0123",
+      "absence_instructions": "Call the school before 8:00 AM (an answering machine takes calls; you can call the night before) with your child's name, grade and teacher. On return, send a note to the homeroom teacher with the dates, reason and a parent signature; 5 or more days needs a doctor's certificate.",
+      "start_time": "8:00 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:18 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Breakfast",
+            "start": "07:45",
+            "end": "07:58"
+          },
+          {
+            "name": "HR/MA",
+            "start": "08:00",
+            "end": "08:04"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:06",
+            "end": "08:54"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:57",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:47",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 4A",
+            "start": "10:38",
+            "end": "11:01"
+          },
+          {
+            "name": "Period 4B",
+            "start": "11:03",
+            "end": "11:26"
+          },
+          {
+            "name": "Period 5A",
+            "start": "11:29",
+            "end": "11:52"
+          },
+          {
+            "name": "Period 5B",
+            "start": "11:54",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 6A",
+            "start": "12:20",
+            "end": "12:43"
+          },
+          {
+            "name": "Period 6B",
+            "start": "12:45",
+            "end": "13:08"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:11",
+            "end": "13:59"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:02",
+            "end": "14:50"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Breakfast",
+            "start": "07:45",
+            "end": "07:58"
+          },
+          {
+            "name": "HR/MA",
+            "start": "08:00",
+            "end": "08:03"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:05",
+            "end": "08:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:37",
+            "end": "09:07"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:09",
+            "end": "09:39"
+          },
+          {
+            "name": "Period 4A",
+            "start": "09:41",
+            "end": "09:55"
+          },
+          {
+            "name": "Period 4B",
+            "start": "09:57",
+            "end": "10:11"
+          },
+          {
+            "name": "Period 5A",
+            "start": "10:13",
+            "end": "10:27"
+          },
+          {
+            "name": "Period 5B",
+            "start": "10:29",
+            "end": "10:43"
+          },
+          {
+            "name": "Period 6A",
+            "start": "10:45",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 6B",
+            "start": "11:01",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:17",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:49",
+            "end": "12:18"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Breakfast",
+            "start": "09:45",
+            "end": "09:58"
+          },
+          {
+            "name": "HR/MA",
+            "start": "10:00",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:08",
+            "end": "10:38"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:41",
+            "end": "11:11"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:14",
+            "end": "11:44"
+          },
+          {
+            "name": "Period 4A",
+            "start": "11:47",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 4B",
+            "start": "12:07",
+            "end": "12:25"
+          },
+          {
+            "name": "Period 5A",
+            "start": "12:27",
+            "end": "12:45"
+          },
+          {
+            "name": "Period 5B",
+            "start": "12:47",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 6A",
+            "start": "13:07",
+            "end": "13:25"
+          },
+          {
+            "name": "Period 6B",
+            "start": "13:27",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:17"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "14:50"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/36397",
+      "nutrislice_location": "lumberton/lumberton-middle-school",
+      "sacc": {
+        "am_hours": "6:35 AM - start of school (8:35 AM on delayed openings)",
+        "pm_hours": "Dismissal (2:50 PM) - 6:00 PM",
+        "site_phone": "(609) 267-1406 ext. 2004",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "EDC closes at 6:00 PM. On an early dismissal, pick up within two hours of school closing to avoid late charges.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run Extended Day Care (EDC), tuition-based, PreK-8; register and book weekly through EZChildTrack ($60 per family registration fee). No PM EDC on the Thanksgiving, winter-break and last-day half days; closed on extended holidays, full snow days and weather early dismissals. Emergency drop-in $25 per day.",
+        "handbook_url": "https://www.lumberton.k12.nj.us/academics/extended-day-care/home"
+      },
+      "district_name": "Lumberton Township School District",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "activities_calendar_ics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1715966344/lumbertonk12njus/e2fulc0rmzfcmw2m46ks/Lumberton_Wildcat_RGB-1.png",
+      "staff_directory_url": "https://www.lumberton.k12.nj.us/for-families/home"
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://brs.lumberton.k12.nj.us/for-families/brs-communications",
+      "label": "Bobby's Run School Bulletin",
+      "school_slug": "bobbys-run",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://lms.lumberton.k12.nj.us/for-families/lms-communications",
+      "label": "Lumberton Middle Updates",
+      "school_slug": "lumberton-middle",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}
