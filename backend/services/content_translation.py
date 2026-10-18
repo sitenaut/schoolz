@@ -135,7 +135,7 @@ def _needs_model(item: SchoolContentItem, lang: str) -> bool:
     return any(c.isalpha() for c in item.title)
 
 
-async def _call_model(payload: list[dict], lang: str) -> dict[int, tuple[str, str | None]]:
+async def _call_model(payload: list[dict], lang: str, guidance: str = "") -> dict[int, tuple[str, str | None]]:
     """One Haiku call. {n: (title, description)} for whatever came back."""
     key = os.getenv("ANTHROPIC_API_KEY", "")
     if not key:
@@ -146,7 +146,7 @@ async def _call_model(payload: list[dict], lang: str) -> dict[int, tuple[str, st
         model=MODEL,
         max_tokens=8192,
         extra_body={"temperature": 0},
-        system=_SYSTEM.format(language=LANGUAGE_NAMES[lang], register=_REGISTER[lang]),
+        system=_SYSTEM.format(language=LANGUAGE_NAMES[lang], register=_REGISTER[lang]) + (f"\n- {guidance}" if guidance else ""),
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_translations"},
         messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
@@ -306,16 +306,17 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
         return 0
 
 
-async def translate_texts(texts: list[tuple[str, str | None]], lang: str) -> dict[int, tuple[str, str | None]]:
+async def translate_texts(texts: list[tuple[str, str | None]], lang: str, guidance: str = "") -> dict[int, tuple[str, str | None]]:
     """Translates short (title, description) pairs that aren't school content
     items - a seasonal guide's title and note. {index: (title, description)}
-    for whatever came back; the caller stores it. Never raises: an error or
-    the cooldown returns {} and the caller serves English."""
+    for whatever came back; the caller stores it. `guidance` is added to the
+    rules (what these texts are). Never raises: an error or the cooldown
+    returns {} and the caller serves English."""
     global _cooldown_until
     if lang not in LANGUAGE_NAMES or not texts or time.monotonic() < _cooldown_until:
         return {}
     try:
-        got = await _call_model([{"n": n, "title": t, **({"description": d} if d else {})} for n, (t, d) in enumerate(texts)], lang)
+        got = await _call_model([{"n": n, "title": t, **({"description": d} if d else {})} for n, (t, d) in enumerate(texts)], lang, guidance)
     except Exception as exc:
         _cooldown_until = time.monotonic() + _COOLDOWN_S
         logger.warning("content_translation_failed", extra={"lang": lang, "items": len(texts), "error": str(exc)})
