@@ -34,7 +34,7 @@ REJECT_TEXT = {
     "other": "of the note below",
 }
 
-SIGN_OFF = "\n\n- Localz, from schoolz\nQuestions? Reply to this email or use " + f"{SITE}/contact"
+SIGN_OFF = "\n\n-- \nLocalz, from schoolz\nQuestions? Reply to this email or use " + f"{SITE}/contact"
 
 
 async def _account_email(db: AsyncSession, user_id: str | None) -> str | None:
