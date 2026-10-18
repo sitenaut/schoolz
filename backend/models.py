@@ -1881,6 +1881,10 @@ class SeasonalGuide(Base):
     ends_on: Mapped[date] = mapped_column(Date, nullable=False)
     # Lower first; the headline guide (the map) leads the badge's page.
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Machine translations of title + note, made on first request in a
+    # language: {lang: {"hash", "title", "note"}}. A hash that no longer
+    # matches the English is retranslated (routers/seasonal_guides.py).
+    translations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

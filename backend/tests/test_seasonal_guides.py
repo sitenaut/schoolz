@@ -82,3 +82,47 @@ def test_chatbot_tool_is_registered_and_says_link_only():
     # The guides are other people's curation; the tool must steer the model
     # to link and credit rather than recite listings.
     assert "never name specific houses" in tool.description
+
+
+@pytest.mark.anyio
+async def test_guides_are_translated_once_and_kept(monkeypatch):
+    from services import content_translation
+
+    calls: list[list] = []
+
+    async def fake(texts, lang):
+        calls.append(texts)
+        return {n: (f"[{lang}] {t}", f"[{lang}] {d}" if d else None) for n, (t, d) in enumerate(texts)}
+
+    monkeypatch.setattr(content_translation, "translate_texts", fake)
+    run = uuid.uuid4().hex[:8]
+    season = f"test-{run}"
+    today = today_et()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        admin = await _register(client, f"a_{run}@example.com", f"a_{run}")
+        await _make_admin(f"a_{run}@example.com")
+        made = await client.post("/seasonal-guides", json=_guide(season, today, today, title="House Map", note="Find houses"), headers=auth(admin))
+        guide_id = made.json()["id"]
+
+        # English never calls the model.
+        assert (await client.get(f"/seasonal-guides?season={season}")).json()[0]["title"] == "House Map"
+        assert calls == []
+
+        es = (await client.get(f"/seasonal-guides?season={season}", headers={"X-Schoolz-Lang": "es"})).json()[0]
+        assert (es["title"], es["note"]) == ("[es] House Map", "[es] Find houses")
+        # Stored: the second visitor doesn't pay again.
+        await client.get(f"/seasonal-guides?season={season}", headers={"X-Schoolz-Lang": "es"})
+        assert len(calls) == 1
+
+        # Editing the English makes the stored one stale.
+        await client.patch(f"/seasonal-guides/{guide_id}", json={"title": "Haunt Map"}, headers=auth(admin))
+        assert (await client.get(f"/seasonal-guides?season={season}", headers={"X-Schoolz-Lang": "es"})).json()[0]["title"] == "[es] Haunt Map"
+        assert len(calls) == 2
+
+    # A failed call serves English.
+    async def broken(texts, lang):
+        return {}
+
+    monkeypatch.setattr(content_translation, "translate_texts", broken)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get(f"/seasonal-guides?season={season}", headers={"X-Schoolz-Lang": "ko"})).json()[0]["title"] == "Haunt Map"

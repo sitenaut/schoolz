@@ -306,6 +306,24 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
         return 0
 
 
+async def translate_texts(texts: list[tuple[str, str | None]], lang: str) -> dict[int, tuple[str, str | None]]:
+    """Translates short (title, description) pairs that aren't school content
+    items - a seasonal guide's title and note. {index: (title, description)}
+    for whatever came back; the caller stores it. Never raises: an error or
+    the cooldown returns {} and the caller serves English."""
+    global _cooldown_until
+    if lang not in LANGUAGE_NAMES or not texts or time.monotonic() < _cooldown_until:
+        return {}
+    try:
+        got = await _call_model([{"n": n, "title": t, **({"description": d} if d else {})} for n, (t, d) in enumerate(texts)], lang)
+    except Exception as exc:
+        _cooldown_until = time.monotonic() + _COOLDOWN_S
+        logger.warning("content_translation_failed", extra={"lang": lang, "items": len(texts), "error": str(exc)})
+        return {}
+    # A text with no English description never gains one.
+    return {n: (title, d if texts[n][1] else None) for n, (title, d) in got.items() if 0 <= n < len(texts)}
+
+
 async def apply_translations(db: AsyncSession, items: list[SchoolContentItem], lang: str, translate_missing: bool = True) -> dict[str, Localized]:
     """{item_id: Localized} for every item, in `lang` where a fresh
     translation exists (translating what's missing first, unless
