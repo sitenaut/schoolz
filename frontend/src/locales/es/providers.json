@@ -129,6 +129,7 @@
   "Languages spoken": "Idiomas que se hablan",
   "Last": "Último",
   "Last day closed": "Último día cerrado",
+  "Last step: tick the box above to show you're a person.": "Último paso: marque la casilla de arriba para confirmar que es una persona.",
   "List your program": "Anuncie su programa",
   "List your program · Localz": "Anuncie su programa · Localz",
   "Location shared after you call": "Ubicación disponible al llamar",
@@ -319,5 +320,6 @@
   "Your organization": "Su organización",
   "Your requests": "Sus solicitudes",
   "Youth shelter": "Refugio para jóvenes",
+  "a 10-digit phone number": "un número de teléfono de 10 dígitos",
   "{{percent}}% complete": "{{percent}}% completo"
 }

@@ -71,8 +71,16 @@ function InquiryForm() {
   const [done, setDone] = useState(false);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value });
 
-  const ready =
-    form.organization_name.trim() && form.contact_name.trim() && validPhone(form.phone) && form.what_you_provide.trim() && form.town.trim() && (!BOT_CHECK_ENABLED || botToken);
+  // Said under the button, so a disabled button is never a mystery.
+  const missing = [
+    !form.organization_name.trim() && t("Organization name"),
+    !form.contact_name.trim() && t("Contact person"),
+    !validPhone(form.phone) && t("a 10-digit phone number"),
+    !form.town.trim() && t("Town"),
+    !form.what_you_provide.trim() && t("What you provide"),
+  ].filter(Boolean) as string[];
+  const botPending = BOT_CHECK_ENABLED && !botToken && !botDown;
+  const ready = missing.length === 0 && (!BOT_CHECK_ENABLED || botToken);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -138,6 +146,11 @@ function InquiryForm() {
         <button className="btn btn-primary" type="submit" disabled={!ready || busy}>
           {busy ? t("Sending…") : t("Ask to be listed")}
         </button>
+        {missing.length > 0 ? (
+          <p className="note">{t("Still needed: {{items}}", { items: missing.join(", ") })}</p>
+        ) : botPending ? (
+          <p className="note">{t("Last step: tick the box above to show you're a person.")}</p>
+        ) : null}
       </form>
     </section>
   );

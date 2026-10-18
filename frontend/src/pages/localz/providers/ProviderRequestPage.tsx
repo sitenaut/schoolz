@@ -8,6 +8,7 @@ import { useToast } from "../../../components/ui/Toast";
 import { useAuth } from "../../../context/AuthContext";
 import { usePrerenderReady } from "../../../lib/prerenderReady";
 import {
+  ITEM_LABELS,
   type ListingBrief,
   type OnboardingRequest,
   type ProviderType,
@@ -232,6 +233,11 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
               {req?.status === "changes_requested" ? t("Send again for review") : t("Send for review")}
             </button>
           </div>
+          {meter.missing_core.length > 0 ? (
+            <p className="note">{t("Still needed: {{items}}", { items: meter.missing_core.map((k) => t(ITEM_LABELS[k] ?? k)).join(", ") })}</p>
+          ) : needsBot && !botToken ? (
+            <p className="note">{t("Last step: tick the box above to show you're a person.")}</p>
+          ) : null}
           <p className="note">{t("Nothing is public until we approve it.")}</p>
         </>
       ) : (
