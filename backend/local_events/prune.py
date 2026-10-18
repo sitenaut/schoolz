@@ -36,6 +36,7 @@ SOURCE_KEYS = (
     "mec_sources",
     "drupal_fullcalendar_sources",
     "theatre_sources",
+    "event_page_sources",
     "ludus_sources",
     "placewise_sources",
     "patch_sources",

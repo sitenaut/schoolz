@@ -16,6 +16,7 @@ from .sources.ccls import CCLSSource
 from .sources.deyra_schedule import DeyraScheduleSource
 from .sources.dostuff import DoStuffSource
 from .sources.drupal_fullcalendar import DrupalFullCalendarSource
+from .sources.event_pages import EventPageSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
@@ -107,6 +108,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
     mec_sources = body.params.get("mec_sources") or []
     drupal_fullcalendar_sources = body.params.get("drupal_fullcalendar_sources") or []
     theatre_sources = body.params.get("theatre_sources") or []
+    event_page_sources = body.params.get("event_page_sources") or []
     placewise_sources = body.params.get("placewise_sources") or []
     patch_sources = body.params.get("patch_sources") or []
     dostuff_sources = body.params.get("dostuff_sources") or []
@@ -146,6 +148,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             raise HTTPException(status_code=400, detail=f"params.{key} must be a list")
     if not isinstance(theatre_sources, list):
         raise HTTPException(status_code=400, detail="params.theatre_sources must be a list")
+    if not isinstance(event_page_sources, list):
+        raise HTTPException(status_code=400, detail="params.event_page_sources must be a list")
     if not isinstance(placewise_sources, list):
         raise HTTPException(status_code=400, detail="params.placewise_sources must be a list")
     if not isinstance(patch_sources, list):
@@ -642,6 +646,25 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             venue_name=entry.get("venue_name"),
             venue_address=entry.get("venue_address"),
             default_categories=list(entry.get("default_categories") or []) or None,
+        )))
+
+    for entry in event_page_sources:
+        name = (entry or {}).get("name") or "(unnamed event pages)"
+        urls = (entry or {}).get("urls")
+        if not urls:
+            results.append(TestFetchSourceResult(
+                name=name, url=None, status="misconfigured",
+                event_count=0, sample_titles=[],
+                error="missing 'urls' field", source_type="event_pages",
+            ))
+            continue
+        results.append(await _probe("event_pages", EventPageSource(
+            name=name,
+            urls=list(urls),
+            venue_name=entry.get("venue_name"),
+            venue_address=entry.get("venue_address"),
+            default_categories=list(entry.get("default_categories") or []) or None,
+            town=entry.get("location"),
         )))
 
     return TestFetchOut(kind=body.kind, sources=results)

@@ -536,6 +536,21 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                 },
             },
         },
+        "event_page_sources": {
+            "type": "array",
+            "description": "A town's (or shop's) hand-written event pages with no feed - one page per festival, parade or market, dates in prose. Same Haiku reader as theatre_sources (title must appear in the page; unchanged pages cached), plus stale-page guards: a written weekday must match the date, and a date written without a year must fall within months. Needs ANTHROPIC_API_KEY. List each event's own page in `urls`; an index page of links alone has no dates.",
+            "items": {
+                "type": "object",
+                "required": ["name", "urls"],
+                "properties": {
+                    **_NAMED_SOURCE_COMMON,
+                    "urls": {"type": "array", "items": {"type": "string"}, "description": "Event pages, one per festival or a page listing several."},
+                    "location": {"type": "string", "description": "The town, e.g. 'Collingswood, NJ'. Appended to a venue a page names ('Knight Park') so it can be placed, and used for events naming none."},
+                    "venue_name": {"type": "string"},
+                    "venue_address": {"type": "string"},
+                },
+            },
+        },
         "ludus_sources": {
             "type": "array",
             "description": "Ludus-hosted ticketing sites (ludus.com), e.g. a school's own theatre program - plain server-rendered HTML, no model call: each show and showtime carries the platform's own stable id. `school_labels` maps a page's category labels (e.g. 'CHS'/'CMS' on a page shared by two schools) to a School.slug - a matched show is also published on that school's own public page, in addition to appearing here. Point `url` at the site's events page (`.../index.php?sections=events`), not the home page.",

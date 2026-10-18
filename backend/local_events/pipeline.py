@@ -41,6 +41,7 @@ from .sources.ccls import DEFAULT_CCLS_PAUSE, CCLSSource
 from .sources.deyra_schedule import DeyraScheduleSource
 from .sources.dostuff import DoStuffSource
 from .sources.drupal_fullcalendar import DrupalFullCalendarSource
+from .sources.event_pages import EventPageSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
@@ -334,6 +335,19 @@ def _build_sources(params: dict) -> list[Source]:
                 venue_address=entry.get("venue_address"),
                 default_categories=list(entry.get("default_categories") or []) or None,
                 school_slug=entry.get("school_slug"),
+            )
+        )
+    for entry in params.get("event_page_sources") or []:
+        if not entry.get("name") or not entry.get("urls"):
+            continue
+        sources.append(
+            EventPageSource(
+                name=entry["name"],
+                urls=list(entry["urls"]),
+                venue_name=entry.get("venue_name"),
+                venue_address=entry.get("venue_address"),
+                default_categories=list(entry.get("default_categories") or []) or None,
+                town=entry.get("location"),
             )
         )
     for entry in params.get("placewise_sources") or []:
