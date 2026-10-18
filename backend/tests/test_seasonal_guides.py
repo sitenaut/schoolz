@@ -90,7 +90,7 @@ async def test_guides_are_translated_once_and_kept(monkeypatch):
 
     calls: list[list] = []
 
-    async def fake(texts, lang):
+    async def fake(texts, lang, guidance=""):
         calls.append(texts)
         return {n: (f"[{lang}] {t}", f"[{lang}] {d}" if d else None) for n, (t, d) in enumerate(texts)}
 
@@ -120,7 +120,7 @@ async def test_guides_are_translated_once_and_kept(monkeypatch):
         assert len(calls) == 2
 
     # A failed call serves English.
-    async def broken(texts, lang):
+    async def broken(texts, lang, guidance=""):
         return {}
 
     monkeypatch.setattr(content_translation, "translate_texts", broken)

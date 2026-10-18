@@ -81,8 +81,19 @@ async def active_guides(db: AsyncSession, season: str | None = None, on: date | 
     return list((await db.execute(stmt)).scalars().all())
 
 
+# A guide's title describes the guide ("2026 South Jersey Halloween House
+# Map"); left alone, the model took it for a product name and kept Korean
+# and Hindi in English.
+_GUIDANCE = (
+    "Each title describes a seasonal guide, it is not a brand name: translate it, "
+    "keeping only place names (South Jersey, Cherry Hill) and the publisher's name as written."
+)
+# Part of the hash, so changing how guides are translated redoes the stored ones.
+_VERSION = "2"
+
+
 def _hash(guide: SeasonalGuide) -> str:
-    return content_translation.source_hash(guide.title, guide.note)
+    return content_translation.source_hash(f"v{_VERSION}:{guide.title}", guide.note)
 
 
 async def localized(db: AsyncSession, guides: list[SeasonalGuide], lang: str) -> list[SeasonalGuideOut]:
@@ -95,7 +106,7 @@ async def localized(db: AsyncSession, guides: list[SeasonalGuide], lang: str) ->
         return outs
     todo = [g for g in guides if ((g.translations or {}).get(lang) or {}).get("hash") != _hash(g)]
     if todo:
-        got = await content_translation.translate_texts([(g.title, g.note) for g in todo], lang)
+        got = await content_translation.translate_texts([(g.title, g.note) for g in todo], lang, _GUIDANCE)
         for n, (title, note) in got.items():
             g = todo[n]
             g.translations = {**(g.translations or {}), lang: {"hash": _hash(g), "title": title, "note": note}}
