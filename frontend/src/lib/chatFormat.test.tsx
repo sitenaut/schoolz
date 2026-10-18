@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ChatText, parseBlocks } from "./chatFormat";
+import { ChatText, parseBlocks, toPlainText } from "./chatFormat";
 
 const html = (text: string) => renderToStaticMarkup(<ChatText text={text} />);
 
@@ -45,5 +45,13 @@ describe("ChatText", () => {
 
   it("a header the model slipped in renders as a bold line, not a literal #", () => {
     expect(html("## This weekend\nStuff")).toBe("<div class=\"chat-text\"><p><span><strong>This weekend</strong></span></p><p><span>Stuff</span></p></div>");
+  });
+});
+
+describe("toPlainText", () => {
+  it("drops bold markers and headings, and keeps link addresses", () => {
+    expect(toPlainText("## Lunch\n**Monday**\n- Pizza, see [the menu](https://example.com/menu)\n- https://example.com/x")).toBe(
+      "Lunch\nMonday\n- Pizza, see the menu (https://example.com/menu)\n- https://example.com/x",
+    );
   });
 });

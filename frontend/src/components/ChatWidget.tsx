@@ -4,8 +4,8 @@ import { apiFetch } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { Modal } from "./ui/Modal";
 import { ChatAvatar } from "./ChatAvatar";
-import { ChatText } from "../lib/chatFormat";
-import { IconSend } from "./icons";
+import { ChatText, toPlainText } from "../lib/chatFormat";
+import { IconCheck, IconCopy, IconRefresh, IconSend, IconShare } from "./icons";
 import { useTranslation } from "react-i18next";
 
 type DisplayMessage = { role: "user" | "assistant"; text: string };
@@ -14,6 +14,34 @@ type DisplayMessage = { role: "user" | "assistant"; text: string };
 // it), only replayed to /chat on the next turn so the model keeps context.
 type ApiMessage = { role: string; content: unknown };
 
+// The conversation survives a reload for the rest of the visit, not
+// longer: sessionStorage is per tab and gone when it closes. It's tagged
+// with the account it belongs to and dropped when that changes, for the
+// same reason the transcript is reset on sign-in/out below.
+const STORE_KEY = "schoolz_chat_v1";
+type Saved = { userId: string | number | null; messages: DisplayMessage[]; apiHistory: ApiMessage[]; escalated: boolean };
+
+function loadSaved(userId: Saved["userId"]): Saved | null {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? "null") as Saved | null;
+    if (s && s.userId === userId && Array.isArray(s.messages) && Array.isArray(s.apiHistory)) return s;
+    sessionStorage.removeItem(STORE_KEY);
+  } catch {
+    // Storage blocked or a bad value: start fresh.
+  }
+  return null;
+}
+
+function save(s: Saved) {
+  try {
+    sessionStorage.setItem(STORE_KEY, JSON.stringify(s));
+  } catch {
+    // Full or blocked - the chat still works, it just won't survive a reload.
+  }
+}
+
+const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
 /** The floating chat trigger + panel, mounted once in AppShell so it
  * persists across every route. A plain fixed-position button rather than
  * part of the page layout - see the placement writeup: a static bar (top
@@ -21,7 +49,7 @@ type ApiMessage = { role: string; content: unknown };
  * already-tight vertical space, where a FAB costs nothing until tapped. */
 export function ChatWidget() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const greeting = user
     ? t("Hi! Ask me about your kids - what's due or missing, grades, today's schedule - what's on this weekend, or anything else on schoolz.")
     : t("Hi! Ask me about bell times, lunch menus, buses, or a school's calendar - anything on schoolz.");
@@ -32,18 +60,23 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // The backend offers personal tools per request based on the login, so a
   // transcript from before a sign-in/out would carry one account's kids'
-  // data into the next account's conversation. Start over instead.
+  // data into the next account's conversation. Start over instead - unless
+  // the saved one is this same account's (a reload). Wait for auth to settle
+  // so a signed-in reload doesn't briefly look anonymous and drop it.
   const userId = user?.id ?? null;
   useEffect(() => {
-    setMessages([]);
-    setApiHistory([]);
-    setEscalated(false);
+    if (loading) return;
+    const s = loadSaved(userId);
+    setMessages(s?.messages ?? []);
+    setApiHistory(s?.apiHistory ?? []);
+    setEscalated(s?.escalated ?? false);
     setError(null);
-  }, [userId]);
+  }, [userId, loading]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -68,14 +101,45 @@ export function ChatWidget() {
       }
       if (!r.ok) throw new Error(t("Something went wrong - please try again."));
       const data = await r.json();
+      const next = [...messages, { role: "user" as const, text }, { role: "assistant" as const, text: data.reply }];
       setApiHistory(data.history);
       setEscalated(data.escalated);
-      setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
+      setMessages(next);
+      save({ userId, messages: next, apiHistory: data.history, escalated: data.escalated });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Something went wrong - please try again."));
     } finally {
       setSending(false);
     }
+  }
+
+  function clearChat() {
+    setMessages([]);
+    setApiHistory([]);
+    setEscalated(false);
+    setError(null);
+    try {
+      sessionStorage.removeItem(STORE_KEY);
+    } catch {
+      // Nothing saved to remove.
+    }
+    trackEvent("chat_cleared");
+  }
+
+  async function copyReply(i: number, text: string) {
+    try {
+      await navigator.clipboard.writeText(toPlainText(text));
+      setCopied(i);
+      setTimeout(() => setCopied((c) => (c === i ? null : c)), 2000);
+      trackEvent("chat_reply_copied");
+    } catch {
+      // No clipboard access (old browser, insecure context) - the text is still selectable.
+    }
+  }
+
+  function shareReply(text: string) {
+    trackEvent("chat_reply_shared");
+    navigator.share({ text: toPlainText(text), url: window.location.origin }).catch(() => undefined);
   }
 
   return (
@@ -97,7 +161,25 @@ export function ChatWidget() {
             <div className="chat-bubble assistant">{greeting}</div>
             {messages.map((m, i) => (
               <div className={`chat-bubble ${m.role}`} key={i}>
-                {m.role === "assistant" ? <ChatText text={m.text} /> : m.text}
+                {m.role === "assistant" ? (
+                  <>
+                    <ChatText text={m.text} />
+                    <div className="chat-actions">
+                      <button type="button" className="chat-action" onClick={() => copyReply(i, m.text)}>
+                        {copied === i ? <IconCheck /> : <IconCopy />}
+                        {copied === i ? t("Copied") : t("Copy")}
+                      </button>
+                      {canShare && (
+                        <button type="button" className="chat-action" onClick={() => shareReply(m.text)}>
+                          <IconShare />
+                          {t("Share")}
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  m.text
+                )}
               </div>
             ))}
             {sending && (
@@ -109,6 +191,14 @@ export function ChatWidget() {
             )}
             {error && <div className="chat-error">{error}</div>}
           </div>
+          {messages.length > 0 && !sending && (
+            <div className="chat-toolbar">
+              <button type="button" className="chat-action" onClick={clearChat}>
+                <IconRefresh />
+                {t("New chat")}
+              </button>
+            </div>
+          )}
           <form
             className="chat-input-row"
             onSubmit={(e) => {

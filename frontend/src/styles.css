@@ -3059,6 +3059,38 @@ select {
     opacity: 1;
   }
 }
+.chat-actions {
+  display: flex;
+  gap: 4px;
+  margin: 6px -6px -4px;
+  white-space: normal;
+}
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+.chat-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.chat-action:hover,
+.chat-action:focus-visible {
+  color: var(--ink);
+  background: var(--line);
+}
+.chat-action svg {
+  width: 14px;
+  height: 14px;
+}
 .chat-error {
   align-self: center;
   color: var(--bad);
