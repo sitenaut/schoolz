@@ -617,7 +617,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             default_categories=list(e.get("default_categories") or []), venue_name=e.get("venue_name"), venue_address=e.get("venue_address"))),
         ("thrillshare", thrillshare_sources, "org_id", lambda n, e: ThrillshareSource(
             n, str(e["org_id"]), site_url=e.get("site_url"), days_ahead=int(e.get("days_ahead", 90)),
-            default_categories=list(e.get("default_categories") or []))),
+            default_categories=list(e.get("default_categories") or []), live_feed=bool(e.get("live_feed")),
+            location=e.get("location"))),
     ):
         for entry in entries:
             name = (entry or {}).get("name") or f"(unnamed {source_type})"

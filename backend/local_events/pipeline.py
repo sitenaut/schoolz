@@ -426,6 +426,8 @@ def _build_sources(params: dict) -> list[Source]:
                 site_url=entry.get("site_url"),
                 days_ahead=int(entry.get("days_ahead", 90)),
                 default_categories=list(entry.get("default_categories") or []),
+                live_feed=bool(entry.get("live_feed")),
+                location=entry.get("location"),
             )
         )
     return sources
