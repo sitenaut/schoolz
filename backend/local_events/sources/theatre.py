@@ -1,8 +1,10 @@
 """Community theatre companies - a season lives on a company's own site in
 whatever shape its web host gave it (Squarespace, Wix, Weebly, GoDaddy, a
 hand-built page, a ticketing widget), and none of them publishes a feed. So
-this is the one source that reads prose: fetch each configured page, have
-Haiku list the productions on it, keep only what the page itself says.
+this source reads prose: fetch each configured page, have Haiku list the
+productions on it, keep only what the page itself says. `event_pages.py`
+reuses the same machinery with a different prompt for a town's festival
+pages.
 
 Guards that make that safe:
 - A production is kept only if its title appears in the page text (a model
@@ -132,10 +134,31 @@ def _parse_clock(s: str | None):
     return int(m[1]), int(m[2])
 
 
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+# A page that never says the year ("Saturday, November 21") is taken to mean
+# the next such date - unless it's far off, when it's more likely last
+# year's page nobody updated. A weekday that agrees with the date vouches
+# for the year, so that case gets the longer window.
+_YEARLESS_DAYS = 120
+_YEARLESS_CONFIRMED_DAYS = 300
+
+
+def _year_near(haystack: str, title: str, year: int, reach: int = 150) -> bool:
+    at = haystack.find(title)
+    while at != -1:
+        if str(year) in haystack[max(0, at - reach): at + len(title) + reach]:
+            return True
+        at = haystack.find(title, at + 1)
+    return False
+
+
 def to_raw_events(
     productions: list[dict], text: str, *, source: str, venue_name: str | None, venue_address: str | None,
     default_categories: list[str], page_url: str, today: date, school_slug: str | None = None,
+    id_prefix: str = "theatre", town: str | None = None,
 ) -> list[RawEvent]:
+    """`town` (event pages only): appended to a venue the page names, so
+    "Knight Park" becomes an address the geocoder can place."""
     haystack = _norm(text)
     out: list[RawEvent] = []
     for p in productions:
@@ -152,27 +175,50 @@ def to_raw_events(
             end_day = None
         if (end_day or start_day) < today - timedelta(days=1):
             continue
+        # Stale-page guards, decided here rather than trusted to the prompt:
+        # "Join us Friday, October 10" on a page last edited a year ago reads
+        # as next October 10, which isn't a Friday.
+        weekday = (p.get("weekday") or "").strip().lower()
+        if weekday[:3] in {w[:3] for w in _WEEKDAYS} and _WEEKDAYS[start_day.weekday()][:3] != weekday[:3]:
+            continue
+        # The model's year_written can't be trusted alone: it said True for
+        # "Community Buy Nothing Exchange on May 17" on a page with no year.
+        # Looked for near the title, since a page can name next year elsewhere.
+        if "year_written" in p and (p["year_written"] is False or not _year_near(haystack, _norm(title), start_day.year)):
+            window = _YEARLESS_CONFIRMED_DAYS if weekday else _YEARLESS_DAYS
+            if start_day > today + timedelta(days=window):
+                continue
         clock = _parse_clock(p.get("start_time"))
+        end_clock = _parse_clock(p.get("end_time"))
         if clock:
             start = datetime(start_day.year, start_day.month, start_day.day, *clock, tzinfo=_ET)
-            end = datetime(end_day.year, end_day.month, end_day.day, 23, 59, tzinfo=_ET) if end_day else None
         else:
             start = datetime(start_day.year, start_day.month, start_day.day, tzinfo=_ET)
-            end = datetime(end_day.year, end_day.month, end_day.day, 23, 59, tzinfo=_ET) if end_day else None
+        if end_day:
+            end = datetime(end_day.year, end_day.month, end_day.day, *(end_clock or (23, 59)), tzinfo=_ET)
+        elif clock and end_clock and end_clock > clock:
+            end = datetime(start_day.year, start_day.month, start_day.day, *end_clock, tzinfo=_ET)
+        else:
+            end = None
         url = (p.get("ticket_url") or "").strip()
         if url and url not in text:
             url = ""
+        venue = (p.get("venue") or "").strip()
+        if venue:
+            address = f"{venue}, {town}" if town and _norm(town) not in _norm(venue) else (venue if town else None)
+        else:
+            address = venue_address
         out.append(
             RawEvent(
                 source=source,
-                source_event_id="theatre:" + hashlib.sha1(f"{_norm(title)}|{start.isoformat()}".encode()).hexdigest()[:20],
+                source_event_id=f"{id_prefix}:" + hashlib.sha1(f"{_norm(title)}|{start.isoformat()}".encode()).hexdigest()[:20],
                 title=title,
                 description=(p.get("description") or "").strip() or None,
                 start_time=start,
                 end_time=end,
                 all_day=clock is None,
-                venue_name=(p.get("venue") or "").strip() or venue_name,
-                venue_address=None if (p.get("venue") or "").strip() else venue_address,
+                venue_name=venue or venue_name,
+                venue_address=address,
                 url=url or page_url,
                 default_categories=list(default_categories),
                 school_slug=school_slug,
@@ -182,6 +228,14 @@ def to_raw_events(
 
 
 class TheatreSiteSource(Source):
+    # What a subclass (event_pages.EventPageSource) swaps to read other prose.
+    SYSTEM = _SYSTEM
+    TOOL = _TOOL
+    ITEMS_KEY = "productions"
+    ID_PREFIX = "theatre"
+    LLM_LABEL = "theatre_page_extract"
+    DEFAULT_CATEGORIES = ("theatre", "arts")
+
     def __init__(
         self,
         name: str,
@@ -191,6 +245,7 @@ class TheatreSiteSource(Source):
         venue_address: str | None = None,
         default_categories: list[str] | None = None,
         school_slug: str | None = None,
+        town: str | None = None,
     ):
         if not urls:
             raise ValueError("urls is required")
@@ -199,7 +254,8 @@ class TheatreSiteSource(Source):
         self.url = urls[0]
         self.venue_name = venue_name
         self.venue_address = venue_address
-        self.default_categories = default_categories or ["theatre", "arts"]
+        self.default_categories = default_categories or list(self.DEFAULT_CATEGORIES)
+        self.town = town
         # Set when this whole site belongs to one tracked school (e.g. a
         # school's theatre booster site) - every production it lists is also
         # published on that school's own public page. See RawEvent.school_slug
@@ -223,7 +279,7 @@ class TheatreSiteSource(Source):
         return text[:_MAX_CHARS]
 
     async def _extract(self, text: str) -> list[dict]:
-        key = hashlib.sha256(text.encode()).hexdigest()
+        key = hashlib.sha256(f"{self.ID_PREFIX}\n{text}".encode()).hexdigest()
         if key in _CACHE:
             return _CACHE[key]
         api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -235,14 +291,14 @@ class TheatreSiteSource(Source):
             model=MODEL,
             max_tokens=4000,
             extra_body={"temperature": 0},
-            system=_SYSTEM.format(today=date.today().isoformat()),
-            tools=[_TOOL],
-            tool_choice={"type": "tool", "name": "record_productions"},
+            system=self.SYSTEM.format(today=date.today().isoformat()),
+            tools=[self.TOOL],
+            tool_choice={"type": "tool", "name": self.TOOL["name"]},
             messages=[{"role": "user", "content": text}],
         )
-        observability.record_llm_call("theatre_page_extract", MODEL, response, time.perf_counter() - started)
+        observability.record_llm_call(self.LLM_LABEL, MODEL, response, time.perf_counter() - started)
         tool_use = next((b for b in response.content if b.type == "tool_use"), None)
-        productions = [p for p in ((tool_use.input.get("productions") if tool_use else None) or []) if isinstance(p, dict)]
+        productions = [p for p in ((tool_use.input.get(self.ITEMS_KEY) if tool_use else None) or []) if isinstance(p, dict)]
         if response.stop_reason != "max_tokens":
             _CACHE[key] = productions
         return productions
@@ -262,6 +318,7 @@ class TheatreSiteSource(Source):
                 for ev in to_raw_events(
                     productions, text, source=self.name, venue_name=self.venue_name, venue_address=self.venue_address,
                     default_categories=self.default_categories, page_url=url, today=today, school_slug=self.school_slug,
+                    id_prefix=self.ID_PREFIX, town=self.town,
                 ):
                     events.setdefault(ev.source_event_id, ev)
         if not events and len(self.partial_failures) == len(self.urls):
