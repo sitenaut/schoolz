@@ -231,6 +231,8 @@ district's schools.
 resolves to a deactivated ISD (`ZZZRANCOCAS VALLEY`, `Status` false);
 Hainesport's and Lumberton's resolve but `GetSchoolsList` returns `[]` (a
 payments account, menus elsewhere). Check the schools list before wiring one.
+When no shortname guess hits, `GetISDBySearch/<name>/<state>` (the search box on
+schoolcafe.com/menus, name before state) lists districts by name.
 
 ---
 
