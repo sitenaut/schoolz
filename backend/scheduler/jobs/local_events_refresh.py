@@ -640,6 +640,8 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                     "base_url": {"type": "string", "description": "The site root, e.g. https://collingswood.com."},
                     "calendar_ids": {"type": "array", "items": {"type": "integer"}, "default": [1], "description": "Calendars to read; calendar_app/db/calendar_db_data.xml lists them (1 is Master)."},
                     "months_ahead": {"type": "integer", "default": 3},
+                    "news_feed": {"type": "boolean", "default": False, "description": "Also read the site's news list (newslist.php) for events announced only there, flyer images included. Haiku reads each post and each image once ever; notices are skipped. Needs ANTHROPIC_API_KEY."},
+                    "location": {"type": "string", "description": "The town, e.g. 'Collingswood, NJ', so a news post's venue ('Knight Park') can be placed."},
                 },
             },
         },

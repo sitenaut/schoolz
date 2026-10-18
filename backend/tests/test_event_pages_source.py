@@ -148,3 +148,90 @@ async def test_live_feed_posts_keep_events_honour_moves_and_ignore_the_posting_d
     # Oct 25 was taken back by the later post; the movie night had no date of its own.
     assert [(e.title, e.start_time.date().isoformat()) for e in events] == [("Town Picnic", "2026-10-18")]
     assert events[0].url == "https://oaklyn.example/live-feed" and events[0].source_event_id.startswith("post:")
+
+
+_NEWS_HTML = """
+<div class="editNews"><a name="news_rz790"></a></div>
+<div style="width: 20%; float: left;"><img src="newsimage/fall fest.jpg?t=1" alt="" /></div>
+<div style="width: 72%; float: right;"> October 14, 2026
+  <h3 class="news-title">PTA Fall Festival</h3>
+  <div class="news-desc"><p><img src="Fall Festival Flyer.jpg?t=2" /></p></div>
+  <div class="news-post clearfix"><a href="news_detail_T6_R790.php" class="readmore">Read More</a></div>
+</div>
+<div class="editNews"><a name="news_rz700"></a></div>
+<div style="width: 20%; float: left;"></div>
+<div style="width: 72%; float: right;"> May 2, 2026
+  <h3 class="news-title">May Fair</h3>
+  <div class="news-desc"><p>Saturday, May 9</p></div>
+</div>
+"""
+
+
+def test_revize_news_list_gives_recent_posts_with_their_flyers():
+    from local_events.sources.revize_calendar_app import parse_news
+
+    posts = parse_news(_NEWS_HTML, "https://town.example", since=datetime(2026, 9, 1, tzinfo=ZoneInfo("America/New_York")))
+    assert [p.body for p in posts] == ["PTA Fall Festival"]  # May's post is past the window
+    assert posts[0].url == "https://town.example/news_detail_T6_R790.php"
+    assert posts[0].images == ["https://town.example/newsimage/fall%20fest.jpg?t=1", "https://town.example/Fall%20Festival%20Flyer.jpg?t=2"]
+
+
+@pytest.mark.anyio
+async def test_a_post_that_is_only_a_title_over_a_flyer_is_read_from_the_flyer(monkeypatch):
+    from local_events.sources import event_pages
+    from local_events.sources.event_pages import Post, read_posts
+
+    async def flyer(client, url):
+        return "" if "thumb" in url else "COSTUME EXCHANGE\nFALL FESTIVAL\nSATURDAY, OCT 24 2026 | KNIGHT PARK"
+
+    seen = []
+
+    async def extract(self, text):
+        seen.append(text)
+        return [{"title": "Fall Festival", "start_date": "2026-10-24", "weekday": "Saturday", "year_written": True, "venue": "Knight Park"}]
+
+    monkeypatch.setattr(event_pages, "flyer_text", flyer)
+    monkeypatch.setattr(EventPageSource, "_extract", extract)
+    reader = EventPageSource(name="cw", urls=["https://town.example/newslist.php"], town="Collingswood, NJ")
+    post = Post(ref="r1", posted=datetime(2026, 10, 14, tzinfo=ZoneInfo("America/New_York")), body="Fall Festival",
+                url="https://town.example/news_detail_T6_R790.php", images=["https://town.example/thumb.jpg", "https://town.example/flyer.jpg"])
+    events = await read_posts(reader, [post], default_categories=["collingswood"], id_prefix="news", today=date(2026, 10, 18), failures=[])
+    assert "KNIGHT PARK" in seen[0] and "Posted Wednesday, October 14, 2026" in seen[0]
+    assert [(e.title, e.start_time.date().isoformat(), e.venue_address) for e in events] == [("Fall Festival", "2026-10-24", "Knight Park, Collingswood, NJ")]
+    assert events[0].source_event_id.startswith("news:")
+
+
+@pytest.mark.anyio
+async def test_a_flyer_is_transcribed_once_ever_and_non_flyers_come_back_empty(monkeypatch):
+    import io
+    import os
+
+    from PIL import Image
+
+    from local_events.sources import flyers, theatre
+
+    buf = io.BytesIO()
+    Image.frombytes("RGB", (300, 300), os.urandom(300 * 300 * 3)).save(buf, format="PNG")
+    images = {"https://x/flyer.png": buf.getvalue(), "https://x/agenda.png": buf.getvalue()[:-1] + b"\0"}
+    replies = iter(["MOVIE NIGHT\nFRIDAY, OCTOBER 9", "NONE"])
+    calls = []
+
+    class FakeMessages:
+        async def create(self, **kwargs):
+            calls.append(kwargs)
+            return type("R", (), {"content": [type("B", (), {"type": "text", "text": next(replies)})()], "stop_reason": "end_turn", "usage": None})()
+
+    class Client:
+        async def get(self, url):
+            return type("Resp", (), {"content": images[url], "raise_for_status": lambda self: None})()
+
+    monkeypatch.setattr(flyers, "AsyncAnthropic", lambda **_: type("C", (), {"messages": FakeMessages()})())
+    monkeypatch.setattr(flyers.observability, "record_llm_call", lambda *a, **k: None)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.setattr(theatre, "_CACHE", {})
+
+    assert await flyers.flyer_text(Client(), "https://x/flyer.png") == "MOVIE NIGHT\nFRIDAY, OCTOBER 9"
+    theatre._CACHE.clear()  # a deploy
+    assert await flyers.flyer_text(Client(), "https://x/flyer.png") == "MOVIE NIGHT\nFRIDAY, OCTOBER 9"
+    assert await flyers.flyer_text(Client(), "https://x/agenda.png") == ""
+    assert len(calls) == 2

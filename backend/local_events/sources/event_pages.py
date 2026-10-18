@@ -14,15 +14,28 @@ fall soon (theatre.to_raw_events).
 """
 from __future__ import annotations
 
-from datetime import date
+import re
+from dataclasses import dataclass, field
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+import httpx
 from rapidfuzz import fuzz
 
 from .base import RawEvent
-from .theatre import TheatreSiteSource
+from .flyers import flyer_text
+from .theatre import _UA, TheatreSiteSource, to_raw_events
 
 _ET = ZoneInfo("America/New_York")
+
+# Words that put a date in a post's own text. Without one, an event dated the
+# day it was posted is the posting date misread as the event's: the
+# image-flyer post "Green Team Movie Night" came back dated the day it went up.
+_DATE_WORDS = re.compile(
+    r"\b(today|tonight|tomorrow|(mon|tues|wednes|thurs|fri|satur|sun)day|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\b|\d{1,2}/\d{1,2}",
+    re.I,
+)
+_FLYERS_PER_POST = 3
 
 _TOOL = {
     "name": "record_events",
@@ -87,6 +100,58 @@ class EventPageSource(TheatreSiteSource):
 
     async def fetch(self) -> list[RawEvent]:
         return one_per_start(await super().fetch())
+
+
+@dataclass
+class Post:
+    """One announcement in a town's feed (Apptegy live feed, Revize news)."""
+    ref: str
+    posted: datetime
+    body: str
+    url: str
+    images: list[str] = field(default_factory=list)
+
+
+async def read_posts(
+    reader: EventPageSource, posts: list[Post], *, default_categories: list[str], id_prefix: str,
+    today: date, failures: list[str],
+) -> list[RawEvent]:
+    """Each post's text plus the words on its flyers (flyers.py), read by the
+    event-page prompt. A post that moves or cancels an event takes back the
+    date an earlier post gave."""
+    events: list[RawEvent] = []
+    gone: list[tuple[str, date]] = []
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": _UA}) as client:
+        for post in posts:
+            flyers = []
+            for image in post.images[:_FLYERS_PER_POST]:
+                try:
+                    words = await flyer_text(client, image)
+                except Exception as exc:  # noqa: BLE001 - the post's own text still counts
+                    failures.append(f"flyer {image}: {type(exc).__name__}: {exc}"[:200])
+                    continue
+                if words:
+                    flyers.append(f"Flyer:\n{words}")
+            body = "\n".join([post.body, *flyers]).strip()
+            if len(body) < 20:
+                continue
+            # The posting date lets the reader place "Sunday, October 18th".
+            text = f"Posted {post.posted.astimezone(_ET):%A, %B %-d, %Y}\n{body}"
+            try:
+                items = await reader._extract(text)
+            except Exception as exc:  # noqa: BLE001 - one post shouldn't sink the feed
+                failures.append(f"post {post.ref}: {type(exc).__name__}: {exc}"[:200])
+                continue
+            gone += withdrawn(items)
+            if not _DATE_WORDS.search(body):
+                posted_day = post.posted.astimezone(_ET).date().isoformat()
+                items = [i for i in items if str(i.get("start_date") or "")[:10] != posted_day]
+            events += to_raw_events(
+                items, text, source=reader.name, venue_name=None, venue_address=None,
+                default_categories=list(default_categories), page_url=post.url, today=today,
+                id_prefix=id_prefix, town=reader.town,
+            )
+    return one_per_start(drop_withdrawn(events, gone))
 
 
 def one_per_start(events: list[RawEvent]) -> list[RawEvent]:
