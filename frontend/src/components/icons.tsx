@@ -109,6 +109,18 @@ export const IconSend = ({ className }: P) => (
     <path d="M4 12 21 3l-6 18-4-8-7-1Z" />
   </svg>
 );
+export const IconCopy = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+  </svg>
+);
+export const IconShare = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 3v13M7 8l5-5 5 5" />
+    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+  </svg>
+);
 export const IconPlay = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <path d="M7 4v16l13-8z" />

@@ -92,6 +92,18 @@ export function renderInline(text: string, keyPrefix = ""): ReactNode[] {
   return out;
 }
 
+/** A reply as it should read when pasted into a text or email: no `**`,
+ * and a markdown link becomes "text (url)" so the address survives. Lists
+ * and line breaks are already plain text. */
+export function toPlainText(text: string): string {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/^\s*#{1,6}\s+/gm, "")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label: string, url: string) => (label === url ? url : `${label} (${url})`))
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .trim();
+}
+
 export function ChatText({ text }: { text: string }) {
   return (
     <div className="chat-text">
