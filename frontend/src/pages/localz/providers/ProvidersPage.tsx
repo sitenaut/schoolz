@@ -1,9 +1,11 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BOT_CHECK_ENABLED, BotCheck } from "../../../components/BotCheck";
 import { SeoHead } from "../../../components/SeoHead";
 import { Field } from "../../../components/ui/Field";
+import { type FilterOption, FilterSelect } from "../../../components/ui/FilterSelect";
+import { PhoneInput } from "../../../components/ui/PhoneInput";
 import { useAuth } from "../../../context/AuthContext";
 import { usePrerenderReady } from "../../../lib/prerenderReady";
 import { sendInquiry, validPhone } from "../../../lib/providerPortal";
@@ -59,9 +61,30 @@ export function ProvidersPage() {
   );
 }
 
+const OTHER_TOWN = "__other__";
+
 function InquiryForm() {
   const { t } = useTranslation();
-  const [form, setForm] = useState({ organization_name: "", contact_name: "", phone: "", email: "", what_you_provide: "", town: "" });
+  const [form, setForm] = useState({ organization_name: "", first_name: "", last_name: "", phone: "", email: "", what_you_provide: "", town: "" });
+  // Town is picked from New Jersey's towns (scripts/build_nj_towns.py),
+  // loaded on this page only; "not listed" opens a box to type it.
+  const [towns, setTowns] = useState<FilterOption[]>([]);
+  const [townPick, setTownPick] = useState("");
+  useEffect(() => {
+    import("../../../lib/njTowns.json").then((m) => {
+      const rows = m.default as unknown as [string, string][];
+      const seen = new Map<string, number>();
+      for (const [name] of rows) seen.set(name, (seen.get(name) ?? 0) + 1);
+      setTowns(
+        rows.map(([name, county]) => ({
+          value: `${name}, ${county} County`,
+          // Five Washingtons: once picked, the box has to say which one.
+          label: (seen.get(name) ?? 0) > 1 ? `${name} (${county})` : name,
+          hint: t("{{county}} County", { county }),
+        })),
+      );
+    });
+  }, [t]);
   const [website, setWebsite] = useState("");
   const [botToken, setBotToken] = useState<string | null>(null);
   const [botRound, setBotRound] = useState(0);
@@ -74,7 +97,8 @@ function InquiryForm() {
   // Said under the button, so a disabled button is never a mystery.
   const missing = [
     !form.organization_name.trim() && t("Organization name"),
-    !form.contact_name.trim() && t("Contact person"),
+    !form.first_name.trim() && t("First name"),
+    !form.last_name.trim() && t("Last name"),
     !validPhone(form.phone) && t("a 10-digit phone number"),
     !form.town.trim() && t("Town"),
     !form.what_you_provide.trim() && t("What you provide"),
@@ -87,7 +111,14 @@ function InquiryForm() {
     setBusy(true);
     setError(null);
     try {
-      await sendInquiry({ ...form, email: form.email.trim() || null, website: website || null, bot_token: botToken });
+      const { first_name, last_name, ...rest } = form;
+      await sendInquiry({
+        ...rest,
+        contact_name: `${first_name.trim()} ${last_name.trim()}`,
+        email: form.email.trim() || null,
+        website: website || null,
+        bot_token: botToken,
+      });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Couldn't send this - please try again."));
@@ -117,18 +148,38 @@ function InquiryForm() {
           <input value={form.organization_name} onChange={set("organization_name")} maxLength={200} required />
         </Field>
         <div className="fgrid two">
-          <Field label={t("Contact person")}>
-            <input value={form.contact_name} onChange={set("contact_name")} maxLength={200} autoComplete="name" required />
+          <Field label={t("First name")}>
+            <input value={form.first_name} onChange={set("first_name")} maxLength={100} autoComplete="given-name" required />
+          </Field>
+          <Field label={t("Last name")}>
+            <input value={form.last_name} onChange={set("last_name")} maxLength={100} autoComplete="family-name" required />
           </Field>
           <Field label={t("Phone")}>
-            <input type="tel" value={form.phone} onChange={set("phone")} maxLength={40} autoComplete="tel" required />
+            <PhoneInput value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required />
           </Field>
           <Field label={t("Email")} hint={t("Optional")}>
             <input type="email" value={form.email} onChange={set("email")} maxLength={255} autoComplete="email" />
           </Field>
           <Field label={t("Town")}>
-            <input value={form.town} onChange={set("town")} maxLength={100} required />
+            <FilterSelect
+              value={townPick}
+              onChange={(v) => {
+                setTownPick(v);
+                setForm({ ...form, town: v === OTHER_TOWN ? "" : v });
+              }}
+              options={towns.length ? [...towns, { value: OTHER_TOWN, label: t("My town isn't listed") }] : []}
+              placeholder={towns.length ? t("Pick your town") : t("Loading…")}
+              filterPlaceholder={t("Type to find your town")}
+              ariaLabel={t("Town")}
+              disabled={!towns.length}
+              required
+            />
           </Field>
+          {townPick === OTHER_TOWN && (
+            <Field label={t("Your town")}>
+              <input value={form.town} onChange={set("town")} maxLength={100} required />
+            </Field>
+          )}
         </div>
         <Field label={t("What you provide")}>
           <textarea rows={3} value={form.what_you_provide} onChange={set("what_you_provide")} maxLength={1000} required />

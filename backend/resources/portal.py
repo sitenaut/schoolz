@@ -315,7 +315,9 @@ class Submission(BaseModel):
 
 
 def phone_digits(phone: str | None) -> str:
-    digits = re.sub(r"\D", "", phone or "")
+    """The number's own digits: an extension ("(856) 555-0101, 12",
+    "... x12", "... ext 12") is left out, as the portal's phone box writes it."""
+    digits = re.sub(r"\D", "", re.split(r"[,;]|ext|x", phone or "", maxsplit=1, flags=re.IGNORECASE)[0])
     if len(digits) == 11 and digits.startswith("1"):
         digits = digits[1:]
     return digits

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Field } from "../../../components/ui/Field";
+import { PhoneInput } from "../../../components/ui/PhoneInput";
 import { LOCALZ_COUNTIES } from "../../../lib/localz";
 import {
   type AddressKind,
@@ -730,7 +731,7 @@ export function ListingForm({
       <section className={`provider-section${fix("phone")}`}>
         <h3>{t("Phone")}</h3>
         <Field label={t("A public number people can call")}>
-          <input type="tel" value={value.phone ?? ""} maxLength={40} autoComplete="tel" onChange={(e) => set("phone", e.target.value)} />
+          <PhoneInput value={value.phone ?? ""} onChange={(v) => set("phone", v)} />
         </Field>
       </section>
 

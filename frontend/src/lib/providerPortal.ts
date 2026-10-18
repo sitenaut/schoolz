@@ -1,4 +1,5 @@
 import { apiFetch } from "../api";
+import { mainDigits } from "./phone";
 
 /** The Localz provider portal (backend/routers/provider_portal.py, design in
  * docs/LOCALZ_DESIGN.md "Provider portal"). A provider's form lives in the
@@ -225,11 +226,8 @@ export function withDefaults(sub: Partial<Submission> | null | undefined): Submi
   return s;
 }
 
-export const phoneDigits = (p: string | null | undefined) => {
-  const d = (p ?? "").replace(/\D/g, "");
-  return d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
-};
-export const validPhone = (p: string | null | undefined) => phoneDigits(p).length === 10;
+export const phoneDigits = mainDigits;
+export const validPhone = (p: string | null | undefined) => mainDigits(p).length === 10;
 const filled = (v: string | null | undefined) => !!(v ?? "").trim();
 
 const hoursDone = (h: Hours, phone: string | null) =>
