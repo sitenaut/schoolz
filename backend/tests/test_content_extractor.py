@@ -181,6 +181,13 @@ def test_a_just_passed_date_is_not_shoved_a_year_ahead():
     assert _correct_stale_year(just_passed, _REF) == just_passed
 
 
+def test_a_months_old_date_from_an_issue_read_late_stays_in_the_past():
+    # A first scan weeks after the issue went out: its mid-summer events are
+    # past, not last year's artwork.
+    summer = datetime(2026, 7, 20, tzinfo=_NY)
+    assert _correct_stale_year(summer, _REF) == summer
+
+
 def test_a_genuinely_historical_date_is_left_alone():
     # Further back than _MAX_YEAR_ROLL - a school-history mention, not a
     # mis-yeared current event, so guessing a year for it would be worse.
