@@ -129,6 +129,7 @@
   "Languages spoken": "बोली जाने वाली भाषाएँ",
   "Last": "आखिरी",
   "Last day closed": "बंद का आख़िरी दिन",
+  "Last step: tick the box above to show you're a person.": "आखिरी चरण: ऊपर दिए बॉक्स पर टिक करके बताएं कि आप इंसान हैं।",
   "List your program": "अपना कार्यक्रम जोड़ें",
   "List your program · Localz": "अपना कार्यक्रम जोड़ें · Localz",
   "Location shared after you call": "कॉल करने पर स्थान बताया जाएगा",
@@ -319,5 +320,6 @@
   "Your organization": "आपका संगठन",
   "Your requests": "आपके अनुरोध",
   "Youth shelter": "युवा आश्रय",
+  "a 10-digit phone number": "10 अंकों का फ़ोन नंबर",
   "{{percent}}% complete": "{{percent}}% पूरा"
 }

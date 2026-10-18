@@ -129,6 +129,7 @@
   "Languages spoken": "使用的语言",
   "Last": "最后一个",
   "Last day closed": "停业最后一天",
+  "Last step: tick the box above to show you're a person.": "最后一步：勾选上方的方框，确认您是真人。",
   "List your program": "登记您的项目",
   "List your program · Localz": "登记您的项目 · Localz",
   "Location shared after you call": "致电后告知地点",
@@ -319,5 +320,6 @@
   "Your organization": "您的机构",
   "Your requests": "您的申请",
   "Youth shelter": "青少年庇护所",
+  "a 10-digit phone number": "10 位数电话号码",
   "{{percent}}% complete": "已完成 {{percent}}%"
 }

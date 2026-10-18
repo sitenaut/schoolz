@@ -129,6 +129,7 @@
   "Languages spoken": "사용 언어",
   "Last": "마지막",
   "Last day closed": "휴무 마지막 날",
+  "Last step: tick the box above to show you're a person.": "마지막 단계: 위의 상자를 선택해 사람임을 확인해 주세요.",
   "List your program": "프로그램 등록하기",
   "List your program · Localz": "프로그램 등록 · Localz",
   "Location shared after you call": "전화하시면 위치를 알려 드립니다",
@@ -319,5 +320,6 @@
   "Your organization": "단체 정보",
   "Your requests": "내 신청",
   "Youth shelter": "청소년 쉼터",
+  "a 10-digit phone number": "10자리 전화번호",
   "{{percent}}% complete": "{{percent}}% 완료"
 }
