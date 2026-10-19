@@ -129,6 +129,14 @@ def setup_telemetry(service_name: str) -> None:
         enable_log_auto_instrumentation=_logger_provider is not None,
         log_handler_level=logging.INFO,
     )
+    # The request ID reached Loki only because the stdout handler's filter
+    # (logging_config.py) happens to run first and leaves the ID on the shared
+    # record. Give the OTel handler its own copy so the order can't matter.
+    otel_handler = getattr(LoggingInstrumentor, "_logging_handler", None)
+    if otel_handler is not None:
+        from request_context import RequestIdLogFilter
+
+        otel_handler.addFilter(RequestIdLogFilter())
     HTTPXClientInstrumentor().instrument()
 
     try:

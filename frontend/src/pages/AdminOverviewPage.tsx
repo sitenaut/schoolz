@@ -8,7 +8,18 @@ import { useToast } from "../components/ui/Toast";
 import { listSubmissions } from "./submissions/submissionsApi";
 import { loadCampaignReport, loadPageVisits, loadSurveySummary, type CampaignReport, type PageVisitReport } from "./survey/surveyApi";
 
-type Summary = { total: number; by_status: Record<string, number> };
+type Summary = { total: number; by_status: Record<string, number>; scheduler_last_seen_at: string | null };
+
+// The scheduler stamps its heartbeat every 30s; past this it is down or
+// stuck, and every scan has stopped (the schoolz-scheduler-down alert agrees).
+const SCHEDULER_STALE_SECONDS = 300;
+
+function ago(seconds: number): string {
+  if (seconds < 90) return `${Math.max(0, Math.round(seconds))}s ago`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)}m ago`;
+  if (seconds < 172800) return `${Math.round(seconds / 3600)}h ago`;
+  return `${Math.round(seconds / 86400)}d ago`;
+}
 
 function FunnelRow({ label, count }: { label: string; count: number }) {
   return (
@@ -22,6 +33,8 @@ function FunnelRow({ label, count }: { label: string; count: number }) {
 export function AdminOverviewPage() {
   const toast = useToast();
   const [summary, setSummary] = useState<Summary | null>(null);
+  // Seconds since the scheduler's last tick, measured when the summary loads.
+  const [schedulerAge, setSchedulerAge] = useState<number | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [pendingSubmissions, setPendingSubmissions] = useState<number | null>(null);
   const [surveyCount, setSurveyCount] = useState<number | null>(null);
@@ -31,7 +44,11 @@ export function AdminOverviewPage() {
   useEffect(() => {
     apiFetch("/scheduled-jobs/runs/summary")
       .then((r) => (r.ok ? r.json() : null))
-      .then(setSummary)
+      .then((data: Summary | null) => {
+        setSummary(data);
+        const seen = data?.scheduler_last_seen_at;
+        setSchedulerAge(seen ? (Date.now() - new Date(seen).getTime()) / 1000 : null);
+      })
       .catch(() => setSummary(null));
     listSubmissions("pending")
       .then((rows) => setPendingSubmissions(rows.length))
@@ -84,6 +101,12 @@ export function AdminOverviewPage() {
             <span className="stat-k">Failing</span>
             <span className="stat-v bad">{s.error ?? 0}</span>
           </Link>
+          <div className="stat" title="When the scheduler last checked in. It does every 30 seconds; if this is stale, no scan is running.">
+            <span className="stat-k">Scheduler seen</span>
+            <span className={`stat-v ${schedulerAge === null ? "" : schedulerAge > SCHEDULER_STALE_SECONDS ? "bad" : "ok"}`}>
+              {!summary ? "—" : schedulerAge === null ? "never" : ago(schedulerAge)}
+            </span>
+          </div>
         </div>
       </SectionCard>
 

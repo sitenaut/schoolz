@@ -83,3 +83,27 @@ def test_log_lines_get_the_current_request_id():
     finally:
         request_id_var.reset(token)
     assert record.request_id == "req-in-context-1"
+
+
+async def test_a_crashed_request_still_gets_its_request_line(caplog):
+    """An unhandled exception skipped the http_request line, so a crashed
+    request was missing from request counts and searches."""
+    from database import get_db
+
+    async def broken_db():
+        raise RuntimeError("database fell over")
+        yield  # pragma: no cover - makes this a generator dependency
+
+    app.dependency_overrides[get_db] = broken_db
+    try:
+        async with _client(raise_app_exceptions=False) as client:
+            with caplog.at_level(logging.INFO, logger="main"):
+                res = await client.get("/schools")
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+    assert res.status_code == 500
+    lines = [r for r in caplog.records if r.name == "main" and r.message == "http_request"]
+    assert len(lines) == 1
+    line = lines[0]
+    assert line.levelno == logging.ERROR and line.status == 500 and line.exception == "RuntimeError"
+    assert line.route == "/schools" and line.authed is False

@@ -4,9 +4,11 @@ import uuid
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
+from datetime import UTC
+
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 import database
 from main import app
@@ -124,13 +126,13 @@ async def test_stuck_run_reaper_keys_on_last_progress_not_start():
     """A long job that keeps checkpointing progress (local_events.refresh with
     the Y's slow schedules runs ~50 min) must not be reaped mid-flight; a run
     with no heartbeat for 45 min still is."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import database
     from models import JobRun, ScheduledJob
     from scheduler.entrypoint import _REAP_STUCK_RUNS_SQL
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     async with database.SessionLocal() as db:
         job = ScheduledJob(kind="local_events.refresh", name="reaper test", cron_expr="0 */3 * * *", params={})
         db.add(job)
@@ -154,13 +156,13 @@ async def test_reaper_finalizes_this_machines_runs_from_a_previous_process_at_on
     progress" because the killed run still had a fresh heartbeat. A run this
     machine started before this process did is reaped straight away; another
     machine's run, or one this process started, is left alone."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import database
     from models import JobRun, ScheduledJob
     from scheduler.entrypoint import _REAP_STUCK_RUNS_SQL
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     process_started_at = now - timedelta(minutes=1)
     async with database.SessionLocal() as db:
         job = ScheduledJob(kind="prerender.warm", name="orphan reaper test", cron_expr="40 22 * * *", params={})
@@ -285,3 +287,33 @@ async def test_run_now_refuses_a_job_that_is_already_running():
 
         assert res.status_code == 409
         assert "already running" in res.text
+
+
+@pytest.mark.anyio
+async def test_scheduler_heartbeat_is_stamped_and_shown_in_the_summary(monkeypatch):
+    """The scheduler-down alert reads this row, and the admin overview shows it."""
+    from sqlalchemy import delete
+
+    from models import SchedulerHeartbeat
+    from scheduler import entrypoint
+
+    monkeypatch.setattr(entrypoint, "SessionLocal", database.SessionLocal)
+    async with database.SessionLocal() as db:
+        await db.execute(delete(SchedulerHeartbeat))
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        admin = await _register(client, "admin", admin=True)
+        before = await client.get("/scheduled-jobs/runs/summary", headers=admin)
+        assert before.json()["scheduler_last_seen_at"] is None
+
+        await entrypoint._beat()
+        first = (await client.get("/scheduled-jobs/runs/summary", headers=admin)).json()["scheduler_last_seen_at"]
+        await entrypoint._beat()
+        second = (await client.get("/scheduled-jobs/runs/summary", headers=admin)).json()["scheduler_last_seen_at"]
+    assert first is not None and second > first
+
+    async with database.SessionLocal() as db:
+        rows = (await db.execute(select(SchedulerHeartbeat))).scalars().all()
+    assert len(rows) == 1 and rows[0].id == "scheduler"

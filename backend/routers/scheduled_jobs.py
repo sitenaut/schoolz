@@ -12,7 +12,7 @@ from local_events.billz_import import plan_import
 from local_events.prune import KIND as LOCAL_EVENTS_KIND
 from local_events.prune import prune_orphaned_events
 from local_events.test_fetch import TestFetchIn, TestFetchOut, run_test_fetch
-from models import District, EmailScanner, JobRun, ScheduledJob, School, SmoreNewsletter, User
+from models import District, EmailScanner, JobRun, ScheduledJob, SchedulerHeartbeat, School, SmoreNewsletter, User
 from scheduler.registry import registry
 from scheduler.sources import job_sources
 from schemas import (
@@ -177,7 +177,12 @@ async def runs_summary(db: AsyncSession = Depends(get_db)):
         select(ScheduledJob.last_status, func.count()).where(ScheduledJob.enabled.is_(True)).group_by(ScheduledJob.last_status)
     )
     by_status = {(status_value or "never"): count for status_value, count in rows.all()}
-    return JobRunSummaryOut(total=sum(by_status.values()), by_status=by_status)
+    heartbeat = await db.get(SchedulerHeartbeat, "scheduler")
+    return JobRunSummaryOut(
+        total=sum(by_status.values()),
+        by_status=by_status,
+        scheduler_last_seen_at=heartbeat.last_seen_at if heartbeat else None,
+    )
 
 
 @router.post("", response_model=ScheduledJobOut, status_code=status.HTTP_201_CREATED)

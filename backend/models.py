@@ -411,6 +411,20 @@ class JobRun(Base):
     last_progress_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class SchedulerHeartbeat(Base):
+    """One row, written by the scheduler on every reconcile tick (30s). The
+    "scheduler is down" alert reads it through Grafana's Postgres datasource,
+    so it still fires when the process is gone *and* when telemetry export
+    is broken - a metric heartbeat goes silent in both cases alike."""
+
+    __tablename__ = "scheduler_heartbeats"
+
+    id: Mapped[str] = mapped_column(String(20), primary_key=True, default="scheduler")
+    machine_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class EmailScanner(Base):
     """One configured recurring Gmail search: filters + a `purpose` telling
     the processor registry how to handle each new matched message. Paired

@@ -251,6 +251,8 @@ class JobKindOut(BaseModel):
 class JobRunSummaryOut(BaseModel):
     total: int
     by_status: dict[str, int]
+    # The scheduler's last reconcile tick (every 30s); None if it has never run here.
+    scheduler_last_seen_at: datetime | None = None
 
 
 class EmailScannerOut(BaseModel):

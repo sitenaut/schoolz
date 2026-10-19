@@ -159,7 +159,29 @@ async def log_requests(request: Request, call_next):
     _first_request_seen = True
 
     start = time.perf_counter()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        # An unhandled exception never reaches the http_request line below,
+        # so a crashed request was missing from every request count and
+        # search. Write its line here - status 500, at ERROR, with the
+        # exception type - then let it propagate to the error handler.
+        route = request.scope.get("route")
+        logger.error(
+            "http_request",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "route": route.path if route else None,
+                "status": 500,
+                "duration_ms": round((time.perf_counter() - start) * 1000, 1),
+                "user_id": getattr(request.state, "user_id", None),
+                "authed": getattr(request.state, "user_id", None) is not None,
+                "api_key_id": getattr(request.state, "api_key_id", None),
+                "exception": type(exc).__name__,
+            },
+        )
+        raise
     duration = time.perf_counter() - start
 
     route = request.scope.get("route")
