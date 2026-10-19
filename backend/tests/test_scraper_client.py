@@ -212,3 +212,32 @@ async def test_check_health_asks_health_deep_and_falls_back_to_health(monkeypatc
     _mock_http(monkeypatch, handler)
     assert await scraper_client.check_health() == {"primary": True, "fallback": False, "residential": False}
     assert asked == ["primary/health/deep", "primary/health", "droplet/health/deep", "pi/health/deep"]
+
+
+async def test_fetch_raw_bytes_asks_for_request_mode_and_skips_unusable_answers(monkeypatch):
+    import base64
+    import json
+
+    _set_services(monkeypatch, fallback=("https://droplet", "dkey"), residential=("https://pi", "rkey"))
+    _recorded_calls(monkeypatch)
+    bodies = []
+
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        if request.url.host == "primary":  # the site's own refusal, passed through
+            return httpx.Response(200, json={"status": 403, "body_base64": "PGh0bWw+"})
+        if request.url.host == "droplet":  # an older scraper: text only
+            return httpx.Response(200, json={"body": "%PDF mangled"})
+        return httpx.Response(200, json={"status": 200, "body_base64": base64.b64encode(b"%PDF-1.4").decode()})
+
+    _mock_http(monkeypatch, handler)
+    assert await scraper_client.fetch_raw_bytes("https://school.example/staff.pdf") == b"%PDF-1.4"
+    assert {b["via"] for b in bodies} == {"request"}
+
+
+async def test_fetch_raw_bytes_says_what_each_scraper_answered(monkeypatch):
+    _set_services(monkeypatch)
+    _recorded_calls(monkeypatch)
+    _mock_http(monkeypatch, lambda request: httpx.Response(200, json={"status": 404}))
+    with pytest.raises(RuntimeError, match="primary: HTTP 404"):
+        await scraper_client.fetch_raw_bytes("https://school.example/staff.pdf")

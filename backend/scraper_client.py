@@ -219,14 +219,37 @@ async def fetch_paginated(
 
 
 async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
-    """A binary download (PDF) through a real browser context, for sites whose
-    WAF 403s a plain GET. Uses /fetch-raw, which returns `body_base64`;
-    playwright-scraper's variant returns a text `body` that would corrupt a
-    PDF, so a service that answers without base64 is skipped, not trusted."""
-    result = await _post_with_fallback("/fetch-raw", {"url": url, "timeout_ms": timeout_ms}, timeout_s=timeout_ms / 1000 * 2 + 10)
-    if not result.get("body_base64"):
-        raise RuntimeError(f"scraper returned no binary body for {url}")
-    return base64.b64decode(result["body_base64"])
+    """A binary download (PDF, XLSX) for sites whose WAF 403s a plain GET.
+    Asks /fetch-raw with via="request" (Playwright's HTTP client, no page:
+    a page opens an inline PDF in its viewer and blew the render budget).
+    An answer counts only with exact bytes (`body_base64`) and, where the
+    scraper reports one, status 200; otherwise the next scraper is asked."""
+    services = _services()
+    if not services:
+        raise ScraperNotConfigured("SCRAPER_URL / SCRAPER_API_KEY are not configured")
+    seen: list[str] = []
+    async with _get_semaphore():
+        for service_url, api_key in services:
+            host = httpx.URL(service_url).host
+            try:
+                result = await _post_to(
+                    service_url, api_key, "/fetch-raw", {"url": url, "timeout_ms": timeout_ms, "via": "request"},
+                    timeout_s=timeout_ms / 1000 * 2 + 10,
+                )
+            except Exception as exc:
+                if not _is_retryable(exc):
+                    raise
+                seen.append(f"{host}: {type(exc).__name__}")
+                continue
+            status = result.get("status")
+            if status is not None and int(status) != 200:
+                seen.append(f"{host}: HTTP {status}")
+                continue
+            if not result.get("body_base64"):
+                seen.append(f"{host}: no binary body")
+                continue
+            return base64.b64decode(result["body_base64"])
+    raise RuntimeError(f"no scraper returned the file for {url}: {'; '.join(seen)}")
 
 
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)
