@@ -14,6 +14,7 @@ from . import (
     hs_rotation_scan,  # noqa: F401
     local_events_refresh,  # noqa: F401
     lunch_menu_scan,  # noqa: F401
+    mailchimp_scan,  # noqa: F401
     marking_period_scan,  # noqa: F401
     myschoolplate_menu_scan,  # noqa: F401
     nutrislice_menu_scan,  # noqa: F401

@@ -356,6 +356,7 @@ _CODE_HINTS = {
     "scraper_unavailable": "The scraper was down or overloaded; re-run once it's healthy.",
     "source_unavailable": "The source's own server was down or overloaded; re-run later. If it fails at the same time every day, move the scan to another minute.",
     "smore_no_blocks": "The link has most likely expired. Replace the newsletter URL with a live issue.",
+    "mailchimp_no_blocks": "Mailchimp has taken the campaign page down. Replace the newsletter URL with a live issue.",
     "source_http_error": "The source returned an HTTP error. Check whether the URL has moved.",
     "llm_rate_limited": "Re-run later; extraction was rate limited.",
     "no_documents_found": "Check whether the school site has moved its documents page.",
@@ -604,8 +605,8 @@ def _newsletter(point: DataPoint, school: School, ctx: AuditContext) -> Finding:
                 if f.status == FAILING:
                     f.job_ids = base["job_ids"]
                     f.runs, f.stale_after, f.last_good = weekly.runs, weekly.stale_after, newest
-                    if run.error_code == "smore_no_blocks":
-                        f.why = ("smore_no_blocks: the page loads but has no newsletter blocks. The link has most likely expired, "
+                    if run.error_code in ("smore_no_blocks", "mailchimp_no_blocks"):
+                        f.why = (f"{run.error_code}: the page loads but has no newsletter blocks. The link has most likely expired, "
                                  "which looks the same as \"nothing new\" unless it is flagged." + ("" if newest else " It has never scanned successfully."))
                         f.why_district = "The newsletter link we have loads with no content and has most likely expired."
                         f.next_district, f.internal_only = "A link to a current issue.", False
@@ -715,7 +716,7 @@ async def load_context(db: AsyncSession, schools: list[School], now: datetime | 
     backpacks_district: dict[str, list[SmoreNewsletter]] = defaultdict(list)
     ptboards: dict[str, list[SmoreNewsletter]] = defaultdict(list)
     for n in newsletters:
-        if n.source_type in ("smore", "smore_archive") and n.school_id:
+        if n.source_type in ("smore", "smore_archive", "mailchimp") and n.school_id:
             by_school[n.school_id].append(n)
         elif n.source_type == "virtual_backpack":
             (backpacks_school[n.school_id] if n.school_id else backpacks_district[n.district_id]).append(n)

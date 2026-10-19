@@ -5,6 +5,7 @@ import { Badge, StatusBadge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { DataTable, type Column } from "../components/ui/DataTable";
 import { Field } from "../components/ui/Field";
+import { FilterSelect } from "../components/ui/FilterSelect";
 import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -14,6 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import { describeCron } from "../lib/cron";
 import { fmtDateTime, relativeTime } from "../lib/format";
 import { can } from "../lib/permissions";
+import { loadTargets, type TargetOption } from "./smore/smoreApi";
 
 type Connection = { google_email: string; last_synced_at: string | null; created_at: string };
 type ScheduledJob = {
@@ -32,15 +34,17 @@ type Scanner = {
   subject_contains: string[];
   body_contains: string[];
   lookback_days: number;
+  school_id: string | null;
+  link_kinds: string[];
   enabled: boolean;
   scheduled_job: ScheduledJob | null;
 };
+type LinkKind = { key: string; label: string };
+/** What a scan keeps of one message: the newsletter links it held, nothing else. */
 type SchoolEmail = {
   id: string;
-  sender: string | null;
-  subject: string | null;
   received_at: string | null;
-  newsletter_links: { url: string }[];
+  newsletter_links: { url: string; kind?: string }[];
 };
 
 const RUN_REFRESH_MS = 2000;
@@ -64,6 +68,8 @@ export function GmailPage() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [scanners, setScanners] = useState<Scanner[]>([]);
   const [emails, setEmails] = useState<SchoolEmail[]>([]);
+  const [linkKinds, setLinkKinds] = useState<LinkKind[]>([]);
+  const [schools, setSchools] = useState<TargetOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<Set<string>>(new Set());
   const [pendingDisconnect, setPendingDisconnect] = useState<Connection | null>(null);
@@ -78,17 +84,23 @@ export function GmailPage() {
   const [fromContains, setFromContains] = useState("");
   const [subjectContains, setSubjectContains] = useState("");
   const [cronExpr, setCronExpr] = useState("0 7 * * *");
+  const [formKinds, setFormKinds] = useState<string[]>(["smore"]);
+  const [schoolId, setSchoolId] = useState("");
 
   const loadAll = useCallback(async () => {
     try {
-      const [c, s, e] = await Promise.all([
+      const [c, s, e, k, t] = await Promise.all([
         apiFetch("/gmail/connections").then((r) => (r.ok ? r.json() : [])),
         apiFetch("/email-scanners").then((r) => (r.ok ? r.json() : [])),
         apiFetch("/school-emails").then((r) => (r.ok ? r.json() : [])),
+        apiFetch("/email-scanners/link-kinds").then((r) => (r.ok ? r.json() : [])),
+        loadTargets().catch(() => ({ schools: [] as TargetOption[] })),
       ]);
+      setSchools(t.schools);
       setConnections(c);
       setScanners(s);
       setEmails(e);
+      setLinkKinds(k);
     } catch (e) {
       toast({ title: "Could not load the email scanner", description: e instanceof Error ? e.message : undefined, tone: "bad" });
     } finally {
@@ -158,6 +170,8 @@ export function GmailPage() {
           subject_contains: csvToList(subjectContains),
           cron_expr: cronExpr,
           purpose: "school_email",
+          link_kinds: formKinds,
+          school_id: schoolId || null,
         }),
       });
       if (!res.ok) {
@@ -168,6 +182,8 @@ export function GmailPage() {
       setName("");
       setFromContains("");
       setSubjectContains("");
+      setFormKinds(["smore"]);
+      setSchoolId("");
       setFormOpen(false);
       loadAll();
     } finally {
@@ -206,6 +222,23 @@ export function GmailPage() {
     setScanners((cur) => cur.map((x) => (x.id === updated.id ? updated : x)));
   };
 
+  const setKinds = async (s: Scanner, kinds: string[]) => {
+    if (!kinds.length) {
+      toast({ title: "A scanner keeps at least one kind of link", tone: "bad" });
+      return;
+    }
+    const res = await apiFetch(`/email-scanners/${s.id}`, { method: "PATCH", body: JSON.stringify({ link_kinds: kinds }) });
+    if (!res.ok) {
+      toast({ title: "Could not update scanner", description: await errorDetail(res, ""), tone: "bad" });
+      return;
+    }
+    const updated: Scanner = await res.json();
+    setScanners((cur) => cur.map((x) => (x.id === updated.id ? updated : x)));
+  };
+
+  const kindLabel = (key: string) => linkKinds.find((k) => k.key === key)?.label ?? key;
+  const schoolLabel = (id: string | null) => (id ? (schools.find((x) => x.id === id)?.label ?? "a school") : null);
+
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     setBusy(true);
@@ -232,9 +265,32 @@ export function GmailPage() {
           <div className="cell-title">{s.name}</div>
           <div className="cell-sub">
             <span>{s.google_email}</span>
+            <span>{schoolLabel(s.school_id) ?? "no school - links wait for an admin"}</span>
           </div>
         </>
       ),
+    },
+    {
+      id: "keeps",
+      header: "Keeps",
+      cell: (s) =>
+        canEdit ? (
+          <div className="chips">
+            {linkKinds.map((k) => (
+              <button
+                key={k.key}
+                type="button"
+                className="chip"
+                aria-pressed={s.link_kinds.includes(k.key)}
+                onClick={() => setKinds(s, s.link_kinds.includes(k.key) ? s.link_kinds.filter((x) => x !== k.key) : [...s.link_kinds, k.key])}
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          s.link_kinds.map(kindLabel).join(", ")
+        ),
     },
     {
       id: "matches",
@@ -305,18 +361,6 @@ export function GmailPage() {
 
   const emailColumns: Column<SchoolEmail>[] = [
     {
-      id: "email",
-      header: "Email",
-      cell: (m) => (
-        <>
-          <div className="cell-title">{m.subject ?? "(no subject)"}</div>
-          <div className="cell-sub">
-            <span>{m.sender ?? "unknown sender"}</span>
-          </div>
-        </>
-      ),
-    },
-    {
       id: "received",
       header: "Received",
       sortValue: (m) => m.received_at ?? "",
@@ -336,6 +380,7 @@ export function GmailPage() {
               <a className="mono" href={l.url} target="_blank" rel="noreferrer" style={{ wordBreak: "break-all" }}>
                 {l.url.replace(/^https?:\/\//, "")}
               </a>
+              {l.kind && <span className="note"> · {kindLabel(l.kind)}</span>}
             </div>
           ))
         ),
@@ -347,7 +392,7 @@ export function GmailPage() {
       <PageHeader
         upperTitle="Admin"
         title="Email scanner"
-        subtitle="Connect a Gmail inbox that receives school emails, then scan it on a schedule to catch the newsletter links inside them."
+        subtitle="Connect a Gmail inbox that receives school emails, then scan it on a schedule to catch the newsletter links inside them. Only those links are kept - never an email's text, subject or sender."
         actions={
           <>
             <button className="btn" onClick={loadAll} title="Refresh">
@@ -431,27 +476,27 @@ export function GmailPage() {
         }
       />
 
-      <div className="section-title">Captured school emails</div>
+      <div className="section-title">Newsletter links found</div>
       <DataTable
         columns={emailColumns}
         rows={emails}
         getRowId={(m) => m.id}
         loading={loading}
         defaultSort={{ id: "received", dir: "desc" }}
-        empty="None captured yet."
+        empty="No newsletter links found yet."
       />
 
       <Modal
         open={formOpen}
         onClose={() => setFormOpen(false)}
         title="Add a scanner"
-        subtitle="Emails matching these filters are captured each time the scanner runs."
+        subtitle="Each run reads the emails matching these filters and keeps only the newsletter links of the kinds ticked below."
         footer={
           <>
             <button className="btn" type="button" onClick={() => setFormOpen(false)} disabled={busy}>
               Cancel
             </button>
-            <button className="btn btn-primary" type="submit" form="scanner-form" disabled={busy || !name.trim() || !account}>
+            <button className="btn btn-primary" type="submit" form="scanner-form" disabled={busy || !name.trim() || !account || !formKinds.length}>
               {busy ? "Saving…" : "Add scanner"}
             </button>
           </>
@@ -480,6 +525,24 @@ export function GmailPage() {
             <Field label="Subject contains" hint="Comma-separated.">
               <input value={subjectContains} onChange={(e) => setSubjectContains(e.target.value)} />
             </Field>
+            <Field label="Keep links to" hint="Nothing else from an email is kept." className="span2">
+              <div className="chips">
+                {linkKinds.map((k) => (
+                  <button
+                    key={k.key}
+                    type="button"
+                    className="chip"
+                    aria-pressed={formKinds.includes(k.key)}
+                    onClick={() => setFormKinds((cur) => (cur.includes(k.key) ? cur.filter((x) => x !== k.key) : [...cur, k.key]))}
+                  >
+                    {k.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="School" hint="Its newsletters become this school's content. Without one, a found link waits for an admin to assign it." className="span2">
+              <FilterSelect value={schoolId} onChange={setSchoolId} options={schools.map((x) => ({ value: x.id, label: x.label }))} placeholder="— none —" clearLabel="No school" />
+            </Field>
             <Field label="Cron expression" hint={describeCron(cronExpr)} className="span2">
               <input className="mono" value={cronExpr} onChange={(e) => setCronExpr(e.target.value)} required />
             </Field>
@@ -492,7 +555,7 @@ export function GmailPage() {
         title="Disconnect this Gmail account?"
         description={
           <>
-            schoolz will stop reading <b>{pendingDisconnect?.google_email}</b>. Its scanners stay but cannot read mail until it is reconnected; emails already captured stay.
+            schoolz will stop reading <b>{pendingDisconnect?.google_email}</b>. Its scanners stay but cannot read mail until it is reconnected; links already found stay.
           </>
         }
         confirmLabel="Disconnect"
@@ -507,7 +570,7 @@ export function GmailPage() {
         title="Remove this scanner?"
         description={
           <>
-            <b>{pendingDelete?.name}</b> will stop scanning and its schedule is deleted. Emails already captured stay.
+            <b>{pendingDelete?.name}</b> will stop scanning and its schedule is deleted. Links already found stay.
           </>
         }
         confirmLabel="Remove"
