@@ -459,6 +459,8 @@ POST /provider-portal/requests/{request_id}/withdraw
   -> 200: RequestOut
 GET /provider-portal/types
   -> 200: list[ProviderTypeOut]
+GET /ready
+  -> 200: any
 POST /resources/by-ids
   body: ByIdsIn
   -> 200: list[ResourceSummaryOut]

@@ -4,6 +4,8 @@ primary_region = "ewr"
 [build]
 
 [deploy]
+  # One machine at a time; each must pass the health check before the next.
+  strategy = "rolling"
   # Runs once per deploy in a temporary machine with the app's secrets, before
   # any app or scheduler machine is replaced. A non-zero exit stops the deploy
   # and the running version stays up. It only ever upgrades
@@ -92,6 +94,16 @@ primary_region = "ewr"
   # always-on cost there.
   min_machines_running = 1
   processes = ["app"]
+
+  # A new machine that doesn't answer here fails the deploy instead of taking
+  # traffic. Liveness only: /health doesn't touch the database, so a database
+  # blip can't take every machine out of rotation (/ready is the one that does).
+  [[http_service.checks]]
+    method = "GET"
+    path = "/health"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
 
 [[vm]]
   size = "shared-cpu-1x"

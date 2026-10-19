@@ -139,6 +139,7 @@ jobs:
             echo "::error::$1 did not answer"; return 1
           }
           answer "/health" "$URL/health"
+          answer "/ready (database)" "$URL/ready"
           answer "/schools" "$URL/schools"
           answer "MCP initialize" -X POST "$URL/mcp/" \
             -H 'Accept: application/json, text/event-stream' -H 'Content-Type: application/json' \

@@ -101,6 +101,11 @@ The checks live only in the Grafana UI (Testing & synthetics); the rule matches
 their job names, so renaming one unwatches it - `schoolz-probe-silent` exists
 to say so.
 
+The API has two health endpoints. `/health` is liveness: it never touches the
+database, and Fly's machine check uses it, so a deploy whose machine doesn't
+answer it fails before taking traffic. `/ready` returns 503 unless the database
+answers within 2 s; outside probes and the deploy smoke check use it.
+
 ### schoolz-api-down
 No API machine has reported telemetry for 10 minutes. One machine is always kept
 running, so either none is up or export broke. Check `fly status -a schoolz-api`
