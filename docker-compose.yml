@@ -132,13 +132,15 @@ services:
       disable: true  # the image's check is for the API; the scheduler serves no HTTP
 
   scraper:
-    build: ./scraper
-    # The image binds "::" for Fly's IPv6-only private network, and asyncio
-    # makes that socket IPv6-only - so on compose's IPv4 network the backend
-    # got "connection refused". Locally, bind IPv4 instead.
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8765"]
+    # The shared playwright-scraper at scraper/SOURCE_REF, checked out into
+    # .cache/ by scripts/scraper-source.sh (compose-local.sh runs it) - the
+    # same service as prod's Fly scraper, the droplet and the Pi.
+    build: ./.cache/playwright-scraper
     environment:
       SCRAPER_API_KEY: ${SCRAPER_API_KEY:-}
+      # Its URL guard refuses private addresses; local /prerender renders the
+      # frontend container (FRONTEND_INTERNAL_URL), which is one.
+      URL_GUARD_ALLOW_HOSTS: frontend
     ports:
       - "8765:8765"
     restart: unless-stopped
