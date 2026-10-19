@@ -15,14 +15,14 @@ import logging
 import re
 import time
 from datetime import date, datetime
-from zoneinfo import ZoneInfo
 from html import unescape
 from urllib.parse import quote, unquote, urljoin, urlparse
+from zoneinfo import ZoneInfo
 
 import httpx
 import pdfplumber
-from bs4 import BeautifulSoup
 from anthropic import AsyncAnthropic
+from bs4 import BeautifulSoup
 
 import observability
 import scraper_client
@@ -469,7 +469,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         return [{**c, "pdf_url": alias.get(c["pdf_url"], c["pdf_url"])} for c in entries]
 
     by_key: dict[tuple, dict] = {}
-    for url, classified in [(u, _classify_pdf_link(u) or _classify_coded_pdf_link(u)) for u in urls] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
+    for _url, classified in [(u, _classify_pdf_link(u) or _classify_coded_pdf_link(u)) for u in urls] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
         if classified:
             key = (classified["school_type"], classified["meal_type"])
             # The page can list more than one month at once, and `urls` is a
@@ -622,13 +622,13 @@ async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None 
     if not ANTHROPIC_API_KEY:
         return []
 
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as http_client:  # Presence hosts 403 the default UA
-        resp = await http_client.get(pdf_url)
-        resp.raise_for_status()
-        pdf_b64 = base64.b64encode(resp.content).decode("ascii")
+    # Presence hosts 403 the default UA; a host that 403s Fly's addresses
+    # (Chesterbrook's Cloudflare) is read through the scrapers.
+    _, content = await scraper_client.get_bytes(pdf_url, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}, timeout_s=20.0)
+    pdf_b64 = base64.b64encode(content).decode("ascii")
     # Some schools post a month's menu as a picture rather than a PDF
     # (Somerdale Park's October JPGs); sniffed from bytes, never the URL.
-    image_type = _sniff_image_type(resp.content)
+    image_type = _sniff_image_type(content)
     file_block = (
         {"type": "image", "source": {"type": "base64", "media_type": image_type, "data": pdf_b64}}
         if image_type

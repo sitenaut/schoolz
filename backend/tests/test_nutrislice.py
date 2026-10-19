@@ -77,3 +77,34 @@ async def test_fetch_entrees_clips_to_window_and_tolerates_a_missing_meal():
         breakfast = await nutrislice.fetch_entrees(client, "cinnaminson", "eleanor-rush-school", "breakfast", date(2026, 10, 7), date(2026, 10, 12))
     assert lunch == {date(2026, 10, 7): ["Popcorn Chicken", "Ham Cheese Sandwich"], date(2026, 10, 12): ["Cheese Pizza"]}
     assert breakfast == {}
+
+
+@pytest.mark.anyio
+async def test_fetch_entrees_retries_a_failed_lookup(monkeypatch):
+    """A DNS failure ("Name or service not known") or a 5xx is asked again."""
+    monkeypatch.setattr(nutrislice, "_RETRY_DELAYS_S", (0, 0))
+    calls = []
+
+    def handler(request):
+        calls.append(request.url)
+        if len(calls) == 1:
+            raise httpx.ConnectError("[Errno -2] Name or service not known", request=request)
+        if len(calls) == 2:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"days": []})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        assert await nutrislice.fetch_entrees(client, "d", "s", "lunch", date(2026, 10, 19), date(2026, 10, 20)) == {}
+    assert len(calls) == 3
+
+
+@pytest.mark.anyio
+async def test_fetch_entrees_gives_up_after_the_retries(monkeypatch):
+    monkeypatch.setattr(nutrislice, "_RETRY_DELAYS_S", (0, 0))
+
+    def handler(request):
+        raise httpx.ConnectError("[Errno -2] Name or service not known", request=request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(httpx.ConnectError):
+            await nutrislice.fetch_entrees(client, "d", "s", "lunch", date(2026, 10, 19), date(2026, 10, 20))

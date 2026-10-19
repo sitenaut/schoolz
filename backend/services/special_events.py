@@ -186,10 +186,8 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
     if not ANTHROPIC_API_KEY:
         return []
 
-    async with httpx.AsyncClient(timeout=20.0) as http_client:
-        resp = await http_client.get(pdf_url)
-        resp.raise_for_status()
-        pdf_b64 = base64.b64encode(resp.content).decode("ascii")
+    _, pdf = await scraper_client.get_bytes(pdf_url, headers=_PDF_UA, timeout_s=20.0)
+    pdf_b64 = base64.b64encode(pdf).decode("ascii")
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     _llm_started = time.perf_counter()

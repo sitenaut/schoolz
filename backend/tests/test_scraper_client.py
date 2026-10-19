@@ -245,7 +245,7 @@ async def test_fetch_raw_bytes_says_what_each_scraper_answered(monkeypatch):
 
 @pytest.mark.anyio
 async def test_fetch_html_sends_stealth(monkeypatch):
-    """Stealth is on unless the caller turns it off (prerender does)."""
+    """No stealth choice unless the caller makes one (prerender does)."""
     sent = []
 
     async def fake_post(path, payload, timeout_s):
@@ -255,7 +255,7 @@ async def test_fetch_html_sends_stealth(monkeypatch):
     monkeypatch.setattr(scraper_client, "_post_with_fallback", fake_post)
     await scraper_client.fetch_html("https://example.org")
     await scraper_client.fetch_html("https://example.org", stealth=False)
-    assert [p["stealth"] for p in sent] == [True, False]
+    assert [p["stealth"] for p in sent] == [None, False]
 
 
 @pytest.mark.anyio
@@ -275,3 +275,76 @@ async def test_prerender_renders_without_stealth(monkeypatch):
     monkeypatch.setattr(prerender, "_store", fake_store)
     await prerender._render("/privacy")
     assert seen["stealth"] is False
+
+
+def test_primary_renders_without_stealth_unless_asked(monkeypatch):
+    """The primary ran without playwright-stealth until it became
+    playwright-scraper (stealth on by default); the fallbacks keep theirs."""
+    _set_services(monkeypatch, primary=("http://p", "k"), fallback=("http://f", "k"), residential=("http://r", "k"))
+    unset = {"url": "u", "stealth": None}
+    assert scraper_client._with_stealth("http://p", unset) == {"url": "u", "stealth": False}
+    assert scraper_client._with_stealth("http://f", unset) == {"url": "u"}
+    assert scraper_client._with_stealth("http://r", {"url": "u", "stealth": True}) == {"url": "u", "stealth": True}
+    assert scraper_client._with_stealth("http://p", {"url": "u"}) == {"url": "u"}
+
+
+class _Resp:
+    def __init__(self, status: int, content: bytes = b"", url: str = "https://site/x"):
+        self.status_code, self.content, self.url = status, content, url
+        self.request = httpx.Request("GET", url)
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise httpx.HTTPStatusError("err", request=self.request, response=self)
+
+
+def _fake_client(monkeypatch, resp):
+    class Client:
+        def __init__(self, *a, **kw):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return None
+
+        async def get(self, url):
+            return resp
+
+    monkeypatch.setattr(scraper_client.httpx, "AsyncClient", Client)
+
+
+async def test_get_bytes_reads_a_403_through_the_scrapers(monkeypatch):
+    _fake_client(monkeypatch, _Resp(403))
+
+    async def fake_raw(url, timeout_ms=45_000):
+        return b"%PDF-via-scraper"
+
+    monkeypatch.setattr(scraper_client, "fetch_raw_bytes", fake_raw)
+    assert await scraper_client.get_bytes("https://site/x.pdf") == ("https://site/x.pdf", b"%PDF-via-scraper")
+
+
+async def test_get_bytes_keeps_a_plain_answer_and_raises_other_errors(monkeypatch):
+    _fake_client(monkeypatch, _Resp(200, b"%PDF-plain", "https://site/final.pdf"))
+    assert await scraper_client.get_bytes("https://site/x.pdf") == ("https://site/final.pdf", b"%PDF-plain")
+    _fake_client(monkeypatch, _Resp(404))
+    with pytest.raises(httpx.HTTPStatusError):
+        await scraper_client.get_bytes("https://site/x.pdf")
+
+
+async def test_fetch_html_from_any_moves_past_a_bot_wall_page(monkeypatch):
+    """A datacenter scraper gets the challenge page; the next one gets the real page."""
+    _set_services(monkeypatch, primary=("http://p", "k"), fallback=("http://f", "k"), residential=("http://r", "k"))
+    pages = {"http://p": "<html>challenge</html>", "http://f": "<html>challenge</html>", "http://r": "<a href='cal.pdf'>"}
+    asked = []
+
+    async def fake_post_to(service_url, api_key, path, payload, timeout_s):
+        asked.append(service_url)
+        return {"html": pages[service_url]}
+
+    monkeypatch.setattr(scraper_client, "_post_to", fake_post_to)
+    html = await scraper_client.fetch_html_from_any("https://site/", accept=lambda h: ".pdf" in h)
+    assert html == pages["http://r"] and asked == ["http://p", "http://f", "http://r"]
+    with pytest.raises(scraper_client.ScraperRefused):
+        await scraper_client.fetch_html_from_any("https://site/", accept=lambda h: False)
