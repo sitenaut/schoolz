@@ -18,7 +18,7 @@ import logging
 import os
 import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -105,7 +105,7 @@ async def _load_stored(path: str) -> tuple[float, str] | None:
 
 
 async def _store(path: str, html: str) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     values = {"path": path, "html_gz": gzip.compress(html.encode("utf-8")), "rendered_at": now}
     try:
         async with database.SessionLocal() as db:
@@ -169,7 +169,7 @@ async def refresh(path: str) -> None:
 async def paths_needing_render(paths: list[str], older_than_seconds: float) -> list[str]:
     """The subset of `paths` with no stored snapshot, or one rendered more
     than `older_than_seconds` ago - in the order given."""
-    cutoff = datetime.now(timezone.utc).timestamp() - older_than_seconds
+    cutoff = datetime.now(UTC).timestamp() - older_than_seconds
     async with database.SessionLocal() as db:
         rows = (await db.execute(select(PrerenderedPage.path, PrerenderedPage.rendered_at).where(PrerenderedPage.path.in_(paths)))).all()
     fresh = {path for path, rendered_at in rows if rendered_at.timestamp() > cutoff}
@@ -204,6 +204,12 @@ async def _render(path: str) -> str:
         wait_for_selector='body[data-prerender-ready="true"]',
         timeout_ms=_RENDER_TIMEOUT_MS,
         block_assets=True,
+        # playwright-stealth's injected scripts throw on this SPA ("utils is
+        # not defined") and #root never mounts: since the Fly scraper became
+        # the shared playwright-scraper (stealth on by default), every render
+        # waited out its whole budget and came back an empty shell. Our own
+        # site has no bot wall to get past.
+        stealth=False,
     )
 
     html = result["html"]
