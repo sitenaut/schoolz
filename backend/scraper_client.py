@@ -140,6 +140,20 @@ async def _post_to(service_url: str, api_key: str, path: str, payload: dict, tim
     raise last
 
 
+def _with_stealth(service_url: str, payload: dict) -> dict:
+    """The payload as `service_url` gets it. A caller's explicit `stealth`
+    goes to every scraper; left as None, the primary renders without
+    playwright-stealth and the droplet and Pi keep their own default (on) -
+    exactly how it ran before the primary became playwright-scraper, whose
+    default turned stealth on there for every scan. Its patches throw inside
+    some pages' JS (schoolz's own SPA never mounts) and blow the memory
+    budget on others (Beck's Finalsite directory: 900MB+ with, 8s without)."""
+    if "stealth" not in payload or payload["stealth"] is not None:
+        return payload
+    rest = {k: v for k, v in payload.items() if k != "stealth"}
+    return {**rest, "stealth": False} if _role(service_url) == "primary" else rest
+
+
 async def _post_with_fallback(path: str, payload: dict, timeout_s: float) -> dict:
     """Tries each configured service in order (schoolz's own scraper, then
     the droplet), falling through only after a service's own retries are
@@ -154,7 +168,7 @@ async def _post_with_fallback(path: str, payload: dict, timeout_s: float) -> dic
         last: Exception | None = None
         for service_url, api_key in services:
             try:
-                return await _post_to(service_url, api_key, path, payload, timeout_s)
+                return await _post_to(service_url, api_key, path, _with_stealth(service_url, payload), timeout_s)
             except Exception as exc:
                 if not _is_retryable(exc):
                     raise
@@ -168,12 +182,10 @@ async def fetch_html(
     wait_for_selector: str | None = None,
     timeout_ms: int = 15_000,
     block_assets: bool = False,
-    stealth: bool = True,
+    stealth: bool | None = None,
 ) -> dict:
-    """`stealth=False` turns off playwright-scraper's playwright-stealth
-    patches (on by default there). They throw inside some pages' own JS -
-    schoolz's own SPA never mounts with them on - and they only exist to get
-    past bot walls a page we control doesn't have."""
+    """`stealth`: see _with_stealth. None (the default) is off on the
+    primary and the fallbacks' own default; True or False goes to all."""
     # The scraper applies timeout_ms to page.goto AND again to
     # wait_for_selector, so it can legitimately take ~2x that before it
     # answers - a client budget of timeout_ms + 5s (the old value) gave up
@@ -198,6 +210,7 @@ async def fetch_paginated(
     wait_after_click_ms: int = 1200,
     timeout_ms: int = 15_000,
     block_assets: bool = False,
+    stealth: bool | None = None,
 ) -> list[str]:
     """Returns one HTML string per page, clicked through in one live
     browser session - for pagination controls that don't respond to a URL
@@ -217,6 +230,7 @@ async def fetch_paginated(
             "wait_after_click_ms": wait_after_click_ms,
             "timeout_ms": timeout_ms,
             "block_assets": block_assets,
+            "stealth": stealth,
         },
         timeout_s=timeout_budget,
     )
@@ -256,6 +270,52 @@ async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
                 continue
             return base64.b64decode(result["body_base64"])
     raise RuntimeError(f"no scraper returned the file for {url}: {'; '.join(seen)}")
+
+
+async def get_bytes(url: str, *, headers: dict | None = None, timeout_s: float = 30.0) -> tuple[str, bytes]:
+    """(final URL, body) of a plain GET, or - when the source answers 403 -
+    the same file through the scrapers (fetch_raw_bytes). A WAF that refuses
+    Fly's datacenter addresses usually lets the droplet or the Pi through
+    (Wood-Ridge's site, Chesterbrook's Cloudflare: 200 from a home network
+    with the very same request). Any other error raises as before."""
+    async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=True, headers=headers) as client:
+        resp = await client.get(url)
+    if resp.status_code != 403:
+        resp.raise_for_status()
+        return str(resp.url), resp.content
+    return url, await fetch_raw_bytes(url)
+
+
+async def fetch_html_from_any(url: str, accept, timeout_ms: int = 20_000) -> str:
+    """A rendered page from the first scraper whose copy `accept(html)`
+    recognises. fetch_html stops at the first scraper that answers at all,
+    but a bot wall that refuses datacenter addresses answers too, with its
+    own page (Wood-Ridge's Fastly challenge), and playwright-scraper reports
+    no status for a render - so each scraper is asked in turn. Raises
+    ScraperRefused when none returns a page the caller recognises."""
+    services = _services()
+    if not services:
+        raise ScraperNotConfigured("SCRAPER_URL / SCRAPER_API_KEY are not configured")
+    seen: list[str] = []
+    async with _get_semaphore():
+        for service_url, api_key in services:
+            host = httpx.URL(service_url).host
+            try:
+                result = await _post_to(
+                    service_url, api_key, "/fetch-html",
+                    _with_stealth(service_url, {"url": url, "timeout_ms": timeout_ms, "stealth": None}),
+                    timeout_s=timeout_ms / 1000 * 2 + 30,
+                )
+            except Exception as exc:
+                if not _is_retryable(exc):
+                    raise
+                seen.append(f"{host}: {type(exc).__name__}")
+                continue
+            html = result.get("html") or ""
+            if accept(html):
+                return html
+            seen.append(f"{host}: not the page")
+    raise ScraperRefused(f"no scraper got the page for {url}: {'; '.join(seen)}")
 
 
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)

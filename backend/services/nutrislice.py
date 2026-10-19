@@ -17,6 +17,7 @@ ham and cheese sandwich), so the shared `day_descriptions` rule
 (`fdmealplanner.day_descriptions`) drops items served on most days.
 """
 
+import asyncio
 import re
 from datetime import date, timedelta
 
@@ -71,15 +72,33 @@ def _week_starts(start: date, end: date) -> list[date]:
     return out
 
 
+# A failed DNS lookup of <district>.api.nutrislice.com ("Name or service not
+# known") failed a scan every few days, the next day's run fine; so do 5xx.
+_RETRY_DELAYS_S = (2.0, 5.0)
+
+
+async def _get(client: httpx.AsyncClient, url: str) -> httpx.Response:
+    for delay in (*_RETRY_DELAYS_S, None):
+        try:
+            resp = await client.get(url, params={"format": "json"}, headers=_HEADERS)
+        except httpx.TransportError:
+            if delay is None:
+                raise
+        else:
+            if resp.status_code < 500 or delay is None:
+                return resp
+        await asyncio.sleep(delay)
+    raise AssertionError("unreachable")
+
+
 async def fetch_entrees(client: httpx.AsyncClient, district: str, school: str, meal: str, start: date, end: date) -> dict[date, list[str]]:
     """Entrées per school day in [start, end]. A meal the school doesn't
     serve is a 404, which just means no days."""
     out: dict[date, list[str]] = {}
     for day in _week_starts(start, end):
-        resp = await client.get(
+        resp = await _get(
+            client,
             f"https://{district}.api.nutrislice.com/menu/api/weeks/school/{school}/menu-type/{meal}/{day.year}/{day.month:02d}/{day.day:02d}/",
-            params={"format": "json"},
-            headers=_HEADERS,
         )
         if resp.status_code == 404:
             continue

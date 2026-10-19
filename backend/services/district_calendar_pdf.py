@@ -28,6 +28,7 @@ import httpx
 from anthropic import AsyncAnthropic
 
 import observability
+import scraper_client
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
 from services.school_status import CLOSED_RE
 
@@ -134,15 +135,23 @@ async def fetch_pdf(page_url: str) -> tuple[str, bytes] | None:
     The URL may itself be the PDF."""
     async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_HEADERS) as client:
         resp = await client.get(page_url)
+    if resp.status_code == 403:
+        # A site that refuses Fly's addresses (Wood-Ridge: 200 from a home
+        # network, a bot challenge to a plain fetch through a scraper) is
+        # rendered in a scraper's browser instead, and only a copy carrying
+        # the calendar link counts.
+        final_url = page_url
+        html = await scraper_client.fetch_html_from_any(page_url, accept=lambda h: find_pdf_link(h, page_url) is not None)
+    else:
         resp.raise_for_status()
         if resp.content[:5] == b"%PDF-":
             return str(resp.url), resp.content
-        pdf_url = find_pdf_link(resp.text, str(resp.url))
-        if not pdf_url:
-            return None
-        pdf = await client.get(pdf_url)
-        pdf.raise_for_status()
-        return pdf_url, pdf.content
+        final_url, html = str(resp.url), resp.text
+    pdf_url = find_pdf_link(html, final_url)
+    if not pdf_url:
+        return None
+    _, pdf = await scraper_client.get_bytes(pdf_url, headers=_HEADERS)
+    return pdf_url, pdf
 
 
 _PARSER_VERSION = b"3"  # bump when title composition or the prompt changes, so stored rows are rebuilt
