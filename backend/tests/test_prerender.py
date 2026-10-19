@@ -1,7 +1,7 @@
 import asyncio
 import gzip
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -31,7 +31,7 @@ async def test_concurrent_requests_for_one_path_share_a_single_render(monkeypatc
     # render per caller starved the real scan jobs sharing that budget.
     calls = 0
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         nonlocal calls
         calls += 1
         await asyncio.sleep(0.05)
@@ -49,7 +49,7 @@ async def test_concurrent_requests_for_one_path_share_a_single_render(monkeypatc
 async def test_a_cached_page_is_not_rendered_again(monkeypatch):
     calls = 0
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         nonlocal calls
         calls += 1
         return {"html": "<html>fresh</html>"}
@@ -67,7 +67,7 @@ async def test_stale_content_is_served_when_a_re_render_fails(monkeypatch):
     # expired entry is kept rather than evicted.
     prerender._CACHE["/lunch"] = (time.time() - 1, "<html>stale</html>")
 
-    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         raise RuntimeError("scraper unavailable")
 
     monkeypatch.setattr(scraper_client, "failing", None, raising=False)
@@ -79,7 +79,7 @@ async def test_stale_content_is_served_when_a_re_render_fails(monkeypatch):
 
 @pytest.mark.anyio
 async def test_a_render_failure_with_no_cache_still_raises(monkeypatch):
-    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         raise RuntimeError("scraper unavailable")
 
     monkeypatch.setattr(scraper_client, "fetch_html", failing_fetch_html)
@@ -95,7 +95,7 @@ async def test_render_uses_the_reduced_timeout(monkeypatch):
     # hold one of three slots for ~50s (48.6s max measured in prod).
     seen: dict = {}
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         seen["timeout_ms"] = timeout_ms
         return {"html": "<html>ok</html>"}
 
@@ -112,7 +112,7 @@ async def test_render_is_flagged_as_internal_traffic_and_a_prerender(monkeypatch
     # without the flag every crawler-triggered render counted as a GA visitor.
     seen: dict = {}
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         seen["url"] = url
         return {"html": "<html>ok</html>"}
 
@@ -126,7 +126,7 @@ async def test_render_is_flagged_as_internal_traffic_and_a_prerender(monkeypatch
 async def _fake_render(monkeypatch, html="<html>rendered</html>"):
     calls = []
 
-    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def fake_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         calls.append(url)
         return {"html": html}
 
@@ -151,7 +151,7 @@ async def _store_old(path: str, hours: float = 25) -> None:
     from models import PrerenderedPage
 
     async with database.SessionLocal() as db:
-        db.add(PrerenderedPage(path=path, html_gz=gzip.compress(b"<html>old</html>"), rendered_at=datetime.now(timezone.utc) - timedelta(hours=hours)))
+        db.add(PrerenderedPage(path=path, html_gz=gzip.compress(b"<html>old</html>"), rendered_at=datetime.now(UTC) - timedelta(hours=hours)))
         await db.commit()
 
 
@@ -179,7 +179,7 @@ async def test_an_expired_page_is_served_at_once_and_refreshed_behind_it(monkeyp
 async def test_a_stale_stored_page_is_served_when_the_render_fails(monkeypatch):
     await _store_old("/survey")
 
-    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         raise RuntimeError("scraper unavailable")
 
     monkeypatch.setattr(scraper_client, "fetch_html", failing_fetch_html)
@@ -236,7 +236,7 @@ async def test_warm_job_warns_when_every_render_fails(monkeypatch):
     async def fake_paths(_db):
         return ["/privacy"]
 
-    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False):
+    async def failing_fetch_html(url: str, wait_for_selector=None, timeout_ms=15_000, block_assets=False, stealth=True):
         raise RuntimeError("scraper unavailable")
 
     monkeypatch.setattr(prerender_warm, "sitemap_paths", fake_paths)

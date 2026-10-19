@@ -168,7 +168,12 @@ async def fetch_html(
     wait_for_selector: str | None = None,
     timeout_ms: int = 15_000,
     block_assets: bool = False,
+    stealth: bool = True,
 ) -> dict:
+    """`stealth=False` turns off playwright-scraper's playwright-stealth
+    patches (on by default there). They throw inside some pages' own JS -
+    schoolz's own SPA never mounts with them on - and they only exist to get
+    past bot walls a page we control doesn't have."""
     # The scraper applies timeout_ms to page.goto AND again to
     # wait_for_selector, so it can legitimately take ~2x that before it
     # answers - a client budget of timeout_ms + 5s (the old value) gave up
@@ -180,6 +185,7 @@ async def fetch_html(
             "wait_for_selector": wait_for_selector,
             "timeout_ms": timeout_ms,
             "block_assets": block_assets,
+            "stealth": stealth,
         },
         timeout_s=timeout_ms / 1000 * 2 + 10,
     )

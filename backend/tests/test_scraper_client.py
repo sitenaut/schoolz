@@ -241,3 +241,37 @@ async def test_fetch_raw_bytes_says_what_each_scraper_answered(monkeypatch):
     _mock_http(monkeypatch, lambda request: httpx.Response(200, json={"status": 404}))
     with pytest.raises(RuntimeError, match="primary: HTTP 404"):
         await scraper_client.fetch_raw_bytes("https://school.example/staff.pdf")
+
+
+@pytest.mark.anyio
+async def test_fetch_html_sends_stealth(monkeypatch):
+    """Stealth is on unless the caller turns it off (prerender does)."""
+    sent = []
+
+    async def fake_post(path, payload, timeout_s):
+        sent.append(payload)
+        return {"html": "<html></html>"}
+
+    monkeypatch.setattr(scraper_client, "_post_with_fallback", fake_post)
+    await scraper_client.fetch_html("https://example.org")
+    await scraper_client.fetch_html("https://example.org", stealth=False)
+    assert [p["stealth"] for p in sent] == [True, False]
+
+
+@pytest.mark.anyio
+async def test_prerender_renders_without_stealth(monkeypatch):
+    import services.prerender as prerender
+
+    seen = {}
+
+    async def fake_fetch_html(url, **kw):
+        seen.update(kw)
+        return {"html": "<html>ok</html>"}
+
+    async def fake_store(path, html):
+        return None
+
+    monkeypatch.setattr(prerender.scraper_client, "fetch_html", fake_fetch_html)
+    monkeypatch.setattr(prerender, "_store", fake_store)
+    await prerender._render("/privacy")
+    assert seen["stealth"] is False
