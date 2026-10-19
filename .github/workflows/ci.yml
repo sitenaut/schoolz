@@ -1,9 +1,9 @@
 name: CI
 
-# The gate for a pull request. backend and frontend are the checks to require
-# on main. images, secrets and audit run on pull requests only; audit reports and is
-# not meant to be required (a newly published advisory shouldn't block
-# unrelated PRs).
+# The gate for a pull request. backend, frontend and images are the checks
+# main requires. images, secrets and audit run on pull requests only; audit
+# reports and is not meant to be required (a newly published advisory
+# shouldn't block unrelated PRs).
 on:
   pull_request:
   workflow_call:
