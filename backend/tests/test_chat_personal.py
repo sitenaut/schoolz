@@ -74,7 +74,6 @@ async def test_chat_offers_personal_tools_only_when_signed_in(monkeypatch):
         return {"reply": "ok", "model": None, "history": [], "escalated": False}
 
     monkeypatch.setattr(chat_router, "run_chat_turn", fake_turn)
-    monkeypatch.setattr(chat_router, "_requests_by_ip", chat_router.defaultdict(chat_router.deque))
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         token = await _register(client, f"chat_{uuid.uuid4().hex[:8]}@example.com")

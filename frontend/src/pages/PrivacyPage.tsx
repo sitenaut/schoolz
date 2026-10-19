@@ -291,7 +291,9 @@ export function PrivacyPage() {
               To answer your question. The conversation lives only in the open page and is gone when you reload.
               If you're signed in, the assistant can look up your own children's schedules and schoolwork to answer
               you, read-only. Our server logs record which lookups the assistant made — for public lookups, what it
-              searched for; for your children, only which kind of lookup — never your messages.{" "}
+              searched for; for your children, only which kind of lookup — never your messages. To keep the
+              assistant from being flooded, we count messages per internet connection over 10 minutes using a
+              scrambled one-way code, never your IP address; those counts are deleted after a day.{" "}
               <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">
                 Anthropic's privacy policy
               </a>{" "}

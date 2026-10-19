@@ -6,26 +6,26 @@ their own children's data (services/chatbot_personal.py). An invalid or
 expired token degrades to the public tools rather than 401ing, like GET
 /calendar.
 
-Rate-limited per client IP with a simple in-memory sliding window: good
-enough for a single Fly machine (min_machines_running=1 - see fly.toml),
-not correct if this app ever scales to multiple machines, since each
-machine would enforce the limit independently rather than sharing one
-counter. Swap for a Redis-backed limiter first if that scaling happens -
-this is deliberately not that, to avoid adding a new infra dependency for
-a first version of a feature nobody's used in prod yet.
+Rate-limited per connection: a count per salted IP hash per fixed
+10-minute window, in the database (models.ChatRateWindow) so every API
+machine shares it and a deploy doesn't reset it. This is the one public
+route that costs money per request.
 """
 
+import hashlib
 import logging
-import time
-from collections import defaultdict, deque
+import os
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import delete
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_optional_user, oauth2_scheme
 from database import get_db
-from models import User
+from models import ChatRateWindow, User
 from services.chat_providers import ProviderUnavailable
 from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
@@ -44,17 +44,33 @@ UNAVAILABLE_REPLY = (
 
 _WINDOW_SECONDS = 600
 _MAX_MESSAGES_PER_WINDOW = 20
-_requests_by_ip: dict[str, deque[float]] = defaultdict(deque)
 
 
-def _check_rate_limit(ip: str) -> None:
-    now = time.monotonic()
-    window = _requests_by_ip[ip]
-    while window and now - window[0] > _WINDOW_SECONDS:
-        window.popleft()
-    if len(window) >= _MAX_MESSAGES_PER_WINDOW:
+def _ip_hash(ip: str) -> str:
+    salt = os.getenv("JWT_SECRET", "schoolz-chat-salt")
+    return hashlib.sha256(f"{salt}:chat:{ip}".encode()).hexdigest()
+
+
+async def _check_rate_limit(db: AsyncSession, ip: str) -> None:
+    now = datetime.now(UTC)
+    window = datetime.fromtimestamp(now.timestamp() // _WINDOW_SECONDS * _WINDOW_SECONDS, UTC)
+    stmt = (
+        insert(ChatRateWindow)
+        .values(ip_hash=_ip_hash(ip), window_start=window, count=1)
+        .on_conflict_do_update(
+            index_elements=[ChatRateWindow.ip_hash, ChatRateWindow.window_start],
+            set_={"count": ChatRateWindow.count + 1},
+        )
+        .returning(ChatRateWindow.count)
+    )
+    count = (await db.execute(stmt)).scalar_one()
+    if count == 1:
+        # A new window for this connection: a cheap moment to clear old rows.
+        await db.execute(delete(ChatRateWindow).where(ChatRateWindow.window_start < now - timedelta(days=1)))
+    await db.commit()
+    if count > _MAX_MESSAGES_PER_WINDOW:
+        logger.warning("chat_rate_limited")
         raise HTTPException(status_code=429, detail="Too many messages - please wait a few minutes and try again.")
-    window.append(now)
 
 
 class ChatMessage(BaseModel):
@@ -85,7 +101,7 @@ async def send_chat_message(
     lang: str = Depends(request_lang),
 ) -> ChatResponse:
     ip = client_ip(request) or "unknown"
-    _check_rate_limit(ip)
+    await _check_rate_limit(db, ip)
 
     # Only a token get_optional_user actually accepted is forwarded - the
     # personal tools then re-present it to each route, which re-checks it.
