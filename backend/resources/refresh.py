@@ -153,7 +153,7 @@ async def _upsert_listing(db: AsyncSession, orgs: _Orgs, results: list[dict], no
                 # A new list, not an in-place append: SQLAlchemy only notices
                 # an ARRAY change on assignment.
                 row.listed_in_counties = [*(row.listed_in_counties or []), county]
-            if row.status != "active":
+            if row.status not in ("active", ownership.HIDDEN):
                 row.status = "active"
                 summary["reactivated"] += 1
     summary["listed"] += len(results)
@@ -353,7 +353,7 @@ async def _upsert_providers(db: AsyncSession, orgs: _Orgs, records: list[dict], 
         if row is not None and row.summary_hash == digest:
             row.last_seen_at = now
             row.missed_crawls = 0
-            if row.status != "active":
+            if row.status not in ("active", ownership.HIDDEN):
                 row.status = "active"
                 summary["reactivated"] += 1
             continue
@@ -368,7 +368,7 @@ async def _upsert_providers(db: AsyncSession, orgs: _Orgs, records: list[dict], 
             summary["new"] += 1
         else:
             summary["changed"] += 1
-            if row.status != "active":
+            if row.status not in ("active", ownership.HIDDEN):
                 summary["reactivated"] += 1
         managed = ownership.is_managed(row)
         await ownership.apply_source_fields(db, row, values, childcarenj.SOURCE)
@@ -380,7 +380,8 @@ async def _upsert_providers(db: AsyncSession, orgs: _Orgs, records: list[dict], 
         row.last_seen_at = now
         row.detail_fetched_at = now  # the list record is the whole record
         row.missed_crawls = 0
-        row.status = "active"
+        if row.status != ownership.HIDDEN:  # a reviewer took it down; only they put it back
+            row.status = "active"
         _derive(row)
 
 

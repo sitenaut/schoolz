@@ -564,6 +564,27 @@ scammers, and a hijacked provider account is the easiest way in.
 - Every change is kept in `resource_change_log` (who, when, before, after)
   so a bad edit can be reverted in one step.
 
+### Reviewer control of live listings
+
+Admin → Localz → **Live listings** lists every listing a provider looks
+after (submitted through the portal, or a scraped one someone manages),
+least recently confirmed first, so a program that closed without telling
+anyone rises to the top. Plain NJ 211 / ChildCareNJ rows are their
+sources' to keep and aren't listed.
+
+- **Edit**: the provider's own quick-update form, but nothing is held: a
+  reviewer's edit publishes at once, logged as `reviewer.update` and
+  revertible.
+- **Hide** (`status = "hidden"`, a reason required): off search, its page,
+  eligibility results and its dates on `/local` at once. Its provider can't
+  edit or confirm it, so a taken-over account can't keep changing it. No
+  refresh reactivates a hidden row (`refresh.py` skips it; "inactive" is
+  the source's word, "hidden" is the reviewer's). Unhide puts it back.
+- **Delete**: only `source = "provider"`. A scraped row would return with
+  the next crawl, so it can only be hidden. Memberships, held edits, the
+  private address and posted dates go with it (ON DELETE CASCADE); a
+  `listing.delete` log entry keeps its id and name.
+
 ### Keeping it fresh
 
 - **"Is this still right?"** emails every 90 days with a one-click

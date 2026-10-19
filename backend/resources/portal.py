@@ -1020,7 +1020,8 @@ async def approve_change(db: AsyncSession, change: ResourceChangeRequest, review
         change_request_id=change.id, before=before, after=after, note=note)
 
 
-REVERTIBLE = {"provider.update", "change.approve", "onboarding.claim", "onboarding.merge", "onboarding.approve", "provider.date"}
+REVERTIBLE = {"provider.update", "reviewer.update", "change.approve", "onboarding.claim", "onboarding.merge", "onboarding.approve",
+              "provider.date"}
 
 
 async def revert(db: AsyncSession, entry: ResourceChangeLog, reviewer: User) -> ResourceChangeLog:

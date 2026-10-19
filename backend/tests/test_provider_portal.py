@@ -30,6 +30,7 @@ from models import (
 )
 from permissions import PERMISSION_KEYS
 from resources import nj211, portal
+from resources.ownership import HIDDEN
 from resources.provider_types import PROVIDER_TYPES
 from resources.refresh import _apply_detail, _Orgs
 
@@ -861,3 +862,140 @@ def test_a_phone_extension_is_not_part_of_the_number():
     for phone in ("(856) 555-0101, 12", "856-555-0101 x12", "1 856 555 0101 ext. 4", "(856) 555-0101"):
         assert portal.phone_digits(phone) == "8565550101" and portal.valid_phone(phone)
     assert not portal.valid_phone("(856) 555-010, 12")
+
+
+# ---- reviewer control of live listings: edit, hide, delete ------------------------------
+
+
+def _scraped(**overrides) -> ResourceService:
+    values = dict(
+        source=nj211.SOURCE, source_record_id=str(uuid.uuid4()), name="Scraped Pantry", status="active", required_documents=[],
+        languages=[], service_areas=[], taxonomy_codes=[], taxonomy_names=[], listed_in_counties=[], categories=[], missing_core=[],
+        provider_owned_fields=[],
+    )
+    return ResourceService(**{**values, **overrides})
+
+
+async def test_a_reviewer_edits_a_live_listing_at_once_and_can_revert_it():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sid = await _approved_listing(client, provider, reviewer)
+        viewer_id, viewer = await _register(client)
+        await _grant(viewer_id, "resources.view")
+        edit = {"phone": "856-555-9999", "description": "Groceries and diapers."}
+        assert (await client.patch(f"/admin/resources/listings/{sid}", json=edit, headers=viewer)).status_code == 403
+        assert (await client.patch(f"/admin/resources/listings/{sid}", json=edit, headers=provider)).status_code == 403
+
+        r = await client.patch(f"/admin/resources/listings/{sid}", json=edit, headers=reviewer)
+        assert r.status_code == 200, r.text
+        # Phone would wait for review from a provider; a reviewer's doesn't.
+        assert r.json()["applied"] == ["description", "phone"] and r.json()["held"] == []
+        detail = (await client.get(f"/resources/{sid}")).json()
+        assert detail["phone"] == "856-555-9999" and detail["description"] == "Groceries and diapers."
+        bad = await client.patch(f"/admin/resources/listings/{sid}", json={"website": "https://bit.ly/x"}, headers=reviewer)
+        assert bad.status_code == 422
+
+        log = (await client.get(f"/admin/resources/services/{sid}/log", headers=reviewer)).json()
+        mine = next(e for e in log if e["action"] == "reviewer.update")
+        assert mine["revertible"] and mine["before"]["phone"] == "856-555-0142"
+        assert (await client.post(f"/admin/resources/log/{mine['id']}/revert", headers=reviewer)).status_code == 200
+        assert (await client.get(f"/resources/{sid}")).json()["phone"] == "856-555-0142"
+
+
+async def test_hiding_takes_a_listing_and_its_dates_off_the_site_and_freezes_it():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sid = await _approved_listing(client, provider, reviewer)
+        r = await client.post(f"/provider-portal/listings/{sid}/dates", headers=provider,
+                              json={"title": "Coat drive", "on": _soon(), "start": "10:00"})
+        assert r.status_code == 201, r.text
+        date_id = r.json()["id"]
+
+        assert (await client.post(f"/admin/resources/listings/{sid}/hide", json={"note": ""}, headers=reviewer)).status_code == 422
+        r = await client.post(f"/admin/resources/listings/{sid}/hide", json={"note": "Account taken over"}, headers=reviewer)
+        assert r.status_code == 200, r.text
+        assert r.json()["status"] == "hidden" and r.json()["hidden_note"] == "Account taken over" and r.json()["can_delete"]
+        assert (await client.post(f"/admin/resources/listings/{sid}/hide", json={"note": "again"}, headers=reviewer)).status_code == 409
+
+        assert (await client.get(f"/resources/{sid}")).status_code == 404
+        search = (await client.post("/resources/search", json={"query": "Saturday Pantry"})).json()
+        assert all(i["id"] != sid for i in search["items"])
+        events = (await client.get("/local-events", params={"q": "Coat drive", "source": "localz"})).json()["items"]
+        assert all(e["id"] != date_id for e in events)
+
+        # Whoever holds the provider's account can't change it meanwhile.
+        frozen = await client.patch(f"/provider-portal/listings/{sid}", json={"description": "Click here"}, headers=provider)
+        assert frozen.status_code == 409
+        assert (await client.post(f"/provider-portal/listings/{sid}/confirm", headers=provider)).status_code == 409
+        # A reviewer still can, before putting it back.
+        assert (await client.patch(f"/admin/resources/listings/{sid}", json={"alert": "Back soon"}, headers=reviewer)).status_code == 200
+
+        hidden = (await client.get("/admin/resources/listings", params={"state": "hidden"}, headers=reviewer)).json()
+        assert [x["id"] for x in hidden if x["id"] == sid] == [sid]
+
+        r = await client.post(f"/admin/resources/listings/{sid}/unhide", headers=reviewer)
+        assert r.status_code == 200 and r.json()["status"] == "active" and r.json()["hidden_note"] is None
+        assert (await client.get(f"/resources/{sid}")).status_code == 200
+        events = (await client.get("/local-events", params={"q": "Coat drive", "source": "localz"})).json()["items"]
+        assert any(e["id"] == date_id for e in events)
+        assert (await client.post(f"/admin/resources/listings/{sid}/unhide", headers=reviewer)).status_code == 409
+
+
+async def test_a_source_refresh_never_brings_back_a_hidden_listing():
+    from resources.refresh import _upsert_listing
+
+    result = {"id": str(uuid.uuid4()), "name": "Scraped Pantry", "organizationName": "Scraped Org"}
+    async with database.SessionLocal() as db:
+        row = _scraped(source_record_id=result["id"], status=HIDDEN, summary_hash=nj211.summary_hash(result))
+        db.add(row)
+        await db.commit()
+        summary = {"new": 0, "changed": 0, "reactivated": 0, "listed": 0}
+        await _upsert_listing(db, _Orgs(db), [result], datetime.now(UTC), summary)
+        await db.commit()
+        await db.refresh(row)
+        assert row.status == HIDDEN and summary["reactivated"] == 0
+
+
+async def test_only_a_listing_a_provider_submitted_can_be_deleted():
+    from models import LocalEvent
+
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sid = await _approved_listing(client, provider, reviewer)
+        date_id = (
+            await client.post(f"/provider-portal/listings/{sid}/dates", headers=provider, json={"title": "Coat drive", "on": _soon(), "start": "10:00"})
+        ).json()["id"]
+        assert (await client.delete(f"/admin/resources/listings/{sid}", headers=provider)).status_code == 403
+
+        assert (await client.delete(f"/admin/resources/listings/{sid}", headers=reviewer)).status_code == 204
+        assert (await client.get(f"/admin/resources/listings/{sid}", headers=reviewer)).status_code == 404
+        assert (await client.get("/provider-portal/listings", headers=provider)).json() == []
+        async with database.SessionLocal() as db:
+            assert await db.get(ResourceService, sid) is None
+            assert await db.get(LocalEvent, date_id) is None
+            entry = (await db.execute(select(ResourceChangeLog).where(ResourceChangeLog.action == "listing.delete"))).scalars().all()
+            assert any(e.before.get("service_id") == sid and e.before["name"] == "Saturday Pantry" for e in entry)
+
+            scraped = _scraped()
+            db.add(scraped)
+            await db.commit()
+            scraped_id = scraped.id
+        refused = await client.delete(f"/admin/resources/listings/{scraped_id}", headers=reviewer)
+        assert refused.status_code == 409 and "Hide it instead" in refused.json()["detail"]
+        # A scraped listing nobody manages isn't the reviewer's list to keep.
+        listed = (await client.get("/admin/resources/listings", params={"q": "Scraped Pantry"}, headers=reviewer)).json()
+        assert all(x["id"] != scraped_id for x in listed)
+
+
+async def test_the_live_list_puts_the_least_recently_confirmed_first():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        tag = uuid.uuid4().hex[:6]
+        fresh = await _approved_listing(client, provider, reviewer, submission=_submission(organization_name=f"Fresh {tag}"))
+        stale = await _approved_listing(client, provider, reviewer, submission=_submission(organization_name=f"Stale {tag}"))
+        async with database.SessionLocal() as db:
+            await db.execute(update(ResourceService).where(ResourceService.id == stale).values(last_assured_on=datetime(2025, 1, 1).date()))
+            await db.commit()
+        rows = (await client.get("/admin/resources/listings", params={"q": tag}, headers=reviewer)).json()
+        assert [r["id"] for r in rows] == [stale, fresh]
+        assert rows[0]["members"] == 1 and rows[0]["verified_members"] == 1 and rows[0]["source"] == "provider"

@@ -20,6 +20,7 @@ import { ProviderRequestPage } from "./pages/localz/providers/ProviderRequestPag
 import { ProviderListingPage } from "./pages/localz/providers/ProviderListingPage";
 import { LocalzReviewPage } from "./pages/LocalzReviewPage";
 import { LocalzReviewDetailPage } from "./pages/LocalzReviewDetailPage";
+import { LocalzListingAdminPage } from "./pages/LocalzListingAdminPage";
 import { SeasonalPage } from "./pages/SeasonalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -244,6 +245,7 @@ function Routed() {
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
           <Route path="resources/onboarding" element={<RequireAdmin permission="resources.view"><LocalzReviewPage /></RequireAdmin>} />
           <Route path="resources/onboarding/:requestId" element={<RequireAdmin permission="resources.view"><LocalzReviewDetailPage /></RequireAdmin>} />
+          <Route path="resources/listings/:serviceId" element={<RequireAdmin permission="resources.view"><LocalzListingAdminPage /></RequireAdmin>} />
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
           <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
           <Route path="api-keys/approve" element={<RequireAdmin superOnly><ApproveApiKeyPage /></RequireAdmin>} />

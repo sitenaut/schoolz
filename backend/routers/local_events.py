@@ -13,7 +13,7 @@ from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import LocalEvent
+from models import LocalEvent, ResourceService
 from services.client_ip import client_ip
 from services.geocoding import find_place
 from services.i18n import fold, folded
@@ -112,7 +112,14 @@ class Near:
 
 
 def _filters(start, end, q, categories, source, is_free) -> list:
-    conds = []
+    # A Localz provider's posted date shows only while its listing does: a
+    # listing a reviewer hid (or that went inactive) takes its dates with it.
+    conds = [
+        or_(
+            LocalEvent.resource_service_id.is_(None),
+            LocalEvent.resource_service_id.in_(select(ResourceService.id).where(ResourceService.status == "active")),
+        )
+    ]
     if start is not None:
         # Overlapping the range, like /calendar: a multi-day event that began
         # before the range but is still running counts.

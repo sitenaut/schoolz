@@ -30,6 +30,7 @@ from models import (
     User,
 )
 from resources import portal, portal_mail
+from resources.ownership import HIDDEN
 from resources.places import zip_point
 from resources.portal import Cost, Hours, ProgramPlace, Signup, Submission, WaysToHelp
 from resources.provider_types import BY_CODE, PROVIDER_TYPES
@@ -498,7 +499,9 @@ def _closure(row: ResourceService) -> ClosureOut | None:
     return None
 
 
-async def _listing_out(db: AsyncSession, row: ResourceService, membership: ProviderMembership) -> MyListingOut:
+async def listing_out(db: AsyncSession, row: ResourceService, membership: ProviderMembership | None) -> MyListingOut:
+    """The listing as its portal screen shows it. No membership is a
+    reviewer's view (routers/admin_resources.py): every change publishes."""
     pending = (
         await db.execute(
             select(ResourceChangeRequest)
@@ -515,8 +518,8 @@ async def _listing_out(db: AsyncSession, row: ResourceService, membership: Provi
         name=row.name,
         organization_name=row.organization_name,
         status=row.status,
-        role=membership.role,
-        verified=membership.verified_at is not None,
+        role=membership.role if membership else "reviewer",
+        verified=membership is None or membership.verified_at is not None,
         description=row.description,
         phone=row.phone,
         website=row.website,
@@ -541,7 +544,9 @@ async def _listing_out(db: AsyncSession, row: ResourceService, membership: Provi
         signup=row.signup,
         ways_to_help=row.ways_to_help,
         last_assured_on=row.last_assured_on,
-        verify_by_email=portal_mail.mask(membership.verify_email) if membership.verify_email and membership.verified_at is None else None,
+        verify_by_email=(
+            portal_mail.mask(membership.verify_email) if membership and membership.verify_email and membership.verified_at is None else None
+        ),
         types=[BY_CODE[c].key for c in (row.taxonomy_codes or []) if c in BY_CODE],
         pending_changes=[PendingChangeOut(id=p.id, fields=sorted(p.changes), created_at=p.created_at) for p in pending],
     )
@@ -559,6 +564,13 @@ async def _membership(db: AsyncSession, user: User, service_id: str) -> tuple[Re
     return row, membership
 
 
+def _not_hidden(row: ResourceService) -> None:
+    """A listing a reviewer took down stays frozen until they put it back:
+    if the account was taken over, nothing more goes onto it."""
+    if row.status == HIDDEN:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Localz has paused this listing. Please contact us to bring it back.")
+
+
 @router.get("/listings", response_model=list[MyListingOut])
 async def my_listings(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     memberships = (
@@ -568,11 +580,11 @@ async def my_listings(user: User = Depends(get_current_user), db: AsyncSession =
     for m in memberships:
         row = await db.get(ResourceService, m.service_id)
         if row is not None:
-            out.append(await _listing_out(db, row, m))
+            out.append(await listing_out(db, row, m))
     return out
 
 
-def _update_columns(body: ListingUpdateIn, row: ResourceService) -> tuple[dict, str | None]:
+def update_columns(body: ListingUpdateIn, row: ResourceService) -> tuple[dict, str | None]:
     """The listing columns a quick update sets, and a private address."""
     sent = body.model_fields_set
     cols: dict = {}
@@ -677,7 +689,8 @@ async def update_listing(
     categories wait for a reviewer while the old value stays live. An
     unverified member's every change waits."""
     row, membership = await _membership(db, user, service_id)
-    cols, private_address = _update_columns(body, row)
+    _not_hidden(row)
+    cols, private_address = update_columns(body, row)
     cols = portal.has_changes(row, cols)
     now_cols, held = portal.split_changes(row, cols, membership.verified_at is not None)
     if private_address:
@@ -870,6 +883,7 @@ async def check_verify_code(service_id: str, body: CodeIn, user: User = Depends(
 async def confirm_listing(service_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> dict:
     """"Yes, it's all still right": the public "Last confirmed" date moves."""
     row, membership = await _membership(db, user, service_id)
+    _not_hidden(row)
     if membership.verified_at is None:
         raise HTTPException(403, "Once we've confirmed it's you, you can confirm the listing.")
     row.last_assured_on = portal.today()

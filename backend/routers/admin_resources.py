@@ -1,5 +1,6 @@
-"""The Localz review queue: onboarding requests and held edits to live
-listings. GETs need `resources.view`, every change `resources.manage` (the
+"""The Localz review queue (onboarding requests and held edits to live
+listings) and reviewer control of live provider listings: edit, hide, and
+delete one a provider submitted. GETs need `resources.view`, every change `resources.manage` (the
 "Localz reviewer" role holds both). Rules in `resources/portal.py`; design
 in docs/LOCALZ_DESIGN.md, "Onboarding approval".
 
@@ -10,11 +11,11 @@ session: a view-only role or an API key sees only that one is on file.
 from __future__ import annotations
 
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user, get_effective_permissions, is_api_key_request, require_permission
@@ -29,8 +30,18 @@ from models import (
     User,
 )
 from resources import portal, portal_mail
+from resources.ownership import HIDDEN
 from resources.portal import Submission
-from routers.provider_portal import ListingBriefOut, RequestOut, request_out
+from routers.provider_portal import (
+    ListingBriefOut,
+    ListingUpdateIn,
+    ListingUpdateOut,
+    MyListingOut,
+    RequestOut,
+    listing_out,
+    request_out,
+    update_columns,
+)
 from services import mailer
 
 _reveal_private: ContextVar[bool] = ContextVar("reveal_private_address", default=False)
@@ -633,3 +644,204 @@ async def private_address(service_id: str, _: User = Depends(_manage), db: Async
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Confidential addresses are shown only in a reviewer's browser session")
     row = await db.get(ResourcePrivateAddress, service_id)
     return {"kind": row.kind if row else None, "address": row.address if row else None}
+
+
+# ---- live listings: edit, hide, delete -------------------------------------------------
+
+
+class LiveListingOut(BaseModel):
+    id: str
+    name: str
+    organization_name: str | None
+    city: str | None
+    source: str
+    status: str
+    last_assured_on: date | None
+    members: int
+    verified_members: int
+    pending_changes: int
+    updated_at: datetime
+
+
+class AdminListingOut(MyListingOut):
+    source: str
+    # Only a listing a provider submitted: a scraped one would come back
+    # with the next crawl, so it can only be hidden.
+    can_delete: bool
+    hidden_note: str | None
+    hidden_at: datetime | None
+
+
+class HideIn(BaseModel):
+    note: str = Field(min_length=1, max_length=2000)
+
+
+def _provider_managed():
+    """Listings a provider looks after: submitted through the portal, or a
+    scraped one somebody manages. Plain NJ 211 / ChildCareNJ rows are their
+    sources' to keep; a hidden one stays in view so it can be put back."""
+    managed = exists().where(ProviderMembership.service_id == ResourceService.id)
+    return or_(ResourceService.source == portal.SOURCE, managed, ResourceService.status == HIDDEN)
+
+
+async def _listing(db: AsyncSession, service_id: str) -> ResourceService:
+    row = await db.get(ResourceService, service_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Listing not found")
+    return row
+
+
+async def _admin_listing_out(db: AsyncSession, row: ResourceService) -> AdminListingOut:
+    hide = None
+    if row.status == HIDDEN:
+        hide = (
+            await db.execute(
+                select(ResourceChangeLog)
+                .where(ResourceChangeLog.service_id == row.id, ResourceChangeLog.action == "listing.hide")
+                .order_by(ResourceChangeLog.created_at.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+    base = await listing_out(db, row, None)
+    return AdminListingOut(
+        **base.model_dump(),
+        source=row.source,
+        can_delete=row.source == portal.SOURCE,
+        hidden_note=hide.note if hide else None,
+        hidden_at=hide.created_at if hide else None,
+    )
+
+
+@router.get("/listings", response_model=list[LiveListingOut])
+async def live_listings(
+    state: str = Query(default="all", pattern=r"^(all|active|hidden|inactive)$"),
+    q: str | None = Query(default=None, max_length=200),
+    _: User = Depends(_view),
+    db: AsyncSession = Depends(get_db),
+):
+    """Least recently confirmed first: a program that closed without telling
+    anyone stops confirming, so it rises to the top."""
+    query = select(ResourceService).where(_provider_managed())
+    if state != "all":
+        query = query.where(ResourceService.status == state)
+    for token in (q or "").split():
+        like = f"%{token}%"
+        query = query.where(
+            or_(ResourceService.name.ilike(like), ResourceService.organization_name.ilike(like), ResourceService.city.ilike(like))
+        )
+    rows = (
+        await db.execute(query.order_by(ResourceService.last_assured_on.asc().nulls_first(), ResourceService.name).limit(300))
+    ).scalars().all()
+    ids = [r.id for r in rows]
+    members = {
+        sid: (total, verified)
+        for sid, total, verified in (
+            await db.execute(
+                select(
+                    ProviderMembership.service_id,
+                    func.count(),
+                    func.count().filter(ProviderMembership.verified_at.is_not(None)),
+                )
+                .where(ProviderMembership.service_id.in_(ids))
+                .group_by(ProviderMembership.service_id)
+            )
+        ).all()
+    }
+    pending = dict(
+        (
+            await db.execute(
+                select(ResourceChangeRequest.service_id, func.count())
+                .where(ResourceChangeRequest.service_id.in_(ids), ResourceChangeRequest.status == "pending")
+                .group_by(ResourceChangeRequest.service_id)
+            )
+        ).all()
+    )
+    return [
+        LiveListingOut(
+            id=r.id,
+            name=r.name,
+            organization_name=r.organization_name,
+            city=r.city,
+            source=r.source,
+            status=r.status,
+            last_assured_on=r.last_assured_on,
+            members=members.get(r.id, (0, 0))[0],
+            verified_members=members.get(r.id, (0, 0))[1],
+            pending_changes=pending.get(r.id, 0),
+            updated_at=r.updated_at,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/listings/{service_id}", response_model=AdminListingOut)
+async def live_listing(service_id: str, _: User = Depends(_view), db: AsyncSession = Depends(get_db)):
+    return await _admin_listing_out(db, await _listing(db, service_id))
+
+
+@router.patch("/listings/{service_id}", response_model=ListingUpdateOut)
+async def edit_listing(service_id: str, body: ListingUpdateIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+    """The provider's own quick-update form, but nothing waits: a reviewer's
+    edit publishes at once and is logged (and revertible) like theirs."""
+    row = await _listing(db, service_id)
+    cols, private_address = update_columns(body, row)
+    cols = portal.has_changes(row, cols)
+    if cols:
+        before = portal.snapshot(row, cols)
+        portal.apply_columns(row, cols)
+        after = dict(cols)
+    else:
+        before, after = {}, {}
+    if private_address:
+        await portal.set_private_address(db, row.id, row.address_kind, private_address)
+        after["private_address"] = "changed"
+    if after:
+        portal.log(db, action="reviewer.update", actor=admin, actor_kind="reviewer", service_id=row.id, before=before, after=after)
+    await db.commit()
+    return ListingUpdateOut(applied=sorted(after), held=[], change_request_id=None)
+
+
+@router.post("/listings/{service_id}/hide", response_model=AdminListingOut)
+async def hide_listing(service_id: str, body: HideIn, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+    """Off the site at once - search, its page, its dates on /local - and
+    frozen for its provider until a reviewer puts it back."""
+    row = await _listing(db, service_id)
+    if row.status == HIDDEN:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This listing is already hidden")
+    before = {"status": row.status}
+    row.status = HIDDEN
+    portal.log(db, action="listing.hide", actor=admin, actor_kind="reviewer", service_id=row.id, before=before,
+               after={"status": row.status}, note=body.note.strip())
+    await db.commit()
+    await db.refresh(row)
+    return await _admin_listing_out(db, row)
+
+
+@router.post("/listings/{service_id}/unhide", response_model=AdminListingOut)
+async def unhide_listing(service_id: str, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+    row = await _listing(db, service_id)
+    if row.status != HIDDEN:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This listing isn't hidden")
+    row.status = "active"
+    portal.log(db, action="listing.unhide", actor=admin, actor_kind="reviewer", service_id=row.id,
+               before={"status": HIDDEN}, after={"status": row.status})
+    await db.commit()
+    await db.refresh(row)
+    return await _admin_listing_out(db, row)
+
+
+@router.delete("/listings/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_listing(service_id: str, admin: User = Depends(_manage), db: AsyncSession = Depends(get_db)):
+    """For good, with its memberships, held edits, private address and
+    posted dates (all ON DELETE CASCADE). The log keeps one entry naming it,
+    since its other entries lose their link to the listing."""
+    row = await _listing(db, service_id)
+    if row.source != portal.SOURCE:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Only a listing a provider submitted can be deleted - its source would bring this one back. Hide it instead."
+        )
+    portal.log(db, action="listing.delete", actor=admin, actor_kind="reviewer", service_id=row.id,
+               before={"service_id": row.id, **portal.listing_brief(row)}, after={"deleted": True})
+    await db.flush()
+    await db.delete(row)
+    await db.commit()

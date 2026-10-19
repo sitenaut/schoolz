@@ -22,6 +22,11 @@ from models import ResourceChangeRequest, ResourceService
 
 LOCATION_FIELDS = ("address", "city", "postal_code", "latitude", "longitude")
 
+# The status a reviewer sets to take a listing down at once (account taken
+# over, closed for good). Off every public surface like "inactive", but a
+# refresh never puts it back and its provider can't edit it.
+HIDDEN = "hidden"
+
 
 def is_managed(row: ResourceService) -> bool:
     return bool(row.provider_owned_fields) or row.address_kind == "confidential"
