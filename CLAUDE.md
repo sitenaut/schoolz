@@ -127,6 +127,7 @@ Docs:
   - A scraper adapter writes listing fields only through `resources/ownership.apply_source_fields`: a plain `setattr` silently overwrites what a provider set on a claimed record (and refills a confidential listing's address).
   - The NJ 211 crawl is a guest on their site: robots.txt every run, ≥10 s between requests, never `/api/`, stop on 403/429. Don't speed it up or add retries.
   - Only a *complete* list crawl may mark records missing; free-text search stays in POST bodies, never URLs.
+  - `status = "hidden"` is a reviewer's takedown of a listing (a hijacked account, a closed program): anything that sets a listing's status, a refresh above all, must leave a hidden one alone.
   - ChildCareNJ (job `resources.childcarenj`): a family child care listing is someone's home - never store its street address or any provider email. Bump `childcarenj.NORMALIZE_VERSION` when `fields()` changes, or stored rows never pick it up.
 - **`docs/BACKUPS.md`** — nightly encrypted `pg_dump` to R2 (`.github/workflows/backup.yml`), the restore drill, restoring for real.
   - The age private key exists only in the `schoolz-prod` vault; lose it and no backup can be restored.

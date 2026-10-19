@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Badge } from "../components/ui/Badge";
 import { DataTable, type Column } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useToast } from "../components/ui/Toast";
 import { useAuth } from "../context/AuthContext";
 import { can } from "../lib/permissions";
-import { type HeldChange, type QueueItem, approveChange, fetchChanges, fetchCounts, fetchQueue, rejectChange } from "../lib/localzReview";
+import {
+  type HeldChange,
+  type LiveListing,
+  type QueueItem,
+  approveChange,
+  fetchChanges,
+  fetchCounts,
+  fetchLiveListings,
+  fetchQueue,
+  rejectChange,
+} from "../lib/localzReview";
 import { ITEM_LABELS, STATUS_LABELS, type RequestStatus } from "../lib/providerPortal";
 
 const STATES = [
@@ -18,6 +28,22 @@ const STATES = [
   { key: "all", label: "All" },
 ];
 
+const LISTING_STATES = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Live" },
+  { key: "hidden", label: "Hidden" },
+  { key: "inactive", label: "Inactive" },
+];
+
+const TABS = ["requests", "changes", "listings"] as const;
+type Tab = (typeof TABS)[number];
+
+const LISTING_STATUS: Record<string, { tone: "ok" | "bad" | "warn"; label: string }> = {
+  active: { tone: "ok", label: "Live" },
+  hidden: { tone: "bad", label: "Hidden" },
+  inactive: { tone: "warn", label: "Inactive" },
+};
+
 const ORIGINS: Record<string, string> = { self_serve: "Portal", inquiry: "Ask to be listed", admin_assisted: "Admin-assisted" };
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "-");
@@ -25,13 +51,19 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "-"
 const show = (v: unknown) => (v === null || v === undefined || v === "" ? "(empty)" : Array.isArray(v) ? v.join(", ") || "(empty)" : typeof v === "object" ? JSON.stringify(v) : String(v));
 
 /** /admin/resources/onboarding - the Localz review queue: new listings
- * (oldest first) and held edits to live ones. */
+ * (oldest first), held edits to live ones, and the live listings providers
+ * look after (least recently confirmed first). */
 export function LocalzReviewPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const manage = can(user, "resources.manage");
-  const [tab, setTab] = useState<"requests" | "changes">("requests");
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = TABS.find((t) => t === params.get("tab")) ?? "requests";
+  const setTab = (t: Tab) => setParams(t === "requests" ? {} : { tab: t }, { replace: true });
+  const [listingState, setListingState] = useState("all");
+  const [query, setQuery] = useState("");
+  const [listings, setListings] = useState<LiveListing[] | null>(null);
   const [state, setState] = useState("open");
   const [rows, setRows] = useState<QueueItem[] | null>(null);
   const [changes, setChanges] = useState<HeldChange[] | null>(null);
@@ -44,6 +76,15 @@ export function LocalzReviewPage() {
     fetchChanges("pending").then(setChanges).catch(() => setChanges([]));
   }, [state]);
   useEffect(load, [load]);
+
+  useEffect(() => {
+    if (tab !== "listings") return;
+    // Typing waits a moment so each keystroke isn't a request.
+    const timer = setTimeout(() => {
+      fetchLiveListings(listingState, query).then(setListings).catch(() => setListings([]));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [tab, listingState, query]);
 
   const decide = async (c: HeldChange, approve: boolean) => {
     setBusy(c.id);
@@ -93,11 +134,44 @@ export function LocalzReviewPage() {
     { id: "submitted", header: "Submitted", cell: (r) => when(r.submitted_at), sortValue: (r) => r.submitted_at ?? "" },
   ];
 
+  const listingColumns: Column<LiveListing>[] = [
+    {
+      id: "name",
+      header: "Listing",
+      cell: (r) => (
+        <span>
+          <strong>{r.name}</strong>
+          {r.organization_name && r.organization_name !== r.name ? ` · ${r.organization_name}` : ""}
+          {r.city ? ` · ${r.city}` : ""}
+        </span>
+      ),
+      sortValue: (r) => r.name,
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (r) => (
+        <Badge tone={LISTING_STATUS[r.status]?.tone ?? "warn"} dot={false}>
+          {LISTING_STATUS[r.status]?.label ?? r.status}
+        </Badge>
+      ),
+      sortValue: (r) => r.status,
+    },
+    {
+      id: "confirmed",
+      header: "Last confirmed",
+      cell: (r) => (r.last_assured_on ? new Date(`${r.last_assured_on}T12:00:00`).toLocaleDateString() : "never"),
+      sortValue: (r) => r.last_assured_on ?? "",
+    },
+    { id: "managers", header: "Managers", cell: (r) => (r.members ? `${r.members} (${r.verified_members} verified)` : "none"), sortValue: (r) => r.members },
+    { id: "source", header: "From", cell: (r) => (r.source === "provider" ? "Provider" : `${r.source}, claimed`) },
+  ];
+
   return (
     <div>
       <PageHeader
         title="Localz listings"
-        subtitle="Every new listing and every held edit is checked here before it goes live. Oldest first."
+        subtitle="Every new listing and every held edit is checked here before it goes live. Oldest first. Live listings can be edited, hidden or deleted."
       />
       <div className="tabs" role="tablist" style={{ marginBottom: 16 }}>
         <button type="button" className={`tab ${tab === "requests" ? "active" : ""}`} onClick={() => setTab("requests")}>
@@ -106,9 +180,32 @@ export function LocalzReviewPage() {
         <button type="button" className={`tab ${tab === "changes" ? "active" : ""}`} onClick={() => setTab("changes")}>
           Held edits {counts.changes ? `(${counts.changes})` : ""}
         </button>
+        <button type="button" className={`tab ${tab === "listings" ? "active" : ""}`} onClick={() => setTab("listings")}>
+          Live listings
+        </button>
       </div>
 
-      {tab === "requests" ? (
+      {tab === "listings" ? (
+        <>
+          <p className="note">Listings providers look after. Least recently confirmed first - a program that closed without telling anyone stops confirming.</p>
+          <div className="chips" style={{ marginBottom: 12, alignItems: "center" }}>
+            {LISTING_STATES.map((s) => (
+              <button key={s.key} type="button" className="chip" aria-pressed={listingState === s.key} onClick={() => setListingState(s.key)}>
+                {s.label}
+              </button>
+            ))}
+            <input type="search" aria-label="Search listings" placeholder="Search name, organization or town" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
+          <DataTable
+            columns={listingColumns}
+            rows={listings ?? []}
+            loading={listings === null}
+            getRowId={(r) => r.id}
+            onRowClick={(r) => navigate(`/admin/resources/listings/${r.id}`)}
+            empty="No listings."
+          />
+        </>
+      ) : tab === "requests" ? (
         <>
           <div className="chips" style={{ marginBottom: 12 }}>
             {STATES.map((s) => (

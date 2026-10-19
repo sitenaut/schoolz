@@ -28,6 +28,12 @@ GET    /admin/permissions  super_admin
 GET    /admin/resources/changes  perm:resources.view
 POST   /admin/resources/changes/{change_id}/approve  perm:resources.manage
 POST   /admin/resources/changes/{change_id}/reject  perm:resources.manage
+GET    /admin/resources/listings  perm:resources.view
+DELETE /admin/resources/listings/{service_id}  perm:resources.manage
+GET    /admin/resources/listings/{service_id}  perm:resources.view
+PATCH  /admin/resources/listings/{service_id}  perm:resources.manage
+POST   /admin/resources/listings/{service_id}/hide  perm:resources.manage
+POST   /admin/resources/listings/{service_id}/unhide  perm:resources.manage
 POST   /admin/resources/log/{log_id}/revert  perm:resources.manage
 POST   /admin/resources/memberships/{membership_id}/verify  perm:resources.manage
 GET    /admin/resources/onboarding  perm:resources.view

@@ -1,5 +1,5 @@
 import { apiFetch } from "../api";
-import { PortalError, type ListingBrief, type OnboardingRequest, type Submission } from "./providerPortal";
+import { PortalError, type ListingBrief, type ListingUpdateResult, type MyListing, type OnboardingRequest, type Submission } from "./providerPortal";
 
 /** The Localz review queue (backend/routers/admin_resources.py). Admin UI,
  * English only like the rest of /admin. */
@@ -62,6 +62,29 @@ export type HeldChange = {
   created_at: string;
 };
 
+/** A live listing a provider looks after (GET /admin/resources/listings). */
+export type LiveListing = {
+  id: string;
+  name: string;
+  organization_name: string | null;
+  city: string | null;
+  source: string;
+  status: "active" | "inactive" | "hidden";
+  last_assured_on: string | null;
+  members: number;
+  verified_members: number;
+  pending_changes: number;
+  updated_at: string;
+};
+
+/** The portal's own listing shape, plus what only a reviewer sees. */
+export type AdminListing = MyListing & {
+  source: string;
+  can_delete: boolean;
+  hidden_note: string | null;
+  hidden_at: string | null;
+};
+
 export type Member = { id: string; email: string | null; role: string; verified_at: string | null; created_at: string };
 
 export const CHECKLIST: { key: string; label: string; hint: string }[] = [
@@ -83,6 +106,7 @@ export const REJECT_REASONS: { key: string; label: string }[] = [
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, init);
+  if (res.status === 204) return undefined as T;
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {
@@ -124,3 +148,11 @@ export const fetchMembers = (serviceId: string) => call<Member[]>(`${base}/servi
 export const addMember = (serviceId: string, email: string, role: string) =>
   call<Member>(`${base}/services/${encodeURIComponent(serviceId)}/members`, post({ email, role }));
 export const verifyMember = (membershipId: string) => call<Member>(`${base}/memberships/${encodeURIComponent(membershipId)}/verify`, post());
+export const fetchLiveListings = (state: string, q: string) =>
+  call<LiveListing[]>(`${base}/listings?${new URLSearchParams({ state, ...(q.trim() ? { q: q.trim() } : {}) })}`);
+export const fetchLiveListing = (id: string) => call<AdminListing>(`${base}/listings/${encodeURIComponent(id)}`);
+export const editLiveListing = (id: string, body: Record<string, unknown>) =>
+  call<ListingUpdateResult>(`${base}/listings/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(body) });
+export const hideListing = (id: string, note: string) => call<AdminListing>(`${base}/listings/${encodeURIComponent(id)}/hide`, post({ note }));
+export const unhideListing = (id: string) => call<AdminListing>(`${base}/listings/${encodeURIComponent(id)}/unhide`, post());
+export const deleteListing = (id: string) => call<void>(`${base}/listings/${encodeURIComponent(id)}`, { method: "DELETE" });

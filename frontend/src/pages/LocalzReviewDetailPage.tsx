@@ -118,7 +118,7 @@ function Summary({ s, types }: { s: Submission; types: ProviderType[] }) {
   );
 }
 
-function LogList({ entries, onRevert, manage }: { entries: LogEntry[]; onRevert?: (e: LogEntry) => void; manage: boolean }) {
+export function LogList({ entries, onRevert, manage }: { entries: LogEntry[]; onRevert?: (e: LogEntry) => void; manage: boolean }) {
   if (!entries.length) return <p className="note">Nothing yet.</p>;
   return (
     <ul className="provider-log">

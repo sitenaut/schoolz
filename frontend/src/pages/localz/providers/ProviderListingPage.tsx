@@ -285,9 +285,9 @@ function StillRight({ listing, onDone }: { listing: MyListing; onDone: () => voi
   );
 }
 
-type CardProps = { listing: MyListing; busy: boolean; send: (body: Record<string, unknown>) => Promise<void> };
+export type CardProps = { listing: MyListing; busy: boolean; send: (body: Record<string, unknown>) => Promise<void> };
 
-function ClosureCard({ listing, busy, send }: CardProps) {
+export function ClosureCard({ listing, busy, send }: CardProps) {
   const { t } = useTranslation();
   const [from, setFrom] = useState(listing.closure?.starts_on ?? today());
   const [to, setTo] = useState(listing.closure?.ends_on ?? today());
@@ -319,7 +319,7 @@ function ClosureCard({ listing, busy, send }: CardProps) {
   );
 }
 
-function AlertCard({ listing, busy, send }: CardProps) {
+export function AlertCard({ listing, busy, send }: CardProps) {
   const { t } = useTranslation();
   const [alert, setAlert] = useState(listing.alert ?? "");
   return (
@@ -348,7 +348,7 @@ function AlertCard({ listing, busy, send }: CardProps) {
   );
 }
 
-function JoiningCard({ listing, busy, send }: CardProps) {
+export function JoiningCard({ listing, busy, send }: CardProps) {
   const { t } = useTranslation();
   const [signup, setSignup] = useState<Signup>(listing.signup ?? emptySignup());
   const [delivery, setDelivery] = useState(listing.delivery);
@@ -468,7 +468,7 @@ function DatesCard({ listing }: { listing: MyListing }) {
   );
 }
 
-function HelpCard({ listing, busy, send }: CardProps) {
+export function HelpCard({ listing, busy, send }: CardProps) {
   const { t } = useTranslation();
   const [ways, setWays] = useState<WaysToHelp>(listing.ways_to_help ?? emptyWaysToHelp());
   const clean = (w: WaysToHelp) => ({
@@ -487,7 +487,7 @@ function HelpCard({ listing, busy, send }: CardProps) {
   );
 }
 
-function WeekHoursCard({ listing, busy, send }: CardProps) {
+export function WeekHoursCard({ listing, busy, send }: CardProps) {
   const { t } = useTranslation();
   const [hours, setHours] = useState<Hours>(listing.week_hours?.hours ?? listing.hours ?? emptyHours());
   const [regular, setRegular] = useState<Hours>(listing.hours ?? emptyHours());
@@ -518,7 +518,7 @@ function WeekHoursCard({ listing, busy, send }: CardProps) {
   );
 }
 
-function DetailsCard({ listing, busy, send }: CardProps) {
+export function DetailsCard({ listing, busy, send }: CardProps) {
   const { t } = useTranslation();
   const [description, setDescription] = useState(listing.description ?? "");
   const [languages, setLanguages] = useState(listing.languages.join(", "));
@@ -554,7 +554,8 @@ function DetailsCard({ listing, busy, send }: CardProps) {
   );
 }
 
-function ReviewedCard({ listing, types, busy, send }: CardProps & { types: ProviderType[] }) {
+/** `immediate`: a reviewer's own edit (admin listing page), which nothing holds back. */
+export function ReviewedCard({ listing, types, busy, send, immediate = false }: CardProps & { types: ProviderType[]; immediate?: boolean }) {
   const { t } = useTranslation();
   const [name, setName] = useState(listing.name);
   const [org, setOrg] = useState(listing.organization_name ?? "");
@@ -603,7 +604,10 @@ function ReviewedCard({ listing, types, busy, send }: CardProps & { types: Provi
   };
 
   return (
-    <Card title={t("Details we check first")} hint={t("Changes here go live after a reviewer checks them. Your current details stay up until then.")}>
+    <Card
+      title={immediate ? t("Name, contact and address") : t("Details we check first")}
+      hint={immediate ? undefined : t("Changes here go live after a reviewer checks them. Your current details stay up until then.")}
+    >
       <div className="fgrid two">
         <Field label={t("Program name")}>
           <input value={name} maxLength={200} onChange={(e) => setName(e.target.value)} />
@@ -659,7 +663,7 @@ function ReviewedCard({ listing, types, busy, send }: CardProps & { types: Provi
         </Field>
       )}
       <button className="btn btn-primary" disabled={busy} onClick={submit}>
-        {t("Send for review")}
+        {immediate ? t("Save") : t("Send for review")}
       </button>
     </Card>
   );

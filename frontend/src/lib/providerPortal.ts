@@ -360,8 +360,10 @@ export const saveRequest = (id: string, body: RequestBody) => call<OnboardingReq
 export const submitRequest = (id: string) => call<OnboardingRequest>(`/provider-portal/requests/${encodeURIComponent(id)}/submit`, { method: "POST" });
 export const withdrawRequest = (id: string) => call<OnboardingRequest>(`/provider-portal/requests/${encodeURIComponent(id)}/withdraw`, { method: "POST" });
 export const fetchMyListings = () => call<MyListing[]>("/provider-portal/listings");
+export type ListingUpdateResult = { applied: string[]; held: string[]; change_request_id: string | null };
+
 export const updateListing = (id: string, body: Record<string, unknown>) =>
-  call<{ applied: string[]; held: string[]; change_request_id: string | null }>(`/provider-portal/listings/${encodeURIComponent(id)}`, json("PATCH", body));
+  call<ListingUpdateResult>(`/provider-portal/listings/${encodeURIComponent(id)}`, json("PATCH", body));
 export const fetchDates = (id: string) => call<ProviderDate[]>(`/provider-portal/listings/${encodeURIComponent(id)}/dates`);
 export type DateBody = { title: string; on: string; start: string; end?: string | null; note?: string | null; place?: ProgramPlace | null };
 export const postDate = (id: string, body: DateBody) => call<ProviderDate>(`/provider-portal/listings/${encodeURIComponent(id)}/dates`, json("POST", body));
