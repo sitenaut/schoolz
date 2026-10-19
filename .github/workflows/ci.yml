@@ -1,7 +1,7 @@
 name: CI
 
 # The gate for a pull request. backend and frontend are the checks to require
-# on main. secrets and audit run on pull requests only; audit reports and is
+# on main. images, secrets and audit run on pull requests only; audit reports and is
 # not meant to be required (a newly published advisory shouldn't block
 # unrelated PRs).
 on:
@@ -113,6 +113,33 @@ jobs:
       - name: Focus app - type-check and build
         working-directory: frontend/focus
         run: npm run build
+
+  images:
+    # Both Dockerfiles still build, and each image starts: the API answers
+    # /health with no database (Fly's machine check depends on that), and the
+    # web image renders its nginx templates and serves the page. Pull
+    # requests only; Fly builds the deployed images itself.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the API image
+        run: docker build -t schoolz-api:ci backend
+      - name: Build the web image
+        run: docker build -t schoolz-web:ci frontend
+      - name: API image starts
+        run: |
+          docker run -d --name api -e APP_ENV=local -e AUTH_MODE=local -e JWT_SECRET=ci \
+            -e DATABASE_HOST=127.0.0.1 -p 8000:8000 schoolz-api:ci
+          for _ in $(seq 1 30); do curl -fsS localhost:8000/health && exit 0; sleep 2; done
+          docker logs api; exit 1
+      - name: Web image serves the page
+        run: |
+          docker run -d --name web -e BACKEND_INTERNAL_URL=http://127.0.0.1:8000 -e RESOLVER=127.0.0.11 \
+            -p 3000:3000 schoolz-web:ci
+          for _ in $(seq 1 30); do curl -fsS -o /dev/null localhost:3000/ && exit 0; sleep 2; done
+          docker logs web; exit 1
 
   secrets:
     # The pull request's own commits only, so history never fails a PR.
