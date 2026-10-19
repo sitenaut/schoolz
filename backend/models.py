@@ -2617,3 +2617,19 @@ class OutboundEmail(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ChatRateWindow(Base):
+    """Chat messages per connection per fixed window (routers/chat.py).
+
+    In the database rather than in memory, so the limit holds across API
+    machines and survives deploys and auto-stops. Keeps a salted hash of the
+    address, never the address; rows older than a day are deleted as new
+    windows open.
+    """
+
+    __tablename__ = "chat_rate_windows"
+
+    ip_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True, index=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

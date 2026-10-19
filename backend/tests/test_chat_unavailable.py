@@ -17,7 +17,6 @@ async def test_a_provider_refusal_is_a_plain_reply_not_a_500(monkeypatch):
         raise ProviderUnavailable("anthropic: You have reached your specified API usage limits.")
 
     monkeypatch.setattr(chat_router, "run_chat_turn", refused)
-    monkeypatch.setattr(chat_router, "_requests_by_ip", chat_router.defaultdict(chat_router.deque))
     history = [{"role": "user", "content": "earlier"}, {"role": "assistant", "content": "answer"}]
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
