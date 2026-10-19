@@ -68,7 +68,9 @@ def _get_semaphore() -> asyncio.Semaphore:
 # and falling through to the droplet and the residential Pi just multiplies
 # one dead link into 9 failed renders (what tripped the residential
 # "more than half of requests failing" alert, 2026-10-05).
-_PERMANENT_ERRORS = ("ERR_NAME_NOT_RESOLVED", "Cannot navigate to invalid URL")
+# A broken TLS certificate (Beck's nurse eBoard link, www2.eboard.com) is
+# the same: 9 renders, ~12 minutes, then the whole roster scan failed.
+_PERMANENT_ERRORS = ("ERR_NAME_NOT_RESOLVED", "Cannot navigate to invalid URL", "ERR_CERT_")
 
 
 def _is_retryable(exc: Exception) -> bool:
