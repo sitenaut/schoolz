@@ -20,12 +20,15 @@ import json
 import logging
 import os
 import re
+import time
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from mcp.server.fastmcp import FastMCP
 
+import observability
 from services.chat_providers import Usage, configured_providers
 from services.chat_school_hint import SchoolDirectory, school_hint
 from services.chat_settings import AudienceConfig
@@ -169,6 +172,21 @@ def _log_usage(provider: str, model: str, usage: Usage) -> None:
     )
 
 
+def _record_usage(model: str, completion, duration_s: float) -> None:
+    """The chat's calls on the same LLM counters as every scan, so the Cost
+    dashboard and the token-use and truncation alerts include it (it had only
+    the chatbot_usage log line). One purpose for every provider and audience:
+    the model label already tells them apart."""
+    u = completion.usage
+    observability.record_llm_call("chat", model, SimpleNamespace(
+        stop_reason=completion.stop_reason,
+        usage=SimpleNamespace(
+            input_tokens=u.input_tokens, output_tokens=u.output_tokens,
+            cache_read_input_tokens=u.cache_read_tokens, cache_creation_input_tokens=u.cache_write_tokens,
+        ),
+    ), duration_s)
+
+
 async def run_chat_turn(
     mcp: FastMCP,
     history: list[dict[str, Any]],
@@ -254,6 +272,7 @@ async def run_chat_turn(
     escalation_error: str | None = None
 
     while True:
+        started = time.perf_counter()
         try:
             completion = await provider.complete(
                 model=model, system=stable_system, dynamic_system=dynamic_system, tools=tools, messages=messages,
@@ -274,6 +293,7 @@ async def run_chat_turn(
         used_model = model
         usage_by_model.setdefault(model, Usage()).add(completion.usage)
         _log_usage(config.provider, model, completion.usage)
+        _record_usage(model, completion, time.perf_counter() - started)
         messages.append({"role": "assistant", "content": completion.content})
 
         tool_uses = [b for b in completion.content if b.get("type") == "tool_use"]
