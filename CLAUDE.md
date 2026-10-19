@@ -61,6 +61,7 @@ Deliberate product pivot: **almost everything is public, no account needed.** Th
 - **API keys** (`ApiKey`, `routers/admin_api_keys.py`) — so a script or agent can change prod, where `/auth/login` can't be scripted (Supabase-only). A key acts as its creator narrowed to the permissions ticked (intersected at request time, so demoting the creator shrinks the key) and **never passes `require_super_admin`**, so no key can manage users, roles or keys. `szk_` prefix, only the SHA-256 stored, optional expiry; requests log `api_key_id`.
   - Get one with **`scripts/schoolz-api.sh login prod`** (device flow, approved by a super admin in a browser; the key lands in gitignored `env/api-keys.env` and never passes through chat). Details: `docs/API_KEYS.md`.
   - **This is the sanctioned route for prod admin changes — never a direct DB connection.**
+- **Audit log** (`services/audit.py`, `audit_events`): a new route that changes access, credentials, roles, connections or a child's access goes in `AUDITED`; a polling endpoint that releases a key or secret calls `audit.note()` instead. The table is append-only (a trigger refuses UPDATE/DELETE), so nothing written there can be cleaned up. Super admins read it at `GET /admin/audit-log` (`/admin/audit` is the unrelated data audit). Addresses are stored hashed, as the privacy page promises.
 
 The chatbot (`POST /chat`) straddles the tiers: public tools for anonymous callers, personal read-only tools with the caller's own bearer token when signed in. See the `chatbot` skill.
 

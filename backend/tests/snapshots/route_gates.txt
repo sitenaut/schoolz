@@ -8,6 +8,7 @@ POST   /admin/api-keys/requests/{user_code}/deny  super_admin
 DELETE /admin/api-keys/{key_id}  super_admin
 PATCH  /admin/api-keys/{key_id}  super_admin
 GET    /admin/audit  perm:audit.view
+GET    /admin/audit-log  super_admin
 GET    /admin/audit/data-points  perm:audit.view
 GET    /admin/audit/export.csv  perm:audit.view
 GET    /admin/audit/schools/{school_id}  perm:audit.view

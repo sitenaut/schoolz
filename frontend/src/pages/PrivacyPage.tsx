@@ -333,6 +333,20 @@ export function PrivacyPage() {
           </tr>
           <tr>
             <td>
+              A security record of account and access changes: when you change or reset your password, delete your
+              account, accept an invitation to a child's records, or remove a student's login, plus everything
+              admins do to accounts, roles, keys and connected inboxes
+            </td>
+            <td>Our database</td>
+            <td>
+              So we can always answer "who changed this, and when". Each entry holds what was done, by which
+              account, the date and time, and a scrambled one-way code in place of your IP address. Never passwords,
+              invitation links or the contents of anything. Entries can't be edited or deleted, are seen only by
+              the people who run schoolz, and stay after the account they mention is deleted.
+            </td>
+          </tr>
+          <tr>
+            <td>
               Where an upload came from: your IP address, which browser sent it, the page it was sent from, the date
               and time, and a fingerprint (hash) of the file
             </td>
@@ -426,6 +440,7 @@ export function PrivacyPage() {
           failure.
         </li>
         <li>Contact messages, survey responses and upload records are kept until we delete them.</li>
+        <li>Security records of account and access changes are kept permanently.</li>
       </ul>
 
       <h3>Your rights</h3>

@@ -10,7 +10,7 @@ and approves. The key is minted when the script collects it, so its
 plaintext never touches the database or the chat.
 """
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
@@ -21,6 +21,7 @@ from auth import generate_api_key, hash_api_key, require_super_admin
 from database import get_db
 from models import ApiKey, ApiKeyRequest, User
 from permissions import PERMISSION_KEYS
+from services import audit
 from services.client_ip import client_ip
 
 router = APIRouter(prefix="/admin/api-keys", tags=["admin-api-keys"], dependencies=[Depends(require_super_admin)])
@@ -105,7 +106,7 @@ async def list_api_keys(db: AsyncSession = Depends(get_db)):
 @router.post("", response_model=ApiKeyCreated, status_code=status.HTTP_201_CREATED)
 async def create_api_key(payload: ApiKeyIn, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
     plaintext, prefix, digest = generate_api_key()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     key = ApiKey(
         name=payload.name,
         key_prefix=prefix,
@@ -209,7 +210,7 @@ class DeviceTokenOut(BaseModel):
 
 @device_router.post("/start", response_model=DeviceStartOut)
 async def device_start(payload: DeviceStartIn, request: Request, db: AsyncSession = Depends(get_db)):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await db.execute(delete(ApiKeyRequest).where(ApiKeyRequest.expires_at < now - timedelta(days=1)))
     open_count = (
         await db.execute(
@@ -244,13 +245,13 @@ async def device_start(payload: DeviceStartIn, request: Request, db: AsyncSessio
 
 
 @device_router.post("/token", response_model=DeviceTokenOut)
-async def device_token(payload: DeviceTokenIn, db: AsyncSession = Depends(get_db)):
+async def device_token(payload: DeviceTokenIn, request: Request, db: AsyncSession = Depends(get_db)):
     req = (
         await db.execute(
             select(ApiKeyRequest).where(ApiKeyRequest.device_code_hash == hash_api_key(payload.device_code)).with_for_update()
         )
     ).scalar_one_or_none()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # An unknown code, an already-collected one and a timed-out one all read
     # "expired": the script's only move in each case is to start over.
     if req is None or req.status == "issued" or req.expires_at <= now:
@@ -273,6 +274,7 @@ async def device_token(payload: DeviceTokenIn, db: AsyncSession = Depends(get_db
     req.status = "issued"
     req.api_key_id = key.id
     await db.commit()
+    audit.note(request, "api_key.device_issued", api_key_id=key.id, key_prefix=prefix, approved_by=req.approved_by_user_id)
     return DeviceTokenOut(status="approved", key=plaintext, key_prefix=prefix, permissions=list(key.permissions))
 
 
@@ -307,7 +309,7 @@ async def _get_request(db: AsyncSession, user_code: str) -> ApiKeyRequest:
 
 
 def _request_out(req: ApiKeyRequest) -> DeviceRequestOut:
-    expired = req.status in ("pending", "approved") and req.expires_at <= datetime.now(timezone.utc)
+    expired = req.status in ("pending", "approved") and req.expires_at <= datetime.now(UTC)
     return DeviceRequestOut(
         user_code=req.user_code,
         client_name=req.client_name,
@@ -320,7 +322,7 @@ def _request_out(req: ApiKeyRequest) -> DeviceRequestOut:
 
 async def _get_pending(db: AsyncSession, user_code: str) -> ApiKeyRequest:
     req = await _get_request(db, user_code)
-    if req.status != "pending" or req.expires_at <= datetime.now(timezone.utc):
+    if req.status != "pending" or req.expires_at <= datetime.now(UTC):
         raise HTTPException(status.HTTP_410_GONE, "This login request has expired or was already answered")
     return req
 
@@ -340,7 +342,7 @@ async def approve_device_request(
     req.key_name = (payload.name or "").strip() or req.client_name
     req.permissions = payload.permissions
     req.key_expires_in_days = payload.expires_in_days
-    req.expires_at = datetime.now(timezone.utc) + DEVICE_COLLECT_WINDOW
+    req.expires_at = datetime.now(UTC) + DEVICE_COLLECT_WINDOW
     await db.commit()
     return _request_out(req)
 

@@ -30,6 +30,7 @@ import security_headers  # noqa: E402
 import telemetry  # noqa: E402
 from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
+from routers import admin_audit as admin_audit_router  # noqa: E402
 from routers import admin_chatbot as admin_chatbot_router  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
 from routers import admin_resources as admin_resources_router  # noqa: E402
@@ -68,6 +69,7 @@ from routers import specials as specials_router  # noqa: E402
 from routers import student_accounts as student_accounts_router  # noqa: E402
 from routers import students as students_router  # noqa: E402
 from routers import survey as survey_router  # noqa: E402
+from services import audit  # noqa: E402
 from settings import check_settings  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -194,6 +196,10 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+# Inside the request-id middleware (it records the id) and outside routing
+# (it reads the matched route once the app has answered).
+app.add_middleware(audit.AuditMiddleware)
+
 # After every other middleware, so it is the outermost: the ID is set before
 # log_requests runs and is on every response, errors included.
 request_context.install(app)
@@ -202,6 +208,7 @@ app.include_router(health_router.router)
 app.include_router(csp_report_router.router)
 app.include_router(admin_config_router.router)
 app.include_router(admin_users_router.router)
+app.include_router(admin_audit_router.router)
 app.include_router(admin_api_keys_router.router)
 app.include_router(admin_api_keys_router.device_router)
 app.include_router(admin_secret_requests_router.router)
