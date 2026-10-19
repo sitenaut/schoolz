@@ -189,8 +189,12 @@ a full newsletter while the run looked fine. The `purpose` label says which
 call; re-run the affected scan after raising the cap or shrinking the chunk.
 
 ### schoolz-scraper-silent
-The schoolz scraper machine isn't reporting. It never auto-stops, so it's down:
-`fly status -a schoolz-scraper`. Scans fall back to the droplet meanwhile.
+A scraper (`primary` = the Fly `schoolz-scraper`, `fallback` = the droplet,
+`residential` = the Pi) has failed `/health/deep` for 15 minutes; the scheduler
+asks every 5 minutes. For the primary, `fly status -a schoolz-scraper` and
+`fly logs -a schoolz-scraper`; the others are in the shared scraper repo's
+RUNBOOK. Scans fall back to the next scraper meanwhile. Not firing at all while
+the scheduler is down: that has its own alert.
 
 ### schoolz-probe-silent
 Fewer than two uptime checks are reporting, so part of the site has no outside
@@ -222,9 +226,11 @@ SLO alert isn't firing.
 Context for a latency burn: which route's p95 is over 2.5s.
 
 ### schoolz-scraper-failing
-Over 30% of the schoolz scraper's page loads are failing. Callers retry and fall
-back to the droplet, so this often costs nothing - the scan SLO says whether it
-did. Persistent, it means the machine is too small for the burst or sites are
+Over 30% of schoolz's calls to one scraper failed for reasons that are the
+scraper's (timeouts, 5xx, a full queue's 503), counted in `scraper_client.py`.
+Callers retry and fall back, so this often costs nothing - the scan SLO says
+whether it did. Persistent on the primary, it means the Fly machines are too
+small for the burst (`MAX_CONCURRENCY` in `scraper/fly.toml`) or sites are
 blocking its address.
 
 ### schoolz-scan-warnings

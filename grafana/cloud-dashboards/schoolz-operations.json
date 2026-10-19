@@ -379,8 +379,8 @@
             "type": "prometheus",
             "uid": "${DS_METRICS}"
           },
-          "expr": "count(schoolz_scraper_pages_open{service_name=\"schoolz-scraper\"})",
-          "legendFormat": "scraper machines",
+          "expr": "min by (scraper) (schoolz_scraper_healthy{service_namespace=\"schoolz\"})",
+          "legendFormat": "{{scraper}} scraper healthy",
           "range": true,
           "format": "time_series",
           "refId": "C"

@@ -193,12 +193,12 @@ def scans() -> dict:
               {"h": 8, "w": 12, "x": 12, "y": 8}, unit="s",
               desc="~85 school-level scans fire in the same minute. This is the panel that proves whether "
                    "the cron needs jittering per job (OBSERVABILITY_PLAN hypothesis #6)."),
-        panel(5, "Scraper page loads by outcome",
-              [target(f'sum by (outcome) (rate(schoolz_scraper_page_load_seconds_count{{service_name="schoolz-scraper"}}[30m]))',
-                      "{{outcome}}")],
+        panel(5, "Scraper calls by scraper and outcome",
+              [target(f'sum by (scraper, outcome) (rate(schoolz_scraper_client_calls_total{sel()}[30m]))',
+                      "{{scraper}} {{outcome}}")],
               {"h": 8, "w": 12, "x": 0, "y": 16},
-              desc="Recorded by the scraper service itself (scraper/observability.py), which is the only "
-                   "place that can see the target host and outcome."),
+              desc="Counted by schoolz per attempt (scraper_client.py). unavailable = the scraper's fault "
+                   "(retried, then the next scraper); refused = the target site's own answer."),
         panel(6, "Parse issues (non-fatal, by code)",
               [target(f'sum by (code, job_kind) (increase(schoolz_parse_issues_total{sel()}[6h]))', "{{job_kind}} · {{code}}")],
               {"h": 8, "w": 12, "x": 12, "y": 16},
@@ -447,7 +447,7 @@ def ops() -> dict:
         panel(6, "Is each process reporting?",
               [target(f'count(process_memory_usage_bytes{sel(API_SVC)})', "API machines", ref="A"),
                target(f'sum(increase(schoolz_scheduler_reconciles_total{sel()}[10m]))', "scheduler ticks / 10m", ref="B"),
-               target('count(schoolz_scraper_pages_open{service_name="schoolz-scraper"})', "scraper machines", ref="C"),
+               target(f'min by (scraper) (schoolz_scraper_healthy{sel()})', "{{scraper}} scraper healthy", ref="C"),
                target('max by (job) (probe_success{job=~"schoolz-web|schoolz-api"})', "{{job}} reachable", ref="D")],
               {"h": 8, "w": 12, "x": 12, "y": 15},
               desc="The liveness signals behind the down/silent alerts, plus the outside probes. A line ending or dropping to 0 is the outage."),
