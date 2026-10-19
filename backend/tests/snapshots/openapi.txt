@@ -1026,7 +1026,7 @@ InviteOut { accept_url: string, expires_at: string(date-time), id: string, invit
 InvitePreviewOut { expires_at: string(date-time), invitee_email_hint?: string | null, inviter_username: string, status: string, student_first_name: string, student_last_initial: string }
 JobKindOut { default_cron: string, default_name: string, default_params?: object, default_timezone: string, description: string, kind: string, param_schema?: object | null }
 JobRunOut { duration_ms: integer | null, error: string | null, error_code: string | null, error_stage: string | null, finished_at: string(date-time) | null, id: string, last_progress_at?: string(date-time) | null, log_excerpt: string | null, machine_id?: string | null, started_at: string(date-time), status: string, trace_id?: string | null, triggered_by: string }
-JobRunSummaryOut { by_status: dict[integer], total: integer }
+JobRunSummaryOut { by_status: dict[integer], scheduler_last_seen_at?: string(date-time) | null, total: integer }
 JobSourceOut { label: string, value: string }
 LateBusContractorOut { name: string, phone: string, routes: dict[list[string]] }
 LateCreditOut { accepted: boolean, by_exception?: boolean, closes_on: string | null, credit_pct: integer | null, days_left: integer | null, extension_by_request: boolean, is_late: boolean }

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, text
+from sqlalchemy.dialects.postgresql import insert
 
 import observability
 import scheduler.jobs  # noqa: F401  (registers all job kinds via decorators)
@@ -13,7 +14,7 @@ import scraper_client
 import telemetry
 from database import SessionLocal, engine
 from logging_config import setup_logging
-from models import ScheduledJob
+from models import ScheduledJob, SchedulerHeartbeat
 from scheduler.runner import (
     build_apscheduler_job,
     claim_requested_runs,
@@ -120,6 +121,20 @@ async def _reconcile(aps_scheduler: AsyncIOScheduler) -> None:
                 forget_apscheduler_job(existing.id)
 
 
+async def _beat() -> None:
+    """Stamps the scheduler_heartbeats row the scheduler-down alert reads."""
+    now = datetime.now(UTC)
+    row = {"id": "scheduler", "machine_id": _MACHINE_ID, "started_at": _PROCESS_STARTED_AT, "last_seen_at": now}
+    async with SessionLocal() as db:
+        await db.execute(
+            insert(SchedulerHeartbeat).values(**row).on_conflict_do_update(
+                index_elements=[SchedulerHeartbeat.id],
+                set_={"machine_id": _MACHINE_ID, "started_at": _PROCESS_STARTED_AT, "last_seen_at": now},
+            )
+        )
+        await db.commit()
+
+
 async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
     caught_up = False
     while not _stop_event.is_set():
@@ -132,8 +147,9 @@ async def _reconcile_loop(aps_scheduler: AsyncIOScheduler) -> None:
             await _reconcile(aps_scheduler)
             # Heartbeat. Nothing else proves this process is alive: with no
             # jobs due, a healthy scheduler and a dead one emit identical
-            # (absent) job metrics, so the "scans stopped running" alert
-            # keys off this tick rather than off job activity.
+            # (absent) job metrics. The alert reads the row (_beat), which
+            # doesn't depend on telemetry export; the counter feeds dashboards.
+            await _beat()
             observability.scheduler_reconciles_total.add(1)
         except Exception:
             logger.exception("scheduler_reconcile_failed")

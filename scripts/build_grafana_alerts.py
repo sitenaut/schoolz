@@ -51,12 +51,14 @@ FARO = '{app_name="schoolz-faro"}'
 SEVERITY = {"page": "critical", "ticket": "warning", "info": "info"}
 # Evaluation interval per group. Pages are checked every minute; the SQL
 # group is slow on purpose - its datasource is capped at 2 connections on a
-# pooler the app shares.
+# pooler the app shares. A SQL rule that pages gets its own quicker group, so
+# it is one cheap query every 2 minutes, not the whole SQL group's.
 GROUPS = {
     "schoolz-page": "1m",
     "schoolz-ticket": "5m",
     "schoolz-info": "5m",
     "schoolz-sql": "15m",
+    "schoolz-sql-page": "2m",
 }
 
 # Machine memory per service (backend/fly.toml). The process metric has no
@@ -143,7 +145,10 @@ def _rule(uid, title, data, condition, *, tier, kind, component, summary, descri
     """`${RUNBOOK_URL}` and `${GRAFANA_URL}` are filled in by grafana_sync.py -
     the repo and the stack address are facts about a deployment, not about
     the rule, and don't belong in a generated file."""
-    group = "schoolz-sql" if any(d["datasourceUid"] == "${DS_SQL}" for d in data) else f"schoolz-{tier}"
+    if any(d["datasourceUid"] == "${DS_SQL}" for d in data):
+        group = "schoolz-sql-page" if tier == "page" else "schoolz-sql"
+    else:
+        group = f"schoolz-{tier}"
     return {
         "uid": uid,
         "title": title,
@@ -324,13 +329,18 @@ def rules() -> list:
                         "empty pages while this lasts.",
             dashboard="schoolz-api",
         ),
-        prom(
+        # Read from the database, not the reconcile counter: a metric goes
+        # silent the same way when the scheduler dies and when telemetry
+        # export breaks. One row comes back - the heartbeat's age - whether the
+        # row is stale or missing, so an empty table alerts too.
+        sql(
             "schoolz-scheduler-down", "schoolz: scheduler has stopped reconciling",
-            f"sum(increase(schoolz_scheduler_reconciles_total{sel()}[10m]))", 1, op="lt",
-            tier="page", kind="symptom", component="scheduler", for_="10m", no_data="Alerting",
+            "SELECT COALESCE(EXTRACT(EPOCH FROM now() - max(last_seen_at)), 1e9)::float AS value\n"
+            "FROM scheduler_heartbeats", 300,
+            tier="page", kind="symptom", component="scheduler", for_="4m", no_data="Alerting",
             summary="The scheduler hasn't ticked in 10 minutes - every scan is stopped",
-            description="It reconciles every 30s, so this should never be below 1. Nothing else will tell "
-                        "you: pages keep serving yesterday's data and no run fails, because no run starts.",
+            description="It stamps scheduler_heartbeats every 30s. Nothing else will tell you: pages keep "
+                        "serving yesterday's data and no run fails, because no run starts.",
             dashboard="schoolz-scans",
         ),
         prom(

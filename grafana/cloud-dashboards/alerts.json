@@ -80,78 +80,6 @@
           ]
         },
         {
-          "uid": "schoolz-scheduler-down",
-          "title": "schoolz: scheduler has stopped reconciling",
-          "condition": "C",
-          "for": "10m",
-          "labels": {
-            "app": "schoolz",
-            "tier": "page",
-            "kind": "symptom",
-            "component": "scheduler",
-            "severity": "critical"
-          },
-          "annotations": {
-            "summary": "The scheduler hasn't ticked in 10 minutes - every scan is stopped",
-            "description": "It reconciles every 30s, so this should never be below 1. Nothing else will tell you: pages keep serving yesterday's data and no run fails, because no run starts.",
-            "runbook_url": "${RUNBOOK_URL}#schoolz-scheduler-down",
-            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
-          },
-          "noDataState": "Alerting",
-          "execErrState": "Error",
-          "orgId": 1,
-          "folderUID": "schoolz",
-          "ruleGroup": "schoolz-page",
-          "data": [
-            {
-              "refId": "A",
-              "relativeTimeRange": {
-                "from": 3600,
-                "to": 0
-              },
-              "datasourceUid": "${DS_METRICS}",
-              "model": {
-                "refId": "A",
-                "expr": "sum(increase(schoolz_scheduler_reconciles_total{service_namespace=\"schoolz\"}[10m]))",
-                "instant": true,
-                "editorMode": "code"
-              }
-            },
-            {
-              "refId": "B",
-              "datasourceUid": "__expr__",
-              "model": {
-                "refId": "B",
-                "type": "reduce",
-                "reducer": "last",
-                "expression": "A",
-                "settings": {
-                  "mode": "dropNN"
-                }
-              }
-            },
-            {
-              "refId": "C",
-              "datasourceUid": "__expr__",
-              "model": {
-                "refId": "C",
-                "type": "threshold",
-                "expression": "B",
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "type": "lt",
-                      "params": [
-                        1
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
           "uid": "schoolz-site-unreachable",
           "title": "schoolz: site unreachable from outside",
           "condition": "C",
@@ -2844,6 +2772,87 @@
                       "type": "gt",
                       "params": [
                         0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "orgId": 1,
+      "name": "schoolz-sql-page",
+      "folder": "schoolz",
+      "interval": "2m",
+      "rules": [
+        {
+          "uid": "schoolz-scheduler-down",
+          "title": "schoolz: scheduler has stopped reconciling",
+          "condition": "C",
+          "for": "4m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "page",
+            "kind": "symptom",
+            "component": "scheduler",
+            "severity": "critical"
+          },
+          "annotations": {
+            "summary": "The scheduler hasn't ticked in 10 minutes - every scan is stopped",
+            "description": "It stamps scheduler_heartbeats every 30s. Nothing else will tell you: pages keep serving yesterday's data and no run fails, because no run starts.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-scheduler-down",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "Alerting",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-sql-page",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_SQL}",
+              "model": {
+                "refId": "A",
+                "rawSql": "SELECT COALESCE(EXTRACT(EPOCH FROM now() - max(last_seen_at)), 1e9)::float AS value\nFROM scheduler_heartbeats",
+                "rawQuery": true,
+                "format": "table",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        300
                       ]
                     }
                   }

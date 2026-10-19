@@ -114,10 +114,14 @@ and the app logs; if machines are healthy and serving, the problem is the OTLP
 secret or the gateway, not the site - downgrade your urgency accordingly.
 
 ### schoolz-scheduler-down
-The scheduler process has not reconciled in 10 minutes; no scan is running and
-nothing will fail to tell you. `fly status -a schoolz-api` (process group
-`scheduler`), then its logs. An OOM kill shows as a restart loop - see
-`schoolz-memory-high`.
+The scheduler process has not stamped `scheduler_heartbeats` in about 10
+minutes; no scan is running and nothing will fail to tell you. The rule reads
+the database through the Postgres datasource, not telemetry, so it means the
+process is gone or stuck, not that export broke (Admin → Overview shows
+"Scheduler seen" too). `fly status -a schoolz-api` (process group `scheduler`),
+then its logs. An OOM kill shows as a restart loop - see `schoolz-memory-high`.
+If the rule is in an error state instead, the datasource can't reach the
+database (or `grafana_ro` lost its grant on `scheduler_heartbeats`).
 
 ### schoolz-slo-api-availability-fast
 Visitors are getting server errors at a rate that empties the budget in days.
