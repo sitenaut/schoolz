@@ -26,6 +26,7 @@ import models  # noqa: F401,E402  (register tables with Base.metadata)
 import observability  # noqa: E402
 import request_context  # noqa: E402
 import scheduler.jobs  # noqa: F401,E402  (populate the job registry in this process too - needed for run-now)
+import security_headers  # noqa: E402
 import telemetry  # noqa: E402
 from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
@@ -143,6 +144,7 @@ app.add_middleware(
     # cuts down repeat preflights within a session.
     max_age=86400,
 )
+app.add_middleware(security_headers.SecurityHeadersMiddleware)
 
 
 @app.middleware("http")
