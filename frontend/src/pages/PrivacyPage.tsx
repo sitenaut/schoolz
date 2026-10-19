@@ -333,8 +333,8 @@ export function PrivacyPage() {
           </tr>
           <tr>
             <td>
-              A security record of account and access changes: when you change or reset your password, delete your
-              account, accept an invitation to a child's records, or remove a student's login, plus everything
+              A security record of sign-ins and account and access changes: when you sign in, change or reset your
+              password, delete your account, accept an invitation to a child's records, or remove a student's login, plus everything
               admins do to accounts, roles, keys and connected inboxes
             </td>
             <td>Our database</td>

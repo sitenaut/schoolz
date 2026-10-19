@@ -50,6 +50,7 @@ import { UsersRolesPage } from "./pages/UsersRolesPage";
 import { ApiKeysPage } from "./pages/ApiKeysPage";
 import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
 import { SecretRequestsPage } from "./pages/SecretRequestsPage";
+import { AuditLogPage } from "./pages/AuditLogPage";
 import { ApproveSecretRequestPage } from "./pages/ApproveSecretRequestPage";
 import { can, isStaff } from "./lib/permissions";
 import { PrivacyPage } from "./pages/PrivacyPage";
@@ -247,6 +248,7 @@ function Routed() {
           <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
           <Route path="api-keys/approve" element={<RequireAdmin superOnly><ApproveApiKeyPage /></RequireAdmin>} />
           <Route path="secret-requests" element={<RequireAdmin superOnly><SecretRequestsPage /></RequireAdmin>} />
+          <Route path="audit-log" element={<RequireAdmin superOnly><AuditLogPage /></RequireAdmin>} />
           <Route path="secret-requests/approve" element={<RequireAdmin superOnly><ApproveSecretRequestPage /></RequireAdmin>} />
         </Route>
       </Route>
