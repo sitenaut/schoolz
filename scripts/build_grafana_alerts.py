@@ -40,6 +40,7 @@ FOLDER = "schoolz"
 NS = 'service_namespace="schoolz"'
 ERRORED = 'status="error"'
 TRUNCATED = 'stop_reason="max_tokens"'
+SCRAPER_UNAVAILABLE = 'outcome="unavailable"'
 WARNED = 'status="warning"'
 FINISHED = 'status=~"success|warning"'
 NOT_SKIPPED = 'status!="skipped"'
@@ -405,12 +406,13 @@ def rules() -> list:
             dashboard="schoolz-scans",
         ),
         prom(
-            "schoolz-scraper-silent", "schoolz: scraper is not reporting",
-            'count(schoolz_scraper_pages_open{service_name="schoolz-scraper"})', 1, op="lt", range_s=900,
-            tier="ticket", kind="cause", component="scraper", for_="15m", no_data="Alerting",
-            summary="The schoolz scraper machine has not reported in 15 minutes",
-            description="It never auto-stops, so silence means it is down. Scans fall back to the shared "
-                        "droplet, which is why this is a ticket and not a page.",
+            "schoolz-scraper-silent", "schoolz: a scraper is unhealthy",
+            f"min by (scraper) (schoolz_scraper_healthy{sel()})", 1, op="lt", range_s=900,
+            tier="ticket", kind="cause", component="scraper", for_="15m",
+            summary="The {{ $labels.scraper }} scraper has failed its /health/deep check for 15 minutes",
+            description="The scheduler asks every scraper's /health/deep every 5 minutes (scraper_client."
+                        "check_health). Scans fall back to the next scraper, which is why this is a ticket "
+                        "and not a page.",
             dashboard="schoolz-scans",
         ),
         prom(
@@ -491,14 +493,15 @@ def rules() -> list:
             dashboard="schoolz-api",
         ),
         prom(
-            "schoolz-scraper-failing", "schoolz: scraper failing more than 30% of page loads",
-            'sum(rate(schoolz_scraper_page_load_seconds_count{service_name="schoolz-scraper", outcome="error"}[1h])) '
-            '/ clamp_min(sum(rate(schoolz_scraper_page_load_seconds_count{service_name="schoolz-scraper"}[1h])), 0.001)',
+            "schoolz-scraper-failing", "schoolz: a scraper failing more than 30% of calls",
+            f"sum by (scraper) (rate(schoolz_scraper_client_calls_total{sel(SCRAPER_UNAVAILABLE)}[1h])) "
+            f"/ clamp_min(sum by (scraper) (rate(schoolz_scraper_client_calls_total{sel()}[1h])), 0.001)",
             0.30,
             tier="info", kind="cause", component="scraper", for_="30m",
-            summary="{{ humanizePercentage $values.B.Value }} of scraper page loads are failing",
-            description="Either the scraper machine is unhealthy or many school sites are unreachable. "
-                        "Callers retry and fall back to the droplet, so the scans SLO says whether this hurt.",
+            summary="{{ humanizePercentage $values.B.Value }} of calls to the {{ $labels.scraper }} scraper are failing",
+            description="Counted by schoolz (scraper_client.py): an error the scraper caused (timeout, 5xx, "
+                        "refused connection), not a school site's own 404. Callers retry and fall back, so "
+                        "the scans SLO says whether this hurt.",
             dashboard="schoolz-scans",
         ),
         prom(

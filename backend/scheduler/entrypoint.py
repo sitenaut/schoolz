@@ -9,6 +9,7 @@ from sqlalchemy import select, text
 
 import observability
 import scheduler.jobs  # noqa: F401  (registers all job kinds via decorators)
+import scraper_client
 import telemetry
 from database import SessionLocal, engine
 from logging_config import setup_logging
@@ -172,6 +173,26 @@ async def _requested_runs_loop() -> None:
             pass
 
 
+SCRAPER_HEALTH_INTERVAL_SECONDS = 300
+
+
+async def _scraper_health_loop() -> None:
+    """Whether each scraper is up, measured from here every 5 minutes, so
+    an idle scraper that died is noticed before the next scan needs it."""
+    while not _stop_event.is_set():
+        try:
+            for role, healthy in (await scraper_client.check_health()).items():
+                observability.scraper_healthy.set(1 if healthy else 0, {"scraper": role})
+                if not healthy:
+                    logger.warning("scraper_unhealthy", extra={"scraper": role})
+        except Exception:
+            logger.exception("scraper_health_check_failed")
+        try:
+            await asyncio.wait_for(_stop_event.wait(), timeout=SCRAPER_HEALTH_INTERVAL_SECONDS)
+        except TimeoutError:
+            pass
+
+
 def _handle_stop_signal(*_args) -> None:
     _stop_event.set()
 
@@ -186,7 +207,7 @@ async def main() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, _handle_stop_signal)
 
-    await asyncio.gather(_reconcile_loop(aps_scheduler), _requested_runs_loop())
+    await asyncio.gather(_reconcile_loop(aps_scheduler), _requested_runs_loop(), _scraper_health_loop())
 
     logger.info("scheduler_stopping")
     aps_scheduler.shutdown(wait=False)

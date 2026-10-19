@@ -186,8 +186,8 @@
     },
     {
       "id": 5,
-      "title": "Scraper page loads by outcome",
-      "description": "Recorded by the scraper service itself (scraper/observability.py), which is the only place that can see the target host and outcome.",
+      "title": "Scraper calls by scraper and outcome",
+      "description": "Counted by schoolz per attempt (scraper_client.py). unavailable = the scraper's fault (retried, then the next scraper); refused = the target site's own answer.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -201,8 +201,8 @@
             "type": "prometheus",
             "uid": "${DS_METRICS}"
           },
-          "expr": "sum by (outcome) (rate(schoolz_scraper_page_load_seconds_count{service_name=\"schoolz-scraper\"}[30m]))",
-          "legendFormat": "{{outcome}}",
+          "expr": "sum by (scraper, outcome) (rate(schoolz_scraper_client_calls_total{service_namespace=\"schoolz\"}[30m]))",
+          "legendFormat": "{{scraper}} {{outcome}}",
           "range": true,
           "format": "time_series",
           "refId": "A"

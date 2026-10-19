@@ -3,8 +3,11 @@ import base64
 import html
 import os
 import re
+import time
 
 import httpx
+
+import observability
 
 SCRAPER_URL = os.getenv("SCRAPER_URL", "")
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY", "")
@@ -99,17 +102,37 @@ def _services() -> list[tuple[str, str]]:
     return [(u, k) for u, k in candidates if u and k]
 
 
+def _role(service_url: str) -> str:
+    """Which configured scraper a URL is: the metric label, never the host."""
+    base = service_url.rstrip("/")
+    for role, url in (("primary", SCRAPER_URL), ("fallback", _FALLBACK_URL), ("residential", _RESIDENTIAL_URL)):
+        if url and base == url.rstrip("/"):
+            return role
+    return "other"
+
+
+def _record_call(service_url: str, path: str, outcome: str, started: float) -> None:
+    attrs = {"scraper": _role(service_url), "endpoint": path, "outcome": outcome}
+    observability.scraper_calls_total.add(1, attrs)
+    observability.scraper_call_seconds.record(time.perf_counter() - started, attrs)
+
+
 async def _post_to(service_url: str, api_key: str, path: str, payload: dict, timeout_s: float) -> dict:
     last: Exception | None = None
     for attempt in range(_ATTEMPTS):
+        started = time.perf_counter()
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
                 response = await client.post(f"{service_url}{path}", headers={"X-API-Key": api_key}, json=payload)
                 response.raise_for_status()
-                return response.json()
+                data = response.json()
+            _record_call(service_url, path, "ok", started)
+            return data
         except Exception as exc:
             if not _is_retryable(exc):
+                _record_call(service_url, path, "refused", started)
                 raise
+            _record_call(service_url, path, "unavailable", started)
             last = exc
             if attempt < _ATTEMPTS - 1:
                 await asyncio.sleep(_BACKOFF_S * (attempt + 1))
@@ -273,3 +296,20 @@ async def fetch_raw_text_from_any(
                 text = viewer
             return {"status": int(status or 200), "content_type": content_type, "text": text, "service": host}
     raise ScraperRefused(f"no scraper got a usable answer for {url}: {'; '.join(seen)}")
+
+
+async def check_health() -> dict[str, bool]:
+    """{role: healthy} for every configured scraper: /health/deep (real
+    readiness in playwright-scraper) answering 200 within 10s. A scraper
+    without that route (404) is asked /health instead."""
+    results: dict[str, bool] = {}
+    async with httpx.AsyncClient(timeout=10) as client:
+        for service_url, _key in _services():
+            try:
+                response = await client.get(f"{service_url}/health/deep")
+                if response.status_code == 404:
+                    response = await client.get(f"{service_url}/health")
+                results[_role(service_url)] = response.status_code == 200
+            except httpx.HTTPError:
+                results[_role(service_url)] = False
+    return results

@@ -31,12 +31,26 @@ job_in_flight = _meter.create_up_down_counter(
     description="Jobs currently executing.",
 )
 
-# NOTE: there are deliberately no scraper instruments here. The scraper
-# service measures its own work at the source (schoolz.scraper.page_load /
-# schoolz.scraper.pages_open in scraper/observability.py), with the host and
-# outcome attributes that only it can see. A backend-side duplicate was
-# declared here originally and never recorded by anything - dashboards
-# should query the scraper service's own metrics instead.
+# Scrapers measured from this side (scraper_client.py), so the dashboards
+# and alerts work whichever scraper image runs behind each URL: the Fly
+# scraper, the droplet and the Pi all run playwright-scraper, which reports
+# to its own Grafana folder, not under schoolz. `scraper` is the role
+# (primary | fallback | residential), never a host or a target URL.
+scraper_calls_total = _meter.create_counter(
+    "schoolz.scraper_client.calls",
+    description="Calls to a scraper, per attempt, by scraper role, endpoint and outcome "
+                "(ok | unavailable: retryable, the scraper's fault | refused: the target's answer).",
+)
+scraper_call_seconds = _meter.create_histogram(
+    "schoolz.scraper_client.duration",
+    unit="s",
+    description="How long one scraper call took, by scraper role and outcome.",
+)
+scraper_healthy = _meter.create_gauge(
+    "schoolz.scraper.healthy",
+    description="1 if the scraper's /health/deep answered 200 at the scheduler's last check "
+                "(every 5 minutes), else 0. By scraper role.",
+)
 
 llm_calls_total = _meter.create_counter(
     "schoolz.llm.calls",

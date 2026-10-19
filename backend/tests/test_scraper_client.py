@@ -156,3 +156,59 @@ async def test_fetch_paginated_passes_block_assets(monkeypatch):
     await scraper_client.fetch_paginated("https://school.example/roster", ".next")
     assert received_payloads[1]["block_assets"] is False
 
+
+
+def _mock_http(monkeypatch, handler):
+    real = httpx.AsyncClient
+    monkeypatch.setattr(scraper_client.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+
+
+def _recorded_calls(monkeypatch):
+    calls = []
+    monkeypatch.setattr(scraper_client.observability.scraper_calls_total, "add", lambda n, attrs: calls.append(attrs))
+    monkeypatch.setattr(scraper_client.observability.scraper_call_seconds, "record", lambda v, attrs: None)
+    return calls
+
+
+async def test_each_attempt_is_counted_by_role_and_outcome(monkeypatch):
+    _set_services(monkeypatch, fallback=("https://droplet", "dkey"))
+    monkeypatch.setattr(scraper_client, "_BACKOFF_S", 0)
+    calls = _recorded_calls(monkeypatch)
+
+    def handler(request):
+        if request.url.host == "primary":
+            return httpx.Response(502)
+        return httpx.Response(200, json={"html": "<p>ok</p>"})
+
+    _mock_http(monkeypatch, handler)
+    assert (await scraper_client.fetch_html("https://school.example/"))["html"] == "<p>ok</p>"
+    assert [(c["scraper"], c["outcome"]) for c in calls] == (
+        [("primary", "unavailable")] * scraper_client._ATTEMPTS + [("fallback", "ok")]
+    )
+    assert {c["endpoint"] for c in calls} == {"/fetch-html"}
+
+
+async def test_a_targets_own_refusal_is_counted_as_refused(monkeypatch):
+    _set_services(monkeypatch)
+    calls = _recorded_calls(monkeypatch)
+    _mock_http(monkeypatch, lambda request: httpx.Response(422, json={"detail": "bad"}))
+    with pytest.raises(httpx.HTTPStatusError):
+        await scraper_client.fetch_html("https://school.example/")
+    assert [(c["scraper"], c["outcome"]) for c in calls] == [("primary", "refused")]
+
+
+async def test_check_health_asks_health_deep_and_falls_back_to_health(monkeypatch):
+    _set_services(monkeypatch, fallback=("https://droplet", "dkey"), residential=("https://pi", "rkey"))
+    asked = []
+
+    def handler(request):
+        asked.append(f"{request.url.host}{request.url.path}")
+        if request.url.host == "primary":  # an old scraper with no /health/deep
+            return httpx.Response(404 if request.url.path == "/health/deep" else 200)
+        if request.url.host == "pi":
+            raise httpx.ConnectError("down")
+        return httpx.Response(503 if request.url.path == "/health/deep" else 200)
+
+    _mock_http(monkeypatch, handler)
+    assert await scraper_client.check_health() == {"primary": True, "fallback": False, "residential": False}
+    assert asked == ["primary/health/deep", "primary/health", "droplet/health/deep", "pi/health/deep"]
