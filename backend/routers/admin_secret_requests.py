@@ -28,6 +28,7 @@ from auth import check_admin_mfa, get_current_user, hash_api_key, require_super_
 from database import get_db
 from models import ApiKey, SecretAccessRequest, User
 from routers.admin_api_keys import DEVICE_POLL_INTERVAL_S, _new_user_code, _normalize_user_code
+from services import audit
 from services.client_ip import client_ip
 
 router = APIRouter(prefix="/admin/secret-requests", tags=["admin-secret-requests"])
@@ -199,6 +200,7 @@ async def poll_secret_request(
     req.status = "collected"
     req.collected_at = now
     await db.commit()
+    audit.note(request, "secret.collected", secret_request_id=req.id, secret_names=",".join(req.secret_names or []))
     return SecretPollOut(status="approved", unlock_key=key, command=req.command, secret_names=list(req.secret_names or []))
 
 

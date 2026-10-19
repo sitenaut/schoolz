@@ -28,6 +28,13 @@ GET /admin/audit
   query detail?: boolean
   query district_id?: string | null
   -> 200: any
+GET /admin/audit-log
+  query action?: string | null
+  query actor_user_id?: string | null
+  query before_id?: integer | null
+  query limit?: integer
+  query outcome?: string | null
+  -> 200: AuditPage
 GET /admin/audit/data-points
   query audience?: string | null
   query district_id?: string | null
@@ -887,7 +894,9 @@ ApiKeyPatch { name?: string | null, permissions?: list[string] | null }
 ApproveIn { checklist: dict[boolean], note?: string | null, target_service_id?: string | null }
 AssistedIn { claimed_service_id?: string | null, contact_email?: string | null, contact_name?: string | null, contact_phone?: string | null, private_address?: string | null, submission?: Submission }
 AudienceConfig { escalation_model?: string | null, model?: string, provider?: string, reasoning_effort?: string | null }
+AuditEventOut { action: string, actor: string | null, actor_user_id: string | null, api_key_id: string | null, credential: string | null, id: integer, method: string | null, outcome: string, request_id: string | null, route: string | null, status: integer | null, target: object | null, ts: string(date-time) }
 AuditMatchedOut { classroom: ChildWorkItemOut | null, genesis: ChildGradeEntryOut | null, title: string }
+AuditPage { events: list[AuditEventOut], next_before_id: integer | null }
 BellPeriodEntry { end: string, name: string, start: string }
 BillzImportIn { text: string }
 BillzImportOut { created: list[ScheduledJobOut], skipped: list[BillzImportSkipOut] }

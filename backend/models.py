@@ -2633,3 +2633,33 @@ class ChatRateWindow(Base):
     ip_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True, index=True)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class AuditEvent(Base):
+    """Who did what to whom (services/audit.py): access, roles, keys, secret
+    approvals, connections, invites and account deletion.
+
+    Append-only: a database trigger refuses UPDATE and DELETE, so a bug or a
+    compromised process can't rewrite history. No foreign keys, so deleting
+    a user or key never deletes their history. Holds no secrets: targets are
+    ids and names, never tokens, keys or passwords. The address is a salted
+    one-way hash, like the survey's (the privacy page promises no raw IPs).
+    """
+
+    __tablename__ = "audit_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(64), nullable=False)
+    # success (2xx/3xx), denied (401/403), failed (anything else)
+    outcome: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    actor_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    # session, api_key, or None (unauthenticated: an OAuth callback, a device poll)
+    credential: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    api_key_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    method: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    route: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    target: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

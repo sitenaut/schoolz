@@ -1,10 +1,10 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
 import httpx
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from database import get_db
 from gmail_client import GMAIL_SCOPES, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, TOKEN_URI
 from models import GmailToken, OAuthState, User
 from oauth_redirect import resolve_redirect_uri
+from services import audit
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
@@ -40,7 +41,7 @@ async def auth_url(user: User = Depends(require_permission("email.manage")), db:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Google OAuth is not configured")
 
     redirect_uri = resolve_redirect_uri("/gmail/callback")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires_at = now + timedelta(minutes=_STATE_EXPIRY_MINUTES)
     nonce = secrets.token_urlsafe(32)
     await db.execute(delete(OAuthState).where(OAuthState.expires_at < now))
@@ -74,7 +75,9 @@ def _popup_response(message: str) -> HTMLResponse:
 
 
 @router.get("/callback")
-async def callback(code: str | None = None, state: str | None = None, db: AsyncSession = Depends(get_db)):
+async def callback(
+    request: Request, code: str | None = None, state: str | None = None, db: AsyncSession = Depends(get_db)
+):
     key = _state_key()
     if not code or not state or key is None:
         return _popup_response("gmail:error")
@@ -96,7 +99,7 @@ async def callback(code: str | None = None, state: str | None = None, db: AsyncS
         .where(
             OAuthState.nonce == payload["jti"],
             OAuthState.user_id == user_id,
-            OAuthState.expires_at >= datetime.now(timezone.utc),
+            OAuthState.expires_at >= datetime.now(UTC),
         )
         .returning(OAuthState.nonce)
     )
@@ -133,7 +136,7 @@ async def callback(code: str | None = None, state: str | None = None, db: AsyncS
             return _popup_response("gmail:error")
         google_email = userinfo_resp.json()["email"]
 
-    expiry = datetime.now(timezone.utc) + timedelta(seconds=tokens.get("expires_in", 3600))
+    expiry = datetime.now(UTC) + timedelta(seconds=tokens.get("expires_in", 3600))
 
     result = await db.execute(
         select(GmailToken).where(GmailToken.user_id == user_id, GmailToken.google_email == google_email)
@@ -160,6 +163,9 @@ async def callback(code: str | None = None, state: str | None = None, db: AsyncS
             )
         )
     await db.commit()
+    # The popup answers 200 either way, so the route's status can't say whether
+    # an inbox was connected; this does.
+    audit.note(request, "connection.connect", user_id=user_id, google_email=google_email)
     return _popup_response("gmail:connected")
 
 
