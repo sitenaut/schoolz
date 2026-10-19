@@ -7,6 +7,7 @@ line right before their own job title. A page naming no one (a nurse page
 that is only health forms) yields nothing rather than a guess.
 """
 
+import logging
 import re
 from urllib.parse import urljoin
 
@@ -14,6 +15,8 @@ from bs4 import BeautifulSoup
 
 import scraper_client
 from services.handtyped_directory import _clean, _name_like
+
+logger = logging.getLogger(__name__)
 
 _ROLE_LINK_RE = re.compile(r"\b(principal|nurse|counselor|counsellor)\b", re.I)
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
@@ -202,7 +205,11 @@ async def fetch_role_staff_scraped(base_url: str) -> list[dict]:
     for title, url in find_role_links(home["html"], base_url):
         if not re.search(r"nurse|health", title, re.I):
             continue
-        page = await scraper_client.fetch_html(url, block_assets=True)
+        try:
+            page = await scraper_client.fetch_html(url, block_assets=True)
+        except Exception:  # noqa: BLE001 - one dead nurse link (a broken certificate) must not fail the roster
+            logger.warning("role_page_unreachable", extra={"url": url})
+            continue
         person = parse_inline_page(page["html"], title)
         if not person:
             continue

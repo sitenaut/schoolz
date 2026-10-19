@@ -348,3 +348,27 @@ async def test_fetch_html_from_any_moves_past_a_bot_wall_page(monkeypatch):
     assert html == pages["http://r"] and asked == ["http://p", "http://f", "http://r"]
     with pytest.raises(scraper_client.ScraperRefused):
         await scraper_client.fetch_html_from_any("https://site/", accept=lambda h: False)
+
+
+def test_a_broken_certificate_is_not_retried():
+    """Every scraper fails a bad certificate the same way; retrying it cost
+    Beck's roster scan ~12 minutes and then the scan."""
+    req = httpx.Request("POST", "http://scraper/fetch-html")
+    resp = httpx.Response(502, request=req, text='{"detail":"net::ERR_CERT_COMMON_NAME_INVALID at https://www2.eboard.com/"}')
+    assert not _is_retryable(httpx.HTTPStatusError("bad gateway", request=req, response=resp))
+
+
+async def test_a_dead_nurse_link_does_not_fail_the_roster(monkeypatch):
+    from services import role_pages
+
+    home = '<a href="/nurse">Nurse</a><a href="https://broken.example/board">Nurse eBoard</a>'
+    nurse = "<main><p>School Nurse Jane Doe 856-555-0100</p></main>"
+
+    async def fake_fetch_html(url, **kw):
+        if "broken" in url:
+            raise RuntimeError("certificate")
+        return {"html": home if url.endswith("org/") else nurse}
+
+    monkeypatch.setattr(role_pages.scraper_client, "fetch_html", fake_fetch_html)
+    people = await role_pages.fetch_role_staff_scraped("https://school.example.org")
+    assert [p["full_name"] for p in people] == ["Jane Doe"]
