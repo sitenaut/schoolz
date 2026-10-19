@@ -1,26 +1,45 @@
+# schoolz's primary scraper: the shared playwright-scraper
+# (Profitnaut/playwright-scraper, the same service as the droplet and the Pi),
+# built at the commit in SOURCE_REF. Its code, API and RUNBOOK live in that
+# repo; schoolz keeps only this file and the pin. Deploy and roll back with
+# scripts/deploy-scraper.sh.
+#
+# No public IP on purpose: the backend reaches it over Fly's private network
+# (SCRAPER_URL = http://schoolz-scraper.internal:8765). SCRAPER_API_KEY is
+# still required, as defense in depth.
 app = "schoolz-scraper"
 primary_region = "ewr"
-
-# No [http_service]/public IP on purpose - this is only reachable from other
-# apps in the same Fly org over the private 6PN network
-# (http://schoolz-scraper.internal:8765), same pattern as billz's own
-# scraper. Keeps the Playwright/Chromium service off the public internet
-# entirely; SCRAPER_API_KEY is still required as defense in depth.
+# uvicorn waits up to 170 s for running renders before it exits.
+kill_timeout = 180
 
 [env]
-  # Without this the scraper's telemetry tags itself deployment.environment=local
-  # (scraper/telemetry.py's default), and prod data reads as a dev machine's.
   APP_ENV = "prod"
+  # 1 GB machines: one render at a time on each (two machines, so two at
+  # once), each held under 700 MB by the scraper's watchdog. The image's
+  # defaults (2 renders x 900 MB) are sized for the droplet's 1.5 GB box.
+  # Extra requests queue (MAX_QUEUE, 90 s) and then get a 503, which the
+  # backend treats as retryable and takes to the droplet.
+  MAX_CONCURRENCY = "1"
+  RENDER_MAX_RSS_MB = "700"
 
-[build]
+[processes]
+  # Listens dual-stack on "::": Fly's private network is IPv6-only, and its
+  # machine checks connect over IPv4. uvicorn's own `--host ::` gives an
+  # IPv6-only socket (asyncio sets IPV6_V6ONLY), so the socket is made here.
+  # The image's ENTRYPOINT (tini) still wraps this, so the janitor runs.
+  app = "python -c 'import socket, uvicorn; s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0); s.bind((\"::\", 8765)); uvicorn.Server(uvicorn.Config(\"app.main:app\", timeout_graceful_shutdown=170, server_header=False)).run(sockets=[s])'"
 
 [[vm]]
   size = "shared-cpu-1x"
   memory = "1024mb"
+  processes = ["app"]
 
 [[services]]
   internal_port = 8765
   protocol = "tcp"
+  processes = ["app"]
+  # Private traffic bypasses fly-proxy, so nothing would wake a stopped
+  # machine, and .internal only resolves started ones: never auto-stop.
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
@@ -29,11 +48,14 @@ primary_region = "ewr"
     port = 8765
 
 [checks]
+  # Real readiness: the canary renders a page every 5 minutes. A machine
+  # whose Chromium can't render fails this, which fails a deploy.
   [checks.browser_health]
     port = 8765
     type = "http"
+    method = "GET"
+    path = "/health/deep"
     interval = "30s"
-    timeout = "5s"
-    grace_period = "20s"
-    method = "get"
-    path = "/health"
+    timeout = "10s"
+    grace_period = "120s"
+    processes = ["app"]

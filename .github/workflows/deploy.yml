@@ -8,8 +8,8 @@ name: Deploy
 # step (backend/fly.toml, scripts/release.py), before any machine is replaced.
 # After each deploy a smoke check runs; if the deploy or the smoke check
 # fails, the image that was running before is put back (the schema is not).
-# By hand: Actions -> Deploy -> Run workflow (main only). The scraper is
-# deployed by hand only (target=scraper). drill=true proves the rollback:
+# By hand: Actions -> Deploy -> Run workflow (main only). The Fly scraper is
+# not deployed here: scripts/deploy-scraper.sh. drill=true proves the rollback:
 # the deploy goes out, the smoke check fails on purpose, and the rollback
 # must leave the previous image running.
 on:
@@ -22,7 +22,7 @@ on:
         required: true
         default: "both"
         type: choice
-        options: ["both", "backend", "frontend", "scraper"]
+        options: ["both", "backend", "frontend"]
       drill:
         description: "Rollback drill: deploy, then fail the smoke check on purpose so the image that was running is put back"
         type: boolean
@@ -249,15 +249,3 @@ jobs:
           done
           if [ "$now" != "${PREV##*@}" ]; then echo "::error::after the rollback $APP runs $now, expected ${PREV##*@}"; exit 1; fi
           echo "Rolled back: every machine runs ${PREV##*@}"
-
-  scraper:
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'scraper' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: prod
-    env:
-      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
-      - run: flyctl deploy --remote-only
-        working-directory: scraper

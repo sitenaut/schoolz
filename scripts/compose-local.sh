@@ -100,5 +100,11 @@ if [ "${SCHOOLZ_SKIP_BACKUP:-0}" != "1" ]; then
   esac
 fi
 
+# The scraper service builds from the shared playwright-scraper checkout.
+# Offline or without access to that repo, everything else still runs.
+if ! bash "$ROOT_DIR/scripts/scraper-source.sh" >/dev/null; then
+  echo "Warning: couldn't check out playwright-scraper (scripts/scraper-source.sh); the scraper service won't build." >&2
+fi
+
 cd "$ROOT_DIR"
 exec "${run_prefix[@]}" docker compose -f docker-compose.yml -f docker-compose.local.yml "$@"
