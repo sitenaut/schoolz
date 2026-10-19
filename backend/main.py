@@ -83,7 +83,7 @@ _DEFAULT_ALLOWED_ORIGINS = [
     "http://frontend:3000",
 ]
 _ALLOWED_ORIGIN_REGEX = r"^https://([a-zA-Z0-9-]+\.)*sitenaut\.com$|^http://localhost(:\d+)?$"
-_SKIP_LOG_PATHS = {"/health"}
+_SKIP_LOG_PATHS = {"/health", "/ready"}
 
 telemetry.setup_telemetry("schoolz-api")
 telemetry.instrument_sqlalchemy_engine(database.engine)
@@ -126,7 +126,7 @@ app = FastAPI(
     redoc_url="/redoc" if _api_docs else None,
     openapi_url="/openapi.json" if _api_docs else None,
 )
-FastAPIInstrumentor.instrument_app(app, excluded_urls="health")
+FastAPIInstrumentor.instrument_app(app, excluded_urls="/health$,/ready$")
 
 app.add_middleware(
     CORSMiddleware,
