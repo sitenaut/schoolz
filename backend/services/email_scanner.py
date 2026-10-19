@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,9 +20,17 @@ def build_gmail_query(scanner: EmailScanner) -> str:
     if scanner.raw_query:
         parts.append(scanner.raw_query)
     if scanner.lookback_days:
-        since = (datetime.now(timezone.utc) - timedelta(days=scanner.lookback_days)).strftime("%Y/%m/%d")
+        since = (datetime.now(UTC) - timedelta(days=scanner.lookback_days)).strftime("%Y/%m/%d")
         parts.append(f"after:{since}")
     return " ".join(parts)
+
+
+def _received_at(message: dict) -> datetime | None:
+    """Gmail's own arrival time (epoch ms), so no header has to be read."""
+    try:
+        return datetime.fromtimestamp(int(message["internalDate"]) / 1000, tz=UTC)
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 class ScannerNotReady(RuntimeError):
@@ -56,13 +64,12 @@ async def run_scanner(db: AsyncSession, scanner: EmailScanner) -> str:
 
     processed_ok = 0
     for message in messages:
-        headers = {h["name"].lower(): h["value"] for h in message.get("payload", {}).get("headers", [])}
+        # Only the id and when it arrived: never the sender, subject or
+        # Gmail's snippet of the body (services/email_links.py says why).
         match = EmailScannerMatch(
             scanner_id=scanner.id,
             message_id=message["id"],
-            sender=headers.get("from"),
-            subject=headers.get("subject"),
-            snippet=message.get("snippet"),
+            received_at=_received_at(message),
             processor_status="pending",
         )
         db.add(match)
@@ -77,11 +84,12 @@ async def run_scanner(db: AsyncSession, scanner: EmailScanner) -> str:
                 processed_ok += 1
         except Exception as exc:
             match.processor_status = "error"
-            match.processor_error = f"{type(exc).__name__}: {exc}"
+            # The type only: an exception's message can quote the email.
+            match.processor_error = type(exc).__name__
 
         await db.commit()
 
-    token.last_synced_at = datetime.now(timezone.utc)
+    token.last_synced_at = datetime.now(UTC)
     await db.commit()
 
     if processor.finalize and processed_ok:

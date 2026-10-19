@@ -1,15 +1,31 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import SmoreBlock, SmoreNewsletter
+from models import ScheduledJob, SmoreBlock, SmoreNewsletter
 from scheduler.errors import parse_warning
 from scheduler.registry import register_job
 from services.content_extractor import extract_from_newsletter
 from services.smore_parser import discover_current_issue_url, fetch_and_parse
+
+
+async def issue_scan_over(db: AsyncSession, newsletter: SmoreNewsletter, params: dict) -> str | None:
+    """A scan the email scanner made for one issue's link carries
+    `params["stop_after"]` (services/email_processors/school_email.py): past
+    that date no email has brought the link for weeks, so the issue is old
+    news and the scan switches its own job off rather than run weekly
+    forever. An email bringing the link again moves the date and turns the
+    job back on. Hand-made and archive-page scans have no date."""
+    stop_after = params.get("stop_after")
+    if not stop_after or date.fromisoformat(stop_after) >= datetime.now(UTC).date():
+        return None
+    job = await db.get(ScheduledJob, newsletter.scheduled_job_id) if newsletter.scheduled_job_id else None
+    if job is not None:
+        job.enabled = False
+    return f"finished: no email has brought this issue's link since before {stop_after}, so its scan is now off"
 
 
 def select_unseen_blocks(blocks: list[dict], existing_hashes: set[str]) -> list[dict]:
@@ -41,49 +57,10 @@ def select_unseen_blocks(blocks: list[dict], existing_hashes: set[str]) -> list[
     return unseen
 
 
-@register_job(
-    kind="smore.scan",
-    default_name="Smore newsletter scan",
-    default_cron="0 8 * * 1",  # Monday mornings - most of these are weekly
-    description="Fetches a Smore (or similar) newsletter URL and stores any content blocks not seen before.",
-    param_schema={"type": "object", "properties": {"newsletter_id": {"type": "string"}}, "required": ["newsletter_id"]},
-)
-async def run(db: AsyncSession, params: dict) -> str | None:
-    newsletter_id = params.get("newsletter_id")
-    if not newsletter_id:
-        return "no newsletter_id in params - nothing to do"
-
-    newsletter = (
-        await db.execute(select(SmoreNewsletter).where(SmoreNewsletter.id == newsletter_id))
-    ).scalar_one_or_none()
-    if not newsletter:
-        return f"newsletter {newsletter_id} no longer exists"
-
-    scan_url = newsletter.url
-    if newsletter.source_type == "smore_archive":
-        # newsletter.url is the school's own "newsletter archive" page,
-        # not an issue - resolve it to whichever issue is current *this*
-        # scan, since that's exactly the part that changes week to week.
-        scan_url = await discover_current_issue_url(newsletter.url)
-        if not scan_url:
-            newsletter.last_scanned_at = datetime.now(timezone.utc)
-            return f"WARNING[smore_archive_no_issues]: no dated Smore issue links found on {newsletter.url}"
-
-    blocks = await fetch_and_parse(scan_url)
-
-    if not blocks:
-        # A real newsletter always has at least one block - a Smore link
-        # that has expired (confirmed real: several Cherry Hill schools'
-        # "stable" URLs went stale mid-week while still reporting success)
-        # renders a different page entirely, with no .block-wrapper
-        # elements, rather than 404ing or timing out. That made an expired
-        # link indistinguishable from "no new content this week" - both
-        # produced status=success with nothing for anyone to notice. Zero
-        # blocks total (not just zero new ones) is the honest signal that
-        # the URL itself needs attention, not the newsletter's content.
-        newsletter.last_scanned_at = datetime.now(timezone.utc)
-        return f"WARNING[smore_no_blocks]: fetched 0 blocks from {scan_url} - link may be dead or expired"
-
+async def store_new_blocks(db: AsyncSession, newsletter: SmoreNewsletter, blocks: list[dict]) -> list[SmoreBlock]:
+    """Stores the parsed blocks this newsletter hasn't seen and returns the
+    rows this call inserted, for extraction. Shared by every newsletter scan
+    whose parser returns smore_parser's block shape (mailchimp_scan.py)."""
     existing_hashes = {
         row[0]
         for row in (
@@ -114,7 +91,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                             "link_url": block["link_url"],
                             "content_hash": block["content_hash"],
                             "pending_vision_extraction": block["block_type"] == "image",
-                            "first_seen_at": datetime.now(timezone.utc),
+                            "first_seen_at": datetime.now(UTC),
                         }
                         for block in unseen
                     ]
@@ -131,8 +108,66 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                     )
                 ).scalars()
             )
+    return new_blocks
 
-    newsletter.last_scanned_at = datetime.now(timezone.utc)
+
+@register_job(
+    kind="smore.scan",
+    default_name="Smore newsletter scan",
+    default_cron="0 8 * * 1",  # Monday mornings - most of these are weekly
+    description="Fetches a Smore (or similar) newsletter URL and stores any content blocks not seen before.",
+    param_schema={
+        "type": "object",
+        "properties": {
+            "newsletter_id": {"type": "string"},
+            # Set only on a scan the email scanner made for one issue: see issue_scan_over.
+            "stop_after": {"type": "string", "format": "date"},
+        },
+        "required": ["newsletter_id"],
+    },
+)
+async def run(db: AsyncSession, params: dict) -> str | None:
+    newsletter_id = params.get("newsletter_id")
+    if not newsletter_id:
+        return "no newsletter_id in params - nothing to do"
+
+    newsletter = (
+        await db.execute(select(SmoreNewsletter).where(SmoreNewsletter.id == newsletter_id))
+    ).scalar_one_or_none()
+    if not newsletter:
+        return f"newsletter {newsletter_id} no longer exists"
+    over = await issue_scan_over(db, newsletter, params)
+    if over:
+        return over
+
+    scan_url = newsletter.url
+    if newsletter.source_type == "smore_archive":
+        # newsletter.url is the school's own "newsletter archive" page,
+        # not an issue - resolve it to whichever issue is current *this*
+        # scan, since that's exactly the part that changes week to week.
+        scan_url = await discover_current_issue_url(newsletter.url)
+        if not scan_url:
+            newsletter.last_scanned_at = datetime.now(UTC)
+            return f"WARNING[smore_archive_no_issues]: no dated Smore issue links found on {newsletter.url}"
+
+    blocks = await fetch_and_parse(scan_url)
+
+    if not blocks:
+        # A real newsletter always has at least one block - a Smore link
+        # that has expired (confirmed real: several Cherry Hill schools'
+        # "stable" URLs went stale mid-week while still reporting success)
+        # renders a different page entirely, with no .block-wrapper
+        # elements, rather than 404ing or timing out. That made an expired
+        # link indistinguishable from "no new content this week" - both
+        # produced status=success with nothing for anyone to notice. Zero
+        # blocks total (not just zero new ones) is the honest signal that
+        # the URL itself needs attention, not the newsletter's content.
+        newsletter.last_scanned_at = datetime.now(UTC)
+        return f"WARNING[smore_no_blocks]: fetched 0 blocks from {scan_url} - link may be dead or expired"
+
+    new_blocks = await store_new_blocks(db, newsletter, blocks)
+
+    newsletter.last_scanned_at = datetime.now(UTC)
     summary = f"fetched {len(blocks)} block(s), {len(new_blocks)} new"
 
     if new_blocks:

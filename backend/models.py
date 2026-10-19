@@ -438,12 +438,18 @@ class EmailScanner(Base):
     school_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
     scheduled_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Which kinds of newsletter link it keeps (services/email_links.py
+    # LINK_KINDS). Links are all a scan keeps from a message (migration 0117).
+    link_kinds: Mapped[list[str]] = mapped_column(JSON, default=lambda: ["smore"], server_default='["smore"]', nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 class EmailScannerMatch(Base):
     """Idempotency/audit ledger: one row per Gmail message a scanner has
-    ever seen, so re-runs never reprocess the same message twice."""
+    ever seen, so re-runs never reprocess the same message twice. Since
+    0117 a scan writes only the message id, when it arrived and what came
+    of it; sender, subject and snippet are left empty (0118 blanked the
+    rows from before)."""
 
     __tablename__ = "email_scanner_matches"
     __table_args__ = (UniqueConstraint("scanner_id", "message_id", name="uq_email_scanner_matches_msg"),)
@@ -464,9 +470,11 @@ class EmailScannerMatch(Base):
 
 
 class SchoolEmailMessage(Base):
-    """The `school_email` purpose's artifact: captured message content for
-    review. Real structured extraction (this is an absence notice / this is
-    a newsletter link, etc.) is a follow-up pass once there's real data."""
+    """The `school_email` purpose's artifact: the newsletter links one
+    message held (services/email_links.py), written only when it held any.
+    Since 0117 nothing else from the message is kept - sender, subject and
+    body_text stay empty and no endpoint returns them (0118 blanked the
+    rows from before)."""
 
     __tablename__ = "school_email_messages"
 

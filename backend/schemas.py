@@ -161,6 +161,9 @@ class EmailScannerCreate(BaseModel):
     # deterministically attributed (and auto-scheduled) instead of landing
     # unlinked in the shared newsletter list.
     school_id: str | None = None
+    # Which newsletter links it keeps (services/email_links.py LINK_KINDS);
+    # nothing else from a message is kept.
+    link_kinds: list[str] = Field(default_factory=lambda: ["smore"], min_length=1, max_length=10)
     cron_expr: str = "0 7 * * *"
     timezone: str = "America/New_York"
     enabled: bool = True
@@ -174,6 +177,7 @@ class EmailScannerUpdate(BaseModel):
     raw_query: str | None = None
     lookback_days: int | None = Field(default=None, ge=1, le=365)
     school_id: str | None = None
+    link_kinds: list[str] | None = Field(default=None, min_length=1, max_length=10)
     cron_expr: str | None = None
     timezone: str | None = None
     enabled: bool | None = None
@@ -260,9 +264,15 @@ class EmailScannerOut(BaseModel):
     lookback_days: int
     purpose: str
     school_id: str | None
+    link_kinds: list[str]
     enabled: bool
     created_at: datetime
     scheduled_job: ScheduledJobOut | None = None
+
+
+class LinkKindOut(BaseModel):
+    key: str
+    label: str
 
 
 class JobRunOut(BaseModel):
@@ -1024,12 +1034,11 @@ class SmoreBlockOut(BaseModel):
 
 
 class SchoolEmailMessageOut(BaseModel):
+    """The links one scanned message held - all that is kept of it."""
+
     id: str
     scanner_id: str
-    sender: str | None
-    subject: str | None
     received_at: datetime | None
-    body_text: str | None
     newsletter_links: list[dict]
     created_at: datetime
 

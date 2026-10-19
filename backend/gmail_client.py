@@ -4,7 +4,7 @@ httplib2 (used internally by googleapiclient) is not safe to share across
 threads/event-loop callbacks."""
 
 import os
-from datetime import timezone
+from datetime import UTC
 
 import anyio
 from google.auth.transport.requests import Request as GoogleAuthRequest
@@ -48,7 +48,7 @@ async def get_gmail_service(db: AsyncSession, token: GmailToken):
         if creds.expired and creds.refresh_token:
             creds.refresh(GoogleAuthRequest())
             token.access_token = creds.token
-            token.token_expiry = creds.expiry.replace(tzinfo=timezone.utc) if creds.expiry else None
+            token.token_expiry = creds.expiry.replace(tzinfo=UTC) if creds.expiry else None
         return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
     return await anyio.to_thread.run_sync(_refresh_and_build)
@@ -76,29 +76,3 @@ def fetch_all_messages_sync(service, query: str, skip_ids: set[str], max_results
         if not page_token:
             break
     return messages
-
-
-def extract_header(message: dict, name: str) -> str | None:
-    headers = message.get("payload", {}).get("headers", [])
-    for h in headers:
-        if h.get("name", "").lower() == name.lower():
-            return h.get("value")
-    return None
-
-
-def extract_body_text(message: dict) -> str:
-    """Best-effort plain-text body extraction, falling back to the snippet."""
-    import base64
-
-    def _walk(part: dict) -> str | None:
-        if part.get("mimeType") == "text/plain" and part.get("body", {}).get("data"):
-            data = part["body"]["data"]
-            return base64.urlsafe_b64decode(data + "=" * (-len(data) % 4)).decode("utf-8", errors="replace")
-        for sub in part.get("parts", []) or []:
-            text = _walk(sub)
-            if text:
-                return text
-        return None
-
-    payload = message.get("payload", {})
-    return _walk(payload) or message.get("snippet", "")

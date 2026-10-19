@@ -7,12 +7,21 @@ from auth import require_permission
 from database import get_db
 from models import EmailScanner, GmailToken, ScheduledJob, User
 from scheduler.registry import registry as job_registry
-from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, ScheduledJobOut
+from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, LinkKindOut, ScheduledJobOut
+from services.email_links import LINK_KINDS
 
 # Admin-only for now (2026-09-11): connecting a Gmail account and scanning it
 # is a data-source management task, not part of the guardian personal layer.
 # Rows stay owner-scoped so two admins never see each other's inbox captures.
 router = APIRouter(prefix="/email-scanners", tags=["email-scanners"])
+
+
+def _link_kinds(kinds: list[str]) -> list[str]:
+    """Only kinds from the catalog: a scanner can't be widened to other links."""
+    unknown = sorted(set(kinds) - set(LINK_KINDS))
+    if unknown:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unknown link kind: {', '.join(unknown)}")
+    return [k for k in LINK_KINDS if k in kinds]
 
 
 def _validate_cron(cron_expr: str) -> None:
@@ -46,10 +55,16 @@ async def _to_out(db: AsyncSession, scanner: EmailScanner) -> EmailScannerOut:
         lookback_days=scanner.lookback_days,
         purpose=scanner.purpose,
         school_id=scanner.school_id,
+        link_kinds=list(scanner.link_kinds or []),
         enabled=scanner.enabled,
         created_at=scanner.created_at,
         scheduled_job=job,
     )
+
+
+@router.get("/link-kinds", response_model=list[LinkKindOut])
+async def link_kinds(_: User = Depends(require_permission("email.view"))):
+    return [LinkKindOut(key=k.key, label=k.label) for k in LINK_KINDS.values()]
 
 
 @router.get("", response_model=list[EmailScannerOut])
@@ -83,6 +98,7 @@ async def create_scanner(
         lookback_days=payload.lookback_days,
         purpose=payload.purpose,
         school_id=payload.school_id,
+        link_kinds=_link_kinds(payload.link_kinds),
     )
     db.add(scanner)
     await db.flush()
@@ -119,6 +135,8 @@ async def update_scanner(
         value = getattr(payload, field)
         if value is not None:
             setattr(scanner, field, value)
+    if payload.link_kinds is not None:
+        scanner.link_kinds = _link_kinds(payload.link_kinds)
 
     job = None
     if scanner.scheduled_job_id:

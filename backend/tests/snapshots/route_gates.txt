@@ -104,6 +104,7 @@ GET    /districts/{district_id}/transportation  public
 POST   /districts/{district_id}/transportation/run-now  perm:schools.manage
 GET    /email-scanners  perm:email.view
 POST   /email-scanners  perm:email.manage
+GET    /email-scanners/link-kinds  perm:email.view
 DELETE /email-scanners/{scanner_id}  perm:email.manage
 PATCH  /email-scanners/{scanner_id}  perm:email.manage
 POST   /email-scanners/{scanner_id}/run-now  perm:email.manage
