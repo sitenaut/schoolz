@@ -28,7 +28,7 @@ Seed through **Admin → Import/export** (`POST /admin/config/import`) with a JS
 
 ### Carrying scan results
 
-Step 4 pays for model extraction locally; a bare seed import makes prod pay again, because every new job's first run starts within ~30s. `scripts/seed-with-results.sh <target> <seed.json>` pulls `GET /admin/config/results?district=…` from local and sends it as `results` in the same import call (`services/config_results.py`). Prod's first runs still happen and prove prod can reach each source, but find nothing new to extract.
+Step 4 pays for model extraction locally; a bare seed import makes prod pay again, because every new job's first run starts within ~30s. `scripts/seed-with-results.sh <target> <seed.json>` reads the same export (`services/config_results.py:export_results`) from the local api container, so it needs no local API key (only the local stack up and a prod key), and sends it as `results` in the same import call. Prod's first runs still happen and prove prod can reach each source, but find nothing new to extract.
 
 - **Carried:** newsletter and Givebacks blocks with their items and translations, lunch-menu PDFs, district calendar PDF items, contact-page staff with `School.contact_page_hash`. Each of those scans is gated on that stored state. Scans with no model call are not carried.
 - **One call, not two.** Importing the seed first and results after loses the race with the first runs.
