@@ -74,6 +74,8 @@ class Completion:
     # Anthropic-shaped assistant content: {"type": "text"} / {"type": "tool_use"} blocks.
     content: list[dict[str, Any]]
     usage: Usage = field(default_factory=Usage)
+    # Anthropic's names: "max_tokens" means the reply was cut off.
+    stop_reason: str | None = None
 
 
 def _strip_private(blocks: Any) -> Any:
@@ -121,6 +123,7 @@ class AnthropicProvider:
                 cache_read_tokens=getattr(u, "cache_read_input_tokens", None) or 0,
                 cache_write_tokens=getattr(u, "cache_creation_input_tokens", None) or 0,
             ),
+            stop_reason=response.stop_reason,
         )
 
     async def list_models(self) -> list[str]:
@@ -277,7 +280,9 @@ class OpenAICompatibleProvider:
         if response.status_code >= 400:
             raise ProviderUnavailable(f"{self.name} returned {response.status_code}: {response.text[:500]}")
         data = response.json()
-        message = (data.get("choices") or [{}])[0].get("message") or {}
+        choice = (data.get("choices") or [{}])[0]
+        message = choice.get("message") or {}
+        finish = choice.get("finish_reason")
         u = data.get("usage") or {}
         cached = ((u.get("prompt_tokens_details") or {}).get("cached_tokens")) or 0
         return Completion(
@@ -288,6 +293,7 @@ class OpenAICompatibleProvider:
                 output_tokens=u.get("completion_tokens") or 0,
                 cache_read_tokens=cached,
             ),
+            stop_reason="max_tokens" if finish == "length" else finish,
         )
 
     async def list_models(self) -> list[str]:
