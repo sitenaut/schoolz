@@ -90,8 +90,8 @@ scan SLO. `schoolz-job-failing` reads the database instead and has no such gap.
 ## Alerts
 
 ### schoolz-site-unreachable
-A Synthetic Monitoring check (`schoolz-web` on the site root, `schoolz-api` on a
-public GET that reads the database) is failing from every probe location. First
+A Synthetic Monitoring check (`schoolz-web` on the site root, `schoolz-api` on
+`/ready`, which answers only when the database does) is failing from every probe location. First
 question: are the app's own alerts quiet? If `schoolz-api-down` and the
 availability SLO are fine, requests aren't reaching the app - check DNS, the
 certificate (`fly certs show`) and Fly's status page. If they're firing too,
@@ -99,7 +99,8 @@ this is the same outage seen from outside; work that one.
 
 The checks live only in the Grafana UI (Testing & synthetics); the rule matches
 their job names, so renaming one unwatches it - `schoolz-probe-silent` exists
-to say so.
+to say so. Keep the API check's timeout above `/ready`'s 2 s database wait, or a
+slow database reads as a timeout instead of a 503.
 
 The API has two health endpoints. `/health` is liveness: it never touches the
 database, and Fly's machine check uses it, so a deploy whose machine doesn't
