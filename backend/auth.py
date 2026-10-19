@@ -21,6 +21,7 @@ from database import SessionLocal, get_db
 from models import ApiKey, RolePermission, User, UserRole
 from permissions import PERMISSION_KEYS, expand
 from request_context import CodedHTTPException
+from services import audit
 
 logger = logging.getLogger(__name__)
 
@@ -305,6 +306,7 @@ async def get_current_user(
         # "aal2" once the session has passed a second factor (SZ-18). The
         # /auth/v1/user fallback doesn't say, which reads as not passed.
         request.state.aal = claims.get("aal")
+        await audit.session_seen(request, claims.get("session_id"), claims.get("aal"))
     else:
         user_id = _decode_local_token(token)
         result = await db.execute(select(User).where(User.id == user_id))

@@ -27,6 +27,7 @@ export const ADMIN_TABS: { to: string; label: string; permission: string | null 
   { to: "/admin/users", label: "Users & roles", permission: null },
   { to: "/admin/api-keys", label: "API keys", permission: null },
   { to: "/admin/secret-requests", label: "Secret access", permission: null },
+  { to: "/admin/audit-log", label: "Audit log", permission: null },
 ];
 
 /** null permission = super admin only. */

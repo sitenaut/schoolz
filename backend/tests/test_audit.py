@@ -133,3 +133,28 @@ async def test_only_super_admins_read_the_log():
     assert body["events"][0]["action"] == "role.create"
     assert body["events"][0]["actor"].startswith("audreader_")
     assert "ip_hash" not in body["events"][0]
+
+
+async def test_a_supabase_session_is_recorded_once_and_mfa_when_it_arrives(monkeypatch):
+    import auth
+
+    monkeypatch.setattr(auth, "AUTH_MODE", "supabase")
+    monkeypatch.setattr(audit, "_seen_sessions", audit.OrderedDict())
+    sub = f"sb-{uuid.uuid4().hex[:8]}"
+    session_id = str(uuid.uuid4())
+
+    async def verify(token):
+        return {"sub": sub, "email": f"{sub}@example.com", "session_id": session_id, "aal": token}
+
+    monkeypatch.setattr(auth, "_verify_supabase_token", verify)
+    async with _client() as client:
+        for aal in ("aal1", "aal1", "aal2", "aal2"):
+            assert (await client.get("/auth/me", headers={"authorization": f"Bearer {aal}"})).status_code == 200
+        # A restart forgets what this process saw; the table still knows.
+        audit._seen_sessions.clear()
+        assert (await client.get("/auth/me", headers={"authorization": "Bearer aal2"})).status_code == 200
+
+    sign_ins = [e for e in await _events("auth.sign_in") if e.target.get("session_id") == session_id]
+    mfa = [e for e in await _events("auth.mfa_passed") if e.target.get("session_id") == session_id]
+    assert len(sign_ins) == 1 and len(mfa) == 1
+    assert sign_ins[0].actor_user_id and sign_ins[0].credential == "session"
