@@ -10,7 +10,7 @@ from sqlalchemy import update
 
 import database
 from main import app
-from models import User
+from models import School, User
 
 
 async def _admin_headers(client: AsyncClient) -> dict[str, str]:
@@ -75,6 +75,30 @@ async def test_untracked_path_is_ignored_not_stored():
         headers = await _admin_headers(client)
         report = (await client.get("/page-views", headers=headers)).json()
     assert "/admin/secrets" not in report["totals_by_path"]
+
+
+@pytest.mark.anyio
+async def test_school_page_counted_per_school_by_slug():
+    tag = uuid.uuid4().hex[:10]
+    async with database.SessionLocal() as db:
+        school = School(name=f"Visit Test {tag}", slug=f"visit-test-{tag}")
+        db.add(school)
+        await db.commit()
+        school_id = school.id
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # By slug and by id both land on the slug's row.
+        await client.post("/page-views", json={"path": f"/schools/visit-test-{tag}", "source": "direct"})
+        await client.post("/page-views", json={"path": f"/schools/{school_id}", "source": "direct"})
+        await client.post("/page-views", json={"path": f"/schools/no-such-school-{tag}", "source": "direct"})
+        await client.post("/page-views", json={"path": "/local", "source": "direct"})
+        headers = await _admin_headers(client)
+        report = (await client.get("/page-views", headers=headers)).json()
+
+    assert report["totals_by_path"][f"/schools/visit-test-{tag}"] == 2
+    assert f"/schools/{school_id}" not in report["totals_by_path"]
+    assert f"/schools/no-such-school-{tag}" not in report["totals_by_path"]
+    assert "/local" in report["totals_by_path"]
 
 
 @pytest.mark.anyio
