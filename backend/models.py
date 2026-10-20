@@ -425,6 +425,28 @@ class SchedulerHeartbeat(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class LlmUsage(Base):
+    """One Claude (or other model) call's token counts, written by
+    services/llm_ledger.py from observability.record_llm_call. It is what the
+    daily cost report prices: per purpose and model, which Anthropic's bill
+    can't break down. Only calls that returned a reply are here - a call that
+    timed out is billed but has no usage to record. No school, user or child
+    data: purpose and model only. Kept 90 days."""
+
+    __tablename__ = "llm_usage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+    purpose: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    service: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    stop_reason: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cache_read_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cache_write_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
 class EmailScanner(Base):
     """One configured recurring Gmail search: filters + a `purpose` telling
     the processor registry how to handle each new matched message. Paired
