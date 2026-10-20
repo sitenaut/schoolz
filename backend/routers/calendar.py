@@ -1,8 +1,8 @@
 import os
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import TypeAdapter
 from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,6 +87,35 @@ _CACHE = SingleFlightTTLCache(ttl_s=float(os.getenv("CALENDAR_CACHE_TTL_S", "120
 _ITEMS_ADAPTER = TypeAdapter(list[SchoolContentItemOut])
 
 
+# A request with no dates used to load every item ever stored (all schools,
+# years of district feeds) and OOM-killed the API machine - anonymous, so any
+# curl could do it. A missing bound gets a default; an explicit range wider
+# than _MAX_SPAN is refused. The year view (365 days) is the widest real one.
+_MAX_SPAN = timedelta(days=400)
+_DEFAULT_LOOKBACK = timedelta(days=30)
+# A text search stays unbounded forward (the chatbot finds "graduation"
+# wherever it falls) but looks back no further than this.
+_SEARCH_LOOKBACK = timedelta(days=400)
+# Backstop on a search's rows, the one request a date range doesn't bound
+# (q="e" matched 46k items).
+_MAX_SEARCH_ROWS = 20000
+
+
+def _bounded_range(start: datetime | None, end: datetime | None, q: str | None) -> tuple[datetime, datetime | None]:
+    now = datetime.now(UTC)
+    start = start.replace(tzinfo=UTC) if start and start.tzinfo is None else start
+    end = end.replace(tzinfo=UTC) if end and end.tzinfo is None else end
+    if q:
+        return start or now - _SEARCH_LOOKBACK, end
+    if start is None:
+        start = (end or now) - _DEFAULT_LOOKBACK
+    if end is None:
+        end = start + _MAX_SPAN
+    if end - start > _MAX_SPAN:
+        raise HTTPException(status_code=422, detail=f"start..end may span at most {_MAX_SPAN.days} days")
+    return start, end
+
+
 def _cache_key(request: Request, lang: str) -> tuple:
     # Order-insensitive, so ?a=1&b=2 and ?b=2&a=1 share one entry.
     return (lang, tuple(sorted(parse_qsl(request.url.query, keep_blank_values=True))))
@@ -107,6 +136,7 @@ async def list_calendar_items(
     db: AsyncSession = Depends(get_db),
     lang: str = Depends(request_lang),
 ):
+    start, end = _bounded_range(start, end, q)
     args = dict(
         start=start,
         end=end,
@@ -247,6 +277,8 @@ async def _list_calendar_items(
         query = query.where(SchoolContentItem.start_date <= end)
 
     query = query.order_by(SchoolContentItem.start_date)
+    if q:
+        query = query.limit(_MAX_SEARCH_ROWS)
     items = (await db.execute(query)).scalars().all()
     if filter_by_type:
         items = [i for i in items if _applies_to_types(i, relevant_types)]
