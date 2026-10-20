@@ -6,8 +6,11 @@ MeterProvider is registered, then the SDK swaps the implementation under it.
 Keep attributes low-cardinality: no ids, slugs, or URLs (those belong in
 spans/logs, not metrics). See docs/OBSERVABILITY_PLAN.md Phase 2e.
 """
+import logging
+
 from opentelemetry import metrics
 
+logger = logging.getLogger(__name__)
 _meter = metrics.get_meter("schoolz")
 
 _DURATION_BUCKETS = (1, 5, 15, 30, 60, 120, 300, 600, 1200, 1800)
@@ -122,6 +125,13 @@ def record_llm_call(purpose: str, model: str, response, duration_s: float) -> No
     llm_duration_seconds.record(duration_s, attrs)
 
     usage = getattr(response, "usage", None)
+    try:
+        # Imported here: the ledger needs the database, which imports this module.
+        from services import llm_ledger
+
+        llm_ledger.note(purpose, model, usage, getattr(response, "stop_reason", None))
+    except Exception:  # noqa: BLE001 - the cost report never breaks a model call
+        logger.warning("llm_ledger_note_failed", exc_info=True)
     if usage is None:
         return
     for direction, value in (

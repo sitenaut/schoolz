@@ -12,6 +12,7 @@ from . import (
     hs_announcements_scan,  # noqa: F401
     hs_class_calendar_scan,  # noqa: F401
     hs_rotation_scan,  # noqa: F401
+    llm_cost_report,  # noqa: F401
     local_events_refresh,  # noqa: F401
     lunch_menu_scan,  # noqa: F401
     mailchimp_scan,  # noqa: F401
