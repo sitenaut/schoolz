@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 
@@ -147,6 +148,33 @@ async def test_model_failure_serves_english_and_backs_off(monkeypatch):
         assert (row["title"], row["description"], row["translated"], row["title_original"]) == ("Picture Day", "Bring the form.", False, None)
         await _content(client, slug, ES)
         assert len(attempts) == 1  # cooldown: an outage isn't retried on every page load
+
+
+@pytest.mark.anyio
+async def test_backfill_sends_small_chunks_a_few_at_a_time(monkeypatch):
+    # 40-item chunks ran past the timeout and were billed without being kept.
+    sizes, in_flight, peak = [], [0], [0]
+
+    async def fake(payload, lang):
+        sizes.append(len(payload))
+        in_flight[0] += 1
+        peak[0] = max(peak[0], in_flight[0])
+        await asyncio.sleep(0.01)
+        in_flight[0] -= 1
+        return {row["n"]: ("ES: " + row["title"], None) for row in payload}
+
+    monkeypatch.setattr(ct, "_call_model", fake)
+    run = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        school = School(name=f"Chunks {run}", slug=f"chunks-{run}", school_type="elementary")
+        db.add(school)
+        await db.flush()
+        for n in range(57):
+            db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title=f"Event {n}", start_date=FUTURE + timedelta(hours=n), is_all_day=False, is_current=True))
+        await db.commit()
+        assert await ct.translate_school_content(db, school.id, "es") == 57
+    assert max(sizes) <= ct.CHUNK_SIZE and sum(sizes) == 57
+    assert peak[0] <= ct._CONCURRENCY
 
 
 @pytest.mark.anyio
