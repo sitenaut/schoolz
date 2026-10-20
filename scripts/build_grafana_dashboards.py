@@ -477,6 +477,8 @@ def ops() -> dict:
 PLAN_PRICE_USD = 100
 MODEL_PRICES = {
     "claude-haiku-4-5.*": (1.00, 5.00, 1.25, 0.10),
+    # Prompts up to 100K tokens; every schoolz call is far below that.
+    "claude-haiku-5-5.*": (0.10, 0.50, 0.125, 0.01),
     "claude-sonnet-5.*": (2.00, 10.00, 2.50, 0.20),
     "claude-opus-5-5.*": (4.00, 20.00, 5.00, 0.20),
     "claude-opus-5|claude-opus-5-20.*": (5.00, 25.00, 6.25, 0.50),
@@ -536,7 +538,8 @@ def loki_instant(expr: str) -> dict:
 # Substring of a model id -> the same four prices, for the per-key estimate,
 # which is computed inside the query (JSONata) because the cost report cannot
 # be grouped by key. Order matters: "opus-5-5" must be tried before "opus-5".
-BILLING_PRICES = (("haiku-4-5", MODEL_PRICES["claude-haiku-4-5.*"]), ("sonnet-5", MODEL_PRICES["claude-sonnet-5.*"]),
+BILLING_PRICES = (("haiku-4-5", MODEL_PRICES["claude-haiku-4-5.*"]), ("haiku-5-5", MODEL_PRICES["claude-haiku-5-5.*"]),
+                  ("sonnet-5", MODEL_PRICES["claude-sonnet-5.*"]),
                   ("opus-5-5", MODEL_PRICES["claude-opus-5-5.*"]),
                   ("opus-5", MODEL_PRICES["claude-opus-5|claude-opus-5-20.*"]),
                   ("fable-5", MODEL_PRICES["claude-fable-5.*"]))

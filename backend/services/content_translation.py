@@ -35,7 +35,11 @@ from services import i18n_strings
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-haiku-4-5-20251001"
+# Haiku 5.5 is a tenth of Haiku 4.5's per-token price, and in a side-by-side on
+# 40 real items x 4 languages it lost none, where 4.5 returned two whole zh
+# chunks empty. It takes no temperature, and thinking is off at low effort so
+# no output is spent on reasoning a translation doesn't need.
+MODEL = "claude-haiku-5-5"
 # Small enough that a chunk finishes well inside _TIMEOUT_S. At 40 items a
 # zh/ko/hi chunk regularly ran past it, and a timed-out call is still billed
 # but never metered (record_llm_call needs the response) - then the next page
@@ -86,7 +90,9 @@ Rules:
 
 _TOOL = {
     "name": "record_translations",
-    "description": "Record the translation of each item.",
+    # Haiku 5.5 translated only the titles until the tool said a description
+    # is required whenever the input has one (102 of 112 dropped, then 2).
+    "description": "Record the translation of every input item: its title, and its description whenever the input item has one.",
     "input_schema": {
         "type": "object",
         # `items` first: a long reply that hits max_tokens keeps every item
@@ -99,7 +105,10 @@ _TOOL = {
                     "properties": {
                         "n": {"type": "integer", "description": "The item's number from the input."},
                         "title": {"type": "string"},
-                        "description": {"type": "string"},
+                        "description": {
+                            "type": "string",
+                            "description": "The translated description, in full. Required whenever the input item has a description; omit it only when the input has none.",
+                        },
                     },
                     "required": ["n", "title"],
                 },
@@ -154,7 +163,8 @@ async def _call_model(payload: list[dict], lang: str, guidance: str = "") -> dic
     response = await client.messages.create(
         model=MODEL,
         max_tokens=8192,
-        extra_body={"temperature": 0},
+        thinking={"type": "disabled"},
+        extra_body={"output_config": {"effort": "low"}},
         system=_SYSTEM.format(language=LANGUAGE_NAMES[lang], register=_REGISTER[lang]) + (f"\n- {guidance}" if guidance else ""),
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_translations"},
