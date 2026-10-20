@@ -155,8 +155,9 @@ export function AppShell() {
       ...(schoolMatch ? { school_slug: schoolMatch[1] } : {}),
     });
     // Server-side counterpart to the RUM event above: RUM is the richer
-    // signal, this is the one that still works behind an ad blocker.
-    countVisit(route);
+    // signal, this is the one that still works behind an ad blocker. A
+    // school page is counted per school (the backend checks the slug).
+    countVisit(schoolMatch ? pathname : route);
     fromRouteRef.current = route;
   }, [pathname]);
 

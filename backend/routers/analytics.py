@@ -5,13 +5,13 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_permission
 from database import get_db
-from models import CommunitySubmission, PageVisit, SurveyResponse, User
+from models import CommunitySubmission, PageVisit, School, SurveyResponse, User
 
 router = APIRouter(prefix="/page-views", tags=["analytics"])
 
@@ -20,7 +20,26 @@ _SCHOOL_TZ = ZoneInfo("America/New_York")
 # Only the public pages worth measuring. An allowlist rather than "record
 # whatever the client sends" keeps the table bounded and stops it being
 # turned into a scratchpad by anyone who finds the endpoint.
-_TRACKED_PATHS = {"/", "/chcomms", "/survey", "/schools", "/calendar", "/lunch", "/contact", "/start", "/privacy"}
+_TRACKED_PATHS = {
+    "/", "/chcomms", "/survey", "/schools", "/calendar", "/lunch", "/contact", "/start", "/privacy", "/local", "/directory",
+}
+# A school's own page is counted per school, but only for a school that
+# exists: the slug is looked up and the row keyed on it, so the table stays
+# bounded by the number of tracked schools whatever a client sends.
+_SCHOOL_PAGE_RE = re.compile(r"^/schools/([^/]{1,100})$")
+
+
+async def _tracked_path(path: str, db: AsyncSession) -> str | None:
+    if path in _TRACKED_PATHS:
+        return path
+    match = _SCHOOL_PAGE_RE.match(path)
+    if not match:
+        return None
+    key = match.group(1)
+    slug = (
+        await db.execute(select(School.slug).where(or_(School.slug == key, School.id == key)))
+    ).scalar_one_or_none()
+    return f"/schools/{slug}" if slug else None
 
 _SOURCE_RE = re.compile(r"^[a-z0-9][a-z0-9.\-]{0,39}$")
 
@@ -49,7 +68,8 @@ async def record_page_view(payload: PageViewIn, db: AsyncSession = Depends(get_d
     """Public, unauthenticated, and intentionally boring: it increments one
     counter and returns nothing. Nothing identifying is accepted or stored -
     see the PageVisit model docstring."""
-    if payload.path not in _TRACKED_PATHS:
+    path = await _tracked_path(payload.path, db)
+    if path is None:
         # Not an error worth surfacing to a browser beacon - just ignore it.
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -57,7 +77,7 @@ async def record_page_view(payload: PageViewIn, db: AsyncSession = Depends(get_d
     source = _clean_source(payload.source)
     statement = (
         pg_insert(PageVisit)
-        .values(id=str(uuid.uuid4()), day=day, path=payload.path, source=source, count=1)
+        .values(id=str(uuid.uuid4()), day=day, path=path, source=source, count=1)
         .on_conflict_do_update(
             constraint="uq_page_visits_day_path_source",
             set_={"count": PageVisit.__table__.c.count + 1, "updated_at": datetime.now(_SCHOOL_TZ)},
