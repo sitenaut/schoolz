@@ -686,7 +686,8 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     ) -> Any:
         """Search dated calendar items (events/deadlines/initiatives/marking
         periods) across schools and districts. Entirely public data - called
-        with no filters at all, it returns everything tracked system-wide.
+        with no filters at all, it returns everything tracked system-wide
+        from 30 days ago to about a year ahead (a range may span at most 400 days).
         "The district calendar" in a question means all of this - district
         and school items together - not just district-wide ones.
 
@@ -694,7 +695,8 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         school_id: narrow to one school (id or slug).
         school_ids: comma-separated ids/slugs to narrow to several schools at once.
         category: one of event, deadline, initiative, marking_period.
-        q: free-text search across title/description, unbounded by date -
+        q: free-text search across title/description, unbounded by date ahead
+           and up to 400 days back -
            useful for finding something like "graduation" regardless of when
            start/end would otherwise cut the search off.
         Each item's day_effect says whether it changes the school day (no

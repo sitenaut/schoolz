@@ -73,3 +73,41 @@ async def test_school_id_accepts_a_slug_as_well_as_an_id():
     assert [i["title"] for i in by_slug.json()] == ["SLUGTEST Early Dismissal"]
     assert by_id.json() == by_slug.json()
     assert unknown.json() == []
+
+
+@pytest.mark.anyio
+async def test_a_request_with_no_dates_is_bounded_and_a_huge_range_is_refused():
+    # No dates used to load every item ever stored and OOM-kill the API.
+    from datetime import timedelta
+
+    now = datetime.now(UTC)
+    async with database.SessionLocal() as db:
+        district = District(name="Bounds Test District")
+        db.add(district)
+        await db.flush()
+        db.add(School(name="Bounds Test High", slug="bounds-test-high", school_type="high", district_id=district.id))
+        common = dict(scope="district", district_id=district.id, category="event", is_current=True, source="ics_feed", is_all_day=False)
+        db.add_all(
+            [
+                SchoolContentItem(title="BOUNDS old", start_date=now - timedelta(days=500), **common),
+                SchoolContentItem(title="BOUNDS soon", start_date=now + timedelta(days=5), **common),
+                SchoolContentItem(title="BOUNDS far", start_date=now + timedelta(days=700), **common),
+            ]
+        )
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        plain = await client.get("/calendar", params={"school_ids": "bounds-test-high"})
+        assert plain.status_code == 200, plain.text
+        titles = {i["title"] for i in plain.json() if i["title"].startswith("BOUNDS")}
+        assert titles == {"BOUNDS soon"}
+
+        # A search reaches far ahead but not years back.
+        found = await client.get("/calendar", params={"q": "BOUNDS", "school_ids": "bounds-test-high"})
+        assert {i["title"] for i in found.json()} == {"BOUNDS soon", "BOUNDS far"}
+
+        wide = await client.get("/calendar", params={"start": "2020-01-01T00:00:00Z", "end": "2026-12-31T00:00:00Z"})
+        assert wide.status_code == 422
+
+        year = await client.get("/calendar", params={"start": "2026-01-01T05:00:00Z", "end": "2026-12-31T23:59:59Z"})
+        assert year.status_code == 200
