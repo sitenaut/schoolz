@@ -36,9 +36,16 @@ from services import i18n_strings
 logger = logging.getLogger(__name__)
 
 MODEL = "claude-haiku-4-5-20251001"
-CHUNK_SIZE = 40
-# One request never translates more than this many missing items (two
-# concurrent chunks): a cold /calendar can hold hundreds, and a parent
+# Small enough that a chunk finishes well inside _TIMEOUT_S. At 40 items a
+# zh/ko/hi chunk regularly ran past it, and a timed-out call is still billed
+# but never metered (record_llm_call needs the response) - then the next page
+# load sent the same chunk and timed out again. That was about half the bill.
+CHUNK_SIZE = 10
+# At most this many chunk calls in flight per translate_items(), so a backfill
+# (limit=None, hundreds of items) doesn't fire them all at once.
+_CONCURRENCY = 4
+# One request never translates more than this many missing items: a cold
+# /calendar can hold hundreds, and a parent
 # shouldn't wait on all of them. The rest are served in English and picked up
 # by the next request - or by translate_school_content() in one go.
 MAX_ITEMS_PER_REQUEST = 80
@@ -140,7 +147,9 @@ async def _call_model(payload: list[dict], lang: str, guidance: str = "") -> dic
     key = os.getenv("ANTHROPIC_API_KEY", "")
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY is not configured")
-    client = AsyncAnthropic(api_key=key, timeout=_TIMEOUT_S, max_retries=1)
+    # No SDK retry: a retried timeout is a second billed call for the same
+    # chunk, and the next request (or backfill pass) retries anyway.
+    client = AsyncAnthropic(api_key=key, timeout=_TIMEOUT_S, max_retries=0)
     started = time.perf_counter()
     response = await client.messages.create(
         model=MODEL,
@@ -267,7 +276,13 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
         try:
             chunks = [[(i.id, i.title, i.description) for i in mine[k : k + CHUNK_SIZE]] for k in range(0, len(mine), CHUNK_SIZE)]
             hashes = {i.id: source_hash(i.title, i.description) for i in mine}
-            results = await asyncio.gather(*[_translate_chunk(c, lang) for c in chunks], return_exceptions=True)
+            sem = asyncio.Semaphore(_CONCURRENCY)
+
+            async def bounded(chunk):
+                async with sem:
+                    return await _translate_chunk(chunk, lang)
+
+            results = await asyncio.gather(*[bounded(c) for c in chunks], return_exceptions=True)
             rows = []
             for chunk, result in zip(chunks, results, strict=True):
                 if isinstance(result, BaseException):
