@@ -38,6 +38,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import observability
 from models import School, SchoolContentItem
 from scheduler.errors import record_parse_issue
+from services import haiku
 from services.class_years import current_grad_years
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
 from services.tool_output import object_list, recover_spilled_input
@@ -215,7 +216,7 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
         response = await client_ai.messages.create(
             model=MODEL,
             max_tokens=4096,
-            extra_body={"temperature": 0},
+            **haiku.CALL_KWARGS,
             system=system_prompt,
             tools=[_EXTRACTION_TOOL],
             tool_choice={"type": "tool", "name": "record_announcements_block"},

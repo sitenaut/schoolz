@@ -31,15 +31,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
 from models import ContentTranslation, School, SchoolContentItem
-from services import i18n_strings
+from services import haiku, i18n_strings
 
 logger = logging.getLogger(__name__)
 
-# Haiku 5.5 is a tenth of Haiku 4.5's per-token price, and in a side-by-side on
-# 40 real items x 4 languages it lost none, where 4.5 returned two whole zh
-# chunks empty. It takes no temperature, and thinking is off at low effort so
-# no output is spent on reasoning a translation doesn't need.
-MODEL = "claude-haiku-5-5"
+MODEL = haiku.MODEL
 # Small enough that a chunk finishes well inside _TIMEOUT_S. At 40 items a
 # zh/ko/hi chunk regularly ran past it, and a timed-out call is still billed
 # but never metered (record_llm_call needs the response) - then the next page
@@ -163,8 +159,7 @@ async def _call_model(payload: list[dict], lang: str, guidance: str = "") -> dic
     response = await client.messages.create(
         model=MODEL,
         max_tokens=8192,
-        thinking={"type": "disabled"},
-        extra_body={"output_config": {"effort": "low"}},
+        **haiku.CALL_KWARGS,
         system=_SYSTEM.format(language=LANGUAGE_NAMES[lang], register=_REGISTER[lang]) + (f"\n- {guidance}" if guidance else ""),
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_translations"},

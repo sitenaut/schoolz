@@ -20,10 +20,11 @@ from bs4 import BeautifulSoup
 
 import observability
 import scraper_client
+from services import haiku
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = haiku.MODEL
 _MAX_CHARS = 12_000
 CONSTITUENT_PREFIX = "contact-page:"
 # Bump when the prompt, tool or verified() changes, so stored hashes stop matching.
@@ -131,7 +132,7 @@ async def fetch_contacts(school_website_url: str, known: tuple[str, list[dict]] 
     response = await client.messages.create(
         model=MODEL,
         max_tokens=2000,
-        extra_body={"temperature": 0},
+        **haiku.CALL_KWARGS,
         system=_SYSTEM,
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_contacts"},

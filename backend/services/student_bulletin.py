@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import observability
 from models import School, SchoolContentItem, StaffMember
 from scheduler.errors import record_parse_issue
+from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
 from services.hs_announcements import doc_export_url
 from services.school_status import is_status_title, status_kind
@@ -271,7 +272,7 @@ async def scan_bulletin(db: AsyncSession, school: School) -> str:
     response = await client_ai.messages.create(
         model=MODEL,
         max_tokens=8192,
-        extra_body={"temperature": 0},
+        **haiku.CALL_KWARGS,
         system=_SYSTEM_PROMPT.format(today=today.isoformat(), weekday=today.strftime("%A")),
         tools=[_EXTRACTION_TOOL],
         tool_choice={"type": "tool", "name": "record_bulletin_items"},

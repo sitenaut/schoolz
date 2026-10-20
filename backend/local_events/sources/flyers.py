@@ -24,6 +24,7 @@ from anthropic import AsyncAnthropic
 from PIL import Image
 
 import observability
+from services import haiku
 
 from . import theatre
 
@@ -82,7 +83,7 @@ async def flyer_text(client: httpx.AsyncClient, url: str) -> str:
     response = await AsyncAnthropic(api_key=api_key).messages.create(
         model=theatre.MODEL,
         max_tokens=1200,
-        extra_body={"temperature": 0},
+        **haiku.CALL_KWARGS,
         system=_PROMPT,
         messages=[{"role": "user", "content": [
             {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(jpeg).decode()}},
