@@ -224,8 +224,14 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
         day = entry.get("day")
         if not isinstance(day, int) or not (1 <= day <= 31):
             continue
+        # The model sometimes returns every grid cell, a blank or icon-only
+        # day as an entry with an empty title, which showed as a nameless
+        # "EVENT" row on Today (October 2026: 19 of them).
+        title = " ".join((entry.get("title") or "").split())
+        if not title:
+            continue
         parsed_date = _parse_date(f"{year:04d}-{month:02d}-{day:02d}")
         if not parsed_date:
             continue
-        items.append({"date": parsed_date, "title": entry["title"][:300], "note": entry.get("note")})
+        items.append({"date": parsed_date, "title": title[:300], "note": entry.get("note") or None})
     return items
