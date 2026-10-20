@@ -33,6 +33,7 @@ from anthropic import AsyncAnthropic
 
 import observability
 import scraper_client
+from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 
 logger = logging.getLogger(__name__)
@@ -194,6 +195,7 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
     response = await client.messages.create(
         model=MODEL,
         max_tokens=4096,
+        **haiku.CALL_KWARGS,
         tools=[_SPECIAL_EVENTS_TOOL],
         tool_choice={"type": "tool", "name": "record_special_events"},
         messages=[

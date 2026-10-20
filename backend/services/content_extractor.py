@@ -39,6 +39,7 @@ from models import (
     normalize_name,
 )
 from scheduler.errors import record_parse_issue
+from services import haiku
 from services.links import unwrap_redirect
 from services.school_status import is_status_title, same_status_fact
 from services.tool_output import object_list, recover_spilled_input
@@ -46,7 +47,7 @@ from services.tool_output import object_list, recover_spilled_input
 logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = haiku.MODEL
 
 # Known parent/student information system login URLs, keyed by lowercased
 # name - resolved deterministically rather than trusting the model to
@@ -275,6 +276,7 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str, image_bytes: b
         response = await client.messages.create(
             model=MODEL,
             max_tokens=1024,
+            **haiku.CALL_KWARGS,
             messages=[
                 {
                     "role": "user",
@@ -316,6 +318,7 @@ async def _document_extract(client: AsyncAnthropic, pdf_url: str, job_kind: str 
         response = await client.messages.create(
             model=MODEL,
             max_tokens=1024,
+            **haiku.CALL_KWARGS,
             messages=[
                 {
                     "role": "user",
@@ -526,6 +529,16 @@ def _title_dedup_key(title: str) -> str:
     return " ".join(_fold_ordinal_word(w) for w in normalize_name(title).split(" "))
 
 
+def _status_category(title: str, category: str, start_date: datetime | None) -> str:
+    """A dated closure/half-day filed as a "reminder" never reaches /calendar
+    (events, deadlines, initiatives and marking periods only) - Haiku 5.5
+    filed "School Closed - Labor Day" that way in a side-by-side. It's an
+    event on that date."""
+    if category == "reminder" and start_date and is_status_title(title):
+        return "event"
+    return category
+
+
 def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: datetime | None = None, job_kind: str = "smore.scan") -> bool:
     """Guards the model's own supersedes_item_id against retiring a live
     item in favour of one that has already happened.
@@ -685,7 +698,7 @@ async def extract_from_newsletter(
         response = await client.messages.create(
             model=MODEL,
             max_tokens=8192,
-            extra_body={"temperature": 0},
+            **haiku.CALL_KWARGS,
             system=_SYSTEM_PROMPT,
             tools=[_EXTRACTION_TOOL],
             tool_choice={"type": "tool", "name": "record_extraction"},
@@ -851,6 +864,7 @@ async def extract_from_newsletter(
                 # means the dedup check just below always gets a chance to
                 # collapse it into the one existing district row.
                 scope = "district"
+            item["category"] = _status_category(item["title"], item["category"], item_start_date)
             item_school_id = school_id
             item_district_id = None
             if scope == "district" and district_id:

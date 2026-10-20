@@ -29,6 +29,7 @@ from anthropic import AsyncAnthropic
 
 import observability
 import scraper_client
+from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
 from services.school_status import CLOSED_RE
 
@@ -280,7 +281,7 @@ async def extract_events(pdf_bytes: bytes) -> list[dict]:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=8192,
-        extra_body={"temperature": 0},
+        **haiku.CALL_KWARGS,
         tools=[_CALENDAR_TOOL],
         tool_choice={"type": "tool", "name": "record_calendar"},
         messages=[{"role": "user", "content": content}],

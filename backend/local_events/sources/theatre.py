@@ -37,13 +37,14 @@ from bs4 import BeautifulSoup
 import database
 import observability
 from models import PageExtraction
+from services import haiku
 
 from .base import RawEvent, Source
 from .scraper import fetch_rendered_html
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = haiku.MODEL
 _ET = ZoneInfo("America/New_York")
 _MAX_CHARS = 14_000
 _MIN_TEXT_CHARS = 400
@@ -320,7 +321,7 @@ class TheatreSiteSource(Source):
         response = await client.messages.create(
             model=MODEL,
             max_tokens=4000,
-            extra_body={"temperature": 0},
+            **haiku.CALL_KWARGS,
             system=self.SYSTEM.format(today=date.today().isoformat()),
             tools=[self.TOOL],
             tool_choice={"type": "tool", "name": self.TOOL["name"]},

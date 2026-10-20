@@ -342,3 +342,14 @@ def test_current_item_line_renders_all_day_item_as_local_date():
 def test_current_item_line_without_date():
     item = SchoolContentItem(id="x", category="reminder", title="t", start_date=None, is_all_day=True)
     assert _current_item_line(item).endswith("(start_date=None)")
+
+
+def test_a_dated_closure_filed_as_a_reminder_becomes_an_event():
+    from services.content_extractor import _status_category
+
+    day = datetime(2026, 9, 7, tzinfo=_NY)
+    assert _status_category("School Closed - Labor Day", "reminder", day) == "event"
+    assert _status_category("Early Dismissal - Staff In-Service", "reminder", day) == "event"
+    assert _status_category("School Closed - Labor Day", "reminder", None) == "reminder"  # undated stays put
+    assert _status_category("Bring a water bottle", "reminder", day) == "reminder"
+    assert _status_category("School Closed - Labor Day", "deadline", day) == "deadline"

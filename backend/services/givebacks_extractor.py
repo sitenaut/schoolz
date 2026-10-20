@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import observability
 from models import GivebacksBlock, School, SchoolContentItem
 from scheduler.errors import record_parse_issue
+from services import haiku
 from services.content_extractor import (
     _EXTRACTION_TOOL,
     _SYSTEM_PROMPT,
@@ -123,7 +124,7 @@ async def extract_from_pta_page(
         response = await client.messages.create(
             model=MODEL,
             max_tokens=8192,
-            extra_body={"temperature": 0},
+            **haiku.CALL_KWARGS,
             system=_SYSTEM_PROMPT,
             tools=[_EXTRACTION_TOOL],
             tool_choice={"type": "tool", "name": "record_extraction"},

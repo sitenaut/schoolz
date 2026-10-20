@@ -30,6 +30,7 @@ import observability
 from models import ResourceEligibility, ResourceService
 from scheduler import progress
 from scheduler.errors import record_parse_issue
+from services import haiku
 from services.tool_output import object_list, recover_spilled_input
 
 logger = logging.getLogger(__name__)
@@ -194,7 +195,7 @@ async def _extract_batch(client: Any, model: str, texts: list[str]) -> dict[int,
     response = await client.messages.create(
         model=model,
         max_tokens=8192,
-        extra_body={"temperature": 0},
+        **haiku.CALL_KWARGS,
         system=_SYSTEM,
         tools=[_TOOL],
         tool_choice={"type": "tool", "name": "record_eligibility"},

@@ -42,6 +42,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import observability
 from models import School, SchoolContentItem, StaffMember, normalize_name
 from scheduler.errors import record_parse_issue
+from services import haiku
 from services.class_years import default_label, get_or_create_class_year
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 from services.links import unwrap_redirect
@@ -336,7 +337,7 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
             response = await client.messages.create(
                 model=MODEL,
                 max_tokens=4096,
-                extra_body={"temperature": 0},
+                **haiku.CALL_KWARGS,
                 system=_SYSTEM_PROMPT,
                 tools=[_EXTRACTION_TOOL],
                 tool_choice={"type": "tool", "name": "record_page_extraction"},
