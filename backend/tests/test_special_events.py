@@ -183,3 +183,36 @@ async def test_menu_stored_before_the_fix_is_reparsed(monkeypatch):
         assert "1 newly parsed" in result
         items = (await db.execute(select(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu_id))).scalars().all()
         assert [i.description for i in items] == ["Grilled Chicken Patty"]
+
+
+@pytest.mark.anyio
+async def test_a_blank_day_from_the_model_is_not_an_event(monkeypatch):
+    # October 2026's calendar came back with an empty-title entry for every
+    # blank or icon-only grid cell; each became a nameless "EVENT" row.
+    from types import SimpleNamespace
+
+    entries = [
+        {"day": 20, "title": ""},
+        {"day": 21, "title": " Pajama  Day ", "note": ""},
+        {"day": 22, "title": "   "},
+        {"day": 23},
+    ]
+
+    class FakeMessages:
+        async def create(self, **kwargs):
+            return SimpleNamespace(content=[SimpleNamespace(type="tool_use", input={"items": entries})])
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.messages = FakeMessages()
+
+    async def fake_bytes(url, **kwargs):
+        return "application/pdf", b"%PDF-1.4"
+
+    monkeypatch.setattr(special_events, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(special_events, "AsyncAnthropic", FakeClient)
+    monkeypatch.setattr(special_events.scraper_client, "get_bytes", fake_bytes)
+    monkeypatch.setattr(special_events.observability, "record_llm_call", lambda *a, **k: None)
+
+    items = await special_events.parse_special_events_pdf(_UPLOADS + "2026/10/October-2026-Special-Events-Calendar.pdf", 2026, 10)
+    assert [(i["date"].day, i["title"], i["note"]) for i in items] == [(21, "Pajama Day", None)]
