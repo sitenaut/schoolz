@@ -116,6 +116,7 @@ Skills (`.claude/skills/<name>/SKILL.md`):
   - The Grafana notification policy tree is shared with billz and the scraper repo: never `PUT` a tree built from scratch.
   - If a panel goes blank, check which metric-name spelling prod emits first.
   - Analytics never blocks rendering, never loads in Focus, and never carries child data.
+- **`visits`** — the prod visit report (`page_visits` by day, source and page). Visits, never people.
 - **`deploy-schoolz`** — the deploy procedure plus prod facts (which Supabase project, pooler host, Fly networking, one-off scripts).
 
 Docs:
