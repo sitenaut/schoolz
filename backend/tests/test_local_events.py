@@ -5,7 +5,7 @@ os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -28,7 +28,7 @@ def auth(token: str) -> dict:
 
 
 def _utc(*a):
-    return datetime(*a, tzinfo=timezone.utc)
+    return datetime(*a, tzinfo=UTC)
 
 
 # ---- billz import -------------------------------------------------------------
@@ -154,6 +154,22 @@ async def test_local_events_api_is_public_and_filters():
         assert any(c["value"] == "music" for c in facets["categories"])
 
 
+async def test_one_event_by_id_is_public():
+    run = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        event = LocalEvent(source=f"one_{run}", source_event_id="1", title=f"Story time {run}", start_time=_utc(2031, 6, 1, 14), categories=["kids"], venue_name="Library")
+        db.add(event)
+        await db.commit()
+        event_id = event.id
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.get(f"/local-events/{event_id}")
+        assert res.status_code == 200, res.text
+        assert res.json()["title"] == f"Story time {run}" and res.json()["categories"] == ["kids"] and res.json()["miles"] is None
+        assert (await client.get(f"/local-events/{uuid.uuid4()}")).status_code == 404
+        # /facets is its own route, not an id.
+        assert "sources" in (await client.get("/local-events/facets")).json()
+
+
 def test_dpcalendar_source_adds_a_date_window_unless_the_url_has_one():
     from datetime import date
 
@@ -267,7 +283,7 @@ async def test_gcal_bare_ids_get_group_suffix_and_one_dead_calendar_doesnt_sink_
     async def fake_fetch(client, cal_id):
         if cal_id == "dead@gmail.com":
             raise RuntimeError("Google Calendar API returned HTTP 404 for calendar 'dead@gmail.com'")
-        return [RawEvent(source="phila_gov", source_event_id=cal_id, title=cal_id, start_time=datetime(2031, 6, 1, tzinfo=timezone.utc))]
+        return [RawEvent(source="phila_gov", source_event_id=cal_id, title=cal_id, start_time=datetime(2031, 6, 1, tzinfo=UTC))]
 
     monkeypatch.setattr(src, "_fetch_calendar", fake_fetch)
     events = await src.fetch()
@@ -332,7 +348,7 @@ def test_a_known_price_decides_the_free_category(kwargs, tagged):
 
     raw = RawEvent(
         source="s", source_event_id="1", title="Turkey Trot 5K", description="Free race photos for all finishers.",
-        start_time=datetime(2031, 11, 27, 13, tzinfo=timezone.utc), **kwargs,
+        start_time=datetime(2031, 11, 27, 13, tzinfo=UTC), **kwargs,
     )
     assert ("free" in normalize(raw)["categories"]) is tagged
 
@@ -340,7 +356,7 @@ def test_a_known_price_decides_the_free_category(kwargs, tagged):
 def test_a_free_price_tags_free_without_the_word():
     from local_events.normalizer import normalize
 
-    raw = RawEvent(source="s", source_event_id="1", title="Training run", start_time=datetime(2031, 6, 1, tzinfo=timezone.utc), price_min=0.0)
+    raw = RawEvent(source="s", source_event_id="1", title="Training run", start_time=datetime(2031, 6, 1, tzinfo=UTC), price_min=0.0)
     assert "free" in normalize(raw)["categories"]
 
 
