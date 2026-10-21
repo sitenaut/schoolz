@@ -22,27 +22,18 @@ See backend/scripts/migrate_config.py for the CLI that pulls this from
 one environment and pushes it to another.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db
 from auth import require_permission
+from database import get_db
 from models import District, SaccProgram, ScheduledJob, School, SmoreNewsletter, User
-from schemas import (
-    ConfigExport,
-    ConfigImportResult,
-    ConfigResults,
-    ExportDistrictOut,
-    ExportSaccOut,
-    ExportSchoolOut,
-    ExportSmoreOut,
-)
 from routers.districts import (
-    _ensure_calendar_scan_job,
     _ensure_calendar_pdf_job,
+    _ensure_calendar_scan_job,
     _ensure_hs_rotation_job,
     _ensure_marking_period_job,
     _ensure_preschool_locations_job,
@@ -52,21 +43,30 @@ from routers.districts import (
 )
 from routers.schools import (
     _ensure_activities_calendar_job,
-    _ensure_bulletin_job,
     _ensure_athletics_calendar_job,
+    _ensure_bulletin_job,
     _ensure_documents_scan_job,
     _ensure_fdmealplanner_job,
+    _ensure_givebacks_job,
     _ensure_healthepro_job,
     _ensure_myschoolplate_job,
     _ensure_nutrislice_job,
     _ensure_presence_menu_job,
-    _ensure_givebacks_job,
     _ensure_school_info_job,
     _ensure_staff_roster_job,
 )
 from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
 from scheduler.cron import public_scan_cron, spread_default_smore_cron
 from scheduler.job_names import district_job_name
+from schemas import (
+    ConfigExport,
+    ConfigImportResult,
+    ConfigResults,
+    ExportDistrictOut,
+    ExportSaccOut,
+    ExportSchoolOut,
+    ExportSmoreOut,
+)
 from services.config_results import export_results, import_results
 
 router = APIRouter(prefix="/admin/config", tags=["admin-config"])
@@ -102,7 +102,7 @@ async def export_config(db: AsyncSession = Depends(get_db)):
     school_by_id = {s.id: s for s in schools}
 
     return ConfigExport(
-        exported_at=datetime.now(timezone.utc),
+        exported_at=datetime.now(UTC),
         source="schoolz",
         districts=[ExportDistrictOut.model_validate(d, from_attributes=True) for d in districts],
         schools=[
@@ -223,6 +223,10 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             district.towns = d.towns
         if d.schoolcafe_shortname:
             district.schoolcafe_shortname = d.schoolcafe_shortname
+        if "uses_google_classroom" in d.model_fields_set:
+            district.uses_google_classroom = d.uses_google_classroom
+        if "genesis_url" in d.model_fields_set:
+            district.genesis_url = d.genesis_url or None
         await _ensure_calendar_scan_job(db, district, user)
         await _ensure_marking_period_job(db, district, user)
         await _ensure_preschool_locations_job(db, district, user)

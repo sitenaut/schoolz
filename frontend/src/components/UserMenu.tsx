@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import { IconLogout, IconSchool, IconUser } from "./icons";
+import { IconLogout, IconSchool, IconUser, IconUsers } from "./icons";
 
 /** The signed-in account button (the username; just an icon on phones) opens a
  * small menu: Account, My schools (phones only, where the header pill is
@@ -53,6 +53,9 @@ export function UserMenu() {
         <div className="authPopover userMenu" role="menu" aria-label={user.username}>
           <Link to="/account" role="menuitem" onClick={() => setOpen(false)}>
             <IconUser /> {t("Account")}
+          </Link>
+          <Link to="/family" role="menuitem" onClick={() => setOpen(false)}>
+            <IconUsers /> {t("My family")}
           </Link>
           {/* The header's My schools pill is hidden on phones once signed in. */}
           <Link to="/start" role="menuitem" className="userMenuMySchools" onClick={() => setOpen(false)}>

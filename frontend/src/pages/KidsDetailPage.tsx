@@ -344,7 +344,7 @@ export function KidsDetailPage() {
     return (
       <div className="page">
         <div className="empty">
-          This student isn't on your profile. <Link to="/kids">Back to Kids</Link>
+          This student isn't on your profile. <Link to="/family">Back to My family</Link>
         </div>
       </div>
     );
@@ -357,8 +357,8 @@ export function KidsDetailPage() {
   return (
     <div className="page">
       {isGuardian && (
-        <Link to="/kids" className="back-link">
-          <IconChevronLeft /> Kids
+        <Link to="/family" className="back-link">
+          <IconChevronLeft /> My family
         </Link>
       )}
       <div className="kids-hd">

@@ -105,6 +105,38 @@ class StudentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FamilyTodayOut(BaseModel):
+    """The one schedule line My family shows: the class a child is in now,
+    the next one, or that the school day is over."""
+
+    state: str  # "now" | "next" | "over"
+    course_name: str | None = None
+    room: str | None = None
+    time_start: str | None = None
+    time_end: str | None = None
+
+
+class FamilyChildOut(StudentOut):
+    """A child on My family: which of their school's systems schoolz can
+    bring in (the district's settings, or data that already arrived) and how
+    much has. A count is None until that source has sent anything - never 0
+    for "not connected"."""
+
+    district_name: str | None = None
+    has_classroom: bool
+    has_genesis: bool
+    classroom_seen_at: datetime | None = None
+    genesis_seen_at: datetime | None = None
+    needs_login: bool = False
+    due_this_week: int | None = None
+    missing: int | None = None
+    classes: int | None = None
+    today: FamilyTodayOut | None = None
+    student_login_email: str | None = None
+    student_invite_email: str | None = None
+    specials_count: int = 0
+
+
 class StudentUpdate(BaseModel):
     grad_year: int | None = Field(default=None, ge=2000, le=2100)
 
@@ -387,6 +419,9 @@ class DistrictCreate(BaseModel):
     hs_rotation_url: str | None = None
     calendar_pdf_url: str | None = None
     transportation_url: str | None = None
+    # What Backpack Capture can bring in for this district's families (District).
+    uses_google_classroom: bool = False
+    genesis_url: str | None = None
 
 
 class DistrictUpdate(BaseModel):
@@ -401,6 +436,9 @@ class DistrictUpdate(BaseModel):
     hs_rotation_url: str | None = None
     calendar_pdf_url: str | None = None
     transportation_url: str | None = None
+    uses_google_classroom: bool | None = None
+    # "" clears it.
+    genesis_url: str | None = None
 
 
 class DistrictSummaryOut(BaseModel):
@@ -429,6 +467,8 @@ class DistrictOut(BaseModel):
     hs_rotation_url: str | None
     calendar_pdf_url: str | None = None
     transportation_url: str | None
+    uses_google_classroom: bool = False
+    genesis_url: str | None = None
     created_at: datetime
     scheduled_job: ScheduledJobOut | None = None
     calendar_scan_job: ScheduledJobOut | None = None
@@ -1127,6 +1167,10 @@ class ExportDistrictOut(BaseModel):
     # Defaulted so an export file from before these existed still imports.
     towns: list[str] = []
     schoolcafe_shortname: str | None = None
+    # Applied only when the file says them, so re-importing an older seed
+    # never switches a district's homework and grades off.
+    uses_google_classroom: bool = False
+    genesis_url: str | None = None
 
     model_config = {"from_attributes": True}
 

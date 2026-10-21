@@ -106,30 +106,31 @@ TOPICS: dict[str, dict[str, str]] = {
             "Tap **Sign in** (top right) to sign in or **Register**, with email and password or with Google. "
             "Email sign-ups need you to click the confirmation link that's emailed to you first.\n"
             "Once signed in, **Account** has your profile, security (password, deleting your account), "
-            "privacy, notifications, and family (your children and the schools on your Today page). Forgot your password? Use "
+            "privacy and notifications. Your children are on **My family**, in the same menu. Forgot your password? Use "
             "**Forgot password** on the sign-in screen."
         ),
     },
     "children": {
         "summary": "Adding your child, specials, graduating class",
         "text": (
-            "Signed in, go to **Account → Family → My children**.\n"
+            "Signed in, open **My family** from the menu under your name (top right). It shows each child, what "
+            "schoolz can do for them, and what is already switched on.\n"
             "- **Add a child** (first name, last name, student ID, school) only if nobody has invited you to "
             "them yet. If the other parent already added them, ask for an invite instead; it links you to the "
             "same child with nothing to type.\n"
             "- High school: set the **Graduating class** to see that class's page.\n"
             "- Elementary: **Specials** records which special (Art, PE, Music...) your child has on each "
             "rotation day, so it shows on the Today card. Every guardian of that child sees the same specials.\n"
-            "- **Remove from my profile** removes only your view. The child stays for any other guardian."
+            "- **Remove from my family** removes only your view. The child stays for any other guardian."
         ),
     },
     "invites": {
         "summary": "Inviting the other parent, or giving your child their own login",
         "text": (
-            "From **My children**, on your child's card:\n"
-            "- **Invite another guardian**: enter their email and schoolz makes a link. Share or copy it to "
+            "From **My family**, on your child's card:\n"
+            "- **Invite another guardian** (Guardians → Invite): enter their email and schoolz makes a link. Share or copy it to "
             "them. When they open it and sign in, the child appears on their profile. Invites expire after 7 days.\n"
-            "- **Give <child> their own login**: invites your child by email. They must sign in with exactly "
+            "- **Gradez → Give <child> a login**: invites your child by email. They must sign in with exactly "
             "that email. They then see the same schoolwork view, without the parent-only settings.\n"
             "Each guardian's own choices (like renaming or recoloring a class) stay private to them."
         ),
@@ -138,7 +139,8 @@ TOPICS: dict[str, dict[str, str]] = {
         "summary": "Seeing assignments, what's due or missing, and grades (Backpack Capture + Gradez)",
         "text": (
             "schoolz can show what's due, what's missing, grades and the class schedule, but only from data "
-            "you bring in yourself with the **Backpack Capture** browser extension. schoolz never logs in to "
+            "you bring in yourself with the **Backpack Capture** browser extension, and only where the school uses "
+            "Google Classroom or Genesis. **My family** shows which of your children that covers. schoolz never logs in to "
             "Google Classroom or Genesis for you.\n"
             "1. On a computer, add Backpack Capture to Chrome from the Chrome Web Store "
             "(https://chromewebstore.google.com/detail/backpack-capture/imjhghdlhjgoeghhgafdpclapkjcnfbe). "

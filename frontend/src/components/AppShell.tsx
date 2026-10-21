@@ -54,7 +54,7 @@ function routeTemplate(pathname: string): string {
 // /directory is school-scoped, but through its own in-page school picker
 // (it searches the whole district by default, which the ribbon filter
 // would silently contradict).
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/upload", "/survey", "/chcomms", "/kids", "/directory", "/local"];
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/upload", "/survey", "/chcomms", "/family", "/kids", "/directory", "/local"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 

@@ -117,6 +117,7 @@ GET    /email-scanners/link-kinds  perm:email.view
 DELETE /email-scanners/{scanner_id}  perm:email.manage
 PATCH  /email-scanners/{scanner_id}  perm:email.manage
 POST   /email-scanners/{scanner_id}/run-now  perm:email.manage
+GET    /family  login
 GET    /gmail/auth-url  perm:email.manage
 GET    /gmail/callback  public
 GET    /gmail/connections  perm:email.view

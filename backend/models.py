@@ -258,7 +258,7 @@ class Student(Base):
     # instead of creating a duplicate.
     match_key: Mapped[str] = mapped_column(String(400), unique=True, index=True, nullable=False)
     # Graduating class year (e.g. 2027), high-school students only - typed
-    # on My Children or derived from a Genesis grade level via the same
+    # on My family or derived from a Genesis grade level via the same
     # Jul-Jun school-year boundary used elsewhere in this app. Deliberately
     # the graduating year, not the current grade number: the school's own
     # materials describe multi-year things ("Fall of junior year") relative
@@ -644,6 +644,14 @@ class District(Base):
     # bus stop changes, lost items. One page tree serves every school.
     transportation_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     transportation_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
+    # Which of the district's own systems Backpack Capture can bring in for a
+    # family: My family (routers/family.py) explains homework and grades only
+    # for a child whose district has one. Set genesis_url only once the
+    # extension can read that district's Genesis - a hosted one under another
+    # path (parents.c3.genesisedu.net/<district>/...) is outside its host
+    # permission, so it would promise grades that never arrive.
+    uses_google_classroom: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    genesis_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 

@@ -323,3 +323,35 @@ export const IconArrowUp = ({ className }: P) => (
     <path d="M12 19V5M5 12l7-7 7 7" />
   </svg>
 );
+// My family's rows: homework, grades, the child's own app, specials, class year.
+export const IconBook = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z" />
+    <path d="M8 7h8M8 11h6" />
+  </svg>
+);
+export const IconChart = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+  </svg>
+);
+export const IconDevice = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <rect x="6" y="2" width="12" height="20" rx="2.5" />
+    <path d="M11 18h2" />
+  </svg>
+);
+export const IconPalette = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.9 1.8-1.8 0-1.3-1-1.6-1-2.7 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z" />
+    <circle cx="7.5" cy="11" r="1" />
+    <circle cx="10.5" cy="7" r="1" />
+    <circle cx="15" cy="7.5" r="1" />
+  </svg>
+);
+export const IconGradCap = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M2 9l10-5 10 5-10 5z" />
+    <path d="M6 11v5c3 2.5 9 2.5 12 0v-5" />
+  </svg>
+);

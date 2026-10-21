@@ -186,6 +186,8 @@ async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
         hs_rotation_url=district.hs_rotation_url,
         calendar_pdf_url=district.calendar_pdf_url,
         transportation_url=district.transportation_url,
+        uses_google_classroom=district.uses_google_classroom,
+        genesis_url=district.genesis_url,
         created_at=district.created_at,
         scheduled_job=job,
         calendar_scan_job=calendar_job,
@@ -224,6 +226,8 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
         hs_rotation_url=payload.hs_rotation_url,
         calendar_pdf_url=payload.calendar_pdf_url,
         transportation_url=payload.transportation_url,
+        uses_google_classroom=payload.uses_google_classroom,
+        genesis_url=payload.genesis_url or None,
     )
     db.add(district)
     await db.flush()
@@ -284,6 +288,10 @@ async def update_district(
         district.calendar_pdf_url = payload.calendar_pdf_url
     if payload.transportation_url is not None:
         district.transportation_url = payload.transportation_url
+    if payload.uses_google_classroom is not None:
+        district.uses_google_classroom = payload.uses_google_classroom
+    if payload.genesis_url is not None:
+        district.genesis_url = payload.genesis_url or None
     await _ensure_calendar_scan_job(db, district, user)
     await _ensure_marking_period_job(db, district, user)
     await _ensure_preschool_locations_job(db, district, user)

@@ -26,7 +26,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
-import { ChildrenPage } from "./pages/ChildrenPage";
+import { FamilyPage } from "./pages/FamilyPage";
 import { KidsPage } from "./pages/KidsPage";
 import { KidsDetailPage } from "./pages/KidsDetailPage";
 import { InvitePage } from "./pages/InvitePage";
@@ -70,7 +70,6 @@ import { ProfileSection } from "./pages/account/ProfileSection";
 import { SecuritySection } from "./pages/account/SecuritySection";
 import { NotificationsSection } from "./pages/account/NotificationsSection";
 import { PrivacySection } from "./pages/account/PrivacySection";
-import { FamilySection } from "./pages/account/FamilySection";
 import { SavedProfileSection } from "./pages/account/SavedProfileSection";
 
 // Gates the *optional* personal layer (my kids, my calendar, account
@@ -148,17 +147,20 @@ function Routed() {
           <Route path="security" element={<SecuritySection />} />
           <Route path="privacy" element={<PrivacySection />} />
           <Route path="notifications" element={<NotificationsSection />} />
-          <Route path="family" element={<FamilySection />} />
+          {/* Family moved out of settings to /family. */}
+          <Route path="family" element={<Navigate to="/family" replace />} />
           <Route path="saved-answers" element={<SavedProfileSection />} />
         </Route>
         <Route
-          path="/children"
+          path="/family"
           element={
             <RequireAuth>
-              <ChildrenPage />
+              <FamilyPage />
             </RequireAuth>
           }
         />
+        {/* My Children became My family. */}
+        <Route path="/children" element={<Navigate to="/family" replace />} />
         <Route path="/invites/:token" element={<InvitePage kind="guardian" />} />
         <Route path="/student-invites/:token" element={<InvitePage kind="student" />} />
         <Route

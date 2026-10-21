@@ -1004,10 +1004,15 @@ async def report_capture_status(
 async def get_bucket3_status(
     student_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    """How current this student's data is. Before Bucket3SyncState has a row
-    (data imported before it existed), each source falls back to its newest
-    stored capture - when something last changed, which is the best there is."""
+    """How current this student's data is."""
     student = await _get_own_student(db, user.id, student_id)
+    return await sync_status(db, user.id, student)
+
+
+async def sync_status(db: AsyncSession, user_id: str, student: Student) -> Bucket3SyncStatusOut:
+    """Before Bucket3SyncState has a row (data imported before it existed),
+    each source falls back to its newest stored capture - when something last
+    changed, which is the best there is. The caller has checked access."""
     state = await db.get(Bucket3SyncState, student.id)
     seen = {
         "classroom": state.classroom_seen_at if state else None,
@@ -1026,7 +1031,7 @@ async def get_bucket3_status(
         await db.execute(
             select(Notification.id)
             .where(
-                Notification.user_id == user.id,
+                Notification.user_id == user_id,
                 Notification.student_id == student.id,
                 Notification.type == CAPTURE_NEEDS_LOGIN,
                 Notification.read_at.is_(None),
