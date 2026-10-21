@@ -34,11 +34,15 @@ SELECT r.id, j.kind, j.name, r.started_at FROM job_runs r JOIN scheduled_jobs j 
 WHERE r.status = 'running' AND r.started_at < now() - interval '45 minutes';
 
 -- Newsletters gone stale
-SELECT label, url, last_scanned_at FROM smore_newsletters
-WHERE last_scanned_at IS NULL OR last_scanned_at < now() - interval '8 days';
+-- (enabled, recurring jobs only; a one-issue link scans once by design)
+SELECT n.label, n.url, n.last_scanned_at FROM smore_newsletters n
+JOIN scheduled_jobs j ON j.id = n.scheduled_job_id
+WHERE j.enabled AND NOT j.run_once
+  AND (n.last_scanned_at IS NULL OR n.last_scanned_at < now() - interval '8 days');
 
--- Vision backlog
-SELECT count(*) FROM smore_blocks WHERE pending_vision_extraction;
+-- Vision backlog (blocks are retried for 14 days, then given up on)
+SELECT count(*) FROM smore_blocks
+WHERE pending_vision_extraction AND first_seen_at > now() - interval '14 days';
 
 -- Alert conditions (create as Grafana-managed alert rules against the same
 -- datasource, folder "schoolz", label app=schoolz, evaluated every 5m,

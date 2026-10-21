@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import ScheduledJob, SmoreBlock, SmoreNewsletter
 from scheduler.errors import parse_warning
 from scheduler.registry import register_job
-from services.content_extractor import extract_from_newsletter
+from services.content_extractor import extract_from_newsletter, pending_vision_retries
 from services.smore_parser import discover_current_issue_url, fetch_and_parse
 
 
@@ -170,8 +170,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     newsletter.last_scanned_at = datetime.now(UTC)
     summary = f"fetched {len(blocks)} block(s), {len(new_blocks)} new"
 
-    if new_blocks:
-        extraction_note = await extract_from_newsletter(db, newsletter, new_blocks)
+    retry_blocks = await pending_vision_retries(db, newsletter.id, new_blocks)
+    if retry_blocks:
+        summary += f", {len(retry_blocks)} retried"
+
+    if new_blocks or retry_blocks:
+        extraction_note = await extract_from_newsletter(db, newsletter, new_blocks, retry_blocks=retry_blocks)
         summary += f" · extraction: {extraction_note}"
         # The runner only reads the prefix of the handler's own return value
         # - propagate whichever code extract_from_newsletter's own warning

@@ -268,11 +268,15 @@ Someone registered. Nothing is wrong.
 The Lambda hit a concurrency limit. Not expected at this traffic.
 
 ### schoolz-newsletter-stale
-Some newsletters have missed their weekly scan; the Scans dashboard lists them.
+Some newsletters with an enabled, recurring scan job have missed their weekly
+scan; the Scans dashboard lists them. One-issue links (`run_once`) and disabled
+jobs are not counted.
 
 ### schoolz-vision-backlog
-Image blocks have been waiting on vision extraction for a day - usually an image
-the model can't read. The block stays pending and warns on each scan.
+Image or PDF blocks have been waiting on vision extraction for a day - usually
+one the model can't read, or a source that refuses server-side fetches. Each
+scan retries pending blocks from the last 14 days and warns while they fail;
+after that they are given up on and drop out of the count.
 
 ## Adding an alert
 

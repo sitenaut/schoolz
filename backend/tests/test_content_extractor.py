@@ -1,7 +1,9 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from models import SchoolContentItem
+import pytest
+
+from models import SchoolContentItem, SmoreBlock, SmoreNewsletter
 from services.content_extractor import (
     _add_years,
     _backfill_from_duplicate,
@@ -353,3 +355,28 @@ def test_a_dated_closure_filed_as_a_reminder_becomes_an_event():
     assert _status_category("School Closed - Labor Day", "reminder", None) == "reminder"  # undated stays put
     assert _status_category("Bring a water bottle", "reminder", day) == "reminder"
     assert _status_category("School Closed - Labor Day", "deadline", day) == "deadline"
+
+
+class _NoDb:
+    async def flush(self):
+        pass
+
+
+@pytest.mark.anyio
+async def test_a_retried_block_that_fails_again_is_not_sent_for_item_extraction(monkeypatch):
+    """A retried block joins the item extraction only once its vision read
+    succeeds; otherwise every scan for 14 days would re-send its bare link."""
+    from services import content_extractor
+
+    async def _fail(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(content_extractor, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(content_extractor, "_document_extract", _fail)
+    retry = SmoreBlock(position=0, block_type="link", link_url="https://example.org/flyer.pdf", pending_vision_extraction=True)
+
+    note = await content_extractor.extract_from_newsletter(_NoDb(), SmoreNewsletter(url="https://x"), [], retry_blocks=[retry])
+
+    assert note.startswith("WARNING[document_unsupported]: 1 document block(s)")
+    assert note.endswith("no extractable text in new blocks")
+    assert retry.pending_vision_extraction is True

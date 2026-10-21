@@ -581,21 +581,26 @@ def rules() -> list:
         ),
         sql(
             "schoolz-newsletter-stale", "schoolz: newsletters not scanned in 8 days",
-            "SELECT count(*) AS value FROM smore_newsletters\n"
-            "WHERE last_scanned_at IS NULL OR last_scanned_at < now() - interval '8 days'", 0,
+            "SELECT count(*) AS value FROM smore_newsletters n\n"
+            "JOIN scheduled_jobs j ON j.id = n.scheduled_job_id\n"
+            "WHERE j.enabled AND NOT j.run_once\n"
+            "  AND (n.last_scanned_at IS NULL OR n.last_scanned_at < now() - interval '8 days')", 0,
             tier="info", kind="cause", component="scans", for_="1h",
             summary="{{ printf \"%.0f\" $values.B.Value }} newsletter(s) have missed a weekly scan",
-            description="The Scans dashboard lists which. An expired per-issue URL does not show up here - "
-                        "it scans fine and finds nothing (smore_no_blocks).",
+            description="The Scans dashboard lists which. Only enabled, recurring jobs count: a one-issue "
+                        "link scans once by design and then sits idle. An expired per-issue URL does not show "
+                        "up here - it scans fine and finds nothing (smore_no_blocks).",
             dashboard="schoolz-scans",
         ),
         sql(
             "schoolz-vision-backlog", "schoolz: flyer images waiting on vision extraction",
-            "SELECT count(*) AS value FROM smore_blocks WHERE pending_vision_extraction", 0,
+            "SELECT count(*) AS value FROM smore_blocks\n"
+            "WHERE pending_vision_extraction AND first_seen_at > now() - interval '14 days'", 0,
             tier="info", kind="cause", component="llm", for_="1d",
             summary="{{ printf \"%.0f\" $values.B.Value }} image block(s) have been pending for a day",
-            description="A failed vision extract stays pending and retries on the next scan; a day of it "
-                        "means the image itself can't be read.",
+            description="A failed vision extract stays pending and is retried on each scan for 14 days "
+                        "(content_extractor.VISION_RETRY_WINDOW); a day of it means the image itself can't be "
+                        "read. Older blocks are given up on and drop out of this count.",
             dashboard="schoolz-scans",
         ),
     ]

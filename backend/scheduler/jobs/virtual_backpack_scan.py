@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +7,7 @@ from models import SmoreBlock, SmoreNewsletter
 from scheduler.errors import parse_warning
 from scheduler.registry import register_job
 from services.backpack_parser import discover_backpack_links, resolve_final_url, resource_content_hash
-from services.content_extractor import extract_from_newsletter
+from services.content_extractor import extract_from_newsletter, pending_vision_retries
 
 _JOB_KIND = "virtual_backpack.scan"
 
@@ -30,7 +30,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     links = await discover_backpack_links(newsletter.url)
     if not links:
-        newsletter.last_scanned_at = datetime.now(timezone.utc)
+        newsletter.last_scanned_at = datetime.now(UTC)
         return "WARNING[backpack_no_links]: found 0 resource links on the page - it may have changed shape"
 
     existing_hashes = {
@@ -62,11 +62,15 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         new_blocks.append(row)
     await db.flush()
 
-    newsletter.last_scanned_at = datetime.now(timezone.utc)
+    newsletter.last_scanned_at = datetime.now(UTC)
     summary = f"found {len(links)} link(s) on the page, {len(new_blocks)} new"
 
-    if new_blocks:
-        extraction_note = await extract_from_newsletter(db, newsletter, new_blocks, job_kind=_JOB_KIND)
+    retry_blocks = await pending_vision_retries(db, newsletter.id, new_blocks)
+    if retry_blocks:
+        summary += f", {len(retry_blocks)} retried"
+
+    if new_blocks or retry_blocks:
+        extraction_note = await extract_from_newsletter(db, newsletter, new_blocks, job_kind=_JOB_KIND, retry_blocks=retry_blocks)
         summary += f" · extraction: {extraction_note}"
         # Propagate whichever code extract_from_newsletter's own warning
         # carried, same reason smore_scan.py does - so it groups correctly
