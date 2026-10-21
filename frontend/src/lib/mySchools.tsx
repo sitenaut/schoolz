@@ -83,6 +83,10 @@ type Ctx = {
   /** mySchools minus whatever's currently hidden via the ribbon filter. */
   activeSchools: School[];
   slugs: string[];
+  /** The slugs saved on this device, known from the first render - before
+   * /schools resolves them - so Today can start fetching and lay out its
+   * cards without waiting on that round trip. */
+  deviceSlugs: string[];
   setSlugs: (slugs: string[]) => void;
   /** True while we don't yet know whether the visitor has picked anything. */
   loading: boolean;
@@ -231,6 +235,7 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
     // so a guardian's linked-kid schools show as checked without
     // hiding whatever they'd separately picked on this device.
     slugs: mySchools.map((s) => s.slug),
+    deviceSlugs: localSlugs,
     setSlugs,
     loading: authLoading || !loadedAll || !accountLoaded,
     fromAccount: Boolean(accountSchools),

@@ -283,7 +283,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum by (route) (count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"page_view\" [1h]))",
+          "expr": "sum by (route) (count_over_time({service_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"page_view\" [1h]))",
           "queryType": "range",
           "refId": "A",
           "instant": false
@@ -314,7 +314,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum by (cta) (count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"cta_click\" [6h]))",
+          "expr": "sum by (cta) (count_over_time({service_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"cta_click\" [6h]))",
           "queryType": "range",
           "refId": "A",
           "instant": false
@@ -345,7 +345,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "quantile_over_time(0.75, {app_name=\"schoolz-faro\"} | logfmt | kind=\"measurement\" | unwrap lcp [1h]) by (route)",
+          "expr": "quantile_over_time(0.75, {service_name=\"schoolz-faro\"} | logfmt | kind=\"measurement\" | unwrap lcp [1h]) by (route)",
           "queryType": "range",
           "refId": "A",
           "instant": false
@@ -377,7 +377,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum by (route) (count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"exception\" [1h]))",
+          "expr": "sum by (route) (count_over_time({service_name=\"schoolz-faro\"} | logfmt | kind=\"exception\" [1h]))",
           "queryType": "range",
           "refId": "A",
           "instant": false

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { DayCard } from "../components/today";
@@ -26,6 +26,23 @@ function HomeSeo() {
   );
 }
 
+/** A card-sized stand-in while a school's day is loading. Real cards are
+ * 420-650px tall at any width; a one-line placeholder made everything below
+ * it jump when they arrived (home-page CLS was 0.25 at p50 in RUM). */
+function PendingCard({ name, color }: { name?: string; color?: string }) {
+  const { t } = useTranslation();
+  return (
+    <section className="day pending" style={color ? { ["--c" as string]: color } : undefined} aria-busy="true">
+      <header>
+        <h2>{name ?? "\u00a0"}</h2>
+      </header>
+      <p className="note" style={{ padding: "0 14px 12px" }}>
+        {t("Loading…")}
+      </p>
+    </section>
+  );
+}
+
 /** The home page: one day-card per active school, with any district-wide
  * closure/early-dismissal in the next week pulled up into a banner so
  * it's read once, not once per card. Every school on the visitor's list
@@ -33,31 +50,50 @@ function HomeSeo() {
  * refetch), but only the active ones render. */
 export function TodayPage() {
   const { t } = useTranslation();
-  const { mySchools, activeSchools, loading, colorFor, isFiltered, districtsById } = useMySchools();
+  const { mySchools, activeSchools, deviceSlugs, loading, colorFor, isFiltered, districtsById } = useMySchools();
+  // Keyed by slug, not id: the slugs saved on this device are known on the
+  // first render, ids only once /schools answers.
   const [cards, setCards] = useState<Record<string, SchoolToday>>({});
+  const requested = useRef(new Set<string>());
+  const mounted = useRef(true);
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
-    mySchools.forEach((s) => {
-      apiFetch(`/schools/${s.slug}/today`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((today: SchoolToday | null) => {
-          if (today && !cancelled) setCards((c) => ({ ...c, [s.id]: today }));
-        })
-        .catch(() => {
-          /* one school's fetch failing shouldn't take the others down */
-        });
-    });
+    mounted.current = true;
     return () => {
-      cancelled = true;
+      mounted.current = false;
     };
-  }, [mySchools]);
+  }, []);
+
+  const fetchToday = useCallback((slug: string) => {
+    if (requested.current.has(slug)) return;
+    requested.current.add(slug);
+    apiFetch(`/schools/${slug}/today`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((today: SchoolToday | null) => {
+        if (today && mounted.current) setCards((c) => ({ ...c, [slug]: today }));
+      })
+      .catch(() => {
+        /* one school's fetch failing shouldn't take the others down */
+      });
+  }, []);
+
+  // Start on the device's saved slugs straight away, in parallel with
+  // /schools, instead of after it: RUM showed the cards taking ~1.6s
+  // whether a visitor had one school or four, i.e. the wait was the
+  // chain of requests, not the requests. mySchools then adds whatever
+  // only it knows (a signed-in guardian's linked schools).
+  useEffect(() => {
+    deviceSlugs.forEach(fetchToday);
+  }, [deviceSlugs, fetchToday]);
+  useEffect(() => {
+    mySchools.forEach((s) => fetchToday(s.slug));
+  }, [mySchools, fetchToday]);
 
   useEffect(() => {
     if (readyReported.current || mySchools.length === 0) return;
-    if (Object.keys(cards).length < mySchools.length) return;
+    if (!mySchools.every((s) => cards[s.slug])) return;
     readyReported.current = true;
     trackMeasurement("today_ready", performance.now() - readyStart.current, { schools: mySchools.length });
   }, [cards, mySchools]);
@@ -69,7 +105,20 @@ export function TodayPage() {
       <>
         <HomeSeo />
         <h1 className="sr-only">{t("Today at your kids' schools")}</h1>
-        <p className="note">{t("Loading…")}</p>
+        {deviceSlugs.length > 0 ? (
+          <>
+            {/* Same footprint as the loaded page (date line + one card per
+                school), so nothing moves when it arrives. */}
+            <p className="eyebrow" style={{ margin: "0 0 10px", lineHeight: 1.15 }} aria-hidden="true">
+              {"\u00a0"}
+            </p>
+            {deviceSlugs.map((slug) => (
+              <PendingCard key={slug} />
+            ))}
+          </>
+        ) : (
+          <p className="note">{t("Loading…")}</p>
+        )}
       </>
     );
   if (mySchools.length === 0)
@@ -115,7 +164,7 @@ export function TodayPage() {
       </>
     );
 
-  const first = cards[activeSchools[0]?.id] ?? cards[mySchools[0].id];
+  const first = cards[activeSchools[0]?.slug] ?? cards[mySchools[0].slug];
   const heading = first
     ? new Date(first.date + "T12:00:00Z").toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
     : "";
@@ -124,7 +173,7 @@ export function TodayPage() {
   // the schools currently active in the ribbon filter.
   const alerts = new Map<string, SchoolContentItem>();
   for (const s of activeSchools) {
-    for (const a of cards[s.id]?.alerts ?? []) {
+    for (const a of cards[s.slug]?.alerts ?? []) {
       const key = `${localDateKey(a.start_date!)}|${a.scope === "district" ? "d" : s.id}|${a.title}`;
       if (!alerts.has(key)) alerts.set(key, a);
     }
@@ -134,7 +183,7 @@ export function TodayPage() {
     <>
       <HomeSeo />
       <h1 className="eyebrow" style={{ margin: "0 0 10px" }}>
-        {heading}
+        {heading || "\u00a0"}
         {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· {t("showing {{a}} of {{b}}", { a: activeSchools.length, b: mySchools.length })}</span>}
       </h1>
 
@@ -156,17 +205,10 @@ export function TodayPage() {
       })}
 
       {activeSchools.map((s) =>
-        cards[s.id] ? (
-          <DayCard data={cards[s.id]} color={colorFor(s.id)} key={s.id} />
+        cards[s.slug] ? (
+          <DayCard data={cards[s.slug]} color={colorFor(s.id)} key={s.id} />
         ) : (
-          <section className="day" style={{ ["--c" as string]: colorFor(s.id) }} key={s.id}>
-            <header>
-              <h2>{s.short_name || s.name}</h2>
-            </header>
-            <p className="note" style={{ padding: "0 14px 12px" }}>
-              {t("Loading…")}
-            </p>
-          </section>
+          <PendingCard name={s.short_name || s.name} color={colorFor(s.id)} key={s.id} />
         ),
       )}
 
