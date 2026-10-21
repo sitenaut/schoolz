@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { courseColorProps, displayCourseName, horizon, sortDueByPoints, sortMissingByRecency } from "../courses";
 import type { CourseColorOverrides, CourseNameOverrides } from "../lib/coursePreferences";
+import { BACKPACK_CAPTURE_STORE_URL, type Freshness } from "../lib/freshness";
 import type { TodoItem, TodoResponse } from "../types";
 import { Capped } from "./Capped";
 import { InboxZero } from "./InboxZero";
@@ -45,6 +46,7 @@ function writeCleared(todayIso: string, ids: Set<string>): void {
  * filter setting. */
 export function FocusTab({
   todo,
+  fresh,
   todayIso,
   onOpen,
   onToggle,
@@ -52,6 +54,7 @@ export function FocusTab({
   courseNames,
 }: {
   todo: TodoResponse | null;
+  fresh: Freshness | null;
   todayIso: string;
   onOpen: (item: TodoItem) => void;
   onToggle: (item: TodoItem, done: boolean) => void;
@@ -70,14 +73,9 @@ export function FocusTab({
     onToggle(item, done);
   };
 
-  if (!todo) {
-    return (
-      <div className="empty-state">
-        <h2>Nothing imported yet</h2>
-        <p>Capture a Genesis or Classroom page with the extension, then import it in schoolz.</p>
-      </div>
-    );
-  }
+  // Before anything has ever come in, an empty list is not "nothing due" -
+  // it's "not set up", and the all-clear screen would say the opposite.
+  if (!todo || fresh?.kind === "never") return <GetStarted />;
 
   const h = horizon(todayIso);
   const inHorizon = (d: string | null) => d === h.today || d === h.next;
@@ -151,7 +149,7 @@ export function FocusTab({
       </section>
 
       {allClear ? (
-        <InboxZero finished={finished.length} />
+        <InboxZero finished={finished.length} asOf={fresh?.kind === "stale" ? fresh.ago : null} />
       ) : (
         <>
           <h2 className="section-heading">Up next</h2>
@@ -205,6 +203,28 @@ export function FocusTab({
         </section>
       )}
     </>
+  );
+}
+
+/** The one thing a new family has to do, as three steps and one button. */
+function GetStarted() {
+  return (
+    <section className="empty-state get-started">
+      <h2>Bring in assignments and grades</h2>
+      <ol className="starter-steps">
+        <li>On a computer, add Backpack Capture to Chrome.</li>
+        <li>Open it and sign in with the same account you use here.</li>
+        <li>
+          Press <strong>Update now</strong>.
+        </li>
+      </ol>
+      <a className="primary" href={BACKPACK_CAPTURE_STORE_URL} target="_blank" rel="noopener noreferrer">
+        Get Backpack Capture
+      </a>
+      <p className="sheet-note">
+        It reads Google Classroom in your own Chrome while you're signed in, and keeps it up to date every few hours.
+      </p>
+    </section>
   );
 }
 

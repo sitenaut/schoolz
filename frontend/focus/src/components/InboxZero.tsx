@@ -4,7 +4,7 @@
  * finish line: it only appears when nothing is missing and nothing is due
  * in the horizon, and it is meant to feel earned - big, warm, and with
  * nothing else on the page competing with it. */
-export function InboxZero({ finished }: { finished: number }) {
+export function InboxZero({ finished, asOf }: { finished: number; asOf: string | null }) {
   return (
     <section className="inbox-zero" aria-live="polite">
       <svg viewBox="0 0 200 140" aria-hidden="true" className="inbox-zero-art">
@@ -24,8 +24,10 @@ export function InboxZero({ finished }: { finished: number }) {
       <h2>You're done for the day!</h2>
       <p>
         {finished > 0
-          ? `${finished} ${finished === 1 ? "task" : "tasks"} finished. Nothing else is due today or tomorrow.`
-          : "Nothing is due today or tomorrow."}
+          ? `${finished} ${finished === 1 ? "task" : "tasks"} finished. Nothing else is due today or tomorrow`
+          : "Nothing is due today or tomorrow"}
+        {/* Data a day old can't promise an empty evening. */}
+        {asOf ? `, as of the last update ${asOf}.` : "."}
       </p>
     </section>
   );

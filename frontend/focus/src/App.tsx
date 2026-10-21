@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { apiFetch, apiGet, hasSession } from "./api";
 import { localTodayIso } from "./courses";
 import { useCoursePreferences } from "./lib/coursePreferences";
+import { freshness, type Freshness } from "./lib/freshness";
 import { CourseSheet } from "./components/CourseSheet";
 import { DetailsTab } from "./components/DetailsTab";
 import { FocusTab } from "./components/FocusTab";
@@ -17,6 +18,7 @@ import type {
   ScheduleResponse,
   Student,
   SuggestionState,
+  SyncStatus,
   TodoItem,
   TodoResponse,
 } from "./types";
@@ -35,6 +37,7 @@ export function App() {
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
   const [helpKinds, setHelpKinds] = useState<HelpKind[]>([]);
   const [latePolicies, setLatePolicies] = useState<LatePolicy[]>([]);
+  const [sync, setSync] = useState<SyncStatus | null>(null);
   const { colors: courseColors, names: courseNames, setColor: setCourseColor, setName: setCourseName } =
     useCoursePreferences();
   const [loading, setLoading] = useState(true);
@@ -73,12 +76,13 @@ export function App() {
   }, []);
 
   const load = useCallback(async (id: string) => {
-    const [todoRes, coursesRes, scheduleRes, kindsRes, policiesRes] = await Promise.all([
+    const [todoRes, coursesRes, scheduleRes, kindsRes, policiesRes, syncRes] = await Promise.all([
       apiGet<TodoResponse>(`/students/${id}/bucket3/todo`),
       apiGet<CourseProgress[]>(`/students/${id}/bucket3/progress`),
       apiGet<ScheduleResponse>(`/students/${id}/bucket3/schedule`),
       apiGet<HelpKind[]>(`/students/${id}/bucket3/help-kinds`),
       apiGet<LatePolicy[]>(`/students/${id}/bucket3/late-policies`),
+      apiGet<SyncStatus>(`/students/${id}/bucket3/status`),
     ]);
     if (!todoRes) setError("Couldn't load assignments.");
     setTodo(todoRes);
@@ -86,6 +90,7 @@ export function App() {
     setSchedule(scheduleRes);
     setHelpKinds(kindsRes ?? []);
     setLatePolicies(policiesRes ?? []);
+    setSync(syncRes);
     setLoading(false);
   }, []);
 
@@ -177,6 +182,8 @@ export function App() {
     await load(studentId);
   };
 
+  const fresh = freshness(sync);
+
   const suggestionFor = (item: TodoItem): SuggestionState | null =>
     suggestions[item.id] ?? (item.suggestion ? { ...item.suggestion, loading: false, error: null } : null);
 
@@ -194,8 +201,13 @@ export function App() {
   }
 
   return (
-    <Shell tab={tab} setTab={setTab} students={students} studentId={studentId} onPick={setStudentId}>
+    <Shell tab={tab} setTab={setTab} students={students} studentId={studentId} onPick={setStudentId} fresh={fresh}>
       {error && <div className="banner-error">{error}</div>}
+      {fresh?.kind !== "never" && fresh?.needsLogin && (
+        <div className="banner-warn">
+          Backpack Capture can't read Google Classroom: sign in to Classroom again in Chrome on the computer it runs on.
+        </div>
+      )}
       {loading ? (
         <div className="empty-state">
           <p>Loading…</p>
@@ -203,6 +215,7 @@ export function App() {
       ) : tab === "focus" ? (
         <FocusTab
           todo={todo}
+          fresh={fresh}
           todayIso={todayIso}
           onOpen={setOpen}
           onToggle={toggleDone}
@@ -309,6 +322,7 @@ function Shell({
   students = [],
   studentId = null,
   onPick,
+  fresh = null,
 }: {
   children: ReactNode;
   tab: Tab;
@@ -316,6 +330,7 @@ function Shell({
   students?: Student[];
   studentId?: string | null;
   onPick?: (id: string) => void;
+  fresh?: Freshness | null;
 }) {
   const title =
     tab === "focus" ? "Focus Dashboard" : tab === "subjects" ? "Subjects & Clubs" : tab === "details" ? "Details" : "Schedule";
@@ -323,7 +338,14 @@ function Shell({
   return (
     <div className="app">
       <header className="app-header">
-        <h1>{title}</h1>
+        <div>
+          <h1>{title}</h1>
+          {fresh && fresh.kind !== "never" && (
+            <p className={`freshness${fresh.kind === "stale" ? " stale" : ""}`}>
+              {fresh.kind === "stale" ? `Last updated ${fresh.ago}` : `Updated ${fresh.ago}`}
+            </p>
+          )}
+        </div>
         {students.length > 1 && onPick ? (
           <select className="who-select" value={studentId ?? ""} onChange={(e) => onPick(e.target.value)} aria-label="Child">
             {students.map((s) => (
