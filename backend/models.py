@@ -2166,6 +2166,26 @@ class Bucket3Capture(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class Bucket3SyncState(Base):
+    """When each source was last read for a student, and how the last
+    Backpack Capture walk ended - Gradez's "Updated 2 h ago". Not derivable
+    from Bucket3Capture: an unchanged page is skipped there as a duplicate,
+    so its newest row says when something last *changed*, not when anyone
+    last looked."""
+
+    __tablename__ = "bucket3_sync_state"
+
+    student_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("students.id", ondelete="CASCADE"), primary_key=True
+    )
+    classroom_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    genesis_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    walk_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    walk_detail: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    walk_finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class ChildScheduleBlock(Base):
     """One period's schedule info for a student, from a Genesis capture.
     `source` is "list" (full-year, no clock times) or "daily" (today's
