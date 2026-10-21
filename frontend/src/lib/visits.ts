@@ -1,4 +1,5 @@
 import { API_URL } from "../authConfig";
+import { isInternalTraffic } from "./analytics";
 import { IS_PRERENDER } from "./prerenderReady";
 
 const SOURCE_KEY = "schoolz_visit_source";
@@ -46,7 +47,9 @@ function computeSource(): string {
   if (!referrer) return "direct";
   try {
     const host = new URL(referrer).hostname.toLowerCase().replace(/^www\./, "");
-    if (host === window.location.hostname) return "internal";
+    // A session that starts from one of our own pages (a link opened in a
+    // new tab) - a visitor of any kind, not the team; that's "team" below.
+    if (host === window.location.hostname) return "self";
     if (/(^|\.)facebook\.com$|(^|\.)fb\.(com|me)$/.test(host)) return "facebook";
     if (/(^|\.)instagram\.com$/.test(host)) return "instagram";
     if (/(^|\.)google\./.test(host)) return "google";
@@ -79,7 +82,10 @@ export function countVisit(path: string): void {
     /* storage unavailable: count it, at the cost of possible duplicates */
   }
 
-  const body = JSON.stringify({ path, source: visitSource() });
+  // The team's own browsing (the same flag GA's internal-traffic filter
+  // reads) is counted under its own label so the report can leave it out.
+  const source = isInternalTraffic() ? "team" : visitSource();
+  const body = JSON.stringify({ path, source });
   try {
     // sendBeacon survives the page being closed mid-request, which a plain
     // fetch does not - it's the difference between counting someone who

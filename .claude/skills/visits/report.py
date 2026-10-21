@@ -40,20 +40,26 @@ for r in rows:
     by_path[r["day"]][r["path"]][r["source"]] += r["count"]
 
 
+# "team" is a browser flagged as the team's own. Older rows say "internal",
+# which only ever meant a session that started from one of our own pages
+# (now "self") - real visitors, so it counts as outside.
+TEAM = "team"
+
+
 def outside(c: collections.Counter) -> int:
-    return sum(c.values()) - c.get("internal", 0)
+    return sum(c.values()) - c.get(TEAM, 0)
 
 
 print(f"As of {now:%a %b %-d, %-I:%M %p} Eastern\n")
-print("## Daily (outside = everything but 'internal', i.e. the team)")
+print("## Daily (outside = everything but 'team', the team's flagged browsers)")
 print(f"{'day':<16}{'outside':>8}{'team':>6}  sources (outside)")
 for day in sorted(by_day):
     c = by_day[day]
     label = datetime.strptime(day, "%Y-%m-%d").strftime("%a %b %-d")
     if day == today:
         label += " *"
-    srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != "internal")
-    print(f"{label:<16}{outside(c):>8}{c.get('internal', 0):>6}  {srcs}")
+    srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != TEAM)
+    print(f"{label:<16}{outside(c):>8}{c.get(TEAM, 0):>6}  {srcs}")
 print("(* today, partial)\n")
 
 for day, name in ((yesterday, "Yesterday"), (today, "Today so far")):
@@ -66,7 +72,7 @@ for day, name in ((yesterday, "Yesterday"), (today, "Today so far")):
     for path, c in ordered:
         if outside(c) == 0:
             continue
-        srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != "internal")
+        srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != TEAM)
         print(f"  {path:<45}{outside(c):>4}  {srcs}")
     schools = sum(outside(c) for p, c in paths.items() if p.startswith("/schools/"))
     print(f"  {'(all school pages)':<45}{schools:>4}\n")

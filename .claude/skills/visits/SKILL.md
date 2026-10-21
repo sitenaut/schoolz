@@ -18,7 +18,8 @@ It calls `GET /page-views` on prod through `scripts/schoolz-api.sh`. A 403 means
 
 Lead with the number asked for, then a short table. Keep it brief; the owner usually wants counts, not commentary.
 
-- **Outside visits** (everything but source `internal`) are the headline. `internal` is the team's own browsing; mention it once, separately.
+- **Outside visits** (everything but source `team`) are the headline. `team` is a browser flagged as the team's own (a staff sign-in, or `?internal=1` once on any URL); mention it once, separately. A team member who never signed in or used the flag on a device counts as outside.
+- `self` (older rows: `internal`) is a session that started from one of our own pages, usually a link opened in a new tab. Those are real visitors and count as outside. Before the `team` label shipped, the team's browsing was mixed into the outside sources and can't be separated out.
 - **Visits, not people.** `page_visits` stores one counter per day/path/source and nothing per visitor (the `/chcomms` promise), so it can't count people. A visit is counted once per page per browser session.
 - **Days are Eastern calendar days**, with no hours. "Last 24 hours" or "last few hours" can only be answered as today + part of yesterday, or as the change since an earlier check in the same conversation.
 - Compare with the same weekday last week; weekends and Facebook posts swing it a lot.
