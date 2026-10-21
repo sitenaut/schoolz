@@ -187,8 +187,16 @@ export function BackpackCapturePrivacyPage() {
         Backpack Capture can optionally send your captures to your own schoolz family account so they appear
         in your child's due/missing/done view, instead of (or alongside) exporting a file by hand.
       </p>
-      <p>Logging in works one of two ways, both handled by schoolz's own authentication system:</p>
+      <p>Connecting it to your account works one of three ways:</p>
       <ul>
+        <li>
+          <strong>Connect to schoolz</strong> (version 0.9.0 and later) - opens schoolz in a tab, where you
+          sign in the way you always do and press Connect after checking the code matches the one the
+          extension shows. The extension then gets its own key, which can only send pages, list your children's
+          names and report how an update went - it can't read anything else in your account. Each connected
+          computer is listed under Account → Security on schoolz, where you can disconnect it, and the
+          extension's own Sign out removes its key.
+        </li>
         <li>
           <strong>Email and password</strong> - sent directly to schoolz's sign-in service; the extension
           never stores your password, only the session token that comes back.
@@ -207,8 +215,9 @@ export function BackpackCapturePrivacyPage() {
         is covered by <a href="/privacy">schoolz's own privacy policy</a>.
       </p>
       <p className="note">
-        Logging out clears the stored session from the extension only - it does not delete anything already
-        published, and does not close your schoolz account.
+        Signing out clears the stored login from the extension (and, for a computer connected with Connect to
+        schoolz, removes its key from your account) - it does not delete anything already sent, and does not
+        close your schoolz account.
       </p>
 
       <h3>Children's data</h3>

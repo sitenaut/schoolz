@@ -213,7 +213,9 @@ function GetStarted() {
       <h2>Bring in assignments and grades</h2>
       <ol className="starter-steps">
         <li>On a computer, add Backpack Capture to Chrome.</li>
-        <li>Open it and sign in with the same account you use here.</li>
+        <li>
+          Open it and press <strong>Connect to schoolz</strong>, then <strong>Connect</strong> on the page it opens.
+        </li>
         <li>
           Press <strong>Update now</strong>.
         </li>

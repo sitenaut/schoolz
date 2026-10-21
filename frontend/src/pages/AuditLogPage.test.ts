@@ -8,7 +8,7 @@ describe("audit log labels", () => {
     const py = readFileSync(fileURLToPath(new URL("../../../backend/services/audit.py", import.meta.url)), "utf8");
     // AUDITED values (`): "role.create",`) and the actions note() is given in this file.
     const recorded = new Set([...py.matchAll(/\):\s*"([a-z_]+\.[a-z_]+)"/g), ...py.matchAll(/"(auth\.[a-z_]+)"/g)].map((m) => m[1]));
-    for (const router of ["admin_api_keys", "admin_secret_requests", "gmail"]) {
+    for (const router of ["admin_api_keys", "admin_secret_requests", "gmail", "capture_devices"]) {
       const src = readFileSync(fileURLToPath(new URL(`../../../backend/routers/${router}.py`, import.meta.url)), "utf8");
       for (const m of src.matchAll(/audit\.note\(request, "([a-z_.]+)"/g)) recorded.add(m[1]);
     }

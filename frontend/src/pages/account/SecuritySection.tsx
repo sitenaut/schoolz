@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { IS_SUPABASE_AUTH } from "../../authConfig";
 import { IconAlert, IconLock, IconLogout, IconShield } from "../../components/icons";
 import { Badge } from "../../components/ui/Badge";
+import { ConnectedComputersCard } from "../../components/ConnectedComputersCard";
 import { TwoStepCard } from "../../components/TwoStepCard";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Field } from "../../components/ui/Field";
@@ -132,6 +133,8 @@ export function SecuritySection() {
           </button>
         </div>
       </SectionCard>
+
+      <ConnectedComputersCard />
 
       <SectionCard title="Danger zone" description="Irreversible. Take a breath first." icon={<IconAlert />} danger>
         <div className="danger-row">
