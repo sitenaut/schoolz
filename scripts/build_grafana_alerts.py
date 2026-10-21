@@ -46,7 +46,9 @@ FINISHED = 'status=~"success|warning"'
 NOT_SKIPPED = 'status!="skipped"'
 SERVER_ERROR = 'http_response_status_code=~"5.."'
 POOL_USED = 'state="used"'
-FARO = '{app_name="schoolz-faro"}'
+# Faro's collector labels its streams service_name, not app_name: an
+# app_name selector matches nothing, so the rules read empty and never fire.
+FARO = '{service_name="schoolz-faro"}'
 
 SEVERITY = {"page": "critical", "ticket": "warning", "info": "info"}
 # Evaluation interval per group. Pages are checked every minute; the SQL

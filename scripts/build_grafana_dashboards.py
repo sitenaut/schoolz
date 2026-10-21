@@ -299,7 +299,7 @@ def api() -> dict:
 # 3. User experience - did anyone come, and did the site work for them?
 # --------------------------------------------------------------------------
 def ux() -> dict:
-    faro = '{app_name="schoolz-faro"}'
+    faro = '{service_name="schoolz-faro"}'  # not app_name: see build_grafana_alerts.FARO
     panels = [
         panel(1, "Visits by page (server-side, last 30d)",
               [sql_target(

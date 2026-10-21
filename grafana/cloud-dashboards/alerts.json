@@ -1616,7 +1616,7 @@
               "datasourceUid": "${DS_LOGS}",
               "model": {
                 "refId": "A",
-                "expr": "sum(count_over_time({app_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"auth_timeout\" [30m]))",
+                "expr": "sum(count_over_time({service_name=\"schoolz-faro\"} | logfmt | kind=\"event\" | event_name=\"auth_timeout\" [30m]))",
                 "queryType": "instant",
                 "editorMode": "code"
               }
@@ -2357,7 +2357,7 @@
               "datasourceUid": "${DS_LOGS}",
               "model": {
                 "refId": "A",
-                "expr": "quantile_over_time(0.95, {app_name=\"schoolz-faro\"} | logfmt | kind=\"measurement\" | type=\"auth_ready\" | unwrap value_ms [30m])",
+                "expr": "quantile_over_time(0.95, {service_name=\"schoolz-faro\"} | logfmt | kind=\"measurement\" | type=\"auth_ready\" | unwrap value_ms [30m])",
                 "queryType": "instant",
                 "editorMode": "code"
               }
