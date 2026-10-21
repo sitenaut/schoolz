@@ -39,6 +39,19 @@ def _no_real_geocoding(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_background_translation(monkeypatch):
+    """A request queues missing translations for a background worker. Under
+    pytest that worker would share the test's one connection with the request
+    still using it, so it never starts: a test that wants the translations
+    runs the queue itself with `content_translation.drain()`."""
+    from services import content_translation
+    monkeypatch.setattr(content_translation, "_start_worker", lambda: None)
+    content_translation._PENDING.clear()
+    yield
+    content_translation._PENDING.clear()
+
+
+@pytest.fixture(autouse=True)
 def _isolated_db_transaction(request):
     """Every async test runs inside `_db_transaction` below. A plain sync test
     can't reach the async database, and pytest 9 refuses a sync test that

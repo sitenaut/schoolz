@@ -72,6 +72,7 @@ from routers import student_accounts as student_accounts_router  # noqa: E402
 from routers import students as students_router  # noqa: E402
 from routers import survey as survey_router  # noqa: E402
 from services import audit  # noqa: E402
+from services.i18n import LANG_HEADER, normalize_lang  # noqa: E402
 from settings import check_settings  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -202,7 +203,8 @@ async def log_requests(request: Request, call_next):
     # request actually resolved a user. Without them there was no way to
     # tell an authenticated request from an anonymous one in the logs -
     # which is the first question worth asking about a bug a visitor only
-    # hits while logged in (see the 2026-09-15 auth stall).
+    # hits while logged in (see the 2026-09-15 auth stall). `lang` is there
+    # because a page in another language does more work than the English one.
     user_id = getattr(request.state, "user_id", None)
     logger.info(
         "http_request",
@@ -215,6 +217,7 @@ async def log_requests(request: Request, call_next):
             "user_id": user_id,
             "authed": user_id is not None,
             "api_key_id": getattr(request.state, "api_key_id", None),
+            "lang": normalize_lang(request.headers.get(LANG_HEADER) or request.query_params.get("lang")),
         },
     )
     return response

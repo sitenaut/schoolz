@@ -21,6 +21,8 @@ from services.school_today import LOCAL_TZ, build_today
 
 ES = {"X-Schoolz-Lang": "es"}
 FUTURE = datetime.now(UTC) + timedelta(days=3)
+# conftest stops the worker starting under pytest; one test starts it for real.
+_REAL_START_WORKER = ct._start_worker
 
 
 @pytest.fixture(autouse=True)
@@ -82,6 +84,11 @@ async def test_spanish_translates_once_stores_it_and_serves_it_to_the_next_visit
     slug, _, item_id = await _school_with_item()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         [row] = await _content(client, slug, ES)
+        assert (row["title"], row["translated"]) == ("Picture Day", False)  # never waits on the model
+        assert calls == []
+        await ct.drain()
+
+        [row] = await _content(client, slug, ES)
         assert row["title"] == "ES: Picture Day"
         assert row["description"] == "ES: Bring the form."
         assert row["translated"] is True
@@ -126,6 +133,9 @@ async def test_edited_item_has_a_stale_hash_and_is_retranslated(monkeypatch):
         await db.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         [row] = await _content(client, slug, ES)
+        assert (row["title"], row["translated"]) == ("Picture Day", False)  # the stale text is never shown
+        await ct.drain()
+        [row] = await _content(client, slug, ES)
         assert row["title"] == "ES: Picture Day"
         assert calls == [["Picture Day"]]
     async with database.SessionLocal() as db:
@@ -145,8 +155,10 @@ async def test_model_failure_serves_english_and_backs_off(monkeypatch):
     slug, _, _ = await _school_with_item()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         [row] = await _content(client, slug, ES)
+        await ct.drain()
+        [row] = await _content(client, slug, ES)
         assert (row["title"], row["description"], row["translated"], row["title_original"]) == ("Picture Day", "Bring the form.", False, None)
-        await _content(client, slug, ES)
+        await ct.drain()
         assert len(attempts) == 1  # cooldown: an outage isn't retried on every page load
 
 
@@ -182,6 +194,8 @@ async def test_missing_api_key_degrades_to_english(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     slug, _, _ = await _school_with_item()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await _content(client, slug, ES)
+        await ct.drain()
         [row] = await _content(client, slug, ES)
         assert (row["title"], row["translated"]) == ("Picture Day", False)
 
@@ -202,6 +216,8 @@ async def test_model_that_skips_an_item_leaves_only_that_one_in_english(monkeypa
         await db.commit()
         slug = school.slug
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await _content(client, slug, ES)
+        await ct.drain()
         rows = {r["title_original"] or r["title"]: r for r in await _content(client, slug, ES)}
         assert rows["Kept"]["title"] == "ES: Kept" and rows["Kept"]["translated"] is True
         assert rows["Skipped"]["title"] == "Skipped" and rows["Skipped"]["translated"] is False
@@ -215,7 +231,8 @@ async def test_calendar_search_matches_the_stored_translation_only_in_spanish(mo
     monkeypatch.setattr(ct, "_call_model", fake)
     slug, school_id, _item_id = await _school_with_item(title="Book Fair", description=None)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        assert (await client.get("/calendar", params={"school_id": school_id}, headers=ES)).status_code == 200  # stores it
+        assert (await client.get("/calendar", params={"school_id": school_id}, headers=ES)).status_code == 200  # queues it
+        await ct.drain()
         es = await client.get("/calendar", params={"school_id": school_id, "q": "feria"}, headers=ES)
         assert [r["title_original"] for r in es.json()] == ["Book Fair"]
         en = await client.get("/calendar", params={"school_id": school_id, "q": "feria"})
@@ -239,6 +256,8 @@ async def test_calendar_translates_and_rotation_titles_are_deterministic(monkeyp
         await db.commit()
         school_id = school.id
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/calendar", params={"school_id": school_id}, headers=ES)).status_code == 200
+        await ct.drain()
         res = await client.get("/calendar", params={"school_id": school_id}, headers=ES)
         assert res.status_code == 200
         by_orig = {(r["title_original"] or r["title"]): r for r in res.json()}
@@ -272,6 +291,8 @@ async def test_today_in_spanish_uses_translated_closure_reason_and_spanish_label
         db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title="Day 4", start_date=at(today), is_all_day=True, is_current=True))
         await db.commit()
 
+        await build_today(db, school, today, lang="es")
+        await ct.drain()
         es = await build_today(db, school, today, lang="es")
         en = await build_today(db, school, today)
 
@@ -482,3 +503,51 @@ async def test_long_past_items_are_not_translated(monkeypatch):
         await db.commit()
         assert await ct.translate_items(db, [item], "es") == 0
         assert calls == []
+
+
+@pytest.mark.anyio
+async def test_the_worker_translates_what_a_request_queued(monkeypatch):
+    calls: list = []
+    monkeypatch.setattr(ct, "_call_model", _fake_model(calls))
+    slug, _, item_id = await _school_with_item()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        [row] = await _content(client, slug, ES)
+        assert row["translated"] is False and calls == []
+        assert list(ct._PENDING["es"]) == [item_id]
+        [row] = await _content(client, slug, ES)
+        assert list(ct._PENDING["es"]) == [item_id]  # queued once, however many visitors
+
+        # The real worker task, started once no request is using the connection.
+        monkeypatch.setattr(ct, "_start_worker", _REAL_START_WORKER)
+        ct._start_worker()
+        await ct._worker
+        assert calls == [["Picture Day"]] and not ct._PENDING
+        [row] = await _content(client, slug, ES)
+        assert (row["title"], row["translated"]) == ("ES: Picture Day", True)
+
+
+@pytest.mark.anyio
+async def test_one_request_queues_at_most_its_share_and_languages_take_turns(monkeypatch):
+    order: list = []
+
+    async def fake(payload, lang):
+        order.append((lang, len(payload)))
+        return {}
+
+    monkeypatch.setattr(ct, "_call_model", fake)
+
+    def items(prefix, n):
+        return [SimpleNamespace(id=f"{prefix}-{k}", title=f"Event {k}", description=None, start_date=FUTURE, end_date=None) for k in range(n)]
+
+    ct._queue(items("a", 200), "zh")
+    assert len(ct._PENDING["zh"]) == ct.MAX_ITEMS_PER_REQUEST
+    ct._queue(items("b", 200), "zh")
+    ct._queue(items("c", 5), "ko")
+    assert len(ct._PENDING["zh"]) == 2 * ct.MAX_ITEMS_PER_REQUEST
+
+    await ct.drain()
+    assert not ct._PENDING
+    langs = [lang for lang, _ in order]
+    # zh's first pass, then ko, then zh's second: ko never waits behind all of zh.
+    assert langs.index("ko") < len(langs) - 1 and langs[-1] == "zh"
+    assert sum(n for lang, n in order if lang == "zh") == 2 * ct.MAX_ITEMS_PER_REQUEST
