@@ -787,6 +787,11 @@ h3 {
   margin-bottom: 14px;
   overflow: hidden;
 }
+/* A loading card holds a real card's space (they run 420-650px tall at any
+   width), so nothing below jumps when it arrives - see TodayPage's PendingCard. */
+.day.pending {
+  min-height: 440px;
+}
 .day > header {
   padding: 12px 14px 8px;
   display: flex;

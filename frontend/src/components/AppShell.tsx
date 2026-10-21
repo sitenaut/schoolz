@@ -75,7 +75,7 @@ export function AppShell() {
   const { user, loading: authLoading, authTimedOut } = useAuth();
   const unreadNotifications = useUnreadNotifications(!!user);
   const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
-  const { allSchools, mySchools, activeSchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
+  const { allSchools, mySchools, deviceSlugs, activeSchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname, search } = useLocation();
   const { seasons } = useSeasons();
   const navigate = useNavigate();
@@ -125,7 +125,7 @@ export function AppShell() {
     if (headerRef.current) ro.observe(headerRef.current);
     if (ribbonRef.current) ro.observe(ribbonRef.current);
     return () => ro.disconnect();
-  }, [mySchools.length, hideSchoolFilter, stickyRibbon]);
+  }, [mySchools.length, deviceSlugs.length, schoolsLoading, hideSchoolFilter, stickyRibbon]);
 
   // An invite opened before signing in is finished the moment a signed-in
   // session shows up, wherever that happens - a Google redirect or an
@@ -314,8 +314,17 @@ export function AppShell() {
         {user ? <UserMenu /> : <AuthPopover />}
       </header>
 
-      {mySchools.length > 0 && !hideSchoolFilter && (
+      {/* Shown while loading too when this device has saved schools: the
+          ribbon appearing late pushed the whole page down 51px, the
+          largest layout shift on the home page. */}
+      {(mySchools.length > 0 || (schoolsLoading && deviceSlugs.length > 0)) && !hideSchoolFilter && (
         <div className={`ribbon${stickyRibbon ? " ribbon-stacked" : ""}`} role="group" aria-label={t("Switch schools")} ref={ribbonRef}>
+          {mySchools.length === 0 && (
+            // An invisible chip, so the empty ribbon is exactly a full one's height.
+            <span className="ribbon-chip" style={{ visibility: "hidden" }} aria-hidden="true">
+              <span className="avatar" />
+            </span>
+          )}
           {mySchools.length > 1 && (
             <button
               className="ribbon-chip all"
