@@ -1,14 +1,20 @@
 """Machine translation of school-authored content (SchoolContentItem).
 
-Same rule as extraction: translate once, share with everyone. The first
-request in a language pays one Haiku call for whatever items are missing a
-translation; the result is stored in `content_translations` and every later
-visitor reads it. English never comes here.
+Same rule as extraction: translate once, share with everyone. A request in
+a language serves whatever translations are stored and queues the missing
+ones; a background worker translates those after the response has gone out
+and stores them in `content_translations`, where every later visitor reads
+them. English never comes here.
+
+Requests never wait on the model. They used to, and a page with new items
+took 4-21s while Haiku ran (75 slow school pages a day, calendars at 11-21s),
+holding a pooled connection and the API's one CPU for every other visitor.
+The visitor who finds an item untranslated now sees it in English.
 
 Nothing in this module raises into a request. A missing API key, a model
 error, a timeout, a malformed reply or an item the model skipped all mean
-the same thing: that item is served in English, and the next request tries
-again. The English text is always kept and returned alongside
+the same thing: that item is served in English, and the next request queues
+it again. The English text is always kept and returned alongside
 (`title_original`), so a translated row can show what the school wrote.
 
 Deterministic titles (the "Day 3" rotation markers) never reach the model -
@@ -29,6 +35,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
 import observability
 from models import ContentTranslation, School, SchoolContentItem
 from services import haiku, i18n_strings
@@ -44,11 +51,14 @@ CHUNK_SIZE = 10
 # At most this many chunk calls in flight per translate_items(), so a backfill
 # (limit=None, hundreds of items) doesn't fire them all at once.
 _CONCURRENCY = 4
-# One request never translates more than this many missing items: a cold
-# /calendar can hold hundreds, and a parent
-# shouldn't wait on all of them. The rest are served in English and picked up
-# by the next request - or by translate_school_content() in one go.
+# One request never queues more than this many missing items (a cold
+# /calendar can hold hundreds), the same cap as when requests translated
+# them in place, so the bill doesn't change. The rest are queued by the next
+# request - or translated by translate_school_content() in one go.
 MAX_ITEMS_PER_REQUEST = 80
+# Items waiting for the worker, all languages together. Past this a request
+# queues nothing, and a later request queues its items again.
+_MAX_PENDING = 2000
 _TIMEOUT_S = 40.0
 # After a failed call, stop calling for a while so an API outage doesn't add
 # a doomed round trip to every page load.
@@ -122,8 +132,23 @@ class Localized:
     translated: bool  # machine-translated (False for English or a deterministic rendering)
 
 
+@dataclass(frozen=True)
+class _Queued:
+    """What the worker needs of an item, copied out of the request's session:
+    that session's objects aren't usable once the request has ended."""
+
+    id: str
+    title: str
+    description: str | None
+    start_date: datetime | None
+    end_date: datetime | None
+
+
 _INFLIGHT: dict[tuple[str, str], "asyncio.Future[None]"] = {}
 _cooldown_until = 0.0
+# lang -> {item_id: _Queued}, waiting for the worker.
+_PENDING: dict[str, dict[str, _Queued]] = {}
+_worker: "asyncio.Task[None] | None" = None
 
 
 def source_hash(title: str, description: str | None) -> str:
@@ -287,6 +312,9 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
                 async with sem:
                     return await _translate_chunk(chunk, lang)
 
+            # Hand the pooled connection back for the seconds the model takes;
+            # the pool is six connections for the whole API.
+            await db.commit()
             results = await asyncio.gather(*[bounded(c) for c in chunks], return_exceptions=True)
             rows = []
             for chunk, result in zip(chunks, results, strict=True):
@@ -326,6 +354,50 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
         return 0
 
 
+def _queue(items: list[SchoolContentItem], lang: str) -> None:
+    """Queues up to MAX_ITEMS_PER_REQUEST of `items` for the worker and makes
+    sure it's running. Never waits."""
+    pending = _PENDING.setdefault(lang, {})
+    room = _MAX_PENDING - sum(len(p) for p in _PENDING.values())
+    for i in items[:MAX_ITEMS_PER_REQUEST]:
+        if room <= 0:
+            break
+        if i.id not in pending and (i.id, lang) not in _INFLIGHT:
+            pending[i.id] = _Queued(i.id, i.title, i.description, i.start_date, i.end_date)
+            room -= 1
+    if not pending:
+        del _PENDING[lang]
+        return
+    _start_worker()
+
+
+def _start_worker() -> None:
+    global _worker
+    if _worker is None or _worker.done():
+        _worker = asyncio.get_running_loop().create_task(drain())
+
+
+async def drain() -> None:
+    """Translates everything queued, up to MAX_ITEMS_PER_REQUEST items of one
+    language per pass, taking languages in turn, until nothing is left. The
+    worker task runs this; tests call it directly. During a cooldown a pass
+    translates nothing, so the queue empties and later requests refill it."""
+    while _PENDING:
+        lang = next(iter(_PENDING))
+        pending = _PENDING.pop(lang)
+        keys = list(pending)
+        batch = [pending[k] for k in keys[:MAX_ITEMS_PER_REQUEST]]
+        rest = {k: pending[k] for k in keys[MAX_ITEMS_PER_REQUEST:]}
+        if rest:
+            # Behind any other language, so one doesn't starve the rest.
+            _PENDING.setdefault(lang, {}).update(rest)
+        try:
+            async with database.SessionLocal() as db:
+                await translate_items(db, batch, lang, limit=None)
+        except Exception as exc:
+            logger.warning("content_translation_error", extra={"lang": lang, "error": str(exc)})
+
+
 async def translate_texts(texts: list[tuple[str, str | None]], lang: str, guidance: str = "") -> dict[int, tuple[str, str | None]]:
     """Translates short (title, description) pairs that aren't school content
     items - a seasonal guide's title and note. {index: (title, description)}
@@ -347,18 +419,18 @@ async def translate_texts(texts: list[tuple[str, str | None]], lang: str, guidan
 
 async def apply_translations(db: AsyncSession, items: list[SchoolContentItem], lang: str, translate_missing: bool = True) -> dict[str, Localized]:
     """{item_id: Localized} for every item, in `lang` where a fresh
-    translation exists (translating what's missing first, unless
-    `translate_missing` is False) and in the original English otherwise."""
+    translation is stored and in the original English otherwise. Items with
+    none are queued for the background worker unless `translate_missing` is
+    False."""
     if lang not in LANGUAGE_NAMES:
         return {i.id: Localized(i.title, i.description, False) for i in items}
-    if translate_missing:
-        await translate_items(db, items, lang)
     try:
         stored = await _stored(db, [i.id for i in items if _needs_model(i, lang)], lang)
     except Exception as exc:
         logger.warning("content_translation_read_failed", extra={"lang": lang, "error": str(exc)})
         stored = {}
     out: dict[str, Localized] = {}
+    missing: list[SchoolContentItem] = []
     for i in items:
         fixed = i18n_strings.rotation_title(i.title, lang)
         row = stored.get(i.id)
@@ -368,6 +440,10 @@ async def apply_translations(db: AsyncSession, items: list[SchoolContentItem], l
             out[i.id] = Localized(row.title, row.description, True)
         else:
             out[i.id] = Localized(i.title, i.description, False)
+            if _needs_model(i, lang):
+                missing.append(i)
+    if translate_missing and missing:
+        _queue(missing, lang)
     return out
 
 
