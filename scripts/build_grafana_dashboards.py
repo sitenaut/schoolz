@@ -216,14 +216,18 @@ def scans() -> dict:
                    "alert and this panel can never disagree."),
         panel(8, "Newsletters not scanned in 8+ days",
               [sql_target(
-                  "SELECT COALESCE(label, url) AS \"Newsletter\",\n"
-                  "       date_trunc('minute', last_scanned_at) AS \"Last scanned\"\n"
-                  "FROM smore_newsletters\n"
-                  "WHERE last_scanned_at IS NULL OR last_scanned_at < now() - interval '8 days'\n"
-                  "ORDER BY last_scanned_at NULLS FIRST;")],
+                  "SELECT COALESCE(n.label, n.url) AS \"Newsletter\",\n"
+                  "       date_trunc('minute', n.last_scanned_at) AS \"Last scanned\"\n"
+                  "FROM smore_newsletters n\n"
+                  "JOIN scheduled_jobs j ON j.id = n.scheduled_job_id\n"
+                  "WHERE j.enabled AND NOT j.run_once\n"
+                  "  AND (n.last_scanned_at IS NULL OR n.last_scanned_at < now() - interval '8 days')\n"
+                  "ORDER BY n.last_scanned_at NULLS FIRST;")],
               {"h": 8, "w": 12, "x": 12, "y": 24}, ptype="table",
-              desc="Smore newsletters run weekly, so 8 days is one missed cycle. Catches the known "
-                   "per-issue-URL schools (Cooper, Clara Barton) going stale."),
+              # Same filter as the schoolz-newsletter-stale alert, or the panel
+              # lists rows the alert has stopped counting.
+              desc="Smore newsletters run weekly, so 8 days is one missed cycle. Only enabled, recurring "
+                   "jobs: a one-issue link scans once by design and then sits idle."),
         panel(9, "LLM tokens (24h, by direction)",
               [target(tokens_by_dir, "{{direction}}")],
               {"h": 8, "w": 8, "x": 0, "y": 32},

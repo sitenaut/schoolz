@@ -4,10 +4,12 @@ import uuid
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 import database
-from models import SmoreNewsletter
+from models import SmoreBlock, SmoreNewsletter
 from scheduler.jobs import smore_scan
 from scheduler.jobs.smore_scan import select_unseen_blocks
 
@@ -119,7 +121,7 @@ async def test_losing_a_race_to_a_concurrent_run_does_not_fail_the_scan(monkeypa
 
     extracted: list[int] = []
 
-    async def _extract(db, newsletter, new_blocks):
+    async def _extract(db, newsletter, new_blocks, retry_blocks=()):
         extracted.append(len(new_blocks))
         return "ok"
 
@@ -142,3 +144,44 @@ async def test_losing_a_race_to_a_concurrent_run_does_not_fail_the_scan(monkeypa
         assert "0 new" in second
         # Only the run that inserted the rows extracts them.
         assert extracted == [2]
+
+
+@pytest.mark.anyio
+async def test_a_block_left_pending_by_an_earlier_run_is_retried(monkeypatch):
+    """Regression: scans only extracted the blocks they inserted, so a block
+    left pending - a failed fetch, or a run killed between storing its
+    blocks and reading them (Audubon's first backpack scan, 105 PDFs) - was
+    never read. A pending block from the last 14 days is retried; an older
+    one has been given up on."""
+    stored = [_block(0, "hash-p1", "Alpha"), _block(1, "hash-p2", "Beta")]
+
+    async def _parse(url: str) -> list[dict]:
+        return stored
+
+    calls: list[tuple[list[str], list[str]]] = []
+
+    async def _extract(db, newsletter, new_blocks, retry_blocks=()):
+        calls.append(([b.content_hash for b in new_blocks], [b.content_hash for b in retry_blocks]))
+        return "ok"
+
+    monkeypatch.setattr(smore_scan, "fetch_and_parse", _parse)
+    monkeypatch.setattr(smore_scan, "extract_from_newsletter", _extract)
+
+    newsletter = SmoreNewsletter(url=f"https://app.smore.com/n/{uuid.uuid4().hex[:8]}")
+    async with database.SessionLocal() as db:
+        db.add(newsletter)
+        await db.commit()
+        await db.refresh(newsletter)
+        now = datetime.now(UTC)
+        db.add_all([
+            SmoreBlock(newsletter_id=newsletter.id, position=0, block_type="image", image_url="https://x/recent.png",
+                       content_hash="hash-p1", pending_vision_extraction=True, first_seen_at=now - timedelta(days=2)),
+            SmoreBlock(newsletter_id=newsletter.id, position=1, block_type="image", image_url="https://x/old.png",
+                       content_hash="hash-p2", pending_vision_extraction=True, first_seen_at=now - timedelta(days=30)),
+        ])
+        await db.commit()
+
+        summary = await smore_scan.run(db, {"newsletter_id": newsletter.id})
+
+    assert "0 new, 1 retried" in summary
+    assert calls == [([], ["hash-p1"])]

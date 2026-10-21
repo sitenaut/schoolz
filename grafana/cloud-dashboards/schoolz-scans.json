@@ -283,7 +283,7 @@
     {
       "id": 8,
       "title": "Newsletters not scanned in 8+ days",
-      "description": "Smore newsletters run weekly, so 8 days is one missed cycle. Catches the known per-issue-URL schools (Cooper, Clara Barton) going stale.",
+      "description": "Smore newsletters run weekly, so 8 days is one missed cycle. Only enabled, recurring jobs: a one-issue link scans once by design and then sits idle.",
       "type": "table",
       "gridPos": {
         "h": 8,
@@ -297,7 +297,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "${DS_SQL}"
           },
-          "rawSql": "SELECT COALESCE(label, url) AS \"Newsletter\",\n       date_trunc('minute', last_scanned_at) AS \"Last scanned\"\nFROM smore_newsletters\nWHERE last_scanned_at IS NULL OR last_scanned_at < now() - interval '8 days'\nORDER BY last_scanned_at NULLS FIRST;",
+          "rawSql": "SELECT COALESCE(n.label, n.url) AS \"Newsletter\",\n       date_trunc('minute', n.last_scanned_at) AS \"Last scanned\"\nFROM smore_newsletters n\nJOIN scheduled_jobs j ON j.id = n.scheduled_job_id\nWHERE j.enabled AND NOT j.run_once\n  AND (n.last_scanned_at IS NULL OR n.last_scanned_at < now() - interval '8 days')\nORDER BY n.last_scanned_at NULLS FIRST;",
           "rawQuery": true,
           "format": "table",
           "editorMode": "code",

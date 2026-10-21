@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import SmoreBlock, SmoreNewsletter
 from scheduler.errors import parse_warning
 from scheduler.registry import register_job
-from services.content_extractor import extract_from_newsletter
+from services.content_extractor import extract_from_newsletter, pending_vision_retries
 from services.page_flyers_parser import fetch_and_parse
 
 _JOB_KIND = "page_flyers.scan"
@@ -34,7 +34,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     # forms, no announcements) is a real, unremarkable state - not treated
     # as a dead-link signal the way smore_scan.py's "0 blocks" is.
     if not items:
-        newsletter.last_scanned_at = datetime.now(timezone.utc)
+        newsletter.last_scanned_at = datetime.now(UTC)
         return "found 0 flyer images on the page - nothing currently posted, or the page changed shape"
 
     existing_hashes = {
@@ -61,11 +61,15 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         new_blocks.append(row)
     await db.flush()
 
-    newsletter.last_scanned_at = datetime.now(timezone.utc)
+    newsletter.last_scanned_at = datetime.now(UTC)
     summary = f"found {len(items)} flyer image(s), {len(new_blocks)} new"
 
-    if new_blocks:
-        extraction_note = await extract_from_newsletter(db, newsletter, new_blocks, job_kind=_JOB_KIND)
+    retry_blocks = await pending_vision_retries(db, newsletter.id, new_blocks)
+    if retry_blocks:
+        summary += f", {len(retry_blocks)} retried"
+
+    if new_blocks or retry_blocks:
+        extraction_note = await extract_from_newsletter(db, newsletter, new_blocks, job_kind=_JOB_KIND, retry_blocks=retry_blocks)
         summary += f" · extraction: {extraction_note}"
         warning_code = parse_warning(extraction_note)
         if warning_code:

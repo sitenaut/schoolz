@@ -18,7 +18,7 @@ import logging
 import os
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -592,19 +592,54 @@ def _backfill_from_duplicate(existing: SchoolContentItem, item: dict, link_url: 
     return changed
 
 
+# How long a block that failed vision/document extraction keeps being
+# retried on later scans. Long enough to outlast a deploy-killed run or an
+# API outage; short enough that an image nobody can read (a CDN that 403s
+# server-side fetches) stops costing a model call per scan. The
+# vision-backlog alert counts the same window.
+VISION_RETRY_WINDOW = timedelta(days=14)
+
+
+async def pending_vision_retries(db: AsyncSession, newsletter_id: str, new_blocks: list[SmoreBlock]) -> list[SmoreBlock]:
+    """Blocks from earlier scans still waiting on vision/document extraction.
+
+    Scans only extract the blocks they insert, so a block left pending -
+    a failed fetch, or a run killed between storing its blocks and reading
+    them (Audubon's first backpack scan stored 105 PDF links and was killed
+    by a deploy; every later scan saw nothing new) - was never looked at
+    again. Pass these to `extract_from_newsletter(retry_blocks=...)`."""
+    new_ids = [b.id for b in new_blocks]
+    query = select(SmoreBlock).where(
+        SmoreBlock.newsletter_id == newsletter_id,
+        SmoreBlock.pending_vision_extraction.is_(True),
+        SmoreBlock.first_seen_at >= datetime.now(UTC) - VISION_RETRY_WINDOW,
+    )
+    if new_ids:
+        query = query.where(SmoreBlock.id.not_in(new_ids))
+    return list((await db.execute(query.order_by(SmoreBlock.position))).scalars())
+
+
 async def extract_from_newsletter(
-    db: AsyncSession, newsletter: SmoreNewsletter, new_blocks: list[SmoreBlock], job_kind: str = "smore.scan"
+    db: AsyncSession,
+    newsletter: SmoreNewsletter,
+    new_blocks: list[SmoreBlock],
+    job_kind: str = "smore.scan",
+    retry_blocks: list[SmoreBlock] = (),
 ) -> str:
+    """`retry_blocks` are earlier blocks still pending vision extraction
+    (`pending_vision_retries`). Each gets another read; only the ones that
+    now succeed join the item extraction, so a block that keeps failing
+    doesn't re-send its bare link to the model on every scan."""
     if not ANTHROPIC_API_KEY:
         return "skipped - ANTHROPIC_API_KEY not configured"
-    if not new_blocks:
+    if not new_blocks and not retry_blocks:
         return "no new blocks to extract from"
 
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
     vision_failures = 0
     document_failures = 0
-    for block in new_blocks:
+    for block in [*new_blocks, *retry_blocks]:
         if not block.pending_vision_extraction:
             continue
         if block.block_type == "image":
@@ -615,9 +650,9 @@ async def extract_from_newsletter(
             continue
         if text is None:
             # Leave it pending: flipping the flag on failure used to mark
-            # the flyer as done with no text - permanently, since only
-            # never-seen blocks get another look - so a transient API
-            # error silently dropped whole flyers with a "success" run.
+            # the flyer as done with no text, so a transient API error
+            # silently dropped whole flyers with a "success" run. Later
+            # scans retry pending blocks (pending_vision_retries).
             if block.block_type == "image":
                 vision_failures += 1
             else:
@@ -626,6 +661,7 @@ async def extract_from_newsletter(
         block.vision_extracted_text = text
         block.pending_vision_extraction = False
     await db.flush()
+    new_blocks = [*new_blocks, *(b for b in retry_blocks if not b.pending_vision_extraction)]
 
     def _corpus_line(block: SmoreBlock) -> str | None:
         text = block.text_content or block.vision_extracted_text
