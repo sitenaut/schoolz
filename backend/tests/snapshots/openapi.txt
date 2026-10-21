@@ -432,6 +432,9 @@ GET /local-events/facets
 POST /local-events/place
   body: PlaceIn
   -> 200: PlaceOut
+GET /local-events/{event_id}
+  path event_id: string
+  -> 200: LocalEventOut
 DELETE /me/saved-answers
   -> 204: -
 GET /me/saved-answers
