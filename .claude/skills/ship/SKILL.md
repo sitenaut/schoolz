@@ -11,6 +11,29 @@ the whole chain, including the commit, the merge to `main` (which is prod) and
 the deploy. Deploy mechanics and the workflow-chaining gotcha live in
 `.claude/skills/deploy-schoolz/SKILL.md`; read it if anything below is unclear.
 
+## 0. Every branch, commit and PR names its Claude session
+
+Several Claude sessions work in this repo, often in the same checkout. Work
+nobody can trace back gets stranded: a branch with no commits and fourteen
+uncommitted files sat in the main checkout for days, half of it already
+merged from another worktree and half not, until someone had to diff it file
+by file to find out which.
+
+- **Branch names start with the session**: `claude-<id8>/<topic>`, where
+  `<id8>` is the first 8 characters after `session_` in this session's
+  `Claude-Session` URL (`session_01CGnyqD...` gives `claude-01CGnyqD/...`).
+  If the session has a name, it may follow: `claude-01CGnyqD-schoolz1/...`.
+- **Every commit and PR body carries the `Claude-Session` line** from the
+  system-reminder. If a session has none, write its id or name in its place.
+  Never drop it.
+- **Don't leave work uncommitted in a shared checkout.** Make a worktree on
+  your own `claude-<id8>/...` branch for anything you change. Before a session
+  ends, or before `/clear`, commit what you have there, even unfinished
+  (`WIP:` in the subject), and say so in the reply.
+- **Found unowned work?** Look up the `Claude-Session` lines in
+  `git log --all` for the same change before redoing it, and compare each
+  file with `origin/main` byte for byte: some of it may already be merged.
+
 ## 1. Check before committing
 
 - `git status --short` and `git diff --stat`. Stage files **by name**, never

@@ -6,6 +6,8 @@ Guidance for Claude Code working in this repository.
 
 **Local paths and personal identifiers never get committed.** No tracked file (docs, skills, scripts, comments, commit/PR messages) may contain a path into anyone's own machine — `C:\Users\…`, `/mnt/c/…`, `/home/<user>/…`, `/Users/…`, or a `~/…` that points outside the repo — nor a contributor's real name, OS/GitHub username, personal email, or personal account/org name (refer to roles: "the owner", "the dev branch"). Use repo-relative paths; scripts derive locations at runtime (`$PSScriptRoot`, `$(dirname "$0")`, `git rev-parse --show-toplevel`; `wsl` inherits the current directory). Anything machine-specific goes in the untracked `CLAUDE.local.md` (excluded via `.git/info/exclude`). The same goes for real people found in scraped data — no staff names in docs.
 
+**Every branch, commit and PR names its Claude session**: branch `claude-<id8>/<topic>`, the `Claude-Session` line on every commit and PR, and no uncommitted work left in a shared checkout. Rules in the `ship` skill, step 0.
+
 ## Project
 
 schoolz streamlines communication between parents and their school districts (South Jersey, starting with Cherry Hill), to better support kids' education at home. Which districts and schools are tracked is data — see the database, not this file.
