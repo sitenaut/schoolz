@@ -922,6 +922,7 @@ async def test_hiding_takes_a_listing_and_its_dates_off_the_site_and_freezes_it(
         assert all(i["id"] != sid for i in search["items"])
         events = (await client.get("/local-events", params={"q": "Coat drive", "source": "localz"})).json()["items"]
         assert all(e["id"] != date_id for e in events)
+        assert (await client.get(f"/local-events/{date_id}")).status_code == 404
 
         # Whoever holds the provider's account can't change it meanwhile.
         frozen = await client.patch(f"/provider-portal/listings/{sid}", json={"description": "Click here"}, headers=provider)
@@ -938,6 +939,7 @@ async def test_hiding_takes_a_listing_and_its_dates_off_the_site_and_freezes_it(
         assert (await client.get(f"/resources/{sid}")).status_code == 200
         events = (await client.get("/local-events", params={"q": "Coat drive", "source": "localz"})).json()["items"]
         assert any(e["id"] == date_id for e in events)
+        assert (await client.get(f"/local-events/{date_id}")).status_code == 200
         assert (await client.post(f"/admin/resources/listings/{sid}/unhide", headers=reviewer)).status_code == 409
 
 

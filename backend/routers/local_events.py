@@ -7,7 +7,7 @@ from collections import defaultdict, deque
 from datetime import datetime
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -217,3 +217,16 @@ async def local_event_facets(
         categories=[FacetOut(value=v, count=c) for v, c in cat_rows],
         sources=[FacetOut(value=v, count=c) for v, c in src_rows],
     )
+
+
+@router.get("/{event_id}", response_model=LocalEventOut)
+async def get_local_event(event_id: str = Path(max_length=64), db: AsyncSession = Depends(get_db)):
+    """One event by its id, for an app that keeps ids (billz adds an event to
+    its family calendar by id). Shown on the same terms as the list, so a
+    hidden listing's posted date is not found here either. Registered last so
+    `/facets` is never read as an id."""
+    conds = _filters(None, None, None, None, None, None)
+    event = (await db.execute(select(LocalEvent).where(LocalEvent.id == event_id, *conds))).scalar_one_or_none()
+    if event is None:
+        raise HTTPException(404, "No such event")
+    return LocalEventOut.model_validate(event)
