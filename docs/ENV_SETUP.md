@@ -260,13 +260,16 @@ Fly via `fly secrets set` — that step, plus the Faro (RUM) frontend wiring,
 the `grafana_ro` read-only Postgres datasource, and Grafana dashboards/alerts,
 are tracked phase-by-phase in `docs/OBSERVABILITY_PLAN.md`.
 
-**Grafana sync** (`scripts/grafana_sync.py`, see `docs/RUNBOOK.md`) reads from
-`env/secrets.prod.env`:
+**Grafana sync** (`scripts/grafana_sync.py`, see `docs/RUNBOOK.md`) takes its
+credentials from the prod vault through `prod-secrets.sh`, with both
+`env.op/grafana.prod.env` and `env.op/grafana-sync.prod.env` (the command is at
+the top of the second); the GA key is a 1Password document it reads itself.
+Without the vault it falls back to `env/secrets.prod.env`:
 
 ```
 GRAFANA_URL=https://<stack>.grafana.net
 GRAFANA_TOKEN=<service-account token, Admin - also drives the IRM API>
-GRAFANA_ALERT_EMAIL=<optional; defaults to an address the stack already emails>
+GRAFANA_ALERT_EMAIL=<optional; defaults to schoolz-info-email's current address>
 GRAFANA_CLOUDWATCH_ACCESS_KEY_ID=<optional; a read-only IAM user's key, never an admin's>
 GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY=
 GRAFANA_GA_SERVICE_ACCOUNT_FILE=env/<service-account-key>.json   # optional
