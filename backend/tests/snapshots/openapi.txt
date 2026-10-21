@@ -265,6 +265,9 @@ POST /auth/register
 POST /auth/reset-password
   body: ResetPasswordRequest
   -> 200: TokenResponse
+POST /bucket3/import
+  body: Bucket3ImportRequest
+  -> 200: Bucket3FamilyImportOut
 GET /calendar
   query category?: string | null
   query end?: string(date-time) | null
@@ -797,6 +800,9 @@ GET /students/{student_id}/bucket3/right-now
 GET /students/{student_id}/bucket3/schedule
   path student_id: string
   -> 200: ChildScheduleOut
+GET /students/{student_id}/bucket3/status
+  path student_id: string
+  -> 200: Bucket3SyncStatusOut
 GET /students/{student_id}/bucket3/student
   path student_id: string
   -> 200: Bucket3StudentOut
@@ -928,10 +934,13 @@ BillzImportSkipOut { name: string, reason: string }
 Body_create_submission_submissions_post { bot_token?: string | null, description?: string | null, district_id?: string | null, file?: string | null, school_id?: string | null, submitter_email?: string | null, submitter_name?: string | null, url?: string | null, website?: string | null }
 Box { east: number, north: number, south: number, west: number }
 Bucket3AuditOut { classroom_only: list[ChildWorkItemOut], classroom_only_all_time: list[ChildWorkItemOut], counts: dict[integer], current_marking_period?: string | null, genesis_only: list[ChildGradeEntryOut], matched: list[AuditMatchedOut] }
+Bucket3FamilyImportOut { captures_unrouted: integer, students: list[Bucket3StudentImportOut], unrouted_accounts: list[UnroutedAccountOut] }
 Bucket3GradesOut { course_grades: list[ChildCourseGradeOut], entries: list[ChildGradeEntryOut], marking_period_discrepancies?: list[string], marking_periods?: list[ChildMarkingPeriodOut] }
 Bucket3ImportRequest { captures: list[object], exported_at?: string | null }
 Bucket3ImportResult { captures_processed: integer, captures_skipped_duplicate: integer, grade_entries_upserted?: integer, identity_mismatches?: list[string], page_kinds_seen: integer, schedule_blocks_upserted: integer, work_items_upserted: integer }
+Bucket3StudentImportOut { captures_processed: integer, captures_skipped_duplicate: integer, first_name: string, grade_entries_upserted?: integer, identity_mismatches?: list[string], page_kinds_seen: integer, schedule_blocks_upserted: integer, student: string, work_items_upserted: integer }
 Bucket3StudentOut { first_name: string, id: string, last_name: string, school_name: string | null, student_id: string, viewer_role: string }
+Bucket3SyncStatusOut { classroom_seen_at: string(date-time) | null, genesis_seen_at: string(date-time) | null, needs_login: boolean, walk_finished_at: string(date-time) | null, walk_status: string | null }
 ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
@@ -1180,6 +1189,7 @@ TodoItemOut { asked_kinds?: list[string], category: string, classroom_status: st
 TodoOut { current_marking_period: ChildMarkingPeriodOut | null, done: list[TodoItemOut], due: list[TodoItemOut], missing: list[TodoItemOut], next_action: TodoItemOut | null, no_due_date: list[TodoItemOut], progress: ProgressOut }
 TokenResponse { access_token: string, token_type?: string }
 TransportationContactOut { email: string | null, name: string, title: string }
+UnroutedAccountOut { account_index: integer | null, captures: integer, email: string | null, name: string | null, other_student: boolean }
 UpcomingDateOut { end_time: string(date-time) | null, id: string, note: string | null, start_time: string(date-time), title: string, venue_address: string | null, venue_name: string | null }
 UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, mfa_enforced?: boolean, mfa_passed?: boolean, mfa_required?: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, username: string }
 UserRolesIn { role_ids: list[string] }
