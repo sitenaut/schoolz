@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
-import { IconBell, IconHeart, IconLock, IconShield, IconUser, IconUsers } from "../../components/icons";
+import { IconBell, IconHeart, IconLock, IconShield, IconUser } from "../../components/icons";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 
@@ -19,9 +19,6 @@ export function AccountLayout() {
         <nav className="settings-nav" aria-label="Settings sections">
           <NavLink to="/account" end>
             <IconUser /> Profile
-          </NavLink>
-          <NavLink to="/account/family">
-            <IconUsers /> Family
           </NavLink>
           <NavLink to="/account/security">
             <IconShield /> Security

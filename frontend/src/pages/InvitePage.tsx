@@ -21,7 +21,7 @@ type Phase =
   | { kind: "accepting" }
   | { kind: "wrong_account"; message: string }
   | { kind: "failed"; message: string }
-  | { kind: "done"; studentId: string | null };
+  | { kind: "done" };
 
 const ENDPOINTS: Record<InviteKind, { preview: (t: string) => string; accept: (t: string) => string }> = {
   guardian: { preview: (t) => `/invites/${t}`, accept: (t) => `/invites/${t}/accept` },
@@ -99,7 +99,7 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
       }
       clearPendingInvite();
       if (kind === "student") await refresh();
-      setPhase({ kind: "done", studentId: kind === "guardian" && typeof body.id === "string" ? body.id : null });
+      setPhase({ kind: "done" });
     })();
   }, [loading, user, preview, kind, token, refresh]);
 
@@ -211,9 +211,9 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
           </p>
           <button
             className="btn btn-primary"
-            onClick={() => navigate(phase.studentId ? `/kids/${phase.studentId}` : "/kids", { replace: true })}
+            onClick={() => navigate(kind === "guardian" ? "/family" : "/kids", { replace: true })}
           >
-            {kind === "guardian" ? `Open ${preview?.student_first_name}'s page` : "Open my schoolz"}
+            {kind === "guardian" ? "Open My family" : "Open my schoolz"}
           </button>
         </div>
       )}
