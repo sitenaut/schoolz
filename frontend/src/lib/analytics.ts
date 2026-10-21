@@ -98,7 +98,8 @@ function gtag(..._args: unknown[]): void {
   (window.dataLayer ||= []).push(arguments);
 }
 
-function readInternal(): boolean {
+/** True in a browser flagged as the team's own (a staff sign-in or ?internal=1). */
+export function isInternalTraffic(): boolean {
   try {
     return localStorage.getItem(INTERNAL_KEY) === "1";
   } catch {
@@ -185,7 +186,7 @@ export function initAnalytics(): void {
     send_page_view: false,
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
-    ...(readInternal() ? { traffic_type: "internal" } : {}),
+    ...(isInternalTraffic() ? { traffic_type: "internal" } : {}),
   });
   ready = true;
 }
