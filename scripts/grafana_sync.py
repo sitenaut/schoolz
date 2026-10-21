@@ -6,7 +6,10 @@ Usage:
     python3 scripts/grafana_sync.py --dry-run  # show what would happen
     python3 scripts/grafana_sync.py --only dashboards,alerts   # or slos, routing
 
-Credentials come from env/secrets.prod.env (gitignored):
+Credentials come from the process environment, then env/secrets.prod.env
+(gitignored). From the prod vault, the full command is at the top of
+env.op/grafana-sync.prod.env; the GA key is then read as a 1Password
+document (see ensure_ga). The variables:
     GRAFANA_URL=https://<stack>.grafana.net
     GRAFANA_TOKEN=glsa_...
     GRAFANA_CLOUDWATCH_ACCESS_KEY_ID / _SECRET_ACCESS_KEY   (optional)
@@ -197,6 +200,7 @@ def ensure_cloudwatch(url: str, token: str, env: dict, dry: bool) -> None:
 
 GA_UID = "schoolz-ga"
 GA_HOST = "https://analyticsdata.googleapis.com"
+GA_KEY_ITEM = "GRAFANA_GA_SERVICE_ACCOUNT_FILE"  # 1Password document item in schoolz-prod
 ANTHROPIC_UID = "schoolz-anthropic"
 ANTHROPIC_HOST = "https://api.anthropic.com"
 
@@ -207,11 +211,23 @@ def ensure_ga(url: str, token: str, env: dict, dry: bool) -> None:
     HTTPS, and Infinity can sign in as a service account. The account needs
     only Viewer on the GA property - no Google Cloud role at all."""
     key_file, prop = env["GRAFANA_GA_SERVICE_ACCOUNT_FILE"], env["GRAFANA_GA_PROPERTY_ID"]
-    if not key_file or not prop:
+    account = None
+    if key_file:
+        path = pathlib.Path(key_file)
+        account = json.loads((path if path.is_absolute() else ROOT / path).read_text())
+    elif prop and os.getenv("OP_SERVICE_ACCOUNT_TOKEN"):
+        # Run through prod-secrets.sh, the key is a document in the prod vault
+        # (a file attachment, so not something an op:// env reference can
+        # hand over as a value). Read it straight into memory - never to disk.
+        got = subprocess.run(["op", "document", "get", GA_KEY_ITEM, "--vault", "schoolz-prod"],
+                             capture_output=True, text=True)
+        if got.returncode == 0:
+            account = json.loads(got.stdout)
+        else:
+            print(f"  ! couldn't read the {GA_KEY_ITEM} document from 1Password")
+    if not account or not prop:
         print("  no GRAFANA_GA_* settings in env - Google Analytics datasource skipped")
         return
-    path = pathlib.Path(key_file)
-    account = json.loads((path if path.is_absolute() else ROOT / path).read_text())
     ds = {
         "uid": GA_UID, "name": GA_UID, "type": "yesoreyeram-infinity-datasource", "access": "proxy",
         "jsonData": {
@@ -480,11 +496,15 @@ def sync_routing(url: str, token: str, env: dict, dry: bool) -> None:
 
     email = env["GRAFANA_ALERT_EMAIL"]
     if not email:
-        # Reuse whatever address this stack already emails rather than ask
-        # for one more secret that says the same thing.
+        # Reuse an address this stack already emails rather than ask for one
+        # more secret that says the same thing - schoolz's own contact point
+        # first. The stack is shared with billz and the scraper, so "the
+        # first email contact point" could be another app's inbox, and a sync
+        # without this variable would quietly re-point schoolz's info alerts.
         existing = call(url, token, "/api/v1/provisioning/contact-points")
-        email = next((c["settings"].get("addresses") for c in existing
-                      if c["type"] == "email" and c["settings"].get("addresses")), "")
+        emails = [c for c in existing if c["type"] == "email" and c["settings"].get("addresses")]
+        own = [c for c in emails if c.get("uid") == EMAIL_CONTACT or c.get("name") == EMAIL_CONTACT]
+        email = next((c["settings"]["addresses"] for c in own + emails), "")
     if dry:
         print(f"  would upsert contact points {IRM_CONTACT}, {EMAIL_CONTACT} and the app=schoolz policy route")
         return
