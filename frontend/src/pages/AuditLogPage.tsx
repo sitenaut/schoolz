@@ -13,7 +13,7 @@ export type AuditEvent = {
   status: number | null;
   actor_user_id: string | null;
   actor: string | null;
-  credential: "session" | "api_key" | null;
+  credential: "session" | "api_key" | "capture_key" | null;
   api_key_id: string | null;
   method: string | null;
   route: string | null;
@@ -188,6 +188,11 @@ export function AuditLogPage() {
           {e.credential === "api_key" && (
             <span className="note" style={{ display: "block" }}>
               via API key
+            </span>
+          )}
+          {e.credential === "capture_key" && (
+            <span className="note" style={{ display: "block" }}>
+              via Backpack Capture
             </span>
           )}
         </span>

@@ -79,6 +79,14 @@ POST   /auth/register  public
 POST   /auth/reset-password  public
 POST   /bucket3/import  login
 GET    /calendar  optional
+GET    /capture-devices  login
+GET    /capture-devices/requests/{user_code}  login
+POST   /capture-devices/requests/{user_code}/approve  login
+POST   /capture-devices/requests/{user_code}/deny  login
+POST   /capture-devices/self/revoke  login
+POST   /capture-devices/start  public
+POST   /capture-devices/token  public
+DELETE /capture-devices/{device_id}  login
 POST   /chat  optional
 GET    /contact-messages  perm:inbox.view
 POST   /contact-messages  optional

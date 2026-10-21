@@ -278,6 +278,28 @@ GET /calendar
   query school_ids?: string | null
   query start?: string(date-time) | null
   -> 200: list[SchoolContentItemOut]
+GET /capture-devices
+  -> 200: list[CaptureDeviceOut]
+GET /capture-devices/requests/{user_code}
+  path user_code: string
+  -> 200: CaptureRequestOut
+POST /capture-devices/requests/{user_code}/approve
+  path user_code: string
+  -> 200: CaptureRequestOut
+POST /capture-devices/requests/{user_code}/deny
+  path user_code: string
+  -> 200: CaptureRequestOut
+POST /capture-devices/self/revoke
+  -> 204: -
+POST /capture-devices/start
+  body: CaptureStartIn
+  -> 200: CaptureStartOut
+POST /capture-devices/token
+  body: CaptureTokenIn
+  -> 200: CaptureTokenOut
+DELETE /capture-devices/{device_id}
+  path device_id: string
+  -> 204: -
 POST /chat
   body: ChatRequest
   -> 200: ChatResponse
@@ -943,9 +965,15 @@ Bucket3StudentOut { first_name: string, id: string, last_name: string, school_na
 Bucket3SyncStatusOut { classroom_seen_at: string(date-time) | null, genesis_seen_at: string(date-time) | null, needs_login: boolean, walk_finished_at: string(date-time) | null, walk_status: string | null }
 ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
+CaptureDeviceOut { created_at: string(date-time), id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string }
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
+CaptureRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), status: string, user_code: string }
+CaptureStartIn { client_name: string }
+CaptureStartOut { connect_path: string, device_code: string, expires_in: integer, interval: integer, user_code: string }
 CaptureStatusIn { detail?: string | null, status: string }
 CaptureStatusOut { notified: boolean }
+CaptureTokenIn { device_code: string }
+CaptureTokenOut { device_id?: string | null, email?: string | null, key?: string | null, status: string }
 CategoryOut { count: integer, key: string, label: string }
 ChangeOut { before: object, changes: object, created_at: string(date-time), has_private_address: boolean, id: string, kind: string, note: string | null, private_address: string | null, requested_by: string | null, service: ListingBriefOut | null, source: string | null, status: string }
 ChangePasswordRequest { current_password: string, new_password: string }
