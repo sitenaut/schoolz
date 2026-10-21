@@ -12,8 +12,8 @@ access shape from the rest of the app.
 import hashlib
 import logging
 from collections import Counter
-from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -26,6 +26,7 @@ from database import get_db
 from models import (
     AssignmentSuggestion,
     Bucket3Capture,
+    Bucket3SyncState,
     CapturePageKind,
     ChildCourseGrade,
     ChildDayCycle,
@@ -39,20 +40,23 @@ from models import (
     GuardianStudentLink,
     HelpRequest,
     Notification,
-    WorkItemLateException,
     School,
     SchoolContentItem,
     StaffMember,
     Student,
     User,
+    WorkItemLateException,
 )
 from schemas import (
     AuditMatchedOut,
     Bucket3AuditOut,
+    Bucket3FamilyImportOut,
     Bucket3GradesOut,
     Bucket3ImportRequest,
     Bucket3ImportResult,
+    Bucket3StudentImportOut,
     Bucket3StudentOut,
+    Bucket3SyncStatusOut,
     CapturePageKindOut,
     CaptureStatusIn,
     CaptureStatusOut,
@@ -62,10 +66,11 @@ from schemas import (
     ChildScheduleBlockOut,
     ChildScheduleOut,
     ChildWorkItemOut,
+    UnroutedAccountOut,
 )
 from services import bucket3_extract as ex
+from services import capture_routing, kids_schedule, kids_suggestions, kids_view
 from services import help_requests as help_svc
-from services import kids_schedule, kids_suggestions, kids_view
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +78,7 @@ router = APIRouter(tags=["bucket3"])
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _local_now() -> datetime:
@@ -383,7 +388,7 @@ async def _upsert_page_kind(db: AsyncSession, adapter: str, source_url: str) -> 
 
 def _parse_captured_at(value: str) -> datetime:
     dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 async def _course_map_for(db: AsyncSession, student: Student, batch: list[dict]) -> ex.CourseMap:
@@ -730,26 +735,50 @@ async def _apply_schedule(db: AsyncSession, student: Student, reduced_text: str,
         counters.schedule += 1
 
 
-@router.post("/students/{student_id}/bucket3/import", response_model=Bucket3ImportResult)
-async def import_bucket3(
+async def _record_sync(
+    db: AsyncSession,
     student_id: str,
-    payload: Bucket3ImportRequest,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    student = await _get_own_student(db, user.id, student_id)
+    *,
+    seen: dict[str, datetime] | None = None,
+    walk: tuple[str, str | None] | None = None,
+) -> None:
+    """Upserts Bucket3SyncState. Each source's last read only ever moves
+    forward (uploading an old export file can't make data look older than
+    it is); the last walk's outcome is simply replaced."""
+    now = _now()
+    values: dict = {"student_id": student_id, "updated_at": now}
+    for adapter, at in (seen or {}).items():
+        values[f"{adapter}_seen_at"] = at
+    if walk:
+        values.update(walk_status=walk[0], walk_detail=walk[1], walk_finished_at=now)
+    ins = pg_insert(Bucket3SyncState).values(**values)
+    table = Bucket3SyncState.__table__
+    set_ = {
+        key: func.greatest(table.c[key], ins.excluded[key]) if key.endswith("_seen_at") else ins.excluded[key]
+        for key in values
+        if key != "student_id"
+    }
+    await db.execute(ins.on_conflict_do_update(index_elements=["student_id"], set_=set_))
 
+
+async def _import_for_student(
+    db: AsyncSession, user: User, student: Student, payload_captures: list[dict]
+) -> Bucket3ImportResult:
+    """Stores and extracts one child's captures. Shared by the per-student
+    import (a file upload) and the whole-family one (the extension's
+    publish); the caller commits."""
     # Captures land newest-first in the extension's own export (its
     # background.js unshifts each new capture). Processing oldest-to-newest
     # is what makes "last write wins" upserts reflect the freshest page state
     # - confirmed real: an unsorted pass let a stale due date overwrite a
     # newer one.
-    captures = sorted(payload.captures, key=lambda c: c.get("captured_at", ""))
+    captures = sorted(payload_captures, key=lambda c: c.get("captured_at", ""))
     course_map = await _course_map_for(db, student, captures)
 
     counters = _Counters()
     skipped_duplicate = 0
     page_kinds_seen: set[str] = set()
+    seen: dict[str, datetime] = {}
 
     for envelope in captures:
         adapter = envelope.get("adapter")
@@ -760,6 +789,12 @@ async def import_bucket3(
 
         page_kinds_seen.add(ex.classify_page(adapter, source_url).pattern)
         await _upsert_page_kind(db, adapter, source_url)
+
+        # Before the duplicate check: re-reading an unchanged page is still
+        # a fresh look, which is all "Updated 2 h ago" claims.
+        if adapter in ("classroom", "genesis") and envelope.get("status", "ok") == "ok":
+            read_at = _parse_captured_at(envelope["captured_at"])
+            seen[adapter] = max(seen.get(adapter, read_at), read_at)
 
         content_hash = hashlib.sha256(reduced_text.encode("utf-8")).hexdigest()
         existing_capture = await db.execute(
@@ -789,7 +824,8 @@ async def import_bucket3(
         )
         await _apply_capture(db, student, adapter, source_url, reduced_text, captured_at, course_map, counters)
 
-    await db.commit()
+    if seen:
+        await _record_sync(db, student.id, seen=seen)
 
     return Bucket3ImportResult(
         captures_processed=len(captures) - skipped_duplicate,
@@ -799,6 +835,66 @@ async def import_bucket3(
         grade_entries_upserted=counters.grades,
         page_kinds_seen=len(page_kinds_seen),
         identity_mismatches=counters.mismatches,
+    )
+
+
+@router.post("/students/{student_id}/bucket3/import", response_model=Bucket3ImportResult)
+async def import_bucket3(
+    student_id: str,
+    payload: Bucket3ImportRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    student = await _get_own_student(db, user.id, student_id)
+    result = await _import_for_student(db, user, student, payload.captures)
+    await db.commit()
+    return result
+
+
+async def _my_children(db: AsyncSession, user_id: str) -> list[Student]:
+    """Every student this person may import for: their guardian links in the
+    order they were added, then their own student record if they are one (a
+    student publishing from their own Chrome)."""
+    linked = (
+        await db.execute(
+            select(Student)
+            .join(GuardianStudentLink, GuardianStudentLink.student_id == Student.id)
+            .where(GuardianStudentLink.guardian_user_id == user_id)
+            .order_by(GuardianStudentLink.created_at)
+        )
+    ).scalars().all()
+    own = (await db.execute(select(Student).where(Student.user_id == user_id))).scalars().all()
+    return list({s.id: s for s in [*linked, *own]}.values())
+
+
+@router.post("/bucket3/import", response_model=Bucket3FamilyImportOut)
+async def import_family_bucket3(
+    payload: Bucket3ImportRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """One publish for the whole family: each capture goes to whichever of
+    the caller's children it belongs to (services/capture_routing.py), so
+    Backpack Capture never asks which child first. Whatever can't be placed
+    is left out and reported - Classroom logins by name, for the extension
+    to ask about once."""
+    children = await _my_children(db, user.id)
+    routing = capture_routing.route(
+        payload.captures,
+        [capture_routing.Child(s.id, s.student_id, s.first_name, s.last_name) for s in children],
+    )
+    results = []
+    for student in children:
+        captures = routing.by_student.get(student.id)
+        if not captures:
+            continue
+        result = await _import_for_student(db, user, student, captures)
+        results.append(Bucket3StudentImportOut(student=student.id, first_name=student.first_name, **result.model_dump()))
+    await db.commit()
+    return Bucket3FamilyImportOut(
+        students=results,
+        captures_unrouted=len(routing.unrouted),
+        unrouted_accounts=[UnroutedAccountOut(**asdict(a)) for a in routing.unrouted_accounts],
     )
 
 
@@ -866,8 +962,10 @@ async def report_capture_status(
     raises one unread notification (never a second while the first is still
     unread - a lapsed sign-in fails every four hours until someone fixes it);
     any successful run marks that notification read, so a stale "sign in
-    again" never outlives the fix. Every other status is informational only."""
+    again" never outlives the fix. Every status is kept as the student's
+    last walk (GET .../bucket3/status)."""
     student = await _get_own_student(db, user.id, student_id)
+    await _record_sync(db, student.id, walk=(payload.status, payload.detail))
     unread = (
         Notification.user_id == user.id,
         Notification.student_id == student.id,
@@ -881,9 +979,11 @@ async def report_capture_status(
         return CaptureStatusOut(notified=False)
 
     if payload.status != "needs_login":
+        await db.commit()
         return CaptureStatusOut(notified=False)
 
     if (await db.execute(select(Notification.id).where(*unread).limit(1))).scalar_one_or_none():
+        await db.commit()
         return CaptureStatusOut(notified=False)
     db.add(
         Notification(
@@ -898,6 +998,49 @@ async def report_capture_status(
     )
     await db.commit()
     return CaptureStatusOut(notified=True)
+
+
+@router.get("/students/{student_id}/bucket3/status", response_model=Bucket3SyncStatusOut)
+async def get_bucket3_status(
+    student_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """How current this student's data is. Before Bucket3SyncState has a row
+    (data imported before it existed), each source falls back to its newest
+    stored capture - when something last changed, which is the best there is."""
+    student = await _get_own_student(db, user.id, student_id)
+    state = await db.get(Bucket3SyncState, student.id)
+    seen = {
+        "classroom": state.classroom_seen_at if state else None,
+        "genesis": state.genesis_seen_at if state else None,
+    }
+    if None in seen.values():
+        newest = await db.execute(
+            select(Bucket3Capture.adapter, func.max(Bucket3Capture.captured_at))
+            .where(Bucket3Capture.student_id == student.id, Bucket3Capture.status == "ok")
+            .group_by(Bucket3Capture.adapter)
+        )
+        for adapter, at in newest.all():
+            if adapter in seen and seen[adapter] is None:
+                seen[adapter] = at
+    needs_login = (
+        await db.execute(
+            select(Notification.id)
+            .where(
+                Notification.user_id == user.id,
+                Notification.student_id == student.id,
+                Notification.type == CAPTURE_NEEDS_LOGIN,
+                Notification.read_at.is_(None),
+            )
+            .limit(1)
+        )
+    ).scalar_one_or_none() is not None
+    return Bucket3SyncStatusOut(
+        classroom_seen_at=seen["classroom"],
+        genesis_seen_at=seen["genesis"],
+        walk_status=state.walk_status if state else None,
+        walk_finished_at=state.walk_finished_at if state else None,
+        needs_login=needs_login,
+    )
 
 
 # ---- raw views ----------------------------------------------------------------
@@ -994,7 +1137,7 @@ async def _marking_period_discrepancies(db: AsyncSession, student: Student, gene
         return []
 
     discrepancies = []
-    for mp, district_end in zip(genesis_mps, district_end_dates):
+    for mp, district_end in zip(genesis_mps, district_end_dates, strict=False):
         if mp.end_date != district_end:
             discrepancies.append(
                 f"{mp.label}: Genesis says it ends {mp.end_date}, but the district calendar says {district_end}."
@@ -1482,10 +1625,10 @@ async def suggest_for_assignment(
     try:
         text, declined = await kids_suggestions.assignment_suggestion(item.title, item.course_name)
     except kids_suggestions.SuggestionsUnavailable:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server")
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server") from None
     except Exception:
         logger.exception("assignment_suggestion_failed", extra={"work_item_id": item.id})
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the suggestion service - try again in a bit")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the suggestion service - try again in a bit") from None
 
     await db.execute(
         pg_insert(AssignmentSuggestion)
@@ -1518,10 +1661,10 @@ async def suggest_plan(student_id: str, user: User = Depends(get_current_user), 
     try:
         text = await kids_suggestions.plan(open_items, today)
     except kids_suggestions.SuggestionsUnavailable:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server")
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server") from None
     except Exception:
         logger.exception("plan_suggestion_failed", extra={"student_id": student.id})
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the suggestion service - try again in a bit")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the suggestion service - try again in a bit") from None
     return PlanOut(text=text)
 
 
@@ -1655,10 +1798,10 @@ async def parse_late_policy(
     try:
         parsed = await kids_suggestions.parse_late_policy(text)
     except kids_suggestions.SuggestionsUnavailable:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server")
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server") from None
     except Exception:
         logger.exception("late_policy_parse_failed", extra={"student_id": student_id})
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the parser - try again in a bit")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the parser - try again in a bit") from None
 
     if not parsed.get("understood"):
         return LatePolicyParseOut(understood=False)
@@ -1711,7 +1854,7 @@ async def set_late_exception(
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
                 "accepted_until must be an ISO date (YYYY-MM-DD) or 'marking_period_end'",
-            )
+            ) from None
     values = {
         "student_id": student.id,
         "work_item_id": item.id,

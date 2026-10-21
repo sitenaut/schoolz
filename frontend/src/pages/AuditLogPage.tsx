@@ -13,7 +13,7 @@ export type AuditEvent = {
   status: number | null;
   actor_user_id: string | null;
   actor: string | null;
-  credential: "session" | "api_key" | null;
+  credential: "session" | "api_key" | "capture_key" | null;
   api_key_id: string | null;
   method: string | null;
   route: string | null;
@@ -37,6 +37,11 @@ export const ACTION_LABELS: Record<string, string> = {
   "api_key.device_approve": "Approved API key request",
   "api_key.device_deny": "Denied API key request",
   "api_key.device_issued": "API key handed to the script",
+  "capture_device.approve": "Connected Backpack Capture on a computer",
+  "capture_device.deny": "Cancelled connecting Backpack Capture",
+  "capture_device.issued": "Backpack Capture collected its key",
+  "capture_device.revoke": "Disconnected a Backpack Capture computer",
+  "capture_device.revoke_self": "Backpack Capture signed itself out",
   "secret.request": "Asked for prod secrets",
   "secret.approve": "Approved prod secret access",
   "secret.deny": "Denied prod secret access",
@@ -188,6 +193,11 @@ export function AuditLogPage() {
           {e.credential === "api_key" && (
             <span className="note" style={{ display: "block" }}>
               via API key
+            </span>
+          )}
+          {e.credential === "capture_key" && (
+            <span className="note" style={{ display: "block" }}>
+              via Backpack Capture
             </span>
           )}
         </span>

@@ -1674,6 +1674,47 @@ body {
   color: var(--ink-soft);
 }
 
+/* ---- data freshness (Backpack Capture) ------------------------------ */
+
+.freshness {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.freshness.stale {
+  color: var(--danger-ink);
+  font-weight: 600;
+}
+
+.banner-warn {
+  margin-bottom: 12px;
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.get-started {
+  text-align: left;
+}
+
+.get-started h2 {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+a.primary {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.empty-state a.primary {
+  color: #fff;
+}
+
 /* iOS Safari zooms the whole page when a form field under 16px gets focus,
    and does not zoom back - on the chat panel that pushed the Send button
    off-screen. Every field is at least 16px on touch devices, everywhere.

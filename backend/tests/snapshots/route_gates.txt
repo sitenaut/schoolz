@@ -77,7 +77,16 @@ GET    /auth/me  login
 PATCH  /auth/me  login
 POST   /auth/register  public
 POST   /auth/reset-password  public
+POST   /bucket3/import  login
 GET    /calendar  optional
+GET    /capture-devices  login
+GET    /capture-devices/requests/{user_code}  login
+POST   /capture-devices/requests/{user_code}/approve  login
+POST   /capture-devices/requests/{user_code}/deny  login
+POST   /capture-devices/self/revoke  login
+POST   /capture-devices/start  public
+POST   /capture-devices/token  public
+DELETE /capture-devices/{device_id}  login
 POST   /chat  optional
 GET    /contact-messages  perm:inbox.view
 POST   /contact-messages  optional
@@ -240,6 +249,7 @@ GET    /students/{student_id}/bucket3/progress  login
 POST   /students/{student_id}/bucket3/reprocess  login
 GET    /students/{student_id}/bucket3/right-now  login
 GET    /students/{student_id}/bucket3/schedule  login
+GET    /students/{student_id}/bucket3/status  login
 GET    /students/{student_id}/bucket3/student  login
 POST   /students/{student_id}/bucket3/suggestions/assignment/{work_item_id}  login
 POST   /students/{student_id}/bucket3/suggestions/plan  login

@@ -15,17 +15,19 @@
 import { SeoHead } from "../components/SeoHead";
 import { usePrerenderReady } from "../lib/prerenderReady";
 
+const STORE_URL = "https://chromewebstore.google.com/detail/backpack-capture/imjhghdlhjgoeghhgafdpclapkjcnfbe";
+
 export function BackpackCapturePrivacyPage() {
   usePrerenderReady(true);
   return (
     <>
       <SeoHead
         title="Backpack Capture Privacy Policy · schoolz"
-        description="What the Backpack Capture Chrome extension reads, stores, and can send off your device - and the two explicit actions that are the only way any of it leaves."
+        description="What the Backpack Capture Chrome extension reads, stores, and can send off your device - and the explicit actions that are the only way any of it leaves."
         path="/backpack-capture/privacy"
       />
       <h2>Backpack Capture Privacy Policy</h2>
-      <p className="note">Effective September 18, 2026 · Applies to versions 0.7.x and later</p>
+      <p className="note">Effective October 21, 2026 · Applies to versions 0.7.x and later</p>
 
       <p>
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
@@ -37,9 +39,9 @@ export function BackpackCapturePrivacyPage() {
       <h3>In short</h3>
       <ul>
         <li>
-          <strong>Nothing is captured</strong> until you press Start capture (or turn on the optional
-          scheduled walk), and only on Classroom or Genesis pages - Chrome enforces this, the extension's
-          code never loads anywhere else.
+          <strong>Nothing is captured</strong> until you press Update now or Start capture (or turn on
+          automatic updates), and only on Classroom or Genesis pages - Chrome enforces this, the
+          extension's code never loads anywhere else.
         </li>
         <li>
           <strong>It never logs in, and never reads passwords or cookies.</strong> It only reads the
@@ -50,9 +52,9 @@ export function BackpackCapturePrivacyPage() {
           you export a file or choose to publish.
         </li>
         <li>
-          <strong>Only you decide what leaves the device</strong>: exporting a local file, publishing to
-          your own schoolz account, or - only if you turn it on - a scheduled walk that publishes there on
-          its own.
+          <strong>Only you decide what leaves the device</strong>: exporting a local file, pressing Update
+          now or Publish to send it to your own schoolz account, or - only if you turn them on - automatic
+          updates that do the same every few hours.
         </li>
         <li>
           <strong>No analytics, no telemetry, no advertising, no third-party trackers</strong> - anywhere in
@@ -75,8 +77,18 @@ export function BackpackCapturePrivacyPage() {
         compact text form.
       </p>
       <p>
-        Nothing is captured before you press <strong>Start capture</strong> (or a scheduled walk you
-        turned on runs), and a badge stays visible on the toolbar icon for as long as capture is active.
+        Nothing is captured before you press <strong>Update now</strong> or <strong>Start capture</strong>{" "}
+        (or automatic updates you turned on run), and a badge stays visible on the toolbar icon for as long
+        as capture is active.
+      </p>
+      <p>
+        <strong>Finding your child's Google account.</strong> Update now (version 0.9.0 and later) opens the
+        Classroom home page of each Google account signed in to this Chrome, one at a time, and reads that
+        account's name and email address to tell whether it belongs to one of your children on schoolz - by
+        their student ID, by their name, or because you told it so. The page of an account that isn't one
+        of your children's is deleted from the device straight away and never sent anywhere. When it can't
+        tell, it asks you once (&quot;whose Google Classroom is this?&quot;) and remembers your answer on this
+        device.
       </p>
 
       <h3>What it stores</h3>
@@ -109,6 +121,13 @@ export function BackpackCapturePrivacyPage() {
             </td>
           </tr>
           <tr>
+            <td>Whose account</td>
+            <td>
+              Which of your children each Google account belongs to, and the account number it was last
+              found at, so the next update goes straight there
+            </td>
+          </tr>
+          <tr>
             <td>Status</td>
             <td>
               A confidence label (<code>ok</code>, <code>low confidence</code>, <code>layout changed?</code>,{" "}
@@ -127,13 +146,13 @@ export function BackpackCapturePrivacyPage() {
         <li>Passwords, or any part of a login form</li>
         <li>Cookies, session tokens, or <code>localStorage</code> belonging to Classroom or Genesis</li>
         <li>Any website other than the two listed above</li>
-        <li>Anything before you explicitly start a capture session, press Capture, or turn on the scheduled walk</li>
+        <li>Anything before you press Update now, start a capture session, press Capture, or turn on automatic updates</li>
       </ul>
       <p>
         The extension's declared permissions reflect this directly: it has no <code>cookies</code> or{" "}
         <code>webRequest</code> permission, and no access to any host beyond Classroom, Genesis, and (only
         for the optional features below) schoolz's own API. Its <code>alarms</code> permission exists only
-        for the scheduled walk.
+        for automatic updates.
       </p>
 
       <h3>What can leave your device - and only this</h3>
@@ -145,44 +164,60 @@ export function BackpackCapturePrivacyPage() {
           server.
         </li>
         <li>
-          <strong>Publish captures</strong> - sends the same stored records to your own schoolz family
-          account (see below). Off until you log in, and only runs when you press Publish.
+          <strong>Update now</strong> - opens Classroom in its own window, finds your children's Google
+          accounts (see above), walks their classes the same way a capture session does, and sends what's
+          new to your own schoolz family account. Only runs when you press it, after you've signed in to
+          schoolz in the extension.
         </li>
         <li>
-          <strong>Scheduled walk</strong> - off by default. If you turn it on, every four hours (never
-          between 10pm and 6am) it opens Classroom in its own window, walks your child's classes the same
-          way a capture session does, and publishes what's new to the student you picked. It never signs
-          in to Google: when that sign-in expires it stops and tells schoolz, which notifies you. Turning
-          it off stops it completely.
+          <strong>Publish captures</strong> - sends pages you captured by hand to your own schoolz family
+          account (see below). Only runs when you press Publish.
+        </li>
+        <li>
+          <strong>Automatic updates</strong> - off by default. If you turn them on, the same thing Update
+          now does runs every four hours (never between 10pm and 6am). It never signs in to Google: when a
+          child's sign-in expires it stops and tells schoolz, which notifies you. Turning it off stops it
+          completely.
         </li>
       </ol>
-      <p>Apart from a scheduled walk you turned on, there is no background sync or upload, and there is no telemetry of any kind.</p>
+      <p>Apart from automatic updates you turned on, there is no background sync or upload, and there is no telemetry of any kind.</p>
 
       <h3>Publishing to schoolz</h3>
       <p>
         Backpack Capture can optionally send your captures to your own schoolz family account so they appear
         in your child's due/missing/done view, instead of (or alongside) exporting a file by hand.
       </p>
-      <p>Logging in works one of two ways, both handled by schoolz's own authentication system:</p>
+      <p>Connecting it to your account works one of three ways:</p>
       <ul>
+        <li>
+          <strong>Connect to schoolz</strong> (version 0.9.0 and later) - opens schoolz in a tab, where you
+          sign in the way you always do and press Connect after checking the code matches the one the
+          extension shows. The extension then gets its own key, which can only send pages, list your children's
+          names and report how an update went - it can't read anything else in your account. Each connected
+          computer is listed under Account → Security on schoolz, where you can disconnect it, and the
+          extension's own Sign out removes its key.
+        </li>
         <li>
           <strong>Email and password</strong> - sent directly to schoolz's sign-in service; the extension
           never stores your password, only the session token that comes back.
         </li>
         <li>
-          <strong>Continue with Google</strong> - uses Chrome's own built-in sign-in flow (
+          <strong>Sign in with Google</strong> - uses Chrome's own built-in sign-in flow (
           <code>chrome.identity</code>); Google credentials are never seen by, or available to, this
           extension.
         </li>
       </ul>
       <p>
-        Once logged in, pressing <strong>Publish captures</strong> sends every capture currently stored to
-        the student you select on your own schoolz account. What happens to that data once it's in schoolz
+        Once you're signed in, Update now and Publish send captured pages to your own schoolz account,
+        where each page is filed under the child it belongs to - by its Genesis student ID, by the Classroom
+        account it came from, or by your answer to &quot;whose Google Classroom is this?&quot;. A page that
+        can't be matched to one of your children isn't kept. What happens to the data once it's in schoolz
         is covered by <a href="/privacy">schoolz's own privacy policy</a>.
       </p>
       <p className="note">
-        Logging out clears the stored session from the extension only - it does not delete anything already
-        published, and does not close your schoolz account.
+        Signing out clears the stored login from the extension (and, for a computer connected with Connect to
+        schoolz, removes its key from your account) - it does not delete anything already sent, and does not
+        close your schoolz account.
       </p>
 
       <h3>Children's data</h3>
@@ -218,7 +253,11 @@ export function BackpackCapturePrivacyPage() {
 
       <h3>Contact</h3>
       <p>
-        Backpack Capture is an open-source project. Questions, concerns, or reports about this policy can be
+        Backpack Capture is an open-source project, available from the{" "}
+        <a href={STORE_URL} target="_blank" rel="noopener noreferrer">
+          Chrome Web Store
+        </a>
+        . Questions, concerns, or reports about this policy can be
         sent to <a href="mailto:enr@profitnaut.com">enr@profitnaut.com</a>, or filed as an issue on its
         repository:{" "}
         <a href="https://github.com/weirdaze/backpack-capture" target="_blank" rel="noopener noreferrer">

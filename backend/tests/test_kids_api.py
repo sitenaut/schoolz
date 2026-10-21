@@ -618,3 +618,84 @@ async def test_capture_status_notifies_once_and_clears_on_success():
         stranger = await _register(client, f"stranger_{uuid.uuid4().hex[:8]}@example.com")
         res = await client.post(url, json={"status": "needs_login"}, headers=_auth(stranger))
         assert res.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_family_import_routes_each_page_and_tracks_freshness(monkeypatch):
+    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, first = await _family(client)
+        [student] = (await client.get("/students", headers=_auth(guardian))).json()
+        second = await client.post(
+            "/students",
+            json={"first_name": "Second", "last_name": "Child", "student_id": "7654321", "school_id": student["school_id"]},
+            headers=_auth(guardian),
+        )
+        second = second.json()["id"]
+
+        async def status(sid: str) -> dict:
+            res = await client.get(f"/students/{sid}/bucket3/status", headers=_auth(guardian))
+            assert res.status_code == 200, res.text
+            return res.json()
+
+        assert await status(first) == {
+            "classroom_seen_at": None,
+            "genesis_seen_at": None,
+            "walk_status": None,
+            "walk_finished_at": None,
+            "needs_login": False,
+        }
+
+        feed = _load("classroom_stream_feed.txt")
+        genesis_url = "https://parents.example.org/genesis/parents?tab1=studentdata&tab2=studentsummary&studentid=7654321"
+        parent_home = _env(
+            "classroom",
+            "https://classroom.google.com/u/0/h",
+            "[aria-label] Google Account: Pat Parent\n(pat@example.com) (role=button)\nNo classes yet",
+        )
+        parent_home["account_index"] = 0
+
+        async def publish(captures: list[dict]) -> dict:
+            res = await client.post("/bucket3/import", json={"captures": captures}, headers=_auth(guardian))
+            assert res.status_code == 200, res.text
+            return res.json()
+
+        body = await publish(
+            [
+                _env("classroom", FEED_URL, feed, captured="2026-09-14T12:00:00Z"),
+                _env("genesis", genesis_url, _load("genesis_daily_view.txt").replace("9999999", "7654321")),
+                parent_home,
+            ]
+        )
+        assert {s["student"]: s["captures_processed"] for s in body["students"]} == {first: 1, second: 1}
+        assert all(s["identity_mismatches"] == [] for s in body["students"])
+        # The parent's own Classroom is neither child's: left out, and named
+        # so the extension can ask.
+        assert body["captures_unrouted"] == 1
+        assert body["unrouted_accounts"] == [
+            {"account_index": 0, "name": "Pat Parent", "email": "pat@example.com", "captures": 1, "other_student": False}
+        ]
+        assert (await client.get(f"/students/{first}/bucket3/todo", headers=_auth(guardian))).json()["due"]
+        assert (await client.get(f"/students/{second}/bucket3/todo", headers=_auth(guardian))).json()["due"] == []
+        assert (await status(second))["genesis_seen_at"].startswith("2026-09-14T13:00")
+
+        # Re-reading an unchanged page still counts as a fresh look...
+        again = await publish([_env("classroom", FEED_URL, feed, captured="2026-09-14T16:00:00Z")])
+        assert again["students"][0]["captures_skipped_duplicate"] == 1
+        assert (await status(first))["classroom_seen_at"].startswith("2026-09-14T16:00")
+        # ...and uploading an older export never makes it look older.
+        await publish([_env("classroom", FEED_URL, feed, captured="2026-09-14T10:00:00Z")])
+        assert (await status(first))["classroom_seen_at"].startswith("2026-09-14T16:00")
+
+        # A walk's outcome is kept, and a lapsed sign-in shows up here too.
+        await client.post(f"/students/{first}/bucket3/capture-status", json={"status": "needs_login"}, headers=_auth(guardian))
+        lapsed = await status(first)
+        assert (lapsed["walk_status"], lapsed["needs_login"]) == ("needs_login", True)
+        await client.post(f"/students/{first}/bucket3/capture-status", json={"status": "ok"}, headers=_auth(guardian))
+        assert (await status(first))["needs_login"] is False
+
+        # Someone with no children gets everything back as unplaced.
+        stranger = await _register(client, f"stranger_{uuid.uuid4().hex[:8]}@example.com")
+        res = await client.post("/bucket3/import", json={"captures": [_env("classroom", FEED_URL, feed)]}, headers=_auth(stranger))
+        assert res.json()["students"] == [] and res.json()["captures_unrouted"] == 1
+        assert (await client.get(f"/students/{first}/bucket3/status", headers=_auth(stranger))).status_code == 404

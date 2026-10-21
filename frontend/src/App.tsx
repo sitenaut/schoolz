@@ -56,6 +56,7 @@ import { ApproveSecretRequestPage } from "./pages/ApproveSecretRequestPage";
 import { can, isStaff } from "./lib/permissions";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
+import { ConnectBackpackPage } from "./pages/ConnectBackpackPage";
 import { ContactPage } from "./pages/ContactPage";
 import { ChCommsPage } from "./pages/ChCommsPage";
 import { SurveyPage } from "./pages/SurveyPage";
@@ -193,6 +194,8 @@ function Routed() {
         <Route path="/directory" element={<DirectoryPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/backpack-capture/privacy" element={<BackpackCapturePrivacyPage />} />
+        {/* Opened by Backpack Capture's "Connect to schoolz"; signs in first if needed. */}
+        <Route path="/connect" element={<ConnectBackpackPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/contact/submit" element={<LegacySubmitRedirect />} />

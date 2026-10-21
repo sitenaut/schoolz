@@ -162,6 +162,47 @@ class ApiKeyRequest(Base):
     api_key_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("api_keys.id", ondelete="SET NULL"), nullable=True)
 
 
+class CaptureDevice(Base):
+    """A computer's Backpack Capture, connected to one person's account
+    (routers/capture_devices.py) - the way a parent who doesn't sign in with
+    Google connects it without typing a password into the extension. Its key
+    reaches only the routes in auth.CAPTURE_KEY_ROUTES: send pages, list
+    this person's children, report how an update went. Only the SHA-256 is
+    stored; removing the row disconnects that computer."""
+
+    __tablename__ = "capture_devices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CaptureDeviceRequest(Base):
+    """A pending "Connect to schoolz" from Backpack Capture: the extension
+    holds `device_code` and polls; the person, signed in to schoolz in the
+    tab it opened, presses Connect on `user_code`. The key is minted only
+    when the extension collects it, so its plaintext is never stored."""
+
+    __tablename__ = "capture_device_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_code: Mapped[str] = mapped_column(String(16), unique=True, index=True, nullable=False)
+    device_code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    client_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # pending | approved | denied | issued
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    approved_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    capture_device_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("capture_devices.id", ondelete="SET NULL"), nullable=True
+    )
+
+
 class SecretAccessRequest(Base):
     """A request to use the prod secrets vault (`scripts/prod-secrets.sh run`):
     a script or agent says why, what it will run and which secrets it needs; a
@@ -2164,6 +2205,26 @@ class Bucket3Capture(Base):
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     reduced_text: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class Bucket3SyncState(Base):
+    """When each source was last read for a student, and how the last
+    Backpack Capture walk ended - Gradez's "Updated 2 h ago". Not derivable
+    from Bucket3Capture: an unchanged page is skipped there as a duplicate,
+    so its newest row says when something last *changed*, not when anyone
+    last looked."""
+
+    __tablename__ = "bucket3_sync_state"
+
+    student_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("students.id", ondelete="CASCADE"), primary_key=True
+    )
+    classroom_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    genesis_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    walk_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    walk_detail: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    walk_finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
 class ChildScheduleBlock(Base):

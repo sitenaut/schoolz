@@ -1525,6 +1525,40 @@ class CaptureStatusOut(BaseModel):
     notified: bool
 
 
+class Bucket3StudentImportOut(Bucket3ImportResult):
+    student: str
+    first_name: str
+
+
+class UnroutedAccountOut(BaseModel):
+    """A Classroom login none of whose pages could be placed with a child.
+    The extension asks the parent once whose it is, unless `other_student`
+    (the login itself names a student who isn't on this account)."""
+
+    account_index: int | None
+    name: str | None
+    email: str | None
+    captures: int
+    other_student: bool
+
+
+class Bucket3FamilyImportOut(BaseModel):
+    students: list[Bucket3StudentImportOut]
+    captures_unrouted: int
+    unrouted_accounts: list[UnroutedAccountOut]
+
+
+class Bucket3SyncStatusOut(BaseModel):
+    """How current a student's Backpack Capture data is (Gradez's header)."""
+
+    classroom_seen_at: datetime | None
+    genesis_seen_at: datetime | None
+    walk_status: str | None
+    walk_finished_at: datetime | None
+    # This viewer's own unread "sign in to Classroom again" notification.
+    needs_login: bool
+
+
 class ChildScheduleBlockOut(BaseModel):
     source: str
     period: str

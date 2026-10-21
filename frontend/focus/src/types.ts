@@ -18,6 +18,15 @@ export type Student = {
   school_name: string | null;
 };
 
+// GET /students/{id}/bucket3/status - how current the imported data is.
+export type SyncStatus = {
+  classroom_seen_at: string | null;
+  genesis_seen_at: string | null;
+  walk_status: string | null;
+  walk_finished_at: string | null;
+  needs_login: boolean;
+};
+
 export type TodoGrade = {
   score_earned: number | null;
   score_possible: number | null;
