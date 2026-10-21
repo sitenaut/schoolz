@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from models import CommunitySubmission, PageVisit, School, SurveyResponse, User
+from resources.categories import CATEGORIES as LOCALZ_CATEGORIES
 
 router = APIRouter(prefix="/page-views", tags=["analytics"])
 
@@ -27,11 +28,21 @@ _TRACKED_PATHS = {
 # exists: the slug is looked up and the row keyed on it, so the table stays
 # bounded by the number of tracked schools whatever a client sends.
 _SCHOOL_PAGE_RE = re.compile(r"^/schools/([^/]{1,100})$")
+# Localz is counted here because it never loads GA (docs/LOCALZ_DESIGN.md):
+# its home, its category pages, the provider landing page, and every listing
+# as one row. Which listing someone opened is never recorded - the privacy
+# page promises that - so /localz/r/<id> always lands on /localz/r/:id.
+_LOCALZ_PATHS = {"/localz", "/localz/providers"} | {f"/localz/{key}" for key in LOCALZ_CATEGORIES}
+_LOCALZ_LISTING_RE = re.compile(r"^/localz/r/[^/]{1,100}$")
 
 
 async def _tracked_path(path: str, db: AsyncSession) -> str | None:
-    if path in _TRACKED_PATHS:
+    if path == "/localz/":  # where the localz.sitenaut.com redirect lands
+        path = "/localz"
+    if path in _TRACKED_PATHS or path in _LOCALZ_PATHS:
         return path
+    if _LOCALZ_LISTING_RE.match(path):
+        return "/localz/r/:id"
     match = _SCHOOL_PAGE_RE.match(path)
     if not match:
         return None

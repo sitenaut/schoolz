@@ -102,6 +102,24 @@ async def test_school_page_counted_per_school_by_slug():
 
 
 @pytest.mark.anyio
+async def test_localz_pages_counted_without_the_listing():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        for path in ("/localz", "/localz/", "/localz/food", "/localz/providers", "/localz/r/:id", "/localz/r/abc123", "/localz/no-such-category"):
+            await client.post("/page-views", json={"path": path, "source": "direct"})
+        headers = await _admin_headers(client)
+        report = (await client.get("/page-views", headers=headers)).json()
+
+    totals = report["totals_by_path"]
+    assert totals["/localz"] >= 2 and "/localz/" not in totals
+    assert totals["/localz/food"] >= 1 and totals["/localz/providers"] >= 1
+    # Both listing forms land on one row; the listing id is never stored.
+    assert totals["/localz/r/:id"] >= 2
+    assert "/localz/r/abc123" not in totals
+    assert "/localz/no-such-category" not in totals
+
+
+@pytest.mark.anyio
 async def test_junk_source_is_normalized():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

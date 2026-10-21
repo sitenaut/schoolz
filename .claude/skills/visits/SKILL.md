@@ -23,6 +23,7 @@ Lead with the number asked for, then a short table. Keep it brief; the owner usu
 - **Days are Eastern calendar days**, with no hours. "Last 24 hours" or "last few hours" can only be answered as today + part of yesterday, or as the change since an earlier check in the same conversation.
 - Compare with the same weekday last week; weekends and Facebook posts swing it a lot.
 - **School pages** (`/schools/<slug>`), `/local` and `/directory` are counted only from Oct 20 2026, ~5pm; before that they were dropped. Nine other pages (`/`, `/start`, `/schools`, `/calendar`, `/lunch`, `/chcomms`, `/survey`, `/contact`, `/privacy`) go back further. Class pages and anything else are not counted.
+- **Localz** (`/localz`, `/localz/<category>`, `/localz/providers`, and every listing as one `/localz/r/:id` row) is counted only from the deploy of the change that added it; GA never loads there by design, so its earlier history is only in Faro RUM (`event_name="page_view"`, `event_data_route`, through Loki; see the `observability` skill). RUM saw a one-day burst of ~620 listing views on Oct 17 2026, the same day as a bot spike, probably crawler traffic (not verified).
 
 ## People, and history before the counter
 
