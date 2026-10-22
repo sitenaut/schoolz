@@ -4072,11 +4072,6 @@ select {
   border-top: 0;
 }
 .fam-sync {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   font-size: 13px;
   color: var(--ink-2);
   padding: 12px var(--space-4);
@@ -4096,6 +4091,60 @@ select {
 .fam-sync a {
   font-weight: 600;
   text-decoration: none;
+}
+.fam-sync-hd {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.fam-sync .when {
+  color: var(--ink-3);
+}
+.fam-sync .dot.warn {
+  background: var(--warn);
+}
+.fam-update {
+  margin-top: 8px;
+}
+.fam-update > p {
+  margin: 0;
+}
+.fam-problems {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--ink);
+}
+.fam-problems li + li {
+  margin-top: 4px;
+}
+.fam-report {
+  margin-top: 8px;
+}
+.fam-report-form {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+.fam-report-form label {
+  font-weight: 600;
+  color: var(--ink);
+}
+.fam-report-form textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+}
+.fam-report-form .note {
+  margin: 0;
+}
+.fam-report-sent {
+  margin: 8px 0 0;
+}
+.fam-report-error {
+  margin: 0;
+  color: var(--bad);
 }
 .fam-kid-hd {
   display: flex;
@@ -4236,4 +4285,57 @@ select {
   padding: 12px;
   font-size: 14px;
   border-style: dashed;
+}
+
+/* Admin -> Support (pages/SupportPage.tsx) */
+.support-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.support-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.support-filters input[type="search"] {
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+}
+.support-summary {
+  margin: 12px 0;
+}
+.support-summary ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.support-log {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+.support-log li {
+  display: grid;
+  grid-template-columns: 88px minmax(120px, max-content) 1fr;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
+}
+.support-log .t {
+  color: var(--ink-3);
+}
+.support-log .d {
+  overflow-wrap: anywhere;
+  color: var(--ink-2);
+}
+@media (max-width: 560px) {
+  .support-log li {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }

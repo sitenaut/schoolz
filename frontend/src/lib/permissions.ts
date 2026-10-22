@@ -15,6 +15,7 @@ export function isStaff(user: PermUser): boolean {
 export const ADMIN_TABS: { to: string; label: string; permission: string | null }[] = [
   { to: "/admin/overview", label: "Overview", permission: "analytics.view" },
   { to: "/admin/inbox", label: "Inbox", permission: "inbox.view" },
+  { to: "/admin/support", label: "Support", permission: "support.view" },
   { to: "/admin/submissions", label: "Submissions", permission: "submissions.view" },
   { to: "/admin/resources/onboarding", label: "Localz", permission: "resources.view" },
   { to: "/admin/newsletters", label: "Newsletters", permission: "newsletters.manage" },

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { IconInbox, IconMail, IconTrash } from "../components/icons";
 import { Badge } from "../components/ui/Badge";
@@ -9,7 +10,17 @@ import { markInboxSeen } from "../lib/notifications";
 import { useAuth } from "../context/AuthContext";
 import { can } from "../lib/permissions";
 
-type Message = { id: string; name: string | null; email: string | null; message: string; user_id: string | null; read_at: string | null; created_at: string };
+type Message = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  message: string;
+  user_id: string | null;
+  read_at: string | null;
+  created_at: string;
+  /** A Backpack Capture problem report: the update log it's about. */
+  capture_diagnostic_id?: string | null;
+};
 
 /** The admins' shared inbox for the public /contact form. Opening it marks
  * everything read for every admin (clearing the banner icon); this visit
@@ -17,6 +28,7 @@ type Message = { id: string; name: string | null; email: string | null; message:
 export function InboxPage() {
   const { user } = useAuth();
   const canEdit = can(user, "inbox.manage");
+  const canSupport = can(user, "support.view");
   const [items, setItems] = useState<Message[] | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<Message | null>(null);
@@ -68,6 +80,11 @@ export function InboxPage() {
                   <a className="btn sm" href={`mailto:${m.email}?subject=${encodeURIComponent("Re: your message to schoolz")}`}>
                     <IconMail /> Reply
                   </a>
+                )}
+                {m.capture_diagnostic_id && canSupport && (
+                  <Link className="btn sm" to={`/admin/support?log=${encodeURIComponent(m.capture_diagnostic_id)}`}>
+                    Open update log
+                  </Link>
                 )}
                 {canEdit && !newIds.has(m.id) && (
                   <button className="btn sm" onClick={() => markUnread(m)}>

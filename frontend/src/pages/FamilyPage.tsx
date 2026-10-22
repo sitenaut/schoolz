@@ -5,6 +5,7 @@ import { AddChildForm, GuardianInvite, SpecialsEditor } from "../components/Fami
 import { IconBook, IconChart, IconChevronLeft, IconClock, IconDevice, IconGradCap, IconPalette, IconUsers } from "../components/icons";
 import { StudentLoginInvite } from "../components/StudentLoginInvite";
 import { useAuth } from "../context/AuthContext";
+import { fmtDateTime } from "../lib/format";
 import {
   BACKPACK_CAPTURE_STORE_URL,
   awaitingSetup,
@@ -20,7 +21,9 @@ import {
   scheduleLine,
   systemsLabel,
   timeAgo,
+  updateLine,
   type FamilyChild,
+  type LastUpdate,
 } from "../lib/family";
 
 type PanelKind = "guardian" | "student" | "specials";
@@ -49,6 +52,7 @@ export function FamilyPage() {
   const [panel, setPanel] = useState<Panel>(null);
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<LastUpdate | null>(null);
 
   useEffect(() => {
     if (isStudent) return;
@@ -58,6 +62,12 @@ export function FamilyPage() {
       .then((children: FamilyChild[]) => {
         if (live) setData({ children, at: Date.now() });
       });
+    apiFetch("/capture-devices/last-update")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u: LastUpdate | null) => {
+        if (live) setLastUpdate(u);
+      })
+      .catch(() => {});
     return () => {
       live = false;
     };
@@ -114,7 +124,7 @@ export function FamilyPage() {
         </div>
       ) : (
         <>
-          <SchoolworkCard kids={children} now={data.at} />
+          <SchoolworkCard kids={children} now={data.at} update={lastUpdate} />
           {children.map((c) => (
             <ChildCard
               key={c.id}
@@ -153,7 +163,7 @@ const GENESIS_FOR_NOW = (
 /** The one card about getting homework and grades in: the full steps until
  * Backpack Capture has sent anything, then a status line - plus, for a child
  * still waiting once it's running, how to add them to the same setup. */
-function SchoolworkCard({ kids, now }: { kids: FamilyChild[]; now: number }) {
+function SchoolworkCard({ kids, now, update }: { kids: FamilyChild[]; now: number; update: LastUpdate | null }) {
   const waiting = awaitingSetup(kids);
   const last = latestSync(kids);
   const names = joinNames(waiting.map((c) => c.first_name));
@@ -196,10 +206,16 @@ function SchoolworkCard({ kids, now }: { kids: FamilyChild[]; now: number }) {
           You never type a school password into schoolz. Once it's in, ask the chat things like{" "}
           <em>"What is {waiting[0].first_name} missing this week?"</em>
         </p>
+        {update && <UpdateStatus update={update} />}
       </div>
     );
   }
-  if (!last) return null;
+  if (!last)
+    return update ? (
+      <div className="card fam-sync">
+        <UpdateStatus update={update} />
+      </div>
+    ) : null;
 
   // Backpack Capture already runs for someone in the family: a waiting child
   // needs their own school account in that Chrome, not a second install.
@@ -207,11 +223,15 @@ function SchoolworkCard({ kids, now }: { kids: FamilyChild[]; now: number }) {
   return (
     <>
       <div className="card fam-sync">
-        <span>
-          <span className="dot" aria-hidden="true" />
-          <b>Backpack Capture</b> last sent schoolwork {timeAgo(last, now)}
-        </span>
-        <Link to="/account/security">Connected computers</Link>
+        <div className="fam-sync-hd">
+          <span>
+            <span className={`dot${update?.summary?.outcome === "trouble" ? " warn" : ""}`} aria-hidden="true" />
+            <b>Backpack Capture</b> last sent schoolwork {timeAgo(last, now)} <span className="when">({fmtDateTime(last)})</span>
+          </span>
+          <Link to="/account/security">Connected computers</Link>
+        </div>
+        {update && <UpdateStatus update={update} />}
+        {!update && <ReportProblem update={null} />}
       </div>
       {waiting.length > 0 && (
         <div className="card fam-setup">
@@ -227,6 +247,91 @@ function SchoolworkCard({ kids, now }: { kids: FamilyChild[]; now: number }) {
         </div>
       )}
     </>
+  );
+}
+
+/** The last update as Backpack Capture summed it up, the problems that
+ * need a parent's attention (the extension decides which do), and the way
+ * to tell schoolz when something still looks wrong. */
+function UpdateStatus({ update }: { update: LastUpdate }) {
+  const problems = update.summary?.outcome === "trouble" ? update.summary.problems : [];
+  return (
+    <div className="fam-update">
+      <p>{updateLine(update, fmtDateTime)}</p>
+      {problems.length > 0 && (
+        <ul className="fam-problems">
+          {problems.map((p, i) => (
+            <li key={i}>{p.text}</li>
+          ))}
+        </ul>
+      )}
+      <ReportProblem update={update} />
+    </div>
+  );
+}
+
+/** Report a problem: a message to the schoolz team's Inbox, tied to the
+ * update's log so whoever helps can see what it did. */
+function ReportProblem({ update }: { update: LastUpdate | null }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState<{ reference: string | null } | null>(
+    update?.reported_at ? { reference: update.reference } : null,
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  if (sent) {
+    return (
+      <p className="fam-report-sent">
+        Reported to the schoolz team{sent.reference ? `, reference ${sent.reference}` : ""}. They'll reply by email.
+      </p>
+    );
+  }
+  if (!open) {
+    return (
+      <button type="button" className="btn sm fam-report" onClick={() => setOpen(true)}>
+        Report a problem
+      </button>
+    );
+  }
+  const send = async () => {
+    setSending(true);
+    setError(null);
+    const r = await apiFetch("/capture-devices/report", {
+      method: "POST",
+      body: JSON.stringify({ note: note.trim() || null, diagnostic_id: update?.id ?? null }),
+    }).catch(() => null);
+    setSending(false);
+    if (r?.ok) setSent(await r.json());
+    else setError(r?.status === 429 ? "That's several reports in the last hour. Try again later." : "Couldn't send that. Try again in a minute.");
+  };
+  return (
+    <div className="fam-report-form">
+      <label htmlFor="fam-report-note">What went wrong? (optional)</label>
+      <textarea
+        id="fam-report-note"
+        rows={3}
+        maxLength={2000}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="For example: it kept asking me to sign in"
+      />
+      <p className="note">
+        {update
+          ? "The schoolz team also gets this update's log: which pages it opened and where it stopped, never what was on them."
+          : "The schoolz team gets your message and your account's email address."}
+      </p>
+      {error && <p className="fam-report-error">{error}</p>}
+      <div className="fam-cta">
+        <button type="button" className="btn btn-primary sm" onClick={send} disabled={sending}>
+          {sending ? "Sending…" : "Send to schoolz"}
+        </button>
+        <button type="button" className="btn sm" onClick={() => setOpen(false)} disabled={sending}>
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 

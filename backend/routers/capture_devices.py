@@ -17,15 +17,17 @@ import json
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import generate_capture_key, get_current_user, hash_api_key, require_permission
 from database import get_db
-from models import CaptureDevice, CaptureDeviceRequest, CaptureDiagnostic, User
+from models import CaptureDevice, CaptureDeviceRequest, CaptureDiagnostic, ContactMessage, User
 from services import audit
 
 logger = logging.getLogger(__name__)
@@ -248,17 +250,44 @@ async def revoke_self(request: Request, _user: User = Depends(get_current_user),
         await db.commit()
 
 
-# ---- Send logs to schoolz --------------------------------------------------
+# ---- Update logs and problem reports ---------------------------------------
 #
-# The extension keeps a step-by-step log of its last few updates on the
-# device and shows it under the popup's result; "Send logs to schoolz" posts
-# it here so a failed update can be worked out after the fact. It holds no
+# The extension keeps a step-by-step log of its updates and posts each one
+# here when it finishes, with a short summary for My family. A log holds no
 # page text and nothing about Google accounts that aren't the children's.
-# Read back by admins with kids.view (GET /capture-devices/diagnostics).
+# The parent sees their own latest summary (GET /last-update) and can report
+# a problem with it into the admins' Inbox (POST /report); support.view reads
+# the logs themselves (GET /diagnostics).
 
 DIAGNOSTICS_KEEP = timedelta(days=30)
+# A reported update's log stays until the problem has had time to be worked out.
+REPORTED_KEEP = timedelta(days=90)
+# Every few hours for a month is ~180 updates; nobody looks that far back.
+DIAGNOSTICS_PER_USER = 100
 DIAGNOSTICS_MAX_BYTES = 512_000
 DIAGNOSTICS_MAX_ENTRIES = 2000
+REPORTS_PER_HOUR = 5
+REPORT_TZ = ZoneInfo("America/New_York")
+
+
+class UpdateProblemIn(BaseModel):
+    student_id: str | None = Field(default=None, max_length=36)
+    text: str = Field(min_length=1, max_length=300)
+
+
+class UpdateSummaryIn(BaseModel):
+    """What My family shows about the update a log is from. The extension
+    decides which problems are worth a parent's attention: a child never
+    found in this Chrome is `not_set_up`, not a problem."""
+
+    finished_at: datetime
+    manual: bool = False
+    outcome: Literal["ok", "trouble"]
+    pages_sent: int = Field(ge=0)
+    last_sent_at: datetime | None = None
+    last_sent_pages: int | None = Field(default=None, ge=0)
+    problems: list[UpdateProblemIn] = Field(default_factory=list, max_length=20)
+    not_set_up: list[str] = Field(default_factory=list, max_length=20)
 
 
 class CaptureDiagnosticsIn(BaseModel):
@@ -266,6 +295,7 @@ class CaptureDiagnosticsIn(BaseModel):
     platform: str | None = Field(default=None, max_length=40)
     log: list[dict] = Field(max_length=DIAGNOSTICS_MAX_ENTRIES)
     last_run: dict | None = None
+    summary: UpdateSummaryIn | None = None
 
 
 class CaptureDiagnosticsSentOut(BaseModel):
@@ -282,6 +312,8 @@ class CaptureDiagnosticSummaryOut(BaseModel):
     device_name: str | None
     extension_version: str
     entries: int
+    outcome: str | None
+    reported_at: datetime | None
 
 
 class CaptureDiagnosticOut(CaptureDiagnosticSummaryOut):
@@ -299,11 +331,21 @@ async def send_diagnostics(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    body = {"platform": payload.platform, "log": payload.log, "last_run": payload.last_run}
+    body = {
+        "platform": payload.platform,
+        "log": payload.log,
+        "last_run": payload.last_run,
+        "summary": payload.summary.model_dump(mode="json") if payload.summary else None,
+    }
     if len(json.dumps(body, default=str)) > DIAGNOSTICS_MAX_BYTES:
         raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "That log is too large to send")
     now = datetime.now(UTC)
-    await db.execute(delete(CaptureDiagnostic).where(CaptureDiagnostic.created_at < now - DIAGNOSTICS_KEEP))
+    await db.execute(
+        delete(CaptureDiagnostic).where(
+            CaptureDiagnostic.created_at < now - DIAGNOSTICS_KEEP,
+            or_(CaptureDiagnostic.reported_at.is_(None), CaptureDiagnostic.reported_at < now - REPORTED_KEEP),
+        )
+    )
     diag = CaptureDiagnostic(
         user_id=user.id,
         capture_device_id=getattr(request.state, "capture_device_id", None),
@@ -312,6 +354,14 @@ async def send_diagnostics(
         payload=body,
     )
     db.add(diag)
+    await db.flush()
+    beyond_cap = (
+        select(CaptureDiagnostic.id)
+        .where(CaptureDiagnostic.user_id == user.id, CaptureDiagnostic.reported_at.is_(None))
+        .order_by(CaptureDiagnostic.created_at.desc())
+        .offset(DIAGNOSTICS_PER_USER)
+    )
+    await db.execute(delete(CaptureDiagnostic).where(CaptureDiagnostic.id.in_(beyond_cap)))
     await db.commit()
     logger.info(
         "capture_diagnostics_received",
@@ -334,6 +384,8 @@ def _diagnostic_summary(diag: CaptureDiagnostic, email: str | None, device: str 
         "device_name": device,
         "extension_version": diag.extension_version,
         "entries": len((diag.payload or {}).get("log") or []),
+        "outcome": ((diag.payload or {}).get("summary") or {}).get("outcome"),
+        "reported_at": diag.reported_at,
     }
 
 
@@ -348,14 +400,18 @@ def _diagnostics_query():
 @router.get("/diagnostics", response_model=list[CaptureDiagnosticSummaryOut])
 async def list_diagnostics(
     reference: str | None = None,
+    reported: bool = False,
     limit: int = Query(default=20, ge=1, le=100),
-    _admin: User = Depends(require_permission("kids.view")),
+    _admin: User = Depends(require_permission("support.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Newest first; `reference` is the code the popup showed the parent."""
+    """Newest first; `reference` is the code My family or the Inbox shows,
+    `reported` keeps only updates a parent reported a problem with."""
     query = _diagnostics_query().order_by(CaptureDiagnostic.created_at.desc()).limit(limit)
     if reference:
         query = query.where(func.upper(func.substr(CaptureDiagnostic.id, 1, 8)) == reference.strip().upper())
+    if reported:
+        query = query.where(CaptureDiagnostic.reported_at.is_not(None))
     rows = (await db.execute(query)).all()
     return [CaptureDiagnosticSummaryOut(**_diagnostic_summary(d, email, device)) for d, email, device in rows]
 
@@ -363,7 +419,7 @@ async def list_diagnostics(
 @router.get("/diagnostics/{diagnostic_id}", response_model=CaptureDiagnosticOut)
 async def get_diagnostic(
     diagnostic_id: str,
-    _admin: User = Depends(require_permission("kids.view")),
+    _admin: User = Depends(require_permission("support.view")),
     db: AsyncSession = Depends(get_db),
 ):
     row = (await db.execute(_diagnostics_query().where(CaptureDiagnostic.id == diagnostic_id))).first()
@@ -371,3 +427,100 @@ async def get_diagnostic(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such log")
     diag, email, device = row
     return CaptureDiagnosticOut(**_diagnostic_summary(diag, email, device), payload=diag.payload)
+
+
+class LastUpdateOut(BaseModel):
+    id: str
+    reference: str
+    created_at: datetime
+    extension_version: str
+    summary: dict | None
+    reported_at: datetime | None
+
+
+@router.get("/last-update", response_model=LastUpdateOut | None)
+async def last_update(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """The newest update log this person's Backpack Capture sent: what My
+    family says about the last update, and what Report a problem refers to.
+    Only ever the caller's own (another guardian's computer reports to them)."""
+    diag = (
+        await db.execute(
+            select(CaptureDiagnostic)
+            .where(CaptureDiagnostic.user_id == user.id)
+            .order_by(CaptureDiagnostic.created_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if diag is None:
+        return None
+    return LastUpdateOut(
+        id=diag.id,
+        reference=_reference(diag.id),
+        created_at=diag.created_at,
+        extension_version=diag.extension_version,
+        summary=(diag.payload or {}).get("summary"),
+        reported_at=diag.reported_at,
+    )
+
+
+class ProblemReportIn(BaseModel):
+    note: str | None = Field(default=None, max_length=2000)
+    diagnostic_id: str | None = Field(default=None, max_length=36)
+
+
+class ProblemReportOut(BaseModel):
+    reference: str | None
+
+
+def _report_message(diag: CaptureDiagnostic | None, note: str) -> str:
+    """The Inbox message. It names no child and quotes none of the update's
+    problems, which do: an Inbox reader may not hold support.view, and the
+    log it links to has all of that."""
+    lines = ["Backpack Capture problem report from My family."]
+    if diag is None:
+        lines.append("No update log attached: Backpack Capture hasn't sent one from this account.")
+    else:
+        summary = (diag.payload or {}).get("summary") or {}
+        bits = [f"version {diag.extension_version}"]
+        if summary.get("finished_at"):
+            finished = datetime.fromisoformat(summary["finished_at"]).astimezone(REPORT_TZ)
+            bits.append(f"finished {finished:%b %-d, %-I:%M %p} ET")
+        if summary.get("outcome") == "trouble":
+            count = len(summary.get("problems") or [])
+            bits.append(f"{count} problem{'' if count == 1 else 's'} shown to the parent")
+        lines.append(f"Update log {_reference(diag.id)} ({', '.join(bits)}).")
+    lines += ["", note or "(No note.)"]
+    return "\n".join(lines)
+
+
+@router.post("/report", response_model=ProblemReportOut, status_code=status.HTTP_201_CREATED)
+async def report_problem(body: ProblemReportIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """My family's Report a problem: a message in the admins' Inbox, tied to
+    the update's log for whoever holds support.view."""
+    now = datetime.now(UTC)
+    recent = await db.scalar(
+        select(func.count())
+        .select_from(ContactMessage)
+        .where(ContactMessage.user_id == user.id, ContactMessage.created_at >= now - timedelta(hours=1))
+    )
+    if (recent or 0) >= REPORTS_PER_HOUR:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "That's several reports in the last hour. Try again later.")
+    diag = None
+    if body.diagnostic_id:
+        diag = await db.get(CaptureDiagnostic, body.diagnostic_id)
+        if diag is None or diag.user_id != user.id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such update")
+        diag.reported_at = now
+    db.add(
+        ContactMessage(
+            name=user.username,
+            email=user.email,
+            message=_report_message(diag, (body.note or "").strip())[:5000],
+            user_id=user.id,
+            capture_diagnostic_id=diag.id if diag else None,
+            created_at=now,
+        )
+    )
+    await db.commit()
+    logger.info("capture_problem_reported", extra={"user_id": user.id, "diagnostic_id": diag.id if diag else None})
+    return ProblemReportOut(reference=_reference(diag.id) if diag else None)

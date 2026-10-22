@@ -80,9 +80,11 @@ POST   /auth/reset-password  public
 POST   /bucket3/import  login
 GET    /calendar  optional
 GET    /capture-devices  login
-GET    /capture-devices/diagnostics  perm:kids.view
+GET    /capture-devices/diagnostics  perm:support.view
 POST   /capture-devices/diagnostics  login
-GET    /capture-devices/diagnostics/{diagnostic_id}  perm:kids.view
+GET    /capture-devices/diagnostics/{diagnostic_id}  perm:support.view
+GET    /capture-devices/last-update  login
+POST   /capture-devices/report  login
 GET    /capture-devices/requests/{user_code}  login
 POST   /capture-devices/requests/{user_code}/approve  login
 POST   /capture-devices/requests/{user_code}/deny  login

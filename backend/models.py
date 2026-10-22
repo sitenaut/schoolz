@@ -204,13 +204,14 @@ class CaptureDeviceRequest(Base):
 
 
 class CaptureDiagnostic(Base):
-    """An update's own step-by-step log, sent from Backpack Capture when the
-    parent presses "Send logs to schoolz" (routers/capture_devices.py), for
-    working out why an update went wrong: which Google account numbers it
-    opened, what each turned out to be, where it stopped, what it sent.
-    Never page text, and never anything about a Google account that isn't
-    one of the children's (the extension leaves those out). Deleted after
-    capture_devices.DIAGNOSTICS_KEEP."""
+    """An update's own step-by-step log, sent by Backpack Capture after each
+    update (routers/capture_devices.py), for working out why one went wrong:
+    which Google account numbers it opened, what each turned out to be,
+    where it stopped, what it sent, plus the short summary My family shows
+    the parent. Never page text, and never anything about a Google account
+    that isn't one of the children's (the extension leaves those out). Read
+    by support.view. Deleted after capture_devices.DIAGNOSTICS_KEEP, or
+    REPORTED_KEEP once the parent reported a problem with it."""
 
     __tablename__ = "capture_diagnostics"
 
@@ -222,6 +223,8 @@ class CaptureDiagnostic(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
     extension_version: Mapped[str] = mapped_column(String(20), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    # When the parent pressed Report a problem on My family for this update.
+    reported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class SecretAccessRequest(Base):
@@ -2081,6 +2084,12 @@ class ContactMessage(Base):
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     read_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+    # A Backpack Capture problem report from My family: the update log it is
+    # about. The message itself names no child; the log does, so it opens
+    # only for support.view.
+    capture_diagnostic_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("capture_diagnostics.id", ondelete="SET NULL"), nullable=True
+    )
 
 
 class PageVisit(Base):

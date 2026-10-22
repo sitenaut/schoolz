@@ -9,7 +9,9 @@ import {
   joinNames,
   latestSync,
   scheduleLine,
+  updateLine,
   type FamilyChild,
+  type LastUpdate,
 } from "./family";
 
 const child = (over: Partial<FamilyChild> = {}): FamilyChild => ({
@@ -95,5 +97,37 @@ describe("family", () => {
     expect(
       latestSync([child({ classroom_seen_at: "2026-10-21T10:00:00Z", genesis_seen_at: "2026-10-20T10:00:00Z" }), child({ genesis_seen_at: "2026-10-21T12:00:00Z" })]),
     ).toBe("2026-10-21T12:00:00Z");
+  });
+});
+
+describe("updateLine", () => {
+  const update = (summary: Partial<NonNullable<LastUpdate["summary"]>> | null): LastUpdate => ({
+    id: "d1",
+    reference: "D1",
+    created_at: "2026-10-22T20:11:00Z",
+    extension_version: "0.9.3",
+    reported_at: null,
+    summary: summary && {
+      finished_at: "2026-10-22T20:10:00Z",
+      manual: false,
+      outcome: "ok",
+      pages_sent: 0,
+      last_sent_at: null,
+      last_sent_pages: null,
+      problems: [],
+      not_set_up: [],
+      ...summary,
+    },
+  });
+  const fmt = (iso: string) => iso.slice(11, 16);
+
+  it("says what the last update sent, nothing new included", () => {
+    expect(updateLine(update({ pages_sent: 12 }), fmt)).toBe("Last update 20:10: 12 pages sent.");
+    expect(updateLine(update({ pages_sent: 1 }), fmt)).toBe("Last update 20:10: 1 page sent.");
+    expect(updateLine(update({ pages_sent: 0 }), fmt)).toBe("Last update 20:10: nothing new to send.");
+  });
+
+  it("falls back to when the log arrived for an older extension", () => {
+    expect(updateLine(update(null), fmt)).toBe("Last update 20:11.");
   });
 });

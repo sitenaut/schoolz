@@ -283,6 +283,7 @@ GET /capture-devices
 GET /capture-devices/diagnostics
   query limit?: integer
   query reference?: string | null
+  query reported?: boolean
   -> 200: list[CaptureDiagnosticSummaryOut]
 POST /capture-devices/diagnostics
   body: CaptureDiagnosticsIn
@@ -290,6 +291,11 @@ POST /capture-devices/diagnostics
 GET /capture-devices/diagnostics/{diagnostic_id}
   path diagnostic_id: string
   -> 200: CaptureDiagnosticOut
+GET /capture-devices/last-update
+  -> 200: LastUpdateOut | null
+POST /capture-devices/report
+  body: ProblemReportIn
+  -> 201: ProblemReportOut
 GET /capture-devices/requests/{user_code}
   path user_code: string
   -> 200: CaptureRequestOut
@@ -1006,9 +1012,9 @@ Bucket3SyncStatusOut { classroom_seen_at: string(date-time) | null, genesis_seen
 ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
 CaptureDeviceOut { created_at: string(date-time), id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string }
-CaptureDiagnosticOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, payload: object, reference: string, user_email: string | null }
-CaptureDiagnosticSummaryOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, reference: string, user_email: string | null }
-CaptureDiagnosticsIn { extension_version: string, last_run?: object | null, log: list[object], platform?: string | null }
+CaptureDiagnosticOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, outcome: string | null, payload: object, reference: string, reported_at: string(date-time) | null, user_email: string | null }
+CaptureDiagnosticSummaryOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, outcome: string | null, reference: string, reported_at: string(date-time) | null, user_email: string | null }
+CaptureDiagnosticsIn { extension_version: string, last_run?: object | null, log: list[object], platform?: string | null, summary?: UpdateSummaryIn | null }
 CaptureDiagnosticsSentOut { id: string, reference: string }
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
 CaptureRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), status: string, user_code: string }
@@ -1053,7 +1059,7 @@ ConfigResults { districts?: list[ResultDistrict], exported_at: string(date-time)
 ConsentIn { policy_version: integer, purpose: enum(services_profile,services_alerts,services_alerts_named) }
 ConsentOut { current: boolean, granted_at: string(date-time), policy_version: integer }
 ContactMessageCreate { email?: string | null, message: string, name?: string | null, website?: string | null }
-ContactMessageOut { created_at: string(date-time), email: string | null, id: string, message: string, name: string | null, read_at: string(date-time) | null, user_id: string | null }
+ContactMessageOut { capture_diagnostic_id?: string | null, created_at: string(date-time), email: string | null, id: string, message: string, name: string | null, read_at: string(date-time) | null, user_id: string | null }
 Cost { amount?: string | null, kind?: enum(free,sliding,fee) | null }
 CountOut { changes: integer, onboarding: integer }
 CoursePreferenceIn { custom_color?: string | null, custom_name?: string | null }
@@ -1111,6 +1117,7 @@ JobKindOut { default_cron: string, default_name: string, default_params?: object
 JobRunOut { duration_ms: integer | null, error: string | null, error_code: string | null, error_stage: string | null, finished_at: string(date-time) | null, id: string, last_progress_at?: string(date-time) | null, log_excerpt: string | null, machine_id?: string | null, started_at: string(date-time), status: string, trace_id?: string | null, triggered_by: string }
 JobRunSummaryOut { by_status: dict[integer], scheduler_last_seen_at?: string(date-time) | null, total: integer }
 JobSourceOut { label: string, value: string }
+LastUpdateOut { created_at: string(date-time), extension_version: string, id: string, reference: string, reported_at: string(date-time) | null, summary: object | null }
 LateBusContractorOut { name: string, phone: string, routes: dict[list[string]] }
 LateCreditOut { accepted: boolean, by_exception?: boolean, closes_on: string | null, credit_pct: integer | null, days_left: integer | null, extension_by_request: boolean, is_late: boolean }
 LateExceptionIn { accepted_until: string, credit_pct?: number | null, granted_note?: string | null }
@@ -1158,6 +1165,8 @@ PermissionOut { access: string, description: string, key: string, label: string,
 PlaceIn { q: string }
 PlaceOut { label: string, latitude: number, longitude: number }
 PlanOut { text: string }
+ProblemReportIn { diagnostic_id?: string | null, note?: string | null }
+ProblemReportOut { reference: string | null }
 ProgramPlace { address?: string | null, city?: string | null, place_name?: string | null, postal_code?: string | null }
 ProgressOut { done: integer, due: integer, missing: integer, percent: integer | null, total: integer }
 ProviderStatus { configured: boolean, name: string }
@@ -1268,6 +1277,8 @@ TokenResponse { access_token: string, token_type?: string }
 TransportationContactOut { email: string | null, name: string, title: string }
 UnroutedAccountOut { account_index: integer | null, captures: integer, email: string | null, name: string | null, other_student: boolean }
 UpcomingDateOut { end_time: string(date-time) | null, id: string, note: string | null, start_time: string(date-time), title: string, venue_address: string | null, venue_name: string | null }
+UpdateProblemIn { student_id?: string | null, text: string }
+UpdateSummaryIn { finished_at: string(date-time), last_sent_at?: string(date-time) | null, last_sent_pages?: integer | null, manual?: boolean, not_set_up?: list[string], outcome: enum(ok,trouble), pages_sent: integer, problems?: list[UpdateProblemIn] }
 UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, mfa_enforced?: boolean, mfa_passed?: boolean, mfa_required?: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, username: string }
 UserRolesIn { role_ids: list[string] }
 UserUpdate { preferred_language?: string | null, username?: string | null }

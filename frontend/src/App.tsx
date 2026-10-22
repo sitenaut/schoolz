@@ -74,6 +74,7 @@ const SubmissionsPage = lazyPage(() => import("./pages/SubmissionsPage").then((m
 const SubmissionReviewPage = lazyPage(() => import("./pages/SubmissionReviewPage").then((m) => m.SubmissionReviewPage));
 const UploadPage = lazyPage(() => import("./pages/UploadPage").then((m) => m.UploadPage));
 const InboxPage = lazyPage(() => import("./pages/InboxPage").then((m) => m.InboxPage));
+const SupportPage = lazyPage(() => import("./pages/SupportPage").then((m) => m.SupportPage));
 const ProfileSection = lazyPage(() => import("./pages/account/ProfileSection").then((m) => m.ProfileSection));
 const SecuritySection = lazyPage(() => import("./pages/account/SecuritySection").then((m) => m.SecuritySection));
 const NotificationsSection = lazyPage(() => import("./pages/account/NotificationsSection").then((m) => m.NotificationsSection));
@@ -260,6 +261,7 @@ function Routed() {
           <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
+          <Route path="support" element={<RequireAdmin permission="support.view"><SupportPage /></RequireAdmin>} />
           <Route path="resources/onboarding" element={<RequireAdmin permission="resources.view"><LocalzReviewPage /></RequireAdmin>} />
           <Route path="resources/onboarding/:requestId" element={<RequireAdmin permission="resources.view"><LocalzReviewDetailPage /></RequireAdmin>} />
           <Route path="resources/listings/:serviceId" element={<RequireAdmin permission="resources.view"><LocalzListingAdminPage /></RequireAdmin>} />
