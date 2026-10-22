@@ -27,24 +27,43 @@ Why the filtering happens in Python rather than SQL: the category is
 derived from free text (see `classify_directory_category`), and the
 grouping above has to happen *before* filtering anyway - filtering by
 school in SQL would truncate a person's school list to the one school
-that matched, so "District-wide" would silently become "Bret Harte". At
-~1900 rows one scoped query plus in-memory work is cheap. Revisit if this
-grows past ~10k.
+that matched, so "District-wide" would silently become "Bret Harte".
+
+**The collapsed list is cached per district scope** (`_PEOPLE`), and every
+other filter runs on it per request. At 18k staff rows, building it for
+every district took ~3s a request on prod, most of it each row dragging its
+school's full 64-column record over the wire; it now reads only the
+columns it shows, and rosters only change when a scan runs.
 """
 
+import os
+from dataclasses import dataclass
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
 from database import get_db
 from models import School, StaffMember
 from schemas import DirectoryFacetOut, DirectoryPageOut, DirectorySchoolOut, DirectoryStaffOut
 from services.i18n import fold
+from services.response_cache import SingleFlightTTLCache
 from services.staff_roles import DIRECTORY_CATEGORIES, classify_directory_category
 
 router = APIRouter(prefix="/directory", tags=["directory"])
 
 _MAX_LIMIT = 200
+
+# district scope -> its collapsed people. Sized at 1 KB a person (measured
+# 17 MB for every district's 17k people), on a 512 MB machine. 0 disables
+# it; the test suite does, since its tests change rosters between calls.
+_PEOPLE = SingleFlightTTLCache(
+    ttl_s=float(os.getenv("DIRECTORY_CACHE_TTL_S", "600")),
+    max_total_bytes=32 * 1024 * 1024,
+    max_entry_bytes=24 * 1024 * 1024,
+    sizeof=lambda people: 1024 * len(people),
+)
 
 # A person counts as district-wide when they cover *every* school of a
 # single type. Deliberately not a "more than N schools" threshold: the real
@@ -82,7 +101,7 @@ def _first(*values: str | None) -> str | None:
     return next((v for v in values if v), None)
 
 
-def _affiliation(schools: list[School], type_totals: dict[str | None, int]) -> tuple[str, bool]:
+def _affiliation(schools: list, type_totals: dict[str | None, int]) -> tuple[str, bool]:
     """Human label for where this person works, plus whether it's district-wide."""
     types = {s.school_type for s in schools}
     if len(types) == 1:
@@ -98,49 +117,78 @@ def _affiliation(schools: list[School], type_totals: dict[str | None, int]) -> t
     return f"{names[0]} +{len(names) - 1}", False
 
 
-def _matches(person: dict, tokens: list[str]) -> bool:
+@dataclass(frozen=True, slots=True)
+class _Person:
+    """One collapsed person. Slots and tuples, not a dict of sets: the cached
+    list for every district held 32 MB as dicts, about 1.8 KB a person."""
+
+    id: str
+    full_name: str
+    title: str | None
+    role: str | None
+    department: str | None
+    email: str | None
+    phone: str | None
+    category: str
+    schools: tuple
+    school_slugs: tuple[str, ...]
+    school_ids: tuple[str, ...]
+    school_types: tuple[str | None, ...]
+    affiliation: str
+    is_district_wide: bool
+    haystack: str
+
+
+def _matches(person: _Person, tokens: list[str]) -> bool:
     """AND across whitespace-separated tokens, OR across the fields - so
     "smith math" finds the math teacher named Smith, and "carusi nurse"
     finds the nurse at Carusi. Each token has to appear *somewhere*, which
     is what makes a two-word query narrow the list instead of widening it
     the way a naive OR would. A token can match any of the person's
     schools, not just one."""
-    return all(token in person["haystack"] for token in tokens)
+    return all(token in person.haystack for token in tokens)
 
 
-@router.get("/staff", response_model=DirectoryPageOut)
-async def search_directory(
-    q: str | None = None,
-    school_id: str | None = Query(default=None, description="School id or slug"),
-    school_type: str | None = None,
-    category: str | None = None,
-    district_id: list[str] = Query(default=[], description="Only schools of these districts (repeatable) - the visitor's own"),
-    limit: int = Query(default=50, ge=1, le=_MAX_LIMIT),
-    offset: int = Query(default=0, ge=0),
-    db: AsyncSession = Depends(get_db),
-) -> DirectoryPageOut:
+async def _collapsed_people(db: AsyncSession, district_ids: tuple[str, ...]) -> list[_Person]:
+    """One entry per person in these districts (all of them when empty),
+    sorted by name. Shared by every request with the same scope, so callers
+    filter it into new lists and never change it."""
     # Scoped in SQL, unlike the other filters: a person's rows all sit in one
     # district (the district's own central staff are written to its own
     # schools), so the school list can't be truncated by it - and the page
     # then never loads the other districts' people at all.
-    in_scope = School.district_id.in_(district_id) if district_id else True
+    in_scope = School.district_id.in_(district_ids) if district_ids else True
+    schools_by_id = {
+        s.id: s
+        for s in (
+            await db.execute(select(School.id, School.slug, School.name, School.short_name, School.school_type).where(in_scope))
+        ).all()
+    }
     rows = (
         await db.execute(
-            select(StaffMember, School).join(School, StaffMember.school_id == School.id).where(in_scope).order_by(StaffMember.full_name)
+            select(
+                StaffMember.id, StaffMember.school_id, StaffMember.full_name, StaffMember.title, StaffMember.department,
+                StaffMember.email, StaffMember.phone, StaffMember.role,
+            )
+            .join(School, StaffMember.school_id == School.id)
+            .where(in_scope)
+            # id breaks ties, so a person's first row (whose id they're
+            # listed under) is the same one on every call.
+            .order_by(StaffMember.full_name, StaffMember.id)
         )
     ).all()
 
     # Counted over the same schools, so "District-wide · 4 elementary schools"
     # means every elementary school in the visitor's districts.
-    type_totals = {
-        school_type_value: count
-        for school_type_value, count in (
-            await db.execute(select(School.school_type, func.count()).where(in_scope).group_by(School.school_type))
-        ).all()
-    }
+    type_totals: dict[str | None, int] = {}
+    for s in schools_by_id.values():
+        type_totals[s.school_type] = type_totals.get(s.school_type, 0) + 1
 
     people: dict[str, dict] = {}
-    for member, school in rows:
+    for member in rows:
+        school = schools_by_id.get(member.school_id)
+        if school is None:  # a school added between the two queries
+            continue
         person = people.setdefault(
             _identity(member),
             {"members": [], "schools": [], "school_ids": set()},
@@ -173,25 +221,51 @@ async def search_directory(
             if part
         )
         collapsed.append(
-            {
-                "id": members[0].id,
-                "full_name": members[0].full_name,
-                "title": title,
-                "role": _first(*(m.role for m in members)),
-                "department": department,
-                "email": _first(*(m.email for m in members)),
-                "phone": _first(*(m.phone for m in members)),
-                "category": classify_directory_category(title, department),
-                "schools": schools,
-                "school_slugs": {s.slug for s in schools},
-                "school_ids": person["school_ids"],
-                "school_types": {s.school_type for s in schools},
-                "affiliation": affiliation,
-                "is_district_wide": is_district_wide,
-                "haystack": haystack,
-            }
+            _Person(
+                id=members[0].id,
+                full_name=members[0].full_name,
+                title=title,
+                role=_first(*(m.role for m in members)),
+                department=department,
+                email=_first(*(m.email for m in members)),
+                phone=_first(*(m.phone for m in members)),
+                category=classify_directory_category(title, department),
+                schools=tuple(schools),
+                school_slugs=tuple({s.slug for s in schools}),
+                school_ids=tuple(person["school_ids"]),
+                school_types=tuple({s.school_type for s in schools}),
+                affiliation=affiliation,
+                is_district_wide=is_district_wide,
+                haystack=haystack,
+            )
         )
-    collapsed.sort(key=lambda p: p["full_name"])
+    collapsed.sort(key=lambda p: p.full_name)
+    return collapsed
+
+
+@router.get("/staff", response_model=DirectoryPageOut)
+async def search_directory(
+    q: str | None = None,
+    school_id: str | None = Query(default=None, description="School id or slug"),
+    school_type: str | None = None,
+    category: str | None = None,
+    district_id: list[str] = Query(default=[], description="Only schools of these districts (repeatable) - the visitor's own"),
+    limit: int = Query(default=50, ge=1, le=_MAX_LIMIT),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+) -> DirectoryPageOut:
+    scope = tuple(sorted(set(district_id)))
+    if _PEOPLE.enabled:
+
+        async def compute() -> list[_Person]:
+            # Its own session: other requests wait on this same computation,
+            # and the first caller's session closes when it disconnects.
+            async with database.SessionLocal() as own_db:
+                return await _collapsed_people(own_db, scope)
+
+        collapsed = await _PEOPLE.get_or_compute(scope, compute)
+    else:
+        collapsed = await _collapsed_people(db, scope)
 
     tokens = [t for t in fold(q or "").split() if t]
     if tokens:
@@ -199,13 +273,13 @@ async def search_directory(
     if school_id:
         # Same id-or-slug courtesy as routers/schools.py:resolve_school, so
         # a link built from a slug works here too.
-        collapsed = [p for p in collapsed if school_id in p["school_ids"] or school_id in p["school_slugs"]]
+        collapsed = [p for p in collapsed if school_id in p.school_ids or school_id in p.school_slugs]
     if school_type:
-        collapsed = [p for p in collapsed if school_type in p["school_types"]]
+        collapsed = [p for p in collapsed if school_type in p.school_types]
 
     counts: dict[str, int] = {}
     for person in collapsed:
-        counts[person["category"]] = counts.get(person["category"], 0) + 1
+        counts[person.category] = counts.get(person.category, 0) + 1
     facets = [
         DirectoryFacetOut(key=key, label=label, count=counts.get(key, 0))
         for key, label in DIRECTORY_CATEGORIES
@@ -213,7 +287,7 @@ async def search_directory(
     ]
 
     if category:
-        collapsed = [p for p in collapsed if p["category"] == category]
+        collapsed = [p for p in collapsed if p.category == category]
 
     page = collapsed[offset : offset + limit]
     return DirectoryPageOut(
@@ -222,21 +296,21 @@ async def search_directory(
         offset=offset,
         items=[
             DirectoryStaffOut(
-                id=p["id"],
-                full_name=p["full_name"],
-                title=p["title"],
-                role=p["role"],
-                department=p["department"],
-                email=p["email"],
-                phone=p["phone"],
-                category=p["category"],
-                affiliation=p["affiliation"],
-                is_district_wide=p["is_district_wide"],
+                id=p.id,
+                full_name=p.full_name,
+                title=p.title,
+                role=p.role,
+                department=p.department,
+                email=p.email,
+                phone=p.phone,
+                category=p.category,
+                affiliation=p.affiliation,
+                is_district_wide=p.is_district_wide,
                 schools=[
                     DirectorySchoolOut(
                         id=s.id, slug=s.slug, name=s.name, short_name=s.short_name, school_type=s.school_type
                     )
-                    for s in p["schools"]
+                    for s in p.schools
                 ],
             )
             for p in page

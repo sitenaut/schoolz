@@ -10,9 +10,11 @@ Process-local on purpose: each API machine keeps its own copy, so there is
 nothing to invalidate across machines. The TTL is the only freshness rule,
 which is fine for data that changes on a 12h scan cadence.
 
-Bytes in, bytes out: the cached value is the already-serialized response
-body, so a hit does no database or serialization work, and the memory bound
-is an exact byte count.
+Bytes in, bytes out by default: the cached value is the already-serialized
+response body, so a hit does no database or serialization work, and the
+memory bound is an exact byte count. A cache of something else (the
+directory's people, filtered per request) passes `sizeof`, an estimate of
+an entry's bytes.
 """
 
 import asyncio
@@ -20,6 +22,7 @@ import logging
 import time
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Hashable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,43 +34,47 @@ class SingleFlightTTLCache:
         max_total_bytes: int = 40 * 1024 * 1024,
         max_entry_bytes: int = 3 * 1024 * 1024,
         clock: Callable[[], float] = time.monotonic,
+        sizeof: Callable[[Any], int] = len,
     ):
         self.ttl_s = ttl_s
         self.max_total_bytes = max_total_bytes
         self.max_entry_bytes = max_entry_bytes
         self._clock = clock
+        self._sizeof = sizeof
         # key -> (expires_at, body). Oldest first, so eviction pops the front.
-        self._entries: "OrderedDict[Hashable, tuple[float, bytes]]" = OrderedDict()
+        self._entries: OrderedDict[Hashable, tuple[float, Any]] = OrderedDict()
+        self._sizes: dict[Hashable, int] = {}
         self._total_bytes = 0
-        self._inflight: dict[Hashable, "asyncio.Task[bytes]"] = {}
+        self._inflight: dict[Hashable, asyncio.Task] = {}
 
     @property
     def enabled(self) -> bool:
         return self.ttl_s > 0
 
-    def _store(self, key: Hashable, body: bytes) -> None:
-        if len(body) > self.max_entry_bytes:
+    def _store(self, key: Hashable, body: Any) -> None:
+        size = self._sizeof(body)
+        if size > self.max_entry_bytes:
             # Too big to be worth holding (an unbounded, whole-year pull).
             self._drop(key)
             return
         self._drop(key)
         self._entries[key] = (self._clock() + self.ttl_s, body)
-        self._total_bytes += len(body)
+        self._sizes[key] = size
+        self._total_bytes += size
         while self._total_bytes > self.max_total_bytes and self._entries:
             oldest = next(iter(self._entries))
             self._drop(oldest)
 
     def _drop(self, key: Hashable) -> None:
-        entry = self._entries.pop(key, None)
-        if entry is not None:
-            self._total_bytes -= len(entry[1])
+        if self._entries.pop(key, None) is not None:
+            self._total_bytes -= self._sizes.pop(key)
 
-    async def _run(self, key: Hashable, compute: Callable[[], Awaitable[bytes]]) -> bytes:
+    async def _run(self, key: Hashable, compute: Callable[[], Awaitable[Any]]) -> Any:
         body = await compute()
         self._store(key, body)  # once, here - not once per waiter
         return body
 
-    async def get_or_compute(self, key: Hashable, compute: Callable[[], Awaitable[bytes]]) -> bytes:
+    async def get_or_compute(self, key: Hashable, compute: Callable[[], Awaitable[Any]]) -> Any:
         entry = self._entries.get(key)
         if entry is not None and entry[0] > self._clock():
             return entry[1]

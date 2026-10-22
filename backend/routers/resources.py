@@ -17,18 +17,21 @@ confidential shelters). "Statewide" skips all of this: plain /search.
 """
 from __future__ import annotations
 
+import os
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, model_validator
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
 from database import get_db
 from models import ResourceService
 from resources import childcarenj, nj211, portal, search_terms
 from resources.categories import CATEGORIES, categories_for_code
 from resources.eligibility import criteria_for
+from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(prefix="/resources", tags=["resources"])
 
@@ -78,6 +81,13 @@ class CategoryOut(BaseModel):
     key: str
     label: str
     count: int
+
+
+# Per county. Every call unnested the categories of every active listing - a
+# full scan of a wide table, 1.9s on prod when it wasn't in memory - and the
+# counts only move when a refresh job runs. 0 disables it; the test suite does.
+_CATEGORY_COUNTS = SingleFlightTTLCache(ttl_s=float(os.getenv("RESOURCE_CATEGORIES_CACHE_TTL_S", "900")), max_total_bytes=2 * 1024 * 1024)
+_CATEGORIES_ADAPTER = TypeAdapter(list[CategoryOut])
 
 
 class ResourceSearchIn(BaseModel):
@@ -344,14 +354,27 @@ def _source_url(row: ResourceService) -> str | None:
     return None
 
 
-@router.get("/categories", response_model=list[CategoryOut])
-async def list_categories(county: str | None = Query(default=None, max_length=40), db: AsyncSession = Depends(get_db)) -> list[CategoryOut]:
-    """Listing counts per category, for one county when given (a county name
-    isn't sensitive, so it can sit in the query string)."""
+async def _category_counts(db: AsyncSession, county: str | None) -> list[CategoryOut]:
     category = func.unnest(ResourceService.categories).label("category")
     sub = select(category).where(*_filters(ResourceSearchIn(county=county))).subquery()
     counts = dict((await db.execute(select(sub.c.category, func.count()).group_by(sub.c.category))).all())
     return [CategoryOut(key=key, label=label, count=counts.get(key, 0)) for key, label in CATEGORIES.items()]
+
+
+@router.get("/categories", response_model=list[CategoryOut])
+async def list_categories(county: str | None = Query(default=None, max_length=40), db: AsyncSession = Depends(get_db)):
+    """Listing counts per category, for one county when given (a county name
+    isn't sensitive, so it can sit in the query string)."""
+    if not _CATEGORY_COUNTS.enabled:
+        return await _category_counts(db, county)
+
+    async def compute() -> bytes:
+        # Its own session: other visitors wait on this same computation.
+        async with database.SessionLocal() as own_db:
+            return _CATEGORIES_ADAPTER.dump_json(await _category_counts(own_db, county))
+
+    body = await _CATEGORY_COUNTS.get_or_compute(county or "", compute)
+    return Response(content=body, media_type="application/json")
 
 
 @router.post("/types", response_model=list[ResourceTypeOut])

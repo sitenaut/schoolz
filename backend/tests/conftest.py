@@ -3,8 +3,12 @@ import os
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
-# Tests change data between identical anonymous /calendar calls.
+# Tests change data between identical anonymous calls to the cached routes.
 os.environ.setdefault("CALENDAR_CACHE_TTL_S", "0")
+os.environ.setdefault("DIRECTORY_CACHE_TTL_S", "0")
+os.environ.setdefault("SITEMAP_CACHE_TTL_S", "0")
+os.environ.setdefault("AUDIT_CACHE_TTL_S", "0")
+os.environ.setdefault("RESOURCE_CATEGORIES_CACHE_TTL_S", "0")
 
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker

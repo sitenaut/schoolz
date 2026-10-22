@@ -11,22 +11,33 @@ The district filter is a convenience, not a permission: the district
 wording is public, so anyone may read every district."""
 import csv
 import io
+import os
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
 from auth import get_effective_permissions, require_permission
 from database import get_db
 from models import AuditNotPublished, District, School, User
 from scheduler.registry import registry
 from services import data_audit as audit
+from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(prefix="/admin/audit", tags=["admin-audit"])
 public_router = APIRouter(prefix="/audit", tags=["audit"])
+
+# The public grid, per (district, detail). Each request evaluated every
+# school's data points on the API's one CPU (up to 3.5s on prod), and the
+# answer only moves when a scan finishes; `generated_at` says how old it is.
+# The admin grid is never cached - an admin re-checks it after a run-now.
+# 0 disables it; the test suite does.
+_PUBLIC_GRID = SingleFlightTTLCache(ttl_s=float(os.getenv("AUDIT_CACHE_TTL_S", "600")), max_total_bytes=8 * 1024 * 1024)
 
 
 async def _audience(request: Request, db: AsyncSession, user: User, requested: str | None) -> str:
@@ -179,7 +190,16 @@ async def export_csv(
 
 @public_router.get("")
 async def public_audit(district_id: str | None = None, detail: bool = False, db: AsyncSession = Depends(get_db)):
-    return await _grid(db, "district", district_id, detail)
+    if not _PUBLIC_GRID.enabled:
+        return await _grid(db, "district", district_id, detail)
+
+    async def compute() -> bytes:
+        # Its own session: other visitors wait on this same computation.
+        async with database.SessionLocal() as own_db:
+            return JSONResponse(jsonable_encoder(await _grid(own_db, "district", district_id, detail))).body
+
+    body = await _PUBLIC_GRID.get_or_compute((district_id, detail), compute)
+    return Response(content=body, media_type="application/json")
 
 
 @public_router.get("/data-points")
