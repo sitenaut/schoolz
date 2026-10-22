@@ -203,6 +203,27 @@ class CaptureDeviceRequest(Base):
     )
 
 
+class CaptureDiagnostic(Base):
+    """An update's own step-by-step log, sent from Backpack Capture when the
+    parent presses "Send logs to schoolz" (routers/capture_devices.py), for
+    working out why an update went wrong: which Google account numbers it
+    opened, what each turned out to be, where it stopped, what it sent.
+    Never page text, and never anything about a Google account that isn't
+    one of the children's (the extension leaves those out). Deleted after
+    capture_devices.DIAGNOSTICS_KEEP."""
+
+    __tablename__ = "capture_diagnostics"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    capture_device_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("capture_devices.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+    extension_version: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
 class SecretAccessRequest(Base):
     """A request to use the prod secrets vault (`scripts/prod-secrets.sh run`):
     a script or agent says why, what it will run and which secrets it needs; a

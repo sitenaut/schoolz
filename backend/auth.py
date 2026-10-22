@@ -53,6 +53,7 @@ CAPTURE_KEY_ROUTES = frozenset(
         ("POST", "/bucket3/import"),
         ("POST", "/students/{student_id}/bucket3/capture-status"),
         ("POST", "/capture-devices/self/revoke"),
+        ("POST", "/capture-devices/diagnostics"),
     }
 )
 

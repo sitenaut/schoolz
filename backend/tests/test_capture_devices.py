@@ -150,3 +150,76 @@ async def test_cancel_and_unknown_codes():
         assert (await client.get("/capture-devices/requests/BBBB-CCCC", headers=_auth(guardian))).status_code == 404
         unknown = await client.post("/capture-devices/token", json={"device_code": "not-a-code"})
         assert unknown.json()["status"] == "expired"
+
+
+async def _admin(client: AsyncClient) -> str:
+    email = f"diag_admin_{uuid.uuid4().hex[:8]}@example.com"
+    token = await _register(client, email)
+    async with database.SessionLocal() as db:
+        await db.execute(update(User).where(User.email == email).values(is_admin=True))
+        await db.commit()
+    return token
+
+
+@pytest.mark.anyio
+async def test_send_logs_to_schoolz_and_an_admin_reads_them_back():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        email, guardian, _child = await _guardian_with_child(client)
+        key = _auth((await _connect(client, guardian))["key"])
+        log = [
+            {"t": "2026-10-22T20:00:00Z", "e": "run_start", "manual": True},
+            {"t": "2026-10-22T20:00:09Z", "e": "left_classroom", "index": 1},
+        ]
+        sent = await client.post(
+            "/capture-devices/diagnostics",
+            json={"extension_version": "0.9.1", "platform": "Windows", "log": log, "last_run": {"status": "done"}},
+            headers=key,
+        )
+        assert sent.status_code == 200, sent.text
+        body = sent.json()
+        assert body["reference"] == body["id"][:8].upper()
+        # From a signed-in browser too (the popup of a password-signed-in extension).
+        assert (
+            await client.post("/capture-devices/diagnostics", json={"extension_version": "0.9.1", "log": []}, headers=_auth(guardian))
+        ).status_code == 200
+
+        # Only admins with kids.view read them back; the key can't, nor can the guardian.
+        assert (await client.get("/capture-devices/diagnostics", headers=key)).status_code == 403
+        assert (await client.get("/capture-devices/diagnostics", headers=_auth(guardian))).status_code == 403
+        admin = _auth(await _admin(client))
+        listed = (await client.get(f"/capture-devices/diagnostics?reference={body['reference'].lower()}", headers=admin)).json()
+        assert [d["id"] for d in listed] == [body["id"]]
+        assert listed[0]["user_email"] == email
+        assert listed[0]["device_name"] == "Backpack Capture on Windows"
+        assert listed[0]["entries"] == 2
+        full = (await client.get(f"/capture-devices/diagnostics/{body['id']}", headers=admin)).json()
+        assert full["payload"] == {"platform": "Windows", "log": log, "last_run": {"status": "done"}}
+
+
+@pytest.mark.anyio
+async def test_logs_are_capped_in_size_and_kept_thirty_days():
+    from datetime import UTC, datetime, timedelta
+
+    from models import CaptureDiagnostic
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _email, guardian, _child = await _guardian_with_child(client)
+        key = _auth((await _connect(client, guardian))["key"])
+        big = [{"e": "x" * 1000}] * 600
+        too_big = await client.post("/capture-devices/diagnostics", json={"extension_version": "0.9.1", "log": big}, headers=key)
+        assert too_big.status_code == 413
+
+        async with database.SessionLocal() as db:
+            user_id = (await db.execute(select(User.id).where(User.email == _email))).scalar_one()
+            old = CaptureDiagnostic(
+                user_id=user_id,
+                created_at=datetime.now(UTC) - timedelta(days=31),
+                extension_version="0.9.0",
+                payload={"log": []},
+            )
+            db.add(old)
+            await db.commit()
+            old_id = old.id
+        assert (await client.post("/capture-devices/diagnostics", json={"extension_version": "0.9.1", "log": []}, headers=key)).status_code == 200
+        async with database.SessionLocal() as db:
+            assert await db.get(CaptureDiagnostic, old_id) is None

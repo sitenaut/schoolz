@@ -179,6 +179,13 @@ export function BackpackCapturePrivacyPage() {
           child's sign-in expires it stops and tells schoolz, which notifies you. Turning it off stops it
           completely.
         </li>
+        <li>
+          <strong>Send logs to schoolz</strong> (version 0.9.1 and later) - sends the extension's own record
+          of its last few updates, so a failed one can be looked into: which Google account numbers it opened,
+          whether each was one of your children's (by your child's schoolz record, never another account's
+          name or email), where it stopped, and how many pages it sent. No page content. Only runs when you
+          press it; schoolz keeps it for 30 days.
+        </li>
       </ol>
       <p>Apart from automatic updates you turned on, there is no background sync or upload, and there is no telemetry of any kind.</p>
 
@@ -193,7 +200,8 @@ export function BackpackCapturePrivacyPage() {
           <strong>Connect to schoolz</strong> (version 0.9.0 and later) - opens schoolz in a tab, where you
           sign in the way you always do and press Connect after checking the code matches the one the
           extension shows. The extension then gets its own key, which can only send pages, list your children's
-          names and report how an update went - it can't read anything else in your account. Each connected
+          names, report how an update went and send its logs when you ask - it can't read anything else in
+          your account. Each connected
           computer is listed under Account → Security on schoolz, where you can disconnect it, and the
           extension's own Sign out removes its key.
         </li>
