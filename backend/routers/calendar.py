@@ -116,9 +116,15 @@ def _bounded_range(start: datetime | None, end: datetime | None, q: str | None) 
     return start, end
 
 
-def _cache_key(request: Request, lang: str) -> tuple:
-    # Order-insensitive, so ?a=1&b=2 and ?b=2&a=1 share one entry.
-    return (lang, tuple(sorted(parse_qsl(request.url.query, keep_blank_values=True))))
+def _cache_key(request: Request, lang: str, grad_years: tuple[int, ...] = ()) -> tuple:
+    # Order-insensitive, so ?a=1&b=2 and ?b=2&a=1 share one entry, and so is
+    # the school list: the same schools picked in another order are one view.
+    params = []
+    for name, value in parse_qsl(request.url.query, keep_blank_values=True):
+        if name == "school_ids":
+            value = ",".join(sorted({x for x in value.split(",") if x}))
+        params.append((name, value))
+    return (lang, grad_years, tuple(sorted(params)))
 
 
 @router.get("", response_model=list[SchoolContentItemOut])
@@ -148,20 +154,24 @@ async def list_calendar_items(
         include_athletics=include_athletics,
         lang=lang,
     )
-    # Only the anonymous, non-search view is shared: a signed-in guardian's
-    # result is narrowed to their own schools and grad years, and free-text
-    # searches are too varied to be worth holding.
-    if not _CACHE.enabled or user is not None or q:
+    # Free-text searches are too varied to be worth holding. A signed-in
+    # guardian's view is shared only when the request names its schools, as
+    # the Calendar page does once any are picked: school_ids/school_id win
+    # over their own schools, so all that's left of them is their kids' grad
+    # years, which go in the key. With no schools named it's narrowed to
+    # their own, per person.
+    if not _CACHE.enabled or q or (user is not None and not (school_ids or school_id)):
         return await _list_calendar_items(user=user, db=db, **args)
+    grad_years = tuple(sorted(await _my_grad_years(db, user.id))) if user is not None else ()
 
     async def compute() -> bytes:
         # Its own session, not the first caller's: other waiters share this
         # computation, and that caller's session closes when it disconnects.
         async with database.SessionLocal() as own_db:
-            items = await _list_calendar_items(user=None, db=own_db, **args)
+            items = await _list_calendar_items(user=None, grad_years=set(grad_years), db=own_db, **args)
         return _ITEMS_ADAPTER.dump_json(items)
 
-    body = await _CACHE.get_or_compute(_cache_key(request, lang), compute)
+    body = await _CACHE.get_or_compute(_cache_key(request, lang, grad_years), compute)
     return Response(content=body, media_type="application/json")
 
 
@@ -177,6 +187,7 @@ async def _list_calendar_items(
     user: User | None,
     db: AsyncSession,
     lang: str,
+    grad_years: set[int] | None = None,
 ):
     """Everything here is public data. A logged-in guardian with linked
     kids gets it narrowed to their own schools + district-wide items by
@@ -200,7 +211,9 @@ async def _list_calendar_items(
     combined) would swamp a district-wide view even worse than club
     meetings do. The "Show sports & band" toggle flips this on."""
     my_school_ids, my_district_ids, my_school_types = ([], [], set())
-    my_grad_years: set[int] = set()
+    # The cached path looks a guardian's grad years up itself and calls this
+    # with user=None, so the shared result holds nothing else of theirs.
+    my_grad_years: set[int] = set(grad_years or ())
     if user:
         my_school_ids, my_district_ids, my_school_types = await _my_school_and_district_ids(db, user.id)
         my_grad_years = await _my_grad_years(db, user.id)

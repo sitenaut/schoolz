@@ -7,8 +7,15 @@ the database - ~0.5-1.3s idle, 5-17s while a scan burst held the pool
 result is served for a short TTL.
 
 Process-local on purpose: each API machine keeps its own copy, so there is
-nothing to invalidate across machines. The TTL is the only freshness rule,
+nothing to invalidate across machines. Time is the only freshness rule,
 which is fine for data that changes on a 12h scan cadence.
+
+Stale while revalidate: for `stale_s` after it expires, an entry is still
+served at once while one refresh runs behind it, so a visitor waits for a
+computation only on a key nobody asked for in the last hour or so. With a
+2-minute TTL and morning-rush traffic of a few requests a minute, half the
+/calendar requests in the 2026-10-22 rush were 1.3-2.3s misses. Past
+`stale_s` the caller waits, as before.
 
 Bytes in, bytes out by default: the cached value is the already-serialized
 response body, so a hit does no database or serialization work, and the
@@ -31,12 +38,14 @@ class SingleFlightTTLCache:
     def __init__(
         self,
         ttl_s: float,
+        stale_s: float = 3600,
         max_total_bytes: int = 40 * 1024 * 1024,
         max_entry_bytes: int = 3 * 1024 * 1024,
         clock: Callable[[], float] = time.monotonic,
         sizeof: Callable[[Any], int] = len,
     ):
         self.ttl_s = ttl_s
+        self.stale_s = stale_s
         self.max_total_bytes = max_total_bytes
         self.max_entry_bytes = max_entry_bytes
         self._clock = clock
@@ -76,14 +85,18 @@ class SingleFlightTTLCache:
 
     async def get_or_compute(self, key: Hashable, compute: Callable[[], Awaitable[Any]]) -> Any:
         entry = self._entries.get(key)
-        if entry is not None and entry[0] > self._clock():
+        now = self._clock()
+        if entry is not None and entry[0] > now:
             return entry[1]
 
         task = self._inflight.get(key)
         if task is None:
             task = asyncio.create_task(self._run(key, compute))
             self._inflight[key] = task
-            task.add_done_callback(lambda _t, k=key: self._inflight.pop(k, None))
+            task.add_done_callback(lambda t, k=key: self._finished(k, t))
+
+        if entry is not None and entry[0] + self.stale_s > now:
+            return entry[1]  # the refresh above replaces it for the next caller
 
         try:
             # Shielded so one caller disconnecting doesn't cancel the
@@ -96,3 +109,9 @@ class SingleFlightTTLCache:
                 logger.warning("response_cache_failed_serving_stale")
                 return entry[1]
             raise
+
+    def _finished(self, key: Hashable, task: asyncio.Task) -> None:
+        self._inflight.pop(key, None)
+        # A refresh nobody waited for fails silently otherwise.
+        if not task.cancelled() and task.exception() is not None:
+            logger.warning("response_cache_refresh_failed", exc_info=task.exception())

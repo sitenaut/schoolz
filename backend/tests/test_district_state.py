@@ -7,6 +7,7 @@ os.environ.setdefault("AUTH_MODE", "local")
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import database
 from main import app
@@ -113,3 +114,28 @@ async def test_creating_a_district_is_unique_per_state_and_exports_carry_the_sta
 
         export = (await client.get("/admin/config/export", headers=headers)).json()
         assert {d["state"] for d in export["districts"] if d["name"] == name} == {"NJ", "PA"}
+
+
+@pytest.mark.anyio
+async def test_listing_districts_loads_every_districts_jobs_in_one_query(monkeypatch):
+    tag = uuid.uuid4().hex[:8]
+    job_queries = []
+    real_execute = AsyncSession.execute
+
+    async def counting(self, statement, *args, **kwargs):
+        if ScheduledJob.__table__ in getattr(statement, "get_final_froms", lambda: [])():
+            job_queries.append(statement)
+        return await real_execute(self, statement, *args, **kwargs)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = await _admin(client)
+        made = {}
+        for n in range(3):
+            r = await client.post("/districts", headers=headers, json=_district(f"Jobs District {tag} {n}"))
+            assert r.status_code == 201, r.text
+            made[r.json()["id"]] = r.json()["scheduled_job"]["id"]
+        monkeypatch.setattr(AsyncSession, "execute", counting)
+        listed = {d["id"]: d for d in (await client.get("/districts")).json()}
+
+    assert {district_id: listed[district_id]["scheduled_job"]["id"] for district_id in made} == made
+    assert len(job_queries) == 1
