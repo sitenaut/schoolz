@@ -37,14 +37,48 @@ async def test_a_fresh_entry_is_served_without_recomputing():
 
 
 @pytest.mark.anyio
-async def test_an_expired_entry_is_recomputed():
+async def test_an_entry_past_its_stale_window_is_recomputed_before_answering():
+    clock = Clock()
+    cache = SingleFlightTTLCache(ttl_s=60, stale_s=30, clock=clock)
+    await cache.get_or_compute("k", _counting(b"old")[1])
+    clock.now += 91
+    calls, compute = _counting(b"new")
+    assert await cache.get_or_compute("k", compute) == b"new"
+    assert calls["n"] == 1
+
+
+@pytest.mark.anyio
+async def test_a_recently_expired_entry_is_served_at_once_and_refreshed_behind_it():
+    clock = Clock()
+    cache = SingleFlightTTLCache(ttl_s=60, stale_s=3600, clock=clock)
+    await cache.get_or_compute("k", _counting(b"old")[1])
+    clock.now += 61
+    calls, compute = _counting(b"new")
+    # Every caller until the refresh lands gets the old copy, and only one refresh runs.
+    assert await asyncio.gather(*(cache.get_or_compute("k", compute) for _ in range(3))) == [b"old"] * 3
+    await cache._inflight["k"]
+    assert calls["n"] == 1
+    assert await cache.get_or_compute("k", compute) == b"new"
+    assert calls["n"] == 1  # fresh again: served without another computation
+
+
+@pytest.mark.anyio
+async def test_a_failed_background_refresh_keeps_the_old_copy_and_is_logged(caplog):
     clock = Clock()
     cache = SingleFlightTTLCache(ttl_s=60, clock=clock)
-    calls, compute = _counting()
-    await cache.get_or_compute("k", compute)
+    await cache.get_or_compute("k", _counting(b"old")[1])
     clock.now += 61
-    await cache.get_or_compute("k", compute)
-    assert calls["n"] == 2
+
+    async def boom():
+        raise RuntimeError("db down")
+
+    assert await cache.get_or_compute("k", boom) == b"old"
+    with pytest.raises(RuntimeError):
+        await cache._inflight["k"]
+    await asyncio.sleep(0)  # let the done-callback run
+    assert "response_cache_refresh_failed" in caplog.text
+    assert "k" not in cache._inflight
+    assert await cache.get_or_compute("k", _counting(b"new")[1]) == b"old"  # and the next caller tries again
 
 
 @pytest.mark.anyio
@@ -76,7 +110,7 @@ async def test_a_failure_is_not_cached_and_reaches_every_waiter():
 @pytest.mark.anyio
 async def test_stale_data_is_served_when_the_refresh_fails():
     clock = Clock()
-    cache = SingleFlightTTLCache(ttl_s=60, clock=clock)
+    cache = SingleFlightTTLCache(ttl_s=60, stale_s=0, clock=clock)
     _, compute = _counting(b"old")
     await cache.get_or_compute("k", compute)
     clock.now += 120
@@ -134,15 +168,24 @@ def wired(monkeypatch):
         async def __aexit__(self, *exc):
             return False
 
+    async def grad_years(db, user_id):
+        return {"u-2027": {2027}, "u-2027b": {2027}, "u-2030": {2030}}.get(user_id, set())
+
     monkeypatch.setattr(cal, "_list_calendar_items", fake_query)
+    monkeypatch.setattr(cal, "_my_grad_years", grad_years)
     monkeypatch.setattr(cal.database, "SessionLocal", lambda: FakeSession())
     monkeypatch.setattr(cal, "_CACHE", SingleFlightTTLCache(ttl_s=60))
     return cal, calls
 
 
-async def _call(cal, query, *, user=None, q=None, lang="en"):
+class _User:
+    def __init__(self, user_id):
+        self.id = user_id
+
+
+async def _call(cal, query, *, user=None, q=None, school_ids=None, lang="en"):
     return await cal.list_calendar_items(
-        request=_request(query), start=None, end=None, school_id=None, school_ids=None, category=None,
+        request=_request(query), start=None, end=None, school_id=None, school_ids=school_ids, category=None,
         q=q, include_class_sources=False, include_athletics=False, user=user, db=object(), lang=lang,
     )
 
@@ -166,15 +209,28 @@ async def test_different_windows_and_languages_are_cached_separately(wired):
 
 
 @pytest.mark.anyio
-async def test_signed_in_and_search_requests_are_never_shared(wired):
+async def test_searches_and_signed_in_views_naming_no_schools_are_never_shared(wired):
     cal, calls = wired
-    user = object()
+    user = _User("u-2027")
     await _call(cal, "start=a", user=user)
     await _call(cal, "start=a", user=user)
     await _call(cal, "start=a&q=lunch", q="lunch")
     await _call(cal, "start=a&q=lunch", q="lunch")
     assert len(calls) == 4
     assert calls[0]["user"] is user
+
+
+@pytest.mark.anyio
+async def test_a_signed_in_view_naming_its_schools_is_shared_by_grad_years(wired):
+    cal, calls = wired
+    query = "start=a&school_ids=east,west"
+    await _call(cal, query, user=_User("u-2027"), school_ids="east,west")
+    await _call(cal, "school_ids=west,east&start=a", user=_User("u-2027b"), school_ids="west,east")  # same years, other order
+    await _call(cal, query, user=_User("u-2030"), school_ids="east,west")
+    await _call(cal, query, user=_User("u-none"), school_ids="east,west")
+    await _call(cal, query, school_ids="east,west")  # anonymous: no grad years, same as u-none
+    assert [c["grad_years"] for c in calls] == [{2027}, {2030}, set()]
+    assert all(c["user"] is None for c in calls)  # nothing else of theirs reaches the shared result
 
 
 @pytest.mark.anyio

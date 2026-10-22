@@ -152,25 +152,21 @@ async def _ensure_schoolcafe_job(db: AsyncSession, district: District, user: Use
     district.schoolcafe_job_id = job.id
 
 
+async def _jobs_by_id(db: AsyncSession, districts: list[District]) -> dict[str, ScheduledJobOut]:
+    # One query for every district's jobs. One per job per district was ~70
+    # sequential round trips, 1.2-1.6s per GET /districts on prod.
+    ids = {j for d in districts for j in (d.scheduled_job_id, d.calendar_scan_job_id, d.marking_period_job_id) if j}
+    if not ids:
+        return {}
+    rows = (await db.execute(select(ScheduledJob).where(ScheduledJob.id.in_(ids)))).scalars().all()
+    return {job.id: ScheduledJobOut.model_validate(job) for job in rows}
+
+
 async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
-    job = None
-    if district.scheduled_job_id:
-        result = await db.execute(select(ScheduledJob).where(ScheduledJob.id == district.scheduled_job_id))
-        job_row = result.scalar_one_or_none()
-        if job_row:
-            job = ScheduledJobOut.model_validate(job_row)
-    calendar_job = None
-    if district.calendar_scan_job_id:
-        result = await db.execute(select(ScheduledJob).where(ScheduledJob.id == district.calendar_scan_job_id))
-        job_row = result.scalar_one_or_none()
-        if job_row:
-            calendar_job = ScheduledJobOut.model_validate(job_row)
-    marking_period_job = None
-    if district.marking_period_job_id:
-        result = await db.execute(select(ScheduledJob).where(ScheduledJob.id == district.marking_period_job_id))
-        job_row = result.scalar_one_or_none()
-        if job_row:
-            marking_period_job = ScheduledJobOut.model_validate(job_row)
+    return _out(district, await _jobs_by_id(db, [district]))
+
+
+def _out(district: District, jobs: dict[str, ScheduledJobOut]) -> DistrictOut:
     return DistrictOut(
         id=district.id,
         name=district.name,
@@ -189,9 +185,9 @@ async def _to_out(db: AsyncSession, district: District) -> DistrictOut:
         uses_google_classroom=district.uses_google_classroom,
         genesis_url=district.genesis_url,
         created_at=district.created_at,
-        scheduled_job=job,
-        calendar_scan_job=calendar_job,
-        marking_period_job=marking_period_job,
+        scheduled_job=jobs.get(district.scheduled_job_id),
+        calendar_scan_job=jobs.get(district.calendar_scan_job_id),
+        marking_period_job=jobs.get(district.marking_period_job_id),
     )
 
 
@@ -202,8 +198,9 @@ async def list_district_summaries(db: AsyncSession = Depends(get_db)):
 
 @router.get("", response_model=list[DistrictOut])
 async def list_districts(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(District).order_by(District.name))
-    return [await _to_out(db, d) for d in result.scalars().all()]
+    districts = list((await db.execute(select(District).order_by(District.name))).scalars().all())
+    jobs = await _jobs_by_id(db, districts)
+    return [_out(d, jobs) for d in districts]
 
 
 @router.post("", response_model=DistrictOut, status_code=status.HTTP_201_CREATED)
