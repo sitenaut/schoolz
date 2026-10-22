@@ -8,12 +8,21 @@ type PrerenderSignals = { search: string; userAgent: string; brands: string[]; w
  * counted it as a new "direct" visitor - ~3,000 a day, an order of
  * magnitude over the real traffic. prerender.py adds `?prerender=1`; the
  * headless/webdriver checks catch a render without it (the droplet's
- * stealth Chromium hides webdriver but still reports HeadlessChrome). */
+ * stealth Chromium hides webdriver but still reports HeadlessChrome).
+ *
+ * Crawlers that run the page's JavaScript are caught the same way: Meta's
+ * AI crawler and ExaSearchBot render in a real-looking Chrome with no
+ * webdriver flag, and on 2026-10-21 were 43 of 44 /calendar
+ * visits. A crawler names itself in its UA, usually with a `+https://`
+ * contact link no real browser carries. */
+const CRAWLER_UA = /\+https?:\/\/|bot\/|crawler|spider|meta-externalagent|meta-webindexer|facebookexternalhit/i;
+
 export function isPrerenderLoad({ search, userAgent, brands, webdriver }: PrerenderSignals): boolean {
   return (
     new URLSearchParams(search).get("prerender") === "1" ||
     webdriver ||
     /HeadlessChrome/.test(userAgent) ||
+    CRAWLER_UA.test(userAgent) ||
     brands.includes("HeadlessChrome")
   );
 }
