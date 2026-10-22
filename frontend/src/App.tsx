@@ -1,76 +1,88 @@
+import { useEffect } from "react";
 import { BrowserRouter, Route, Navigate, useLocation } from "react-router-dom";
 import { FaroRoutes } from "./lib/telemetry";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppShell } from "./components/AppShell";
 import { ToastProvider } from "./components/ui/Toast";
 import { ROUTER_BASENAME } from "./lib/i18n";
+import { lazyPage, preloadWhenIdle } from "./lib/lazyPage";
 import { MySchoolsProvider } from "./lib/mySchools";
+import { IS_PRERENDER } from "./lib/prerenderReady";
 import { ThemeProvider } from "./lib/theme";
-import { TodayPage } from "./pages/TodayPage";
-import { PickSchoolsPage } from "./pages/PickSchoolsPage";
-import { LunchPage } from "./pages/LunchPage";
-import { LocalPage } from "./pages/LocalPage";
-import { LocalzLayout } from "./pages/localz/LocalzLayout";
-import { LocalzHomePage } from "./pages/localz/LocalzHomePage";
-import { LocalzCategoryPage } from "./pages/localz/LocalzCategoryPage";
-import { LocalzResourcePage } from "./pages/localz/LocalzResourcePage";
-import { ProvidersPage } from "./pages/localz/providers/ProvidersPage";
-import { ProviderPortalPage } from "./pages/localz/providers/ProviderPortalPage";
-import { ProviderRequestPage } from "./pages/localz/providers/ProviderRequestPage";
-import { ProviderListingPage } from "./pages/localz/providers/ProviderListingPage";
-import { LocalzReviewPage } from "./pages/LocalzReviewPage";
-import { LocalzReviewDetailPage } from "./pages/LocalzReviewDetailPage";
-import { LocalzListingAdminPage } from "./pages/LocalzListingAdminPage";
-import { SeasonalPage } from "./pages/SeasonalPage";
-import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
-import { ResetPasswordPage } from "./pages/ResetPasswordPage";
-import { FamilyPage } from "./pages/FamilyPage";
-import { KidsPage } from "./pages/KidsPage";
-import { KidsDetailPage } from "./pages/KidsDetailPage";
-import { InvitePage } from "./pages/InvitePage";
-import { GmailPage } from "./pages/GmailPage";
-import { SmoreNewslettersPage } from "./pages/SmoreNewslettersPage";
-import { SchoolsPage } from "./pages/SchoolsPage";
-import { DirectoryPage } from "./pages/DirectoryPage";
-import { SchoolDetailPage } from "./pages/SchoolDetailPage";
-import { SchoolClassYearPage } from "./pages/schools/SchoolClassYearPage";
-import { CalendarPage } from "./pages/CalendarPage";
-import { JobsPage } from "./pages/JobsPage";
-import { AdminConfigPage } from "./pages/AdminConfigPage";
-import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
-import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
-import { AuditBySchoolPage } from "./pages/audit/AuditBySchoolPage";
-import { AuditCatalogPage } from "./pages/audit/AuditCatalogPage";
-import { AuditReportPage } from "./pages/audit/AuditReportPage";
-import { AuditSchoolPage } from "./pages/audit/AuditSchoolPage";
-import { AuditShell } from "./pages/audit/AuditShell";
-import { AdminOverviewPage } from "./pages/AdminOverviewPage";
-import { UsersRolesPage } from "./pages/UsersRolesPage";
-import { ApiKeysPage } from "./pages/ApiKeysPage";
-import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
-import { SecretRequestsPage } from "./pages/SecretRequestsPage";
-import { AuditLogPage } from "./pages/AuditLogPage";
-import { ApproveSecretRequestPage } from "./pages/ApproveSecretRequestPage";
 import { can, isStaff } from "./lib/permissions";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import { BackpackCapturePrivacyPage } from "./pages/BackpackCapturePrivacyPage";
-import { ConnectBackpackPage } from "./pages/ConnectBackpackPage";
-import { ContactPage } from "./pages/ContactPage";
-import { ChCommsPage } from "./pages/ChCommsPage";
-import { SurveyPage } from "./pages/SurveyPage";
-import { SubmissionsPage } from "./pages/SubmissionsPage";
-import { SubmissionReviewPage } from "./pages/SubmissionReviewPage";
-import { UploadPage } from "./pages/UploadPage";
-import { InboxPage } from "./pages/InboxPage";
 import { MfaGate } from "./components/MfaGate";
+// In the main bundle: Today and a school's page are where nearly every visit
+// lands (the home page, and search results), so they draw without waiting on
+// a second file. The layouts are small and wrap lazy pages of their own.
+import { TodayPage } from "./pages/TodayPage";
+import { SchoolDetailPage } from "./pages/SchoolDetailPage";
+import { LocalzLayout } from "./pages/localz/LocalzLayout";
+import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
+import { AuditShell } from "./pages/audit/AuditShell";
 import { AccountLayout } from "./pages/account/AccountLayout";
-import { ProfileSection } from "./pages/account/ProfileSection";
-import { SecuritySection } from "./pages/account/SecuritySection";
-import { NotificationsSection } from "./pages/account/NotificationsSection";
-import { PrivacySection } from "./pages/account/PrivacySection";
-import { SavedProfileSection } from "./pages/account/SavedProfileSection";
+
+// Every other page is its own chunk, fetched when it's first opened.
+const PickSchoolsPage = lazyPage(() => import("./pages/PickSchoolsPage").then((m) => m.PickSchoolsPage));
+const LunchPage = lazyPage(() => import("./pages/LunchPage").then((m) => m.LunchPage));
+const LocalPage = lazyPage(() => import("./pages/LocalPage").then((m) => m.LocalPage));
+const LocalzHomePage = lazyPage(() => import("./pages/localz/LocalzHomePage").then((m) => m.LocalzHomePage));
+const LocalzCategoryPage = lazyPage(() => import("./pages/localz/LocalzCategoryPage").then((m) => m.LocalzCategoryPage));
+const LocalzResourcePage = lazyPage(() => import("./pages/localz/LocalzResourcePage").then((m) => m.LocalzResourcePage));
+const ProvidersPage = lazyPage(() => import("./pages/localz/providers/ProvidersPage").then((m) => m.ProvidersPage));
+const ProviderPortalPage = lazyPage(() => import("./pages/localz/providers/ProviderPortalPage").then((m) => m.ProviderPortalPage));
+const ProviderRequestPage = lazyPage(() => import("./pages/localz/providers/ProviderRequestPage").then((m) => m.ProviderRequestPage));
+const ProviderListingPage = lazyPage(() => import("./pages/localz/providers/ProviderListingPage").then((m) => m.ProviderListingPage));
+const LocalzReviewPage = lazyPage(() => import("./pages/LocalzReviewPage").then((m) => m.LocalzReviewPage));
+const LocalzReviewDetailPage = lazyPage(() => import("./pages/LocalzReviewDetailPage").then((m) => m.LocalzReviewDetailPage));
+const LocalzListingAdminPage = lazyPage(() => import("./pages/LocalzListingAdminPage").then((m) => m.LocalzListingAdminPage));
+const SeasonalPage = lazyPage(() => import("./pages/SeasonalPage").then((m) => m.SeasonalPage));
+const LoginPage = lazyPage(() => import("./pages/LoginPage").then((m) => m.LoginPage));
+const RegisterPage = lazyPage(() => import("./pages/RegisterPage").then((m) => m.RegisterPage));
+const ForgotPasswordPage = lazyPage(() => import("./pages/ForgotPasswordPage").then((m) => m.ForgotPasswordPage));
+const ResetPasswordPage = lazyPage(() => import("./pages/ResetPasswordPage").then((m) => m.ResetPasswordPage));
+const FamilyPage = lazyPage(() => import("./pages/FamilyPage").then((m) => m.FamilyPage));
+const KidsPage = lazyPage(() => import("./pages/KidsPage").then((m) => m.KidsPage));
+const KidsDetailPage = lazyPage(() => import("./pages/KidsDetailPage").then((m) => m.KidsDetailPage));
+const InvitePage = lazyPage(() => import("./pages/InvitePage").then((m) => m.InvitePage));
+const GmailPage = lazyPage(() => import("./pages/GmailPage").then((m) => m.GmailPage));
+const SmoreNewslettersPage = lazyPage(() => import("./pages/SmoreNewslettersPage").then((m) => m.SmoreNewslettersPage));
+const SchoolsPage = lazyPage(() => import("./pages/SchoolsPage").then((m) => m.SchoolsPage));
+const DirectoryPage = lazyPage(() => import("./pages/DirectoryPage").then((m) => m.DirectoryPage));
+const SchoolClassYearPage = lazyPage(() => import("./pages/schools/SchoolClassYearPage").then((m) => m.SchoolClassYearPage));
+const CalendarPage = lazyPage(() => import("./pages/CalendarPage").then((m) => m.CalendarPage));
+const JobsPage = lazyPage(() => import("./pages/JobsPage").then((m) => m.JobsPage));
+const AdminConfigPage = lazyPage(() => import("./pages/AdminConfigPage").then((m) => m.AdminConfigPage));
+const ChatbotAdminPage = lazyPage(() => import("./pages/ChatbotAdminPage").then((m) => m.ChatbotAdminPage));
+const AuditBySchoolPage = lazyPage(() => import("./pages/audit/AuditBySchoolPage").then((m) => m.AuditBySchoolPage));
+const AuditCatalogPage = lazyPage(() => import("./pages/audit/AuditCatalogPage").then((m) => m.AuditCatalogPage));
+const AuditReportPage = lazyPage(() => import("./pages/audit/AuditReportPage").then((m) => m.AuditReportPage));
+const AuditSchoolPage = lazyPage(() => import("./pages/audit/AuditSchoolPage").then((m) => m.AuditSchoolPage));
+const AdminOverviewPage = lazyPage(() => import("./pages/AdminOverviewPage").then((m) => m.AdminOverviewPage));
+const UsersRolesPage = lazyPage(() => import("./pages/UsersRolesPage").then((m) => m.UsersRolesPage));
+const ApiKeysPage = lazyPage(() => import("./pages/ApiKeysPage").then((m) => m.ApiKeysPage));
+const ApproveApiKeyPage = lazyPage(() => import("./pages/ApproveApiKeyPage").then((m) => m.ApproveApiKeyPage));
+const SecretRequestsPage = lazyPage(() => import("./pages/SecretRequestsPage").then((m) => m.SecretRequestsPage));
+const AuditLogPage = lazyPage(() => import("./pages/AuditLogPage").then((m) => m.AuditLogPage));
+const ApproveSecretRequestPage = lazyPage(() => import("./pages/ApproveSecretRequestPage").then((m) => m.ApproveSecretRequestPage));
+const PrivacyPage = lazyPage(() => import("./pages/PrivacyPage").then((m) => m.PrivacyPage));
+const BackpackCapturePrivacyPage = lazyPage(() => import("./pages/BackpackCapturePrivacyPage").then((m) => m.BackpackCapturePrivacyPage));
+const ConnectBackpackPage = lazyPage(() => import("./pages/ConnectBackpackPage").then((m) => m.ConnectBackpackPage));
+const ContactPage = lazyPage(() => import("./pages/ContactPage").then((m) => m.ContactPage));
+const ChCommsPage = lazyPage(() => import("./pages/ChCommsPage").then((m) => m.ChCommsPage));
+const SurveyPage = lazyPage(() => import("./pages/SurveyPage").then((m) => m.SurveyPage));
+const SubmissionsPage = lazyPage(() => import("./pages/SubmissionsPage").then((m) => m.SubmissionsPage));
+const SubmissionReviewPage = lazyPage(() => import("./pages/SubmissionReviewPage").then((m) => m.SubmissionReviewPage));
+const UploadPage = lazyPage(() => import("./pages/UploadPage").then((m) => m.UploadPage));
+const InboxPage = lazyPage(() => import("./pages/InboxPage").then((m) => m.InboxPage));
+const ProfileSection = lazyPage(() => import("./pages/account/ProfileSection").then((m) => m.ProfileSection));
+const SecuritySection = lazyPage(() => import("./pages/account/SecuritySection").then((m) => m.SecuritySection));
+const NotificationsSection = lazyPage(() => import("./pages/account/NotificationsSection").then((m) => m.NotificationsSection));
+const PrivacySection = lazyPage(() => import("./pages/account/PrivacySection").then((m) => m.PrivacySection));
+const SavedProfileSection = lazyPage(() => import("./pages/account/SavedProfileSection").then((m) => m.SavedProfileSection));
+
+// The bottom tabs and the school picker Today points to, fetched once the
+// landing page is done so a tap on them doesn't wait on the network.
+const NEXT_TAPS = [CalendarPage, LunchPage, SchoolsPage, DirectoryPage, LocalPage, LocalzHomePage, PickSchoolsPage];
 
 // Gates the *optional* personal layer (my kids, my calendar, account
 // settings) - never the public directory/calendar/school pages, which are
@@ -272,6 +284,7 @@ function LegacySubmitRedirect() {
 }
 
 export default function App() {
+  useEffect(() => preloadWhenIdle(NEXT_TAPS, IS_PRERENDER), []);
   return (
     <BrowserRouter basename={ROUTER_BASENAME}>
       <ThemeProvider>
