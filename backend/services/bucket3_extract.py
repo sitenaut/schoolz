@@ -178,6 +178,13 @@ class WorkItem:
     teacher_name: str | None = None
     posted_raw: str | None = None
     body: str | None = None
+    # True when the item came from a row of the Classwork list its page was
+    # opened for. Classroom marks finished work there on every row
+    # ("Completed"), so a row with no status word is a reading of "not
+    # finished", not a gap: work a student unsubmits loses its label. Feed
+    # cards and the home page carry a status only sometimes, so their
+    # silence says nothing.
+    status_read: bool = False
 
 
 _SHAPE_A_RE = re.compile(r"^\[aria-label\] (Assignment|Material|Announcement): (.+)$")
@@ -291,6 +298,7 @@ def _merge_item(items: dict[str, WorkItem], new: WorkItem) -> None:
             setattr(old, field_name, getattr(new, field_name))
     if new.status:
         old.status = _better_status(old.status, new.status)
+    old.status_read = old.status_read or new.status_read
 
 
 def extract_classroom_work_items(source_url: str, text: str, course_map: CourseMap) -> list[WorkItem]:
@@ -305,8 +313,12 @@ def extract_classroom_work_items(source_url: str, text: str, course_map: CourseM
          "[aria-label] Untitled Formative 817 (role=button)" ... "Assignment" ... "Due Sep 16, 9:30 AM"
     """
     lines = _join_wrapped_labels(text.split("\n"))
-    view_slugs = _view_course_slugs(lines, _course_slug_from_url(source_url))
+    url_slug = _course_slug_from_url(source_url)
+    view_slugs = _view_course_slugs(lines, url_slug)
     items: dict[str, WorkItem] = {}
+    # Only the list the page was opened for: a leftover view of another class
+    # (see _view_course_slugs) can be hours old in a tab a parent left open.
+    listed_here = url_slug if classify_page("classroom", source_url).pattern == "classroom:/u/N/w/:courseId/t/all" else None
 
     for i, line in enumerate(lines):
         m = _SHAPE_A_RE.match(line)
@@ -413,6 +425,7 @@ def extract_classroom_work_items(source_url: str, text: str, course_map: CourseM
                 course_name=course_map.by_slug.get(row_slug) if row_slug else None,
                 link=f"/c/{row_slug}" if row_slug else None,
                 status=status,
+                status_read=listed_here is not None and row_slug == listed_here,
             ),
         )
 

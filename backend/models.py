@@ -2216,7 +2216,10 @@ class Bucket3Capture(Base):
     (a person can export/upload the same file twice); a changed capture of
     the same URL is a new row, an append-only log rather than an overwrite,
     since the raw text is what a future reducer/parser fix would need to
-    re-run against."""
+    re-run against. A page that goes back to text it had before (work
+    unsubmitted, then turned in again) moves that row's `captured_at` up
+    instead: reprocess replays in `captured_at` order, and the latest look
+    has to land last."""
 
     __tablename__ = "bucket3_captures"
     __table_args__ = (
@@ -2318,6 +2321,11 @@ class ChildWorkItem(Base):
     due_raw: Mapped[str | None] = mapped_column(String(100), nullable=True)
     due_date: Mapped[str | None] = mapped_column(String(10), nullable=True)  # resolved ISO date, best-effort
     status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    # When a Classwork list last showed this item's row, the one page whose
+    # silence means "not finished" (bucket3_extract.WorkItem.status_read).
+    # That reading replaces `status`, clearing it too, unless a newer one is
+    # already in; other pages only ever fill a status in.
+    status_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Kids view v2 enrichment (docs/KIDS_VIEW_V2_DESIGN.md §2-3), confirmed
     # real in captures: "<Teacher> posted a new assignment: <Title>",

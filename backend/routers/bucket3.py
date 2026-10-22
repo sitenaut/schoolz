@@ -17,7 +17,7 @@ from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import delete, func, select, tuple_, update
+from sqlalchemy import case, delete, func, or_, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -428,13 +428,30 @@ _WORK_ITEM_KEEP_COLUMNS = (
     "course_external_id",
     "due_raw",
     "due_date",
-    "status",
     "link",
     "teacher_name",
     "posted_raw",
     "posted_date",
     "body",
 )
+
+
+def _status_update(ins, status_read: bool, captured_at: datetime) -> dict:
+    """How one capture's reading of an item's status lands on the stored row.
+    A Classwork-list row is the whole truth as of its capture, so it replaces
+    the status, a missing label included - otherwise work unsubmitted after
+    "Turned in" stays done forever. Anything else only fills a status in.
+    Neither may undo a Classwork reading taken after it (a late upload of an
+    old export, say)."""
+    seen_at = ChildWorkItem.status_seen_at
+    if status_read:
+        newer = or_(seen_at.is_(None), ins.excluded.status_seen_at >= seen_at)
+        return {
+            "status": case((newer, ins.excluded.status), else_=ChildWorkItem.status),
+            "status_seen_at": func.greatest(ins.excluded.status_seen_at, seen_at),
+        }
+    newer = or_(seen_at.is_(None), seen_at < captured_at)
+    return {"status": case((newer, func.coalesce(ins.excluded.status, ChildWorkItem.status)), else_=ChildWorkItem.status)}
 
 
 async def _apply_capture(
@@ -552,6 +569,7 @@ async def _apply_capture(
                 posted_raw=item.posted_raw,
                 posted_date=ex.resolve_posted_date(item.posted_raw, captured_at),
                 body=item.body,
+                status_seen_at=captured_at if item.status_read else None,
                 first_seen_at=captured_at,
                 last_seen_at=captured_at,
             )
@@ -562,6 +580,7 @@ async def _apply_capture(
             set_["title"] = ins.excluded.title
             set_["item_type"] = ins.excluded.item_type
             set_["last_seen_at"] = func.greatest(ins.excluded.last_seen_at, ChildWorkItem.last_seen_at)
+            set_.update(_status_update(ins, item.status_read, captured_at))
             await db.execute(ins.on_conflict_do_update(index_elements=["student_id", "external_uid"], set_=set_))
             counters.work_items += 1
             counters.seen_work_uids.add(item.external_uid)
@@ -797,31 +816,47 @@ async def _import_for_student(
             seen[adapter] = max(seen.get(adapter, read_at), read_at)
 
         content_hash = hashlib.sha256(reduced_text.encode("utf-8")).hexdigest()
-        existing_capture = await db.execute(
-            select(Bucket3Capture.id).where(
-                Bucket3Capture.student_id == student.id,
-                Bucket3Capture.source_url == source_url,
-                Bucket3Capture.content_hash == content_hash,
+        captured_at = _parse_captured_at(envelope["captured_at"])
+        same_page = (Bucket3Capture.student_id == student.id, Bucket3Capture.source_url == source_url)
+        latest_hash = (
+            await db.execute(
+                select(Bucket3Capture.content_hash)
+                .where(*same_page, Bucket3Capture.captured_at <= captured_at)
+                .order_by(Bucket3Capture.captured_at.desc())
+                .limit(1)
             )
-        )
-        if existing_capture.scalar_one_or_none():
+        ).scalar_one_or_none()
+        if latest_hash == content_hash:
+            # Unchanged since the last look at this page (or the same file
+            # uploaded twice).
             skipped_duplicate += 1
             continue
 
-        captured_at = _parse_captured_at(envelope["captured_at"])
-        db.add(
-            Bucket3Capture(
-                owner_user_id=user.id,
-                student_id=student.id,
-                adapter=adapter,
-                source_url=source_url,
-                captured_at=captured_at,
-                status=envelope.get("status", "ok"),
-                char_count=envelope.get("char_count", len(reduced_text)),
-                content_hash=content_hash,
-                reduced_text=reduced_text,
+        earlier = (
+            await db.execute(select(Bucket3Capture).where(*same_page, Bucket3Capture.content_hash == content_hash))
+        ).scalar_one_or_none()
+        if earlier is not None:
+            if earlier.captured_at >= captured_at:
+                skipped_duplicate += 1  # an older copy of a page already seen since
+                continue
+            # The page went back to text it had before - work unsubmitted,
+            # then turned in again. Still news: apply it, and move the stored
+            # copy up so reprocess replays it last too.
+            earlier.captured_at = captured_at
+        else:
+            db.add(
+                Bucket3Capture(
+                    owner_user_id=user.id,
+                    student_id=student.id,
+                    adapter=adapter,
+                    source_url=source_url,
+                    captured_at=captured_at,
+                    status=envelope.get("status", "ok"),
+                    char_count=envelope.get("char_count", len(reduced_text)),
+                    content_hash=content_hash,
+                    reduced_text=reduced_text,
+                )
             )
-        )
         await _apply_capture(db, student, adapter, source_url, reduced_text, captured_at, course_map, counters)
 
     if seen:
@@ -917,6 +952,13 @@ async def reprocess_bucket3(
     ).scalars().all()
     course_map = await _course_map_for(db, student, [])
     counters = _Counters()
+    # Replayed oldest first, so each Classwork reading lands in turn. Naming
+    # last_seen_at keeps its onupdate from stamping every row with now.
+    await db.execute(
+        update(ChildWorkItem)
+        .where(ChildWorkItem.student_id == student.id)
+        .values(status_seen_at=None, last_seen_at=ChildWorkItem.last_seen_at)
+    )
     for capture in stored:
         await _apply_capture(
             db, student, capture.adapter, capture.source_url, capture.reduced_text, capture.captured_at, course_map, counters

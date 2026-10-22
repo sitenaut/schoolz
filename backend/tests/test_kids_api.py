@@ -13,7 +13,7 @@ from sqlalchemy import select, update
 
 import database
 from main import app
-from models import ChildWorkItem, ChildWorkItemProgress, StaffMember, User
+from models import Bucket3Capture, ChildWorkItem, ChildWorkItemProgress, StaffMember, User
 from routers import bucket3 as bucket3_router
 from services import help_requests as help_svc
 from services import kids_suggestions
@@ -588,6 +588,94 @@ async def test_detail_page_capture_attaches_points_possible_to_the_matching_item
         result = await _import(client, guardian, sid, [_env("classroom", detail_url, orphan_text)])
         assert result["identity_mismatches"] == []
         assert result["work_items_upserted"] == 0
+
+
+def _classwork(done: bool) -> str:
+    """One Classwork-list row, in the fixture's real shape, with or without
+    Classroom's "Completed" label."""
+    return "\n".join(
+        [
+            "[aria-label] Google Account: Sample Student",
+            "(1234567@example.org) (role=button) (href: https://accounts.google.com/SignOutOptions)",
+            "[aria-label] ALGEBRA I 101-1 (role=menuitem) (href: /u/2/c/AAAASLUG) (data-id: 111111111)",
+            "(data-include-stream-item-materials: true) (data-draggable-item-id: 900050) (data-stream-item-id: 900050)",
+            "[aria-label] Unit 2 Worksheet (role=button)",
+            "(data-controller-loaded: true)",
+            *(["Completed"] if done else []),
+            "Assignment",
+            "assignment",
+            "Unit 2 Worksheet",
+            "(data-type: 2) (data-visibility: 2) (data-stream-item-id: 900050)",
+            "Due Sep 12",
+        ]
+    )
+
+
+async def _worksheet_status(sid: str) -> str | None:
+    async with database.SessionLocal() as db:
+        return (
+            await db.execute(select(ChildWorkItem.status).where(ChildWorkItem.student_id == sid, ChildWorkItem.external_uid == "si:900050"))
+        ).scalar_one()
+
+
+@pytest.mark.anyio
+async def test_unsubmitted_work_loses_its_turned_in_and_gets_it_back(monkeypatch):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _classwork(True), "2026-09-14T13:00:00Z")])
+        assert await _worksheet_status(sid) == "Completed"
+
+        # Unsubmitted: the row comes back without its label.
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _classwork(False), "2026-09-14T17:00:00Z")])
+        assert await _worksheet_status(sid) is None
+
+        # Turned in again: word for word the first capture, which used to be
+        # skipped as already imported.
+        result = await _import(client, guardian, sid, [_env("classroom", FEED_URL, _classwork(True), "2026-09-14T21:00:00Z")])
+        assert result["captures_skipped_duplicate"] == 0
+        assert await _worksheet_status(sid) == "Completed"
+
+        # An unchanged page is still skipped, and so is a re-sent old one.
+        result = await _import(
+            client,
+            guardian,
+            sid,
+            [
+                _env("classroom", FEED_URL, _classwork(True), "2026-09-15T01:00:00Z"),
+                _env("classroom", FEED_URL, _classwork(False), "2026-09-14T17:00:00Z"),
+            ],
+        )
+        assert result["captures_skipped_duplicate"] == 2
+        assert await _worksheet_status(sid) == "Completed"
+
+        # Reprocess replays the stored copies in order and lands the same way.
+        async with database.SessionLocal() as db:
+            stored = (
+                await db.execute(select(Bucket3Capture.captured_at).where(Bucket3Capture.student_id == sid).order_by(Bucket3Capture.captured_at))
+            ).scalars().all()
+        assert [t.hour for t in stored] == [17, 21]  # the first copy moved up to its latest look
+        res = await client.post(f"/students/{sid}/bucket3/reprocess", headers=_auth(guardian))
+        assert res.status_code == 200, res.text
+        assert await _worksheet_status(sid) == "Completed"
+
+
+@pytest.mark.anyio
+async def test_only_a_newer_classwork_list_clears_a_status(monkeypatch):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _classwork(True), "2026-09-14T13:00:00Z")])
+
+        # A class stream page without the label says nothing about it.
+        stream_url = "https://classroom.google.com/u/2/c/AAAASLUG"
+        await _import(client, guardian, sid, [_env("classroom", stream_url, _classwork(False), "2026-09-14T17:00:00Z")])
+        assert await _worksheet_status(sid) == "Completed"
+
+        # Nor does an older Classwork list uploaded late.
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _classwork(False), "2026-09-14T09:00:00Z")])
+        assert await _worksheet_status(sid) == "Completed"
+        res = await client.post(f"/students/{sid}/bucket3/reprocess", headers=_auth(guardian))
+        assert res.status_code == 200, res.text
+        assert await _worksheet_status(sid) == "Completed"
 
 
 @pytest.mark.anyio
