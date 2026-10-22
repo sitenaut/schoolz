@@ -184,3 +184,98 @@ async def test_a_zero_ttl_runs_the_query_every_time_with_the_callers_own_session
     await _call(cal, "start=a")
     await _call(cal, "start=a")
     assert len(calls) == 2
+
+
+def test_sizeof_is_what_the_byte_budget_counts():
+    cache = SingleFlightTTLCache(ttl_s=60, max_total_bytes=25, max_entry_bytes=20, sizeof=lambda people: 10 * len(people))
+    cache._store("a", ["p", "p"])
+    cache._store("b", ["p"])
+    assert cache._total_bytes == 30 - 20  # "a" (20) went first to fit "b" under 25
+    cache._store("c", ["p", "p", "p"])  # 30 > the 20 a single entry may hold
+    assert "c" not in cache._entries and cache._total_bytes == 10
+
+
+# ---- the other cached routes, their DB work stubbed out ----
+
+
+class _FakeSession:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+@pytest.fixture
+def no_db(monkeypatch):
+    import database
+
+    monkeypatch.setattr(database, "SessionLocal", lambda: _FakeSession())
+
+
+@pytest.mark.anyio
+async def test_directory_filters_one_cached_list_per_district_scope(monkeypatch, no_db):
+    import routers.directory as d
+
+    def person(pid, name, category, haystack):
+        return d._Person(id=pid, full_name=name, title=None, role=None, department=None, email=None, phone=None,
+                         category=category, schools=(), school_slugs=("s",), school_ids=("s1",), school_types=("high",),
+                         affiliation="S", is_district_wide=False, haystack=haystack)
+
+    people = [person("1", "Ann Lee", "nurse", "ann lee school nurse"), person("2", "Bo Diaz", "teacher", "bo diaz math")]
+    calls = []
+
+    async def fake(db, scope):
+        calls.append(scope)
+        return people
+
+    monkeypatch.setattr(d, "_collapsed_people", fake)
+    monkeypatch.setattr(d, "_PEOPLE", SingleFlightTTLCache(ttl_s=60, sizeof=len))
+
+    async def search(**kw):
+        args = {"q": None, "school_id": None, "school_type": None, "category": None, "district_id": [], "limit": 50, "offset": 0, "db": object()}
+        return await d.search_directory(**(args | kw))
+
+    assert (await search()).total == 2
+    assert [p.full_name for p in (await search(q="nurse")).items] == ["Ann Lee"]
+    assert (await search(category="teacher")).total == 1
+    await search(district_id=["b", "a"])
+    await search(district_id=["a", "b", "a"])
+    assert calls == [(), ("a", "b")]  # one build per scope, whatever the order
+    assert len(people) == 2  # filtering never changes the shared list
+
+
+@pytest.mark.anyio
+async def test_sitemap_audit_and_resource_counts_are_built_once_per_key(monkeypatch, no_db):
+    import routers.data_audit as audit_router
+    import routers.resources as resources
+    import routers.seo as seo
+
+    calls = []
+
+    async def sitemap_xml(db):
+        calls.append("sitemap")
+        return b"<urlset/>"
+
+    async def grid(db, aud, district_id, detail):
+        calls.append(("audit", aud, district_id, detail))
+        return {"schools": []}
+
+    async def counts(db, county):
+        calls.append(("categories", county))
+        return [resources.CategoryOut(key="food", label="Food", count=3)]
+
+    monkeypatch.setattr(seo, "_sitemap_xml", sitemap_xml)
+    monkeypatch.setattr(seo, "_SITEMAP", SingleFlightTTLCache(ttl_s=60))
+    monkeypatch.setattr(audit_router, "_grid", grid)
+    monkeypatch.setattr(audit_router, "_PUBLIC_GRID", SingleFlightTTLCache(ttl_s=60))
+    monkeypatch.setattr(resources, "_category_counts", counts)
+    monkeypatch.setattr(resources, "_CATEGORY_COUNTS", SingleFlightTTLCache(ttl_s=60))
+
+    for _ in range(2):
+        assert (await seo.sitemap(db=object())).body == b"<urlset/>"
+        assert (await audit_router.public_audit(district_id="d1", detail=False, db=object())).body == b'{"schools":[]}'
+        assert (await resources.list_categories(county="Camden", db=object())).body == b'[{"key":"food","label":"Food","count":3}]'
+    await audit_router.public_audit(district_id="d1", detail=True, db=object())
+    await resources.list_categories(county=None, db=object())
+    assert calls == ["sitemap", ("audit", "district", "d1", False), ("categories", "Camden"), ("audit", "district", "d1", True), ("categories", None)]

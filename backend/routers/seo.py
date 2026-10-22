@@ -6,11 +6,18 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
+import services.prerender as prerender
 from database import get_db
 from models import School, SchoolContentItem
-import services.prerender as prerender
+from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(tags=["seo"])
+
+# Every crawler fetch rebuilt it (1.1 MB of XML, two scans of the content
+# table) - up to 2.8s on prod. lastmod is a date, so an hour-old copy says
+# exactly the same thing. 0 disables it; the test suite does.
+_SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "3600")))
 
 # Static public routes worth listing - anything gated by RequireAuth/
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)
@@ -77,8 +84,7 @@ async def sitemap_paths(db: AsyncSession) -> list[str]:
     return [v for path in _STATIC_PATHS + [f"/schools/{slug}" for slug in slugs] for v in _variants(path)]
 
 
-@router.get("/sitemap.xml", include_in_schema=False)
-async def sitemap(db: AsyncSession = Depends(get_db)) -> Response:
+async def _sitemap_xml(db: AsyncSession) -> bytes:
     base_url = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
     lastmods = await _school_lastmods(db)
     entries = "".join(_entry(base_url, path, None) for path in _STATIC_PATHS)
@@ -88,7 +94,20 @@ async def sitemap(db: AsyncSession = Depends(get_db)) -> Response:
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'
         f"{entries}</urlset>"
     )
-    return Response(content=xml, media_type="application/xml")
+    return xml.encode()
+
+
+@router.get("/sitemap.xml", include_in_schema=False)
+async def sitemap(db: AsyncSession = Depends(get_db)) -> Response:
+    if not _SITEMAP.enabled:
+        return Response(content=await _sitemap_xml(db), media_type="application/xml")
+
+    async def compute() -> bytes:
+        # Its own session: other crawlers wait on this same computation.
+        async with database.SessionLocal() as own_db:
+            return await _sitemap_xml(own_db)
+
+    return Response(content=await _SITEMAP.get_or_compute("sitemap", compute), media_type="application/xml")
 
 
 @router.get("/prerender", include_in_schema=False)
@@ -99,5 +118,5 @@ async def prerender_page(path: str) -> Response:
     try:
         html = await prerender.get_prerendered_html(path)
     except prerender.PathNotAllowed:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
     return Response(content=html, media_type="text/html")
