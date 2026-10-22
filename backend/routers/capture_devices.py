@@ -13,18 +13,22 @@ Same shape as the admin API-key device flow (routers/admin_api_keys.py),
 for guardians: nothing to pick, and approved by the person whose account it
 is, not by a super admin.
 """
+import json
+import logging
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import generate_capture_key, get_current_user, hash_api_key
+from auth import generate_capture_key, get_current_user, hash_api_key, require_permission
 from database import get_db
-from models import CaptureDevice, CaptureDeviceRequest, User
+from models import CaptureDevice, CaptureDeviceRequest, CaptureDiagnostic, User
 from services import audit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/capture-devices", tags=["capture-devices"])
 
@@ -242,3 +246,128 @@ async def revoke_self(request: Request, _user: User = Depends(get_current_user),
     if device is not None:
         await db.delete(device)
         await db.commit()
+
+
+# ---- Send logs to schoolz --------------------------------------------------
+#
+# The extension keeps a step-by-step log of its last few updates on the
+# device and shows it under the popup's result; "Send logs to schoolz" posts
+# it here so a failed update can be worked out after the fact. It holds no
+# page text and nothing about Google accounts that aren't the children's.
+# Read back by admins with kids.view (GET /capture-devices/diagnostics).
+
+DIAGNOSTICS_KEEP = timedelta(days=30)
+DIAGNOSTICS_MAX_BYTES = 512_000
+DIAGNOSTICS_MAX_ENTRIES = 2000
+
+
+class CaptureDiagnosticsIn(BaseModel):
+    extension_version: str = Field(min_length=1, max_length=20)
+    platform: str | None = Field(default=None, max_length=40)
+    log: list[dict] = Field(max_length=DIAGNOSTICS_MAX_ENTRIES)
+    last_run: dict | None = None
+
+
+class CaptureDiagnosticsSentOut(BaseModel):
+    id: str
+    # What the popup shows, and what the parent quotes when asking about it.
+    reference: str
+
+
+class CaptureDiagnosticSummaryOut(BaseModel):
+    id: str
+    reference: str
+    created_at: datetime
+    user_email: str | None
+    device_name: str | None
+    extension_version: str
+    entries: int
+
+
+class CaptureDiagnosticOut(CaptureDiagnosticSummaryOut):
+    payload: dict
+
+
+def _reference(diag_id: str) -> str:
+    return diag_id[:8].upper()
+
+
+@router.post("/diagnostics", response_model=CaptureDiagnosticsSentOut)
+async def send_diagnostics(
+    payload: CaptureDiagnosticsIn,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    body = {"platform": payload.platform, "log": payload.log, "last_run": payload.last_run}
+    if len(json.dumps(body, default=str)) > DIAGNOSTICS_MAX_BYTES:
+        raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "That log is too large to send")
+    now = datetime.now(UTC)
+    await db.execute(delete(CaptureDiagnostic).where(CaptureDiagnostic.created_at < now - DIAGNOSTICS_KEEP))
+    diag = CaptureDiagnostic(
+        user_id=user.id,
+        capture_device_id=getattr(request.state, "capture_device_id", None),
+        created_at=now,
+        extension_version=payload.extension_version,
+        payload=body,
+    )
+    db.add(diag)
+    await db.commit()
+    logger.info(
+        "capture_diagnostics_received",
+        extra={
+            "diagnostic_id": diag.id,
+            "user_id": user.id,
+            "extension_version": payload.extension_version,
+            "entries": len(payload.log),
+        },
+    )
+    return CaptureDiagnosticsSentOut(id=diag.id, reference=_reference(diag.id))
+
+
+def _diagnostic_summary(diag: CaptureDiagnostic, email: str | None, device: str | None) -> dict:
+    return {
+        "id": diag.id,
+        "reference": _reference(diag.id),
+        "created_at": diag.created_at,
+        "user_email": email,
+        "device_name": device,
+        "extension_version": diag.extension_version,
+        "entries": len((diag.payload or {}).get("log") or []),
+    }
+
+
+def _diagnostics_query():
+    return (
+        select(CaptureDiagnostic, User.email, CaptureDevice.name)
+        .join(User, User.id == CaptureDiagnostic.user_id)
+        .outerjoin(CaptureDevice, CaptureDevice.id == CaptureDiagnostic.capture_device_id)
+    )
+
+
+@router.get("/diagnostics", response_model=list[CaptureDiagnosticSummaryOut])
+async def list_diagnostics(
+    reference: str | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    _admin: User = Depends(require_permission("kids.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Newest first; `reference` is the code the popup showed the parent."""
+    query = _diagnostics_query().order_by(CaptureDiagnostic.created_at.desc()).limit(limit)
+    if reference:
+        query = query.where(func.upper(func.substr(CaptureDiagnostic.id, 1, 8)) == reference.strip().upper())
+    rows = (await db.execute(query)).all()
+    return [CaptureDiagnosticSummaryOut(**_diagnostic_summary(d, email, device)) for d, email, device in rows]
+
+
+@router.get("/diagnostics/{diagnostic_id}", response_model=CaptureDiagnosticOut)
+async def get_diagnostic(
+    diagnostic_id: str,
+    _admin: User = Depends(require_permission("kids.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = (await db.execute(_diagnostics_query().where(CaptureDiagnostic.id == diagnostic_id))).first()
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such log")
+    diag, email, device = row
+    return CaptureDiagnosticOut(**_diagnostic_summary(diag, email, device), payload=diag.payload)

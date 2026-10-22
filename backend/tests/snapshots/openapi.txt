@@ -280,6 +280,16 @@ GET /calendar
   -> 200: list[SchoolContentItemOut]
 GET /capture-devices
   -> 200: list[CaptureDeviceOut]
+GET /capture-devices/diagnostics
+  query limit?: integer
+  query reference?: string | null
+  -> 200: list[CaptureDiagnosticSummaryOut]
+POST /capture-devices/diagnostics
+  body: CaptureDiagnosticsIn
+  -> 200: CaptureDiagnosticsSentOut
+GET /capture-devices/diagnostics/{diagnostic_id}
+  path diagnostic_id: string
+  -> 200: CaptureDiagnosticOut
 GET /capture-devices/requests/{user_code}
   path user_code: string
   -> 200: CaptureRequestOut
@@ -996,6 +1006,10 @@ Bucket3SyncStatusOut { classroom_seen_at: string(date-time) | null, genesis_seen
 ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
 CaptureDeviceOut { created_at: string(date-time), id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string }
+CaptureDiagnosticOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, payload: object, reference: string, user_email: string | null }
+CaptureDiagnosticSummaryOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, reference: string, user_email: string | null }
+CaptureDiagnosticsIn { extension_version: string, last_run?: object | null, log: list[object], platform?: string | null }
+CaptureDiagnosticsSentOut { id: string, reference: string }
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
 CaptureRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), status: string, user_code: string }
 CaptureStartIn { client_name: string }
