@@ -6,7 +6,6 @@
   "Year": "年",
   "Only <1>{{school}}</1>": "仅显示 <1>{{school}}</1>",
   "Show all my schools": "显示我的所有学校",
-  "Every school in the district. Pick schools on \"My schools\" to narrow it down.": "学区内的所有学校。请在“我的学校”中选择学校以缩小范围。",
   "Previous month": "上个月",
   "Next month": "下个月",
   "today": "今天",
@@ -36,5 +35,6 @@
   "Nothing found for this day.": "这一天没有内容。",
   "Nothing found this month.": "本月没有内容。",
   "All {{name}}": "{{name}}的所有学校",
-  "Filter events": "筛选活动"
+  "Filter events": "筛选活动",
+  "to see their closures, early dismissals, and events here.": "即可在此查看停课、提前放学和活动。"
 }

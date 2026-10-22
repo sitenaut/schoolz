@@ -6,7 +6,6 @@
   "Year": "वर्ष",
   "Only <1>{{school}}</1>": "केवल <1>{{school}}</1>",
   "Show all my schools": "मेरे सभी स्कूल दिखाएँ",
-  "Every school in the district. Pick schools on \"My schools\" to narrow it down.": "डिस्ट्रिक्ट के सभी स्कूल। सूची छोटी करने के लिए \"मेरे स्कूल\" में स्कूल चुनें।",
   "Previous month": "पिछला महीना",
   "Next month": "अगला महीना",
   "today": "आज",
@@ -36,5 +35,6 @@
   "Nothing found for this day.": "इस दिन के लिए कुछ नहीं मिला।",
   "Nothing found this month.": "इस महीने कुछ नहीं मिला।",
   "All {{name}}": "{{name}} के सभी",
-  "Filter events": "कार्यक्रम फ़िल्टर करें"
+  "Filter events": "कार्यक्रम फ़िल्टर करें",
+  "to see their closures, early dismissals, and events here.": "ताकि यहाँ बंदी, जल्दी छुट्टी और कार्यक्रम देख सकें।"
 }

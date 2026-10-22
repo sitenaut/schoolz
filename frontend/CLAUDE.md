@@ -3,7 +3,7 @@
 Built around one question: what does a parent need at 7:40 AM with one hand. Home is the **Today feed** — one day-card per school from `GET /schools/{id}/today` (one request per school). Everything renders inside `components/AppShell.tsx` (bottom tabs on mobile, left rail ≥900px).
 
 - **"My schools" without an account** (`lib/mySchools.tsx`) — slugs in `localStorage` (survives closing the browser, no server round-trip). Tracks *picked* and *hidden* sets so a school added later is visible automatically; all hidden falls back to showing all.
-- **Today renders in place with no schools picked** (a picker prompt, not a redirect), so the homepage always has indexable content.
+- **Today and Calendar render in place with no schools picked** (a picker prompt, not a redirect), so the page always has indexable content. Calendar used to fall back to every school's month instead: 3,000+ events and 1.9 MB, for a view crawlers got far more often than people. The prompt links to `/start?next=/calendar`, and the picker goes back to `next`.
 - **School page order is deliberate — actions first, reference last**: sticky actions → week strip → reminders → coming up → who to contact → SACC → documents → newsletter leftovers. Documents flag "may be outdated" on academic-year mismatch.
 - **Content in a collapsed accordion is content that doesn't exist** — a lunch menu rendered under "More" was invisible until a user asked.
 - **Shared filters**: "Exclude district" (off by default; key `schoolz_exclude_district_v2` because old saved values were on-by-default) hides board/committee noise but never closures, half-days, or grading dates, and governs Today, the week strip and school page too. "Show day rotation" is Calendar-only.

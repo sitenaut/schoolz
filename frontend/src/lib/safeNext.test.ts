@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeNext } from "./LoginPage";
+import { safeNext } from "./safeNext";
 
 describe("safeNext", () => {
   it("keeps valid same-site paths", () => {

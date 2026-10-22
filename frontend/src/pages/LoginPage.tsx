@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
+import { safeNext } from "../lib/safeNext";
 
 /** The full-page version - only reached via a direct link (an invite's
  * `?next=` redirect, a bookmark, or landing here with JS routing not yet
@@ -29,10 +30,4 @@ export function LoginPage() {
       />
     </div>
   );
-}
-
-/** Only a same-site app path: it's concatenated after the origin for
- * Supabase's redirect, where "@evil.com" or "//evil.com" would leave the site. */
-export function safeNext(raw: string | null): string {
-  return raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\") ? raw : "/";
 }

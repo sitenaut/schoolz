@@ -6,7 +6,6 @@
   "Year": "연",
   "Only <1>{{school}}</1>": "<1>{{school}}</1>만 보기",
   "Show all my schools": "내 학교 모두 보기",
-  "Every school in the district. Pick schools on \"My schools\" to narrow it down.": "교육구의 모든 학교입니다. \"내 학교\"에서 학교를 선택하면 목록을 좁힐 수 있습니다.",
   "Previous month": "이전 달",
   "Next month": "다음 달",
   "today": "오늘",
@@ -36,5 +35,6 @@
   "Nothing found for this day.": "이 날짜에는 일정이 없습니다.",
   "Nothing found this month.": "이번 달에는 일정이 없습니다.",
   "All {{name}}": "{{name}} 전체",
-  "Filter events": "행사 필터"
+  "Filter events": "행사 필터",
+  "to see their closures, early dismissals, and events here.": "선택하시면 휴교, 조기 하교, 행사를 여기에서 볼 수 있습니다."
 }
