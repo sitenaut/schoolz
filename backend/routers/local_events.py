@@ -2,21 +2,27 @@
 same access model as schools/districts/calendar: community data pulled from
 third-party feeds is still worth bookmarking with no account."""
 
+import os
 import time
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import UTC, date, datetime, timedelta
+from datetime import time as dtime
+from urllib.parse import parse_qsl
+from zoneinfo import ZoneInfo
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response
+from pydantic import BaseModel, Field, TypeAdapter
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import database
 from database import get_db
 from models import LocalEvent, ResourceService
 from services.client_ip import client_ip
 from services.geocoding import find_place
 from services.i18n import fold, folded
+from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(prefix="/local-events", tags=["local-events"])
 
@@ -53,6 +59,38 @@ class LocalEventOut(BaseModel):
 
 class LocalEventListOut(BaseModel):
     items: list[LocalEventOut]
+    total: int
+
+
+class LocalEventRowOut(BaseModel):
+    """One row of the /local list: only what a row shows. The page fetches the
+    rest (description, address, image, link) by id when the event is opened -
+    descriptions alone were over half the bytes of a month."""
+
+    id: str
+    source: str
+    title: str
+    start_time: datetime
+    end_time: datetime | None
+    all_day: bool
+    venue_name: str | None
+    price_min: float | None
+    price_max: float | None
+    is_free: bool | None
+    categories: list[str]
+    miles: float | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class LocalEventRowsOut(BaseModel):
+    items: list[LocalEventRowOut]
+    total: int
+
+
+class LocalEventDaysOut(BaseModel):
+    # "YYYY-MM-DD" (Cherry Hill's date) -> events on that day, inside the range.
+    days: dict[str, int]
     total: int
 
 
@@ -109,6 +147,62 @@ class Near:
         if self.point is None or self.radius is None:
             return []
         return [or_(LocalEvent.latitude.is_(None), LocalEvent.longitude.is_(None), self.miles() <= self.radius)]
+
+
+_LOCAL_TZ = ZoneInfo("America/New_York")
+
+# Anonymous and identical for every visitor with the same filters (the page
+# opens on today, near Cherry Hill), and the feed only changes when the
+# refresh job runs. 0 disables it; the test suite does.
+_CACHE = SingleFlightTTLCache(ttl_s=float(os.getenv("LOCAL_EVENTS_CACHE_TTL_S", "600")), max_total_bytes=16 * 1024 * 1024)
+_ROWS_ADAPTER = TypeAdapter(LocalEventRowsOut)
+_DAYS_ADAPTER = TypeAdapter(LocalEventDaysOut)
+# A year of the feed was ~10k events (2026); a month ~5k.
+_MAX_ROWS = 6000
+
+
+def date_keys(start: datetime, end: datetime | None, all_day: bool) -> list[date]:
+    """Every Cherry Hill date an event covers - the same rule as
+    frontend/src/lib/calendar.ts:itemDateKeys, which the page uses to file
+    rows under days, so a dot is never drawn on a day whose list is empty.
+    An all-day end is the ICS-style exclusive day after; a timed end that
+    lands on a later date counts that date."""
+    first = start.astimezone(_LOCAL_TZ).date()
+    if end is None:
+        return [first]
+    last = end.astimezone(_LOCAL_TZ).date()
+    if all_day:
+        last -= timedelta(days=1)
+    if last <= first:
+        return [first]
+    return [first + timedelta(days=n) for n in range((last - first).days + 1)]
+
+
+def _day_bounds(day: date) -> tuple[datetime, datetime]:
+    """A range whose overlap filter keeps every event date_keys files under
+    `day`. One second early: a timed event ending exactly at midnight still
+    counts that date, and the overlap filter wants end > start."""
+    start = datetime.combine(day, dtime.min, _LOCAL_TZ)
+    return start - timedelta(seconds=1), datetime.combine(day, dtime.max, _LOCAL_TZ)
+
+
+def _cache_key(request: Request) -> tuple:
+    # Order-insensitive, so ?a=1&b=2 and ?b=2&a=1 share one entry.
+    return (request.url.path, tuple(sorted(parse_qsl(request.url.query, keep_blank_values=True))))
+
+
+async def _cached(request: Request, q: str | None, compute, adapter: TypeAdapter, db: AsyncSession):
+    """The response, from the cache when one is held for this exact query.
+    Text searches are too varied to be worth holding."""
+    if not _CACHE.enabled or q:
+        return await compute(db)
+
+    async def body() -> bytes:
+        # Its own session: other visitors wait on this same computation.
+        async with database.SessionLocal() as own_db:
+            return adapter.dump_json(await compute(own_db))
+
+    return Response(content=await _CACHE.get_or_compute(_cache_key(request), body), media_type="application/json")
 
 
 def _filters(start, end, q, categories, source, is_free) -> list:
@@ -170,6 +264,85 @@ async def list_local_events(
             item.miles = round(row[1], 1)
         items.append(item)
     return LocalEventListOut(items=items, total=total)
+
+
+@router.get("/rows", response_model=LocalEventRowsOut)
+async def list_local_event_rows(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    start: datetime | None = None,
+    end: datetime | None = None,
+    day: date | None = Query(None, description="Only events on this Cherry Hill date (overrides start/end)"),
+    q: str | None = Query(None, max_length=200),
+    categories: str | None = Query(None, description="Comma-separated; any match"),
+    source: str | None = None,
+    is_free: bool | None = None,
+    limit: int = Query(500, ge=1, le=_MAX_ROWS),
+    offset: int = Query(0, ge=0),
+    near: Near = Depends(),
+):
+    """The /local page's list, in light rows. `day` gives exactly the events
+    filed under that date, the same ones its dot on /days counts."""
+    if day is not None:
+        start, end = _day_bounds(day)
+
+    async def compute(session: AsyncSession) -> LocalEventRowsOut:
+        conds = _filters(start, end, q, categories, source, is_free) + near.conds()
+        cols = [getattr(LocalEvent, f) for f in LocalEventRowOut.model_fields if f != "miles"]
+        stmt = select(*cols).where(and_(*conds))
+        if near.point is not None:
+            stmt = stmt.add_columns(near.miles().label("miles"))
+        stmt = stmt.order_by(LocalEvent.start_time, LocalEvent.title)
+        if day is not None:
+            # One day is small: filter by date_keys in full, then page.
+            rows = [r for r in (await session.execute(stmt)).all() if day in date_keys(r.start_time, r.end_time, r.all_day)]
+            total, rows = len(rows), rows[offset : offset + limit]
+        else:
+            total = (await session.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
+            rows = (await session.execute(stmt.limit(limit).offset(offset))).all()
+        items = []
+        for r in rows:
+            item = LocalEventRowOut.model_validate(r._mapping)
+            if near.point is not None and r.miles is not None:
+                item.miles = round(r.miles, 1)
+            items.append(item)
+        return LocalEventRowsOut(items=items, total=total)
+
+    return await _cached(request, q, compute, _ROWS_ADAPTER, db)
+
+
+@router.get("/days", response_model=LocalEventDaysOut)
+async def local_event_days(
+    request: Request,
+    start: datetime,
+    end: datetime,
+    db: AsyncSession = Depends(get_db),
+    q: str | None = Query(None, max_length=200),
+    categories: str | None = Query(None, description="Comma-separated; any match"),
+    source: str | None = None,
+    is_free: bool | None = None,
+    near: Near = Depends(),
+):
+    """How many events fall on each date in the range, for the month and
+    year grids' dots - so a grid no longer needs every event of the month
+    (a busy month ran past the list's cap and lost its last ten days)."""
+    # A bare timestamp is UTC, as the page's toISOString() sends.
+    start, end = (t if t.tzinfo else t.replace(tzinfo=UTC) for t in (start, end))
+    if end - start > timedelta(days=400):
+        raise HTTPException(422, "start..end may span at most 400 days")
+    first, last = start.astimezone(_LOCAL_TZ).date(), end.astimezone(_LOCAL_TZ).date()
+
+    async def compute(session: AsyncSession) -> LocalEventDaysOut:
+        conds = _filters(start, end, q, categories, source, is_free) + near.conds()
+        rows = (await session.execute(select(LocalEvent.start_time, LocalEvent.end_time, LocalEvent.all_day).where(and_(*conds)))).all()
+        days: dict[str, int] = defaultdict(int)
+        for r in rows:
+            for d in date_keys(r.start_time, r.end_time, r.all_day):
+                if first <= d <= last:
+                    days[d.isoformat()] += 1
+        return LocalEventDaysOut(days=dict(sorted(days.items())), total=len(rows))
+
+    return await _cached(request, q, compute, _DAYS_ADAPTER, db)
 
 
 @router.post("/place", response_model=PlaceOut)

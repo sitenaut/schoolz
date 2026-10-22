@@ -374,6 +374,13 @@ export type LocalEvent = {
   miles: number | null;
 };
 
+/** A row of the /local list (GET /local-events/rows): only what a row shows.
+ * The sheet fetches the whole LocalEvent by id when the event is opened. */
+export type LocalEventRow = Pick<
+  LocalEvent,
+  "id" | "source" | "title" | "start_time" | "end_time" | "all_day" | "venue_name" | "price_min" | "price_max" | "is_free" | "categories" | "miles"
+>;
+
 export type LocalEventFacets = { categories: { value: string; count: number }[]; sources: { value: string; count: number }[] };
 
 export type SmoreNewsletter = {

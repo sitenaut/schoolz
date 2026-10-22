@@ -13,7 +13,7 @@ import { type NearChoice, addNearParams, loadNearChoice, saveNearChoice } from "
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackEvent } from "../lib/track";
-import type { LocalEvent, LocalEventFacets } from "../types";
+import type { LocalEvent, LocalEventFacets, LocalEventRow } from "../types";
 import styles from "./CalendarPage.module.css";
 import { LOCALE } from "../lib/i18n";
 
@@ -25,10 +25,16 @@ type ViewMode = "month" | "year";
 const TODAY_KEY = dateKey(new Date());
 const PAGE = 150;
 
-const asItem = (e: LocalEvent) => ({ title: e.title, description: e.description, start_date: e.start_time, end_date: e.end_time, is_all_day: e.all_day });
+const asItem = (e: LocalEventRow & { description?: string | null }) => ({
+  title: e.title,
+  description: e.description ?? null,
+  start_date: e.start_time,
+  end_date: e.end_time,
+  is_all_day: e.all_day,
+});
 const labelize = (s: string) => s.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-function price(e: LocalEvent): string | null {
+function price(e: LocalEventRow): string | null {
   if (e.is_free) return "Free";
   if (e.price_min == null) return null;
   const f = (n: number) => `$${n % 1 ? n.toFixed(2) : n}`;
@@ -41,9 +47,11 @@ export function LocalPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<string | null>(TODAY_KEY);
-  const [items, setItems] = useState<LocalEvent[]>([]);
+  const [items, setItems] = useState<LocalEventRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [days, setDays] = useState<Record<string, number>>({});
+  const [daysKey, setDaysKey] = useState<string | null>(null);
   const [facets, setFacets] = useState<LocalEventFacets>({ categories: [], sources: [] });
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,7 +60,7 @@ export function LocalPage() {
   const [freeOnly, setFreeOnly] = useState(false);
   const [nearChoice, setNearChoice] = useState<NearChoice>(loadNearChoice);
   const [shown, setShown] = useState(PAGE);
-  const [open, setOpen] = useState<LocalEvent | null>(null);
+  const [open, setOpen] = useState<LocalEventRow | null>(null);
   const [scrollToToday, setScrollToToday] = useState(false);
 
   useEffect(() => {
@@ -67,7 +75,14 @@ export function LocalPage() {
 
   const { near, radius } = nearChoice;
   const nearKey = [near.lat, near.lng, radius].join(",");
-  const queryKey = [range.start.toISOString(), searchTerm, category, source, freeOnly, nearKey].join("|");
+  const filterKey = [range.start.toISOString(), searchTerm, category, source, freeOnly, nearKey].join("|");
+  // The list is only shown in the month view or for a search. A picked day
+  // loads just that day; the whole month (or a search) loads every row of
+  // the range. The grid's dots come from /days either way, so a busy month
+  // never loses its last days to the list's cap.
+  const showList = viewMode === "month" || !!searchTerm;
+  const listDay = viewMode === "month" && selectedDay && !searchTerm ? selectedDay : null;
+  const queryKey = [filterKey, showList, listDay].join("|");
 
   const changeNear = (choice: NearChoice) => {
     setNearChoice(choice);
@@ -75,17 +90,47 @@ export function LocalPage() {
     trackEvent("local_near", { method: choice.near.kind, radius: choice.radius ?? "any" });
   };
 
-  useEffect(() => {
-    const q = new URLSearchParams({ start: range.start.toISOString(), end: range.end.toISOString(), limit: "3000" });
+  const filterParams = () => {
+    const q = new URLSearchParams();
     if (searchTerm) q.set("q", searchTerm);
     if (category) q.set("categories", category);
     if (source) q.set("source", source);
     if (freeOnly) q.set("is_free", "true");
     addNearParams(q, nearChoice);
+    return q;
+  };
+
+  useEffect(() => {
+    const q = filterParams();
+    q.set("start", range.start.toISOString());
+    q.set("end", range.end.toISOString());
     let cancelled = false;
-    apiFetch(`/local-events?${q}`)
+    apiFetch(`/local-events/days?${q}`)
+      .then((r) => (r.ok ? r.json() : { days: {} }))
+      .then((d: { days: Record<string, number> }) => {
+        if (cancelled) return;
+        setDays(d.days);
+        setDaysKey(filterKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
+
+  useEffect(() => {
+    if (!showList) return;
+    const q = filterParams();
+    if (listDay) q.set("day", listDay);
+    else {
+      q.set("start", range.start.toISOString());
+      q.set("end", range.end.toISOString());
+    }
+    q.set("limit", "6000");
+    let cancelled = false;
+    apiFetch(`/local-events/rows?${q}`)
       .then((r) => (r.ok ? r.json() : { items: [], total: 0 }))
-      .then((d: { items: LocalEvent[]; total: number }) => {
+      .then((d: { items: LocalEventRow[]; total: number }) => {
         if (cancelled) return;
         setItems(d.items);
         setTotal(d.total);
@@ -108,11 +153,7 @@ export function LocalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range, nearKey]);
 
-  const eventsByDay = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const e of items) for (const k of itemDateKeys(asItem(e))) map.set(k, (map.get(k) ?? 0) + 1);
-    return map;
-  }, [items]);
+  const eventsByDay = useMemo(() => new Map(Object.entries(days)), [days]);
 
   const listed = useMemo(
     () => (selectedDay && viewMode === "month" ? items.filter((e) => itemDateKeys(asItem(e)).includes(selectedDay)) : items),
@@ -132,7 +173,7 @@ export function LocalPage() {
 
   // Without this every crawler render of /local waited out the prerender
   // timeout and failed - it's in the sitemap, but Google only ever got errors.
-  usePrerenderReady(loadedKey === queryKey);
+  usePrerenderReady((!showList || loadedKey === queryKey) && daysKey === filterKey);
 
   const changeMonth = (delta: number) => {
     setViewDate((d) => (viewMode === "year" ? new Date(d.getFullYear() + delta, d.getMonth(), 1) : new Date(d.getFullYear(), d.getMonth() + delta, 1)));
@@ -299,7 +340,7 @@ export function LocalPage() {
           <input type="checkbox" checked={freeOnly} onChange={(e) => setFreeOnly(e.target.checked)} />
           Free only
         </label>
-        {total > items.length && <span className="note" style={{ margin: 0 }}>Showing the first {items.length} of {total} - narrow the filters to see the rest.</span>}
+        {showList && total > items.length && <span className="note" style={{ margin: 0 }}>Showing the first {items.length} of {total} - narrow the filters to see the rest.</span>}
       </div>
 
       {(viewMode === "month" || searchTerm) &&
@@ -329,7 +370,7 @@ export function LocalPage() {
   );
 }
 
-function LocalRow({ event: e, onOpen, rangeStart, rangeEnd }: { event: LocalEvent; onOpen: () => void; rangeStart?: string; rangeEnd?: string }) {
+function LocalRow({ event: e, onOpen, rangeStart, rangeEnd }: { event: LocalEventRow; onOpen: () => void; rangeStart?: string; rangeEnd?: string }) {
   const allKeys = itemDateKeys(asItem(e));
   // A multi-day event (e.g. a theatre run spanning two months) still passes the
   // backend's overlap filter for whichever month is in view; clip the label to
@@ -362,8 +403,25 @@ function LocalRow({ event: e, onOpen, rangeStart, rangeEnd }: { event: LocalEven
   );
 }
 
-function LocalEventSheet({ event: e, onClose }: { event: LocalEvent | null; onClose: () => void }) {
-  if (!e) return null;
+function LocalEventSheet({ event: row, onClose }: { event: LocalEventRow | null; onClose: () => void }) {
+  // The row has what the list shows; the rest (description, address, image,
+  // link) is fetched when the sheet opens.
+  const [full, setFull] = useState<LocalEvent | null>(null);
+  useEffect(() => {
+    if (!row) return;
+    let cancelled = false;
+    apiFetch(`/local-events/${encodeURIComponent(row.id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: LocalEvent | null) => {
+        if (!cancelled) setFull(d);
+      });
+    return () => {
+      cancelled = true;
+      setFull(null);
+    };
+  }, [row]);
+  if (!row) return null;
+  const e: LocalEventRow & Partial<LocalEvent> = full && full.id === row.id ? { ...full, miles: row.miles } : row;
   const cal = googleCalendarQuickAddUrl(asItem(e));
   const keys = itemDateKeys(asItem(e));
   const fmt = (k: string, wd: boolean) =>

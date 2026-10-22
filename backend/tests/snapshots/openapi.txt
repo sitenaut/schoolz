@@ -424,6 +424,17 @@ GET /local-events
   query source?: string | null
   query start?: string(date-time) | null
   -> 200: LocalEventListOut
+GET /local-events/days
+  query categories?: string | null
+  query end: string(date-time)
+  query is_free?: boolean | null
+  query near_lat?: number | null
+  query near_lng?: number | null
+  query q?: string | null
+  query radius_miles?: number | null
+  query source?: string | null
+  query start: string(date-time)
+  -> 200: LocalEventDaysOut
 GET /local-events/facets
   query end?: string(date-time) | null
   query near_lat?: number | null
@@ -434,6 +445,20 @@ GET /local-events/facets
 POST /local-events/place
   body: PlaceIn
   -> 200: PlaceOut
+GET /local-events/rows
+  query categories?: string | null
+  query day?: string(date) | null
+  query end?: string(date-time) | null
+  query is_free?: boolean | null
+  query limit?: integer
+  query near_lat?: number | null
+  query near_lng?: number | null
+  query offset?: integer
+  query q?: string | null
+  query radius_miles?: number | null
+  query source?: string | null
+  query start?: string(date-time) | null
+  -> 200: LocalEventRowsOut
 GET /local-events/{event_id}
   path event_id: string
   -> 200: LocalEventOut
@@ -1085,9 +1110,12 @@ ListingBriefOut { address: string | null, city: string | null, id: string, locat
 ListingUpdateIn { address?: AddressIn | null, alert?: string | null, closed_today?: boolean | null, closure?: ClosureIn | null, cost?: Cost | null, delivery?: string | null, description?: string | null, documents?: list[string] | null, eligibility_note?: string | null, email?: string | null, hours?: Hours | null, languages?: list[string] | null, name?: string | null, organization_name?: string | null, phone?: string | null, signup?: Signup | null, types?: list[string] | null, ways_to_help?: WaysToHelp | null, website?: string | null, week_hours?: Hours | null }
 ListingUpdateOut { applied: list[string], change_request_id: string | null, held: list[string] }
 LiveListingOut { city: string | null, id: string, last_assured_on: string(date) | null, members: integer, name: string, organization_name: string | null, pending_changes: integer, source: string, status: string, updated_at: string(date-time), verified_members: integer }
+LocalEventDaysOut { days: dict[integer], total: integer }
 LocalEventFacetsOut { categories: list[FacetOut], sources: list[FacetOut] }
 LocalEventListOut { items: list[LocalEventOut], total: integer }
 LocalEventOut { all_day: boolean, categories: list[string], description: string | null, end_time: string(date-time) | null, id: string, image_url: string | null, is_free: boolean | null, miles?: number | null, price_max: number | null, price_min: number | null, source: string, start_time: string(date-time), title: string, url: string | null, venue_address: string | null, venue_name: string | null }
+LocalEventRowOut { all_day: boolean, categories: list[string], end_time: string(date-time) | null, id: string, is_free: boolean | null, miles?: number | null, price_max: number | null, price_min: number | null, source: string, start_time: string(date-time), title: string, venue_name: string | null }
+LocalEventRowsOut { items: list[LocalEventRowOut], total: integer }
 LogOut { action: string, actor_email: string | null, actor_kind: string, after: object, before: object, created_at: string(date-time), id: string, note: string | null, request_id: string | null, reverted_at: string(date-time) | null, revertible: boolean, service_id: string | null }
 LoginRequest { password: string, username_or_email: string }
 LowGradeOut { percent: number, title: string }
