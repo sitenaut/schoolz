@@ -39,6 +39,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
+# A gzip -9 copy beside each hashed asset, for nginx's gzip_static
+# (nginx.conf.template, the assets/ location).
+RUN find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -k {} +
 
 # The Focus app (focus/) - a separate Vite build served from the SAME
 # ORIGIN at /focus/, which is what lets it share the auth session (see
@@ -60,6 +63,7 @@ COPY focus/package.json focus/package-lock.json ./
 RUN npm ci
 COPY focus/ .
 RUN npm run build
+RUN find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -k {} +
 
 # nginx-unprivileged runs as uid 101 with its pid file and caches in /tmp;
 # it listens on 3000 (nginx.conf.template), which needs no root either.

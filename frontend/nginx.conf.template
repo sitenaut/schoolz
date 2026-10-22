@@ -93,6 +93,22 @@ server {
         client_max_body_size 16k;
     }
 
+    # Vite names every file under assets/ (this app's and Focus's) after a
+    # hash of its content, so one URL always serves the same bytes: browsers
+    # keep them a year and never ask again. What moves a visitor to a new
+    # build is index.html, which is never cached without asking (below).
+    # Each file is gzipped at -9 at build time (Dockerfile), smaller than
+    # what Fly's proxy compresses on the fly, and gzip_static serves that
+    # copy to every browser that takes gzip. Listed before the regex below,
+    # so it wins for these paths.
+    location ~ ^/(?:focus/)?assets/ {
+        include /etc/nginx/conf.d/security-headers.inc;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        gzip_static on;
+        gzip_vary on;
+        try_files $uri =404;
+    }
+
     # Static assets are served directly regardless of user agent - a
     # crawler bounced to /prerender never needs its own JS/CSS anyway
     # (it gets fully-rendered HTML instead), and this keeps the
@@ -115,11 +131,17 @@ server {
     # scraper's three concurrency slots rendering a login wall.
     location /focus/ {
         include /etc/nginx/conf.d/security-headers.inc;
+        # Focus's index.html: always checked, so a deploy reaches the next load.
+        add_header Cache-Control "no-cache";
         try_files $uri $uri/ /focus/index.html;
     }
 
     location / {
         include /etc/nginx/conf.d/security-headers.inc;
+        # index.html names the build's chunks, so it is always revalidated
+        # (a 304 when nothing changed). With no Cache-Control at all, a
+        # browser could reuse a days-old copy for hours after a deploy.
+        add_header Cache-Control "no-cache";
         # proxy_ssl_server_name isn't valid inside an `if` block (nginx:
         # "directive is not allowed here"), so it sits here instead -
         # harmless for the non-crawler case below, which never reaches
@@ -160,6 +182,7 @@ server {
 
     location @spa_for_crawler {
         include /etc/nginx/conf.d/security-headers.inc;
+        add_header Cache-Control "no-cache";
         try_files /index.html =404;
     }
 }
