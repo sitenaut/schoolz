@@ -9,7 +9,8 @@ Both auth modes keep the session in `localStorage`, which is scoped to the
 **origin**, not the path:
 
 - local mode — `schoolz_token`, written by `frontend/src/api.ts`
-- supabase mode (prod) — `sb-<project-ref>-auth-token`, written by supabase-js
+- supabase mode (prod) — `sb-<project-ref>-auth-token`, written by the
+  Supabase auth client (`src/supabase.ts`, the same in both apps)
 
 Serving this app from a path on the same host means a login in `schoolz-web`
 is already signed in here, with no token passing, no CORS change, no backend
@@ -92,8 +93,8 @@ Three screens from the mockup, bound to endpoints that already exist:
 1. **`src/api.ts` duplicates the auth layer.** It has its own `supabase.ts`
    client and its own token-caching/401-retry logic, mirroring
    schoolz-web's `AuthContext`/`api.ts` rather than importing them - a real
-   supabase-js client, not a hand-rolled storage read (fixed 2026-09-18: an
-   earlier version parsed supabase-js's storage key directly instead of
+   Supabase auth client, not a hand-rolled storage read (fixed 2026-09-18: an
+   earlier version parsed the client's storage key directly instead of
    calling `getSession()`, so it never refreshed an expired access token -
    landing on `/focus/` after the ~1hr TTL elapsed showed a false
    logged-out state until some other tab happened to refresh it first).
