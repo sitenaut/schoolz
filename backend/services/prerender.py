@@ -31,10 +31,17 @@ logger = logging.getLogger(__name__)
 
 # How long a snapshot counts as fresh. A crawler is served an older one
 # anyway (and it's refreshed in the background) - this only decides when
-# that refresh happens. A day is plenty for a search index, and the nightly
-# scheduler job (scheduler/jobs/prerender_warm.py) renders every sitemap
-# page before it expires, so crawlers essentially never wait on a render.
-_TTL_SECONDS = 24 * 3600
+# a crawler's visit triggers that refresh. The nightly job
+# (scheduler/jobs/prerender_warm.py) re-renders what changed and anything
+# nearing this age, so crawlers essentially never trigger a render. It was a
+# day, which had that job re-render all ~1,000 pages every night though
+# most schools' pages hadn't changed, and crawler visits re-render through
+# the day on the scraper the scans and visitors share.
+_TTL_SECONDS = 7 * 24 * 3600
+
+# The Fly scraper holds a request in its queue up to 90s when it's busy
+# (one render at a time per machine); the nightly job waits that out.
+_PATIENT_QUEUE_S = 90
 # path -> (expires at, as time.time(); html). Wall clock, not monotonic,
 # since entries also come from the DB with a rendered_at timestamp.
 _CACHE: dict[str, tuple[float, str]] = {}
@@ -144,10 +151,10 @@ async def get_prerendered_html(path: str) -> str:
     return await asyncio.shield(_start_render(path))
 
 
-def _start_render(path: str) -> "asyncio.Task[str]":
+def _start_render(path: str, patient: bool = False) -> "asyncio.Task[str]":
     task = _INFLIGHT.get(path)
     if task is None:
-        task = asyncio.create_task(_render(path))
+        task = asyncio.create_task(_render(path, patient))
         _INFLIGHT[path] = task
         task.add_done_callback(lambda _t, p=path: _INFLIGHT.pop(p, None))
     return task
@@ -160,23 +167,21 @@ def _log_background_failure(task: "asyncio.Task[str]") -> None:
 
 async def refresh(path: str) -> None:
     """Render `path` now and store it, whatever the cache holds - the
-    nightly warm job's entry point."""
+    nightly warm job's entry point. Waits out a busy scraper's queue, where
+    a crawler's render would give up."""
     if len(path) > _MAX_PATH_LEN or not _is_allowed(path):
         raise PathNotAllowed(path)
-    await asyncio.shield(_start_render(path))
+    await asyncio.shield(_start_render(path, patient=True))
 
 
-async def paths_needing_render(paths: list[str], older_than_seconds: float) -> list[str]:
-    """The subset of `paths` with no stored snapshot, or one rendered more
-    than `older_than_seconds` ago - in the order given."""
-    cutoff = datetime.now(UTC).timestamp() - older_than_seconds
+async def rendered_at(paths: list[str]) -> dict[str, datetime]:
+    """When each of `paths` that has a stored snapshot was rendered."""
     async with database.SessionLocal() as db:
         rows = (await db.execute(select(PrerenderedPage.path, PrerenderedPage.rendered_at).where(PrerenderedPage.path.in_(paths)))).all()
-    fresh = {path for path, rendered_at in rows if rendered_at.timestamp() > cutoff}
-    return [p for p in paths if p not in fresh]
+    return dict(rows)
 
 
-async def _render(path: str) -> str:
+async def _render(path: str, patient: bool = False) -> str:
     # Deliberately NOT PUBLIC_WEB_URL: that's the address a human's own
     # browser can reach (http://localhost:5173 locally, since it's also
     # used in things like invite emails), but the scraper container
@@ -210,6 +215,7 @@ async def _render(path: str) -> str:
         # waited out its whole budget and came back an empty shell. Our own
         # site has no bot wall to get past.
         stealth=False,
+        **({"queue_s": _PATIENT_QUEUE_S} if patient else {}),
     )
 
     html = result["html"]
