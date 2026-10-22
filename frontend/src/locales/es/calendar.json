@@ -6,7 +6,6 @@
   "Year": "Año",
   "Only <1>{{school}}</1>": "Solo <1>{{school}}</1>",
   "Show all my schools": "Mostrar todas mis escuelas",
-  "Every school in the district. Pick schools on \"My schools\" to narrow it down.": "Todas las escuelas del distrito. Elija escuelas en \"Mis escuelas\" para reducir la lista.",
   "Previous month": "Mes anterior",
   "Next month": "Mes siguiente",
   "today": "hoy",
@@ -36,5 +35,6 @@
   "Nothing found for this day.": "No se encontró nada para este día.",
   "Nothing found this month.": "No se encontró nada este mes.",
   "All {{name}}": "Todas las escuelas de {{name}}",
-  "Filter events": "Filtrar eventos"
+  "Filter events": "Filtrar eventos",
+  "to see their closures, early dismissals, and events here.": "para ver aquí sus cierres, salidas tempranas y eventos."
 }

@@ -1,10 +1,11 @@
 import { FilterSelect } from "../components/ui/FilterSelect";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { IconSearch, IconX } from "../components/icons";
 import { logoClass } from "../lib/logos";
 import { usePrerenderReady } from "../lib/prerenderReady";
+import { safeNext } from "../lib/safeNext";
 import { useMySchools } from "../lib/mySchools";
 import { useAuth } from "../context/AuthContext";
 import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
@@ -21,6 +22,10 @@ export function PickSchoolsPage() {
   const { allSchools, districtsById, slugs, setSlugs, fromAccount, loading } = useMySchools();
   const { user } = useAuth();
   const navigate = useNavigate();
+  // A page that asks for a school before it shows anything (Calendar) sends
+  // the visitor here with ?next= and gets them back once they've picked.
+  const [params] = useSearchParams();
+  const next = params.get("next") ? safeNext(params.get("next")) : null;
   const [picked, setPicked] = useState<string[]>(slugs);
   const [q, setQ] = useState("");
   const [town, setTown] = useState<string | null>(null);
@@ -74,7 +79,7 @@ export function PickSchoolsPage() {
   const save = () => {
     setSlugs(picked);
     trackEvent("schools_picked", { count: picked.length });
-    navigate("/");
+    navigate(next ?? "/");
   };
 
   return (
@@ -145,7 +150,11 @@ export function PickSchoolsPage() {
       })}
 
       <button className="cta attention" onClick={save} disabled={picked.length === 0}>
-        {picked.length === 0 ? t("Pick at least one school") : t("Show me today ({{n}})", { n: picked.length })}
+        {picked.length === 0
+          ? t("Pick at least one school")
+          : next
+            ? t("Continue ({{n}})", { n: picked.length })
+            : t("Show me today ({{n}})", { n: picked.length })}
       </button>
       {!user && (
         <p className="fine">

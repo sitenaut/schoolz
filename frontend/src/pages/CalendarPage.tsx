@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { townsLabel } from "../lib/towns";
 import { apiFetch } from "../api";
@@ -23,7 +23,7 @@ const TODAY_KEY = dateKey(new Date());
 
 export function CalendarPage() {
   const { t } = useTranslation();
-  const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict, districtsById, myTowns } = useMySchools();
+  const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict, districtsById, myTowns, deviceSlugs } = useMySchools();
   const [params, setParams] = useSearchParams();
   const deepSchool = params.get("school");
   // A "this week" tap (school page) deep-links a specific day, and an
@@ -112,7 +112,15 @@ export function CalendarPage() {
   // Which school selection `items` was fetched for - scrolling to today has
   // to wait for the list that matches the current selection.
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
-  usePrerenderReady(dataReady);
+  // No school picked and none linked: ask for one rather than loading every
+  // school's month - 3,000+ events and 1.9 MB, mostly schools the visitor
+  // doesn't care about (and the view most crawlers got). A school page's
+  // ?school= link still works with nothing picked.
+  const noSchools = !deepSchool && !loading && mySchools.length === 0;
+  // Until we know, a visitor with nothing saved on this device gets a
+  // placeholder, not a calendar grid that the prompt would then replace.
+  const waitingForSchools = !deepSchool && loading && deviceSlugs.length === 0;
+  usePrerenderReady(dataReady || noSchools);
 
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
@@ -136,7 +144,7 @@ export function CalendarPage() {
   }, [deepDate]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !schoolSlugs.length) return;
     const q = new URLSearchParams();
     if (isSearching) {
       // Search looks across every upcoming (and recent) event, not just
@@ -151,7 +159,7 @@ export function CalendarPage() {
       q.set("start", startOfMonth(viewDate).toISOString());
       q.set("end", endOfMonth(viewDate).toISOString());
     }
-    if (schoolSlugs.length) q.set("school_ids", schoolIdsKey);
+    q.set("school_ids", schoolIdsKey);
     if (category) q.set("category", category);
     if (includeClassSources) q.set("include_class_sources", "true");
     if (includeAthletics) q.set("include_athletics", "true");
@@ -178,7 +186,6 @@ export function CalendarPage() {
     const s = scopedSchools.find((m) => (m.short_name || m.name) === name);
     return s ? colorFor(s.id) : "var(--district)";
   };
-  const showEmptySelectionNote = activeSchools.length === 0;
 
   // Exclude-district and day-rotation both narrow what's visible before
   // anything else touches the data - the month grid's dots/status colors
@@ -312,13 +319,39 @@ export function CalendarPage() {
       .join(" ");
   };
 
+  const seo = (
+    <SeoHead
+      title={t("School calendar · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
+      description={t("District-wide and per-school calendar for {{towns}} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.", { towns: townsLabel(myTowns) })}
+      path="/calendar"
+    />
+  );
+
+  if (noSchools || waitingForSchools)
+    return (
+      <div>
+        {seo}
+        <h2 style={{ marginTop: 0 }}>{t("Calendar")}</h2>
+        {noSchools ? (
+          <div className="empty">
+            <p>
+              <strong>{t("Pick your kids' schools")}</strong> {t("to see their closures, early dismissals, and events here.")}
+            </p>
+            <p>
+              <Link to="/start?next=/calendar" className="btn btn-primary attention">
+                {t("Pick your schools")}
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <p className="note">{t("Loading…")}</p>
+        )}
+      </div>
+    );
+
   return (
     <div>
-      <SeoHead
-        title={t("School calendar · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
-        description={t("District-wide and per-school calendar for {{towns}} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.", { towns: townsLabel(myTowns) })}
-        path="/calendar"
-      />
+      {seo}
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>{t("Calendar")}</h2>
         <div className="tabs" style={{ margin: 0 }}>
@@ -342,8 +375,6 @@ export function CalendarPage() {
           </button>
         </div>
       )}
-
-      {!deepSchool && showEmptySelectionNote && !isSearching && <p className="note">{t("Every school in the district. Pick schools on \"My schools\" to narrow it down.")}</p>}
 
       {!isSearching && viewMode === "month" && (
         <>

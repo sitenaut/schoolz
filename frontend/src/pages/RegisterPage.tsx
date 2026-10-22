@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
-import { safeNext } from "./LoginPage";
+import { safeNext } from "../lib/safeNext";
 
 /** Full-page version, reached the same way LoginPage is - see its note. */
 export function RegisterPage() {
