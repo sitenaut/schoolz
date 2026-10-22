@@ -185,9 +185,16 @@ async def fetch_html(
     timeout_ms: int = 15_000,
     block_assets: bool = False,
     stealth: bool | None = None,
+    queue_s: float = 0,
 ) -> dict:
     """`stealth`: see _with_stealth. None (the default) is off on the
-    primary and the fallbacks' own default; True or False goes to all."""
+    primary and the fallbacks' own default; True or False goes to all.
+
+    `queue_s`: extra time to wait for a busy scraper, which holds a request
+    in its queue (up to 90s on Fly) before rendering it. A caller that can
+    wait - a nightly job - passes it, so a queued request is answered rather
+    than abandoned at the budget and retried: the prerender warm gave up on
+    538 of 1,344 calls one night, each a render the scraper did anyway."""
     # The scraper applies timeout_ms to page.goto AND again to
     # wait_for_selector, so it can legitimately take ~2x that before it
     # answers - a client budget of timeout_ms + 5s (the old value) gave up
@@ -201,7 +208,7 @@ async def fetch_html(
             "block_assets": block_assets,
             "stealth": stealth,
         },
-        timeout_s=timeout_ms / 1000 * 2 + 10,
+        timeout_s=timeout_ms / 1000 * 2 + 10 + queue_s,
     )
 
 

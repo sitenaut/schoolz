@@ -62,7 +62,7 @@ def _entry(base_url: str, path: str, lastmod: datetime | None) -> str:
     return "".join(f"<url><loc>{escape(base_url + p)}</loc>{mod}{links}</url>" for p in alts.values())
 
 
-async def _school_lastmods(db: AsyncSession) -> dict[str, datetime]:
+async def school_lastmods(db: AsyncSession) -> dict[str, datetime]:
     """slug -> when that school's page last changed: the newest content item
     on it (its own, or its district's), or the school record itself."""
     by_school = dict((await db.execute(select(SchoolContentItem.school_id, func.max(SchoolContentItem.extracted_at)).where(SchoolContentItem.school_id.is_not(None)).group_by(SchoolContentItem.school_id))).all())
@@ -86,7 +86,7 @@ async def sitemap_paths(db: AsyncSession) -> list[str]:
 
 async def _sitemap_xml(db: AsyncSession) -> bytes:
     base_url = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
-    lastmods = await _school_lastmods(db)
+    lastmods = await school_lastmods(db)
     entries = "".join(_entry(base_url, path, None) for path in _STATIC_PATHS)
     entries += "".join(_entry(base_url, f"/schools/{slug}", mod) for slug, mod in lastmods.items())
     xml = (
