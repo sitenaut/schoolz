@@ -6,6 +6,7 @@ import { IconChevronLeft } from "../../components/icons";
 import { SeoHead } from "../../components/SeoHead";
 import { useAuth } from "../../context/AuthContext";
 import { monthDay, todayKey, localDateKey } from "../../lib/calendar";
+import { usePrerenderReady } from "../../lib/prerenderReady";
 import type { ClassPayment, School, SchoolClassYear, SchoolContentItem } from "../../types";
 import { LOCALE } from "../../lib/i18n";
 
@@ -59,6 +60,7 @@ export function SchoolClassYearPage() {
   const [payments, setPayments] = useState<ClassPayment[]>([]);
   const [myStudents, setMyStudents] = useState<StudentMini[]>([]);
   const [missing, setMissing] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!schoolId || !gradYearParam) return;
@@ -73,8 +75,13 @@ export function SchoolClassYearPage() {
       setClassYears(cy);
       setItems(c);
       setPayments(p);
+      setLoaded(true);
     });
   }, [schoolId, gradYearParam]);
+  // Without it the prerender waited out its timeout on every class page and
+  // stored nothing: Googlebot got a 5xx (Search Console listed them) and,
+  // once nginx fell back to the bare app, 25s of nothing per page.
+  usePrerenderReady(loaded || !gradYearParam);
 
   useEffect(() => {
     if (!user) return;
@@ -144,6 +151,17 @@ export function SchoolClassYearPage() {
           <IconChevronLeft /> Schools
         </Link>
         <div className="empty">This school couldn't be found.</div>
+      </div>
+    );
+  }
+  if (loaded && school && !thisClassYear) {
+    // A class this school has no page for used to sit on "Loading…" forever.
+    return (
+      <div>
+        <Link to={`/schools/${schoolId}`} className="back-link">
+          <IconChevronLeft /> {school.short_name || school.name}
+        </Link>
+        <div className="empty">No Class of {gradYear} page for {school.short_name || school.name}.</div>
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay, todayKey } from "../lib/calendar";
@@ -8,7 +8,7 @@ import { useMySchools } from "../lib/mySchools";
 import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { trackMeasurement } from "../lib/track";
-import type { LunchMenu } from "../types";
+import type { LunchMenu, School } from "../types";
 import { useTranslation } from "react-i18next";
 import { LOCALE } from "../lib/i18n";
 
@@ -21,12 +21,21 @@ export function LunchPage() {
   // first active one - previously every such link landed on the same
   // school regardless of which card's button was clicked, since nothing
   // told this page which one to pick.
+  //
+  // It lands there whether or not that school is one of yours: a visitor
+  // with nothing picked (a new parent on a shared school page, every
+  // crawler) used to be sent to the picker, and one with other schools
+  // picked got their own first school's menu instead. 185 such links were
+  // Search Console "Page with redirect"s.
   const deepSchool = params.get("school");
   // A "this week" meal tap (school page) carries which day to land on -
   // otherwise this page defaults to today, same as before.
   const deepDate = params.get("date");
   const [active, setActive] = useState<string | null>(deepSchool);
   const [menu, setMenu] = useState<LunchMenu | null | undefined>(undefined);
+  // The linked school's name and type, when it isn't one of yours; null
+  // once it turns out not to exist, so the page falls back to yours.
+  const [fetchedDeep, setFetchedDeep] = useState<School | null | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const readyStart = useRef(performance.now());
@@ -34,14 +43,28 @@ export function LunchPage() {
 
   useEffect(() => {
     // Keep the selected tab valid - picks the first active school once
-    // data is ready if nothing (or an invalid/no-longer-tracked school)
-    // is selected yet. A deep-linked school stays selected even if the
-    // ribbon filter currently hides it - explicit navigation wins.
+    // data is ready if nothing (or a no-longer-tracked school) is selected
+    // yet. A deep-linked school stays selected even if the ribbon filter
+    // hides it or it isn't one of yours - explicit navigation wins.
+    if (deepSchool && active === deepSchool && fetchedDeep !== null) return;
     if (activeSchools.length === 0) return;
     if (!active || !mySchools.some((s) => s.slug === active)) {
       setActive(activeSchools[0].slug);
     }
-  }, [activeSchools, mySchools, active]);
+  }, [activeSchools, mySchools, active, deepSchool, fetchedDeep]);
+
+  useEffect(() => {
+    if (!deepSchool || loading || mySchools.some((s) => s.slug === deepSchool)) return;
+    apiFetch(`/schools/${deepSchool}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setFetchedDeep);
+  }, [deepSchool, loading, mySchools]);
+  const deepObj = deepSchool ? (mySchools.find((s) => s.slug === deepSchool) ?? (fetchedDeep?.slug === deepSchool ? fetchedDeep : null)) : null;
+  // The linked school leads the tabs when it isn't among the ones shown,
+  // and its tab names it even when it's the only one - with nothing else
+  // on the page saying whose menu this is.
+  const deepIsExtra = !!deepObj && !activeSchools.some((s) => s.id === deepObj.id);
+  const tabs = deepObj && deepIsExtra ? [deepObj, ...activeSchools] : activeSchools;
 
   useEffect(() => {
     if (!active) return;
@@ -80,7 +103,7 @@ export function LunchPage() {
     }
   }, [items, targetDate]);
 
-  const school = mySchools.find((s) => s.slug === active);
+  const school = tabs.find((s) => s.slug === active);
 
   const rows = useMemo(
     () =>
@@ -93,18 +116,43 @@ export function LunchPage() {
     [items, tk, targetDate],
   );
 
-  usePrerenderReady(!loading && (menu !== undefined || mySchools.length === 0));
+  // Nothing picked and no school in the link: ask for one in place, as
+  // Today and Calendar do, rather than redirecting to the picker.
+  const noSchools = !deepSchool && !loading && mySchools.length === 0;
+  usePrerenderReady(menu !== undefined || noSchools);
 
-  if (loading) return <p className="note">{t("Loading…")}</p>;
-  if (mySchools.length === 0) return <Navigate to="/start" replace />;
+  const seo = (
+    <SeoHead
+      title={t("Lunch menus · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
+      description={t("Daily lunch menus for {{towns}} public schools, by school - synced from district and school-published menus.", { towns: townsLabel(myTowns) })}
+      path="/lunch"
+    />
+  );
+
+  if (noSchools)
+    return (
+      <>
+        {seo}
+        <h2 style={{ marginTop: 0 }}>{t("Lunch")}</h2>
+        <div className="empty">
+          <p>
+            <strong>{t("Pick your kids' schools")}</strong> {t("to see their lunch menus here.")}
+          </p>
+          <p>
+            <Link to="/start?next=/lunch" className="btn btn-primary attention">
+              {t("Pick your schools")}
+            </Link>
+          </p>
+        </div>
+      </>
+    );
+  // A deep link can show its school's menu before we know whose schools
+  // these are; anything else waits for that.
+  if (loading && !deepSchool) return <p className="note">{t("Loading…")}</p>;
 
   return (
     <>
-      <SeoHead
-        title={t("Lunch menus · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
-        description={t("Daily lunch menus for {{towns}} public schools, by school - synced from district and school-published menus.", { towns: townsLabel(myTowns) })}
-        path="/lunch"
-      />
+      {seo}
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>{t("Lunch")}</h2>
         {menu && !menu.source_pdf_url.startsWith("newsletter:") && (
@@ -113,9 +161,9 @@ export function LunchPage() {
           </a>
         )}
       </div>
-      {activeSchools.length > 1 && (
+      {(tabs.length > 1 || deepIsExtra) && (
         <div className="chips">
-          {activeSchools.map((s) => (
+          {tabs.map((s) => (
             <button className="chip" aria-pressed={s.slug === active} style={{ ["--c" as string]: colorFor(s.id) }} onClick={() => setActive(s.slug)} key={s.id}>
               <span className="dot" />
               {s.short_name || s.name}
@@ -126,7 +174,7 @@ export function LunchPage() {
       {menu === undefined ? (
         <p className="note">{t("Loading…")}</p>
       ) : menu === null ? (
-        <div className="empty">{t("No lunch menu on file for {{school}} yet.", { school: school?.short_name || school?.name })}</div>
+        <div className="empty">{t("No lunch menu on file for {{school}} yet.", { school: school?.short_name || school?.name || active })}</div>
       ) : rows.length === 0 ? (
         <div className="empty">{t("No days listed for {{period}} yet.", { period: menu.period_label })}</div>
       ) : (
