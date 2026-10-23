@@ -104,7 +104,7 @@ def test_extract_genesis_daily_blocks_handles_lunch_with_no_teacher():
     assert date_ == "09/14"
     by_period = {b.period: b for b in blocks}
     assert by_period["A"].course == "GEOMETRY A"
-    assert by_period["A"].teacher == "Borrelli/Squazzo"
+    assert by_period["A"].teacher == "Lee/Park"
     assert by_period["A"].time_start == "7:30 AM"
     assert by_period["A"].time_end == "8:27 AM"
     assert by_period["A"].room == "C203"
@@ -120,7 +120,7 @@ def test_extract_genesis_list_blocks():
     by_period = {b.period: b for b in blocks}
     assert by_period["A"].course == "GEOMETRY A"
     assert by_period["A"].term == "FY"
-    assert by_period["A"].teacher == "Borrelli/Squazzo"
+    assert by_period["A"].teacher == "Lee/Park"
     assert by_period["A"].room == "C203"
     assert by_period["A"].days == "123456"
 
@@ -293,30 +293,30 @@ def test_rows_take_their_course_from_the_enclosing_view_not_a_stale_url():
     # DOM of a capture taken under Geometry's Classwork URL.
     text = "\n".join(
         [
-            "[aria-label] GEOM A Per A 2026-27 210-1 (role=menuitem) (href: /u/2/c/ODcyNDkxNDc4MTk4) (data-id: 872491478198)",
-            "[aria-label] ENG 2A Block B (26-27) 121-1 (role=menuitem) (href: /u/2/c/ODc2NDQ0NzExNTM3) (data-id: 876444711537)",
+            "[aria-label] GEOM A Per A 2026-27 210-1 (role=menuitem) (href: /u/2/c/ODAwMDAwMDAwMDAy) (data-id: 800000000002)",
+            "[aria-label] ENG 2A Block B (26-27) 121-1 (role=menuitem) (href: /u/2/c/ODAwMDAwMDAwMDAz) (data-id: 800000000003)",
             "Classwork for GEOM A Per A 2026-27 210-1 - Classroom",
             "[aria-label] Loading (role=status)",
-            '(data-p: %.@."ODc2NDQ0NzExNTM3"]) (data-node-index: 0;0) (data-view-id: ucc-58)',
-            "(data-include-stream-item-materials: true) (data-draggable-item-id: 884889938985) (data-stream-item-id: 884889938985)",
+            '(data-p: %.@."ODAwMDAwMDAwMDAz"]) (data-node-index: 0;0) (data-view-id: ucc-58)',
+            "(data-include-stream-item-materials: true) (data-draggable-item-id: 800000000005) (data-stream-item-id: 800000000005)",
             "[aria-label] Part One of F451 + Study Guide (DUE) (role=button)",
             "Assignment",
             "assignment",
-            "(data-type: 2) (data-visibility: 2) (data-stream-item-id: 884889938985)",
+            "(data-type: 2) (data-visibility: 2) (data-stream-item-id: 800000000005)",
             "Due Sep 23",
         ]
     )
     cm = ex.extract_course_map(text)
     assert cm.by_code[("121", "1")] == "ENG 2A Block B (26-27) 121-1"
     assert ex.course_codes_from_name("ENG 2A Block B (26-27) 121-1") == [("121", "1")]
-    [item] = ex.extract_classroom_work_items("https://classroom.google.com/u/2/w/ODcyNDkxNDc4MTk4/t/all", text, cm)
-    assert item.course_id == "ODc2NDQ0NzExNTM3"
+    [item] = ex.extract_classroom_work_items("https://classroom.google.com/u/2/w/ODAwMDAwMDAwMDAy/t/all", text, cm)
+    assert item.course_id == "ODAwMDAwMDAwMDAz"
     assert item.course_name == "ENG 2A Block B (26-27) 121-1"
     assert not item.status_read  # a leftover view can be hours old
 
 
 def test_stream_id_is_decoded_from_the_item_link():
-    assert ex._stream_id_from_href("/u/2/c/X/a/ODg0NjAzNzc3NzY1/details") == "884603777765"
+    assert ex._stream_id_from_href("/u/2/c/X/a/ODAwMDAwMDAwMDA4/details") == "800000000008"
     assert ex._stream_id_from_href("/u/2/c/X/a/ITEM1/details") is None
     assert ex._stream_id_from_href(None) is None
 
@@ -374,7 +374,7 @@ _DETAIL_UNGRADED_NO_DUE = (
 )
 _DETAIL_GRADED = (
     "(role=main)\n(data-stream-item-id: 999888777)\nassignment\nWorksheet 4.2\n"
-    "Kenneth Smith\n•\nSep 8\n10\n/10\n10 points out of possible 10\n|\nDue Sep 8\n"
+    "Kevin Smith\n•\nSep 8\n10\n/10\n10 points out of possible 10\n|\nDue Sep 8\n"
     "(data-type: 2) (data-visibility: 2)\n"
 )
 _DETAIL_NO_POINTS_LINE = (
