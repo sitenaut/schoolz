@@ -748,6 +748,9 @@ class LunchMenuOut(BaseModel):
     meal_type: str
     period_label: str
     source_pdf_url: str
+    # The district's food-services page, for a district menu: where next
+    # month's menu will appear (source_pdf_url is the one month's PDF).
+    source_page_url: str | None = None
     parsed_at: datetime
     items: list[LunchMenuItemOut]
 

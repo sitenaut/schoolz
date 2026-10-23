@@ -703,12 +703,14 @@ async def get_school_lunch_menu(
         .scalars()
         .all()
     )
+    district = await db.get(District, menu.district_id) if menu.district_id else None
     return LunchMenuOut(
         id=menu.id,
         school_type=menu.school_type,
         meal_type=menu.meal_type,
         period_label=menu.period_label,
         source_pdf_url=menu.source_pdf_url,
+        source_page_url=district.food_services_menu_url if district else None,
         parsed_at=menu.parsed_at,
         items=[LunchMenuItemOut.model_validate(i) for i in items],
     )

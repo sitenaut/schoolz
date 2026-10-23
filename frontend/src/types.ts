@@ -161,7 +161,7 @@ export type SaccProgram = {
 };
 
 export type LunchMenuItem = { id: string; menu_date: string; description: string; notes: string | null };
-export type LunchMenu = { id: string; period_label: string; source_pdf_url: string; items: LunchMenuItem[] };
+export type LunchMenu = { id: string; period_label: string; source_pdf_url: string; source_page_url?: string | null; items: LunchMenuItem[] };
 
 export type TodayContact = { role: string; label: string; name: string; email: string | null; phone: string | null };
 

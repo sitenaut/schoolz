@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { School } from "../types";
+import { todayKey } from "../lib/calendar";
 
 const apiFetch = vi.fn();
 vi.mock("../api", () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
@@ -17,10 +18,13 @@ vi.mock("../components/SeoHead", () => ({ SeoHead: () => null }));
 
 import { LunchPage } from "./LunchPage";
 
+// Dated today: a menu whose days are all past shows "not posted yet" instead.
+let menuDay: string;
 const menu = (slug: string) => ({
   period_label: "October 2026",
   source_pdf_url: "https://example.org/menu.pdf",
-  items: [{ id: `${slug}-1`, menu_date: "2026-10-22T12:00:00Z", description: `${slug} pizza`, notes: null }],
+  source_page_url: "https://example.org/food",
+  items: [{ id: `${slug}-1`, menu_date: `${menuDay}T16:00:00Z`, description: `${slug} pizza`, notes: null }],
 });
 const res = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body });
 const fetched = () => apiFetch.mock.calls.map((c) => String(c[0]));
@@ -43,6 +47,7 @@ function at(url: string) {
 }
 
 beforeEach(() => {
+  menuDay = todayKey();
   mine = [];
   loading = false;
   apiFetch.mockImplementation(async (url: string) => {
@@ -96,5 +101,16 @@ describe("LunchPage", () => {
     at("/lunch");
     expect(await screen.findByText("east pizza")).toBeTruthy();
     await waitFor(() => expect(fetched()).toEqual(["/schools/east/lunch-menu"]));
+  });
+
+  it("says the next menu isn't posted instead of listing one that's over", async () => {
+    // Burlington City showed September's menu all through October.
+    menuDay = "2020-09-30";
+    mine = [school("east")];
+    at("/lunch");
+    expect(await screen.findByText(/lunch menu hasn't been posted yet/)).toBeTruthy();
+    expect(screen.queryByText("east pizza")).toBeNull();
+    expect(screen.getByRole("link", { name: "Check the district's menu page" }).getAttribute("href")).toBe("https://example.org/food");
+    await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
   });
 });

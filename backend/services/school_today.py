@@ -351,7 +351,11 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         today=lunch_by_day.get(today) if status != "closed" else None,
         next_label=next_label if lunch_by_day.get(next_day) else None,
         next=lunch_by_day.get(next_day),
-        source_pdf_url=menu.source_pdf_url if menu and not menu.source_pdf_url.startswith("newsletter:") else None,
+        # No link to a menu that's over: "Lunch from the district's monthly
+        # menu" beside September's PDF reads as this month's.
+        source_pdf_url=menu.source_pdf_url
+        if menu and not menu.source_pdf_url.startswith("newsletter:") and any(d >= today for d in lunch_by_day)
+        else None,
     )
 
     now = datetime.now(LOCAL_TZ)
