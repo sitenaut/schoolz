@@ -287,3 +287,34 @@ def test_a_month_year_lunch_forms_pdf_is_the_unbanded_menu():
     found = _classify_unbanded_pdf_link("https://x.org/wp-content/uploads/October-2026-Lunch-Forms.pdf", "elementary")
     assert found["period_label"] == "October 2026" and found["school_type"] == "elementary"
     assert _classify_unbanded_pdf_link("https://x.org/wp-content/uploads/Lunch-Token-Form-25.pdf", "elementary") is None
+
+
+def test_band_in_words_with_breakfast_in_the_name(monkeypatch):
+    # Burlington City's real October names. Every one says "Breakfast", so
+    # all were thrown out; September's MS-HS file got through on its typo
+    # ("Breakfasat") as an unbanded menu and was served to the elementaries.
+    names = [
+        "September%202026%20MS-HS%20Breakfasat-Lunch%20Menu.pdf?rnd=1788896180931",
+        "October%202026%20Elementary%20Breakfast%20-Lunch-%20Aftercare.pdf?rnd=1791382606607",
+        "October%202026%20MS-HS%20Breakfast%20-Lunch-Aftercare%20Menu.pdf?rnd=1790625640458",
+        "October%202026%20Pre-K%20Breakfast-%20Lunch-Aftercare%20Snack.pdf",
+        "Birthday%20Flyer%2026-27.pdf",
+    ]
+    html = "".join(f'<a href="/ourpages/auto/2026/7/1/56872616/{n}"></a>' for n in names)
+
+    async def fake_fetch(url, **kw):
+        return {"html": html}
+
+    async def fake_rm(url, html):
+        return set()
+
+    monkeypatch.setattr(lunch_menu.scraper_client, "fetch_html", fake_fetch)
+    monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x/apps/pages/", school_types=["elementary", "high", "middle"]))
+    got = {(e["school_type"], e["meal_type"], e["period_label"], e["pdf_url"].split("%20")[2]) for e in found}
+    # No Pre-K school in the district, so its PDF isn't parsed for nobody.
+    assert got == {
+        ("elementary", "lunch", "October 2026", "Elementary"),
+        ("middle", "lunch", "October 2026", "MS-HS"),
+        ("high", "lunch", "October 2026", "MS-HS"),
+    }

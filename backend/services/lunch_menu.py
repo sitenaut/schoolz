@@ -86,6 +86,36 @@ def _classify_numeric_pdf_link(url: str, school_type: str) -> dict | None:
     }
 
 
+# Burlington City: "October 2026 Elementary Breakfast -Lunch- Aftercare.pdf",
+# "October 2026 MS-HS Breakfast -Lunch-Aftercare Menu.pdf", "... Pre-K ...":
+# month, year and the band in words, one PDF holding breakfast, lunch and
+# the aftercare snack. Every name says "Breakfast", so _NOT_A_MENU_RE threw
+# them all out; only September's MS-HS file got through, on its typo
+# "Breakfasat", as an unbanded menu for every school type, so the
+# elementaries were served the MS-HS menu. One band can cover two types.
+_BAND_WORDS_MENU_RE = re.compile(
+    r"^(" + "|".join(_MONTHS) + r")\s+(\d{4})\s*-?\s*(Elementary|Middle|High|MS-HS|MS|HS|Pre-?K)\b.*\bLunch\b", re.IGNORECASE
+)
+_BAND_WORDS = {"ELEMENTARY": ("elementary",), "MIDDLE": ("middle",), "HIGH": ("high",), "MS": ("middle",), "HS": ("high",), "MSHS": ("middle", "high"), "PREK": ("other",)}
+
+
+def _classify_band_words_pdf_link(url: str) -> list[dict]:
+    match = _BAND_WORDS_MENU_RE.search(unquote(url.rsplit("/", 1)[-1].split("?", 1)[0]))
+    if not match:
+        return []
+    month, year, band = match.groups()
+    return [
+        {
+            "school_type": school_type,
+            "meal_type": "lunch",
+            "period_label": f"{month.title()} {year}",
+            "pdf_url": url,
+            "_sort": (int(year), _MONTHS.index(month.lower())),
+        }
+        for school_type in _BAND_WORDS[re.sub(r"[^A-Za-z]", "", band).upper()]
+    ]
+
+
 def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
     filename = url.rsplit("/", 1)[-1]
     if _NOT_A_MENU_RE.search(filename):
@@ -470,7 +500,12 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         return [{**c, "pdf_url": alias.get(c["pdf_url"], c["pdf_url"])} for c in entries]
 
     by_key: dict[tuple, dict] = {}
-    for _url, classified in [(u, _classify_pdf_link(u) or _classify_coded_pdf_link(u)) for u in urls] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
+    classified_links = []
+    for u in urls:
+        one = _classify_pdf_link(u) or _classify_coded_pdf_link(u)
+        # A band no school in the district has (Burlington City's Pre-K) would only cost a parse.
+        classified_links += [one] if one else [c for c in _classify_band_words_pdf_link(u) if not school_types or c["school_type"] in school_types]
+    for _url, classified in [(c["pdf_url"], c) for c in classified_links] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
         if classified:
             key = (classified["school_type"], classified["meal_type"])
             # The page can list more than one month at once, and `urls` is a
