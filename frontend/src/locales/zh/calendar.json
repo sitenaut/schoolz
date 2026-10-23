@@ -36,5 +36,10 @@
   "Nothing found this month.": "本月没有内容。",
   "All {{name}}": "{{name}}的所有学校",
   "Filter events": "筛选活动",
-  "to see their closures, early dismissals, and events here.": "即可在此查看停课、提前放学和活动。"
+  "to see their closures, early dismissals, and events here.": "即可在此查看停课、提前放学和活动。",
+  "{{school}} calendar · schoolz": "{{school}}日历 · schoolz",
+  "Closures, early dismissals, half days, deadlines and events at {{school}}, with the district-wide dates that apply to it.": "{{school}}的停课、提前放学、半天课、截止日期和活动，以及适用于该校的全学区日期。",
+  "{{school}} calendar": "{{school}}日历",
+  "We couldn't find that school.": "找不到该学校。",
+  "See the calendar for your schools": "查看您的学校的日历"
 }

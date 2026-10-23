@@ -13,8 +13,10 @@ five languages) every night, at ~23s a render on a scraper it shares with
 the night's scans: 8 hours, and a deploy-interrupted run's catch-up ran on
 past 10 AM, through parents' morning. A school's page is re-rendered when
 its content changed since its snapshot (14-78 of 264 schools a day), or the
-snapshot is nearly as old as prerender's TTL; the pages that show dated
-content (home, calendar, local, directory...) are re-rendered nightly.
+snapshot is nearly as old as prerender's TTL, and so is its calendar page
+(/schools/<slug>/calendar), which is also redone when a new month starts:
+it shows the month it was rendered in. The pages that show dated content
+(home, calendar, local, directory...) are re-rendered nightly.
 
 **Never in the daytime.** It stops at 6 AM Eastern and a catch-up after a
 daytime deploy does nothing: a page it didn't reach keeps serving its
@@ -53,7 +55,7 @@ _LOCAL_TZ = ZoneInfo("America/New_York")
 NIGHT_START = dtime(22, 0)
 NIGHT_END = dtime(6, 0)
 
-_SCHOOL_PATH = re.compile(r"^(?:/(?:es|zh|ko|hi))?/schools/([^/]+)$")
+_SCHOOL_PATH = re.compile(r"^(?:/(?:es|zh|ko|hi))?/schools/([^/]+)(/calendar)?$")
 
 
 def _now() -> datetime:
@@ -63,6 +65,10 @@ def _now() -> datetime:
 def is_night(now: datetime) -> bool:
     t = now.astimezone(_LOCAL_TZ).time()
     return t >= NIGHT_START or t < NIGHT_END
+
+
+def _month(at: datetime) -> str:
+    return at.astimezone(_LOCAL_TZ).strftime("%Y-%m")
 
 
 def school_max_age_s(path: str) -> int:
@@ -82,6 +88,8 @@ def paths_to_render(paths: list[str], rendered: dict[str, datetime], lastmods: d
         elif school:
             changed = lastmods.get(school.group(1))
             if changed is not None and changed > at:
+                rank = 1
+            elif school.group(2) and _month(at) != _month(now):
                 rank = 1
             elif (now - at).total_seconds() > school_max_age_s(path):
                 rank = 3

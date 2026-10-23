@@ -8,7 +8,7 @@ import { ContactGrid, CurrentPeriodChip, DayBlocks, ItemRow, StatusPill, WeekStr
 import { IconChevronLeft, IconPhone } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
 import { useAuth } from "../context/AuthContext";
-import { localDateKey, telHref, todayKey } from "../lib/calendar";
+import { localDateKey, schoolCalendarPath, telHref, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
 import { CURRENT_LANG, localizedPath } from "../lib/i18n";
 import { useMySchools } from "../lib/mySchools";
@@ -302,7 +302,7 @@ export function SchoolDetailPage() {
 
       <div className="h-row">
         <h2>{t("This week")}</h2>
-        <Link to={`/calendar?school=${s.slug}`}>{t("Full calendar")}</Link>
+        <Link to={schoolCalendarPath(s.slug)}>{t("Full calendar")}</Link>
       </div>
       <WeekStrip week={today.week} schoolSlug={s.slug} specials={today.my_specials} />
       {today.lunch.source_pdf_url && (
@@ -332,7 +332,7 @@ export function SchoolDetailPage() {
 
       <div className="h-row">
         <h2>{t("Coming up")}</h2>
-        <Link to={`/calendar?school=${s.slug}`}>{t("All dates")}</Link>
+        <Link to={schoolCalendarPath(s.slug)}>{t("All dates")}</Link>
       </div>
       {upcoming.length === 0 ? (
         <div className="empty">{t("Nothing dated yet. Check back after the next newsletter.")}</div>

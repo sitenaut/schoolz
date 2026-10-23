@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { itemDateKeys, telHref } from "./calendar";
+import { itemDateKeys, schoolCalendarPath, telHref } from "./calendar";
 
 describe("telHref", () => {
   it("keeps the comma dial-pause before an extension", () => {
@@ -50,5 +50,13 @@ describe("itemDateKeys", () => {
 
   it("no start_date returns no keys", () => {
     expect(itemDateKeys({ start_date: null })).toEqual([]);
+  });
+});
+
+describe("schoolCalendarPath", () => {
+  it("is a path of its own, carrying the day and event a link points at", () => {
+    expect(schoolCalendarPath("bret-harte")).toBe("/schools/bret-harte/calendar");
+    expect(schoolCalendarPath("bret-harte", { date: "2026-10-22" })).toBe("/schools/bret-harte/calendar?date=2026-10-22");
+    expect(schoolCalendarPath("bret-harte", { date: "2026-10-22", event: "e1" })).toBe("/schools/bret-harte/calendar?date=2026-10-22&event=e1");
   });
 });

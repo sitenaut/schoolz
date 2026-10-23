@@ -36,5 +36,10 @@
   "Nothing found this month.": "이번 달에는 일정이 없습니다.",
   "All {{name}}": "{{name}} 전체",
   "Filter events": "행사 필터",
-  "to see their closures, early dismissals, and events here.": "선택하시면 휴교, 조기 하교, 행사를 여기에서 볼 수 있습니다."
+  "to see their closures, early dismissals, and events here.": "선택하시면 휴교, 조기 하교, 행사를 여기에서 볼 수 있습니다.",
+  "{{school}} calendar · schoolz": "{{school}} 캘린더 · schoolz",
+  "Closures, early dismissals, half days, deadlines and events at {{school}}, with the district-wide dates that apply to it.": "{{school}}의 휴교, 조기 하교, 단축 수업, 마감일과 행사, 그리고 이 학교에 해당하는 학군 전체 일정.",
+  "{{school}} calendar": "{{school}} 캘린더",
+  "We couldn't find that school.": "해당 학교를 찾을 수 없습니다.",
+  "See the calendar for your schools": "내 학교 캘린더 보기"
 }

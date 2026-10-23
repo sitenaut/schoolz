@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { townsLabel } from "../lib/towns";
 import { apiFetch } from "../api";
@@ -10,7 +10,7 @@ import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { CLOSED_RE, HALF_DAY_RE, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
-import { itemDateKeys } from "../lib/calendar";
+import { itemDateKeys, schoolCalendarPath } from "../lib/calendar";
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
 import type { School, SchoolContentItem } from "../types";
 import styles from "./CalendarPage.module.css";
@@ -21,11 +21,31 @@ type ViewMode = "month" | "year";
 
 const TODAY_KEY = dateKey(new Date());
 
+/** /calendar: the dates of every school picked in the ribbon. A ?school=
+ * link from before schools had their own calendar page goes to that page. */
 export function CalendarPage() {
+  const [params] = useSearchParams();
+  const legacySchool = params.get("school");
+  if (legacySchool) {
+    const target = schoolCalendarPath(legacySchool, { date: params.get("date") ?? undefined, event: params.get("event") ?? undefined });
+    return <Navigate to={target} replace />;
+  }
+  return <CalendarView school={null} />;
+}
+
+/** /schools/:schoolId/calendar: one school's dates, its district's
+ * included - the same calendar, scoped to that school and indexable on its
+ * own (canonical, sitemap, crawler snapshot). */
+export function SchoolCalendarPage() {
+  const { schoolId } = useParams();
+  return <CalendarView key={schoolId} school={schoolId ?? null} />;
+}
+
+function CalendarView({ school: deepSchool }: { school: string | null }) {
   const { t } = useTranslation();
   const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict, districtsById, myTowns, deviceSlugs } = useMySchools();
-  const [params, setParams] = useSearchParams();
-  const deepSchool = params.get("school");
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
   // A "this week" tap (school page) deep-links a specific day, and an
   // event pill within it also carries which item to land on/highlight.
   const deepDate = params.get("date");
@@ -36,31 +56,18 @@ export function CalendarPage() {
   // school page's "see all dates" deep link narrows to just that one
   // school instead, same as before.
   //
-  // That narrowing is temporary and visible: a bar says which school it is,
-  // and tapping it or any ribbon chip drops ?school= so the ribbon governs
-  // again. It used to override the ribbon silently, and survive a reload, so
-  // the ribbon looked broken on this page.
+  // That narrowing is visible: a bar says which school it is, and tapping
+  // it or any ribbon chip goes to /calendar so the ribbon governs again. It
+  // used to override the ribbon silently, so the ribbon looked broken here.
   const schoolSlugs = useMemo(() => (deepSchool ? [deepSchool] : activeSchools.map((s) => s.slug)), [deepSchool, activeSchools]);
-  const clearSchoolFilter = () => {
-    setScrollToToday(true);
-    setParams(
-      (cur) => {
-        const next = new URLSearchParams(cur);
-        next.delete("school");
-        next.delete("date");
-        next.delete("event");
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  const clearSchoolFilter = () => navigate("/calendar");
   // The button's own handler, deliberately not the same function the ribbon
-  // event uses below. Dropping ?school= alone was not enough to make it do
-  // what it says: arriving here from a school's "All dates" link usually
+  // event uses below. Leaving the school's page alone was not enough to make
+  // it do what it says: arriving from a school's "All dates" link usually
   // means that school's chip is the only active one in the ribbon, so the
-  // narrowing survived the click, the list came back byte-identical, and
-  // the bar just vanished - indistinguishable from a dead button.
-  // Un-hiding every chip is what "all my schools" actually means.
+  // list came back byte-identical and the bar just vanished -
+  // indistinguishable from a dead button. Un-hiding every chip is what "all
+  // my schools" actually means.
   const showAllMySchools = () => {
     activateAll();
     clearSchoolFilter();
@@ -71,13 +78,20 @@ export function CalendarPage() {
     return () => window.removeEventListener(RIBBON_CHANGE_EVENT, clearSchoolFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepSchool]);
-  const [fetchedDeepSchool, setFetchedDeepSchool] = useState<School | null>(null);
-  const deepSchoolObj = deepSchool ? (mySchools.find((s) => s.slug === deepSchool) ?? (fetchedDeepSchool?.slug === deepSchool ? fetchedDeepSchool : null)) : null;
+  // The route's :schoolId can be a slug or an id (the API resolves either).
+  const [fetchedDeepSchool, setFetchedDeepSchool] = useState<School | "missing" | null>(null);
+  const matches = (s: School) => s.slug === deepSchool || s.id === deepSchool;
+  const deepSchoolObj = deepSchool
+    ? (mySchools.find(matches) ?? (fetchedDeepSchool && fetchedDeepSchool !== "missing" && matches(fetchedDeepSchool) ? fetchedDeepSchool : null))
+    : null;
+  const deepSchoolMissing = fetchedDeepSchool === "missing";
   useEffect(() => {
-    if (!deepSchool || loading || mySchools.some((s) => s.slug === deepSchool)) return;
-    apiFetch(`/schools/${deepSchool}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setFetchedDeepSchool);
+    if (!deepSchool || loading || mySchools.some(matches)) return;
+    apiFetch(`/schools/${encodeURIComponent(deepSchool)}`)
+      .then((r) => (r.ok ? r.json() : "missing"))
+      .then(setFetchedDeepSchool)
+      .catch(() => setFetchedDeepSchool("missing"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepSchool, loading, mySchools]);
   // Rows are labeled per school the page is scoped to - the linked school,
   // not the ribbon's, or its type-restricted district items get dropped.
@@ -120,7 +134,8 @@ export function CalendarPage() {
   // Until we know, a visitor with nothing saved on this device gets a
   // placeholder, not a calendar grid that the prompt would then replace.
   const waitingForSchools = !deepSchool && loading && deviceSlugs.length === 0;
-  usePrerenderReady(dataReady || noSchools);
+  // A school's own page also waits for the school, whose name is its title.
+  usePrerenderReady((dataReady && (!deepSchool || Boolean(deepSchoolObj))) || noSchools || deepSchoolMissing);
 
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
@@ -319,13 +334,34 @@ export function CalendarPage() {
       .join(" ");
   };
 
-  const seo = (
+  const seo = deepSchool ? (
+    <SeoHead
+      title={t("{{school}} calendar · schoolz", { school: deepSchoolObj?.name ?? deepSchool })}
+      description={t("Closures, early dismissals, half days, deadlines and events at {{school}}, with the district-wide dates that apply to it.", {
+        school: deepSchoolObj?.name ?? deepSchool,
+      })}
+      path={schoolCalendarPath(deepSchoolObj?.slug ?? deepSchool)}
+    />
+  ) : (
     <SeoHead
       title={t("School calendar · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
       description={t("District-wide and per-school calendar for {{towns}} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.", { towns: townsLabel(myTowns) })}
       path="/calendar"
     />
   );
+
+  if (deepSchoolMissing)
+    return (
+      <div>
+        <h2 style={{ marginTop: 0 }}>{t("Calendar")}</h2>
+        <div className="empty">
+          <p>{t("We couldn't find that school.")}</p>
+          <p>
+            <Link to="/calendar">{t("See the calendar for your schools")}</Link>
+          </p>
+        </div>
+      </div>
+    );
 
   if (noSchools || waitingForSchools)
     return (
@@ -353,7 +389,7 @@ export function CalendarPage() {
     <div>
       {seo}
       <div className="h-row" style={{ marginTop: 0 }}>
-        <h2>{t("Calendar")}</h2>
+        <h2>{deepSchoolObj ? t("{{school}} calendar", { school: deepSchoolObj.short_name || deepSchoolObj.name }) : t("Calendar")}</h2>
         <div className="tabs" style={{ margin: 0 }}>
           <button className={`tab ${viewMode === "month" ? "active" : ""}`} onClick={() => setViewMode("month")}>
             {t("Month")}

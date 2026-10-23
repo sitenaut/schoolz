@@ -115,3 +115,14 @@ export function telHref(phone: string): string {
   const [main, ext] = m ? [m[1], m[2]] : [phone, ""];
   return `tel:${main.replace(/[^\d+,]/g, "")}${ext ? `,${ext}` : ""}`;
 }
+
+/** One school's own calendar page. A path, not /calendar?school=: crawlers
+ * get one snapshot per path (nginx drops the query), and the page carries
+ * its own canonical, so "<school> calendar" has somewhere to land. */
+export function schoolCalendarPath(slug: string, query?: { date?: string; event?: string }): string {
+  const q = new URLSearchParams();
+  if (query?.date) q.set("date", query.date);
+  if (query?.event) q.set("event", query.event);
+  const rest = q.toString();
+  return `/schools/${slug}/calendar${rest ? `?${rest}` : ""}`;
+}

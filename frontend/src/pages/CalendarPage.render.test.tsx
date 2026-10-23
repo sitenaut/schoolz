@@ -28,7 +28,7 @@ vi.mock("../lib/mySchools", () => ({
 vi.mock("../context/AuthContext", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("../components/SeoHead", () => ({ SeoHead: () => null }));
 
-import { CalendarPage } from "./CalendarPage";
+import { CalendarPage, SchoolCalendarPage } from "./CalendarPage";
 import { PickSchoolsPage } from "./PickSchoolsPage";
 
 const json = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
@@ -44,6 +44,7 @@ function at(url: string) {
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/schools/:schoolId/calendar" element={<SchoolCalendarPage />} />
         <Route path="/start" element={<PickSchoolsPage />} />
       </Routes>
       <Where />
@@ -76,11 +77,11 @@ describe("CalendarPage with no schools picked", () => {
     expect(screen.queryByRole("link", { name: "Pick your schools" })).toBeNull();
   });
 
-  it("still shows a school page's ?school= link", async () => {
-    at("/calendar?school=beck");
-    await waitFor(() => expect(calendarCalls()).toHaveLength(1));
-    expect(calendarCalls()[0]).toContain("school_ids=beck");
-    expect(screen.queryByRole("link", { name: "Pick your schools" })).toBeNull();
+  it("sends an old ?school= link to that school's own calendar page", async () => {
+    at("/calendar?school=beck&date=2026-10-22&event=e1");
+    expect(screen.getByTestId("where").textContent).toBe("/schools/beck/calendar?date=2026-10-22&event=e1");
+    await waitFor(() => expect(calendarCalls().length).toBeGreaterThan(0));
+    expect(calendarCalls().every((u) => u.includes("school_ids=beck"))).toBe(true);
   });
 
   it("comes back to the calendar once a school is picked", async () => {
@@ -98,5 +99,32 @@ describe("CalendarPage with schools picked", () => {
     at("/calendar");
     await waitFor(() => expect(calendarCalls()).toHaveLength(1));
     expect(calendarCalls()[0]).toContain("school_ids=east%2Cbeck");
+  });
+});
+
+describe("A school's own calendar page", () => {
+  beforeEach(() => {
+    apiFetch.mockImplementation(async (url: string) => (url === "/schools/beck" ? json(school("beck")) : json([])));
+  });
+
+  it("shows that school's dates with nothing picked, under its name", async () => {
+    at("/schools/beck/calendar");
+    await waitFor(() => expect(calendarCalls()).toHaveLength(1));
+    expect(calendarCalls()[0]).toContain("school_ids=beck");
+    // "<school> calendar" (no i18n in tests, so the key itself), not "Calendar".
+    expect(await screen.findByRole("heading", { name: /calendar$/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Pick your schools" })).toBeNull();
+  });
+
+  it("goes to the whole calendar for all my schools", async () => {
+    at("/schools/beck/calendar");
+    fireEvent.click(await screen.findByRole("button", { name: "Show all my schools" }));
+    expect(screen.getByTestId("where").textContent).toBe("/calendar");
+  });
+
+  it("says so when there's no such school", async () => {
+    apiFetch.mockImplementation(async (url: string) => (url === "/schools/nope" ? { ok: false, status: 404, json: async () => ({}) } : json([])));
+    at("/schools/nope/calendar");
+    expect(await screen.findByText("We couldn't find that school.")).toBeTruthy();
   });
 });

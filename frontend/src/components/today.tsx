@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
+import { googleCalendarQuickAddUrl, itemDateKeys, localDateKey, monthDay, schoolCalendarPath, shortDay, telHref, timeOfDay, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
 import { schoolTypeLabel } from "../lib/schoolType";
@@ -301,7 +301,7 @@ export function EventSheet({ item, schoolSlug, onClose }: { item: SchoolContentI
           </a>
         )}
         {dayKey && schoolSlug && (
-          <Link className="btn" to={`/calendar?school=${schoolSlug}&date=${dayKey}&event=${item.id}`}>
+          <Link className="btn" to={schoolCalendarPath(schoolSlug, { date: dayKey, event: item.id })}>
             {t("See on calendar")}
           </Link>
         )}
@@ -533,10 +533,10 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             </li>
           ))}
           <li className="next-more">
-            {/* Deep-links the calendar to just this school - district-wide
-                dates come along automatically, the backend always includes
-                a selected school's district. */}
-            <Link to={`/calendar?school=${s.slug}`}>
+            {/* The school's own calendar - district-wide dates come along
+                automatically, the backend always includes a selected
+                school's district. */}
+            <Link to={schoolCalendarPath(s.slug)}>
               {t("All dates for {{name}}", { name: s.short_name || s.name })} <IconChevronRight className="trailing-chevron" />
             </Link>
           </li>
@@ -614,7 +614,7 @@ export function WeekStrip({ week, schoolSlug, specials }: { week: TodayDay[]; sc
         const md = monthDay(d.date);
         const cls = ["wd", d.date === today && "today", d.status === "closed" && "closed"].filter(Boolean).join(" ");
         const items = excludeDistrict ? d.items.filter((i) => !isNoisyDistrictItem(i)) : d.items;
-        const dayHref = `/calendar?school=${schoolSlug}&date=${d.date}`;
+        const dayHref = schoolCalendarPath(schoolSlug, { date: d.date });
         return (
           <div className={cls} key={d.date}>
             <div className="dn">{d.weekday}</div>

@@ -77,18 +77,27 @@ async def school_lastmods(db: AsyncSession) -> dict[str, datetime]:
     return lastmods
 
 
+def _school_paths(slug: str) -> tuple[str, str]:
+    """A school's page and its own calendar page (/calendar?school= used to be
+    the only way in, and every one of those canonicalized to /calendar)."""
+    return f"/schools/{slug}", f"/schools/{slug}/calendar"
+
+
 async def sitemap_paths(db: AsyncSession) -> list[str]:
     """Every path the sitemap lists, language versions included - what the
-    nightly prerender warm job renders."""
+    nightly prerender warm job renders, in this order (school pages before
+    their calendars, so a run that stops at 6 AM has done the pages first)."""
     slugs = [s for s in (await db.execute(select(School.slug).order_by(School.name))).scalars().all() if s]
-    return [v for path in _STATIC_PATHS + [f"/schools/{slug}" for slug in slugs] for v in _variants(path)]
+    pages = [f"/schools/{slug}" for slug in slugs]
+    calendars = [_school_paths(slug)[1] for slug in slugs]
+    return [v for path in _STATIC_PATHS + pages + calendars for v in _variants(path)]
 
 
 async def _sitemap_xml(db: AsyncSession) -> bytes:
     base_url = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
     lastmods = await school_lastmods(db)
     entries = "".join(_entry(base_url, path, None) for path in _STATIC_PATHS)
-    entries += "".join(_entry(base_url, f"/schools/{slug}", mod) for slug, mod in lastmods.items())
+    entries += "".join(_entry(base_url, path, mod) for slug, mod in lastmods.items() for path in _school_paths(slug))
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'
