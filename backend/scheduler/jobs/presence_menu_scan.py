@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -39,7 +39,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     new_menus = 0
     empty: list[str] = []
-    for entry in picked:  # oldest month first, so the newest ends up with the latest parsed_at
+    for entry in picked:
         stored = (
             await db.execute(
                 select(LunchMenu).where(LunchMenu.school_id == school.id, LunchMenu.meal_type == entry["meal_type"], LunchMenu.source_pdf_url == entry["url"])
@@ -55,7 +55,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         menu = LunchMenu(school_id=school.id, meal_type=entry["meal_type"], period_label=entry["period_label"], source_pdf_url=entry["url"])
         db.add(menu)
         await db.flush()
-        menu.parsed_at = datetime.now(timezone.utc)
+        menu.parsed_at = datetime.now(UTC)
         for day in days:
             db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=day["description"], notes=day.get("notes")))
         new_menus += 1

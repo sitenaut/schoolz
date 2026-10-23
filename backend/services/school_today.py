@@ -12,18 +12,42 @@ import re
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember, Student
-from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayCurrentClassOut, TodayKidSpecialOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
+from models import (
+    DistrictTransportation,
+    GuardianStudentLink,
+    LunchMenu,
+    LunchMenuItem,
+    SaccProgram,
+    School,
+    SchoolContentItem,
+    StaffMember,
+    Student,
+)
+from schemas import (
+    CurrentPeriodOut,
+    DayBlockOut,
+    NextRotationOut,
+    SchoolContentItemOut,
+    SchoolOut,
+    SchoolTodayOut,
+    TodayContactOut,
+    TodayCurrentClassOut,
+    TodayDayOut,
+    TodayKidSpecialOut,
+    TodayLunchOut,
+    TodaySaccOut,
+    TodayTransportationOut,
+)
+from services import i18n_strings
+from services import specials as specials_svc
 from services.arbiter import ATHLETICS_SOURCES
 from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
-from services.hs_rotation import blocks_from_description
-from services import i18n_strings
-from services import specials as specials_svc
 from services.content_translation import Localized, apply_translations, localize_out
+from services.hs_rotation import blocks_from_description
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 from services.weather import pick_weather_day, today_weather
@@ -130,23 +154,40 @@ def week_window(today: date) -> list[date]:
     return [monday + timedelta(days=i) for i in range(5)]
 
 
-async def resolve_lunch_menu(db: AsyncSession, school: School, meal_type: str = "lunch") -> LunchMenu | None:
-    """School's own newsletter-embedded menu first, then the shared
-    district+school_type PDF menu (see routers/schools.py for why)."""
-    menu = (
-        await db.execute(
-            select(LunchMenu).where(LunchMenu.school_id == school.id, LunchMenu.meal_type == meal_type).order_by(LunchMenu.parsed_at.desc())
-        )
-    ).scalars().first()
-    if not menu and school.district_id and school.school_type:
-        menu = (
+async def resolve_lunch_menu(db: AsyncSession, school: School, meal_type: str = "lunch", on: date | None = None) -> LunchMenu | None:
+    """The menu for the day `on` (default today): the school's own menus
+    first, then the shared district+school_type PDF menu (see
+    routers/schools.py for why). Within each, a menu whose days span `on`
+    wins, else the next one to start. Not simply the latest parsed: menus
+    are often posted a week or more before their month, and the next
+    month's then hid the current one (Chesterbrook showed November all
+    through late October). With nothing current or upcoming, the latest
+    parsed menu of the first tier that has one."""
+    on = on or datetime.now(LOCAL_TZ).date()
+    tiers = [LunchMenu.school_id == school.id]
+    if school.district_id and school.school_type:
+        tiers.append((LunchMenu.district_id == school.district_id) & (LunchMenu.school_type == school.school_type))
+    fallback = None
+    for tier in tiers:
+        rows = (
             await db.execute(
-                select(LunchMenu)
-                .where(LunchMenu.district_id == school.district_id, LunchMenu.school_type == school.school_type, LunchMenu.meal_type == meal_type)
+                select(LunchMenu, func.min(LunchMenuItem.menu_date), func.max(LunchMenuItem.menu_date))
+                .outerjoin(LunchMenuItem, LunchMenuItem.lunch_menu_id == LunchMenu.id)
+                .where(tier, LunchMenu.meal_type == meal_type)
+                .group_by(LunchMenu.id)
                 .order_by(LunchMenu.parsed_at.desc())
             )
-        ).scalars().first()
-    return menu
+        ).all()
+        dated = [(menu, local_date(first), local_date(last)) for menu, first, last in rows if first is not None]
+        current = next((menu for menu, first, last in dated if first <= on <= last), None)
+        if current:
+            return current
+        upcoming = sorted((first, i) for i, (_, first, _) in enumerate(dated) if first > on)
+        if upcoming:
+            return dated[upcoming[0][1]][0]
+        if fallback is None and rows:
+            fallback = rows[0][0]
+    return fallback
 
 
 async def _my_specials(db: AsyncSession, school: School, user_id: str, rotation, today: date, next_day: date, next_label: str, week: list[date]) -> list[TodayKidSpecialOut]:
@@ -288,19 +329,21 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     def is_long_block(d: date) -> bool:
         return is_long_block_day(school.bell_periods, rotation_blocks(d))
 
-    # Lunch: today's + the next school day's.
-    menu = await resolve_lunch_menu(db, school)
-    lunch_by_day: dict[date, str] = {}
-    if menu:
-        menu_items = (await db.execute(select(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu.id))).scalars().all()
-        lunch_by_day = {local_date(m.menu_date): m.description for m in menu_items}
-
     status, _ = day_status(today)
     next_day = today + timedelta(days=1)
     while next_day.weekday() >= 5 or day_status(next_day)[0] == "closed":
         next_day += timedelta(days=1)
         if next_day > today + timedelta(days=14):
             break
+
+    # Lunch: today's + the next school day's, each from the menu covering
+    # that day (the next school day can be in next month's menu).
+    menu = await resolve_lunch_menu(db, school, on=today)
+    next_menu = await resolve_lunch_menu(db, school, on=next_day)
+    lunch_by_day: dict[date, str] = {}
+    for m in {x.id: x for x in (next_menu, menu) if x}.values():
+        menu_items = (await db.execute(select(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == m.id))).scalars().all()
+        lunch_by_day.update({local_date(i.menu_date): i.description for i in menu_items})
     next_label = "Tomorrow" if next_day == today + timedelta(days=1) else _WEEKDAYS[next_day.weekday()]
     next_label_en = next_label
     next_label = i18n_strings.day_label(next_label, next_day.weekday(), lang)
