@@ -1,6 +1,6 @@
 GEOMETRY A
 FY
-Borrelli/Squazzo
+Lee/Park
 Room
 C203
 Period
@@ -9,7 +9,7 @@ Days
 123456
 ENG/LANG ARTS 2A
 FY
-Maniscalco/Mihalecsko
+Ortiz/Novak
 Room
 C219
 Period

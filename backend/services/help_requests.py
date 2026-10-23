@@ -97,8 +97,8 @@ def menu() -> list[dict[str, str]]:
 
 
 def _teacher_greeting(teacher_name: str | None) -> str:
-    """"Ms. Beck" stays as written; a bare "Gregory Rouen" becomes "Mr./Ms."-
-    free "Gregory Rouen" rather than guessing an honorific or a gender."""
+    """"Ms. Beck" stays as written; a bare "Daniel Quinn" becomes "Mr./Ms."-
+    free "Daniel Quinn" rather than guessing an honorific or a gender."""
     return (teacher_name or "").strip() or "there"
 
 

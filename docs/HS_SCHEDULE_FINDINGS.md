@@ -74,7 +74,7 @@ Related: Homeroom appears as two List rows, `1 3 5` and `2 4 6`, with the same r
 | A time | `7:30AM-8:27AM` (Bell print), `7:30 AM - 8:27 AM` (Genesis screen), `06:54AM` (bus, zero-padded), `07:30` (our table) |
 | A date | `09/20/2026` (List header), `09/14` (daily view, no year), `9/2/26` (grades), `9/02 to 11/10` (MP ranges, no year), `14-Day` under a `September` header in a `2026-2027` sheet (rotation PDF), `Sep 4, 2025` / `May 11` (Classroom) |
 | A school | `Cherry Hill High School East(50)` (List, with the district's school code glued on), `Cherry Hill High School East` (Bell) |
-| A teacher | `Scharff, Elizabeth M` (Last, First MI), `Pierlott, Marc`, `Borrelli/Squazzo` (co-taught: last names only, slash-joined), `Anthony Maniscalco` (Classroom), `Mr. Maniscalco` |
+| A teacher | `Rivera, Ann M` (Last, First MI), `Quinn, Daniel`, `Lee/Park` (co-taught: last names only, slash-joined), `Anthony Ortiz` (Classroom), `Mr. Ortiz` |
 | A course | `ENG/LANG ARTS 2A`, `US HISTORY 1A`, `INTERMEDIATE GERMAN I A`. The trailing letters are a level or section marker we can't decode from the documents. Classroom names the same class differently again; `kids_view.course_key` joins them on the district course/section code |
 | A term | `FY` in its own column (List) vs `Room: C203 FY` (Bell and Genesis screen) |
 
@@ -128,7 +128,7 @@ The student doesn't need cycle numbers, term codes, or `Days 123456`. Room numbe
 1. **Days that change pickup or supervision**: no school, early dismissal, delayed opening. The day's letters matter too, because they're the shorthand the household already uses ("it's a C-D-G-H day, so PE today").
 2. **Marking-period boundaries, as deadlines.** When MP1 ends (11/10 here), missing MP1 work stops being recoverable, and grades lock toward a report card. This is where "missed deadline" parent frustration concentrates at the high school level. The dates exist in Genesis ("MP1 9/02 to 11/10"). They're just never presented as a deadline.
 3. **The semester changeover (~Jan 28 here).** Three S1 courses end, PE starts (gear, a new teacher), and two blocks go blank. The family should know ahead of time whether those blanks are study halls/free periods or spring electives that haven't been assigned yet. **A blank cell on a printout doesn't say which**, which is the same rule `late_credit` follows: unknown must stay distinguishable from known.
-4. **Teachers per course, with an email that works.** Co-taught classes (`Borrelli/Squazzo`) mean two people, and the parent needs to know both exist.
+4. **Teachers per course, with an email that works.** Co-taught classes (`Lee/Park`) mean two people, and the parent needs to know both exist.
 5. **Grade trend within the current marking period**, not the full list of scores.
 
 The parent almost never needs the time grid, the lunch wave, or room numbers.

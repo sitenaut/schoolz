@@ -419,8 +419,8 @@ def _norm_name(value: str) -> str:
 
 def name_parts(raw: str | None) -> list[tuple[str | None, str]]:
     """Every (first, last) person in a teacher field. Handles the real shapes:
-    Genesis "Rouen, Gregory" and co-taught "Borrelli/Squazzo", Classroom's
-    "Anthony Maniscalco", and "Mr. Maniscalco"."""
+    Genesis "Quinn, Daniel" and co-taught "Lee/Park", Classroom's
+    "Anthony Ortiz", and "Mr. Ortiz"."""
     if not raw:
         return []
     parts: list[tuple[str | None, str]] = []

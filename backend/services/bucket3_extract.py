@@ -81,7 +81,7 @@ class CourseMap:
 # by its URL slug (base64-ish, from /c/<slug>) and its numeric data-id -
 # confirmed real, both appear on the same menuitem line:
 # "[aria-label] ENG 2A Block B (26-27) 121-1 (role=menuitem)
-#  (href: /u/2/c/ODc2NDQ0NzExNTM3) (data-id: 876444711537)"
+#  (href: /u/2/c/ODAwMDAwMDAwMDAz) (data-id: 800000000003)"
 _COURSE_MENU_RE = re.compile(
     # Names can contain parentheses - "ENG 2A Block B (26-27) 121-1" is real.
     r"\[aria-label\] (.+?) \(role=menuitem\) \(href: /u/\d+/c/([\w-]+)\)(?: \(data-id: (\d+)\))?"
@@ -195,7 +195,7 @@ _DUE_SUFFIX_RE = re.compile(r"^(.*?),\s*due\s+(.+)$", re.I)
 _BUTTON_RE = re.compile(r"^\[aria-label\] (.+) \(role=button\)$")
 _TYPE_LINE_RE = re.compile(r"^(Assignment|Material|Quiz|Question)$")
 _DUE_LINE_RE = re.compile(r"^Due (.+)$")
-# "Kenneth Smith posted a new assignment: Pre-Test Google Form" and
+# "Kevin Smith posted a new assignment: Pre-Test Google Form" and
 # "Posted Sep 11" - both confirmed real on a class's feed cards.
 _POSTED_BY_RE = re.compile(r"^(.+?) posted a new (?:assignment|material|question|quiz assignment): ")
 _POSTED_LINE_RE = re.compile(r"^Posted (.+)$")
@@ -217,8 +217,8 @@ def _better_status(current: str | None, candidate: str) -> str | None:
 
 def _stream_id_from_href(href: str | None) -> str | None:
     """Classroom's /a/<id>/details path segment is the numeric stream-item id,
-    base64-encoded - confirmed real: "ODg0NjAzNzc3NzY1" decodes to
-    "884603777765", the same id the classwork grid carries as
+    base64-encoded - confirmed real: "ODAwMDAwMDAwMDA4" decodes to
+    "800000000008", the same id the classwork grid carries as
     data-stream-item-id. Decoding it gives both page layouts one shared
     identity; before this, the feed card fell back to a title hash and the
     same assignment showed up twice (visible as doubled rows in the audit)."""
@@ -234,7 +234,7 @@ def _stream_id_from_href(href: str | None) -> str | None:
 
 
 # Each class page Classroom renders is a view whose root names its class:
-# "(data-p: %.@."ODcyNDkxNDc4MTk4"]) ...". Confirmed real: Classroom keeps
+# "(data-p: %.@."ODAwMDAwMDAwMDAy"]) ...". Confirmed real: Classroom keeps
 # the previously opened class's view in the DOM, so a capture under one
 # class's URL also held the previous class's Classwork list - trusting the
 # URL filed every class's work under the class captured after it.
@@ -306,7 +306,7 @@ def extract_classroom_work_items(source_url: str, text: str, course_map: CourseM
     captures:
       A) stream/to-do style - one label line, then a card block below it:
          "[aria-label] Assignment: Title, due Tomorrow (href: ...) ..."
-         ... "Completed" ... "Kenneth Smith posted a new assignment: Title"
+         ... "Completed" ... "Kevin Smith posted a new assignment: Title"
          ... "Posted Sep 11" ... "Graded"
       B) classwork-list style - a button label, then a type line, then
          (sometimes) a "Due <text>" line a few lines later:
@@ -501,9 +501,9 @@ def extract_classroom_announcements(source_url: str, text: str, course_map: Cour
     Classwork page). These never carry an "Announcement:" aria-label, so the
     work-item extractor never saw them. Confirmed real shape:
 
-        (data-include-stream-item-materials: false) (data-stream-item-id: 877349388671)
-        Post by Kenneth Smith
-        Kenneth Smith
+        (data-include-stream-item-materials: false) (data-stream-item-id: 800000000009)
+        Post by Kevin Smith
+        Kevin Smith
         Created
         Sep 3
         ...

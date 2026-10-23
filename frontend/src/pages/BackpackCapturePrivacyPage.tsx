@@ -27,7 +27,7 @@ export function BackpackCapturePrivacyPage() {
         path="/backpack-capture/privacy"
       />
       <h2>Backpack Capture Privacy Policy</h2>
-      <p className="note">Effective October 22, 2026 · Applies to versions 0.7.x and later</p>
+      <p className="note">Effective October 23, 2026 · Applies to versions 0.7.x and later</p>
 
       <p>
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
@@ -270,23 +270,17 @@ export function BackpackCapturePrivacyPage() {
       <h3>Changes to this policy</h3>
       <p>
         If what this extension reads, stores, or sends ever changes, this page will be updated to match,
-        and the effective date above will change with it. The extension's source is public, so any change
-        in behavior is checkable directly against the code, not just this description of it.
+        and the effective date above will change with it.
       </p>
 
       <h3>Contact</h3>
       <p>
-        Backpack Capture is an open-source project, available from the{" "}
+        Backpack Capture is available from the{" "}
         <a href={STORE_URL} target="_blank" rel="noopener noreferrer">
           Chrome Web Store
         </a>
         . Questions, concerns, or reports about this policy can be
-        sent to <a href="mailto:enr@profitnaut.com">enr@profitnaut.com</a>, or filed as an issue on its
-        repository:{" "}
-        <a href="https://github.com/weirdaze/backpack-capture" target="_blank" rel="noopener noreferrer">
-          github.com/weirdaze/backpack-capture
-        </a>
-        .
+        sent to <a href="mailto:enr@profitnaut.com">enr@profitnaut.com</a>.
       </p>
       <p className="note">
         Backpack Capture reads Google Classroom and Genesis Parent Portal pages locally in your browser. It

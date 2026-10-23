@@ -33,7 +33,7 @@ DAY = [
     _block("A", "7:30 AM", "8:27 AM", "GEOMETRY A"),
     _block("C", "9:32 AM", "10:29 AM", "SCIENCE OF COOKING"),
     _block("L1", "10:33 AM", "10:58 AM", "Homeroom"),
-    _block("F", "12:32 PM", "1:29 PM", "CHEMISTRY 1A", teacher="Rouen, Gregory", room="C313"),
+    _block("F", "12:32 PM", "1:29 PM", "CHEMISTRY 1A", teacher="Quinn, Daniel", room="C313"),
     _block("G", "1:33 PM", "2:30 PM", "GERMAN I A"),
 ]
 
@@ -140,33 +140,33 @@ def test_progress_and_next_action():
 
 
 STAFF = [
-    ("Gregory Rouen", "grouen@chclc.org"),
-    ("Lisa Borrelli", "LBorrelli@chclc.org"),
-    ("Andrew Graff", "agraff@chclc.org"),
-    ("Danielle Graffeo", "dgraffeo@chclc.org"),
-    ("Kenneth Smith", "KSmith@chclc.org"),
-    ("Jordan Smith", "JSmith@chclc.org"),
-    ("Anthony Maniscalco", "amaniscalco@chclc.org"),
+    ("Daniel Quinn", "dquinn@example.org"),
+    ("Lisa Lee", "LLee@example.org"),
+    ("Andrew Hart", "ahart@example.org"),
+    ("Danielle Hartley", "dhartley@example.org"),
+    ("Kevin Smith", "KSmith@example.org"),
+    ("Jordan Smith", "JSmith@example.org"),
+    ("Anthony Ortiz", "aortiz@example.org"),
     ("No Email", None),
 ]
 
 
 def test_name_parts_real_shapes():
-    assert kv.name_parts("Rouen, Gregory") == [("gregory", "rouen")]
-    assert kv.name_parts("Borrelli/Squazzo") == [(None, "borrelli"), (None, "squazzo")]
-    assert kv.name_parts("Anthony Maniscalco") == [("anthony", "maniscalco")]
-    assert kv.name_parts("Mr. Maniscalco") == [(None, "maniscalco")]
+    assert kv.name_parts("Quinn, Daniel") == [("daniel", "quinn")]
+    assert kv.name_parts("Lee/Park") == [(None, "lee"), (None, "park")]
+    assert kv.name_parts("Anthony Ortiz") == [("anthony", "ortiz")]
+    assert kv.name_parts("Mr. Ortiz") == [(None, "ortiz")]
 
 
 def test_match_teacher_emails():
-    assert kv.match_teacher_emails("Rouen, Gregory", STAFF) == ["grouen@chclc.org"]
+    assert kv.match_teacher_emails("Quinn, Daniel", STAFF) == ["dquinn@example.org"]
     # Co-taught: the teacher not in the directory simply doesn't resolve.
-    assert kv.match_teacher_emails("Borrelli/Squazzo", STAFF) == ["lborrelli@chclc.org"]
-    # "Graff" must not match "Graffeo".
-    assert kv.match_teacher_emails("Mr. Graff", STAFF) == ["agraff@chclc.org"]
+    assert kv.match_teacher_emails("Lee/Park", STAFF) == ["llee@example.org"]
+    # "Hart" must not match "Hartley".
+    assert kv.match_teacher_emails("Mr. Hart", STAFF) == ["ahart@example.org"]
     # Two Smiths and no first name: ambiguous, so no link at all.
     assert kv.match_teacher_emails("Smith", STAFF) == []
-    assert kv.match_teacher_emails("Kenneth Smith", STAFF) == ["ksmith@chclc.org"]
+    assert kv.match_teacher_emails("Kevin Smith", STAFF) == ["ksmith@example.org"]
     assert kv.match_teacher_emails(None, STAFF) == []
 
 
@@ -179,7 +179,7 @@ def test_course_key_prefers_district_code():
 
 def test_course_progress_flags_low_grades_without_calculating_makeup():
     items = [
-        {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "missing", "due_date": "2026-09-08", "teacher_name": "Gregory Rouen", "teacher_emails": ["grouen@chclc.org"]},
+        {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "missing", "due_date": "2026-09-08", "teacher_name": "Daniel Quinn", "teacher_emails": ["dquinn@example.org"]},
         {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "done", "due_date": "2026-09-09"},
         {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "due", "due_date": "2026-09-16"},
         {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "no_due_date", "due_date": None},
@@ -195,7 +195,7 @@ def test_course_progress_flags_low_grades_without_calculating_makeup():
     assert chem["completion_pct"] == 33
     assert chem["grade_percent"] == 27.27
     assert chem["low_grade_entries"] == [{"title": "Density Activity", "percent": 0.0}]
-    assert chem["teacher_emails"] == ["grouen@chclc.org"]
+    assert chem["teacher_emails"] == ["dquinn@example.org"]
 
 
 def _policy(shape, **kw):

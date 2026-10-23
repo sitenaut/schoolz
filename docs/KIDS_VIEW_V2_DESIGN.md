@@ -197,8 +197,8 @@ directory, and generate a pre-filled "email about this assignment" link.
 
 - `StaffMember.full_name` / `.email` already exist per school
   (`backend/models.py`). Genesis's own `teacher` field is `"Last, First"`
-  or `"Last1/Last2"` (co-taught sections, confirmed real: `"Borrelli/
-  Squazzo"`); Classroom's "posted by" name is `"First Last"`. Neither
+  or `"Last1/Last2"` (co-taught sections, confirmed real: `"Lee/
+  Park"`); Classroom's "posted by" name is `"First Last"`. Neither
   matches `StaffMember.full_name` verbatim, so match on **last name only**
   (split on `/` or `,` for multi-teacher fields, normalize case, compare
   against `StaffMember.full_name`'s trailing word) — accept the ambiguity
