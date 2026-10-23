@@ -39,7 +39,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     new_menus = 0
     empty: list[str] = []
-    for entry in picked:  # oldest month first, so the newest ends up with the latest parsed_at
+    for entry in picked:
         stored = (
             await db.execute(
                 select(LunchMenu).where(LunchMenu.school_id == school.id, LunchMenu.meal_type == entry["meal_type"], LunchMenu.source_pdf_url == entry["url"])

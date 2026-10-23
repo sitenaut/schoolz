@@ -692,7 +692,8 @@ async def get_school_lunch_menu(
     private preschool has no district PDF pipeline at all), then the
     shared district+school_type PDF-based menu - the parent never needs to
     know or visit the district's own menu page, or care which source it
-    came from."""
+    came from. Of each, the menu covering today, else the next one to
+    start (see resolve_lunch_menu)."""
     menu = await resolve_lunch_menu(db, school, meal_type)
     if not menu:
         return None

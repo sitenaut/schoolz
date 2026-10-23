@@ -112,8 +112,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 async def _scan_menus(db: AsyncSession, school: School, pages: list, today) -> tuple[str, str | None]:
     """Stores this month's and next month's lunch menu PDFs as the school's
     own LunchMenu (same shape as presence_menu.scan). Returns (summary,
-    warning code or None). Oldest month first, so the newest menu ends up
-    with the latest parsed_at - which is the one resolve_lunch_menu serves."""
+    warning code or None). resolve_lunch_menu serves whichever month covers
+    the day asked about, so storing next month early is safe."""
     menus = await discover_menu_pdf_urls(pages, today)
     warning = None
     if not any((y, m) == (today.year, today.month) for y, m, _ in menus):
