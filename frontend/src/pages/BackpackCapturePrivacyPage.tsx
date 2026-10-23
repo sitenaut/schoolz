@@ -27,7 +27,7 @@ export function BackpackCapturePrivacyPage() {
         path="/backpack-capture/privacy"
       />
       <h2>Backpack Capture Privacy Policy</h2>
-      <p className="note">Effective October 21, 2026 · Applies to versions 0.7.x and later</p>
+      <p className="note">Effective October 22, 2026 · Applies to versions 0.7.x and later</p>
 
       <p>
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
@@ -180,14 +180,29 @@ export function BackpackCapturePrivacyPage() {
           completely.
         </li>
         <li>
-          <strong>Send logs to schoolz</strong> (version 0.9.1 and later) - sends the extension's own record
-          of its last few updates, so a failed one can be looked into: which Google account numbers it opened,
-          whether each was one of your children's (by your child's schoolz record, never another account's
-          name or email), where it stopped, and how many pages it sent. No page content. Only runs when you
-          press it; schoolz keeps it for 30 days.
+          <strong>The update log</strong> (version 0.9.3 and later; 0.9.1 and 0.9.2 sent it only when you
+          pressed Send logs) - as each update ends, the extension sends schoolz its own record of that update,
+          so one that went wrong can be looked into without you having to report it. It holds: the
+          extension's version, your computer's operating system and Chrome version; which Google account
+          numbers it opened and whether each was one of your children's (by your child's schoolz record,
+          never another account's name or email); the web addresses of Google sign-in pages it passed
+          through, without the part that can name an account; the Classroom addresses (class and assignment
+          numbers, no titles) of pages that were slow or had to be reloaded; how many classes and pages it
+          read for each child and how many didn't load; where it stopped; and how many pages it sent. No page
+          content and no names. With it goes a short summary of the update that schoolz shows you on My
+          family: when it finished, how many pages it sent and when pages were last sent, which of your
+          children aren't set up in that Chrome yet, and anything that needs a look, in plain sentences that
+          use your child's first name (for example, that Google wants their sign-in again). It's only sent
+          after an update you pressed or automatic updates you turned on. schoolz keeps it for 30 days, or 90
+          if you report a problem with that update, and only the people on the schoolz team who help with
+          Backpack Capture problems can read it. <strong>Report a problem</strong> on My family sends them
+          your note and your account's email address, linked to that update's log.
         </li>
       </ol>
-      <p>Apart from automatic updates you turned on, there is no background sync or upload, and there is no telemetry of any kind.</p>
+      <p>
+        Apart from updates (yours, or automatic ones you turned on) and their logs, there is no background
+        sync or upload, and nothing about the rest of your browsing is ever collected.
+      </p>
 
       <h3>Publishing to schoolz</h3>
       <p>
@@ -200,7 +215,7 @@ export function BackpackCapturePrivacyPage() {
           <strong>Connect to schoolz</strong> (version 0.9.0 and later) - opens schoolz in a tab, where you
           sign in the way you always do and press Connect after checking the code matches the one the
           extension shows. The extension then gets its own key, which can only send pages, list your children's
-          names, report how an update went and send its logs when you ask - it can't read anything else in
+          names, report how an update went and send each update's log and summary - it can't read anything else in
           your account. Each connected
           computer is listed under Account → Security on schoolz, where you can disconnect it, and the
           extension's own Sign out removes its key.

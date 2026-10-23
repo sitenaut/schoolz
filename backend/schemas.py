@@ -1768,6 +1768,8 @@ class ContactMessageOut(BaseModel):
     user_id: str | None
     read_at: datetime | None
     created_at: datetime
+    # Set on a Backpack Capture problem report: the update log it is about.
+    capture_diagnostic_id: str | None = None
 
     model_config = {"from_attributes": True}
 

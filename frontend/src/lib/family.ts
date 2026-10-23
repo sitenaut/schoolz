@@ -116,6 +116,37 @@ export function timeAgo(iso: string, now: number): string {
   return days === 1 ? "yesterday" : `${days} days ago`;
 }
 
+/** GET /capture-devices/last-update: what Backpack Capture said about the
+ * last update it ran for this account, as the extension summed it up. */
+export type UpdateSummary = {
+  finished_at: string;
+  manual: boolean;
+  outcome: "ok" | "trouble";
+  pages_sent: number;
+  last_sent_at: string | null;
+  last_sent_pages: number | null;
+  problems: { student_id: string | null; text: string }[];
+  not_set_up: string[];
+};
+export type LastUpdate = {
+  id: string;
+  reference: string;
+  created_at: string;
+  extension_version: string;
+  summary: UpdateSummary | null;
+  reported_at: string | null;
+};
+
+/** "Last update Oct 22, 4:10 PM: 12 pages sent." An update with nothing new
+ * still counts: it looked, and everything was as before. */
+export function updateLine(update: LastUpdate, fmt: (iso: string) => string): string {
+  const s = update.summary;
+  const when = fmt(s?.finished_at ?? update.created_at);
+  if (!s) return `Last update ${when}.`;
+  const sent = s.pages_sent === 1 ? "1 page sent" : s.pages_sent > 1 ? `${s.pages_sent} pages sent` : "nothing new to send";
+  return `Last update ${when}: ${sent}.`;
+}
+
 /** The newest thing Backpack Capture sent for any child. */
 export function latestSync(children: FamilyChild[]): string | null {
   const times = children.flatMap((c) => [c.classroom_seen_at, c.genesis_seen_at]).filter((t): t is string => Boolean(t));

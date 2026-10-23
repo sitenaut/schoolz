@@ -3,7 +3,7 @@ after real Backpack Capture exports (see that module's docstring - every
 regex here was validated against a real capture before being committed).
 No real student data in any fixture."""
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from services import bucket3_extract as ex
 
@@ -130,19 +130,19 @@ def test_extract_genesis_list_blocks_returns_none_on_daily_view_text():
 
 
 def test_resolve_due_date_relative_words():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)  # a Monday
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)  # a Monday
     assert ex.resolve_due_date("Tomorrow", anchor) == "2026-09-15"
     assert ex.resolve_due_date("Today", anchor) == "2026-09-14"
     assert ex.resolve_due_date(None, anchor) is None
 
 
 def test_resolve_due_date_weekday_name_finds_next_occurrence():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)  # Monday
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)  # Monday
     assert ex.resolve_due_date("Friday", anchor) == "2026-09-18"
 
 
 def test_resolve_due_date_month_day_uses_school_year_boundary():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
     assert ex.resolve_due_date("Sep 16, 9:30 AM", anchor) == "2026-09-16"
     # A June date captured in September is the end of the school year that
     # just started (2026-27), i.e. June 2027 - not ~3 months in the past.
@@ -150,7 +150,7 @@ def test_resolve_due_date_month_day_uses_school_year_boundary():
 
 
 def test_resolve_due_date_prefers_an_explicit_year_over_inference():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
     # Classroom prints the year exactly when a bare month/day would be
     # ambiguous - an item over a year old. Inferring one instead re-dated
     # last year's work into the current school year, so it came back as
@@ -232,7 +232,7 @@ def test_extract_genesis_course_grades_handles_no_assignments():
 
 
 def test_extract_genesis_marking_periods_resolves_school_year_and_dedups_repeats():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
     mps = ex.extract_genesis_marking_periods(_load("genesis_weekly_summary.txt"), anchor)
     assert [mp.label for mp in mps] == ["MP1", "MP2", "MP3", "MP4"]
     by_label = {mp.label: mp for mp in mps}
@@ -263,6 +263,14 @@ def test_feed_card_and_grid_row_merge_into_one_item_with_teacher_posted_and_stat
     assert pre.status == "Graded"  # card shows both "Completed" and "Graded"; the specific one wins
     assert pre.due_raw == "Sep 12"  # only the grid row has it
     assert not any(uid.startswith("hash:") for uid in items)
+
+
+def test_only_the_pages_own_classwork_rows_read_status():
+    _text, _cm, items = _feed_items()
+    assert items["si:900010"].status_read  # a grid row, merged with its feed card
+    assert items["si:900030"].status_read and items["si:900030"].status is None  # a row with no label: not finished
+    stream = ex.extract_classroom_work_items("https://classroom.google.com/u/2/c/AAAASLUG", _text, _cm)
+    assert not any(i.status_read for i in stream)  # same rows, but not on a Classwork tab
 
 
 def test_two_line_button_label_is_rejoined():
@@ -297,6 +305,7 @@ def test_rows_take_their_course_from_the_enclosing_view_not_a_stale_url():
     [item] = ex.extract_classroom_work_items("https://classroom.google.com/u/2/w/ODcyNDkxNDc4MTk4/t/all", text, cm)
     assert item.course_id == "ODc2NDQ0NzExNTM3"
     assert item.course_name == "ENG 2A Block B (26-27) 121-1"
+    assert not item.status_read  # a leftover view can be hours old
 
 
 def test_stream_id_is_decoded_from_the_item_link():
@@ -318,23 +327,23 @@ def test_extract_classroom_announcements():
 
 
 def test_resolve_due_date_handles_weekday_prefixes_times_and_local_date():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)  # Monday
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)  # Monday
     assert ex.resolve_due_date("Fri, Sep 18, 11:59 PM", anchor) == "2026-09-18"
     assert ex.resolve_due_date("Friday, 11:59 PM", anchor) == "2026-09-18"
     assert ex.resolve_due_date("7:30 AM", anchor) == "2026-09-14"
     assert ex.resolve_due_date("Due Sep 16", anchor) == "2026-09-16"
     assert ex.resolve_due_date("Today, 10:30 AM", anchor) == "2026-09-14"
     # 01:52 UTC on Sep 14 is still Sep 13 in New York - "Tomorrow" means the 14th.
-    late_evening = datetime(2026, 9, 14, 1, 52, tzinfo=timezone.utc)
+    late_evening = datetime(2026, 9, 14, 1, 52, tzinfo=UTC)
     assert ex.resolve_due_date("Tomorrow", late_evening) == "2026-09-14"
 
 
 def test_resolve_posted_date_is_never_in_the_future():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
+    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
     assert ex.resolve_posted_date("Sep 11", anchor) == "2026-09-11"
     assert ex.resolve_posted_date("10:12 AM", anchor) == "2026-09-14"
     assert ex.resolve_posted_date("Yesterday", anchor) == "2026-09-13"
-    january = datetime(2027, 1, 5, 15, 0, tzinfo=timezone.utc)
+    january = datetime(2027, 1, 5, 15, 0, tzinfo=UTC)
     assert ex.resolve_posted_date("Dec 20", january) == "2026-12-20"
     assert ex.resolve_posted_date(None, anchor) is None
 

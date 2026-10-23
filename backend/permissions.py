@@ -27,6 +27,13 @@ PERMISSIONS: tuple[Permission, ...] = (
     Permission("analytics.view", "Analytics & survey", "View page-visit reports, the campaign report and survey responses.", "read"),
     Permission("chatbot.view", "Chatbot settings", "See which providers/models the chatbot uses.", "read"),
     Permission("kids.view", "Kids view admin", "Admin tools for the Kids view (capture page kinds).", "read"),
+    Permission(
+        "support.view",
+        "Backpack Capture support",
+        "Read the update logs Backpack Capture sends and open the problems parents report from My family. A log names the "
+        "children and the class pages an update opened.",
+        "read",
+    ),
     Permission("config.view", "Export config", "Download the full district/school/job configuration.", "read"),
     Permission("audit.view", "Data audit", "See the data audit and the missing-data reports (district wording only), download and print them.", "read"),
     Permission(

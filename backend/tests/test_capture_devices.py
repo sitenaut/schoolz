@@ -183,7 +183,7 @@ async def test_send_logs_to_schoolz_and_an_admin_reads_them_back():
             await client.post("/capture-devices/diagnostics", json={"extension_version": "0.9.1", "log": []}, headers=_auth(guardian))
         ).status_code == 200
 
-        # Only admins with kids.view read them back; the key can't, nor can the guardian.
+        # Only support.view reads them back; the key can't, nor can the guardian.
         assert (await client.get("/capture-devices/diagnostics", headers=key)).status_code == 403
         assert (await client.get("/capture-devices/diagnostics", headers=_auth(guardian))).status_code == 403
         admin = _auth(await _admin(client))
@@ -193,7 +193,7 @@ async def test_send_logs_to_schoolz_and_an_admin_reads_them_back():
         assert listed[0]["device_name"] == "Backpack Capture on Windows"
         assert listed[0]["entries"] == 2
         full = (await client.get(f"/capture-devices/diagnostics/{body['id']}", headers=admin)).json()
-        assert full["payload"] == {"platform": "Windows", "log": log, "last_run": {"status": "done"}}
+        assert full["payload"] == {"platform": "Windows", "log": log, "last_run": {"status": "done"}, "summary": None}
 
 
 @pytest.mark.anyio
@@ -223,3 +223,125 @@ async def test_logs_are_capped_in_size_and_kept_thirty_days():
         assert (await client.post("/capture-devices/diagnostics", json={"extension_version": "0.9.1", "log": []}, headers=key)).status_code == 200
         async with database.SessionLocal() as db:
             assert await db.get(CaptureDiagnostic, old_id) is None
+
+
+SUMMARY = {
+    "finished_at": "2026-10-22T20:10:00Z",
+    "manual": False,
+    "outcome": "trouble",
+    "pages_sent": 12,
+    "last_sent_at": "2026-10-22T20:09:30Z",
+    "last_sent_pages": 12,
+    "problems": [{"student_id": None, "text": "Google asked to sign in to Ryan's account again."}],
+    "not_set_up": [],
+}
+
+
+async def _support_user(client: AsyncClient) -> str:
+    """Someone holding only the seeded Tech support role (migration 0127)."""
+    from models import Role, UserRole
+
+    email = f"support_{uuid.uuid4().hex[:8]}@example.com"
+    token = await _register(client, email)
+    async with database.SessionLocal() as db:
+        user_id = (await db.execute(select(User.id).where(User.email == email))).scalar_one()
+        role_id = (await db.execute(select(Role.id).where(Role.name == "Tech support"))).scalar_one()
+        db.add(UserRole(user_id=user_id, role_id=role_id))
+        await db.commit()
+    return token
+
+
+@pytest.mark.anyio
+async def test_each_update_reaches_my_family_and_a_report_reaches_the_inbox():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        email, guardian, _child = await _guardian_with_child(client)
+        key = _auth((await _connect(client, guardian))["key"])
+        assert (await client.get("/capture-devices/last-update", headers=_auth(guardian))).json() is None
+
+        sent = await client.post(
+            "/capture-devices/diagnostics",
+            json={"extension_version": "0.9.3", "log": [{"e": "run_start"}], "summary": SUMMARY},
+            headers=key,
+        )
+        assert sent.status_code == 200, sent.text
+        ref = sent.json()["reference"]
+        # The parent's page reads it; the capture key can't.
+        assert (await client.get("/capture-devices/last-update", headers=key)).status_code == 403
+        last = (await client.get("/capture-devices/last-update", headers=_auth(guardian))).json()
+        assert last["reference"] == ref
+        assert last["summary"]["outcome"] == "trouble"
+        assert last["summary"]["problems"][0]["text"].startswith("Google asked")
+        assert last["reported_at"] is None
+        # Someone else's page doesn't see it, and can't report it.
+        stranger = await _register(client, f"stranger_{uuid.uuid4().hex[:8]}@example.com")
+        assert (await client.get("/capture-devices/last-update", headers=_auth(stranger))).json() is None
+        assert (
+            await client.post("/capture-devices/report", json={"diagnostic_id": last["id"]}, headers=_auth(stranger))
+        ).status_code == 404
+        assert (await client.post("/capture-devices/report", json={"diagnostic_id": last["id"]}, headers=key)).status_code == 403
+
+        reported = await client.post(
+            "/capture-devices/report", json={"diagnostic_id": last["id"], "note": "It kept opening windows."}, headers=_auth(guardian)
+        )
+        assert reported.status_code == 201, reported.text
+        assert reported.json()["reference"] == ref
+        assert (await client.get("/capture-devices/last-update", headers=_auth(guardian))).json()["reported_at"]
+
+        # In the Inbox: who sent it, the log reference, the note - no child's name.
+        support = _auth(await _support_user(client))
+        [msg] = [m for m in (await client.get("/contact-messages", headers=support)).json() if m["email"] == email]
+        assert msg["capture_diagnostic_id"] == last["id"]
+        assert ref in msg["message"] and "It kept opening windows." in msg["message"]
+        assert "Ryan" not in msg["message"]
+        assert "4:10 PM ET" in msg["message"]
+
+        # Tech support opens the log; reported ones can be listed alone.
+        listed = (await client.get("/capture-devices/diagnostics?reported=true", headers=support)).json()
+        assert last["id"] in [d["id"] for d in listed]
+        assert all(d["reported_at"] for d in listed)
+        full = (await client.get(f"/capture-devices/diagnostics/{last['id']}", headers=support)).json()
+        assert full["payload"]["summary"]["pages_sent"] == 12
+        # The parent reads their own summary, never the log itself.
+        assert (await client.get(f"/capture-devices/diagnostics/{last['id']}", headers=_auth(guardian))).status_code == 403
+
+
+@pytest.mark.anyio
+async def test_reports_are_rate_limited_and_work_without_a_log():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _email, guardian, _child = await _guardian_with_child(client)
+        for _ in range(5):
+            res = await client.post("/capture-devices/report", json={}, headers=_auth(guardian))
+            assert res.status_code == 201, res.text
+            assert res.json()["reference"] is None
+        assert (await client.post("/capture-devices/report", json={}, headers=_auth(guardian))).status_code == 429
+
+
+@pytest.mark.anyio
+async def test_a_reported_log_outlives_the_thirty_days_and_each_account_keeps_its_last_hundred():
+    from datetime import UTC, datetime, timedelta
+
+    from models import CaptureDiagnostic
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        email, guardian, _child = await _guardian_with_child(client)
+        now = datetime.now(UTC)
+        async with database.SessionLocal() as db:
+            user_id = (await db.execute(select(User.id).where(User.email == email))).scalar_one()
+            reported = CaptureDiagnostic(
+                user_id=user_id, created_at=now - timedelta(days=40), reported_at=now - timedelta(days=39),
+                extension_version="0.9.3", payload={"log": []},
+            )
+            db.add(reported)
+            for i in range(100):
+                db.add(CaptureDiagnostic(user_id=user_id, created_at=now - timedelta(hours=i + 1), extension_version="0.9.3", payload={"log": []}))
+            await db.commit()
+            reported_id = reported.id
+        res = await client.post("/capture-devices/diagnostics", json={"extension_version": "0.9.3", "log": []}, headers=_auth(guardian))
+        assert res.status_code == 200
+        async with database.SessionLocal() as db:
+            assert await db.get(CaptureDiagnostic, reported_id) is not None
+            unreported = (
+                await db.execute(select(CaptureDiagnostic.created_at).where(CaptureDiagnostic.user_id == user_id, CaptureDiagnostic.reported_at.is_(None)))
+            ).scalars().all()
+        assert len(unreported) == 100
+        assert min(unreported) > now - timedelta(hours=100)  # the oldest one went
