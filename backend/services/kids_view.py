@@ -137,6 +137,26 @@ def resolve_done(override: bool | None, classroom_status: str | None, has_real_g
     return False, None
 
 
+def classes_genesis_doesnt_list(course_names: set[str], genesis_courses: set[tuple[str, str]]) -> set[str]:
+    """Classroom classes that aren't schoolwork, because Genesis is the
+    authority on which classes are (the owner's rule). A class-council room
+    or a club posts fundraisers, ticket sales and meeting sign-ups - real
+    case: "Class of 2029" put nine of those among one student's Missing.
+
+    A Genesis course is a (code, section) pair, and in a district whose
+    Classroom names embed that pair (see course_codes_from_name) a class
+    with no code in its name can't be one. That convention is only taken
+    as proven once one of this student's classes actually matches a
+    captured Genesis course: with no Genesis capture, or a district that
+    names classes differently, nothing is excluded. A class whose code
+    Genesis hasn't listed still counts - its Genesis page may simply not
+    have been captured, and unknown must not hide work."""
+    coded = {name for name in course_names if course_codes_from_name(name)}
+    if not any(code in genesis_courses for name in coded for code in course_codes_from_name(name)):
+        return set()
+    return course_names - coded
+
+
 def todo_category(item_type: str, due_date: str | None, done: bool, today_iso: str) -> str:
     """"done" | "missing" | "due" | "no_due_date". Missing is always derived
     (past due + not done): Classroom's own captured text never says "Missing"
