@@ -1345,7 +1345,21 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
     all_items = (
         await db.execute(select(ChildWorkItem).where(ChildWorkItem.student_id == student.id))
     ).scalars().all()
-    work = [w for w in all_items if w.item_type not in kids_view.REFERENCE_TYPES]
+    genesis_courses = {
+        (code, section)
+        for model in (ChildCourseGrade, ChildGradeEntry)
+        for code, section in (
+            await db.execute(
+                select(model.course_code, model.course_section).where(model.student_id == student.id).distinct()
+            )
+        ).all()
+    }
+    not_schoolwork = kids_view.classes_genesis_doesnt_list(
+        {w.course_name for w in all_items if w.course_name}, genesis_courses
+    )
+    work = [
+        w for w in all_items if w.item_type not in kids_view.REFERENCE_TYPES and w.course_name not in not_schoolwork
+    ]
 
     marks = {
         p.work_item_id: p

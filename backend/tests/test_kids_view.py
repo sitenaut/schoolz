@@ -99,6 +99,19 @@ def test_todo_category():
     assert kv.todo_category("material", "2026-09-20", False, today) == "no_due_date"
 
 
+def test_classes_genesis_doesnt_list():
+    names = {"Class of 2029", "Cougars' Book Club", "ENG 2A Block B (26-27) 121-1", "F: CHEM-1A 331-10"}
+    # English matches a captured Genesis course, so the codeless classes
+    # (class council, a club) aren't schoolwork. Chemistry's Genesis page
+    # isn't captured yet, but its code says it's a course: it still counts.
+    assert kv.classes_genesis_doesnt_list(names, {("121", "1")}) == {"Class of 2029", "Cougars' Book Club"}
+    # No Genesis capture: no authority to ask, so nothing is excluded.
+    assert kv.classes_genesis_doesnt_list(names, set()) == set()
+    # Genesis captured, but no class name carries a code (a district that
+    # names classes differently): the convention isn't proven, so nothing goes.
+    assert kv.classes_genesis_doesnt_list({"Mrs. Smith's Algebra", "Class of 2029"}, {("101", "1")}) == set()
+
+
 def test_previous_marking_period_work_drops_out():
     mp_start = "2026-11-11"
     assert kv.in_current_marking_period("missing", "2026-11-01", mp_start) is False

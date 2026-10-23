@@ -13,7 +13,7 @@ from sqlalchemy import select, update
 
 import database
 from main import app
-from models import Bucket3Capture, ChildWorkItem, ChildWorkItemProgress, StaffMember, User
+from models import Bucket3Capture, ChildCourseGrade, ChildWorkItem, ChildWorkItemProgress, StaffMember, User
 from routers import bucket3 as bucket3_router
 from services import help_requests as help_svc
 from services import kids_suggestions
@@ -787,3 +787,38 @@ async def test_family_import_routes_each_page_and_tracks_freshness(monkeypatch):
         res = await client.post("/bucket3/import", json={"captures": [_env("classroom", FEED_URL, feed)]}, headers=_auth(stranger))
         assert res.json()["students"] == [] and res.json()["captures_unrouted"] == 1
         assert (await client.get(f"/students/{first}/bucket3/status", headers=_auth(stranger))).status_code == 404
+
+
+@pytest.mark.anyio
+async def test_a_class_genesis_doesnt_list_never_counts_as_missing(monkeypatch):
+    _freeze(monkeypatch, 2026, 10, 23, 16, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        async with database.SessionLocal() as db:
+            for uid, course, title in [
+                ("council", "Class of 2029", "Primo Water Ice Fundraiser"),
+                ("english", "ENG 2A Block B (26-27) 121-1", "Summer Reading Essay"),
+                ("chem", "F: CHEM-1A 331-10", "Density Activity"),
+            ]:
+                db.add(
+                    ChildWorkItem(
+                        student_id=sid, external_uid=uid, course_name=course, title=title, item_type="assignment", due_date="2026-09-10"
+                    )
+                )
+            await db.commit()
+
+        async def missing() -> list[str]:
+            todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+            return sorted(i["title"] for i in todo["missing"])
+
+        # Before any Genesis capture, Classroom stands alone.
+        assert await missing() == ["Density Activity", "Primo Water Ice Fundraiser", "Summer Reading Essay"]
+
+        async with database.SessionLocal() as db:
+            db.add(ChildCourseGrade(student_id=sid, course_code="121", course_section="1", marking_period="MP1", grade_percent=80.0))
+            await db.commit()
+        # Genesis lists English, which proves the naming convention; the class
+        # council isn't a course. Chemistry's Genesis page just isn't captured.
+        assert await missing() == ["Density Activity", "Summer Reading Essay"]
+        courses = (await client.get(f"/students/{sid}/bucket3/progress", headers=_auth(guardian))).json()
+        assert "Class of 2029" not in {c["course_name"] for c in courses}
