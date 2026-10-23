@@ -116,6 +116,15 @@ export function LunchPage() {
     [items, tk, targetDate],
   );
 
+  // Every listed day is behind us: the next menu hasn't been posted. Showing
+  // the old month's list read as this month's (Burlington City showed
+  // September all through October), so say so and link where it'll appear.
+  const lastKey = rows.length > 0 ? rows[rows.length - 1].key : null;
+  const isOver = !!lastKey && lastKey < tk;
+  const monthName = (key: string) => new Date(key.slice(0, 7) + "-15T12:00:00Z").toLocaleDateString(LOCALE, { month: "long", timeZone: "UTC" });
+  const shortDate = (key: string) => new Date(key + "T12:00:00Z").toLocaleDateString(LOCALE, { month: "short", day: "numeric", timeZone: "UTC" });
+  const nextMenuUrl = menu?.source_page_url ?? (menu && !menu.source_pdf_url.startsWith("newsletter:") ? menu.source_pdf_url : null);
+
   // Nothing picked and no school in the link: ask for one in place, as
   // Today and Calendar do, rather than redirecting to the picker.
   const noSchools = !deepSchool && !loading && mySchools.length === 0;
@@ -155,7 +164,7 @@ export function LunchPage() {
       {seo}
       <div className="h-row" style={{ marginTop: 0 }}>
         <h2>{t("Lunch")}</h2>
-        {menu && !menu.source_pdf_url.startsWith("newsletter:") && (
+        {menu && !isOver && !menu.source_pdf_url.startsWith("newsletter:") && (
           <a href={menu.source_pdf_url} target="_blank" rel="noreferrer">
             {t("{{period}} PDF", { period: menu.period_label })}
           </a>
@@ -177,6 +186,23 @@ export function LunchPage() {
         <div className="empty">{t("No lunch menu on file for {{school}} yet.", { school: school?.short_name || school?.name || active })}</div>
       ) : rows.length === 0 ? (
         <div className="empty">{t("No days listed for {{period}} yet.", { period: menu.period_label })}</div>
+      ) : isOver && lastKey ? (
+        <div className="empty">
+          <p>
+            <strong>
+              {lastKey.slice(0, 7) < tk.slice(0, 7)
+                ? t("{{month}}'s lunch menu hasn't been posted yet.", { month: monthName(tk) })
+                : t("No lunch menu has been posted after {{date}} yet.", { date: shortDate(lastKey) })}
+            </strong>
+          </p>
+          {nextMenuUrl && (
+            <p>
+              <a href={nextMenuUrl} target="_blank" rel="noreferrer">
+                {menu.source_page_url ? t("Check the district's menu page") : t("Check the source")}
+              </a>
+            </p>
+          )}
+        </div>
       ) : (
         <>
           {/* tabIndex: a scrolling region has to be reachable from the keyboard (WCAG 2.1.1). */}

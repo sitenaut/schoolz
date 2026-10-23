@@ -3,10 +3,12 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 
 import database
+from main import app
 from models import District, LunchMenu, LunchMenuItem, School
-from services.school_today import resolve_lunch_menu
+from services.school_today import build_today, resolve_lunch_menu
 
 _TZ = ZoneInfo("America/New_York")
 
@@ -59,3 +61,33 @@ async def test_stale_school_menu_falls_back_to_a_current_district_menu():
         current = await _menu(db, "October 2026", date(2026, 10, 1), 30, _day(2026, 10, 1), district_id=district.id, school_type="elementary")
 
         assert (await resolve_lunch_menu(db, school, on=date(2026, 10, 23))).id == current.id
+
+
+@pytest.mark.anyio
+async def test_today_links_only_a_menu_that_is_not_over_and_crosses_into_next_month():
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"District {tag}", food_services_menu_url="https://x.test/food")
+        db.add(district)
+        await db.flush()
+        school = School(name=f"Elementary {tag}", slug=f"el-{tag}", district_id=district.id, school_type="elementary")
+        db.add(school)
+        await db.flush()
+        owner = {"district_id": district.id, "school_type": "elementary"}
+        sep = await _menu(db, "September 2026", date(2026, 9, 1), 30, _day(2026, 9, 1), **owner)
+
+        # September's PDF beside "Lunch from the district's monthly menu" in October read as October's.
+        assert (await build_today(db, school, date(2026, 9, 29))).lunch.source_pdf_url == sep.source_pdf_url
+        over = (await build_today(db, school, date(2026, 10, 23))).lunch
+        assert (over.today, over.source_pdf_url) == (None, None)
+
+        await _menu(db, "October 2026", date(2026, 10, 1), 30, _day(2026, 10, 1), **owner)
+        await _menu(db, "November 2026", date(2026, 11, 2), 28, _day(2026, 10, 19), **owner)
+        friday = (await build_today(db, school, date(2026, 10, 30))).lunch
+        assert (friday.today, friday.next) == ("October 2026 29", "November 2026 0")
+        await db.commit()
+        slug = school.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        menu = (await client.get(f"/schools/{slug}/lunch-menu")).json()
+        assert menu["source_page_url"] == "https://x.test/food"

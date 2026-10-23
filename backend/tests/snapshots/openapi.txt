@@ -1141,7 +1141,7 @@ LogOut { action: string, actor_email: string | null, actor_kind: string, after: 
 LoginRequest { password: string, username_or_email: string }
 LowGradeOut { percent: number, title: string }
 LunchMenuItemOut { description: string, id: string, menu_date: string(date-time), notes: string | null }
-LunchMenuOut { id: string, items: list[LunchMenuItemOut], meal_type: string, parsed_at: string(date-time), period_label: string, school_type: string | null, source_pdf_url: string }
+LunchMenuOut { id: string, items: list[LunchMenuItemOut], meal_type: string, parsed_at: string(date-time), period_label: string, school_type: string | null, source_page_url?: string | null, source_pdf_url: string }
 MatchIn { name: string }
 MemberIn { email: string, role?: string }
 MemberOut { created_at: string(date-time), email: string | null, id: string, role: string, verified_at: string(date-time) | null }
