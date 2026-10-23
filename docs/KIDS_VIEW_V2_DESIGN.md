@@ -130,7 +130,7 @@ UNIQUE(student_id, work_item_id)
 - `POST /students/{id}/bucket3/workitems/{work_item_id}/complete
   {done: bool}` — either a guardian or the student account may toggle it;
   it's one shared row, last write wins, `marked_by_user_id` is kept so the
-  UI can say "marked done by Ryan" vs "marked done by a parent" — visible,
+  UI can say "marked done by Sam" vs "marked done by a parent" — visible,
   never silent about who changed shared state.
 - Derived display category (computed at read time, not stored):
   - **Done** = `ChildWorkItemProgress.done` is true, OR Classroom's own

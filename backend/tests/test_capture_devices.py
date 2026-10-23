@@ -232,7 +232,7 @@ SUMMARY = {
     "pages_sent": 12,
     "last_sent_at": "2026-10-22T20:09:30Z",
     "last_sent_pages": 12,
-    "problems": [{"student_id": None, "text": "Google asked to sign in to Ryan's account again."}],
+    "problems": [{"student_id": None, "text": "Google asked to sign in to Juniper's account again."}],
     "not_set_up": [],
 }
 
@@ -292,7 +292,7 @@ async def test_each_update_reaches_my_family_and_a_report_reaches_the_inbox():
         [msg] = [m for m in (await client.get("/contact-messages", headers=support)).json() if m["email"] == email]
         assert msg["capture_diagnostic_id"] == last["id"]
         assert ref in msg["message"] and "It kept opening windows." in msg["message"]
-        assert "Ryan" not in msg["message"]
+        assert "Juniper" not in msg["message"]
         assert "4:10 PM ET" in msg["message"]
 
         # Tech support opens the log; reported ones can be listed alone.
