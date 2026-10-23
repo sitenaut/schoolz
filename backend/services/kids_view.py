@@ -87,7 +87,7 @@ def right_now(blocks: list, bell_periods: dict | None, now: datetime) -> dict:
 
     blocks_out = []
     current = None
-    for s, e, b in rows:
+    for s, _e, b in rows:
         is_current = bool(cur and cur["name"] == b.period)
         item = {
             "period": b.period,
@@ -109,7 +109,7 @@ def right_now(blocks: list, bell_periods: dict | None, now: datetime) -> dict:
     school_day_over = False
     if not stale and rows:
         now_t = now.time()
-        upcoming = [item for (s, _e, _b), item in zip(rows, blocks_out) if s > now_t]
+        upcoming = [item for (s, _e, _b), item in zip(rows, blocks_out, strict=True) if s > now_t]
         nxt = upcoming[0] if upcoming else None
         school_day_over = now_t >= rows[-1][1]
 
@@ -199,11 +199,12 @@ LATE_SHAPES = ("full_credit", "flat", "daily_decay", "window", "tiered", "not_ac
 
 # Past this many days late, a wrong year is a likelier explanation than a
 # genuinely year-old assignment, so no policy is allowed to declare the item
-# closed. Classroom's captured due text carries no year at all ("Due Sep 12")
-# - bucket3_extract.resolve_due_date infers one from the capture's own
-# timestamp - and an off-by-one-year inference lands at ~365 days late. Since
-# a closed item is *removed* from the dashboard, guessing wrong there makes
-# live work vanish silently; returning "unknown" keeps it visible instead.
+# closed. Classroom leaves the year off a date in the current calendar year
+# ("Due Sep 12") - bucket3_extract.resolve_due_date takes it from the
+# capture's own timestamp - and an off-by-one-year inference lands at ~365
+# days late. Since a closed item is *removed* from the dashboard, guessing
+# wrong there makes live work vanish silently; returning "unknown" keeps it
+# visible instead.
 MAX_PLAUSIBLE_DAYS_LATE = 300
 
 
