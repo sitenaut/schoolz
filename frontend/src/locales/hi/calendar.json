@@ -36,5 +36,10 @@
   "Nothing found this month.": "इस महीने कुछ नहीं मिला।",
   "All {{name}}": "{{name}} के सभी",
   "Filter events": "कार्यक्रम फ़िल्टर करें",
-  "to see their closures, early dismissals, and events here.": "ताकि यहाँ बंदी, जल्दी छुट्टी और कार्यक्रम देख सकें।"
+  "to see their closures, early dismissals, and events here.": "ताकि यहाँ बंदी, जल्दी छुट्टी और कार्यक्रम देख सकें।",
+  "{{school}} calendar · schoolz": "{{school}} कैलेंडर · schoolz",
+  "Closures, early dismissals, half days, deadlines and events at {{school}}, with the district-wide dates that apply to it.": "{{school}} में स्कूल बंद होने, जल्दी छुट्टी, आधे दिन, अंतिम तिथियाँ और कार्यक्रम, साथ ही उस पर लागू होने वाली पूरे ज़िले की तिथियाँ।",
+  "{{school}} calendar": "{{school}} कैलेंडर",
+  "We couldn't find that school.": "हमें वह स्कूल नहीं मिला।",
+  "See the calendar for your schools": "अपने स्कूलों का कैलेंडर देखें"
 }

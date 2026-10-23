@@ -50,6 +50,7 @@ const SchoolsPage = lazyPage(() => import("./pages/SchoolsPage").then((m) => m.S
 const DirectoryPage = lazyPage(() => import("./pages/DirectoryPage").then((m) => m.DirectoryPage));
 const SchoolClassYearPage = lazyPage(() => import("./pages/schools/SchoolClassYearPage").then((m) => m.SchoolClassYearPage));
 const CalendarPage = lazyPage(() => import("./pages/CalendarPage").then((m) => m.CalendarPage));
+const SchoolCalendarPage = lazyPage(() => import("./pages/CalendarPage").then((m) => m.SchoolCalendarPage));
 const JobsPage = lazyPage(() => import("./pages/JobsPage").then((m) => m.JobsPage));
 const AdminConfigPage = lazyPage(() => import("./pages/AdminConfigPage").then((m) => m.AdminConfigPage));
 const ChatbotAdminPage = lazyPage(() => import("./pages/ChatbotAdminPage").then((m) => m.ChatbotAdminPage));
@@ -200,6 +201,7 @@ function Routed() {
         <Route path="/jobs" element={<Navigate to="/admin/scans" replace />} />
         <Route path="/schools" element={<SchoolsPage />} />
         <Route path="/schools/:schoolId" element={<SchoolDetailPage />} />
+        <Route path="/schools/:schoolId/calendar" element={<SchoolCalendarPage />} />
         {/* react-router v6 can't match a literal prefix inside a dynamic
             segment ("class-of-:gradYear") - a segment is either fully
             static or fully dynamic. Routed on the whole segment instead

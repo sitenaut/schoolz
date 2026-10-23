@@ -255,6 +255,22 @@ def test_a_school_page_is_rendered_only_when_it_changed_or_ages_out():
     assert paths_to_render(paths, rendered, lastmods, now) == ["/schools/d", "/schools/a", "/es/schools/a", "/calendar", "/schools/c"]
 
 
+def test_a_school_calendar_follows_its_school_and_the_month():
+    from scheduler.jobs.prerender_warm import paths_to_render
+
+    now = NIGHT
+    hours = lambda h: now - timedelta(hours=h)  # noqa: E731
+    paths = ["/schools/a/calendar", "/es/schools/a/calendar", "/schools/b/calendar", "/schools/c/calendar"]
+    rendered = {
+        "/schools/a/calendar": hours(30),  # its school changed since: redo, every language
+        "/es/schools/a/calendar": hours(30),
+        "/schools/b/calendar": hours(30),  # unchanged, this month: skip
+        "/schools/c/calendar": now.replace(day=1) - timedelta(days=2),  # unchanged, but last month's grid: redo
+    }
+    lastmods = {"a": hours(2), "b": hours(40), "c": hours(400)}
+    assert paths_to_render(paths, rendered, lastmods, now) == ["/schools/a/calendar", "/es/schools/a/calendar", "/schools/c/calendar"]
+
+
 def test_unchanged_school_pages_come_due_on_different_nights():
     from scheduler.jobs.prerender_warm import school_max_age_s
 

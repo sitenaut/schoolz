@@ -10,7 +10,6 @@ import database
 from main import app
 from models import District, School, SchoolContentItem
 
-
 _WEB_URL = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
 
 
@@ -75,6 +74,7 @@ def test_prerender_allows_language_prefixed_paths():
     assert prerender._is_allowed("/es/lunch")
     assert prerender._is_allowed("/seasonal/halloween")
     assert prerender._is_allowed("/zh/schools/some-school")
+    assert prerender._is_allowed("/es/schools/some-school/calendar")
     assert prerender._is_allowed("/ko/lunch")
     assert prerender._is_allowed("/hi")
     assert not prerender._is_allowed("/history")
@@ -84,7 +84,7 @@ def test_prerender_allows_language_prefixed_paths():
 
 @pytest.mark.anyio
 async def test_sitemap_dates_school_pages_by_their_newest_content():
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     async with database.SessionLocal() as db:
         district = District(name="Lastmod District")
@@ -93,7 +93,7 @@ async def test_sitemap_dates_school_pages_by_their_newest_content():
         school = School(name="Lastmod Elementary", slug="lastmod-elementary", school_type="elementary", district_id=district.id)
         db.add(school)
         await db.flush()
-        db.add(SchoolContentItem(scope="district", district_id=district.id, category="event", title="Board meeting", extracted_at=datetime(2031, 3, 4, 15, tzinfo=timezone.utc)))
+        db.add(SchoolContentItem(scope="district", district_id=district.id, category="event", title="Board meeting", extracted_at=datetime(2031, 3, 4, 15, tzinfo=UTC)))
         await db.commit()
 
     transport = ASGITransport(app=app)
@@ -101,6 +101,9 @@ async def test_sitemap_dates_school_pages_by_their_newest_content():
         res = await client.get("/sitemap.xml")
     assert f"<loc>{_WEB_URL}/schools/lastmod-elementary</loc><lastmod>2031-03-04</lastmod>" in res.text
     assert f"<loc>{_WEB_URL}/es/schools/lastmod-elementary</loc><lastmod>2031-03-04</lastmod>" in res.text
+    # Its own calendar page, dated the same way, in every language.
+    assert f"<loc>{_WEB_URL}/schools/lastmod-elementary/calendar</loc><lastmod>2031-03-04</lastmod>" in res.text
+    assert f"<loc>{_WEB_URL}/ko/schools/lastmod-elementary/calendar</loc><lastmod>2031-03-04</lastmod>" in res.text
     # Static pages have no honest content date, so they carry none.
     assert f"<loc>{_WEB_URL}/privacy</loc></url>" in res.text
 

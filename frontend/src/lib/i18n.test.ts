@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localizedPath, stripLangPrefix, langFromPath, foldAccents } from "./i18n";
+import { localizedPath, stripLangPrefix, langFromPath, foldAccents, isTranslatedPath } from "./i18n";
 import es from "../locales/es";
 import zh from "../locales/zh";
 import ko from "../locales/ko";
@@ -27,6 +27,12 @@ describe("language paths", () => {
     expect(localizedPath("/lunch", "ko")).toBe("/ko/lunch");
     expect(langFromPath("/hi/schools/x")).toBe("hi");
     expect(langFromPath("/history")).toBe("en");
+  });
+  it("translates a school's page and its calendar page, not its class pages", () => {
+    expect(isTranslatedPath("/schools/x")).toBe(true);
+    expect(isTranslatedPath("/schools/x/calendar")).toBe(true);
+    expect(isTranslatedPath("/schools/x/calendar?date=2026-10-22")).toBe(true);
+    expect(isTranslatedPath("/schools/x/class-of-2027")).toBe(false);
   });
 });
 

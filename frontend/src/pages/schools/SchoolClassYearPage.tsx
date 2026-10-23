@@ -5,7 +5,7 @@ import { ItemRow } from "../../components/today";
 import { IconChevronLeft } from "../../components/icons";
 import { SeoHead } from "../../components/SeoHead";
 import { useAuth } from "../../context/AuthContext";
-import { monthDay, todayKey, localDateKey } from "../../lib/calendar";
+import { localDateKey, monthDay, schoolCalendarPath, todayKey } from "../../lib/calendar";
 import { usePrerenderReady } from "../../lib/prerenderReady";
 import type { ClassPayment, School, SchoolClassYear, SchoolContentItem } from "../../types";
 import { LOCALE } from "../../lib/i18n";
@@ -244,7 +244,7 @@ export function SchoolClassYearPage() {
 
       <div className="h-row">
         <h2>Dates for this class</h2>
-        <Link to={`/calendar?school=${school.slug}`}>Full calendar</Link>
+        <Link to={schoolCalendarPath(school.slug)}>Full calendar</Link>
       </div>
       {events.length === 0 ? (
         <div className="empty">Nothing dated yet for this class.</div>
@@ -257,7 +257,7 @@ export function SchoolClassYearPage() {
           </div>
           {eventsTotal > events.length && (
             <p className="note">
-              Showing the next {events.length} of {eventsTotal}. <Link to={`/calendar?school=${school.slug}`}>See the rest</Link>
+              Showing the next {events.length} of {eventsTotal}. <Link to={schoolCalendarPath(school.slug)}>See the rest</Link>
             </p>
           )}
         </>

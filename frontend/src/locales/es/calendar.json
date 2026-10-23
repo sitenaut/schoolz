@@ -36,5 +36,10 @@
   "Nothing found this month.": "No se encontró nada este mes.",
   "All {{name}}": "Todas las escuelas de {{name}}",
   "Filter events": "Filtrar eventos",
-  "to see their closures, early dismissals, and events here.": "para ver aquí sus cierres, salidas tempranas y eventos."
+  "to see their closures, early dismissals, and events here.": "para ver aquí sus cierres, salidas tempranas y eventos.",
+  "{{school}} calendar · schoolz": "Calendario de {{school}} · schoolz",
+  "Closures, early dismissals, half days, deadlines and events at {{school}}, with the district-wide dates that apply to it.": "Cierres, salidas tempranas, medios días, fechas límite y eventos en {{school}}, con las fechas de todo el distrito que le corresponden.",
+  "{{school}} calendar": "Calendario de {{school}}",
+  "We couldn't find that school.": "No encontramos esa escuela.",
+  "See the calendar for your schools": "Vea el calendario de sus escuelas"
 }

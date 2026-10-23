@@ -49,7 +49,7 @@ export const LOCALE: string = LANGUAGES.find((l) => l.code === CURRENT_LANG)?.lo
 export function isTranslatedPath(routerPath: string): boolean {
   const p = routerPath.split(/[?#]/)[0];
   if (["/", "/schools", "/lunch", "/directory", "/calendar"].includes(p)) return true;
-  return /^\/schools\/[^/]+$/.test(p);
+  return /^\/schools\/[^/]+(?:\/calendar)?$/.test(p);
 }
 
 /** A router-relative path ("/schools/x?y=1") as a real URL path in `lang`. */
