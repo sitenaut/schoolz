@@ -46,7 +46,7 @@ WHERE pending_vision_extraction AND first_seen_at > now() - interval '14 days';
 
 -- Alert conditions (create as Grafana-managed alert rules against the same
 -- datasource, folder "schoolz", label app=schoolz, evaluated every 5m,
--- contact point: enr@profitnaut.com):
+-- contact point: the owner's email):
 --   1. Job failed twice in a row: jobs whose last 2 non-skipped runs are both 'error'.
 --   2. Stuck run > 45 min (query above, count > 0).
 --   3. No runs at all in 13h: max(started_at) < now() - interval '13 hours'.

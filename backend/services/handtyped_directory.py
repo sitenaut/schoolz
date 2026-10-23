@@ -1,9 +1,9 @@
 """Staff lists that a school typed straight into a page body instead of using
 a directory widget - confirmed on two Evesham Smart Sites schools:
 
-- Beeler: centered paragraphs, role first ("Principal - Ryan Mahlman",
-  "Music: Meredith Lowden"), then bare names under grade headings.
-- Rice: a pasted spreadsheet, two data columns, name first ("Beverly Green -
+- Beeler: centered paragraphs, role first ("Principal - Jane Doe",
+  "Music: John Roe"), then bare names under grade headings.
+- Rice: a pasted spreadsheet, two data columns, name first ("Pat Smith -
   Principal"), bare names under headings ("Kindergarten", "PIRT").
 
 Deterministic, no model. Each line is one of: a heading, "role <sep> name" /

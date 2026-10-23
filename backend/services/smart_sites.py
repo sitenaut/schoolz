@@ -18,7 +18,7 @@ Confirmed structure (all ten Evesham sites):
   HTML). That POST works for anyone. Emails are base64 in each card's
   `data-staff-email` (the site hides them from scrapers, not from us).
 - Some schools instead hand-type the directory into the page body ("Principal -
-  Ryan Mahlman", no emails; parsed by `handtyped_directory`) or embed a document
+  Jane Doe", no emails; parsed by `handtyped_directory`) or embed a document
   viewer, which is reported as empty rather than guessed at."""
 
 import base64
