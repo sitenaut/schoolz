@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, select
@@ -21,7 +21,7 @@ from services.special_events import (
 # Menus stored before this kept the faded previous-month cells at the top of
 # the calendar grid (October's held Sept 28-30) and "No meal listed" days;
 # a menu stored before then is re-parsed in place on its next scan.
-_REPARSE_BEFORE = datetime(2026, 10, 5, 3, 47, tzinfo=timezone.utc)
+_REPARSE_BEFORE = datetime(2026, 10, 5, 3, 47, tzinfo=UTC)
 _NO_MEAL_RE = re.compile(r"^\s*(no (meal|lunch|menu)( listed| served)?|none|n/?a|tbd)\.?\s*$", re.IGNORECASE)
 
 
@@ -147,7 +147,7 @@ async def _scan_menus(db: AsyncSession, school: School, pages: list, today) -> t
             menu = LunchMenu(school_id=school.id, meal_type="lunch", period_label=label, source_pdf_url=url)
             db.add(menu)
         await db.flush()
-        menu.parsed_at = datetime.now(timezone.utc)
+        menu.parsed_at = datetime.now(UTC)
         for day in days:
             db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=strip_portions(day["description"]), notes=day.get("notes")))
         new_menus += 1

@@ -15,15 +15,39 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import DistrictTransportation, GuardianStudentLink, LunchMenu, LunchMenuItem, SaccProgram, School, SchoolContentItem, StaffMember, Student
-from schemas import CurrentPeriodOut, DayBlockOut, NextRotationOut, TodayCurrentClassOut, TodayKidSpecialOut, SchoolContentItemOut, SchoolOut, SchoolTodayOut, TodayContactOut, TodayDayOut, TodayLunchOut, TodaySaccOut, TodayTransportationOut
+from models import (
+    DistrictTransportation,
+    GuardianStudentLink,
+    LunchMenu,
+    LunchMenuItem,
+    SaccProgram,
+    School,
+    SchoolContentItem,
+    StaffMember,
+    Student,
+)
+from schemas import (
+    CurrentPeriodOut,
+    DayBlockOut,
+    NextRotationOut,
+    SchoolContentItemOut,
+    SchoolOut,
+    SchoolTodayOut,
+    TodayContactOut,
+    TodayCurrentClassOut,
+    TodayDayOut,
+    TodayKidSpecialOut,
+    TodayLunchOut,
+    TodaySaccOut,
+    TodayTransportationOut,
+)
+from services import i18n_strings
+from services import specials as specials_svc
 from services.arbiter import ATHLETICS_SOURCES
 from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
-from services.hs_rotation import blocks_from_description
-from services import i18n_strings
-from services import specials as specials_svc
 from services.content_translation import Localized, apply_translations, localize_out
+from services.hs_rotation import blocks_from_description
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 from services.weather import pick_weather_day, today_weather
