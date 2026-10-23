@@ -141,25 +141,32 @@ def test_resolve_due_date_weekday_name_finds_next_occurrence():
     assert ex.resolve_due_date("Friday", anchor) == "2026-09-18"
 
 
-def test_resolve_due_date_month_day_uses_school_year_boundary():
-    anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
-    assert ex.resolve_due_date("Sep 16, 9:30 AM", anchor) == "2026-09-16"
-    # A June date captured in September is the end of the school year that
-    # just started (2026-27), i.e. June 2027 - not ~3 months in the past.
-    assert ex.resolve_due_date("Jun 10", anchor) == "2027-06-10"
+def test_resolve_due_date_bare_month_day_is_the_capture_calendar_year():
+    anchor = datetime(2026, 10, 23, 20, 10, tzinfo=UTC)
+    assert ex.resolve_due_date("Oct 27", anchor) == "2026-10-27"
+    # Classroom leaves the year off anything in the current calendar year,
+    # so a bare spring date seen in October is last spring - real posts from
+    # one capture, which a school-year guess had put in 2027.
+    assert ex.resolve_due_date("Jan 20, 11:59 PM", anchor) == "2026-01-20"
+    assert ex.resolve_due_date("May 29, 12:30 PM", anchor) == "2026-05-29"
+    # The calendar year of the family's local day, not UTC's.
+    new_years_eve = datetime(2027, 1, 1, 3, 0, tzinfo=UTC)  # 10pm Dec 31 in NJ
+    assert ex.resolve_due_date("Dec 31", new_years_eve) == "2026-12-31"
+    assert ex.resolve_due_date("Feb 30", anchor) is None
 
 
 def test_resolve_due_date_prefers_an_explicit_year_over_inference():
     anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
-    # Classroom prints the year exactly when a bare month/day would be
-    # ambiguous - an item over a year old. Inferring one instead re-dated
-    # last year's work into the current school year, so it came back as
-    # current (and, once late policies existed, as still worth credit).
+    # Classroom prints the year on a date outside the current calendar
+    # year. Inferring one instead re-dated last year's work into the current
+    # school year, so it came back as current (and, once late policies
+    # existed, as still worth credit).
     assert ex.resolve_due_date("Sep 4, 2025, 11:30 AM", anchor) == "2025-09-04"
     assert ex.resolve_due_date("Due Sep 4, 2025", anchor) == "2025-09-04"
     # A clock time following the day is not a year.
     assert ex.resolve_due_date("Sep 16, 9:30 AM", anchor) == "2026-09-16"
     assert ex.resolve_due_date("Fri, Sep 18, 11:59 PM", anchor) == "2026-09-18"
+    assert ex.resolve_due_date("Jan 8, 2027", anchor) == "2027-01-08"
 
 
 def test_course_codes_from_name_excludes_academic_year_ranges():

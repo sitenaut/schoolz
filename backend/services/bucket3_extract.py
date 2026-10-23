@@ -830,11 +830,10 @@ _MP_RANGE_RE = re.compile(r"MP(\d)\n(\d{1,2})/(\d{1,2}) to (\d{1,2})/(\d{1,2})")
 
 def extract_genesis_marking_periods(text: str, captured_at: datetime) -> list[MarkingPeriodRange]:
     """Resolves each marking period's bare "M/D to M/D" range (no year) to
-    real dates using the same school-year-boundary logic as
-    resolve_due_date: MP1 starts in the calendar year the school year
-    itself started, and the year rolls forward each time a later MP's
-    start month is earlier than the previous one's (Dec/Jan-crossing
-    marking periods, confirmed real: MP2 "11/11 to 1/27")."""
+    real dates using the school-year boundary: MP1 starts in the calendar
+    year the school year itself started, and the year rolls forward each
+    time a later MP's start month is earlier than the previous one's
+    (Dec/Jan-crossing marking periods, confirmed real: MP2 "11/11 to 1/27")."""
     anchor = captured_at.date() if isinstance(captured_at, datetime) else captured_at
     year = anchor.year if anchor.month >= 7 else anchor.year - 1
     seen: dict[str, MarkingPeriodRange] = {}
@@ -958,30 +957,24 @@ def resolve_due_date(due_raw: str | None, captured_at: datetime) -> str | None:
     if m:
         month = _MONTHS[m.group(1).lower()]
         day = int(m.group(2))
-        # Classroom spells the year out exactly when a bare month/day would
-        # be ambiguous - confirmed real on one Classwork page, where a
-        # ~4-month-old item reads "Due May 11, 7:30 AM" and one over a year
-        # old reads "Due Sep 4, 2025, 11:30 AM" (backpack-capture's
-        # docs/DESIGN.md). When it's there it's authoritative and must win:
-        # inferring instead silently re-dated genuinely old work into the
-        # current school year, which made stale assignments reappear as
-        # current ones - and, since late-credit is computed from this date,
-        # gave them a live "still worth N%" that was pure fiction.
+        # Classroom prints the year on a date outside the current calendar
+        # year and leaves it off inside it. Confirmed for past dates on one
+        # Class of 2029 Classwork page captured Oct 2026: "Nov 27, 2025"
+        # carries its year while "Jan 20" (freshman ticket sales) and
+        # "May 13" (class officer elections for 2026-27) don't, and both were
+        # Jan/May 2026. A next-year date seen in December is assumed to
+        # follow suit ("Jan 8, 2027"), as Google's dates do elsewhere; not
+        # yet seen in a capture. A school-year guess put every bare
+        # Jan-Jun date in the coming spring, so last spring's posts showed
+        # up as upcoming work. Inferring a year when one is printed is worse
+        # still: genuinely old work came back as current, with a live
+        # late-credit figure.
         explicit_year = _EXPLICIT_YEAR_RE.match(text[m.end() :])
-        if explicit_year:
-            return date(int(explicit_year.group(1)), month, day).isoformat()
-        # A U.S. school year runs roughly Jul-Jun, not Jan-Dec - a due date
-        # in Jul-Dec belongs to the school year that started that same
-        # calendar year, one in Jan-Jun belongs to the school year that
-        # started the *previous* calendar year. So "Jun 10" captured in
-        # September isn't 3 months in the past, it's next June (the end of
-        # the school year that just started) - and "Sep 3" captured the
-        # same September genuinely is a few days in the past, not a whole
-        # year off. A day-count threshold can't distinguish these two
-        # cases correctly; the school-year boundary can.
-        school_year_start = anchor.year if anchor.month >= 7 else anchor.year - 1
-        year = school_year_start if month >= 7 else school_year_start + 1
-        return date(year, month, day).isoformat()
+        year = int(explicit_year.group(1)) if explicit_year else anchor.year
+        try:
+            return date(year, month, day).isoformat()
+        except ValueError:
+            return None
 
     return None
 
