@@ -31,6 +31,8 @@ def test_resolve_year_rolls_across_new_year():
     assert sb.resolve_year(10, 5, TODAY) == date(2026, 10, 5)
     assert sb.resolve_year(1, 10, TODAY) == date(2027, 1, 10)
     assert sb.resolve_year(2, 30, TODAY) is None
+    # Last year wasn't a leap year; this coming February is.
+    assert sb.resolve_year(2, 29, date(2027, 12, 1)) == date(2028, 2, 29)
 
 
 def test_build_items_rolls_a_stale_year_and_infers_all_day():

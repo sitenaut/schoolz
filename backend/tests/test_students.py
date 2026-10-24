@@ -88,6 +88,9 @@ async def test_gary_and_susan_share_only_common_children(monkeypatch, tmp_path):
 
         notifications = (await client.get("/notifications", headers=auth(susan))).json()
         assert any(n["type"] == "guardian_matched" for n in notifications)
+        # The guardian whose add made the match isn't told about themselves.
+        gary_notes = (await client.get("/notifications", headers=auth(gary))).json()
+        assert not any(n["type"] == "guardian_matched" for n in gary_notes)
 
         unread = (await client.get("/notifications/unread-count", headers=auth(susan))).json()["count"]
         assert unread == sum(1 for n in notifications if not n["read_at"]) > 0

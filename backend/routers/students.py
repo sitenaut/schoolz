@@ -107,9 +107,13 @@ async def add_student(
         db.add(link)
 
         # Notify every other guardian already linked to this student - the
-        # match is automatic (no approval gate), but never silent.
+        # match is automatic (no approval gate), but never silent. The query
+        # autoflushes the new link, so leave the adder out by id.
         other_links = await db.execute(
-            select(GuardianStudentLink).where(GuardianStudentLink.student_id == existing.id)
+            select(GuardianStudentLink).where(
+                GuardianStudentLink.student_id == existing.id,
+                GuardianStudentLink.guardian_user_id != user.id,
+            )
         )
         for other in other_links.scalars().all():
             db.add(

@@ -11,7 +11,8 @@ corner: "have I personally paid this" is per-account, never school-wide.
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user, get_optional_user, require_permission
@@ -257,16 +258,23 @@ async def toggle_payment_tick(
     "have I paid this" independently. Toggles: ticking an already-ticked
     payment un-ticks it."""
     payment = await _resolve_payment(school.id, grad_year, payment_id, db)
-    existing = (
+    # Delete-or-insert in statements, not read-then-write: two overlapping
+    # taps both read "not ticked" and the second insert hit the unique
+    # constraint (a 500). Now the second waits on the first's row and
+    # changes nothing.
+    removed = (
         await db.execute(
-            select(ClassPaymentTick).where(ClassPaymentTick.user_id == user.id, ClassPaymentTick.class_payment_id == payment.id)
+            delete(ClassPaymentTick)
+            .where(ClassPaymentTick.user_id == user.id, ClassPaymentTick.class_payment_id == payment.id)
+            .returning(ClassPaymentTick.id)
         )
-    ).scalar_one_or_none()
-    if existing:
-        await db.delete(existing)
-        ticked = False
-    else:
-        db.add(ClassPaymentTick(user_id=user.id, class_payment_id=payment.id, ticked_at=datetime.now(UTC)))
-        ticked = True
+    ).first()
+    ticked = removed is None
+    if ticked:
+        await db.execute(
+            pg_insert(ClassPaymentTick)
+            .values(user_id=user.id, class_payment_id=payment.id, ticked_at=datetime.now(UTC))
+            .on_conflict_do_nothing(index_elements=["user_id", "class_payment_id"])
+        )
     await db.commit()
     return ClassPaymentOut.model_validate(payment, from_attributes=True).model_copy(update={"ticked": ticked})

@@ -14,6 +14,7 @@ from sqlalchemy import select, update
 import database
 from main import app
 from models import (
+    AssignmentSuggestion,
     Bucket3Capture,
     ChildCourseGrade,
     ChildDayCycle,
@@ -26,8 +27,9 @@ from models import (
     WorkItemLateException,
 )
 from routers import bucket3 as bucket3_router
+from services import bucket3_extract as ex
 from services import help_requests as help_svc
-from services import kids_suggestions
+from services import kids_suggestions, kids_view
 
 ET = ZoneInfo("America/New_York")
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures", "bucket3")
@@ -242,6 +244,42 @@ async def test_assignment_suggestion_is_cached_and_shared_across_the_class(monke
 
 
 @pytest.mark.anyio
+async def test_an_answer_stored_while_waiting_is_read_not_bought_again(monkeypatch):
+    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
+    calls = []
+
+    async def fake_suggestion(title, course_name):
+        calls.append(title)
+        return "- mine", False
+
+    monkeypatch.setattr(kids_suggestions, "assignment_suggestion", fake_suggestion)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+        lab = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()["due"][0]
+
+        # Another request for the same assignment commits its answer while
+        # this one is past the first cache check.
+        real_limit = bucket3_router._limit_model_calls
+
+        async def limit_then_other_answers(db, user):
+            await real_limit(db, user)
+            code, section = kids_view.course_key(lab["course_name"], None)
+            db.add(
+                AssignmentSuggestion(
+                    course_code=code, course_section=section, normalized_title=ex.normalize_title(lab["title"]),
+                    suggestion_text="- theirs", declined=False, model="test",
+                )
+            )
+            await db.commit()
+
+        monkeypatch.setattr(bucket3_router, "_limit_model_calls", limit_then_other_answers)
+        res = await client.post(f"/students/{sid}/bucket3/suggestions/assignment/{lab['id']}", headers=_auth(guardian))
+        assert res.json() == {"text": "- theirs", "declined": False, "cached": True}
+        assert calls == []
+
+
+@pytest.mark.anyio
 async def test_plan_sends_only_open_items_and_503_without_key(monkeypatch):
     _freeze(monkeypatch, 2026, 9, 14, 9, 0)
     seen = {}
@@ -341,6 +379,11 @@ async def test_late_policy_drives_credit_still_earnable(monkeypatch):
             headers=_auth(guardian),
         )
         assert saved.status_code == 200, saved.text
+        # "Until the end of the marking period" needs that period on file;
+        # without one, when it closes is unknown.
+        async with database.SessionLocal() as db:
+            db.add(ChildMarkingPeriod(student_id=sid, label="MP1", start_date="2026-09-08", end_date="2026-11-06"))
+            await db.commit()
 
         todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
         [lab] = todo["missing"]
