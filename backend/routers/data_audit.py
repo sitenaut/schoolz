@@ -32,12 +32,15 @@ from services.response_cache import SingleFlightTTLCache
 router = APIRouter(prefix="/admin/audit", tags=["admin-audit"])
 public_router = APIRouter(prefix="/audit", tags=["audit"])
 
-# The public grid, per (district, detail). Each request evaluated every
-# school's data points on the API's one CPU (up to 3.5s on prod), and the
-# answer only moves when a scan finishes; `generated_at` says how old it is.
-# The admin grid is never cached - an admin re-checks it after a run-now.
-# 0 disables it; the test suite does.
+# The public grid, per (district, detail), and the catalog's per-point
+# counts. Each request evaluated every school's data points on the API's one
+# CPU (up to 3.5s on prod), and the answer only moves when a scan finishes;
+# `generated_at` says how old it is. The admin views are never cached - an
+# admin re-checks them after a run-now. 0 disables it; the test suite does.
 _PUBLIC_GRID = SingleFlightTTLCache(ttl_s=float(os.getenv("AUDIT_CACHE_TTL_S", "600")), max_total_bytes=8 * 1024 * 1024)
+# The public CSV (~1.7 MB for every school) evaluates the same, and is kept
+# apart so a download never pushes the grid out.
+_PUBLIC_CSV = SingleFlightTTLCache(ttl_s=_PUBLIC_GRID.ttl_s, max_total_bytes=4 * 1024 * 1024)
 
 
 async def _audience(request: Request, db: AsyncSession, user: User, requested: str | None) -> str:
@@ -105,9 +108,12 @@ async def _school_audit(db: AsyncSession, aud: str, school_id: str) -> dict:
             "school": _school_row(school, ctx, aud, True)}
 
 
-async def _csv(db: AsyncSession, aud: str, district_id: str | None, school_id: str | None, statuses: str | None) -> StreamingResponse:
+def _keep(statuses: str | None) -> frozenset[str] | None:
+    return frozenset(statuses.split(",")) & frozenset(audit.STATUS_LABELS) if statuses else None
+
+
+async def _csv_body(db: AsyncSession, aud: str, district_id: str | None, school_id: str | None, keep: frozenset[str] | None) -> bytes:
     schools = await _schools(db, district_id, school_id)
-    keep = set(statuses.split(",")) if statuses else None
     ctx = await audit.load_context(db, schools)
     buf = io.StringIO()
     w = csv.writer(buf)
@@ -127,8 +133,12 @@ async def _csv(db: AsyncSession, aud: str, district_id: str | None, school_id: s
             if aud == "internal":
                 row += [c["error_code"] or "", c["why_district"], c["next_district"]]
             w.writerow(row)
+    return buf.getvalue().encode()
+
+
+def _csv_response(body: bytes) -> StreamingResponse:
     stamp = datetime.now(UTC).strftime("%Y-%m-%d")
-    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
+    return StreamingResponse(iter([body]), media_type="text/csv",
                              headers={"Content-Disposition": f'attachment; filename="data-audit-{stamp}.csv"'})
 
 
@@ -183,7 +193,7 @@ async def export_csv(
     user: User = Depends(require_permission("audit.view")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await _csv(db, await _audience(request, db, user, audience), district_id, school_id, statuses)
+    return _csv_response(await _csv_body(db, await _audience(request, db, user, audience), district_id, school_id, _keep(statuses)))
 
 
 # --- public: the district wording, no account needed -------------------------
@@ -198,13 +208,22 @@ async def public_audit(district_id: str | None = None, detail: bool = False, db:
         async with database.SessionLocal() as own_db:
             return JSONResponse(jsonable_encoder(await _grid(own_db, "district", district_id, detail))).body
 
-    body = await _PUBLIC_GRID.get_or_compute((district_id, detail), compute)
+    body = await _PUBLIC_GRID.get_or_compute(("grid", district_id, detail), compute)
     return Response(content=body, media_type="application/json")
 
 
 @public_router.get("/data-points")
 async def public_data_points(district_id: str | None = None, db: AsyncSession = Depends(get_db)):
-    return await _data_points(db, "district", district_id)
+    """The public catalog page asks for this on every visit."""
+    if not _PUBLIC_GRID.enabled:
+        return await _data_points(db, "district", district_id)
+
+    async def compute() -> bytes:
+        async with database.SessionLocal() as own_db:
+            return JSONResponse(jsonable_encoder(await _data_points(own_db, "district", district_id))).body
+
+    body = await _PUBLIC_GRID.get_or_compute(("data-points", district_id), compute)
+    return Response(content=body, media_type="application/json")
 
 
 @public_router.get("/schools/{school_id}")
@@ -215,7 +234,17 @@ async def public_school_audit(school_id: str, db: AsyncSession = Depends(get_db)
 @public_router.get("/export.csv")
 async def public_export_csv(district_id: str | None = None, school_id: str | None = None, statuses: str | None = _STATUSES,
                             db: AsyncSession = Depends(get_db)):
-    return await _csv(db, "district", district_id, school_id, statuses)
+    keep = _keep(statuses)
+    # One school's rows are cheap; caching them would only let made-up ids
+    # fill the cache.
+    if school_id or not _PUBLIC_CSV.enabled:
+        return _csv_response(await _csv_body(db, "district", district_id, school_id, keep))
+
+    async def compute() -> bytes:
+        async with database.SessionLocal() as own_db:
+            return await _csv_body(own_db, "district", district_id, None, keep)
+
+    return _csv_response(await _PUBLIC_CSV.get_or_compute((district_id, keep), compute))
 
 
 # --- mutations: audit.manage -----------------------------------------------

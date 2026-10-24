@@ -335,3 +335,36 @@ async def test_sitemap_audit_and_resource_counts_are_built_once_per_key(monkeypa
     await audit_router.public_audit(district_id="d1", detail=True, db=object())
     await resources.list_categories(county=None, db=object())
     assert calls == ["sitemap", ("audit", "district", "d1", False), ("categories", "Camden"), ("audit", "district", "d1", True), ("categories", None)]
+
+
+@pytest.mark.anyio
+async def test_the_public_audit_catalog_and_csv_are_built_once_per_key(monkeypatch, no_db):
+    import routers.data_audit as audit_router
+
+    calls = []
+
+    async def data_points(db, aud, district_id):
+        calls.append(("points", district_id))
+        return {"data_points": []}
+
+    async def csv_body(db, aud, district_id, school_id, keep):
+        calls.append(("csv", district_id, school_id, keep))
+        return b"District,School\n"
+
+    monkeypatch.setattr(audit_router, "_data_points", data_points)
+    monkeypatch.setattr(audit_router, "_csv_body", csv_body)
+    monkeypatch.setattr(audit_router, "_PUBLIC_GRID", SingleFlightTTLCache(ttl_s=60))
+    monkeypatch.setattr(audit_router, "_PUBLIC_CSV", SingleFlightTTLCache(ttl_s=60))
+
+    for statuses in ("failing,stale", "stale,failing,nonsense"):
+        assert (await audit_router.public_data_points(district_id=None, db=object())).body == b'{"data_points":[]}'
+        await audit_router.public_export_csv(district_id=None, school_id=None, statuses=statuses, db=object())
+    # One school's rows are cheap and never cached, so made-up ids can't fill it.
+    for _ in range(2):
+        await audit_router.public_export_csv(district_id=None, school_id="s1", statuses=None, db=object())
+    assert calls == [
+        ("points", None),
+        ("csv", None, None, frozenset({"failing", "stale"})),
+        ("csv", None, "s1", None),
+        ("csv", None, "s1", None),
+    ]
