@@ -1,7 +1,7 @@
 import asyncio
 import gzip
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -140,10 +140,98 @@ async def test_a_render_survives_a_process_restart(monkeypatch):
     # kept separately per API machine: ~1,000 paths rendered ~3,000x a day.
     calls = await _fake_render(monkeypatch)
 
-    assert await prerender.get_prerendered_html("/schools/bret-harte") == "<html>rendered</html>"
+    slug = await _school()
+    assert await prerender.get_prerendered_html(f"/schools/{slug}") == "<html>rendered</html>"
     prerender._CACHE.clear()  # a restart, or the other machine
-    assert await prerender.get_prerendered_html("/schools/bret-harte") == "<html>rendered</html>"
+    assert await prerender.get_prerendered_html(f"/schools/{slug}") == "<html>rendered</html>"
     assert len(calls) == 1
+
+
+async def _school() -> str:
+    import uuid
+
+    import database
+    from models import School
+
+    slug = f"prerender-{uuid.uuid4().hex[:8]}"
+    async with database.SessionLocal() as db:
+        db.add(School(name=f"Prerender Elementary {slug}", slug=slug, school_type="high"))
+        await db.commit()
+    return slug
+
+
+async def _stored_paths() -> set[str]:
+    from sqlalchemy import select
+
+    import database
+    from models import PrerenderedPage
+
+    async with database.SessionLocal() as db:
+        return set((await db.execute(select(PrerenderedPage.path))).scalars().all())
+
+
+@pytest.mark.anyio
+async def test_a_made_up_school_or_season_is_never_rendered_or_stored(monkeypatch):
+    calls = await _fake_render(monkeypatch)
+    slug = await _school()
+    for path in (
+        "/schools/no-such-school",
+        "/es/schools/no-such-school/calendar",
+        f"/schools/{slug}/anything",
+        f"/schools/{slug}/class-of-1999",
+        f"/schools/{slug}/calendar/extra",
+        "/schools/",
+        "/seasonal/no-such-season",
+        "/seasonal/",
+    ):
+        with pytest.raises(prerender.PathNotAllowed):
+            await prerender.get_prerendered_html(path)
+    assert calls == []
+    assert not any("no-such" in p or p.startswith(f"/schools/{slug}/") for p in await _stored_paths())
+    assert prerender._CACHE == {}
+
+
+@pytest.mark.anyio
+async def test_real_schools_their_pages_and_seasons_are_rendered(monkeypatch):
+    from sqlalchemy import select
+
+    import database
+    from models import School, SeasonalGuide
+    from services import class_years
+
+    calls = await _fake_render(monkeypatch)
+    slug = await _school()
+    async with database.SessionLocal() as db:
+        school_id = (await db.execute(select(School.id).where(School.slug == slug))).scalar_one()
+        season = f"season{slug[-8:]}"
+        db.add(SeasonalGuide(season=season, title="Guide", publisher="A publisher", url="https://example.org/guide", starts_on=date(2026, 10, 1), ends_on=date(2026, 11, 1)))
+        await db.commit()
+    year = class_years.current_grad_years()[0]
+    for path in (f"/schools/{slug}", f"/zh/schools/{slug}/calendar", f"/schools/{slug}/class-of-{year}", f"/schools/{school_id}", f"/seasonal/{season}"):
+        assert await prerender.get_prerendered_html(path) == "<html>rendered</html>"
+    assert len(calls) == 5
+
+
+@pytest.mark.anyio
+async def test_a_stored_snapshot_of_a_made_up_path_is_dropped_at_its_refresh(monkeypatch):
+    calls = await _fake_render(monkeypatch)
+    await _store_old("/schools/stored-before-the-check")
+    # Served once more while it refreshes behind, then gone.
+    assert await prerender.get_prerendered_html("/schools/stored-before-the-check") == "<html>old</html>"
+    await _drain_renders()
+    assert "/schools/stored-before-the-check" not in await _stored_paths()
+    with pytest.raises(prerender.PathNotAllowed):
+        await prerender.get_prerendered_html("/schools/stored-before-the-check")
+    assert calls == []
+
+
+@pytest.mark.anyio
+async def test_the_in_process_copy_keeps_only_the_most_recent_pages(monkeypatch):
+    monkeypatch.setattr(prerender, "_MAX_CACHED", 2)
+    await _fake_render(monkeypatch)
+    for path in ("/lunch", "/calendar", "/lunch", "/privacy"):
+        await prerender.get_prerendered_html(path)
+    assert list(prerender._CACHE) == ["/lunch", "/privacy"]
 
 
 async def _store_old(path: str, hours: float = 8 * 24, before: datetime | None = None) -> None:  # past the 7-day TTL

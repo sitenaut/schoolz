@@ -20,12 +20,13 @@ import re
 import time
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select, union_all
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 import database
 import scraper_client
-from models import PrerenderedPage
+from models import PrerenderedPage, School, SeasonalAttraction, SeasonalGuide
+from services import class_years
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +44,11 @@ _TTL_SECONDS = 7 * 24 * 3600
 # (one render at a time per machine); the nightly job waits that out.
 _PATIENT_QUEUE_S = 90
 # path -> (expires at, as time.time(); html). Wall clock, not monotonic,
-# since entries also come from the DB with a rendered_at timestamp.
+# since entries also come from the DB with a rendered_at timestamp. Only the
+# most recently used pages: the table holds all of them, and ~1,000 pages in
+# every API process's memory is more than a machine can spare.
 _CACHE: dict[str, tuple[float, str]] = {}
+_MAX_CACHED = 200
 
 # Longer than any real route; keeps an arbitrary caller from filling the
 # table with junk keys under an allowed prefix (/schools/<anything>).
@@ -97,6 +101,52 @@ def _is_allowed(path: str) -> bool:
     return path in _ALLOWED_PATHS or path.startswith(_ALLOWED_PREFIXES)
 
 
+_CLASS_SLUG = re.compile(r"^class-of-(\d{4})$")
+
+
+async def _names_something(path: str) -> bool:
+    """Whether a path under an allowed prefix is a real page: a school (by
+    slug or id), its calendar, one of its class pages, or a season that has
+    guides or attractions. The prefix alone let anyone have a render made and
+    stored for every made-up /schools/<anything>, each holding one of the
+    three scraper slots the scans share."""
+    path = _LANG_PREFIX.sub("", path) or "/"
+    if path in _ALLOWED_PATHS:
+        return True
+    section, _, rest = path.strip("/").partition("/")
+    parts = rest.split("/") if rest else []
+    try:
+        async with database.SessionLocal() as db:
+            if section == "seasonal":
+                if len(parts) != 1:
+                    return False
+                found = union_all(
+                    select(SeasonalGuide.id).where(SeasonalGuide.season == parts[0]),
+                    select(SeasonalAttraction.id).where(SeasonalAttraction.season == parts[0]),
+                ).limit(1)
+                return (await db.execute(found)).first() is not None
+            if not 1 <= len(parts) <= 2:
+                return False
+            if len(parts) == 2 and parts[1] != "calendar":
+                match = _CLASS_SLUG.match(parts[1])
+                if not match or int(match[1]) not in class_years.page_years():
+                    return False
+            school = select(School.id).where(or_(School.id == parts[0], School.slug == parts[0]))
+            return (await db.execute(school)).first() is not None
+    except Exception:
+        # The DB is never a dependency here (see _load_stored): a crawler
+        # still gets its render if the lookup fails.
+        logger.warning("prerender_path_check_failed", extra={"path": path}, exc_info=True)
+        return True
+
+
+def _remember(path: str, entry: tuple[float, str]) -> None:
+    _CACHE.pop(path, None)
+    _CACHE[path] = entry
+    while len(_CACHE) > _MAX_CACHED:
+        _CACHE.pop(next(iter(_CACHE)))
+
+
 async def _load_stored(path: str) -> tuple[float, str] | None:
     # The DB is a cache here, never a dependency: if it's unreachable a
     # crawler still gets a fresh render.
@@ -126,6 +176,15 @@ async def _store(path: str, html: str) -> None:
         logger.warning("prerender_cache_write_failed", extra={"path": path}, exc_info=True)
 
 
+async def _forget(path: str) -> None:
+    try:
+        async with database.SessionLocal() as db:
+            await db.execute(delete(PrerenderedPage).where(PrerenderedPage.path == path))
+            await db.commit()
+    except Exception:
+        logger.warning("prerender_cache_delete_failed", extra={"path": path}, exc_info=True)
+
+
 async def get_prerendered_html(path: str) -> str:
     if len(path) > _MAX_PATH_LEN or not _is_allowed(path):
         raise PathNotAllowed(path)
@@ -135,8 +194,8 @@ async def get_prerendered_html(path: str) -> str:
         stored = await _load_stored(path)
         if stored and (not cached or stored[0] > cached[0]):
             cached = stored
-            _CACHE[path] = stored
     if cached:
+        _remember(path, cached)
         # Stale-while-revalidate: a crawler kept waiting 2-10s on an
         # uncached render is how pages ended up as Search Console "server
         # errors" - three render slots, Googlebot fetching in parallel, and
@@ -161,7 +220,7 @@ def _start_render(path: str, patient: bool = False) -> "asyncio.Task[str]":
 
 
 def _log_background_failure(task: "asyncio.Task[str]") -> None:
-    if not task.cancelled() and task.exception() is not None:
+    if not task.cancelled() and task.exception() is not None and not isinstance(task.exception(), PathNotAllowed):
         logger.warning("prerender_refresh_failed", extra={"error": repr(task.exception())})
 
 
@@ -182,6 +241,12 @@ async def rendered_at(paths: list[str]) -> dict[str, datetime]:
 
 
 async def _render(path: str, patient: bool = False) -> str:
+    if not await _names_something(path):
+        # Also drops a snapshot stored before paths were checked, so a
+        # made-up path stops being served and refreshed.
+        _CACHE.pop(path, None)
+        await _forget(path)
+        raise PathNotAllowed(path)
     # Deliberately NOT PUBLIC_WEB_URL: that's the address a human's own
     # browser can reach (http://localhost:5173 locally, since it's also
     # used in things like invite emails), but the scraper container
@@ -219,6 +284,6 @@ async def _render(path: str, patient: bool = False) -> str:
     )
 
     html = result["html"]
-    _CACHE[path] = (time.time() + _TTL_SECONDS, html)
+    _remember(path, (time.time() + _TTL_SECONDS, html))
     await _store(path, html)
     return html
