@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { initI18n } from "./i18n";
-import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem } from "./districtItems";
+import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem, saysClosed } from "./districtItems";
 import type { School, SchoolContentItem } from "../types";
 
 beforeAll(() => initI18n());
@@ -148,5 +148,40 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["Board of Education Meeting", "Day 3"])).toBeNull();
     // Still an in-service day for "Exclude district", which never hides one.
     expect(isStatusItem("Staff In-Service")).toBe(true);
+  });
+});
+
+// Same real titles as backend/tests/test_status_lows.py: the two must agree.
+describe("saysClosed", () => {
+  it("keeps a bare 'closed' closure, as most feeds word it", () => {
+    for (const t of [
+      "CLOSED - Winter Recess",
+      "Closed- Labor Day",
+      "Columbus Day, Closed",
+      "Schools & Offices Closed, Winter Recess",
+      "Juneteenth - School/Offices Closed",
+      "School - Closed: Winter Break",
+      "No School - Yom Kippur",
+    ]) {
+      expect(saysClosed(t)).toBe(true);
+      expect(dayStatusOf([t])).toBe("closed");
+    }
+  });
+
+  it("doesn't close the day for an office, a portal, a gym or a closed session", () => {
+    for (const t of [
+      "OFFICE CLOSED",
+      "GYM 2 CLOSED FOR REPAIRS",
+      "Genesis Parent & Student Portals Closed for Summer Maintenance",
+      "Weight Room Closed",
+      "Board of Education Meeting - Executive (Closed) Session",
+      "Main Office Closed",
+    ]) {
+      expect(saysClosed(t)).toBe(false);
+      expect(dayStatusOf([t])).toBeNull();
+      expect(isStatusItem(t)).toBe(false);
+    }
+    // Asked twice: the global replace pattern keeps no state between calls.
+    expect(saysClosed("OFFICE CLOSED")).toBe(false);
   });
 });

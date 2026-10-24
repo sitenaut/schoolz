@@ -16,7 +16,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import ChildMarkingPeriod, ChildScheduleBlock, School, SchoolContentItem, StudentSpecial
 from services.bell_schedule import _parse_hm, is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
-from services.school_today import LOCAL_TZ, _WEEKDAYS, _applies, _is_rotation_item, _item_date_range, _ROTATION_RE, classify_day
+from services.school_today import (
+    _ROTATION_RE,
+    _WEEKDAYS,
+    LOCAL_TZ,
+    _applies,
+    _is_rotation_item,
+    _is_status_item,
+    _item_date_range,
+    classify_day,
+    local_date,
+    starts_or_runs_from,
+)
 
 _SEMESTER_MPS = {"S1": ("MP1", "MP2"), "S2": ("MP3", "MP4")}
 
@@ -239,6 +250,9 @@ async def upcoming_days(db: AsyncSession, school: School, student_id: str, today
     scope = SchoolContentItem.school_id == school.id
     if school.district_id:
         scope = or_(scope, SchoolContentItem.district_id == school.district_id)
+    # A closure that began before today and is still running counts, as on
+    # Today: looking back a fixed week listed the end of a winter recess as
+    # school days.
     items = [
         i
         for i in (
@@ -247,12 +261,12 @@ async def upcoming_days(db: AsyncSession, school: School, student_id: str, today
                     scope,
                     SchoolContentItem.is_current.is_(True),
                     SchoolContentItem.start_date.is_not(None),
-                    SchoolContentItem.start_date >= datetime.combine(today - timedelta(days=7), datetime.min.time(), LOCAL_TZ),
+                    starts_or_runs_from(datetime.combine(today, datetime.min.time(), LOCAL_TZ)),
                     SchoolContentItem.start_date <= datetime.combine(horizon, datetime.max.time(), LOCAL_TZ),
                 )
             )
         ).scalars()
-        if _applies(i, school)
+        if _applies(i, school) and (local_date(i.start_date) >= today or _is_status_item(i))
     ]
     by_day: dict[date, list[SchoolContentItem]] = {}
     for i in items:

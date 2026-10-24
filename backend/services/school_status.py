@@ -7,9 +7,40 @@ duplicate/miscounted-day bug this module exists to prevent."""
 
 import re
 
+# The closure words, for taking them out of a title (district_calendar_pdf).
+# Whether a title says the school is closed is says_closed's job: this also
+# matches an office or a gym being closed.
 CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b", re.I)
 EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
+# Staff days and conference days: status facts, but not closures of the day
+# (school_today's classify_day doesn't count them).
+STAFF_DAY_RE = re.compile(r"\bin-?service\b|\bconference\b", re.I)
+
+# "Closed" that belongs to something other than the school day. Real titles:
+# "OFFICE CLOSED", "GYM 2 CLOSED FOR REPAIRS", "Genesis Parent & Student
+# Portals Closed for Summer Maintenance", "Weight Room Closed", "Board of
+# Education Meeting - Executive (Closed) Session". Most real closures say
+# only "closed" ("CLOSED - Winter Recess", "Columbus Day, Closed"), so a bare
+# "closed" still counts once these are taken out. Mirrored in
+# frontend/src/lib/districtItems.ts.
+NOT_THE_SCHOOL_CLOSED_RE = re.compile(
+    r"\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool"
+    r"|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b"
+    r"|\(?\bclosed\)?\s+session\b",
+    re.I,
+)
+# A school word earlier in the same clause makes it the school after all:
+# "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
+_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b", re.I)
+_BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
+
+
+def says_closed(title: str) -> bool:
+    """True when a title says there's no school that day. Matching any
+    "closed" made a newsletter's "Main Office Closed" a district-wide row
+    (is_status_title) that closed every school's Today card."""
+    return bool(_SCHOOL_CLOSED_RE.search(title) or _BARE_CLOSED_RE.search(NOT_THE_SCHOOL_CLOSED_RE.sub(" ", title)))
 
 
 def is_status_title(title: str) -> bool:
@@ -20,7 +51,7 @@ def is_status_title(title: str) -> bool:
     dismissed/delayed on the same day - even when one school's own
     newsletter phrases it with a school-specific detail (a particular
     early-dismissal time)."""
-    return bool(CLOSED_RE.search(title) or EARLY_RE.search(title) or DELAY_RE.search(title))
+    return bool(says_closed(title) or STAFF_DAY_RE.search(title) or EARLY_RE.search(title) or DELAY_RE.search(title))
 
 
 # The boilerplate a status title wraps around its actual subject. Stripping
@@ -52,7 +83,7 @@ def status_kind(title: str) -> str | None:
         return "early"
     if DELAY_RE.search(title):
         return "delay"
-    if CLOSED_RE.search(title):
+    if says_closed(title) or STAFF_DAY_RE.search(title):
         return "closed"
     return None
 
