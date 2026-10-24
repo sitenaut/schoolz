@@ -429,3 +429,37 @@ async def test_undated_district_items_of_one_category_are_not_each_others_duplic
         ).scalars().all()
     # The repeat of the same title is still a duplicate.
     assert sorted(titles) == ["Chess club starts", "Robotics team sign-ups"]
+
+
+@pytest.mark.anyio
+async def test_an_item_without_a_category_is_skipped_not_fatal(monkeypatch):
+    import uuid
+    from types import SimpleNamespace
+
+    from sqlalchemy import select
+
+    import database
+    from models import District
+    from services import content_extractor
+
+    class _Messages:
+        async def create(self, **kwargs):
+            items = [{"title": "No category given", "scope": "district"}, {"category": "program", "title": "Chess club", "scope": "district"}]
+            return SimpleNamespace(content=[SimpleNamespace(type="tool_use", input={"items": items})], stop_reason="tool_use", usage=None)
+
+    class _Client:
+        def __init__(self, **kwargs):
+            self.messages = _Messages()
+
+    monkeypatch.setattr(content_extractor, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(content_extractor, "AsyncAnthropic", _Client)
+    async with database.SessionLocal() as db:
+        district = District(name=f"Keyless District {uuid.uuid4().hex[:8]}")
+        db.add(district)
+        await db.flush()
+        newsletter = SmoreNewsletter(url=f"https://example.org/{uuid.uuid4().hex}", district_id=district.id)
+        db.add(newsletter)
+        await db.flush()
+        await content_extractor.extract_from_newsletter(db, newsletter, [SmoreBlock(position=0, block_type="text", text_content="x")])
+        titles = (await db.execute(select(SchoolContentItem.title).where(SchoolContentItem.district_id == district.id))).scalars().all()
+    assert titles == ["Chess club"]

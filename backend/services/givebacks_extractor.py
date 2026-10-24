@@ -146,6 +146,11 @@ async def extract_from_pta_page(
             record_parse_issue(_JOB_KIND, "unexpected_format", school_id=school.id, sample=str(dropped)[:200])
         items_per_position = _count_items_per_block_position(items)
         for item in items:
+            # As in content_extractor: "required" isn't enforced, and a bare
+            # item["title"] below would sink the whole scan.
+            if not item.get("title") or not item.get("category"):
+                record_parse_issue(_JOB_KIND, "unexpected_format", school_id=school.id, sample=str(item)[:200])
+                continue
             source_block = block_by_position.get(item.get("source_block_position"))
             is_all_day = "T" not in (item.get("start_date") or "")
             # A PTA page's own block is unambiguously about the item(s)

@@ -38,6 +38,7 @@ import database
 import observability
 from models import PageExtraction
 from services import haiku
+from services.tool_output import object_list, recover_spilled_input
 
 from .base import RawEvent, Source
 from .scraper import fetch_rendered_html
@@ -329,10 +330,18 @@ class TheatreSiteSource(Source):
         )
         observability.record_llm_call(self.LLM_LABEL, MODEL, response, time.perf_counter() - started)
         tool_use = next((b for b in response.content if b.type == "tool_use"), None)
-        productions = [p for p in ((tool_use.input.get(self.ITEMS_KEY) if tool_use else None) or []) if isinstance(p, dict)]
-        if response.stop_reason != "max_tokens":
+        if tool_use is None:
+            # Not "no events": stored as [], it stood for this page text on
+            # every later run. Raised, the page is a partial failure this run.
+            raise ValueError("the model made no tool call")
+        productions, dropped = object_list(recover_spilled_input(tool_use.input, self.ITEMS_KEY).get(self.ITEMS_KEY))
+        # Only an answer read whole is accepted and kept (CLAUDE.md: a
+        # model's answer is paid-for data, but only once it's correct).
+        if response.stop_reason != "max_tokens" and not dropped:
             _CACHE[key] = productions
             await _store(key, productions)
+        elif dropped:
+            logger.warning("page_events_unreadable_entries", extra={"source": self.ID_PREFIX, "dropped": len(dropped)})
         return productions
 
     async def fetch(self) -> list[RawEvent]:
