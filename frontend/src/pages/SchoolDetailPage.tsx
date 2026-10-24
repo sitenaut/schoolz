@@ -55,6 +55,10 @@ export function SchoolDetailPage() {
   const [classYears, setClassYears] = useState<SchoolClassYear[]>([]);
   const [myStudents, setMyStudents] = useState<StudentMini[]>([]);
   const [missing, setMissing] = useState(false);
+  // Not "missing": the school exists, the server just didn't answer (a
+  // deploy outlasting apiFetch's one retry). Bumping `attempt` reads again.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [editingHours, setEditingHours] = useState(false);
   const { user } = useAuth();
   const readyStart = useRef(performance.now());
@@ -72,21 +76,34 @@ export function SchoolDetailPage() {
     readyStart.current = performance.now();
     // A newer read (another school, another viewer) replaces this one.
     let current = true;
+    // The page's sections: one that fails, even on the network, is left out
+    // rather than holding the whole page on "Loading…".
+    const section = <T,>(path: string, fallback: T): Promise<T> =>
+      apiFetch(`/schools/${schoolId}/${path}`)
+        .then((r) => (r.ok ? r.json() : fallback))
+        .catch(() => fallback);
     Promise.all([
-      apiFetch(`/schools/${schoolId}/today`).then((r) => (r.ok ? r.json() : null)),
-      apiFetch(`/schools/${schoolId}/content`).then((r) => (r.ok ? r.json() : [])),
-      apiFetch(`/schools/${schoolId}/staff`).then((r) => (r.ok ? r.json() : [])),
-      apiFetch(`/schools/${schoolId}/documents`).then((r) => (r.ok ? r.json() : [])),
-      apiFetch(`/schools/${schoolId}/sacc`).then((r) => (r.ok ? r.json() : null)),
-      apiFetch(`/schools/${schoolId}/newsletters`).then((r) => (r.ok ? r.json() : [])),
-      apiFetch(`/schools/${schoolId}/transportation`).then((r) => (r.ok ? r.json() : null)),
+      // The school itself: only a 404 means there's no such school. Any other
+      // failure rejects, so the page offers Try again instead of "not found".
+      apiFetch(`/schools/${schoolId}/today`).then((r): Promise<SchoolToday> | null => {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error(`today ${r.status}`);
+        return r.json();
+      }),
+      section<SchoolContentItem[]>("content", []),
+      section<StaffMember[]>("staff", []),
+      section<SchoolDocument[]>("documents", []),
+      section<SaccProgram | null>("sacc", null),
+      section<Newsletter[]>("newsletters", []),
+      section<SchoolTransportation | null>("transportation", null),
       // Cheap for a non-high-school too (the endpoint just returns []) -
       // fetched alongside everything else rather than gated on school_type,
       // which isn't known until `today` itself resolves.
-      apiFetch(`/schools/${schoolId}/class-years`).then((r) => (r.ok ? r.json() : [])),
+      section<SchoolClassYear[]>("class-years", []),
     ]).then(([td, c, st, docs, sc, nl, tr, cy]) => {
       if (!current) return;
-      if (!td) setMissing(true);
+      setFailed(false);
+      setMissing(!td);
       setToday(td);
       setItems(c);
       setStaff(st);
@@ -96,11 +113,15 @@ export function SchoolDetailPage() {
       setTransport(tr);
       setClassYears(cy);
       if (td) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
+    }, () => {
+      if (!current) return;
+      setMissing(false);
+      setFailed(true);
     });
     return () => {
       current = false;
     };
-  }, [schoolId, viewerEpoch]);
+  }, [schoolId, viewerEpoch, attempt]);
 
   // Only fetched when signed in - which class, if any, is highlighted
   // first in the strip.
@@ -148,9 +169,28 @@ export function SchoolDetailPage() {
     });
   }, [staff, staffQuery]);
 
+  // Not on `failed`: a crawler's render would replace the stored snapshot
+  // with the error, where a render that never gets ready keeps the old one.
   usePrerenderReady(!!today || missing);
 
   if (missing) return <div className="empty">{t("School not found.")}</div>;
+  if (failed) {
+    return (
+      <div className="empty">
+        <p>{t("Couldn't load this school just now.")}</p>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            setFailed(false);
+            setAttempt((n) => n + 1);
+          }}
+        >
+          {t("Try again")}
+        </button>
+      </div>
+    );
+  }
   if (!today) return <p className="note">{t("Loading…")}</p>;
   const s = today.school;
   const district = s.district_id ? districtsById.get(s.district_id) : undefined;

@@ -1,5 +1,7 @@
 {
   "School not found.": "स्कूल नहीं मिला।",
+  "Couldn't load this school just now.": "अभी इस स्कूल की जानकारी लोड नहीं हो सकी।",
+  "Try again": "फिर कोशिश करें",
   "Loading…": "लोड हो रहा है…",
   "{{name}} ({{type}})": "{{name}} ({{type}})",
   "{{name}} in {{town}}, NJ.": "{{name}}, {{town}}, NJ।",

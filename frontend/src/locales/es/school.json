@@ -1,5 +1,7 @@
 {
   "School not found.": "No se encontró la escuela.",
+  "Couldn't load this school just now.": "No se pudo cargar esta escuela en este momento.",
+  "Try again": "Intentar de nuevo",
   "Loading…": "Cargando…",
   "{{name}} ({{type}})": "{{name}} ({{type}})",
   "{{name}} in {{town}}, NJ.": "{{name}} en {{town}}, NJ.",

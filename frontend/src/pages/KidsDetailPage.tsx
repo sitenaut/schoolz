@@ -240,6 +240,9 @@ export function KidsDetailPage() {
   const base = `/students/${studentId}/bucket3`;
   const [student, setStudent] = useState<Student | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // The server didn't answer (a deploy, a dropped connection): not the same
+  // as a student who isn't on this profile.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [now, setNow] = useState<RightNow | null>(null);
   const [todo, setTodo] = useState<Todo | null>(null);
   const [courses, setCourses] = useState<CourseProgress[]>([]);
@@ -265,11 +268,16 @@ export function KidsDetailPage() {
   const loadNow = useCallback(async () => setNow(await getJson<RightNow | null>(`${base}/right-now`, null)), [base]);
 
   const loadAll = useCallback(async () => {
-    const res = await apiFetch(`${base}/student`);
-    if (!res.ok) {
+    const res = await apiFetch(`${base}/student`).catch(() => null);
+    if (res?.status === 404 || res?.status === 403) {
       setNotFound(true);
       return;
     }
+    if (!res?.ok) {
+      setLoadFailed(true);
+      return;
+    }
+    setLoadFailed(false);
     setStudent(await res.json());
     const [a, s, g] = await Promise.all([
       getJson<Announcement[]>(`${base}/announcements`, []),
@@ -346,6 +354,25 @@ export function KidsDetailPage() {
       <div className="page">
         <div className="empty">
           This student isn't on your profile. <Link to="/family">Back to My family</Link>
+        </div>
+      </div>
+    );
+  }
+  if (loadFailed && !student) {
+    return (
+      <div className="page">
+        <div className="empty">
+          <p>Couldn't load this page just now.</p>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setLoadFailed(false);
+              void loadAll();
+            }}
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
