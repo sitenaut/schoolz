@@ -29,7 +29,7 @@ from models import ChatRateWindow, User
 from services.chat_providers import ProviderUnavailable
 from services.chat_settings import get_settings
 from services.chatbot import run_chat_turn
-from services.chatbot_personal import LocalEventTools, PersonalTools
+from services.chatbot_personal import PERSONAL_TOOL_NAMES, LocalEventTools, PersonalTools
 from services.client_ip import client_ip
 from services.i18n import request_lang
 
@@ -40,6 +40,11 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 UNAVAILABLE_REPLY = (
     "The assistant isn't available right now - please try again later. Everything else on schoolz "
     "(school pages, the calendar, lunch menus) works as usual."
+)
+
+SIGNED_OUT_REPLY = (
+    "Your sign-in has expired, so I can't go on with a conversation about your children. Sign in again to keep "
+    "asking about them, or ask me anything about schools in general."
 )
 
 _WINDOW_SECONDS = 600
@@ -71,6 +76,14 @@ async def _check_rate_limit(db: AsyncSession, ip: str) -> None:
     if count > _MAX_MESSAGES_PER_WINDOW:
         logger.warning("chat_rate_limited")
         raise HTTPException(status_code=429, detail="Too many messages - please wait a few minutes and try again.")
+
+
+def _looked_up_a_child(history: list) -> bool:
+    for message in history:
+        content = message.content if isinstance(message.content, list) else []
+        if any(b.get("type") == "tool_use" and b.get("name") in PERSONAL_TOOL_NAMES for b in content if isinstance(b, dict)):
+            return True
+    return False
 
 
 class ChatMessage(BaseModel):
@@ -108,6 +121,13 @@ async def send_chat_message(
     # Only a token get_optional_user actually accepted is forwarded - the
     # personal tools then re-present it to each route, which re-checks it.
     personal = PersonalTools(request.app, token) if user and token else None
+    if personal is None and _looked_up_a_child(body.history):
+        # A signed-in conversation whose token no longer validates: its
+        # history (tool results and the answers quoting them) holds a child's
+        # grades and schedule, which never go to the anonymous provider -
+        # the two are configured apart on purpose (chatbot skill).
+        logger.info("chat_signed_out_mid_conversation")
+        return ChatResponse(reply=SIGNED_OUT_REPLY, model=None, history=[], escalated=False)
     # Offered to every caller, signed in or not - /local-events needs no login.
     local_events = LocalEventTools(request.app)
     settings = await get_settings(db)

@@ -454,6 +454,34 @@ def _status_update(ins, status_read: bool, captured_at: datetime) -> dict:
     return {"status": case((newer, func.coalesce(ins.excluded.status, ChildWorkItem.status)), else_=ChildWorkItem.status)}
 
 
+def _identity_mismatch(student: Student, adapter: str, source_url: str, reduced_text: str) -> str | None:
+    """Why this capture is another child's, or None. Guard rail: never
+    silently attach one child's captured data to a different child's record.
+
+    Genesis is checked two ways: the studentid URL param (present on every
+    Genesis page, including gradebook pages, which don't carry the page-body
+    identity block) and, when available, the richer page-body identity.
+    Classroom has the same intent - a family with several kids can have more
+    than one child's account in one export - but only when the login email's
+    local part is numeric (this district's convention); permissive otherwise,
+    since a false block would be worse than no check."""
+    if adapter == "genesis":
+        url_student_id = ex.genesis_student_id_from_url(source_url)
+        if url_student_id and url_student_id != student.student_id:
+            return f"Capture of {source_url} is for student ID {url_student_id}, not {student.student_id} - skipped."
+        identity = ex.extract_genesis_identity(reduced_text)
+        if identity and identity.student_id != student.student_id:
+            return f"Capture of {source_url} is for student ID {identity.student_id}, not {student.student_id} - skipped."
+    elif adapter == "classroom":
+        classroom_student_id = ex.classroom_account_student_id(reduced_text)
+        if classroom_student_id and classroom_student_id != student.student_id:
+            return (
+                f"Capture of {source_url} is for a Classroom account with student ID "
+                f"{classroom_student_id}, not {student.student_id} - skipped."
+            )
+    return None
+
+
 async def _apply_capture(
     db: AsyncSession,
     student: Student,
@@ -467,25 +495,12 @@ async def _apply_capture(
     """Runs extraction for one stored-or-uploaded capture and upserts the
     results. Shared by import and reprocess so both always use the same,
     current parsing."""
-    if adapter == "genesis":
-        # Guard rail: never silently attach one child's captured data to a
-        # different child's record. Checked two ways: the studentid URL param
-        # (present on every Genesis page, including gradebook pages, which
-        # don't carry the page-body identity block) and, when available, the
-        # richer page-body identity.
-        url_student_id = ex.genesis_student_id_from_url(source_url)
-        if url_student_id and url_student_id != student.student_id:
-            counters.mismatches.append(
-                f"Capture of {source_url} is for student ID {url_student_id}, not {student.student_id} - skipped."
-            )
-            return
-        identity = ex.extract_genesis_identity(reduced_text)
-        if identity and identity.student_id != student.student_id:
-            counters.mismatches.append(
-                f"Capture of {source_url} is for student ID {identity.student_id}, not {student.student_id} - skipped."
-            )
-            return
+    mismatch = _identity_mismatch(student, adapter, source_url, reduced_text)
+    if mismatch:
+        counters.mismatches.append(mismatch)
+        return
 
+    if adapter == "genesis":
         page_kind = ex.classify_page(adapter, source_url).pattern
         if page_kind == "genesis:gradebook-course":
             await _apply_course_grades(db, student, source_url, reduced_text, captured_at, course_map, counters)
@@ -505,19 +520,6 @@ async def _apply_capture(
         return
 
     if adapter == "classroom":
-        # Same guard-rail intent: a family with several kids can have more
-        # than one child's Classroom account in one export. Only enforced
-        # when the login email's local part is numeric (this district's
-        # convention) - permissive otherwise, since a false block would be
-        # worse than no check.
-        classroom_student_id = ex.classroom_account_student_id(reduced_text)
-        if classroom_student_id and classroom_student_id != student.student_id:
-            counters.mismatches.append(
-                f"Capture of {source_url} is for a Classroom account with student ID "
-                f"{classroom_student_id}, not {student.student_id} - skipped."
-            )
-            return
-
         page_kind = ex.classify_page(adapter, source_url).pattern
         if page_kind in (
             "classroom:/u/N/c/:courseId/a/:id/details",
@@ -795,7 +797,7 @@ async def _import_for_student(
     course_map = await _course_map_for(db, student, captures)
 
     counters = _Counters()
-    skipped_duplicate = 0
+    skipped_duplicate = mismatched = 0
     page_kinds_seen: set[str] = set()
     seen: dict[str, datetime] = {}
 
@@ -804,6 +806,14 @@ async def _import_for_student(
         source_url = envelope.get("source_url", "")
         reduced_text = envelope.get("reduced_text", "")
         if not adapter or not source_url or envelope.get("status") == "login_wall":
+            continue
+        # Before anything is kept: another child's page was stored under this
+        # one, counted as this child's fresh look ("Updated just now"), and a
+        # re-upload of it then passed as a duplicate instead of a mismatch.
+        mismatch = _identity_mismatch(student, adapter, source_url, reduced_text)
+        if mismatch:
+            counters.mismatches.append(mismatch)
+            mismatched += 1
             continue
 
         page_kinds_seen.add(ex.classify_page(adapter, source_url).pattern)
@@ -863,7 +873,7 @@ async def _import_for_student(
         await _record_sync(db, student.id, seen=seen)
 
     return Bucket3ImportResult(
-        captures_processed=len(captures) - skipped_duplicate,
+        captures_processed=len(captures) - skipped_duplicate - mismatched,
         captures_skipped_duplicate=skipped_duplicate,
         schedule_blocks_upserted=counters.schedule,
         work_items_upserted=counters.work_items,

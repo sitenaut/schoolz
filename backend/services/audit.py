@@ -83,6 +83,8 @@ AUDITED: dict[tuple[str, str], str] = {
 
 # Path parameters that are secrets in their own right: kept out of the target.
 _SECRET_PARAMS = frozenset({"token"})
+# Path parameters that are a credential: an invite token, a device-flow code.
+SECRET_PATH_PARAMS = frozenset({"token", "user_code"})
 _MAX_TARGET_VALUE = 200
 
 
