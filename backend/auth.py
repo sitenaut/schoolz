@@ -14,6 +14,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWKClient
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
@@ -236,10 +237,7 @@ async def _supabase_user(token: str) -> dict:
     return {"sub": body["id"], "email": body.get("email")}
 
 
-async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
-    supabase_user_id = claims["sub"]
-    email = claims.get("email", "")
-
+async def _find_supabase_user(db: AsyncSession, supabase_user_id: str, email: str) -> User | None:
     result = await db.execute(select(User).where(User.supabase_user_id == supabase_user_id))
     user = result.scalar_one_or_none()
     if user:
@@ -254,6 +252,16 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
             await db.refresh(user)
             logger.info("supabase_identity_linked_existing_user", extra={"user_id": user.id})
             return user
+    return None
+
+
+async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
+    supabase_user_id = claims["sub"]
+    email = claims.get("email", "")
+
+    user = await _find_supabase_user(db, supabase_user_id, email)
+    if user:
+        return user
 
     base_username = (email.split("@")[0] if email else supabase_user_id)[:56] or "user"
     candidate = base_username
@@ -271,8 +279,15 @@ async def _get_or_create_supabase_user(db: AsyncSession, claims: dict) -> User:
     db.add(user)
     try:
         await db.commit()
-    except Exception:
+    except IntegrityError:
         await db.rollback()
+        # A first sign-in sends several requests at once, and all of them
+        # missed above: if another one created this person in the meantime,
+        # that's the row (a new username would hit the same email).
+        user = await _find_supabase_user(db, supabase_user_id, email)
+        if user:
+            return user
+        # Otherwise the username was taken between the check and the insert.
         candidate = f"{base_username[:50]}_{secrets.token_hex(4)}"
         user = User(
             email=email or f"{supabase_user_id}@unknown.local",

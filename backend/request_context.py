@@ -23,6 +23,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from services.client_ip import client_ip
+
 logger = logging.getLogger(__name__)
 
 HEADER = "X-Request-ID"
@@ -30,6 +32,9 @@ _HEADER_BYTES = HEADER.lower().encode()
 _SANE = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
 
 request_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("request_id", default=None)
+# The caller's address (services/client_ip), for code that acts on a request
+# without holding it: the MCP tools, run inside a /mcp or /chat request.
+caller_ip_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("caller_ip", default=None)
 
 CODES = {
     400: "bad_request",
@@ -79,6 +84,7 @@ class RequestIdMiddleware:
         rid = incoming if _SANE.match(incoming) else uuid.uuid4().hex
         scope.setdefault("state", {})["request_id"] = rid
         token = request_id_var.set(rid)
+        ip_token = caller_ip_var.set(client_ip(Request(scope)))
 
         async def send_with_id(message: Message) -> None:
             if message["type"] == "http.response.start":
@@ -90,6 +96,7 @@ class RequestIdMiddleware:
         try:
             await self.app(scope, receive, send_with_id)
         finally:
+            caller_ip_var.reset(ip_token)
             request_id_var.reset(token)
 
 

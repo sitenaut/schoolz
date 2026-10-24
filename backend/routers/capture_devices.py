@@ -13,8 +13,10 @@ Same shape as the admin API-key device flow (routers/admin_api_keys.py),
 for guardians: nothing to pick, and approved by the person whose account it
 is, not by a super admin.
 """
+import hashlib
 import json
 import logging
+import os
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -29,6 +31,7 @@ from auth import generate_capture_key, get_current_user, hash_api_key, require_p
 from database import get_db
 from models import CaptureDevice, CaptureDeviceRequest, CaptureDiagnostic, ContactMessage, User
 from services import audit
+from services.client_ip import client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +41,24 @@ REQUEST_TTL = timedelta(minutes=10)
 # After Connect, time left for the extension to collect its key.
 COLLECT_WINDOW = timedelta(minutes=5)
 POLL_INTERVAL_S = 3
-# Unauthenticated start endpoint: bounds how many open requests anyone can pile up.
-MAX_PENDING_REQUESTS = 200
+# Unauthenticated start endpoint: bounds how many open requests can pile up,
+# per connection and in all. The per-connection cap is what keeps one script
+# from filling the queue and refusing every family's Connect.
+MAX_PENDING_REQUESTS = 1000
+MAX_PENDING_REQUESTS_PER_IP = 10
 # No vowels (no accidental words) and no 0/O/1/I lookalikes.
 _USER_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ"
 CONNECT_PATH = "/connect"
+
+
+def requester_ip_hash(ip: str | None) -> str | None:
+    """The connection a Connect came from, as the same reversible code the
+    other rate limits keep (CLAUDE.md, "IP codes are reversible on purpose"),
+    never the address. Gone with the request, a day after it expires."""
+    if not ip:
+        return None
+    salt = os.getenv("JWT_SECRET", "schoolz-capture-salt")
+    return hashlib.sha256(f"{salt}:capture-connect:{ip}".encode()).hexdigest()
 
 
 def _new_user_code() -> str:
@@ -98,17 +114,18 @@ class CaptureDeviceOut(BaseModel):
 
 
 @router.post("/start", response_model=CaptureStartOut)
-async def start(payload: CaptureStartIn, db: AsyncSession = Depends(get_db)):
+async def start(payload: CaptureStartIn, request: Request, db: AsyncSession = Depends(get_db)):
     now = datetime.now(UTC)
+    ip_code = requester_ip_hash(client_ip(request))
     await db.execute(delete(CaptureDeviceRequest).where(CaptureDeviceRequest.expires_at < now - timedelta(days=1)))
-    open_count = (
+    open_count, from_ip = (
         await db.execute(
-            select(func.count())
+            select(func.count(), func.count().filter(CaptureDeviceRequest.requester_ip_hash == ip_code))
             .select_from(CaptureDeviceRequest)
             .where(CaptureDeviceRequest.status == "pending", CaptureDeviceRequest.expires_at > now)
         )
-    ).scalar_one()
-    if open_count >= MAX_PENDING_REQUESTS:
+    ).one()
+    if open_count >= MAX_PENDING_REQUESTS or (ip_code and from_ip >= MAX_PENDING_REQUESTS_PER_IP):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many open connect requests; try again in a few minutes")
 
     device_code = secrets.token_urlsafe(32)
@@ -120,6 +137,7 @@ async def start(payload: CaptureStartIn, db: AsyncSession = Depends(get_db)):
             user_code=user_code,
             device_code_hash=hash_api_key(device_code),
             client_name=payload.client_name.strip(),
+            requester_ip_hash=ip_code,
             status="pending",
             created_at=now,
             expires_at=now + REQUEST_TTL,

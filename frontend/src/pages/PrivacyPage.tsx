@@ -211,7 +211,9 @@ export function PrivacyPage() {
               <a href="/backpack-capture/privacy">Backpack Capture</a> browser extension. The pages are read by our
               own code, not by an AI service, into your child's due/missing/done lists and grades, which every
               guardian linked to that child — and the child, if they have their own login — can see. We keep a
-              trimmed copy of each page you published so it can be read again when we improve the reader.
+              trimmed copy of each page you published so it can be read again when we improve the reader. While a
+              computer is connecting the extension, the connect request keeps a code made from your IP address, so
+              no one connection can flood them; it's deleted a day after the request runs out.
             </td>
           </tr>
           <tr>
@@ -356,9 +358,10 @@ export function PrivacyPage() {
             </td>
             <td>Our database</td>
             <td>
-              Only if you use the <a href="/upload">upload form</a>, and unlike the survey this is your{" "}
-              <strong>real IP address</strong>. It's the one place a stranger can put a file on this site, so we
-              keep a record of who sent what to protect the families who use it. The record is kept even if the
+              Only if you use the <a href="/upload">upload form</a>, or ask the assistant to send us a link for you,
+              and unlike the survey this is your <strong>real IP address</strong>. It's the one place a stranger can
+              put a file or link on this site, so we keep a record of who sent what to protect the families who use
+              it. The record is kept even if the
               upload is deleted or refused, is seen only by the people who run schoolz, and is handed to law
               enforcement or the National Center for Missing &amp; Exploited Children if someone uploads illegal
               content. It isn't used for advertising or to track you around the site. That form also runs
@@ -378,8 +381,8 @@ export function PrivacyPage() {
         came from.
       </p>
       <p>
-        We keep your real IP address only when you send something through the upload form (above); just visiting
-        that page doesn't record it. Everywhere else this page says we keep a code made from your IP address
+        We keep your real IP address only when you send something through the upload form (above), or ask the
+        assistant to send us a link for you; just visiting that page, or chatting, doesn't record it. Everywhere else this page says we keep a code made from your IP address
         instead, and that code isn't one-way: the people who run schoolz can turn it back into the address. We do
         that only to deal with illegal content or abuse of the site, or when the law requires it.
       </p>

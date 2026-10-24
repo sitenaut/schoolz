@@ -50,6 +50,7 @@ from fastapi import FastAPI
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from request_context import caller_ip_var
 from services.app_help import app_help
 from services.public_url import check_public_page
 from services.school_today import classify_day, local_date, other_grades_only
@@ -912,7 +913,15 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         if submitter_email:
             form["submitter_email"] = submitter_email[:255]
 
-        response = await app_client.post("/submissions", data=form)
+        # /submissions limits and records submissions per connection, and an
+        # in-process request's only address is the transport's peer - by
+        # default 127.0.0.1, one bucket shared by every MCP and chat user.
+        # So the outer caller's address goes in as that peer.
+        peer = (caller_ip_var.get() or "127.0.0.1", 0)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app, client=peer), base_url="http://schoolz-internal"
+        ) as submit_client:
+            response = await submit_client.post("/submissions", data=form)
         if response.status_code >= 400:
             return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text}
 

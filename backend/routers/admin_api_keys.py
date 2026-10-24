@@ -32,8 +32,11 @@ DEVICE_REQUEST_TTL = timedelta(minutes=10)
 # After approval, time left for the script to collect the key.
 DEVICE_COLLECT_WINDOW = timedelta(minutes=5)
 DEVICE_POLL_INTERVAL_S = 3
-# Unauthenticated start endpoint: bounds how many open requests anyone can pile up.
-MAX_PENDING_DEVICE_REQUESTS = 25
+# Unauthenticated start endpoint: bounds how many open requests can pile up,
+# per connection and in all. The per-connection cap is what keeps one script
+# from filling the queue and refusing every real login for ten minutes.
+MAX_PENDING_DEVICE_REQUESTS = 100
+MAX_PENDING_DEVICE_REQUESTS_PER_IP = 3
 # No vowels (no accidental words) and no 0/O/1/I lookalikes.
 _USER_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ"
 
@@ -211,13 +214,15 @@ class DeviceTokenOut(BaseModel):
 @device_router.post("/start", response_model=DeviceStartOut)
 async def device_start(payload: DeviceStartIn, request: Request, db: AsyncSession = Depends(get_db)):
     now = datetime.now(UTC)
+    ip = client_ip(request)
     await db.execute(delete(ApiKeyRequest).where(ApiKeyRequest.expires_at < now - timedelta(days=1)))
-    open_count = (
+    open_now = (ApiKeyRequest.status == "pending", ApiKeyRequest.expires_at > now)
+    open_count, from_ip = (
         await db.execute(
-            select(func.count()).select_from(ApiKeyRequest).where(ApiKeyRequest.status == "pending", ApiKeyRequest.expires_at > now)
+            select(func.count(), func.count().filter(ApiKeyRequest.requested_ip == ip)).select_from(ApiKeyRequest).where(*open_now)
         )
-    ).scalar_one()
-    if open_count >= MAX_PENDING_DEVICE_REQUESTS:
+    ).one()
+    if open_count >= MAX_PENDING_DEVICE_REQUESTS or (ip and from_ip >= MAX_PENDING_DEVICE_REQUESTS_PER_IP):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many open login requests; try again in a few minutes")
 
     device_code = secrets.token_urlsafe(32)
@@ -229,7 +234,7 @@ async def device_start(payload: DeviceStartIn, request: Request, db: AsyncSessio
             user_code=user_code,
             device_code_hash=hash_api_key(device_code),
             client_name=payload.client_name.strip(),
-            requested_ip=client_ip(request),
+            requested_ip=ip,
             status="pending",
             created_at=now,
             expires_at=now + DEVICE_REQUEST_TTL,
