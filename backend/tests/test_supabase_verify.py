@@ -1,6 +1,6 @@
-"""Supabase token checks (SZ-12): only an unreachable key set or an unknown
-signing key falls back to asking Supabase; an expired or forged token is a
-401 on the spot, without a round trip."""
+"""Supabase token checks (SZ-12): only an unreachable key set falls back to
+asking Supabase; an expired or forged token, or one naming a key the set
+doesn't have, is a 401 on the spot, without a round trip."""
 import os
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
@@ -41,10 +41,18 @@ def fallback_calls(monkeypatch):
     return calls
 
 
-async def test_unknown_signing_key_asks_supabase(monkeypatch, fallback_calls):
-    monkeypatch.setattr(auth, "_jwks_client", _Jwks(jwt.PyJWKClientError("no matching kid")))
+async def test_an_unreachable_key_set_asks_supabase(monkeypatch, fallback_calls):
+    monkeypatch.setattr(auth, "_jwks_client", _Jwks(jwt.PyJWKClientConnectionError("timed out")))
     assert await auth._verify_supabase_token("t") == {"sub": "from-supabase"}
     assert fallback_calls == ["t"]
+
+
+async def test_an_unknown_signing_key_is_refused_locally(monkeypatch, fallback_calls):
+    monkeypatch.setattr(auth, "_jwks_client", _Jwks(jwt.PyJWKClientError('Unable to find a signing key that matches: "x"')))
+    with pytest.raises(HTTPException) as err:
+        await auth._verify_supabase_token("t")
+    assert err.value.status_code == 401
+    assert fallback_calls == []
 
 
 async def test_expired_or_garbage_tokens_are_refused_locally(monkeypatch, fallback_calls):

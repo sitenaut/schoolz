@@ -57,5 +57,5 @@ async def test_school_newsletters_list_newest_content_first():
         db.add(SmoreBlock(newsletter_id=old.id, position=0, block_type="text", content_hash="a", first_seen_at=now - timedelta(days=30)))
         db.add(SmoreBlock(newsletter_id=new.id, position=0, block_type="text", content_hash="b", first_seen_at=now - timedelta(days=3)))
         await db.flush()
-        out = await list_school_newsletters(school=school, db=db)
+        out = await list_school_newsletters(request=None, school=school, user=None, db=db)
     assert [n.label for n in out] == ["new", "old"]

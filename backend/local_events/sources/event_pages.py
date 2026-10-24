@@ -22,6 +22,8 @@ from zoneinfo import ZoneInfo
 import httpx
 from rapidfuzz import fuzz
 
+from services.public_url import PUBLIC_ONLY
+
 from .base import RawEvent
 from .flyers import flyer_text
 from .theatre import _UA, TheatreSiteSource, to_raw_events
@@ -121,7 +123,7 @@ async def read_posts(
     date an earlier post gave."""
     events: list[RawEvent] = []
     gone: list[tuple[str, date]] = []
-    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": _UA}) as client:
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": _UA}, event_hooks=PUBLIC_ONLY) as client:
         for post in posts:
             flyers = []
             for image in post.images[:_FLYERS_PER_POST]:

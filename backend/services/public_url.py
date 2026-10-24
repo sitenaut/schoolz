@@ -5,6 +5,10 @@ anonymous chatbot) checks that a submitted link is live by requesting it
 from the API machine. Without this, that request could reach anything on
 Fly's private network (schoolz-scraper.internal, 127.0.0.1, fdaa::) and the
 reply's status said what answered: a port and service scanner.
+
+Files named by scraped pages (a newsletter's image, a flyer, a PDF) are
+fetched the same way, from URLs that newsletter authors, PTA pages and
+admins choose: those clients take `event_hooks=PUBLIC_ONLY`.
 """
 
 import asyncio
@@ -38,12 +42,34 @@ async def public_url_error(url: str) -> str | None:
         return "This URL isn't on the public internet"
     try:
         port = parts.port or (443 if parts.scheme == "https" else 80)
-        infos = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
+        addresses = await _addresses(host, port)
     except (socket.gaierror, ValueError, UnicodeError):
         return "Could not find this URL's website - double-check it's correct and publicly accessible"
-    if not infos or not all(_is_public(info[4][0]) for info in infos):
+    if not addresses or not all(_is_public(address) for address in addresses):
         return "This URL isn't on the public internet"
     return None
+
+
+async def _addresses(host: str, port: int) -> list[str]:
+    infos = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    return [info[4][0] for info in infos]
+
+
+class NotPublicURL(httpx.RequestError):
+    """A request refused before it was sent: its address isn't public. A
+    RequestError, so callers that handle a failed fetch handle this too."""
+
+
+async def refuse_private(request: httpx.Request) -> None:
+    """An httpx request hook. httpx runs request hooks before every redirect
+    hop as well, so a public URL that redirects into the private network is
+    stopped at that hop, not after it answered."""
+    problem = await public_url_error(str(request.url))
+    if problem:
+        raise NotPublicURL(f"{problem}: {request.url.host}", request=request)
+
+
+PUBLIC_ONLY = {"request": [refuse_private]}
 
 
 async def check_public_page(client: httpx.AsyncClient, url: str) -> str | None:

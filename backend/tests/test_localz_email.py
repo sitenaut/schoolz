@@ -11,11 +11,11 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 
 import database
 from models import OutboundEmail, ProviderMembership, ResourceService
-from resources import nj211, portal
+from resources import nj211, portal, portal_mail
 from scheduler.jobs import email_outbox, resources_checkin
 from services import mailer
 from tests.test_provider_portal import ALL_TICKED, _approved_listing, _client, _people, _submission
@@ -170,6 +170,21 @@ async def test_a_claim_can_skip_the_call_and_verify_with_a_code_from_the_source_
         assert (await client.post(f"/provider-portal/listings/{sid}/verify", json={"code": code}, headers=provider)).json() == {"verified": True}
         listing = next(x for x in (await client.get("/provider-portal/listings", headers=provider)).json() if x["id"] == sid)
         assert listing["verified"] is True and listing["verify_by_email"] is None
+
+
+async def test_a_code_check_counts_the_tries_other_requests_made_meanwhile(outbox):
+    # Guesses sent in parallel each load the membership before the others count
+    # theirs. The check re-reads the row under a lock, so it sees every try.
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sid = await _claimed_with_source_email(client, provider, reviewer, {**ALL_TICKED, "connected": False})
+        assert (await client.post(f"/provider-portal/listings/{sid}/verify/send", headers=provider)).status_code == 202
+    async with database.SessionLocal() as db:
+        membership = (await db.execute(select(ProviderMembership).where(ProviderMembership.service_id == sid))).scalar_one()
+        assert membership.code_attempts == 0
+        await db.execute(text("UPDATE provider_memberships SET code_attempts = :n WHERE id = :id"),
+                         {"n": portal_mail.CODE_ATTEMPTS, "id": membership.id})
+        assert await portal_mail.check_code(db, membership, "123456") == "Too many tries - ask for a new code."
 
 
 async def test_codes_are_limited_expire_and_never_go_to_a_typed_address(outbox):

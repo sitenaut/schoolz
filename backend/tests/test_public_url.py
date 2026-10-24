@@ -1,7 +1,8 @@
 import httpx
 import pytest
 
-from services.public_url import check_public_page, public_url_error
+import scraper_client
+from services.public_url import PUBLIC_ONLY, NotPublicURL, check_public_page, public_url_error
 
 
 @pytest.mark.anyio
@@ -52,3 +53,25 @@ async def test_a_public_redirect_is_followed_and_a_404_reported():
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler), follow_redirects=False) as client:
         assert "404" in await check_public_page(client, "http://93.184.216.34/old")
         assert await check_public_page(client, "http://93.184.216.34/fine") is None
+
+
+@pytest.mark.anyio
+async def test_a_scraped_file_fetch_stops_at_a_private_hop_before_requesting_it():
+    # A newsletter image or flyer URL is chosen by whoever wrote the page.
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        if request.url.host == "93.184.216.34":
+            return httpx.Response(302, headers={"location": "http://169.254.169.254/latest/meta-data/"})
+        return httpx.Response(200, content=b"not for you")
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), follow_redirects=True, event_hooks=PUBLIC_ONLY
+    ) as client:
+        with pytest.raises(NotPublicURL):
+            await client.get("http://93.184.216.34/flyer.png")
+        assert seen == ["http://93.184.216.34/flyer.png"]
+
+    with pytest.raises(httpx.RequestError):
+        await scraper_client.get_bytes("http://127.0.0.1:8765/health/deep")

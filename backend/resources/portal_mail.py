@@ -171,8 +171,11 @@ def send_code(db: AsyncSession, membership: ProviderMembership, row: ResourceSer
                  expires_in=timedelta(minutes=CODE_MINUTES))
 
 
-def check_code(membership: ProviderMembership, code: str) -> str | None:
-    """None when it's right, else why not. Counts the try either way."""
+async def check_code(db: AsyncSession, membership: ProviderMembership, code: str) -> str | None:
+    """None when it's right, else why not. Counts the try either way, with the
+    row locked until the caller commits: read unlocked, guesses sent in
+    parallel each saw the same count and each got a try."""
+    await db.refresh(membership, with_for_update=True)
     if not membership.code_hash or not membership.code_expires_at or membership.code_expires_at < mailer._now():
         return "That code has expired - ask for a new one."
     if membership.code_attempts >= CODE_ATTEMPTS:
