@@ -51,6 +51,10 @@ MAX_TOOL_ROUNDS = 4
 # turns that fit (trim_history). The widget replays the full history every
 # turn, and a turn with tools adds 4-12 messages.
 MAX_HISTORY_MESSAGES = 24
+# ...and in characters of JSON. The history is whatever the caller sends, so
+# without this one anonymous request could bill ~150k input tokens however
+# short its message is. A long, tool-heavy real conversation fits.
+MAX_HISTORY_CHARS = 150_000
 
 # lang -> (name of the site version, how to answer)
 _LANG_REPLY = {
@@ -207,16 +211,21 @@ def _asks_for_tools(message: dict[str, Any]) -> bool:
 
 
 def trim_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """The most recent whole turns that fit in MAX_HISTORY_MESSAGES, cut only
-    where a user's own message starts, so a tool_use never loses its
-    tool_result. A turn left unfinished (an unanswered tool_use at the end,
-    which the round cap used to leave) is dropped: every later turn sent with
-    it failed as "the assistant isn't available"."""
+    """The most recent whole turns that fit in MAX_HISTORY_MESSAGES and
+    MAX_HISTORY_CHARS, cut only where a user's own message starts, so a
+    tool_use never loses its tool_result. A turn left unfinished (an
+    unanswered tool_use at the end, which the round cap used to leave) is
+    dropped: every later turn sent with it failed as "the assistant isn't
+    available"."""
     starts = [i for i, m in enumerate(history) if _is_turn_start(m)]
     if history and _asks_for_tools(history[-1]):
         history = history[: starts[-1]] if starts else []
         starts = starts[:-1]
-    return next((history[i:] for i in starts if len(history) - i <= MAX_HISTORY_MESSAGES), [])
+    sizes = [len(json.dumps(m, default=str)) for m in history]
+    return next(
+        (history[i:] for i in starts if len(history) - i <= MAX_HISTORY_MESSAGES and sum(sizes[i:]) <= MAX_HISTORY_CHARS),
+        [],
+    )
 
 
 async def run_chat_turn(

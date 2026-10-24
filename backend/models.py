@@ -193,6 +193,8 @@ class CaptureDeviceRequest(Base):
     user_code: Mapped[str] = mapped_column(String(16), unique=True, index=True, nullable=False)
     device_code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     client_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # routers/capture_devices.requester_ip_hash: the per-connection cap on open requests.
+    requester_ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # pending | approved | denied | issued
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)

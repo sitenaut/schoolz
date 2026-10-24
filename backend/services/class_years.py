@@ -12,6 +12,7 @@ docs/HS_CLASS_PAGES_DESIGN.md), so there's nothing for a form to do.
 from datetime import date
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import SchoolClassYear
@@ -31,6 +32,9 @@ CLASS_PAGE_SOURCES = ("hs_activities_site", "hs_announcements", "school_ics")
 # school-year boundary used throughout this codebase (marking periods,
 # CourseDisplayPreference's academic-year keying, etc).
 _LABELS = {1: "Seniors", 2: "Juniors", 3: "Sophomores", 4: "Freshmen"}
+# How many classes past the seniors and before the freshmen a page reached by
+# URL still resolves for (page_years).
+PAGE_YEARS_EITHER_SIDE = 6
 
 
 def academic_year_start(reference: date | None = None) -> int:
@@ -54,32 +58,44 @@ def default_label(grad_year: int, reference: date | None = None) -> str:
     return _LABELS.get(grad_year - start, f"Class of {grad_year}")
 
 
+def page_years(reference: date | None = None) -> range:
+    """The classes a page reached by URL may be created for: the four
+    enrolled, recent graduates, and the next classes coming up. A public GET
+    creates the row, so a crawler walking /class-years/1..5000 must not
+    leave thousands of rows behind."""
+    years = current_grad_years(reference)
+    return range(years[0] - PAGE_YEARS_EITHER_SIDE, years[-1] + PAGE_YEARS_EITHER_SIDE + 1)
+
+
+async def _insert_if_missing(db: AsyncSession, school_id: str, grad_year: int) -> None:
+    # Two first visits at once both find no row; the second insert must not 500.
+    await db.execute(
+        pg_insert(SchoolClassYear)
+        .values(school_id=school_id, grad_year=grad_year)
+        .on_conflict_do_nothing(constraint="uq_school_class_year")
+    )
+
+
 async def ensure_current_class_years(db: AsyncSession, school_id: str) -> list[SchoolClassYear]:
     """Lazily creates the four in-progress classes' rows the first time
     they're asked for - mirrors the _ensure_*_job convention used
     elsewhere in this codebase (routers/schools.py), just for a plain row
     instead of a ScheduledJob. Returns them in senior-first order."""
-    existing = (await db.execute(select(SchoolClassYear).where(SchoolClassYear.school_id == school_id))).scalars().all()
-    by_year = {c.grad_year: c for c in existing}
-    created = False
-    for year in current_grad_years():
-        if year not in by_year:
-            row = SchoolClassYear(school_id=school_id, grad_year=year)
-            db.add(row)
-            by_year[year] = row
-            created = True
-    if created:
-        await db.flush()
-    return [by_year[y] for y in current_grad_years()]
+    years = current_grad_years()
+    query = select(SchoolClassYear).where(SchoolClassYear.school_id == school_id, SchoolClassYear.grad_year.in_(years))
+    by_year = {c.grad_year: c for c in (await db.execute(query)).scalars().all()}
+    missing = [y for y in years if y not in by_year]
+    if missing:
+        for year in missing:
+            await _insert_if_missing(db, school_id, year)
+        by_year = {c.grad_year: c for c in (await db.execute(query)).scalars().all()}
+    return [by_year[y] for y in years]
 
 
 async def get_or_create_class_year(db: AsyncSession, school_id: str, grad_year: int) -> SchoolClassYear:
-    row = (
-        await db.execute(select(SchoolClassYear).where(SchoolClassYear.school_id == school_id, SchoolClassYear.grad_year == grad_year))
-    ).scalar_one_or_none()
+    query = select(SchoolClassYear).where(SchoolClassYear.school_id == school_id, SchoolClassYear.grad_year == grad_year)
+    row = (await db.execute(query)).scalar_one_or_none()
     if row:
         return row
-    row = SchoolClassYear(school_id=school_id, grad_year=grad_year)
-    db.add(row)
-    await db.flush()
-    return row
+    await _insert_if_missing(db, school_id, grad_year)
+    return (await db.execute(query)).scalar_one()

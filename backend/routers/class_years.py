@@ -8,7 +8,7 @@ see CLAUDE.md). The payment-tick endpoints are the one authenticated
 corner: "have I personally paid this" is per-account, never school-wide.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user, get_optional_user, require_permission
 from database import get_db
 from models import ClassPayment, ClassPaymentTick, School, SchoolClassYear, SchoolContentItem, StaffMember, User
+from routers.schools import resolve_school
 from schemas import (
     ClassPaymentCreate,
     ClassPaymentOut,
@@ -26,10 +27,15 @@ from schemas import (
     SchoolContentItemOut,
     StaffMiniOut,
 )
-from services.class_years import CLASS_PAGE_SOURCES, default_label, ensure_current_class_years, get_or_create_class_year
+from services.class_years import (
+    CLASS_PAGE_SOURCES,
+    default_label,
+    ensure_current_class_years,
+    get_or_create_class_year,
+    page_years,
+)
 from services.content_translation import localize_outs
 from services.i18n import request_lang
-from routers.schools import resolve_school
 
 router = APIRouter(prefix="/schools/{school_id}/class-years", tags=["class-years"])
 
@@ -70,18 +76,22 @@ async def list_class_years(school: School = Depends(resolve_school), db: AsyncSe
     return [await _to_out(db, c) for c in class_years]
 
 
-async def _resolve_class_year(school_id: str, grad_year: int, db: AsyncSession) -> SchoolClassYear:
-    """Reached-directly-by-URL never 404s - a link to a class two years
-    out (already graduated) or one not yet a freshman still resolves,
-    consistent with School.slug never breaking an old link."""
-    row = await get_or_create_class_year(db, school_id, grad_year)
+async def _resolve_class_year(school: School, grad_year: int, db: AsyncSession) -> SchoolClassYear:
+    """Reached directly by URL, a class a few years either side of the
+    enrolled four still resolves - a link to a class two years out (already
+    graduated) or one not yet a freshman - consistent with School.slug never
+    breaking an old link. Anything further out, or at a school with no class
+    pages, is a 404: this is a public GET that creates the row."""
+    if school.school_type != "high" or grad_year not in page_years():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No class page for that year")
+    row = await get_or_create_class_year(db, school.id, grad_year)
     await db.commit()
     return row
 
 
 @router.get("/{grad_year}", response_model=SchoolClassYearOut)
 async def get_class_year(grad_year: int, school: School = Depends(resolve_school), db: AsyncSession = Depends(get_db)):
-    class_year = await _resolve_class_year(school.id, grad_year, db)
+    class_year = await _resolve_class_year(school, grad_year, db)
     return await _to_out(db, class_year)
 
 
@@ -148,7 +158,7 @@ async def list_class_payments(
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
-    class_year = await _resolve_class_year(school.id, grad_year, db)
+    class_year = await _resolve_class_year(school, grad_year, db)
     payments = (
         (await db.execute(select(ClassPayment).where(ClassPayment.school_class_year_id == class_year.id).order_by(ClassPayment.sequence)))
         .scalars()
@@ -256,7 +266,7 @@ async def toggle_payment_tick(
         await db.delete(existing)
         ticked = False
     else:
-        db.add(ClassPaymentTick(user_id=user.id, class_payment_id=payment.id, ticked_at=datetime.now(timezone.utc)))
+        db.add(ClassPaymentTick(user_id=user.id, class_payment_id=payment.id, ticked_at=datetime.now(UTC)))
         ticked = True
     await db.commit()
     return ClassPaymentOut.model_validate(payment, from_attributes=True).model_copy(update={"ticked": ticked})
