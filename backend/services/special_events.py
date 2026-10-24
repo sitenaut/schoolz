@@ -23,6 +23,8 @@ applies to this one school, never every Cherry Hill school.
 """
 
 import base64
+import hashlib
+import json
 import logging
 import re
 import time
@@ -31,8 +33,10 @@ from datetime import date
 import httpx
 from anthropic import AsyncAnthropic
 
+import database
 import observability
 import scraper_client
+from models import PageExtraction
 from scheduler.errors import record_parse_issue
 from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
@@ -184,14 +188,41 @@ _SPECIAL_EVENTS_TOOL = {
 }
 
 
-async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[dict]:
-    """Returns [{date: datetime, title: str, note: str|None}, ...]."""
-    if not ANTHROPIC_API_KEY:
-        return []
+_PROMPT = (
+    "This is a preschool's {year}-{month:02d} monthly calendar of special/spirit days "
+    "(a themed graphic, one day per grid cell). Extract every day that has a label - a themed "
+    "day, a closure, a scheduled activity - skipping blank days and purely decorative icons with "
+    "no text. Keep each title exactly as written, including any time mentioned."
+)
 
-    _, pdf = await scraper_client.get_bytes(pdf_url, headers=_PDF_UA, timeout_s=20.0)
-    pdf_b64 = base64.b64encode(pdf).decode("ascii")
 
+def _extraction_key(prompt: str, pdf: bytes) -> str:
+    tool = json.dumps(_SPECIAL_EVENTS_TOOL, sort_keys=True)
+    return hashlib.sha256(f"special_events\n{prompt}\n{tool}\n{hashlib.sha256(pdf).hexdigest()}".encode()).hexdigest()
+
+
+async def _stored_entries(key: str) -> list | None:
+    try:
+        async with database.SessionLocal() as db:
+            row = await db.get(PageExtraction, key)
+            return list(row.items) if row else None
+    except Exception:  # noqa: BLE001 - a cache miss costs one model call, never the scan
+        logger.warning("page_extraction_cache_read_failed", exc_info=True)
+        return None
+
+
+async def _store_entries(key: str, entries: list) -> None:
+    try:
+        async with database.SessionLocal() as db:
+            await db.merge(PageExtraction(key=key, items=entries))
+            await db.commit()
+    except Exception:  # noqa: BLE001
+        logger.warning("page_extraction_cache_write_failed", exc_info=True)
+
+
+async def _read_pdf(pdf_url: str, pdf: bytes, prompt: str) -> list[dict] | None:
+    """The model's entries for one calendar PDF, or None when it answered
+    without the tool call (nothing worth keeping)."""
     client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     _llm_started = time.perf_counter()
     response = await client.messages.create(
@@ -204,14 +235,8 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
             {
                 "role": "user",
                 "content": [
-                    {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_b64}},
-                    {
-                        "type": "text",
-                        "text": f"This is a preschool's {year}-{month:02d} monthly calendar of special/spirit days "
-                        "(a themed graphic, one day per grid cell). Extract every day that has a label - a themed "
-                        "day, a closure, a scheduled activity - skipping blank days and purely decorative icons with "
-                        "no text. Keep each title exactly as written, including any time mentioned.",
-                    },
+                    {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": base64.b64encode(pdf).decode("ascii")}},
+                    {"type": "text", "text": prompt},
                 ],
             }
         ],
@@ -219,11 +244,35 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
     observability.record_llm_call("special_events", MODEL, response, time.perf_counter() - _llm_started)
     tool_use = next((b for b in response.content if b.type == "tool_use"), None)
     if not tool_use:
-        return []
+        return None
 
     entries, dropped = object_list(recover_spilled_input(tool_use.input).get("items"))
     if dropped:
         record_parse_issue("special_events.scan", "unexpected_format", url=pdf_url, sample=str(dropped)[:200])
+    return entries
+
+
+async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[dict]:
+    """Returns [{date: datetime, title: str, note: str|None}, ...].
+
+    What the model read is stored by a hash of the prompt and the PDF's
+    bytes (page_extractions). The scan skips a PDF once one of its items is
+    stored, but a parse that added nothing (every item already there from a
+    re-upload, or no labelled days) left no item behind, and the same PDF
+    was paid for again every week the page listed it."""
+    if not ANTHROPIC_API_KEY:
+        return []
+
+    _, pdf = await scraper_client.get_bytes(pdf_url, headers=_PDF_UA, timeout_s=20.0)
+    prompt = _PROMPT.format(year=year, month=month)
+    key = _extraction_key(prompt, pdf)
+    entries = await _stored_entries(key)
+    if entries is None:
+        entries = await _read_pdf(pdf_url, pdf, prompt)
+        if entries is None:
+            return []
+        await _store_entries(key, entries)
+
     items = []
     for entry in entries:
         day = entry.get("day")

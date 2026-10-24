@@ -131,3 +131,75 @@ async def test_dismissed_document_stays_out_and_the_audit_reports_the_handbook_m
         assert (await client.get(f"/schools/{school.id}/documents")).json() == []
         cell = (await client.get(f"/audit/schools/{school.id}")).json()["school"]["cells"]["hand"]
         assert cell["status"] == "not_collecting", cell
+
+
+async def _scan_handbooks(monkeypatch, school: School, site, newsletter=()) -> dict[str, bool]:
+    """Runs the scan with the site (a list, or an exception to raise) and the
+    newsletter finds given; returns {url: is_current} for the school."""
+    from sqlalchemy import select
+
+    from models import SchoolDocument
+
+    async def fake_site(url):
+        if isinstance(site, Exception):
+            raise site
+        return list(site)
+
+    async def fake_smore(db, school_id):
+        return list(newsletter)
+
+    monkeypatch.setattr(documents_scan, "discover_from_website", fake_site)
+    monkeypatch.setattr(documents_scan, "discover_from_smore", fake_smore)
+    async with database.SessionLocal() as db:
+        await documents_scan.run(db, {"school_id": school.id})
+        await db.commit()
+        return {d.url: d.is_current for d in (await db.execute(select(SchoolDocument).where(SchoolDocument.school_id == school.id))).scalars()}
+
+
+def _years() -> tuple[str, str]:
+    from services.class_years import academic_year_start
+
+    start = academic_year_start()
+    return f"{start - 2}-{start - 1}", f"{start}-{start + 1}"
+
+
+def _handbook(url: str, year: str | None) -> dict:
+    return {"title": f"{year} Handbook" if year else "Student Handbook", "url": url, "academic_year": year, "doc_type": "handbook"}
+
+
+@pytest.mark.anyio
+async def test_an_undated_handbook_the_site_lists_now_replaces_an_older_dated_one(monkeypatch):
+    # L5: a stored "2024-2025 Handbook" the site no longer lists outranked the
+    # undated "Student Handbook" it lists now, so only last year's showed.
+    from models import SchoolDocument
+
+    old_year, _ = _years()
+    school = await _make_school(website_url="https://handbook.example.org")
+    old, new = "https://handbook.example.org/old.pdf", "https://handbook.example.org/handbook.pdf"
+    async with database.SessionLocal() as db:
+        db.add(SchoolDocument(school_id=school.id, doc_type="handbook", title=f"{old_year} Handbook", url=old,
+                              academic_year=old_year, source="website", is_current=True))
+        await db.commit()
+
+    assert await _scan_handbooks(monkeypatch, school, [_handbook(new, None)]) == {old: False, new: True}
+
+
+@pytest.mark.anyio
+async def test_an_old_newsletters_dated_handbook_doesnt_beat_the_undated_one_on_the_site(monkeypatch):
+    old_year, this_year = _years()
+    school = await _make_school(website_url="https://handbook2.example.org")
+    site, letter = "https://handbook2.example.org/handbook.pdf", "https://docs.google.com/document/d/old"
+    assert await _scan_handbooks(monkeypatch, school, [_handbook(site, None)], [_handbook(letter, old_year)]) == {site: True, letter: False}
+    # This year's dated one still beats an undated one: the latest year wins.
+    assert await _scan_handbooks(monkeypatch, school, [_handbook(site, None)], [_handbook(letter, this_year)]) == {site: False, letter: True}
+
+
+@pytest.mark.anyio
+async def test_a_site_that_cant_be_read_doesnt_retire_its_handbook(monkeypatch):
+    _, this_year = _years()
+    school = await _make_school(website_url="https://handbook3.example.org")
+    site, letter = "https://handbook3.example.org/handbook.pdf", "https://docs.google.com/document/d/new"
+    assert await _scan_handbooks(monkeypatch, school, [_handbook(site, this_year)]) == {site: True}
+    assert await _scan_handbooks(monkeypatch, school, RuntimeError("site down"), [_handbook(letter, this_year)]) == {site: True, letter: True}
+    # Read again and no longer listed: gone.
+    assert await _scan_handbooks(monkeypatch, school, [], [_handbook(letter, this_year)]) == {site: False, letter: True}
