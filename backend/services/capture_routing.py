@@ -27,6 +27,11 @@ Evidence, strongest first:
 
 Anything left is reported back, with the Classroom account it came from, so
 the extension can ask the parent once whose account it is.
+
+The extension (backpack-capture's src/accounts.js) picks which logins to
+walk by rules 2-3 only: a capture key never gets a student ID
+(routers/students.py), so rule 1 runs here alone, and a login it blocks
+comes back `other_student`, which the extension then stops walking.
 """
 import re
 import unicodedata

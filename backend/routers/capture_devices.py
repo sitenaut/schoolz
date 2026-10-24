@@ -5,7 +5,14 @@ The extension starts a request and polls with a secret device code, and
 opens schoolz's /connect page in a tab. Whoever is signed in there (by
 Google, password or anything else - that's the point) checks the short code
 matches the one the extension shows and presses Connect; the extension's
-next poll collects a key minted for that person. The key reaches only
+next poll collects a key minted for that person.
+
+Anyone can start a request and send a parent the link, so the page must not
+be a one-click way to hand a stranger a key: the computer's name is one of
+the extension's own (never free text the page would show in bold), and a
+request from a different connection than the parent's asks them to type
+the code from the popup on that computer instead - a phished parent has no
+popup showing it. The key reaches only
 auth.CAPTURE_KEY_ROUTES, is listed under Account so it can be removed, and
 the extension's own Sign out removes it.
 
@@ -49,6 +56,11 @@ MAX_PENDING_REQUESTS_PER_IP = 10
 # No vowels (no accidental words) and no 0/O/1/I lookalikes.
 _USER_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ"
 CONNECT_PATH = "/connect"
+# The only names the extension ever sends (backpack-capture's PLATFORM_NAMES).
+DEFAULT_CLIENT_NAME = "Backpack Capture"
+KNOWN_CLIENT_NAMES = frozenset(
+    {DEFAULT_CLIENT_NAME, *(f"Backpack Capture on {p}" for p in ("Windows", "Mac", "Linux", "Chromebook"))}
+)
 
 
 def requester_ip_hash(ip: str | None) -> str | None:
@@ -93,7 +105,6 @@ class CaptureTokenOut(BaseModel):
     status: str
     key: str | None = None
     device_id: str | None = None
-    email: str | None = None
 
 
 class CaptureRequestOut(BaseModel):
@@ -103,6 +114,13 @@ class CaptureRequestOut(BaseModel):
     expires_at: datetime
     # pending | approved | denied | issued | expired
     status: str
+    # The request came from the connection this page is on. When it didn't,
+    # Connect needs the code typed in from the popup (see the docstring).
+    same_network: bool
+
+
+class CaptureApproveIn(BaseModel):
+    typed_code: str | None = Field(default=None, max_length=20)
 
 
 class CaptureDeviceOut(BaseModel):
@@ -136,7 +154,7 @@ async def start(payload: CaptureStartIn, request: Request, db: AsyncSession = De
         CaptureDeviceRequest(
             user_code=user_code,
             device_code_hash=hash_api_key(device_code),
-            client_name=payload.client_name.strip(),
+            client_name=name if (name := payload.client_name.strip()) in KNOWN_CLIENT_NAMES else DEFAULT_CLIENT_NAME,
             requester_ip_hash=ip_code,
             status="pending",
             created_at=now,
@@ -181,7 +199,8 @@ async def token(payload: CaptureTokenIn, request: Request, db: AsyncSession = De
     req.capture_device_id = device.id
     await db.commit()
     audit.note(request, "capture_device.issued", capture_device_id=device.id, key_prefix=prefix, user_id=user.id)
-    return CaptureTokenOut(status="approved", key=plaintext, device_id=device.id, email=user.email)
+    # No email: whoever polls may be a stranger who phished the Connect.
+    return CaptureTokenOut(status="approved", key=plaintext, device_id=device.id)
 
 
 async def _get_request(db: AsyncSession, user_code: str) -> CaptureDeviceRequest:
@@ -195,7 +214,11 @@ async def _get_request(db: AsyncSession, user_code: str) -> CaptureDeviceRequest
     return req
 
 
-def _request_out(req: CaptureDeviceRequest) -> CaptureRequestOut:
+def _same_network(req: CaptureDeviceRequest, request: Request) -> bool:
+    return req.requester_ip_hash is not None and req.requester_ip_hash == requester_ip_hash(client_ip(request))
+
+
+def _request_out(req: CaptureDeviceRequest, request: Request) -> CaptureRequestOut:
     expired = req.status in ("pending", "approved") and req.expires_at <= datetime.now(UTC)
     return CaptureRequestOut(
         user_code=req.user_code,
@@ -203,6 +226,7 @@ def _request_out(req: CaptureDeviceRequest) -> CaptureRequestOut:
         created_at=req.created_at,
         expires_at=req.expires_at,
         status="expired" if expired else req.status,
+        same_network=_same_network(req, request),
     )
 
 
@@ -214,26 +238,40 @@ async def _get_pending(db: AsyncSession, user_code: str) -> CaptureDeviceRequest
 
 
 @router.get("/requests/{user_code}", response_model=CaptureRequestOut)
-async def get_request(user_code: str, _user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return _request_out(await _get_request(db, user_code))
+async def get_request(
+    user_code: str, request: Request, _user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    return _request_out(await _get_request(db, user_code), request)
 
 
 @router.post("/requests/{user_code}/approve", response_model=CaptureRequestOut)
-async def approve(user_code: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def approve(
+    user_code: str,
+    request: Request,
+    payload: CaptureApproveIn | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     req = await _get_pending(db, user_code)
+    if not _same_network(req, request):
+        typed = _normalize_user_code(payload.typed_code or "") if payload else ""
+        if typed != req.user_code:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Type the code Backpack Capture shows on the computer you're connecting")
     req.status = "approved"
     req.approved_by_user_id = user.id
     req.expires_at = datetime.now(UTC) + COLLECT_WINDOW
     await db.commit()
-    return _request_out(req)
+    return _request_out(req, request)
 
 
 @router.post("/requests/{user_code}/deny", response_model=CaptureRequestOut)
-async def deny(user_code: str, _user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def deny(
+    user_code: str, request: Request, _user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     req = await _get_pending(db, user_code)
     req.status = "denied"
     await db.commit()
-    return _request_out(req)
+    return _request_out(req, request)
 
 
 @router.get("", response_model=list[CaptureDeviceOut])
