@@ -100,12 +100,13 @@ async def test_a_co_guardian_deleting_their_account_leaves_the_childs_work_throu
         )
         assert linked.json()["id"] == sid
 
-        # The second guardian looked once, before the lab was posted; the
-        # first kept looking, then left.
-        await _import(client, second, sid, [_env("classroom", FEED_URL, FEED_WITHOUT_LAB, "2026-09-10T13:00:00Z")])
-        await _import(client, first, sid, [_env("classroom", FEED_URL, FEED, "2026-09-14T13:00:00Z")])
-        gone = await client.request("DELETE", "/auth/me", json={"confirm": "DELETE", "password": "password123"}, headers=_auth(first))
+        # The first guardian looked once, before the lab was posted; the
+        # second kept looking, then left. (The first is _family's super
+        # admin, who may not delete the only super admin account.)
+        await _import(client, first, sid, [_env("classroom", FEED_URL, FEED_WITHOUT_LAB, "2026-09-10T13:00:00Z")])
+        await _import(client, second, sid, [_env("classroom", FEED_URL, FEED, "2026-09-14T13:00:00Z")])
+        gone = await client.request("DELETE", "/auth/me", json={"confirm": "DELETE", "password": "password123"}, headers=_auth(second))
         assert gone.status_code == 204, gone.text
 
-        assert (await client.post(f"/students/{sid}/bucket3/reprocess", headers=_auth(second))).status_code == 200
+        assert (await client.post(f"/students/{sid}/bucket3/reprocess", headers=_auth(first))).status_code == 200
         assert "si:900030" in await _items(sid)
