@@ -32,6 +32,7 @@ import scraper_client
 from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
 from services.school_status import CLOSED_RE
+from services.tool_output import object_list, recover_spilled_input
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +296,11 @@ async def extract_events(pdf_bytes: bytes) -> list[dict]:
         raise RuntimeError("calendar PDF extraction hit max_tokens; keeping the stored rows")
     if not tool_use:
         return []
-    return list(tool_use.input.get("events", []))
+    events, dropped = object_list(recover_spilled_input(tool_use.input, "events").get("events"))
+    if dropped:
+        # Same reason as max_tokens: what comes back replaces every stored row.
+        raise RuntimeError(f"calendar PDF extraction returned {len(dropped)} unreadable event(s); keeping the stored rows")
+    return events
 
 
 def _defang(subject: str) -> str:

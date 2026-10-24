@@ -553,6 +553,33 @@ def _status_category(title: str, category: str, start_date: datetime | None) -> 
     return category
 
 
+async def apply_supersede(
+    db: AsyncSession,
+    supersedes_id: str | None,
+    new_item: SchoolContentItem,
+    *,
+    school_id: str | None,
+    source: str | None = None,
+    job_kind: str = "smore.scan",
+) -> bool:
+    """Retires the item the model says `new_item` corrects, but only one of
+    the CURRENT ITEMS it was shown: the school's own (`source` narrows that
+    further). The id is model output over page text and every item's id is
+    public, so a PTA-editable page could otherwise name another school's
+    event and hide it from every view."""
+    if not supersedes_id or not school_id:
+        return False
+    query = select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id, SchoolContentItem.school_id == school_id)
+    if source:
+        query = query.where(SchoolContentItem.source == source)
+    old = (await db.execute(query)).scalar_one_or_none()
+    if old is None or old.id == new_item.id or not _may_supersede(old, new_item, job_kind=job_kind):
+        return False
+    old.is_current = False
+    old.superseded_by_id = new_item.id
+    return True
+
+
 def _may_supersede(old: SchoolContentItem, new: SchoolContentItem, reference: datetime | None = None, job_kind: str = "smore.scan") -> bool:
     """Guards the model's own supersedes_item_id against retiring a live
     item in favour of one that has already happened.
@@ -1035,12 +1062,7 @@ async def extract_from_newsletter(
             await db.flush()
             created += 1
 
-            supersedes_id = item.get("supersedes_item_id")
-            if supersedes_id:
-                old = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id))).scalar_one_or_none()
-                if old and old.id != new_item.id and _may_supersede(old, new_item):
-                    old.is_current = False
-                    old.superseded_by_id = new_item.id
+            await apply_supersede(db, item.get("supersedes_item_id"), new_item, school_id=school_id)
 
     if latest_summary:
         newsletter.latest_summary = latest_summary

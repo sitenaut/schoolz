@@ -35,6 +35,7 @@ from routers.districts import (
     _ensure_calendar_pdf_job,
     _ensure_calendar_scan_job,
     _ensure_hs_rotation_job,
+    _ensure_lunch_menu_job,
     _ensure_marking_period_job,
     _ensure_preschool_locations_job,
     _ensure_preschool_team_job,
@@ -56,8 +57,7 @@ from routers.schools import (
     _ensure_staff_roster_job,
 )
 from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
-from scheduler.cron import public_scan_cron, spread_default_smore_cron
-from scheduler.job_names import district_job_name
+from scheduler.cron import spread_default_smore_cron
 from schemas import (
     ConfigExport,
     ConfigImportResult,
@@ -235,19 +235,7 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         await _ensure_calendar_pdf_job(db, district, user)
         await _ensure_transportation_job(db, district, user)
         await _ensure_schoolcafe_job(db, district, user)
-        # A district that gains a menu URL on re-import needs its scan job too.
-        if d.food_services_menu_url and not district.scheduled_job_id:
-            job = ScheduledJob(
-                owner_user_id=user.id,
-                kind="lunch_menu.scan",
-                name=district_job_name("Lunch menu scan", district),
-                cron_expr=public_scan_cron("lunch_menu.scan", district.id),
-                params={"district_id": district.id},
-                enabled=True,
-            )
-            db.add(job)
-            await db.flush()
-            district.scheduled_job_id = job.id
+        await _ensure_lunch_menu_job(db, district, user)
 
     # --- Schools, matched by slug (falling back to name) ---
     school_by_slug: dict[str, School] = {s.slug: s for s in (await db.execute(select(School))).scalars().all()}
@@ -267,6 +255,10 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             )
         if school is None:
             school = school_by_name.get((district.id if district else None, s.name))
+            if school is not None:
+                # Found under its own slug: the seed's newsletters and results
+                # below name the seed's, and missed it ("not tracked here").
+                school_by_slug[s.slug] = school
         if school is None:
             # Use the exported slug directly rather than recomputing one -
             # slugs are meant to be stable, portable identifiers, and a
