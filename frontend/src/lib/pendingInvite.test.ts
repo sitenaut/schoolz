@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { clearPendingInvite, invitePath, loadPendingInvite, savePendingInvite } from "./pendingInvite";
+import { clearPendingInvite, invitePath, loadPendingInvite, markPendingInviteRefused, savePendingInvite } from "./pendingInvite";
 
 function memoryStorage(): Storage {
   const m = new Map<string, string>();
@@ -35,5 +35,21 @@ describe("pendingInvite", () => {
   it("maps each kind to its route", () => {
     expect(invitePath({ kind: "guardian", token: "t" })).toBe("/invites/t");
     expect(invitePath({ kind: "student", token: "t" })).toBe("/student-invites/t");
+  });
+});
+
+describe("markPendingInviteRefused", () => {
+  beforeEach(() => vi.stubGlobal("localStorage", memoryStorage()));
+
+  it("remembers which account an invite was refused for, until the link is opened again", () => {
+    clearPendingInvite();
+    savePendingInvite({ kind: "student", token: "t1" });
+    markPendingInviteRefused("parent-1");
+    expect(loadPendingInvite()).toEqual({ kind: "student", token: "t1", refusedFor: "parent-1" });
+    savePendingInvite({ kind: "student", token: "t1" });
+    expect(loadPendingInvite()).toEqual({ kind: "student", token: "t1" });
+    clearPendingInvite();
+    markPendingInviteRefused("parent-1");
+    expect(loadPendingInvite()).toBeNull();
   });
 });

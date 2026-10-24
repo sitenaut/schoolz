@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
-import { clearPendingInvite, invitePath, savePendingInvite, type InviteKind } from "../lib/pendingInvite";
+import { clearPendingInvite, invitePath, markPendingInviteRefused, savePendingInvite, type InviteKind } from "../lib/pendingInvite";
 
 type Preview = {
   student_first_name: string;
@@ -90,6 +90,9 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
         // 403 is the one recoverable failure: right person, wrong login.
         // Anything else won't change on retry, so stop remembering it.
         if (res.status === 403) {
+          // Kept for the right account, but this one isn't sent back here
+          // on every visit (AppShell) - it was, for the invite's 7 days.
+          markPendingInviteRefused(user.id);
           setPhase({ kind: "wrong_account", message });
         } else {
           clearPendingInvite();

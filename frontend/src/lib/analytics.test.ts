@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyticsPath, schoolViews, shouldTrack } from "./analytics";
+import { analyticsPath, analyticsTitle, schoolViews, shouldTrack } from "./analytics";
 
 describe("analyticsPath", () => {
   it("keeps a public school's real path so landing pages are reportable", () => {
@@ -74,5 +74,13 @@ describe("schoolViews", () => {
   it("credits no school on pages that aren't per-school", () => {
     expect(schoolViews("/calendar", all, [harte]).slugs).toEqual([]);
     expect(schoolViews("/schools", all, [harte]).slugs).toEqual([]);
+  });
+});
+
+describe("analyticsTitle", () => {
+  it("never passes a Localz title to Google, whatever page it lingers on", () => {
+    expect(analyticsTitle("Safe Harbor Shelter · Hope Org · Localz")).toBe("schoolz");
+    expect(analyticsTitle("Ayuda alimentaria en Nueva Jersey · Localz")).toBe("schoolz");
+    expect(analyticsTitle("Calendar · schoolz")).toBe("Calendar · schoolz");
   });
 });

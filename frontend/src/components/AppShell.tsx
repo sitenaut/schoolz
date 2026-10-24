@@ -137,7 +137,7 @@ export function AppShell() {
   useEffect(() => {
     if (!user) return;
     const pending = loadPendingInvite();
-    if (!pending || resumedInviteToken === pending.token) return;
+    if (!pending || resumedInviteToken === pending.token || pending.refusedFor === user.id) return;
     resumedInviteToken = pending.token;
     const target = invitePath(pending);
     if (pathname !== target) navigate(target, { replace: true });

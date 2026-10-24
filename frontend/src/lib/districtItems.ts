@@ -13,6 +13,22 @@ export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Eastern Regional appends the class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
 const ROTATION_RE = /^\s*Day\s+\d+\s*(?:\([^)]*\))?\s*$/i;
 
+// What closes a whole day, as the Today card decides it
+// (backend/services/school_today.py:_CLOSED_RE and classify_day). Narrower
+// than CLOSED_RE on purpose: "EARLY DISMISSAL - Staff In-Service" and
+// "Early Dismissal - Parent/Teacher Conferences" are half days, and the
+// Calendar grid painted them as closures. CLOSED_RE keeps the wider net for
+// isStatusItem, so "Exclude district" never hides an in-service day.
+const DAY_CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b/i;
+
+/** One day's status from the titles landing on it, by the Today card's
+ * rules: closed beats half day; anything else is an ordinary day. */
+export function dayStatusOf(titles: string[]): "closed" | "half" | null {
+  if (titles.some((t) => DAY_CLOSED_RE.test(t))) return "closed";
+  if (titles.some((t) => HALF_DAY_RE.test(t))) return "half";
+  return null;
+}
+
 export function isStatusItem(title: string): boolean {
   return CLOSED_RE.test(title) || HALF_DAY_RE.test(title) || DELAY_RE.test(title);
 }
