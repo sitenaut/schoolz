@@ -301,9 +301,9 @@ export function SurveyPage() {
           {busy ? "Sending…" : answeredSomething ? "Send it in" : "Answer at least one question"}
         </button>
         <p className="fine">
-          We record the date and time each response comes in, plus a scrambled one-way code that stands in for your
-          internet connection. We never store your IP address, and that code can't be turned back into one — it exists
-          only so we can show the district these came from real, separate people. More on the{" "}
+          We record the date and time each response comes in, plus a code made from your IP address that stands in for
+          your internet connection. We don't keep the address itself, but we can turn the code back into it if someone
+          abuses the survey. It exists so we can show the district these came from real, separate people. More on the{" "}
           <Link to="/privacy">privacy page</Link>.
         </p>
       </form>

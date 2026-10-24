@@ -7,7 +7,9 @@
  * Every row here is a promise: when what a feature stores, sends or logs
  * changes, this page changes in the same PR. The Localz rows follow
  * docs/LOCALZ_DESIGN.md; the upload row is the deliberate exception to "no
- * IPs" (frontend/CLAUDE.md). */
+ * IPs" (frontend/CLAUDE.md). The codes that stand in for an address (survey,
+ * audit, chat) can be turned back into it on purpose, and "Illegal content"
+ * says so (CLAUDE.md, "IP codes are reversible on purpose"). */
 import { SeoHead } from "../components/SeoHead";
 import { useState } from "react";
 import { isAnalyticsOptedOut, setAnalyticsOptOut } from "../lib/analytics";
@@ -24,7 +26,7 @@ export function PrivacyPage() {
         path="/privacy"
       />
       <h2>Privacy &amp; cookies</h2>
-      <p className="note">Last updated October 17, 2026.</p>
+      <p className="note">Last updated October 23, 2026.</p>
 
       <p>
         schoolz ("we", "us") helps parents and guardians in South Jersey keep up with their kids' schools, and
@@ -293,7 +295,8 @@ export function PrivacyPage() {
               you, read-only. Our server logs record which lookups the assistant made — for public lookups, what it
               searched for; for your children, only which kind of lookup — never your messages. To keep the
               assistant from being flooded, we count messages per internet connection over 10 minutes using a
-              scrambled one-way code, never your IP address; those counts are deleted after a day.{" "}
+              code made from your IP address rather than the address itself; those counts are deleted after a
+              day.{" "}
               <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">
                 Anthropic's privacy policy
               </a>{" "}
@@ -321,14 +324,15 @@ export function PrivacyPage() {
           <tr>
             <td>
               Proof a survey response is genuine: the date and time it arrived, which browser sent it, and a
-              scrambled one-way code that stands in for your internet connection
+              code made from your IP address that stands in for your internet connection
             </td>
             <td>Our database</td>
             <td>
               So a stack of responses can be shown to the district as real, separate people rather than one person
-              submitting over and over. <strong>We never store your IP address.</strong> It's immediately scrambled
-              with a secret key into a code that can't be turned back into an address, and that code is useless
-              anywhere else. It isn't used to track you, isn't tied to your browsing, and isn't shared with anyone.
+              submitting over and over. We don't keep your IP address itself, only the code, but the people
+              who run schoolz can turn the code back into the address (see "Illegal content" below). It isn't used
+              to track you, isn't tied to your browsing, and isn't shared with anyone: the copy we give the district
+              numbers the senders instead.
             </td>
           </tr>
           <tr>
@@ -340,7 +344,7 @@ export function PrivacyPage() {
             <td>Our database</td>
             <td>
               So we can always answer "who changed this, and when". Each entry holds what was done, by which
-              account, the date and time, and a scrambled one-way code in place of your IP address. Never passwords,
+              account, the date and time, and a code made from your IP address in place of the address itself. Never passwords,
               invitation links or the contents of anything. Entries can't be edited or deleted, are seen only by
               the people who run schoolz, and stay after the account they mention is deleted.
             </td>
@@ -363,6 +367,22 @@ export function PrivacyPage() {
           </tr>
         </tbody>
       </table>
+
+      <h3>Illegal content</h3>
+      <p>
+        <strong>Don't upload, post or send anything illegal anywhere on schoolz or Localz</strong> - through the
+        upload form, a Localz listing, the survey or contact form, the assistant, or anything else. That includes
+        child sexual abuse material, which we are required by law to report. If you do, we will remove it, report it
+        to law enforcement (and, for material that exploits children, to the National Center for Missing &amp;
+        Exploited Children), and <strong>give them your IP address</strong> and anything else we hold about where it
+        came from.
+      </p>
+      <p>
+        We keep your real IP address only when you send something through the upload form (above); just visiting
+        that page doesn't record it. Everywhere else this page says we keep a code made from your IP address
+        instead, and that code isn't one-way: the people who run schoolz can turn it back into the address. We do
+        that only to deal with illegal content or abuse of the site, or when the law requires it.
+      </p>
 
       <h3>Where AI is used</h3>
       <p>

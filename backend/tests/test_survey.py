@@ -1,3 +1,5 @@
+import csv
+import io
 import os
 import uuid
 
@@ -6,11 +8,11 @@ os.environ.setdefault("AUTH_MODE", "local")
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 import database
 from main import app
-from models import District, School, User
+from models import District, School, SurveyResponse, User
 
 
 async def _admin_headers(client: AsyncClient) -> dict[str, str]:
@@ -134,3 +136,22 @@ async def test_raw_ip_is_never_stored():
         headers = await _admin_headers(client)
         csv_res = await client.get("/survey/responses.csv", headers=headers)
     assert "203.0.113.42" not in csv_res.text
+
+
+@pytest.mark.anyio
+async def test_csv_numbers_senders_instead_of_exporting_the_hash():
+    """The hash is reversible on purpose, so it never leaves the database:
+    the district's CSV gets one number per distinct address instead."""
+    tag = uuid.uuid4().hex[:8]
+    for comment, ip in ((f"a1-{tag}", "203.0.113.7"), (f"a2-{tag}", "203.0.113.7"), (f"b-{tag}", "198.51.100.8")):
+        transport = ASGITransport(app=app, client=(ip, 4000))
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            assert (await client.post("/survey", json={"comments": comment})).status_code == 201
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        csv_res = await client.get("/survey/responses.csv", headers=await _admin_headers(client))
+    sender = {r["comments"]: r["sender"] for r in csv.DictReader(io.StringIO(csv_res.text))}
+    assert sender[f"a1-{tag}"] == sender[f"a2-{tag}"] != sender[f"b-{tag}"]
+    assert sender[f"a1-{tag}"].isdigit() and sender[f"b-{tag}"].isdigit()
+    async with database.SessionLocal() as db:
+        ip_hash = await db.scalar(select(SurveyResponse.ip_hash).where(SurveyResponse.comments == f"b-{tag}"))
+    assert ip_hash and ip_hash[:12] not in csv_res.text

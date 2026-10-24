@@ -1,4 +1,4 @@
-"""Who is calling, by address - for rate limits, the survey's one-way hash,
+"""Who is calling, by address - for rate limits, the survey's hashed address,
 and the audit columns on submissions and approval requests.
 
 On Fly, `Fly-Client-IP`, which Fly's proxy sets itself and a client cannot
