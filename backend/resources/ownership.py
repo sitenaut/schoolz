@@ -47,9 +47,23 @@ def _same(a: Any, b: Any) -> bool:
     return (a or None) == (b or None)
 
 
+def _keep_latest_assurance(row: ResourceService, fields: dict) -> dict:
+    """"Last confirmed" is whoever confirmed the listing most recently. A
+    provider's "Yes, it's all still right" was put back to NJ 211's older
+    date by its next detail refresh, and blanked by ChildCareNJ (which has
+    none), so the card lost it and the check-in mail asked again."""
+    if "last_assured_on" not in fields:
+        return fields
+    current, scraped = row.last_assured_on, fields["last_assured_on"]
+    if scraped is None or (current is not None and current >= scraped):
+        return {k: v for k, v in fields.items() if k != "last_assured_on"}
+    return fields
+
+
 async def apply_source_fields(db: AsyncSession, row: ResourceService, fields: dict, source: str) -> dict:
     """Set `fields` from a scraper on `row`, except the ones a provider
     owns. Returns the held conflicts ({field: scraped value})."""
+    fields = _keep_latest_assurance(row, fields)
     if not is_managed(row):
         for attr, value in fields.items():
             setattr(row, attr, value)
