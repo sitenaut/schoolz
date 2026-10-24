@@ -935,9 +935,13 @@ async def extract_from_newsletter(
                 # original case this dedup exists for, where one school's
                 # newsletter says plain "Labor Day" and another's says
                 # something else entirely on the same district-wide date.
+                # Only on a date, though: with none, the lookup above is
+                # start_date IS NULL, every undated district item is a
+                # candidate, and the first undated "program" or "reminder"
+                # swallowed every later one as its duplicate.
                 new_title = item["title"][:300]
                 if any(
-                    c.category == item["category"]
+                    (item_start_date is not None and c.category == item["category"])
                     or _title_dedup_key(c.title) == _title_dedup_key(new_title)
                     or same_status_fact(c.title, new_title)
                     for c in district_candidates
