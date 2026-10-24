@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scrubUrl } from "./telemetry";
+import { scrubDeep, scrubUrl } from "./telemetry";
 
 describe("scrubUrl", () => {
   it("drops the entire hash - Supabase OAuth returns tokens there", () => {
@@ -46,6 +46,27 @@ describe("scrubUrl", () => {
     expect(scrubUrl("https://schoolz.sitenaut.com/?code=abc#access_token=def")).toBe(
       "https://schoolz.sitenaut.com/"
     );
+  });
+});
+
+describe("token-bearing paths", () => {
+  it("collapses every invite and approval-code route, page or API", () => {
+    expect(scrubUrl("/student-invites/abc123")).toBe("/student-invites/:token");
+    expect(scrubUrl("https://api.example/student-account-invites/abc123/accept")).toBe("https://api.example/student-account-invites/:token/accept");
+    expect(scrubUrl("https://api.example/invites/abc123/accept")).toBe("https://api.example/invites/:token/accept");
+    expect(scrubUrl("/capture-devices/requests/WXYZ-1234/approve")).toBe("/capture-devices/requests/:code/approve");
+    expect(scrubUrl("/admin/api-keys/requests/WXYZ-1234")).toBe("/admin/api-keys/requests/:code");
+    expect(scrubUrl("/admin/secret-requests/WXYZ-1234/deny")).toBe("/admin/secret-requests/:code/deny");
+    expect(scrubUrl("/admin/secret-requests/poll")).toBe("/admin/secret-requests/poll");
+  });
+
+  it("scrubs a trace span's URL attribute, however deep it sits", () => {
+    const payload = {
+      resourceSpans: [{ scopeSpans: [{ spans: [{ attributes: [{ key: "http.url", value: { stringValue: "https://api.example/invites/abc123/accept" } }] }] }] }],
+    };
+    scrubDeep(payload);
+    expect(JSON.stringify(payload)).not.toContain("abc123");
+    expect(JSON.stringify(payload)).toContain("/invites/:token/accept");
   });
 });
 

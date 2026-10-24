@@ -70,7 +70,12 @@ export function scrubUrl(url: string): string {
     // Not a parseable URL (e.g. a bare route template) - fall through.
   }
 
-  result = result.replace(/\/invites\/[^/?#]+/, "/invites/:token");
+  // Path segments that are a credential. A guardian-invite token lets
+  // whoever accepts it see a child's schoolwork; the approval codes are the
+  // device-flow keys' (Backpack Capture, API keys, prod secrets).
+  result = result.replace(/\/(student-account-|student-)?invites\/[^/?#]+/, "/$1invites/:token");
+  result = result.replace(/\/(capture-devices|admin\/api-keys)\/requests\/[^/?#]+/, "/$1/requests/:code");
+  result = result.replace(/\/admin\/secret-requests\/(?!approve\b|poll\b)[^/?#]+/, "/admin/secret-requests/:code");
   // Which Localz resource someone opened (a shelter, a recovery program) is
   // nobody's business, monitoring included.
   result = result.replace(/\/localz\/r\/[^/?#]+/, "/localz/r/:id");
@@ -78,9 +83,25 @@ export function scrubUrl(url: string): string {
 }
 
 function scrubValue(value: unknown): unknown {
-  if (typeof value === "string" && (value.startsWith("http") || value.includes("/invites/") || value.includes("/localz/r/"))) {
+  if (typeof value === "string" && (value.startsWith("http") || value.startsWith("/") || value.includes("invites/") || value.includes("/localz/r/"))) {
     return scrubUrl(value);
   }
+  return value;
+}
+
+/** Every string in a payload, however deep. A trace item is
+ * `{resourceSpans: [{scopeSpans: [{spans: [{attributes: [{key: "http.url",
+ * value: {stringValue}}]}]}]}]}`: a one-level walk sent every fetch span's
+ * URL, invite tokens included, to Grafana Cloud unscrubbed. */
+export function scrubDeep(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return scrubValue(value);
+  if (!value || typeof value !== "object" || depth > 12) return value;
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) value[i] = scrubDeep(value[i], depth + 1);
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of Object.keys(record)) record[key] = scrubDeep(record[key], depth + 1);
   return value;
 }
 
@@ -91,25 +112,7 @@ function scrubItem<P>(item: TransportItem<P>): TransportItem<P> {
   if (item.meta.view?.name) {
     item.meta.view.name = scrubUrl(item.meta.view.name);
   }
-  const payload = item.payload as unknown as Record<string, unknown> | undefined;
-  if (payload && typeof payload === "object") {
-    for (const key of Object.keys(payload)) {
-      const value = payload[key];
-      if (typeof value === "string") {
-        payload[key] = scrubValue(value);
-      } else if (value && typeof value === "object") {
-        // One level deep is enough for the shapes that carry a URL
-        // (event/measurement attributes, page context) - never the
-        // query itself, which callers are told not to attach anyway.
-        for (const nestedKey of Object.keys(value as Record<string, unknown>)) {
-          const nested = (value as Record<string, unknown>)[nestedKey];
-          if (typeof nested === "string") {
-            (value as Record<string, unknown>)[nestedKey] = scrubValue(nested);
-          }
-        }
-      }
-    }
-  }
+  scrubDeep(item.payload);
   return item;
 }
 

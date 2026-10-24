@@ -20,8 +20,12 @@ type Phase =
   | { kind: "needs_account" }
   | { kind: "accepting" }
   | { kind: "wrong_account"; message: string }
+  | { kind: "already_yours"; message: string }
   | { kind: "failed"; message: string }
   | { kind: "done" };
+
+// How a closed invite reads in "This invite has ...".
+const CLOSED: Record<string, string> = { accepted: "already been used", revoked: "been withdrawn", expired: "expired" };
 
 const ENDPOINTS: Record<InviteKind, { preview: (t: string) => string; accept: (t: string) => string }> = {
   guardian: { preview: (t) => `/invites/${t}`, accept: (t) => `/invites/${t}/accept` },
@@ -46,6 +50,8 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [mode, setMode] = useState<"login" | "register">("register");
   const attempted = useRef(false);
+  // Bumped by "Try again": the accept effect has nothing else to re-run on.
+  const [attempt, setAttempt] = useState(0);
 
   const path = invitePath({ kind, token });
 
@@ -62,7 +68,7 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
         setPreview(data);
         if (data.status !== "pending") {
           clearPendingInvite();
-          setPhase({ kind: "unavailable", message: `This invite has ${data.status === "accepted" ? "already been used" : data.status}.` });
+          setPhase({ kind: "unavailable", message: `This invite has ${CLOSED[data.status] ?? data.status}.` });
           return;
         }
         savePendingInvite({ kind, token });
@@ -89,7 +95,15 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
         const message = typeof body.detail === "string" ? body.detail : "Could not accept this invite.";
         // 403 is the one recoverable failure: right person, wrong login.
         // Anything else won't change on retry, so stop remembering it.
-        if (res.status === 403) {
+        if (res.status === 409) {
+          // Already linked - the inviter opening their own link to look at
+          // it. The invite stays open for the person it was meant for.
+          clearPendingInvite();
+          setPhase({ kind: "already_yours", message });
+        } else if (res.status === 410) {
+          clearPendingInvite();
+          setPhase({ kind: "unavailable", message: "This invite isn't open any more - ask for a new one." });
+        } else if (res.status === 403) {
           // Kept for the right account, but this one isn't sent back here
           // on every visit (AppShell) - it was, for the invite's 7 days.
           markPendingInviteRefused(user.id);
@@ -104,7 +118,7 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
       if (kind === "student") await refresh();
       setPhase({ kind: "done" });
     })();
-  }, [loading, user, preview, kind, token, refresh]);
+  }, [loading, user, preview, kind, token, refresh, attempt]);
 
   const switchAccount = async () => {
     attempted.current = false;
@@ -186,6 +200,14 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
         </div>
       )}
 
+      {phase.kind === "already_yours" && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>This invite is for someone else</h2>
+          <p>{phase.message}</p>
+          <p className="note">Send the link to the person you're inviting - it still works for them.</p>
+        </div>
+      )}
+
       {phase.kind === "failed" && (
         <div className="card">
           <div className="banner bad">{phase.message}</div>
@@ -193,7 +215,7 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
             className="btn"
             onClick={() => {
               attempted.current = false;
-              setPhase({ kind: "needs_account" });
+              setAttempt((n) => n + 1);
             }}
           >
             Try again
