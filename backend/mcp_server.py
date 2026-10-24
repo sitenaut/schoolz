@@ -51,6 +51,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from services.app_help import app_help
+from services.public_url import check_public_page
 from services.school_today import classify_day, local_date, other_grades_only
 
 
@@ -266,7 +267,8 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     # A *real* network client, used only to validate a third-party URL a
     # caller wants to submit in submit_community_content - that's an
     # external page, not one of this app's own routes.
-    web_client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
+    # Redirects are followed by check_public_page, re-checking each hop.
+    web_client = httpx.AsyncClient(timeout=15.0, follow_redirects=False)
 
     async def _get(path: str, params: dict[str, Any] | None = None) -> Any:
         """GET one of this app's own public routes and return the parsed JSON body.
@@ -327,20 +329,7 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         PDFs live on all kinds of domains), so "is this real" is the bar,
         not "is this from a known host."
         """
-        if not (url.startswith("http://") or url.startswith("https://")):
-            return "URL must start with http:// or https://"
-        try:
-            response = await web_client.head(url)
-            # Some hosts (and most CDNs) reject HEAD outright - a 405
-            # there says nothing about whether the page itself is real,
-            # so fall back to a ranged GET rather than trusting HEAD.
-            if response.status_code in (403, 405) or response.status_code >= 500:
-                response = await web_client.get(url, headers={"Range": "bytes=0-0"})
-        except httpx.RequestError as exc:
-            return f"Could not reach this URL ({exc.__class__.__name__}) - double-check it's correct and publicly accessible"
-        if response.status_code >= 400:
-            return f"This URL returned {response.status_code} {response.reason_phrase} - it doesn't look like a live page"
-        return None
+        return await check_public_page(web_client, url)
 
     async def _resolve_school(school_id_or_slug: str) -> dict | None:
         """Fetch a school's own record, for its display name / real id / type.
