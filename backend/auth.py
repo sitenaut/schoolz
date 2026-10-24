@@ -205,11 +205,14 @@ async def _verify_supabase_token(token: str) -> dict:
         # A cache miss fetches the key set over HTTP, synchronously (PyJWKClient
         # keeps it five minutes): off the event loop, or every request waits.
         signing_key = await anyio.to_thread.run_sync(_jwks_client.get_signing_key_from_jwt, token)
-    except jwt.PyJWKClientError:
-        # The key set is unreachable or lacks this token's key (a rotation
-        # race): ask Supabase directly.
+    except jwt.PyJWKClientConnectionError:
+        # The key set is unreachable: ask Supabase directly.
         return await _supabase_user(token)
     except jwt.PyJWTError:
+        # Includes a key id the set lacks even after PyJWT refetched it (at
+        # most every 30 s; Supabase publishes a standby key before rotating
+        # to it). That used to ask Supabase too, so a made-up key id cost an
+        # outbound call on every request, public routes included.
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token") from None
     try:
         return jwt.decode(
@@ -406,7 +409,7 @@ async def get_current_user(
         # "aal2" once the session has passed a second factor (SZ-18). The
         # /auth/v1/user fallback doesn't say, which reads as not passed.
         request.state.aal = claims.get("aal")
-        await audit.session_seen(request, claims.get("session_id"), claims.get("aal"))
+        await audit.session_seen(request, db, claims.get("session_id"), claims.get("aal"))
     else:
         user_id = _decode_local_token(token)
         result = await db.execute(select(User).where(User.id == user_id))
@@ -453,6 +456,16 @@ async def require_super_admin(request: Request, user: User = Depends(get_current
     return user
 
 
+async def lock_super_admins(db: AsyncSession) -> set[str]:
+    """The super admins' ids, their rows locked until the transaction ends.
+    Anything that can remove one (a demotion, deleting an account) re-checks
+    the last-one-left rule against this set: checked without the lock, two
+    super admins demoting each other at once each still saw the other and
+    left none."""
+    rows = await db.execute(select(User.id).where(User.is_admin.is_(True)).order_by(User.id).with_for_update())
+    return set(rows.scalars())
+
+
 async def get_user_permissions(db: AsyncSession, user: User) -> set[str]:
     if user.is_admin:
         return set(PERMISSION_KEYS)
@@ -462,6 +475,15 @@ async def get_user_permissions(db: AsyncSession, user: User) -> set[str]:
         .where(UserRole.user_id == user.id)
     )
     return expand(set(rows.scalars().all()))
+
+
+async def sees_scan_internals(request: Request, db: AsyncSession, user: User | None, manage: str) -> bool:
+    """Whether a public GET that embeds scan jobs may show them whole: to an
+    admin who can see scans or manage that area (the admin pages read these
+    same routes). Everyone else gets `ScheduledJobOut.without_internals()`."""
+    if user is None:
+        return False
+    return bool(await get_effective_permissions(request, db, user) & {"scans.view", manage})
 
 
 async def get_effective_permissions(request: Request, db: AsyncSession, user: User) -> set[str]:

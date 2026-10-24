@@ -41,6 +41,7 @@ from models import (
 from scheduler.errors import record_parse_issue
 from services import haiku
 from services.links import unwrap_redirect
+from services.public_url import PUBLIC_ONLY
 from services.school_status import is_status_title, same_status_fact
 from services.tool_output import object_list, recover_spilled_input
 
@@ -260,7 +261,7 @@ async def _vision_extract(client: AsyncAnthropic, image_url: str, image_bytes: b
     that isn't actually a fetch failure at all)."""
     try:
         if image_bytes is None:
-            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http_client:
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, event_hooks=PUBLIC_ONLY) as http_client:
                 resp = await http_client.get(image_url)
                 resp.raise_for_status()
             image_bytes = resp.content
@@ -309,7 +310,7 @@ async def _document_extract(client: AsyncAnthropic, pdf_url: str, job_kind: str 
     an image fetch - no Pillow re-encoding needed, since the API accepts
     the file as-is."""
     try:
-        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as http_client:
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, event_hooks=PUBLIC_ONLY) as http_client:
             resp = await http_client.get(pdf_url)
             resp.raise_for_status()
         pdf_b64 = base64.b64encode(resp.content).decode("ascii")

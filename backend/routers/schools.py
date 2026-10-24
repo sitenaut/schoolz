@@ -1,11 +1,11 @@
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import get_current_user, get_optional_user, require_permission
+from auth import get_current_user, get_optional_user, require_permission, sees_scan_internals
 from database import get_db
 from models import (
     District,
@@ -24,7 +24,7 @@ from models import (
     User,
     derive_school_short_name,
 )
-from routers.smore_newsletters import _to_out as _newsletter_to_out
+from routers.smore_newsletters import _to_outs as _newsletters_to_outs
 from routers.smore_newsletters import target_id
 from scheduler.cron import public_scan_cron
 from scheduler.job_names import school_job_name
@@ -707,7 +707,12 @@ async def get_school_lunch_menu(
 
 
 @router.get("/{school_id}/newsletters", response_model=list[SmoreNewsletterOut])
-async def list_school_newsletters(school: School = Depends(resolve_school), db: AsyncSession = Depends(get_db)):
+async def list_school_newsletters(
+    request: Request,
+    school: School = Depends(resolve_school),
+    user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
+):
     # Newest first, because the school page shows the first row as "the"
     # newsletter. "Newest" is when a row last gained content, not when it was
     # created or last scanned: a recurring job pinned to a stale issue URL is
@@ -721,7 +726,8 @@ async def list_school_newsletters(school: School = Depends(resolve_school), db: 
         .group_by(SmoreNewsletter.id)
         .order_by(freshest.desc(), SmoreNewsletter.created_at.desc())
     )
-    return [await _newsletter_to_out(db, n) for n in result.scalars().all()]
+    internals = await sees_scan_internals(request, db, user, "newsletters.manage")
+    return await _newsletters_to_outs(db, list(result.scalars().all()), internals=internals)
 
 
 @router.get("/{school_id}/content", response_model=list[SchoolContentItemOut])

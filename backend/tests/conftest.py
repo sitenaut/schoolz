@@ -35,6 +35,26 @@ def _no_real_scrapers(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_dns(monkeypatch):
+    """Files named by scraped pages are fetched only from public addresses
+    (services/public_url.py PUBLIC_ONLY), which resolves each host. Tests use
+    made-up hosts behind mock transports, so here a name resolves to a public
+    address and an IP literal to itself."""
+    import ipaddress
+
+    from services import public_url
+
+    async def addresses(host, port):
+        try:
+            ipaddress.ip_address(host.split("%", 1)[0])
+        except ValueError:
+            return ["93.184.216.34"]
+        return [host]
+
+    monkeypatch.setattr(public_url, "_addresses", addresses)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_geocoding(monkeypatch):
     """run_pipeline ends by geocoding the events it saved (local_events/
     locate.py); with no lookup budget a test never calls Census or

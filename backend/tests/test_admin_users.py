@@ -170,3 +170,29 @@ async def test_user_list_filters_sorts_and_pages():
 
         bad = await client.get("/admin/users", headers=boss, params={"sort": "password_hash"})
         assert bad.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_a_super_admin_demoted_mid_request_cant_demote_the_other():
+    # Two super admins demoting each other at once: the second request loaded
+    # its actor before the first one committed. Re-checked under a lock, it's
+    # refused, so one of them is still a super admin.
+    from fastapi import HTTPException
+    from sqlalchemy import text
+
+    from routers.admin_users import SuperAdminIn, set_super_admin
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _a, a_id = await _register(client, "race_a", super_admin=True)
+        _b, b_id = await _register(client, "race_b", super_admin=True)
+
+    async with database.SessionLocal() as db:
+        actor_b = await db.get(User, b_id)
+        assert actor_b.is_admin
+        # A's request demoting B commits first (not through the ORM, so the
+        # actor B already loaded still reads as a super admin).
+        await db.execute(text("UPDATE users SET is_admin = false WHERE id = :id"), {"id": b_id})
+        with pytest.raises(HTTPException) as refused:
+            await set_super_admin(a_id, SuperAdminIn(is_admin=False), actor=actor_b, db=db)
+        assert refused.value.status_code == 403
+        assert (await db.get(User, a_id)).is_admin

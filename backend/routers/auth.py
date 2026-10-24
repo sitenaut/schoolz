@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import auth as auth_module
@@ -252,12 +252,10 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
         if not payload.password or not await verify_password_async(payload.password, user.password_hash):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Password is incorrect")
     # The same guarantee as admin_users.set_super_admin: one always remains.
-    if user.is_admin:
-        others = await db.scalar(select(func.count()).select_from(User).where(User.is_admin.is_(True), User.id != user.id))
-        if not others:
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "You're the only super admin. Make someone else one before deleting your account"
-            )
+    if user.is_admin and not await auth_module.lock_super_admins(db) - {user.id}:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "You're the only super admin. Make someone else one before deleting your account"
+        )
 
     uid = user.id
 

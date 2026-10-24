@@ -291,3 +291,16 @@ async def test_naming_a_place_includes_its_paid_classes():
         assert [e["title"] for e in named["items"]] == ["Lap Swimming"]
     finally:
         await tools.aclose()
+
+
+def test_a_community_submission_is_logged_by_argument_names_only(caplog):
+    from services import chatbot
+
+    with caplog.at_level("INFO", logger=chatbot.logger.name):
+        chatbot._log_tool_call(
+            "submit_community_content",
+            {"submitter_name": "A Parent", "submitter_email": "parent@example.com", "description": "Our PTA flyer"},
+        )
+        chatbot._log_tool_call("find_schools", {"query": "Beck"})
+    logged = [r.tool_input for r in caplog.records if r.getMessage() == "chatbot_tool_call"]
+    assert logged == ['["description", "submitter_email", "submitter_name"]', '{"query": "Beck"}']

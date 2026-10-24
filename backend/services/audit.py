@@ -25,6 +25,7 @@ import os
 from collections import OrderedDict
 from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 import database
@@ -107,10 +108,15 @@ _seen_sessions: OrderedDict[tuple[str, str], None] = OrderedDict()
 _SEEN_MAX = 2000
 
 
-async def session_seen(request: Request, session_id: str | None, aal: str | None) -> None:
+async def session_seen(request: Request, db: AsyncSession, session_id: str | None, aal: str | None) -> None:
     """Note `auth.sign_in` the first time a Supabase session is used, and
     `auth.mfa_passed` the first time it arrives at aal2. A session already
-    recorded (by another machine, or before a restart) is skipped."""
+    recorded (by another machine, or before a restart) is skipped.
+
+    Looked up on the request's own session: a second one from the same small
+    pool, held while the request kept its first, ran the pool dry when a
+    deploy emptied `_seen_sessions` and every visitor's next request came in
+    at once."""
     if not session_id:
         return
     actions = ["auth.sign_in"] + (["auth.mfa_passed"] if aal == "aal2" else [])
@@ -121,21 +127,23 @@ async def session_seen(request: Request, session_id: str | None, aal: str | None
         _seen_sessions[key] = None
         while len(_seen_sessions) > _SEEN_MAX:
             _seen_sessions.popitem(last=False)
-        if not await _session_recorded(action, session_id):
+        if not await _session_recorded(db, action, session_id):
             note(request, action, session_id=session_id, aal=aal)
 
 
-async def _session_recorded(action: str, session_id: str) -> bool:
-    from sqlalchemy import select
+async def _session_recorded(db: AsyncSession, action: str, session_id: str) -> bool:
+    from sqlalchemy import literal_column, select
 
     from models import AuditEvent
 
+    # The key spelled out, not bound, so the lookup matches the expression
+    # `ix_audit_events_session_id` indexes (migration 0131).
+    stored_session = AuditEvent.target.op("->>")(literal_column("'session_id'"))
     try:
-        async with database.SessionLocal() as session:
-            found = await session.execute(
-                select(AuditEvent.id)
-                .where(AuditEvent.action == action, AuditEvent.target["session_id"].astext == session_id)
-                .limit(1)
+        # A savepoint, so a failed lookup leaves the request's transaction usable.
+        async with db.begin_nested():
+            found = await db.execute(
+                select(AuditEvent.id).where(AuditEvent.action == action, stored_session == session_id).limit(1)
             )
             return found.scalar() is not None
     except Exception:

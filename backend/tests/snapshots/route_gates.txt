@@ -103,7 +103,7 @@ GET    /course-preferences  login
 PUT    /course-preferences/{course_key}  login
 POST   /csp-report  public
 GET    /directory/staff  public
-GET    /districts  public
+GET    /districts  optional
 POST   /districts  perm:schools.manage
 GET    /districts/summary  public
 PATCH  /districts/{district_id}  perm:schools.manage
@@ -210,7 +210,7 @@ PATCH  /schools/{school_id}/documents/{document_id}  perm:schools.manage
 POST   /schools/{school_id}/events-doc/run-now  perm:schools.manage
 POST   /schools/{school_id}/info/run-now  perm:schools.manage
 GET    /schools/{school_id}/lunch-menu  public
-GET    /schools/{school_id}/newsletters  public
+GET    /schools/{school_id}/newsletters  optional
 GET    /schools/{school_id}/sacc  public
 POST   /schools/{school_id}/special-events/run-now  perm:schools.manage
 GET    /schools/{school_id}/staff  public
@@ -229,7 +229,7 @@ GET    /seasonal-guides/all  perm:seasonal.manage
 DELETE /seasonal-guides/{guide_id}  perm:seasonal.manage
 PATCH  /seasonal-guides/{guide_id}  perm:seasonal.manage
 GET    /sitemap.xml  public
-GET    /smore-newsletters  public
+GET    /smore-newsletters  optional
 POST   /smore-newsletters  perm:newsletters.manage
 DELETE /smore-newsletters/{newsletter_id}  perm:newsletters.manage
 PATCH  /smore-newsletters/{newsletter_id}  perm:newsletters.manage

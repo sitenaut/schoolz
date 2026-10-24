@@ -155,11 +155,15 @@ async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
     return "\n".join(parts) if parts else "null"
 
 
+_NAMES_ONLY_TOOLS = PERSONAL_TOOL_NAMES | {"submit_community_content"}
+
+
 def _log_tool_call(name: str, tool_input: dict[str, Any]) -> None:
     # What the model actually asked each tool, so a bad answer can be traced to
     # a bad search (e.g. "fall festival" vs the listing's "Harvest Festival").
-    # Personal tools take a child's id: log only which arguments were passed.
-    logged = sorted(tool_input) if name in PERSONAL_TOOL_NAMES else tool_input
+    # Personal tools take a child's id, and a community submission carries the
+    # sender's name and email: log only which arguments were passed.
+    logged = sorted(tool_input) if name in _NAMES_ONLY_TOOLS else tool_input
     logger.info("chatbot_tool_call", extra={"tool": name, "tool_input": json.dumps(logged, default=str)[:500]})
 
 
