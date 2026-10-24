@@ -301,6 +301,7 @@ GET /capture-devices/requests/{user_code}
   -> 200: CaptureRequestOut
 POST /capture-devices/requests/{user_code}/approve
   path user_code: string
+  body?: CaptureApproveIn | null
   -> 200: CaptureRequestOut
 POST /capture-devices/requests/{user_code}/deny
   path user_code: string
@@ -806,7 +807,7 @@ POST /student-account-invites/{token}/accept
   path token: string
   -> 200: StudentAccountStatusOut
 GET /students
-  -> 200: list[StudentOut]
+  -> 200: list[StudentOut] | list[CaptureStudentOut]
 POST /students
   body: StudentCreate
   -> 201: StudentOut
@@ -1011,19 +1012,21 @@ Bucket3StudentOut { first_name: string, id: string, last_name: string, school_na
 Bucket3SyncStatusOut { classroom_seen_at: string(date-time) | null, genesis_seen_at: string(date-time) | null, needs_login: boolean, walk_finished_at: string(date-time) | null, walk_status: string | null }
 ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
+CaptureApproveIn { typed_code?: string | null }
 CaptureDeviceOut { created_at: string(date-time), id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string }
 CaptureDiagnosticOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, outcome: string | null, payload: object, reference: string, reported_at: string(date-time) | null, user_email: string | null }
 CaptureDiagnosticSummaryOut { created_at: string(date-time), device_name: string | null, entries: integer, extension_version: string, id: string, outcome: string | null, reference: string, reported_at: string(date-time) | null, user_email: string | null }
 CaptureDiagnosticsIn { extension_version: string, last_run?: object | null, log: list[object], platform?: string | null, summary?: UpdateSummaryIn | null }
 CaptureDiagnosticsSentOut { id: string, reference: string }
 CapturePageKindOut { adapter: string, count: integer, description: string, example_url: string, first_seen_at: string(date-time), last_seen_at: string(date-time), pattern: string }
-CaptureRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), status: string, user_code: string }
+CaptureRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), same_network: boolean, status: string, user_code: string }
 CaptureStartIn { client_name: string }
 CaptureStartOut { connect_path: string, device_code: string, expires_in: integer, interval: integer, user_code: string }
 CaptureStatusIn { detail?: string | null, status: string }
 CaptureStatusOut { notified: boolean }
+CaptureStudentOut { first_name: string, id: string, last_name: string }
 CaptureTokenIn { device_code: string }
-CaptureTokenOut { device_id?: string | null, email?: string | null, key?: string | null, status: string }
+CaptureTokenOut { device_id?: string | null, key?: string | null, status: string }
 CategoryOut { count: integer, key: string, label: string }
 ChangeOut { before: object, changes: object, created_at: string(date-time), has_private_address: boolean, id: string, kind: string, note: string | null, private_address: string | null, requested_by: string | null, service: ListingBriefOut | null, source: string | null, status: string }
 ChangePasswordRequest { current_password: string, new_password: string }

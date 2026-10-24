@@ -54,7 +54,7 @@ async def _connect(client: AsyncClient, approver: str) -> dict:
     started = (await client.post("/capture-devices/start", json={"client_name": "Backpack Capture on Windows"})).json()
     assert started["connect_path"] == "/connect" and len(started["user_code"]) == 9
     pending = await client.post("/capture-devices/token", json={"device_code": started["device_code"]})
-    assert pending.json() == {"status": "pending", "key": None, "device_id": None, "email": None}
+    assert pending.json() == {"status": "pending", "key": None, "device_id": None}
     approved = await client.post(f"/capture-devices/requests/{started['user_code']}/approve", headers=_auth(approver))
     assert approved.json()["status"] == "approved", approved.text
     issued = (await client.post("/capture-devices/token", json={"device_code": started["device_code"]})).json()
@@ -68,14 +68,18 @@ async def _connect(client: AsyncClient, approver: str) -> dict:
 @pytest.mark.anyio
 async def test_connect_hands_out_a_key_that_only_sends_pages():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        email, guardian, child = await _guardian_with_child(client)
+        _email, guardian, child = await _guardian_with_child(client)
         issued = await _connect(client, guardian)
-        assert issued["email"] == email
+        # Whoever polls may have phished the Connect: no account email.
+        assert "email" not in issued
         key = _auth(issued["key"])
 
-        # What the extension does with it...
+        # What the extension does with it: names to label pages with, never
+        # the student ID that completes the auto-match key.
         [kid] = (await client.get("/students", headers=key)).json()
-        assert kid["id"] == child
+        assert kid == {"id": child, "first_name": "Sample", "last_name": "Student"}
+        [own] = (await client.get("/students", headers=_auth(guardian))).json()
+        assert own["student_id"] == "1234567"
         text = "[aria-label] Google Account: Sample Student\n(1234567@example.org) (role=button)\nNothing due"
         envelope = {"adapter": "classroom", "source_url": FEED_URL, "reduced_text": text,
                     "captured_at": "2026-09-14T13:00:00Z", "status": "ok", "char_count": len(text)}
@@ -345,3 +349,46 @@ async def test_a_reported_log_outlives_the_thirty_days_and_each_account_keeps_it
             ).scalars().all()
         assert len(unreported) == 100
         assert min(unreported) > now - timedelta(hours=100)  # the oldest one went
+
+
+@pytest.mark.anyio
+async def test_a_connect_from_another_network_needs_the_popup_code_typed():
+    """Anyone can start a request and send a parent the link. When it didn't
+    come from the parent's own connection, one click isn't enough."""
+    async with (
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as parent,
+        AsyncClient(transport=ASGITransport(app=app, client=("203.0.113.9", 4000)), base_url="http://test") as stranger,
+    ):
+        _email, guardian, _child = await _guardian_with_child(parent)
+        started = (await stranger.post("/capture-devices/start", json={"client_name": "Backpack Capture on your school's Chromebook"})).json()
+        code = started["user_code"]
+
+        shown = (await parent.get(f"/capture-devices/requests/{code}", headers=_auth(guardian))).json()
+        assert shown["same_network"] is False
+        # Only the extension's own names are ever shown on the page.
+        assert shown["client_name"] == "Backpack Capture"
+
+        refused = await parent.post(f"/capture-devices/requests/{code}/approve", headers=_auth(guardian))
+        assert refused.status_code == 403
+        wrong = await parent.post(f"/capture-devices/requests/{code}/approve", json={"typed_code": "BCDF-GHJK"}, headers=_auth(guardian))
+        assert wrong.status_code == 403
+        assert (await stranger.post("/capture-devices/token", json={"device_code": started["device_code"]})).json()["status"] == "pending"
+
+        # The parent's own computer, behind another connection: they type
+        # what the popup shows (any case or spacing) and it goes through.
+        typed = code.replace("-", "").lower()
+        ok = await parent.post(f"/capture-devices/requests/{code}/approve", json={"typed_code": typed}, headers=_auth(guardian))
+        assert ok.status_code == 200 and ok.json()["status"] == "approved", ok.text
+        issued = (await stranger.post("/capture-devices/token", json={"device_code": started["device_code"]})).json()
+        assert issued["status"] == "approved" and issued["key"].startswith("szc_")
+
+
+@pytest.mark.anyio
+async def test_a_connect_from_the_same_network_is_one_click_under_the_extensions_name():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _email, guardian, _child = await _guardian_with_child(client)
+        started = (await client.post("/capture-devices/start", json={"client_name": "Backpack Capture on Chromebook"})).json()
+        shown = (await client.get(f"/capture-devices/requests/{started['user_code']}", headers=_auth(guardian))).json()
+        assert shown["same_network"] is True and shown["client_name"] == "Backpack Capture on Chromebook"
+        ok = await client.post(f"/capture-devices/requests/{started['user_code']}/approve", headers=_auth(guardian))
+        assert ok.status_code == 200 and ok.json()["status"] == "approved"

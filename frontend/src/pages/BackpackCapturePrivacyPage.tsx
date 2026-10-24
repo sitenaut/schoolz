@@ -85,7 +85,9 @@ export function BackpackCapturePrivacyPage() {
         <strong>Finding your child's Google account.</strong> Update now (version 0.9.0 and later) opens the
         Classroom home page of each Google account signed in to this Chrome, one at a time, and reads that
         account's name and email address to tell whether it belongs to one of your children on schoolz - by
-        their student ID, by their name, or because you told it so. The page of an account that isn't one
+        their name, or because you told it so. schoolz never tells the extension your children's student IDs
+        (from version 0.9.5): it checks a school login's student ID itself when the pages arrive, and an
+        account it says is another student's isn't opened again. The page of an account that isn't one
         of your children's is deleted from the device straight away and never sent anywhere. When it can't
         tell, it asks you once (&quot;whose Google Classroom is this?&quot;) and remembers your answer on this
         device.
@@ -214,8 +216,9 @@ export function BackpackCapturePrivacyPage() {
         <li>
           <strong>Connect to schoolz</strong> (version 0.9.0 and later) - opens schoolz in a tab, where you
           sign in the way you always do and press Connect after checking the code matches the one the
-          extension shows. The extension then gets its own key, which can only send pages, list your children's
-          names, report how an update went and send each update's log and summary - it can't read anything else in
+          extension shows (if the request came from a different internet connection than yours, you type that
+          code in instead). The extension then gets its own key, which can only send pages, list your children's
+          names (never their student IDs), report how an update went and send each update's log and summary - it can't read anything else in
           your account. Each connected
           computer is listed under Account → Security on schoolz, where you can disconnect it, and the
           extension's own Sign out removes its key.

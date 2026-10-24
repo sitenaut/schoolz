@@ -1577,6 +1577,14 @@ class Bucket3StudentImportOut(Bucket3ImportResult):
     first_name: str
 
 
+class CaptureStudentOut(BaseModel):
+    """GET /students as a Backpack Capture key sees it (routers/students.py)."""
+
+    id: str
+    first_name: str
+    last_name: str
+
+
 class UnroutedAccountOut(BaseModel):
     """A Classroom login none of whose pages could be placed with a child.
     The extension asks the parent once whose it is, unless `other_student`

@@ -2,14 +2,14 @@ import os
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
 from models import GuardianInvite, GuardianStudentLink, Notification, School, Student, User, student_match_key
-from schemas import InviteCreate, InviteOut, StudentCreate, StudentOut, StudentUpdate
+from schemas import CaptureStudentOut, InviteCreate, InviteOut, StudentCreate, StudentOut, StudentUpdate
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -39,15 +39,24 @@ async def _student_out(db: AsyncSession, student: Student, link: GuardianStudent
     )
 
 
-@router.get("", response_model=list[StudentOut])
-async def list_my_students(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+@router.get("", response_model=list[StudentOut] | list[CaptureStudentOut])
+async def list_my_students(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Student, GuardianStudentLink)
         .join(GuardianStudentLink, GuardianStudentLink.student_id == Student.id)
         .where(GuardianStudentLink.guardian_user_id == user.id)
         .order_by(GuardianStudentLink.created_at)
     )
-    return [await _student_out(db, student, link) for student, link in result.all()]
+    rows = result.all()
+    if getattr(request.state, "capture_device_id", None):
+        # A Backpack Capture key gets the names it labels pages and asks
+        # about, never the student ID: first + last + ID is the auto-match
+        # key (add_student), so a phished or stolen key would otherwise let
+        # its holder link their own account to the child. The server checks
+        # a numeric Classroom login against the ID itself, on import
+        # (services/capture_routing.py).
+        return [CaptureStudentOut(id=s.id, first_name=s.first_name, last_name=s.last_name) for s, _ in rows]
+    return [await _student_out(db, student, link) for student, link in rows]
 
 
 @router.post("", response_model=StudentOut, status_code=status.HTTP_201_CREATED)
