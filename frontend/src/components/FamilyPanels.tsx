@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
+import { errorDetail } from "../lib/errorDetail";
 import type { School } from "../types";
 import { InviteShare } from "./InviteShare";
 import { FilterSelect } from "./ui/FilterSelect";
@@ -27,7 +28,7 @@ export function GuardianInvite({ student, onClose }: { student: ChildRef; onClos
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.detail ?? "Could not create invite");
+        setError(errorDetail(body, "Could not create invite"));
         return;
       }
       setInvite({ link: body.accept_url, email: body.invitee_email });
@@ -107,7 +108,7 @@ export function SpecialsEditor({ student, onClose }: { student: ChildRef; onClos
         .map(([day, r]) => ({ rotation_day: Number(day), subject: r.subject.trim(), teacher: r.teacher.trim() || null }));
       const res = await apiFetch(`/students/${student.id}/specials`, { method: "PUT", body: JSON.stringify(body) });
       if (!res.ok) {
-        setError((await res.json()).detail ?? "Could not save");
+        setError(errorDetail(await res.json().catch(() => null), "Could not save"));
         return;
       }
       setSaved(true);
@@ -196,7 +197,7 @@ export function AddChildForm({ onAdded, onCancel }: { onAdded: (notice: string |
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.detail ?? "Could not add student");
+        setError(errorDetail(body, "Could not add student"));
         return;
       }
       onAdded(

@@ -9,6 +9,7 @@ import { localDateKey, monthDay, todayKey } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
 import { SITE_URL } from "../lib/site";
 import { usePrerenderReady } from "../lib/prerenderReady";
+import { useViewerEpoch, withoutViewerLayer } from "../lib/viewer";
 import { trackMeasurement } from "../lib/track";
 import type { SchoolContentItem, SchoolToday } from "../types";
 import { useTranslation } from "react-i18next";
@@ -56,6 +57,16 @@ export function TodayPage() {
   const [cards, setCards] = useState<Record<string, SchoolToday>>({});
   const requested = useRef(new Set<string>());
   const mounted = useRef(true);
+  // A sign-out here left the child layer (whose class it is now, today's
+  // special) on the cards for the next person on the device, and a sign-in
+  // never added it. The layer goes at once; every card is asked for again.
+  const viewerEpoch = useViewerEpoch();
+  const [cardsEpoch, setCardsEpoch] = useState(viewerEpoch);
+  if (cardsEpoch !== viewerEpoch) {
+    setCardsEpoch(viewerEpoch);
+    setCards((c) => Object.fromEntries(Object.entries(c).map(([slug, today]) => [slug, withoutViewerLayer(today)])));
+  }
+  const fetchEpoch = useRef(viewerEpoch);
   const readyStart = useRef(performance.now());
   const readyReported = useRef(false);
 
@@ -69,9 +80,12 @@ export function TodayPage() {
   const fetchToday = useCallback((slug: string) => {
     if (requested.current.has(slug)) return;
     requested.current.add(slug);
+    const epoch = fetchEpoch.current;
     apiFetch(`/schools/${slug}/today`)
       .then((r) => (r.ok ? r.json() : null))
       .then((today: SchoolToday | null) => {
+        // Asked for as the previous viewer: not theirs to show any more.
+        if (epoch !== fetchEpoch.current) return;
         if (today && mounted.current) setCards((c) => ({ ...c, [slug]: today }));
       })
       .catch(() => {
@@ -90,6 +104,13 @@ export function TodayPage() {
   useEffect(() => {
     mySchools.forEach((s) => fetchToday(s.slug));
   }, [mySchools, fetchToday]);
+  useEffect(() => {
+    if (fetchEpoch.current === viewerEpoch) return;
+    fetchEpoch.current = viewerEpoch;
+    requested.current.clear();
+    deviceSlugs.forEach(fetchToday);
+    mySchools.forEach((s) => fetchToday(s.slug));
+  }, [viewerEpoch, deviceSlugs, mySchools, fetchToday]);
 
   // A tab or home-screen app resumed the next morning still held
   // yesterday's cards - nothing refetched, so an overnight closure never

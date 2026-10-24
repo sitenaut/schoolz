@@ -4,6 +4,7 @@ import { trackEvent, trackMeasurement } from "../lib/track";
 import { API_URL, IS_SUPABASE_AUTH } from "../authConfig";
 import { supabase } from "../supabase";
 import { apiFetch, setLocalToken, clearLocalToken, getLocalToken, setCachedAccessToken } from "../api";
+import { errorDetail } from "../lib/errorDetail";
 import { ROUTER_BASENAME } from "../lib/i18n";
 import { hasStoredSession, recoverSession } from "../lib/sessionRecovery";
 
@@ -46,10 +47,11 @@ type AuthContextValue = {
    * should stop pretending it's still about to finish. */
   authTimedOut: boolean;
   error: string | null;
-  registerLocal: (email: string, username: string, password: string) => Promise<void>;
-  loginLocal: (usernameOrEmail: string, password: string) => Promise<void>;
+  /** These resolve true once signed in; on failure they set `error` and resolve false. */
+  registerLocal: (email: string, username: string, password: string) => Promise<boolean>;
+  loginLocal: (usernameOrEmail: string, password: string) => Promise<boolean>;
   loginWithGoogle: (returnTo?: string) => Promise<void>;
-  loginWithPasswordSupabase: (email: string, password: string) => Promise<void>;
+  loginWithPasswordSupabase: (email: string, password: string) => Promise<boolean>;
   registerWithPasswordSupabase: (email: string, password: string, returnTo?: string) => Promise<boolean>;
   resendConfirmationEmailSupabase: (email: string, returnTo?: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -169,16 +171,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch {
       setError(`Could not reach the backend at ${API_URL}`);
-      return;
+      return false;
     }
     if (!res.ok) {
-      setError((await res.json()).detail ?? "Registration failed");
-      return;
+      setError(errorDetail(await res.json().catch(() => null), "Registration failed"));
+      return false;
     }
     const { access_token } = await res.json();
     setLocalToken(access_token);
     trackEvent("sign_up", { method: "password" });
     await refresh();
+    return true;
   };
 
   const loginLocal = async (usernameOrEmail: string, password: string) => {
@@ -191,16 +194,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch {
       setError(`Could not reach the backend at ${API_URL}`);
-      return;
+      return false;
     }
     if (!res.ok) {
-      setError((await res.json()).detail ?? "Login failed");
-      return;
+      setError(errorDetail(await res.json().catch(() => null), "Login failed"));
+      return false;
     }
     const { access_token } = await res.json();
     setLocalToken(access_token);
     trackEvent("login", { method: "password" });
     await refresh();
+    return true;
   };
 
   // Supabase sends the browser back to its configured Site URL after Google
@@ -220,14 +224,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithPasswordSupabase = async (email: string, password: string) => {
-    if (!supabase) return;
+    if (!supabase) return false;
     setError(null);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-    if (err) setError(friendlyAuthError(err, GENERIC_AUTH_FALLBACK));
-    else {
-      trackEvent("login", { method: "password" });
-      await refresh();
+    if (err) {
+      setError(friendlyAuthError(err, GENERIC_AUTH_FALLBACK));
+      return false;
     }
+    trackEvent("login", { method: "password" });
+    await refresh();
+    return true;
   };
 
   const registerWithPasswordSupabase = async (email: string, password: string, returnTo?: string): Promise<boolean> => {

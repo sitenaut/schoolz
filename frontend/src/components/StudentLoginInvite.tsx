@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "../api";
+import { errorDetail } from "../lib/errorDetail";
 import { InviteShare } from "./InviteShare";
 
 type StudentAccountStatus = { has_account: boolean; account_email: string | null; pending_invite_email: string | null };
@@ -32,7 +33,7 @@ export function StudentLoginInvite({ studentId, firstName }: { studentId: string
       const res = await apiFetch(`/students/${studentId}/account-invites`, { method: "POST", body: JSON.stringify({ invitee_email: email }) });
       const body = await res.json();
       if (!res.ok) {
-        setError(typeof body.detail === "string" ? body.detail : "Could not create invite");
+        setError(errorDetail(body, "Could not create invite"));
         return;
       }
       setInvite({ link: body.accept_url, email: body.invitee_email });

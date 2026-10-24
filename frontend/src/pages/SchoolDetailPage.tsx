@@ -8,6 +8,7 @@ import { ContactGrid, CurrentPeriodChip, DayBlocks, ItemRow, StatusPill, WeekStr
 import { IconChevronLeft, IconPhone } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
 import { useAuth } from "../context/AuthContext";
+import { useViewerEpoch, withoutViewerLayer } from "../lib/viewer";
 import { localDateKey, schoolCalendarPath, telHref, todayKey } from "../lib/calendar";
 import { isNoisyDistrictItem } from "../lib/districtItems";
 import { CURRENT_LANG, localizedPath } from "../lib/i18n";
@@ -57,10 +58,20 @@ export function SchoolDetailPage() {
   const [editingHours, setEditingHours] = useState(false);
   const { user } = useAuth();
   const readyStart = useRef(performance.now());
+  // Signing out or in on this page: the child layer goes at once, and the
+  // page is read again as whoever is signed in now (lib/viewer.ts).
+  const viewerEpoch = useViewerEpoch();
+  const [todayEpoch, setTodayEpoch] = useState(viewerEpoch);
+  if (todayEpoch !== viewerEpoch) {
+    setTodayEpoch(viewerEpoch);
+    setToday((td) => (td ? withoutViewerLayer(td) : td));
+  }
 
   useEffect(() => {
     if (!schoolId) return;
     readyStart.current = performance.now();
+    // A newer read (another school, another viewer) replaces this one.
+    let current = true;
     Promise.all([
       apiFetch(`/schools/${schoolId}/today`).then((r) => (r.ok ? r.json() : null)),
       apiFetch(`/schools/${schoolId}/content`).then((r) => (r.ok ? r.json() : [])),
@@ -74,6 +85,7 @@ export function SchoolDetailPage() {
       // which isn't known until `today` itself resolves.
       apiFetch(`/schools/${schoolId}/class-years`).then((r) => (r.ok ? r.json() : [])),
     ]).then(([td, c, st, docs, sc, nl, tr, cy]) => {
+      if (!current) return;
       if (!td) setMissing(true);
       setToday(td);
       setItems(c);
@@ -85,7 +97,10 @@ export function SchoolDetailPage() {
       setClassYears(cy);
       if (td) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
     });
-  }, [schoolId]);
+    return () => {
+      current = false;
+    };
+  }, [schoolId, viewerEpoch]);
 
   // Only fetched when signed in - which class, if any, is highlighted
   // first in the strip.
@@ -285,7 +300,7 @@ export function SchoolDetailPage() {
       {classYears.length > 0 && (
         <div className="tabs" style={{ margin: "12px 0" }}>
           {classYears.map((c) => {
-            const isMine = myStudents.some((st) => st.school_id === s.id && st.grad_year === c.grad_year);
+            const isMine = !!user && myStudents.some((st) => st.school_id === s.id && st.grad_year === c.grad_year);
             return (
               <Link
                 key={c.grad_year}
