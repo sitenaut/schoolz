@@ -47,6 +47,10 @@ logger = logging.getLogger(__name__)
 # own tail (or a caller trying to provoke that) has a real dollar cost per
 # extra round, not just a slow response.
 MAX_TOOL_ROUNDS = 4
+# How much of the conversation goes back to the model: the most recent whole
+# turns that fit (trim_history). The widget replays the full history every
+# turn, and a turn with tools adds 4-12 messages.
+MAX_HISTORY_MESSAGES = 24
 
 # lang -> (name of the site version, how to answer)
 _LANG_REPLY = {
@@ -187,6 +191,34 @@ def _record_usage(model: str, completion, duration_s: float) -> None:
     ), duration_s)
 
 
+def _is_turn_start(message: dict[str, Any]) -> bool:
+    """A user's own words, not the tool results that also travel as role "user"."""
+    content = message.get("content")
+    if message.get("role") != "user":
+        return False
+    return isinstance(content, str) or not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content or [])
+
+
+def _asks_for_tools(message: dict[str, Any]) -> bool:
+    content = message.get("content")
+    return message.get("role") == "assistant" and isinstance(content, list) and any(
+        isinstance(b, dict) and b.get("type") == "tool_use" for b in content
+    )
+
+
+def trim_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The most recent whole turns that fit in MAX_HISTORY_MESSAGES, cut only
+    where a user's own message starts, so a tool_use never loses its
+    tool_result. A turn left unfinished (an unanswered tool_use at the end,
+    which the round cap used to leave) is dropped: every later turn sent with
+    it failed as "the assistant isn't available"."""
+    starts = [i for i, m in enumerate(history) if _is_turn_start(m)]
+    if history and _asks_for_tools(history[-1]):
+        history = history[: starts[-1]] if starts else []
+        starts = starts[:-1]
+    return next((history[i:] for i in starts if len(history) - i <= MAX_HISTORY_MESSAGES), [])
+
+
 async def run_chat_turn(
     mcp: FastMCP,
     history: list[dict[str, Any]],
@@ -261,7 +293,7 @@ async def run_chat_turn(
     escalated = already_escalated and bool(config.escalation_model)
     model = config.escalation_model if escalated else config.model
 
-    messages: list[dict[str, Any]] = list(history)
+    messages: list[dict[str, Any]] = trim_history(history)
     messages.append({"role": "user", "content": message})
 
     tool_rounds = 0
@@ -311,6 +343,9 @@ async def run_chat_turn(
 
         if tool_rounds > MAX_TOOL_ROUNDS:
             final_text = "That's a more involved question than I can chase down right now - try narrowing it to one school or one topic."
+            # In place of the tool_use nobody will answer, which would make
+            # the provider refuse every later turn of this conversation.
+            messages[-1] = {"role": "assistant", "content": [{"type": "text", "text": final_text}]}
             break
 
         results = []

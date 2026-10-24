@@ -4,6 +4,7 @@ import json
 import os
 import uuid
 from functools import partial
+from itertools import pairwise
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
@@ -19,7 +20,7 @@ from routers import admin_chatbot
 from services import chat_providers, chat_settings
 from services.chat_providers import Completion, OpenAICompatibleProvider, Usage, _gemini_schema
 from services.chat_settings import AudienceConfig
-from services.chatbot import run_chat_turn
+from services.chatbot import MAX_HISTORY_MESSAGES, MAX_TOOL_ROUNDS, run_chat_turn, trim_history
 from tests.test_kids_api import _register
 from tests.test_students import _make_admin
 
@@ -440,3 +441,76 @@ async def test_calendar_tool_caps_a_huge_result_upcoming_first():
     got = json.loads(await _run_tool(app.state.mcp, "list_calendar_items", {"q": "CAPTEST"}))
     assert got["count"] == 120 and len(got["items"]) == 60 < mcp_server._MAX_CALENDAR_ITEMS
     assert all("soon" in i["title"] for i in got["items"]) and "upcoming only" in got["note"]
+
+
+def _turn(n: int, tools: int = 1) -> list[dict]:
+    """One question with `tools` tool rounds, as the widget replays it."""
+    out = [{"role": "user", "content": f"question {n}"}]
+    for t in range(tools):
+        out.append({"role": "assistant", "content": [{"type": "tool_use", "id": f"t{n}-{t}", "name": "list_schools", "input": {}}]})
+        out.append({"role": "user", "content": [{"type": "tool_result", "tool_use_id": f"t{n}-{t}", "content": "[]"}]})
+    out.append({"role": "assistant", "content": [{"type": "text", "text": f"answer {n}"}]})
+    return out
+
+
+def test_trim_history_keeps_whole_recent_turns_and_drops_an_unfinished_one():
+    history = [m for n in range(20) for m in _turn(n)]
+    trimmed = trim_history(history)
+    assert len(trimmed) <= MAX_HISTORY_MESSAGES and trimmed[0] == {"role": "user", "content": "question 14"}
+    assert trimmed[-1]["content"][0]["text"] == "answer 19"
+
+    # What the round cap used to leave behind: a turn ending on a tool_use.
+    broken = _turn(1) + _turn(2)[:-2]
+    assert trim_history(broken) == _turn(1)
+    assert trim_history([{"role": "assistant", "content": [{"type": "tool_use", "id": "x", "name": "n", "input": {}}]}]) == []
+
+
+@pytest.mark.anyio
+async def test_a_long_conversation_keeps_working(monkeypatch):
+    """The widget sends back everything it was given. Past 40 messages that
+    used to 422 every send for the rest of the session."""
+    from types import SimpleNamespace
+
+    import services.chatbot as chatbot_module
+    from routers import chat as chat_router
+
+    class _Answers:
+        async def complete(self, model, messages, **_):
+            assert len(messages) <= MAX_HISTORY_MESSAGES + 1
+            return Completion(content=[{"type": "text", "text": "ok"}], usage=Usage())
+
+    async def _settings(db):
+        return SimpleNamespace(anonymous=AudienceConfig(escalation_model=None), signed_in=AudienceConfig(escalation_model=None))
+
+    monkeypatch.setattr(chatbot_module, "configured_providers", lambda **_: {"anthropic": _Answers()})
+    monkeypatch.setattr(chat_router, "get_settings", _settings)
+    history = [m for n in range(30) for m in _turn(n)]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.post("/chat", json={"message": "and tomorrow?", "history": history})
+    assert res.status_code == 200, res.text
+    assert res.json()["reply"] == "ok" and len(res.json()["history"]) <= MAX_HISTORY_MESSAGES + 2
+
+
+@pytest.mark.anyio
+async def test_hitting_the_tool_round_cap_leaves_a_history_the_next_turn_can_use():
+    class _AlwaysTools:
+        calls = 0
+
+        async def complete(self, model, messages, **_):
+            # Every tool_use the model sees must have been answered.
+            for prev, nxt in pairwise(messages):
+                if any(b.get("type") == "tool_use" for b in prev["content"] if isinstance(prev["content"], list)):
+                    assert any(b.get("type") == "tool_result" for b in nxt["content"] if isinstance(nxt["content"], list))
+            self.calls += 1
+            return Completion(content=[{"type": "tool_use", "id": f"t{self.calls}", "name": "list_schools", "input": {}}], usage=Usage())
+
+    provider = _AlwaysTools()
+    config = AudienceConfig(escalation_model=None)
+    first = await run_chat_turn(app.state.mcp, history=[], message="everything about every school", already_escalated=False,
+                                config=config, providers={"anthropic": provider})
+    assert first["rounds"] == MAX_TOOL_ROUNDS + 1 and "more involved" in first["reply"]
+    assert first["history"][-1] == {"role": "assistant", "content": [{"type": "text", "text": first["reply"]}]}
+    # The next turn reaches the provider with a well-formed history (the
+    # assert in complete()) instead of being refused.
+    await run_chat_turn(app.state.mcp, history=first["history"], message="ok, just one school", already_escalated=False,
+                        config=config, providers={"anthropic": provider})
