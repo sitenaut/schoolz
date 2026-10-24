@@ -380,3 +380,52 @@ async def test_a_retried_block_that_fails_again_is_not_sent_for_item_extraction(
     assert note.startswith("WARNING[document_unsupported]: 1 document block(s)")
     assert note.endswith("no extractable text in new blocks")
     assert retry.pending_vision_extraction is True
+
+
+@pytest.mark.anyio
+async def test_undated_district_items_of_one_category_are_not_each_others_duplicates(monkeypatch):
+    """Category alone means "the same holiday" only on a date: two undated
+    programs in a district-wide newsletter are two programs."""
+    import uuid
+    from types import SimpleNamespace
+
+    from sqlalchemy import select
+
+    import database
+    from models import District
+    from services import content_extractor
+
+    answers = []
+
+    class _Messages:
+        async def create(self, **kwargs):
+            return SimpleNamespace(
+                content=[SimpleNamespace(type="tool_use", input={"items": answers.pop(0)})], stop_reason="tool_use", usage=None
+            )
+
+    class _Client:
+        def __init__(self, **kwargs):
+            self.messages = _Messages()
+
+    monkeypatch.setattr(content_extractor, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(content_extractor, "AsyncAnthropic", _Client)
+
+    def program(title: str) -> dict:
+        return {"category": "program", "title": title, "description": title, "scope": "district", "source_block_position": 0}
+
+    async with database.SessionLocal() as db:
+        district = District(name=f"Dedup District {uuid.uuid4().hex[:8]}")
+        db.add(district)
+        await db.flush()
+        for n, title in enumerate(["Chess club starts", "Robotics team sign-ups", "Chess club starts"]):
+            newsletter = SmoreNewsletter(url=f"https://example.org/{uuid.uuid4().hex}", district_id=district.id)
+            db.add(newsletter)
+            await db.flush()
+            answers.append([program(title)])
+            block = SmoreBlock(position=0, block_type="text", text_content=f"issue {n}: {title}")
+            await content_extractor.extract_from_newsletter(db, newsletter, [block])
+        titles = (
+            await db.execute(select(SchoolContentItem.title).where(SchoolContentItem.district_id == district.id))
+        ).scalars().all()
+    # The repeat of the same title is still a duplicate.
+    assert sorted(titles) == ["Chess club starts", "Robotics team sign-ups"]
