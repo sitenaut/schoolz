@@ -216,3 +216,45 @@ async def test_a_blank_day_from_the_model_is_not_an_event(monkeypatch):
 
     items = await special_events.parse_special_events_pdf(_UPLOADS + "2026/10/October-2026-Special-Events-Calendar.pdf", 2026, 10)
     assert [(i["date"].day, i["title"], i["note"]) for i in items] == [(21, "Pajama Day", None)]
+
+
+@pytest.mark.anyio
+async def test_a_calendar_pdf_is_read_by_the_model_once(monkeypatch):
+    # L7: the scan skips a PDF once one of its items is stored, so a parse
+    # that stored nothing (a re-upload whose items were all already there,
+    # or no labelled days) bought the same model call every week.
+    from types import SimpleNamespace
+
+    answers = {b"%PDF-1.4 re-upload": [{"day": 21, "title": "Pajama Day"}], b"%PDF-1.4 blank": []}
+    calls = []
+
+    class FakeMessages:
+        async def create(self, **kwargs):
+            pdf = special_events.base64.b64decode(kwargs["messages"][0]["content"][0]["source"]["data"])
+            calls.append(pdf)
+            return SimpleNamespace(content=[SimpleNamespace(type="tool_use", input={"items": answers[pdf]})])
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.messages = FakeMessages()
+
+    served = {}
+
+    async def fake_bytes(url, **kwargs):
+        return "application/pdf", served[url]
+
+    monkeypatch.setattr(special_events, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(special_events, "AsyncAnthropic", FakeClient)
+    monkeypatch.setattr(special_events.scraper_client, "get_bytes", fake_bytes)
+    monkeypatch.setattr(special_events.observability, "record_llm_call", lambda *a, **k: None)
+
+    url = _UPLOADS + "2026/10/October-2026-Special-Events-Calendar-1.pdf"
+    for pdf in answers:
+        served[url] = pdf
+        first = await special_events.parse_special_events_pdf(url, 2026, 10)
+        again = await special_events.parse_special_events_pdf(url, 2026, 10)
+        assert first == again
+    assert calls == list(answers)
+    # The prompt names the month, so the same bytes for another month are asked again.
+    await special_events.parse_special_events_pdf(url, 2026, 11)
+    assert len(calls) == 3

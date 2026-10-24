@@ -19,7 +19,7 @@ in the target is left alone, so re-importing a file changes nothing and a
 stale local copy can never overwrite what prod scanned for itself.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -55,6 +55,7 @@ from schemas import (
 from services import district_calendar_pdf
 from services.contact_page import CONSTITUENT_PREFIX
 from services.content_extractor import _title_dedup_key
+from services.school_status import same_status_fact
 from services.staff_roles import classify_role
 
 GIVEBACKS_SOURCE = "givebacks_pta"
@@ -152,7 +153,7 @@ async def export_results(db: AsyncSession, district_names: list[str], state: str
         s.id: s for s in (await db.execute(select(School).where(School.district_id.in_(districts)))).scalars().all()
     }
 
-    out = ConfigResults(exported_at=datetime.now(timezone.utc))
+    out = ConfigResults(exported_at=datetime.now(UTC))
 
     for d in found:
         menus = (await db.execute(select(LunchMenu).where(LunchMenu.district_id == d.id))).scalars().all()
@@ -274,7 +275,9 @@ class _Importer:
     async def _is_district_duplicate(self, district_id: str, item: ResultItem) -> bool:
         """The check content_extractor makes before storing a district-scoped
         newsletter item: another school's newsletter in a district already
-        tracked here may have reported the same closure."""
+        tracked here may have reported the same closure. Category alone counts
+        only on a date: with none, every undated district item is a candidate,
+        and the first undated "reminder" swallowed every later one."""
         candidates = (
             await self.db.execute(
                 select(SchoolContentItem).where(
@@ -285,7 +288,12 @@ class _Importer:
                 )
             )
         ).scalars().all()
-        return any(c.category == item.category or _title_dedup_key(c.title) == _title_dedup_key(item.title) for c in candidates)
+        return any(
+            (item.start_date is not None and c.category == item.category)
+            or _title_dedup_key(c.title) == _title_dedup_key(item.title)
+            or same_status_fact(c.title, item.title)
+            for c in candidates
+        )
 
     async def _add_items(
         self,
@@ -356,7 +364,7 @@ class _Importer:
         fires here, proving this environment can reach the source."""
         if not job_id or run is None:
             return
-        when = run.finished_at or datetime.now(timezone.utc)
+        when = run.finished_at or datetime.now(UTC)
         self.db.add(
             JobRun(
                 job_id=job_id,

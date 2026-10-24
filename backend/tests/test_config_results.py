@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
@@ -30,7 +30,7 @@ from services import contact_page, district_calendar_pdf
 
 
 def _dt(day: int) -> datetime:
-    return datetime(2026, 10, day, 4, tzinfo=timezone.utc)
+    return datetime(2026, 10, day, 4, tzinfo=UTC)
 
 
 async def _admin_client(client: AsyncClient, run_id: str) -> dict:
@@ -265,3 +265,46 @@ async def test_unchanged_contact_page_skips_the_model(monkeypatch):
 
     with pytest.raises(AssertionError, match="model called"):
         await contact_page.fetch_contacts("https://school.example.org", ("stale", known_people))
+
+
+@pytest.mark.anyio
+async def test_imported_undated_district_items_are_not_each_others_duplicates():
+    # L10: with no date, the duplicate lookup was start_date IS NULL, so the
+    # first undated district reminder swallowed every later one by category
+    # (3 carried, 1 stored). L40: a closure worded differently from the one
+    # already stored is still the same fact.
+    run_id = uuid.uuid4().hex[:8]
+    config = _config(run_id)
+    reminders = ["Bring a water bottle", "Return permission slips", "Sign up for conferences"]
+    thanksgiving = datetime(2026, 11, 26, 5, tzinfo=UTC)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = await _admin_client(client, run_id)
+        assert (await client.post("/admin/config/import", json=config, headers=headers)).status_code == 200
+        async with database.SessionLocal() as db:
+            district = (await db.execute(select(District).where(District.name == config["districts"][0]["name"]))).scalar_one()
+            newsletter = (
+                await db.execute(select(SmoreNewsletter).where(SmoreNewsletter.url == config["smore_newsletters"][0]["url"]))
+            ).scalar_one()
+            block = SmoreBlock(newsletter_id=newsletter.id, position=0, block_type="text", text_content="Reminders", content_hash=f"r{run_id}")
+            db.add(block)
+            await db.flush()
+            for title in reminders:
+                db.add(SchoolContentItem(scope="district", district_id=district.id, newsletter_id=newsletter.id,
+                                         source_block_id=block.id, category="reminder", title=title))
+            db.add(SchoolContentItem(scope="district", district_id=district.id, newsletter_id=newsletter.id, source_block_id=block.id,
+                                     category="reminder", title="No School - Thanksgiving Recess", start_date=thanksgiving))
+            await db.commit()
+
+        results = (await client.get("/admin/config/results", params={"district": config["districts"][0]["name"]}, headers=headers)).json()
+        await _wipe_results(config)
+        async with database.SessionLocal() as db:
+            db.add(SchoolContentItem(scope="district", district_id=district.id, category="event", source="ics_feed",
+                                     title="SCHOOLS CLOSED - Thanksgiving Recess", start_date=thanksgiving))
+            await db.commit()
+
+        imported = await client.post("/admin/config/import", json={**config, "results": results}, headers=headers)
+        assert imported.status_code == 200, imported.text
+        assert imported.json()["results_applied"]["items"] == 3
+        async with database.SessionLocal() as db:
+            titles = (await db.execute(select(SchoolContentItem.title).where(SchoolContentItem.district_id == district.id))).scalars().all()
+        assert sorted(titles) == sorted([*reminders, "SCHOOLS CLOSED - Thanksgiving Recess"])

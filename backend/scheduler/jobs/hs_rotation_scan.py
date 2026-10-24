@@ -174,8 +174,15 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 )
             )
             created += 1
+    # The sheet is tentative, so a day it no longer lists is gone - but only
+    # inside the dates it covers. The district posts next year's PDF in the
+    # spring, and deleting everything it doesn't list emptied the rest of
+    # this year's rotation from Today until June.
+    parsed_dates = [datetime.fromisoformat(day["date"]).date() for day in parsed["days"]]
+    first, last = min(parsed_dates), max(parsed_dates)
     for row in existing.values():
-        await db.delete(row)
-        removed += 1
+        if first <= row.start_date.astimezone(_TZ).date() <= last:
+            await db.delete(row)
+            removed += 1
 
     return f"hs rotation ({parsed['academic_year']}): {created} new, {updated} updated, {removed} removed, {len(parsed['days'])} days in PDF"

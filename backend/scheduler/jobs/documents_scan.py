@@ -1,3 +1,4 @@
+from datetime import date
 from urllib.parse import urlparse
 
 from sqlalchemy import func, select
@@ -6,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import District, School, SchoolDocument, SmoreNewsletter
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
+from services.class_years import academic_year_start
 from services.school_documents import (
     discover_district_letter_days,
     discover_from_smore,
@@ -125,17 +127,36 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # Drive viewer's sign-in link, with a year read off the viewer page),
         # and neither is one an admin dismissed.
         dead = {d.id for d in docs if d.dismissed_at or urlparse(d.url).hostname == "accounts.google.com"}
-        years = [d.academic_year for d in docs if d.academic_year and d.id not in dead]
-        max_year = max(years) if years else None
         found_urls = {e["url"] for e in found if e["doc_type"] == doc_type}
+        if doc_type == "letter_day_schedule" or (doc_type == "bell_schedule" and bells_narrowed):
+            # A replaced rotation sheet gets a new URL; only what this run found is live.
+            live = {d.id for d in docs if d.id not in dead and d.url in found_urls}
+        else:
+            live = _current_ids(docs, dead, found_urls, site_unread=site_error is not None)
         for d in docs:
-            if d.id in dead:
-                d.is_current = False
-            elif doc_type == "letter_day_schedule" or (doc_type == "bell_schedule" and bells_narrowed):
-                # A replaced rotation sheet gets a new URL; only what this run found is live.
-                d.is_current = d.url in found_urls
-            else:
-                d.is_current = d.academic_year == max_year if max_year else True
+            d.is_current = d.id in live
 
     summary = ", ".join(f"{t}: {sum(1 for e in found if e['doc_type'] == t)}" for t in sorted(doc_types))
     return f"documents: {created} new, {updated} updated ({summary})"
+
+
+def _current_ids(docs: list[SchoolDocument], dead: set[str], found_urls: set[str], site_unread: bool, today: date | None = None) -> set[str]:
+    """Which of one doc type's rows are current. Only what this run found
+    counts: a stored "2024-2025 Handbook" the site no longer lists used to
+    outrank the undated "Student Handbook" it lists now, and stayed current
+    for as long as it held the highest year. When the site couldn't be read,
+    its rows weren't checked, so they still count.
+
+    Among those, the latest year wins (nav and newsletter genuinely
+    disagree), and a dated row beats an undated one, except when the latest
+    year is already over: an undated handbook found today is more likely
+    this year's than last year's is."""
+    seen = [d for d in docs if d.id not in dead and (d.url in found_urls or (site_unread and d.source == "website"))]
+    dated = [d for d in seen if d.academic_year]
+    if not dated:
+        return {d.id for d in seen}
+    max_year = max(d.academic_year for d in dated)
+    undated = [d for d in seen if not d.academic_year]
+    if undated and int(max_year[:4]) < academic_year_start(today):
+        return {d.id for d in undated}
+    return {d.id for d in dated if d.academic_year == max_year}
