@@ -2152,7 +2152,8 @@ class SurveyResponse(Base):
     also carries lightweight provenance: when it arrived, the browser's
     user agent, and a *salted hash* of the sender's IP - never the address
     itself, which would be personal data under GDPR for no added benefit.
-    The hash is one-way but stable, so a pile of responses can be shown to
+    The hash is stable (and reversible on purpose, see routers/survey.py
+    `_ip_hash`), so a pile of responses can be shown to
     the district as genuinely distinct submissions rather than one person
     clicking submit two hundred times. PrivacyPage.tsx discloses exactly
     this, in these words - keep the two in sync.
@@ -2794,7 +2795,8 @@ class AuditEvent(Base):
     compromised process can't rewrite history. No foreign keys, so deleting
     a user or key never deletes their history. Holds no secrets: targets are
     ids and names, never tokens, keys or passwords. The address is a salted
-    one-way hash, like the survey's (the privacy page promises no raw IPs).
+    hash, like the survey's, reversible on purpose (routers/survey.py
+    `_ip_hash`); the privacy page promises no raw IPs and says so.
     """
 
     __tablename__ = "audit_events"

@@ -1119,8 +1119,8 @@ async def delete_user_data(db: AsyncSession, user_id: str) -> None:
 
 
 def ip_hash(ip: str | None) -> str | None:
-    """Salted one-way hash, same reasoning as the survey's: enough to count
-    one connection's inquiries, never the address itself."""
+    """Salted hash, like the survey's (and reversible on purpose, like it):
+    enough to count one connection's inquiries, never the address itself."""
     if not ip:
         return None
     salt = os.getenv("JWT_SECRET", "schoolz-localz-salt")

@@ -18,11 +18,16 @@ router = APIRouter(prefix="/survey", tags=["survey"])
 
 
 def _ip_hash(request: Request) -> str | None:
-    """A salted, one-way hash - never the address itself. Enough to tell
-    two hundred responses from two hundred people apart from two hundred
-    responses from one person, which is the only question this needs to
-    answer. Salting with a server-side secret means the hashes can't be
-    brute-forced back into addresses from the small IPv4 space."""
+    """A salted hash in place of the address itself. Enough to tell two
+    hundred responses from two hundred people apart from two hundred
+    responses from one person.
+
+    Reversible on purpose: prod has no JWT_SECRET, so the salt is the
+    literal below, and hashing the IPv4 space gives an address back. That
+    lets the owner hand an address to the authorities over illegal content,
+    and /privacy says so. Don't swap in a secret salt (CLAUDE.md, "IP codes
+    are reversible on purpose"), and don't let the hash leave the database:
+    the CSV numbers senders instead."""
     ip = client_ip(request)
     if not ip:
         return None
@@ -146,10 +151,15 @@ async def export_responses_csv(_: User = Depends(require_permission("analytics.v
             "name",
             "email",
             "may_be_quoted_with_name",
-            "distinct_sender_hash",
+            "sender",
         ]
     )
+    # One number per distinct address, so the district can still see the
+    # responses came from separate people without getting the (reversible)
+    # hash itself.
+    senders: dict[str, int] = {}
     for r in rows:
+        sender = senders.setdefault(r.ip_hash, len(senders) + 1) if r.ip_hash else ""
         writer.writerow(
             [
                 r.created_at.isoformat(),
@@ -161,7 +171,7 @@ async def export_responses_csv(_: User = Depends(require_permission("analytics.v
                 r.submitter_name or "",
                 r.submitter_email or "",
                 "yes" if r.share_consent == "named" else "no",
-                (r.ip_hash or "")[:12],
+                sender,
             ]
         )
     return Response(
