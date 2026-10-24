@@ -1,5 +1,10 @@
+import json
 from datetime import date
+from types import SimpleNamespace
 
+import pytest
+
+from local_events.sources import theatre
 from local_events.sources.theatre import page_text, to_raw_events
 
 TODAY = date(2026, 9, 27)
@@ -54,3 +59,40 @@ def test_school_slug_passes_through_when_set():
 
 def test_page_text_inlines_links():
     assert "[https://x.org/a]" in page_text('<p>Show <a href="/a">Tickets</a></p>', "https://x.org")
+
+
+@pytest.mark.anyio
+async def test_an_unreadable_model_answer_is_never_kept_as_no_events(monkeypatch):
+    answers, stored = [], {}
+
+    class _Messages:
+        async def create(self, **kwargs):
+            return SimpleNamespace(content=answers.pop(0), stop_reason="tool_use", usage=None)
+
+    class _Client:
+        def __init__(self, **kwargs):
+            self.messages = _Messages()
+
+    async def _stored(key):
+        return stored.get(key)
+
+    async def _store(key, items):
+        stored[key] = items
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(theatre, "AsyncAnthropic", _Client)
+    monkeypatch.setattr(theatre, "_stored", _stored)
+    monkeypatch.setattr(theatre, "_store", _store)
+    monkeypatch.setattr(theatre, "_CACHE", {})
+    source = theatre.TheatreSiteSource("hp", ["https://x.org/season"])
+
+    answers.append([SimpleNamespace(type="text", text="no tool call")])
+    with pytest.raises(ValueError):
+        await source._extract(TEXT)
+    assert stored == {}
+
+    # The list as a JSON string is the answer's real content, read and kept.
+    show = {"title": "Sweeney Todd", "start_date": "2026-10-30"}
+    answers.append([SimpleNamespace(type="tool_use", input={"productions": json.dumps([show])})])
+    assert await source._extract(TEXT) == [show]
+    assert list(stored.values()) == [[show]]

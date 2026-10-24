@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ from services.school_status import is_status_title, same_status_fact
 # Apptegy's events API needs an explicit date range, unlike an .ics feed
 # which just hands over everything it has. Wide enough to cover a school
 # year looking both directions from whenever this happens to run.
+_ET = ZoneInfo("America/New_York")
 _APPTEGY_WINDOW_PAST_DAYS = 120
 _APPTEGY_WINDOW_FUTURE_DAYS = 400
 
@@ -23,6 +25,37 @@ async def _fetch_feed(feed: dict) -> list[dict]:
             feed["org_id"], today - timedelta(days=_APPTEGY_WINDOW_PAST_DAYS), today + timedelta(days=_APPTEGY_WINDOW_FUTURE_DAYS)
         )
     return await fetch_district_calendar(feed["url"])
+
+
+def _retire_vanished(fetched: list[tuple[dict, list[dict]]], events: list[dict], existing_by_uid: dict) -> int:
+    """Retire upcoming rows a feed no longer lists: a district that deletes a
+    mistaken "Schools Closed" from its calendar would otherwise keep showing
+    it on Today forever, and a hash-keyed event (no UID, or Incident IQ's
+    title + start + rooms) that moves leaves its old time behind.
+
+    Only for feeds that returned events: a failed fetch returns [] too
+    (fetch_district_calendar), and must never read as "everything's gone".
+    Feeds that share a name share a uid prefix, so all of them must have
+    answered. Retired, not deleted: some rows were a newsletter's before the
+    feed claimed them, and the update path makes one current again if it
+    comes back."""
+    answered: dict[str, bool] = {}
+    for feed, feed_events in fetched:
+        prefix = f"{feed.get('name')}:"
+        answered[prefix] = answered.get(prefix, True) and bool(feed_events)
+    prefixes = tuple(p for p, ok in answered.items() if ok)
+    if not prefixes:
+        return 0
+    seen = {e["external_uid"] for e in events}
+    today = datetime.now(_ET).date()
+    retired = 0
+    for uid, row in existing_by_uid.items():
+        if uid in seen or not row.is_current or not uid.startswith(prefixes) or row.start_date is None:
+            continue
+        if row.start_date.astimezone(_ET).date() >= today:
+            row.is_current = False
+            retired += 1
+    return retired
 
 
 def _same_event_key(event: dict) -> tuple:
@@ -128,6 +161,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     for event in events:
         row = existing_by_uid.get(event["external_uid"])
         if row:
+            row.is_current = True  # back on the feed after being retired below
             row.title = event["title"]
             row.description = event["description"]
             row.start_date = event["start_date"]
@@ -230,7 +264,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         )
         created += 1
 
-    summary = f"district calendar: {created} new, {updated} updated, {claimed} deduped against newsletter items, {len(events)} total across {len(district.ics_feeds)} feed(s)"
+    retired = _retire_vanished(fetched, events, existing_by_uid)
+    retired_note = f", {retired} no longer on the feed" if retired else ""
+    summary = f"district calendar: {created} new, {updated} updated, {claimed} deduped against newsletter items{retired_note}, {len(events)} total across {len(district.ics_feeds)} feed(s)"
     if missing_schools:
         return f"WARNING[ics_feed_school_missing]: {summary}; no school with slug: {', '.join(missing_schools)}"
     return summary

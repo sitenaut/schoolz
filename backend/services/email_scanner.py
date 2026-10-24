@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
+import anyio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,7 +61,10 @@ async def run_scanner(db: AsyncSession, scanner: EmailScanner) -> str:
     skip_ids = {row[0] for row in seen_result.all()}
 
     query = build_gmail_query(scanner)
-    messages = fetch_all_messages_sync(service, query, skip_ids)
+    # Off the event loop, like every other Gmail call (gmail_client.py): a
+    # year's lookback is hundreds of blocking requests, which froze every
+    # other job in the scheduler. One thread, so httplib2 isn't shared.
+    messages = await anyio.to_thread.run_sync(fetch_all_messages_sync, service, query, skip_ids)
 
     processed_ok = 0
     for message in messages:

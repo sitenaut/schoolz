@@ -394,6 +394,9 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
                 else:
                     items_updated += 1
 
+                # Current again if an earlier run retired it: the model's
+                # wording varies run to run, so a uid can leave and come back.
+                row.is_current = True
                 row.category = category
                 row.title = title[:300]
                 row.description = item.get("description")
