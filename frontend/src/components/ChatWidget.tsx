@@ -62,6 +62,9 @@ export function ChatWidget() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Moves whenever the transcript is reset (sign-in/out, New chat), so a
+  // reply still in flight from before can tell it no longer belongs here.
+  const conversation = useRef(0);
 
   // The backend offers personal tools per request based on the login, so a
   // transcript from before a sign-in/out would carry one account's kids'
@@ -71,6 +74,7 @@ export function ChatWidget() {
   const userId = user?.id ?? null;
   useEffect(() => {
     if (loading) return;
+    conversation.current += 1;
     const s = loadSaved(userId);
     setMessages(s?.messages ?? []);
     setApiHistory(s?.apiHistory ?? []);
@@ -90,6 +94,7 @@ export function ChatWidget() {
     setMessages((m) => [...m, { role: "user", text }]);
     setSending(true);
     trackEvent("chat_message_sent", { turn: apiHistory.length + 1 });
+    const turn = conversation.current;
     try {
       const r = await apiFetch("/chat", {
         method: "POST",
@@ -101,19 +106,24 @@ export function ChatWidget() {
       }
       if (!r.ok) throw new Error(t("Something went wrong - please try again."));
       const data = await r.json();
+      // Signed out (or started over) while waiting: this reply and the
+      // history it carries are the previous conversation's, child data
+      // included, and must not land in the new one.
+      if (conversation.current !== turn) return;
       const next = [...messages, { role: "user" as const, text }, { role: "assistant" as const, text: data.reply }];
       setApiHistory(data.history);
       setEscalated(data.escalated);
       setMessages(next);
       save({ userId, messages: next, apiHistory: data.history, escalated: data.escalated });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("Something went wrong - please try again."));
+      if (conversation.current === turn) setError(err instanceof Error ? err.message : t("Something went wrong - please try again."));
     } finally {
       setSending(false);
     }
   }
 
   function clearChat() {
+    conversation.current += 1;
     setMessages([]);
     setApiHistory([]);
     setEscalated(false);
