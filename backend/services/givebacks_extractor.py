@@ -34,6 +34,7 @@ from services.content_extractor import (
     _parse_date,
     _title_dedup_key,
     _vision_extract,
+    all_day_end,
 )
 from services.links import unwrap_redirect
 from services.tool_output import object_list, recover_spilled_input
@@ -159,6 +160,7 @@ async def extract_from_pta_page(
 
             item_start_date = _correct_stale_year(_parse_date(item.get("start_date"), job_kind=_JOB_KIND), job_kind=_JOB_KIND, school_id=school.id)
             item_end_date = _correct_stale_year(_parse_date(item.get("end_date"), job_kind=_JOB_KIND), job_kind=_JOB_KIND, school_id=school.id)
+            item_end_date = all_day_end(item_start_date, item_end_date, is_all_day)
 
             new_title = item["title"][:300]
             existing_row = next(

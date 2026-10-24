@@ -44,7 +44,7 @@ from models import School, SchoolContentItem, StaffMember, normalize_name
 from scheduler.errors import record_parse_issue
 from services import haiku
 from services.class_years import default_label, get_or_create_class_year
-from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
+from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date, all_day_end
 from services.links import unwrap_redirect
 from services.tool_output import object_list, object_value, recover_spilled_input
 
@@ -381,7 +381,7 @@ async def scan_activities_site(db: AsyncSession, school: School) -> str:
 
                 grad_years = item.get("audience_grad_years") or page_grad_years
                 start_date = _parse_date(item.get("start_date"))
-                end_date = _parse_date(item.get("end_date"))
+                end_date = all_day_end(start_date, _parse_date(item.get("end_date")), "T" not in (item.get("start_date") or ""))
                 uid = _stable_uid(page_path, title, item.get("start_date"))
                 touched_uids.add(uid)
 

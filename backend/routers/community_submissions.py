@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
@@ -33,7 +33,7 @@ from schemas import (
     SubmissionReviewOut,
 )
 from services import submission_review, upload_guard
-from services.content_extractor import _DEFAULT_TZ, _parse_date
+from services.content_extractor import _DEFAULT_TZ, _parse_date, all_day_end
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +186,7 @@ async def create_submission(
         await _refuse(db, attempt, "honeypot", status.HTTP_400_BAD_REQUEST, "Could not submit this - please try again")
 
     if attempt.ip and not staff:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         recent = SubmissionAttempt.created_at > now - timedelta(days=1)
         result = await db.execute(
             select(
@@ -343,7 +343,7 @@ async def update_submission(
     if payload.status is not None:
         submission.status = payload.status
         submission.reviewed_by_user_id = user.id
-        submission.reviewed_at = datetime.now(timezone.utc)
+        submission.reviewed_at = datetime.now(UTC)
     if payload.admin_notes is not None:
         submission.admin_notes = payload.admin_notes.strip()[:2000] or None
     if payload.school_id is not None:
@@ -546,7 +546,7 @@ async def extract_submission(
     scope = "local" if not submission.school_id and (submission.description or "").startswith("[Local event]") else "school"
     for position, item in enumerate(items):
         db.add(CommunitySubmissionItem(submission_id=submission_id, position=position, origin="model", scope=scope, **item))
-    submission.extracted_at = datetime.now(timezone.utc)
+    submission.extracted_at = datetime.now(UTC)
     await db.commit()
     return await _review(db, submission)
 
@@ -610,8 +610,9 @@ def _write_item(item: SchoolContentItem, draft: CommunitySubmissionItem, school:
     item.title = _published_title(draft)
     item.description = draft.description
     item.start_date = start
-    item.end_date = _parse_date(draft.end_local, job_kind="submission.review")
     item.is_all_day = "T" not in draft.start_local
+    # The draft keeps the flyer's printed last day; stored as the day after.
+    item.end_date = all_day_end(start, _parse_date(draft.end_local, job_kind="submission.review"), item.is_all_day)
     item.source_excerpt = draft.source_excerpt
 
 
@@ -756,7 +757,7 @@ async def publish_items(
 
     submission.status = "approved"
     submission.reviewed_by_user_id = user.id
-    submission.reviewed_at = datetime.now(timezone.utc)
+    submission.reviewed_at = datetime.now(UTC)
     await db.commit()
     return await _review(db, submission)
 

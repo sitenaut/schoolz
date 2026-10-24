@@ -439,6 +439,20 @@ def _parse_date(value: str | None, job_kind: str = "smore.scan") -> datetime | N
     return parsed
 
 
+def all_day_end(start: datetime | None, end: datetime | None, is_all_day: bool) -> datetime | None:
+    """An all-day range's end as every reader takes it: the day after its last
+    day, ICS style (school_today._item_date_range, GET /calendar's overlap,
+    frontend lib/calendar.ts). A model writes the printed last day ("No
+    School Nov 5-6" ends "2026-11-06"), which dropped that day everywhere:
+    Nov 6 showed Open. An end on the start day is no range at all."""
+    if end is None or not is_all_day:
+        return end
+    end_day = end.astimezone(_DEFAULT_TZ).date()
+    if start is not None and end_day <= start.astimezone(_DEFAULT_TZ).date():
+        return None
+    return datetime.combine(end_day + timedelta(days=1), datetime.min.time(), _DEFAULT_TZ)
+
+
 def _current_item_line(item: SchoolContentItem) -> str:
     """One CURRENT ITEMS context line, with the date in the same local,
     offset-free format the model is asked to return - the inverse of
@@ -823,6 +837,7 @@ async def extract_from_newsletter(
                     if year_shift
                     else _correct_stale_year(item_end_date, newsletter_id=newsletter.id)
                 )
+            item_end_date = all_day_end(item_start_date, item_end_date, is_all_day)
             if item_start_date is None and item["category"] == "lunch_menu":
                 item_start_date = _infer_lunch_menu_start_date(item, datetime.now(_DEFAULT_TZ))
                 record_parse_issue("smore.scan", "unexpected_format", newsletter_id=newsletter.id, sample="lunch_menu item missing start_date")
