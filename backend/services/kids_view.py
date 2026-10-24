@@ -9,8 +9,7 @@ picked what it picked.
 from __future__ import annotations
 
 import re
-from datetime import datetime, time, timedelta
-from types import SimpleNamespace
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from services.bell_schedule import current_period, period_name_by_start_time
@@ -58,7 +57,10 @@ def right_now(blocks: list, bell_periods: dict | None, now: datetime) -> dict:
     now = now.astimezone(LOCAL_TZ)
     today_key = now.strftime("%m/%d")
 
-    todays = [b for b in blocks if b.schedule_date == today_key]
+    # MM/DD carries no year and daily rows are never pruned, so a row on
+    # today's date that nobody has refreshed in a week is an older year's.
+    fresh_since = now - timedelta(days=7)
+    todays = [b for b in blocks if b.schedule_date == today_key and (getattr(b, "updated_at", None) or now) >= fresh_since]
     stale = False
     shown = todays
     if not todays and blocks:
@@ -254,6 +256,39 @@ def _days_between(start_iso: str, end_iso: str) -> int:
     return (datetime.fromisoformat(end_iso).date() - datetime.fromisoformat(start_iso).date()).days
 
 
+def valid_accepted_until(value: str | None) -> bool:
+    """The only cutoffs late_credit can read: none, "marking_period_end", or
+    an ISO date. A syllabus's "until 11/10" has no year."""
+    if not value or value == "marking_period_end":
+        return True
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def _shape_credit(policy, days_late: int, past_last_band: float = 0.0) -> float | None:
+    """The points a class rule's gradient leaves after `days_late` days, cutoff
+    aside. `past_last_band` is a tiered rule's credit once later than its last
+    step: zero under the rule itself (it closes there), but a teacher who
+    reopened the work keeps that last band."""
+    shape = policy.shape
+    if shape in ("full_credit", "window"):
+        return 100.0
+    if shape == "flat":
+        return 100.0 - (policy.penalty_pct or 0)
+    if shape == "daily_decay":
+        decayed = 100.0 - (policy.penalty_per_day or 0) * days_late
+        return max(decayed, policy.floor_pct if policy.floor_pct is not None else 0.0)
+    if shape == "tiered":
+        # First tier whose day-count still covers how late this is; steps are
+        # written as "within N days you get X%".
+        ordered = sorted(policy.steps or [], key=lambda s: int(s.get("days", 0)))
+        return next((float(s.get("credit_pct", 0)) for s in ordered if int(s.get("days", 0)) >= days_late), past_last_band)
+    return None
+
+
 def _exception_credit(exception, policy, due_date: str | None, today_iso: str, mp_end: str | None) -> dict:
     """A teacher's yes on one assignment, which replaces the class rule for
     that item.
@@ -279,25 +314,19 @@ def _exception_credit(exception, policy, due_date: str | None, today_iso: str, m
     else:
         gradient = None
         if policy is not None and policy.shape in ("flat", "daily_decay", "tiered"):
-            # Re-run the class rule for its points gradient only, with the
-            # cutoff stripped off so it can't close what the teacher reopened.
-            bare = SimpleNamespace(
-                shape=policy.shape,
-                penalty_pct=policy.penalty_pct,
-                penalty_per_day=policy.penalty_per_day,
-                floor_pct=policy.floor_pct,
-                window_days=None,
-                steps=policy.steps,
-                accepted_until=None,
-                applies_to_types=None,
-                extension_by_request=False,
-            )
-            scored = late_credit(bare, due_date, today_iso)
-            gradient = scored["credit_pct"] if scored else None
-        credit = float(gradient) if gradient is not None else 100.0
+            # The class rule's points gradient only, never its cutoff, so it
+            # can't close what the teacher reopened. Re-running late_credit
+            # for this kept a tiered rule's cutoff (its last step), which
+            # zeroed exactly the work the exception was for.
+            days_late = _days_between(due_date, today_iso) if due_date else 0
+            bands = sorted(policy.steps or [], key=lambda s: int(s.get("days", 0)))
+            last_band = float(bands[-1].get("credit_pct", 0)) if bands else 0.0
+            gradient = _shape_credit(policy, days_late, past_last_band=last_band) if days_late > 0 else 100.0
+        credit = max(0.0, min(100.0, float(gradient))) if gradient is not None else 100.0
 
     return {
-        "accepted": not expired and credit > 0,
+        # A teacher's unexpired yes is a yes; only a stated 0% says otherwise.
+        "accepted": not expired and (credit > 0 or exception.credit_pct is None),
         "credit_pct": 0 if expired else round(credit),
         "closes_on": closes_on,
         "days_left": days_left,
@@ -365,6 +394,10 @@ def late_credit(
     if policy.accepted_until == "marking_period_end":
         closes_on = mp_end
     elif policy.accepted_until:
+        if not valid_accepted_until(policy.accepted_until):
+            # Saved before it was checked: unknown, rather than a ValueError
+            # that took /todo, /progress and /family down with it.
+            return None
         closes_on = policy.accepted_until
     if due_date:
         if shape == "window" and policy.window_days is not None:
@@ -398,21 +431,8 @@ def late_credit(
             "by_exception": False,
         }
 
-    if shape == "full_credit":
-        credit = 100.0
-    elif shape == "flat":
-        credit = 100.0 - (policy.penalty_pct or 0)
-    elif shape == "daily_decay":
-        decayed = 100.0 - (policy.penalty_per_day or 0) * days_late
-        credit = max(decayed, policy.floor_pct if policy.floor_pct is not None else 0.0)
-    elif shape == "window":
-        credit = 100.0
-    elif shape == "tiered":
-        # First tier whose day-count still covers how late this is; steps are
-        # written as "within N days you get X%".
-        ordered = sorted(policy.steps or [], key=lambda s: int(s.get("days", 0)))
-        credit = next((float(s.get("credit_pct", 0)) for s in ordered if int(s.get("days", 0)) >= days_late), 0.0)
-    else:
+    credit = _shape_credit(policy, days_late)
+    if credit is None:
         return None
 
     credit = max(0.0, min(100.0, credit))

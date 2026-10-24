@@ -1,5 +1,5 @@
 """Pure rules behind the Kids view (services/kids_view.py)."""
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
@@ -346,3 +346,32 @@ def test_genesis_grade_for_needs_the_due_day_when_a_title_repeats():
     assert kv.genesis_grade_for([newest, older], "2026-10-05", True) is older
     assert kv.genesis_grade_for([older], "2026-10-12", True) is None
     assert kv.genesis_grade_for([older], None, True) is None
+
+
+def test_a_teacher_exception_keeps_a_tiered_rules_last_band_past_its_cutoff():
+    # "1 day late 90%, 3 days 75%, after that zero" - and the teacher said yes on day 14.
+    tiered = _policy("tiered", steps=[{"days": 1, "credit_pct": 90}, {"days": 3, "credit_pct": 75}])
+    assert kv.late_credit(tiered, "2026-10-01", "2026-10-15")["accepted"] is False
+    reopened = kv.late_credit(tiered, "2026-10-01", "2026-10-15", exception=_exception("2026-11-10"))
+    assert reopened["accepted"] is True and reopened["credit_pct"] == 75
+    # A no-floor decay that has run out: still a yes, at what the rule leaves.
+    decay = kv.late_credit(_policy("daily_decay", penalty_per_day=10), "2026-10-01", "2026-10-20", exception=_exception("2026-11-10"))
+    assert decay["accepted"] is True and decay["credit_pct"] == 0
+    # Only a stated 0% means no.
+    assert kv.late_credit(tiered, "2026-10-01", "2026-10-15", exception=_exception("2026-11-10", credit_pct=0))["accepted"] is False
+
+
+def test_an_unreadable_policy_cutoff_is_unknown_rather_than_an_error():
+    assert kv.late_credit(_policy("flat", penalty_pct=10, accepted_until="11/10"), "2026-10-01", "2026-10-15") is None
+    assert [kv.valid_accepted_until(v) for v in (None, "marking_period_end", "2026-11-10", "11/10", "")] == [
+        True, True, True, False, True,
+    ]
+
+
+def test_right_now_ignores_an_older_years_row_on_todays_date():
+    now = datetime(2026, 9, 14, 10, 30, tzinfo=ET)
+    last_year = _block("A", "07:30", "08:20", "Algebra", date="09/14")
+    last_year.updated_at = now - timedelta(days=365)
+    assert kv.right_now([last_year], None, now)["stale"] is True
+    last_year.updated_at = now - timedelta(hours=2)
+    assert kv.right_now([last_year], None, now)["stale"] is False
