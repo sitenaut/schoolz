@@ -25,6 +25,7 @@ from models import (
     derive_school_short_name,
 )
 from routers.smore_newsletters import _to_out as _newsletter_to_out
+from routers.smore_newsletters import target_id
 from scheduler.cron import public_scan_cron
 from scheduler.job_names import school_job_name
 from schemas import (
@@ -399,17 +400,16 @@ async def list_my_schools(user: User = Depends(get_current_user), db: AsyncSessi
 
 @router.post("", response_model=SchoolOut, status_code=status.HTTP_201_CREATED)
 async def create_school(payload: SchoolCreate, user: User = Depends(require_permission("schools.manage")), db: AsyncSession = Depends(get_db)):
-    district_name = None
-    if payload.district_id:
-        district = (await db.execute(select(District).where(District.id == payload.district_id))).scalar_one_or_none()
-        district_name = district.name if district else None
+    district_id = await target_id(db, District, payload.district_id)
+    district = await db.get(District, district_id) if district_id else None
+    district_name = district.name if district else None
 
     short_name = payload.short_name or derive_school_short_name(payload.name, district_name)
     school = School(
         name=payload.name,
         slug=await unique_school_slug(db, short_name or payload.name),
         short_name=short_name,
-        district_id=payload.district_id,
+        district_id=district_id,
         school_type=payload.school_type,
         address=payload.address,
         main_phone=payload.main_phone,
@@ -438,7 +438,7 @@ async def update_school(
     if payload.short_name is not None:
         school.short_name = payload.short_name
     if payload.district_id is not None:
-        school.district_id = payload.district_id
+        school.district_id = await target_id(db, District, payload.district_id)
     if payload.school_type is not None:
         school.school_type = payload.school_type
     if payload.website_url is not None:

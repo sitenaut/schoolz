@@ -1,6 +1,5 @@
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from croniter import croniter
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
@@ -13,6 +12,7 @@ from local_events.prune import KIND as LOCAL_EVENTS_KIND
 from local_events.prune import prune_orphaned_events
 from local_events.test_fetch import TestFetchIn, TestFetchOut, run_test_fetch
 from models import District, EmailScanner, JobRun, ScheduledJob, SchedulerHeartbeat, School, SmoreNewsletter, User
+from scheduler.cron import cron_problem
 from scheduler.registry import registry
 from scheduler.sources import job_sources
 from schemas import (
@@ -34,8 +34,9 @@ _TARGET_PARAMS = ("school_id", "district_id", "newsletter_id", "scanner_id")
 
 
 def _validate_cron(cron_expr: str) -> None:
-    if not croniter.is_valid(cron_expr):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid cron expression: {cron_expr}")
+    problem = cron_problem(cron_expr)
+    if problem:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, problem)
 
 
 def _validate_timezone(tz: str) -> None:

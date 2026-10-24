@@ -161,6 +161,21 @@ async def test_robots_disallowing_search_blocks_the_run():
 
 
 @pytest.mark.anyio
+async def test_an_unreachable_robots_txt_blocks_the_run_but_a_missing_one_does_not():
+    status = 503
+
+    def handler(request):
+        return httpx.Response(status, text="")
+
+    client, _ = _client(handler)
+    with pytest.raises(nj211.Blocked):
+        await client.check_robots()
+    status = 404
+    client, _ = _client(handler)
+    await client.check_robots()
+
+
+@pytest.mark.anyio
 async def test_a_refusal_stops_rather_than_retrying():
     calls = []
 

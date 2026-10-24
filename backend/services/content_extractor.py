@@ -744,7 +744,9 @@ async def extract_from_newsletter(
     created = 0
     skipped_dupes = 0
     truncated_chunks = 0
-    latest_summary = None
+    # One per chunk: a newsletter over _CHUNK_SIZE blocks used to keep only
+    # its last chunk's, which could be a summary of the footer alone.
+    summaries: list[str] = []
 
     # One Claude call per newsletter used to mean one big-enough newsletter
     # could blow the whole extraction: a real 37-block Bret Harte issue
@@ -810,8 +812,8 @@ async def extract_from_newsletter(
                     school.absence_instructions = None
                 else:
                     school.absence_instructions = data.get("absence_instructions")
-        if data.get("summary"):
-            latest_summary = data["summary"]
+        if isinstance(data.get("summary"), str) and data["summary"].strip():
+            summaries.append(data["summary"].strip())
 
         block_by_position = {b.position: b for b in chunk}
         items, dropped = object_list(data.get("items"))
@@ -1064,8 +1066,8 @@ async def extract_from_newsletter(
 
             await apply_supersede(db, item.get("supersedes_item_id"), new_item, school_id=school_id)
 
-    if latest_summary:
-        newsletter.latest_summary = latest_summary
+    if summaries:
+        newsletter.latest_summary = " ".join(summaries)
     dupe_note = f", {skipped_dupes} duplicate item(s) already covered" if skipped_dupes else ""
     total_chunks = -(-len(extractable_blocks) // _CHUNK_SIZE)  # ceil division
     if truncated_chunks:

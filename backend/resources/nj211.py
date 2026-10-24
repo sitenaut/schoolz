@@ -325,6 +325,10 @@ class NJ211Client:
 
     async def check_robots(self) -> None:
         resp = await self._get("/robots.txt")
+        if resp.status_code >= 500:
+            # RFC 9309: an unreachable robots.txt means assume everything is
+            # disallowed - when unsure, stop (docs/LOCALZ_DESIGN.md).
+            raise Blocked(f"robots.txt answered {resp.status_code}")
         if resp.status_code >= 400:
             return  # no robots.txt: nothing disallowed
         parser = urllib.robotparser.RobotFileParser()
