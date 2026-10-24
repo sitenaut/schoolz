@@ -12,7 +12,7 @@ import re
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import (
@@ -72,6 +72,10 @@ _ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(?:\([^)]*\))?\s*$", re.I)
 _UPCOMING_CATEGORIES = ("event", "deadline", "initiative", "reminder", "marking_period")
 _UPCOMING_WINDOW_DAYS = 60
 _ALERT_WINDOW_DAYS = 7
+# How far back a closure may have started and still be running: one row
+# covers a whole winter recess. Longer than any break; only status items
+# reach back (see build_today), so months-long fundraisers stay out.
+_ONGOING_STATUS_LOOKBACK_DAYS = 31
 
 _WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
@@ -272,6 +276,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     week = week_window(today)
     range_start = min(today, week[0])
     range_end = today + timedelta(days=_UPCOMING_WINDOW_DAYS)
+    range_start_at = datetime.combine(range_start, datetime.min.time(), LOCAL_TZ)
 
     scope_filter = SchoolContentItem.school_id == school.id
     if school.district_id:
@@ -288,13 +293,29 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
                 # their own the way the general calendar's toggle does.
                 SchoolContentItem.source.not_in(ATHLETICS_SOURCES),
                 SchoolContentItem.start_date.is_not(None),
-                SchoolContentItem.start_date >= datetime.combine(range_start, datetime.min.time(), LOCAL_TZ),
+                # Starts in the window, or began earlier and is still going:
+                # a recess stored as one row from Dec 24 still closes Dec 29.
+                # Overlap as GET /calendar has it (an all-day end_date is the
+                # exclusive day after).
+                or_(
+                    SchoolContentItem.start_date >= range_start_at,
+                    and_(
+                        SchoolContentItem.start_date >= range_start_at - timedelta(days=_ONGOING_STATUS_LOOKBACK_DAYS),
+                        or_(
+                            and_(SchoolContentItem.is_all_day.is_(True), SchoolContentItem.end_date > range_start_at),
+                            and_(SchoolContentItem.is_all_day.is_(False), SchoolContentItem.end_date >= range_start_at),
+                        ),
+                    ),
+                ),
                 SchoolContentItem.start_date <= datetime.combine(range_end, datetime.max.time(), LOCAL_TZ),
             )
             .order_by(SchoolContentItem.start_date)
         )
     ).scalars().all()
-    items = [i for i in rows if _applies(i, school)]
+    # Of the items that began before the window, only closures, delays and
+    # early dismissals: a six-week fundraiser that started last month isn't
+    # news on this week's card, but a recess still running is.
+    items = [i for i in rows if _applies(i, school) and (local_date(i.start_date) >= range_start or _is_status_item(i))]
 
     by_day: dict[date, list[SchoolContentItem]] = {}
     for i in items:

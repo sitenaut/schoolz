@@ -219,3 +219,44 @@ async def test_week_strip_puts_a_days_own_items_ahead_of_week_long_ones():
         today = await build_today(db, school, date(2026, 10, 6))
         thursday = next(d for d in today.week if str(d.date) == "2026-10-08")
         assert [i.title for i in thursday.items] == ["Green Day", "Week A", "Week B"]
+
+
+@pytest.mark.anyio
+async def test_a_closure_that_began_before_this_week_still_closes_today():
+    # Real shape: one ICS row "SCHOOLS CLOSED - Winter Recess" Wed Dec 24 to
+    # Jan 3 (exclusive). On Mon Dec 29 it began before the week's Monday.
+    import database
+    from models import School
+    from services.school_today import build_today
+
+    async with database.SessionLocal() as db:
+        school = School(name=f"Recess School {uuid.uuid4().hex[:8]}", slug=f"recess-{uuid.uuid4().hex[:8]}")
+        db.add(school)
+        await db.flush()
+
+        def item(title: str, start: datetime, end: datetime) -> SchoolContentItem:
+            return SchoolContentItem(
+                scope="school", school_id=school.id, category="event", title=title, start_date=start, end_date=end, is_all_day=True
+            )
+
+        db.add_all(
+            [
+                item("SCHOOLS CLOSED - Winter Recess", datetime(2026, 12, 24, tzinfo=_ET), datetime(2027, 1, 3, tzinfo=_ET)),
+                item("Canned Food Drive", datetime(2026, 12, 1, tzinfo=_ET), datetime(2027, 1, 15, tzinfo=_ET)),
+            ]
+        )
+        await db.flush()
+
+        monday = await build_today(db, school, date(2026, 12, 29))
+        assert monday.status == "closed" and monday.is_school_day is False
+        assert [d.status for d in monday.week if d.weekday not in ("Sat", "Sun")] == ["closed"] * 5
+        # Only status items reach back past the week: the long drive stays off.
+        assert "Canned Food Drive" not in [i.title for i in monday.upcoming]
+
+        # A weekend inside the break, with the week ahead still closed.
+        saturday = await build_today(db, school, date(2026, 12, 26))
+        assert saturday.status == "weekend"
+        assert {d.status for d in saturday.week if d.weekday not in ("Sat", "Sun")} == {"closed"}
+
+        back = await build_today(db, school, date(2027, 1, 4))
+        assert back.status == "open"
