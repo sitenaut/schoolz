@@ -1374,7 +1374,8 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
         else {}
     )
 
-    grades_by_title: dict[str, ChildGradeEntry] = {}
+    # Keyed by class and title together (kids_view.genesis_grade_for).
+    grades_by_class_title: dict[tuple[str, str, str], list[ChildGradeEntry]] = {}
     for entry in (
         await db.execute(
             select(ChildGradeEntry)
@@ -1382,7 +1383,8 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
             .order_by(ChildGradeEntry.last_seen_at.desc())
         )
     ).scalars().all():
-        grades_by_title.setdefault(ex.normalize_title(entry.title), entry)
+        key = (entry.course_code, entry.course_section, ex.normalize_title(entry.title))
+        grades_by_class_title.setdefault(key, []).append(entry)
 
     # A classwork-grid row never says who posted it; the course's feed cards
     # and announcements do. Fall back to whoever posts most in that course.
@@ -1417,6 +1419,11 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
             kinds.append(h.kind)
 
     keyed = [(w, kids_view.course_key(w.course_name, w.course_external_id), ex.normalize_title(w.title)) for w in work]
+
+    def class_titles(course_name: str | None, norm: str) -> list[tuple[str, str, str]]:
+        return [(code, section, norm) for code, section in ex.course_codes_from_name(course_name or "")]
+
+    title_counts = Counter(k for w, _, norm in keyed for k in class_titles(w.course_name, norm))
     suggestion_keys = {(code, section, norm) for _, (code, section), norm in keyed}
     suggestions = {}
     if suggestion_keys:
@@ -1434,7 +1441,14 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
     items = []
     for w, key, norm in keyed:
         mark = marks.get(w.id)
-        grade = grades_by_title.get(norm)
+        grade = next(
+            (
+                g
+                for k in class_titles(w.course_name, norm)
+                if (g := kids_view.genesis_grade_for(grades_by_class_title.get(k, []), w.due_date, title_counts[k] > 1))
+            ),
+            None,
+        )
         has_real_grade = bool(grade and grade.percent is not None and grade.status not in ("Missing", "Exempt"))
         done, source = kids_view.resolve_done(mark.done if mark else None, w.status, has_real_grade)
         category = kids_view.todo_category(w.item_type, w.due_date, done, today)
