@@ -10,10 +10,20 @@ from auth import get_current_user
 from database import get_db
 from models import GuardianInvite, GuardianStudentLink, Notification, School, Student, User, student_match_key
 from schemas import CaptureStudentOut, InviteCreate, InviteOut, StudentCreate, StudentOut, StudentUpdate
+from services import rate_limit
+from services.client_ip import client_ip
 
 router = APIRouter(prefix="/students", tags=["students"])
 
 INVITE_EXPIRY_DAYS = 7
+
+# Adding a child whose name and student ID match an existing record links
+# the account to that child with no approval (CLAUDE.md, "Auto-matching").
+# Names are often public, so what keeps a stranger from guessing the ID is
+# how few guesses they get: a family adds a handful of children once.
+ADDS_PER_ACCOUNT_PER_DAY = 10
+ADDS_PER_CONNECTION_PER_DAY = 30
+_TOO_MANY_ADDS = "That's a lot of children added today. If you're still setting up, try again tomorrow."
 
 
 async def _guardian_count(db: AsyncSession, student_id: str) -> int:
@@ -60,10 +70,23 @@ async def list_my_students(request: Request, user: User = Depends(get_current_us
 
 
 @router.post("", response_model=StudentOut, status_code=status.HTTP_201_CREATED)
-async def add_student(payload: StudentCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def add_student(
+    payload: StudentCreate, request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     school = (await db.execute(select(School).where(School.id == payload.school_id))).scalar_one_or_none()
     if not school:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown school")
+    await rate_limit.enforce(
+        db, "students.add", user.id, limit=ADDS_PER_ACCOUNT_PER_DAY, window_seconds=rate_limit.DAY, detail=_TOO_MANY_ADDS
+    )
+    await rate_limit.enforce(
+        db,
+        "students.add.connection",
+        rate_limit.connection_key(client_ip(request)),
+        limit=ADDS_PER_CONNECTION_PER_DAY,
+        window_seconds=rate_limit.DAY,
+        detail=_TOO_MANY_ADDS,
+    )
 
     match_key = student_match_key(payload.first_name, payload.last_name, payload.student_id)
 

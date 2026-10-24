@@ -471,6 +471,68 @@ async def test_late_policy_parse_proposes_but_never_saves(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_the_same_late_policy_paragraph_is_read_once(monkeypatch):
+    calls = []
+
+    async def fake_parse(text):
+        calls.append(text)
+        return {"understood": True, "shape": "flat", "penalty_pct": 10, "source_sentence": text, "summary": "10% off."}
+
+    monkeypatch.setattr(kids_suggestions, "parse_late_policy", fake_parse)
+    paragraph = f"Late work loses 10%. ({uuid.uuid4().hex[:8]})"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        _run, other_family, other_sid = await _family(client, student_id=f"x-{uuid.uuid4().hex[:6]}")
+        first = await client.post(f"/students/{sid}/bucket3/late-policies/parse", json={"text": paragraph}, headers=_auth(guardian))
+        again = await client.post(
+            f"/students/{other_sid}/bucket3/late-policies/parse", json={"text": f"  {paragraph}\n"}, headers=_auth(other_family)
+        )
+        assert first.json() == again.json()
+        assert first.json()["policy"] == {"shape": "flat", "penalty_pct": 10}
+        assert len(calls) == 1
+        await client.post(f"/students/{sid}/bucket3/late-policies/parse", json={"text": paragraph + " Really."}, headers=_auth(guardian))
+        assert len(calls) == 2
+
+
+@pytest.mark.anyio
+async def test_kids_model_calls_are_limited_per_account_and_stored_answers_are_free(monkeypatch):
+    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
+    monkeypatch.setattr(bucket3_router, "MODEL_CALLS_PER_ACCOUNT_PER_HOUR", 2)
+    calls = []
+
+    async def fake_plan(items, today):
+        calls.append("plan")
+        return "1. Lab Safety Contract"
+
+    async def fake_parse(text):
+        calls.append("parse")
+        return {"understood": False}
+
+    monkeypatch.setattr(kids_suggestions, "plan", fake_plan)
+    monkeypatch.setattr(kids_suggestions, "parse_late_policy", fake_parse)
+    paragraph = f"See the handbook. ({uuid.uuid4().hex[:8]})"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+        parse = f"/students/{sid}/bucket3/late-policies/parse"
+        assert (await client.post(parse, json={"text": paragraph}, headers=_auth(guardian))).status_code == 200
+        assert (await client.post(f"/students/{sid}/bucket3/suggestions/plan", headers=_auth(guardian))).status_code == 200
+        refused = await client.post(f"/students/{sid}/bucket3/suggestions/plan", headers=_auth(guardian))
+        assert refused.status_code == 429
+        assert "Try again a bit later" in refused.json()["detail"]
+        # A paragraph already read is answered from the store, over the limit or not.
+        stored = await client.post(parse, json={"text": paragraph}, headers=_auth(guardian))
+        assert stored.status_code == 200 and stored.json()["understood"] is False
+        assert calls == ["parse", "plan"]
+
+        # The limit is the account's: another family's first plan still runs.
+        _run, other, other_sid = await _family(client, first_name="Other")
+        await _import(client, other, other_sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
+        assert (await client.post(f"/students/{other_sid}/bucket3/suggestions/plan", headers=_auth(other))).status_code == 200
+        assert calls == ["parse", "plan", "plan"]
+
+
+@pytest.mark.anyio
 async def test_new_kids_endpoints_require_access():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         _run, _guardian, sid = await _family(client)

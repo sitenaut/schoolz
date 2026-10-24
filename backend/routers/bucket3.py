@@ -40,6 +40,7 @@ from models import (
     GuardianStudentLink,
     HelpRequest,
     Notification,
+    PageExtraction,
     School,
     SchoolContentItem,
     StaffMember,
@@ -69,12 +70,38 @@ from schemas import (
     UnroutedAccountOut,
 )
 from services import bucket3_extract as ex
-from services import capture_routing, kids_schedule, kids_suggestions, kids_view
+from services import capture_routing, kids_schedule, kids_suggestions, kids_view, rate_limit
 from services import help_requests as help_svc
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["bucket3"])
+
+# The Kids View model calls run on the interactive key, whose spend limit
+# also stops run-now, translation and submission review for everyone (chatbot
+# skill, "Four Anthropic keys"), so one account looping them must not get
+# there. Only calls that reach the model count; a stored answer is free.
+MODEL_CALLS_PER_ACCOUNT_PER_HOUR = 30
+MODEL_CALLS_PER_ACCOUNT_PER_DAY = 100
+
+
+async def _limit_model_calls(db: AsyncSession, user: User) -> None:
+    await rate_limit.enforce(
+        db,
+        "kids.model.hour",
+        user.id,
+        limit=MODEL_CALLS_PER_ACCOUNT_PER_HOUR,
+        window_seconds=rate_limit.HOUR,
+        detail="That's a lot of suggestions in one hour. Try again a bit later.",
+    )
+    await rate_limit.enforce(
+        db,
+        "kids.model.day",
+        user.id,
+        limit=MODEL_CALLS_PER_ACCOUNT_PER_DAY,
+        window_seconds=rate_limit.DAY,
+        detail="That's a lot of suggestions for one day. Try again tomorrow.",
+    )
 
 
 def _now() -> datetime:
@@ -1789,6 +1816,7 @@ async def suggest_for_assignment(
     if existing:
         return SuggestionOut(text=existing.suggestion_text, declined=existing.declined, cached=True)
 
+    await _limit_model_calls(db, user)
     try:
         text, declined = await kids_suggestions.assignment_suggestion(item.title, item.course_name)
     except kids_suggestions.SuggestionsUnavailable:
@@ -1825,6 +1853,7 @@ async def suggest_plan(student_id: str, user: User = Depends(get_current_user), 
     )
     if not open_items:
         return PlanOut(text="Nothing due or missing right now - nothing to plan.")
+    await _limit_model_calls(db, user)
     try:
         text = await kids_suggestions.plan(open_items, today)
     except kids_suggestions.SuggestionsUnavailable:
@@ -1959,20 +1988,29 @@ async def parse_late_policy(
     db: AsyncSession = Depends(get_db),
 ):
     """Turn a pasted syllabus paragraph into a proposed policy. Deliberately
-    does NOT save: a misread late policy quietly changes what the dashboard
-    tells a kid to work on next, so a person confirms it against the handout
-    first."""
+    does NOT save the policy: a misread late policy quietly changes what the
+    dashboard tells a kid to work on next, so a person confirms it against
+    the handout first. The model's reading is stored (page_extractions), so
+    the same paragraph pasted again - by anyone in that class - is free."""
     await _get_own_student(db, user.id, student_id)
     text = payload.text.strip()
     if not text:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Paste the late-work paragraph first")
-    try:
-        parsed = await kids_suggestions.parse_late_policy(text)
-    except kids_suggestions.SuggestionsUnavailable:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server") from None
-    except Exception:
-        logger.exception("late_policy_parse_failed", extra={"student_id": student_id})
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the parser - try again in a bit") from None
+    key = kids_suggestions.late_policy_key(text)
+    stored = await db.get(PageExtraction, key)
+    if stored and stored.items:
+        parsed = stored.items[0]
+    else:
+        await _limit_model_calls(db, user)
+        try:
+            parsed = await kids_suggestions.parse_late_policy(text)
+        except kids_suggestions.SuggestionsUnavailable:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server") from None
+        except Exception:
+            logger.exception("late_policy_parse_failed", extra={"student_id": student_id})
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the parser - try again in a bit") from None
+        await db.merge(PageExtraction(key=key, items=[parsed]))
+        await db.commit()
 
     if not parsed.get("understood"):
         return LatePolicyParseOut(understood=False)
