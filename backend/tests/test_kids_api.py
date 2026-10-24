@@ -16,11 +16,14 @@ from main import app
 from models import (
     Bucket3Capture,
     ChildCourseGrade,
+    ChildDayCycle,
     ChildGradeEntry,
+    ChildMarkingPeriod,
     ChildWorkItem,
     ChildWorkItemProgress,
     StaffMember,
     User,
+    WorkItemLateException,
 )
 from routers import bucket3 as bucket3_router
 from services import help_requests as help_svc
@@ -867,3 +870,76 @@ async def test_a_genesis_grade_marks_done_only_its_own_class_and_day(monkeypatch
         assert missing == [(chem, "Exit Ticket", "2026-10-12"), (chem, "Unit 3 Quiz", "2026-10-01")]
         done = {(i["course_name"], i["title"], i["due_date"]): i["done_source"] for i in todo["done"]}
         assert done == {(english, "Unit 3 Quiz", "2026-10-01"): "genesis", (chem, "Exit Ticket", "2026-10-05"): "genesis"}
+
+
+@pytest.mark.anyio
+async def test_a_marking_period_end_exception_ends_with_the_period_it_was_given_in(monkeypatch):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        async with database.SessionLocal() as db:
+            db.add_all(
+                [
+                    ChildMarkingPeriod(student_id=sid, label="MP1", start_date="2026-09-01", end_date="2026-11-10"),
+                    ChildMarkingPeriod(student_id=sid, label="MP2", start_date="2026-11-11", end_date="2027-01-25"),
+                ]
+            )
+            for uid in ("old-row", "new-row"):
+                db.add(
+                    ChildWorkItem(student_id=sid, external_uid=uid, course_name="F: CHEM-1A 331-10", title=uid,
+                                  item_type="assignment", due_date="2026-10-01")
+                )
+            await db.commit()
+            ids = {
+                w.external_uid: w.id
+                for w in (await db.execute(select(ChildWorkItem).where(ChildWorkItem.student_id == sid))).scalars()
+            }
+            # Saved before the date was stored: the literal, recorded in MP1.
+            db.add(
+                WorkItemLateException(student_id=sid, work_item_id=ids["old-row"], accepted_until="marking_period_end",
+                                      created_at=datetime(2026, 10, 20, 12, 0, tzinfo=ET))
+            )
+            await db.commit()
+
+        _freeze(monkeypatch, 2026, 10, 21, 9, 0)
+        saved = await client.put(
+            f"/students/{sid}/bucket3/workitems/{ids['new-row']}/late-exception",
+            json={"accepted_until": "marking_period_end"}, headers=_auth(guardian),
+        )
+        assert saved.status_code == 200 and saved.json()["accepted_until"] == "2026-11-10"
+
+        # Into MP2: both promises were for MP1, so both are over.
+        _freeze(monkeypatch, 2026, 11, 15, 9, 0)
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        items = {i["title"]: i for bucket in todo.values() if isinstance(bucket, list) for i in bucket if isinstance(i, dict)}
+        for title in ("old-row", "new-row"):
+            assert items[title]["late_credit"]["accepted"] is False, title
+            assert items[title]["late_credit"]["closes_on"] == "2026-11-10", title
+
+
+@pytest.mark.anyio
+async def test_the_latest_schedule_is_the_latest_captured_not_the_largest_mm_dd(monkeypatch):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        async with database.SessionLocal() as db:
+            db.add_all(
+                [
+                    ChildDayCycle(student_id=sid, schedule_date="12/18", cycle_label="Day 2",
+                                  updated_at=datetime(2026, 12, 18, 8, 0, tzinfo=ET)),
+                    ChildDayCycle(student_id=sid, schedule_date="01/06", cycle_label="Day 5",
+                                  updated_at=datetime(2027, 1, 6, 8, 0, tzinfo=ET)),
+                ]
+            )
+            await db.commit()
+        schedule = (await client.get(f"/students/{sid}/bucket3/schedule", headers=_auth(guardian))).json()
+    assert (schedule["cycle_date"], schedule["cycle_label"]) == ("01/06", "Day 5")
+
+
+@pytest.mark.anyio
+async def test_a_late_policy_cutoff_must_be_a_real_date():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        body = {"course_key": "331-10", "course_name": "F: CHEM-1A 331-10", "shape": "flat", "penalty_pct": 10}
+        bad = await client.put(f"/students/{sid}/bucket3/late-policies", json={**body, "accepted_until": "11/10"}, headers=_auth(guardian))
+        assert bad.status_code == 422
+        good = await client.put(f"/students/{sid}/bucket3/late-policies", json={**body, "accepted_until": "2026-11-10"}, headers=_auth(guardian))
+        assert good.status_code == 200, good.text

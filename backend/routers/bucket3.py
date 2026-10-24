@@ -1099,15 +1099,17 @@ async def get_bucket3_schedule(
 ):
     student = await _get_own_student(db, user.id, student_id)
 
+    # Latest by when it was captured: schedule_date is MM/DD with no year, so
+    # sorting it put December's "12/18" ahead of January's "01/06".
     cycle_result = await db.execute(
-        select(ChildDayCycle).where(ChildDayCycle.student_id == student.id).order_by(ChildDayCycle.schedule_date.desc())
+        select(ChildDayCycle).where(ChildDayCycle.student_id == student.id).order_by(ChildDayCycle.updated_at.desc())
     )
     latest_cycle = cycle_result.scalars().first()
 
     daily_result = await db.execute(
         select(ChildScheduleBlock)
         .where(ChildScheduleBlock.student_id == student.id, ChildScheduleBlock.source == "daily")
-        .order_by(ChildScheduleBlock.schedule_date.desc())
+        .order_by(ChildScheduleBlock.updated_at.desc())
     )
     daily_blocks = daily_result.scalars().all()
     latest_date = daily_blocks[0].schedule_date if daily_blocks else None
@@ -1154,6 +1156,18 @@ async def _get_marking_periods(db: AsyncSession, student_id: str) -> list[ChildM
 
 def _current_marking_period(marking_periods: list[ChildMarkingPeriod], today: str) -> ChildMarkingPeriod | None:
     return next((mp for mp in marking_periods if mp.start_date <= today <= mp.end_date), None)
+
+
+def _promised_period_end(
+    exception: WorkItemLateException, marking_periods: list[ChildMarkingPeriod], current_mp: ChildMarkingPeriod | None
+) -> str | None:
+    """Where a teacher's "before the marking period ends" ends: the period it
+    was said in. set_late_exception now stores that date; rows saved before
+    it did still hold the literal, and reading it as the *current* period's
+    end kept an expired promise open for a whole extra period."""
+    said_on = exception.created_at.astimezone(kids_view.LOCAL_TZ).date().isoformat()
+    mp = _current_marking_period(marking_periods, said_on) or current_mp
+    return mp.end_date if mp else None
 
 
 async def _marking_period_discrepancies(db: AsyncSession, student: Student, genesis_mps: list[ChildMarkingPeriod]) -> list[str]:
@@ -1340,7 +1354,8 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
     Due/Missing/Done category resolved (services/kids_view.py holds the rules)
     and everything the dashboard shows next to it attached."""
     today = _local_today()
-    current_mp = _current_marking_period(await _get_marking_periods(db, student.id), today)
+    marking_periods = await _get_marking_periods(db, student.id)
+    current_mp = _current_marking_period(marking_periods, today)
 
     all_items = (
         await db.execute(select(ChildWorkItem).where(ChildWorkItem.student_id == student.id))
@@ -1500,7 +1515,11 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
                     policies.get(key),
                     w.due_date,
                     today,
-                    mp_end=current_mp.end_date if current_mp else None,
+                    mp_end=(
+                        _promised_period_end(exception, marking_periods, current_mp)
+                        if exception
+                        else current_mp.end_date if current_mp else None
+                    ),
                     item_type=w.item_type,
                     exception=exception,
                 ),
@@ -1799,6 +1818,10 @@ async def save_late_policy(
     student = await _get_own_student(db, user.id, student_id)
     if payload.shape not in kids_view.LATE_SHAPES:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unknown late-policy shape '{payload.shape}'")
+    if not kids_view.valid_accepted_until(payload.accepted_until):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "accepted_until must be an ISO date (YYYY-MM-DD) or 'marking_period_end'"
+        )
     code, section = _split_course_key(payload.course_key)
     values = {
         "student_id": student.id,
@@ -1895,6 +1918,10 @@ async def parse_late_policy(
         )
         if k in parsed
     }
+    if not kids_view.valid_accepted_until(policy.get("accepted_until")):
+        # "until 11/10" with no year: the form has no field to show it in, so
+        # it would be saved unseen. The teacher's sentence is shown instead.
+        policy.pop("accepted_until")
     return LatePolicyParseOut(
         understood=True,
         summary=parsed.get("summary"),
@@ -1922,7 +1949,13 @@ async def set_late_exception(
     student = await _get_own_student(db, user.id, student_id)
     item = await _get_own_work_item(db, student, work_item_id)
     until = payload.accepted_until.strip()
-    if until != "marking_period_end":
+    if until == "marking_period_end":
+        # Stored as the date it means, so the promise ends with the period it
+        # was made in instead of moving on to the next one.
+        mp = _current_marking_period(await _get_marking_periods(db, student.id), _local_today())
+        if mp:
+            until = mp.end_date
+    else:
         try:
             date.fromisoformat(until)
         except ValueError:
