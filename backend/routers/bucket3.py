@@ -17,7 +17,7 @@ from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import case, delete, func, or_, select, tuple_, update
+from sqlalchemy import and_, case, delete, func, or_, select, tuple_, union, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -421,6 +421,9 @@ class _Counters:
     grades: int = 0
     mismatches: list[str] = field(default_factory=list)
     seen_work_uids: set[str] = field(default_factory=set)
+    # course id (None: no class known) -> the newest capture that listed work
+    # for it (reprocess's prune).
+    course_read_at: dict[str | None, datetime] = field(default_factory=dict)
 
 
 _WORK_ITEM_KEEP_COLUMNS = (
@@ -434,6 +437,27 @@ _WORK_ITEM_KEEP_COLUMNS = (
     "posted_date",
     "body",
 )
+
+
+def _fields_update(ins, replay: bool) -> dict:
+    """How one capture's reading of an item's other fields lands on the
+    stored row. A later capture that lacks a field (a classwork-grid row has
+    no teacher; a feed card has no due date) never erases what an earlier one
+    found. On import a capture can arrive after a newer one of the same item
+    (a second computer publishing after it woke up): it then only fills in
+    what's missing, so a moved due date can't move back and make the work
+    Missing. Reprocess replays oldest first, so there the latest simply wins."""
+    keep = {col: (getattr(ins.excluded, col), getattr(ChildWorkItem, col)) for col in _WORK_ITEM_KEEP_COLUMNS}
+    if replay:
+        set_ = {col: func.coalesce(new, old) for col, (new, old) in keep.items()}
+        set_["title"] = ins.excluded.title
+        set_["item_type"] = ins.excluded.item_type
+        return set_
+    newer = ins.excluded.last_seen_at >= ChildWorkItem.last_seen_at
+    set_ = {col: case((newer, func.coalesce(new, old)), else_=func.coalesce(old, new)) for col, (new, old) in keep.items()}
+    set_["title"] = case((newer, ins.excluded.title), else_=ChildWorkItem.title)
+    set_["item_type"] = case((newer, ins.excluded.item_type), else_=ChildWorkItem.item_type)
+    return set_
 
 
 def _status_update(ins, status_read: bool, captured_at: datetime) -> dict:
@@ -491,13 +515,25 @@ async def _apply_capture(
     captured_at: datetime,
     course_map: ex.CourseMap,
     counters: _Counters,
+    *,
+    replay: bool = False,
+    superseded: bool = False,
 ) -> None:
     """Runs extraction for one stored-or-uploaded capture and upserts the
     results. Shared by import and reprocess so both always use the same,
-    current parsing."""
+    current parsing. `replay` is reprocess (every stored capture, oldest
+    first); `superseded` means a newer copy of this same page is already
+    stored and applied."""
     mismatch = _identity_mismatch(student, adapter, source_url, reduced_text)
     if mismatch:
         counters.mismatches.append(mismatch)
+        return
+
+    if adapter == "genesis" and superseded:
+        # A Genesis page is a whole snapshot (a course's grades, the
+        # schedule), so an older one would only put back what the newer
+        # copy replaced: a graded entry back to Missing. It is still stored,
+        # for reprocess, which replays in order.
         return
 
     if adapter == "genesis":
@@ -543,7 +579,7 @@ async def _apply_capture(
                         ChildWorkItem.student_id == student.id,
                         ChildWorkItem.external_uid == f"si:{item_id}",
                     )
-                    .values(points_possible=points_possible, last_seen_at=captured_at)
+                    .values(points_possible=points_possible, last_seen_at=func.greatest(ChildWorkItem.last_seen_at, captured_at))
                 )
                 # A details page crawled before its own classwork/stream
                 # capture has landed has nothing to attach to yet - the
@@ -575,17 +611,13 @@ async def _apply_capture(
                 first_seen_at=captured_at,
                 last_seen_at=captured_at,
             )
-            # A later capture that lacks a field (a classwork-grid row has no
-            # teacher; a feed card has no due date) must not erase what an
-            # earlier capture already found - only a non-null value replaces.
-            set_ = {col: func.coalesce(getattr(ins.excluded, col), getattr(ChildWorkItem, col)) for col in _WORK_ITEM_KEEP_COLUMNS}
-            set_["title"] = ins.excluded.title
-            set_["item_type"] = ins.excluded.item_type
+            set_ = _fields_update(ins, replay)
             set_["last_seen_at"] = func.greatest(ins.excluded.last_seen_at, ChildWorkItem.last_seen_at)
             set_.update(_status_update(ins, item.status_read, captured_at))
             await db.execute(ins.on_conflict_do_update(index_elements=["student_id", "external_uid"], set_=set_))
             counters.work_items += 1
             counters.seen_work_uids.add(item.external_uid)
+            counters.course_read_at[item.course_id] = max(counters.course_read_at.get(item.course_id, captured_at), captured_at)
 
 
 async def _apply_course_grades(
@@ -842,6 +874,12 @@ async def _import_for_student(
             skipped_duplicate += 1
             continue
 
+        # Captures of one page can arrive out of order (two computers, one
+        # publishing after it woke up); this one is then older than what's
+        # already applied, and _apply_capture doesn't let it win.
+        superseded = (
+            await db.execute(select(Bucket3Capture.id).where(*same_page, Bucket3Capture.captured_at > captured_at).limit(1))
+        ).first() is not None
         earlier = (
             await db.execute(select(Bucket3Capture).where(*same_page, Bucket3Capture.content_hash == content_hash))
         ).scalar_one_or_none()
@@ -867,7 +905,9 @@ async def _import_for_student(
                     reduced_text=reduced_text,
                 )
             )
-        await _apply_capture(db, student, adapter, source_url, reduced_text, captured_at, course_map, counters)
+        await _apply_capture(
+            db, student, adapter, source_url, reduced_text, captured_at, course_map, counters, superseded=superseded
+        )
 
     if seen:
         await _record_sync(db, student.id, seen=seen)
@@ -951,9 +991,10 @@ async def reprocess_bucket3(
     this student. Import's content-hash dedup means an improved parser never
     touches pages imported before the improvement existed (confirmed real: a
     page imported before marking-period parsing existed stayed unparsed on
-    re-upload). Work items are rebuilt: rows no capture produces any more are
-    removed unless someone marked them done - which also clears the title-hash
-    duplicates left behind once feed cards started resolving real ids."""
+    re-upload). Work items are rebuilt: rows a re-read class page no longer
+    lists are removed unless a person marked, excepted or asked about them -
+    which also clears the title-hash duplicates left behind once feed cards
+    started resolving real ids."""
     student = await _get_own_student(db, user.id, student_id)
     stored = (
         await db.execute(
@@ -971,16 +1012,38 @@ async def reprocess_bucket3(
     )
     for capture in stored:
         await _apply_capture(
-            db, student, capture.adapter, capture.source_url, capture.reduced_text, capture.captured_at, course_map, counters
+            db, student, capture.adapter, capture.source_url, capture.reduced_text, capture.captured_at, course_map, counters,
+            replay=True,
         )
 
-    if counters.seen_work_uids:
-        marked = select(ChildWorkItemProgress.work_item_id).where(ChildWorkItemProgress.student_id == student.id)
+    if counters.course_read_at:
+        # Gone means a stored capture of the item's class, taken since the
+        # item was last seen, no longer lists it. An item whose only sightings
+        # were in captures no longer stored stays: a co-guardian who deletes
+        # their account takes their captures with them, and their child's
+        # schoolwork stays for the other guardians, as /privacy promises.
+        reread = or_(
+            *(
+                and_(
+                    ChildWorkItem.course_external_id.is_(None) if course_id is None else ChildWorkItem.course_external_id == course_id,
+                    ChildWorkItem.last_seen_at <= read_at,
+                )
+                for course_id, read_at in counters.course_read_at.items()
+            )
+        )
+        # What people entered about an item goes with it (ondelete CASCADE),
+        # so a marked, excepted or asked-about item is never removed.
+        kept = union(
+            select(ChildWorkItemProgress.work_item_id).where(ChildWorkItemProgress.student_id == student.id),
+            select(WorkItemLateException.work_item_id).where(WorkItemLateException.student_id == student.id),
+            select(HelpRequest.work_item_id).where(HelpRequest.student_id == student.id),
+        )
         await db.execute(
             delete(ChildWorkItem).where(
                 ChildWorkItem.student_id == student.id,
                 ChildWorkItem.external_uid.not_in(counters.seen_work_uids),
-                ChildWorkItem.id.not_in(marked),
+                ChildWorkItem.id.not_in(kept),
+                reread,
             )
         )
     await db.commit()
