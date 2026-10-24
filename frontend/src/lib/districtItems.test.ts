@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { initI18n } from "./i18n";
-import { expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem } from "./districtItems";
+import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem } from "./districtItems";
 import type { School, SchoolContentItem } from "../types";
 
 beforeAll(() => initI18n());
@@ -136,5 +136,17 @@ describe("expandItemRows", () => {
     const highDay = item({ id: "h1", title: "Day 2", category: "event", applies_to_school_types: ["high"] });
     const rows = [...expandItemRows(elementaryDay, [bretHarte, east]), ...expandItemRows(highDay, [bretHarte, east])];
     expect(rows.map((r) => `${r.item.title} [${r.label}]`)).toEqual(["Day 3 [Bret Harte]", "Day 2 [Cherry Hill East]"]);
+  });
+});
+
+describe("dayStatusOf", () => {
+  it("reads a day the way the Today card does", () => {
+    expect(dayStatusOf(["SCHOOLS CLOSED - Labor Day"])).toBe("closed");
+    expect(dayStatusOf(["EARLY DISMISSAL - Staff In-Service"])).toBe("half");
+    expect(dayStatusOf(["Early Dismissal - Parent/Teacher Conferences"])).toBe("half");
+    expect(dayStatusOf(["Science conference night"])).toBeNull();
+    expect(dayStatusOf(["Board of Education Meeting", "Day 3"])).toBeNull();
+    // Still an in-service day for "Exclude district", which never hides one.
+    expect(isStatusItem("Staff In-Service")).toBe(true);
   });
 });

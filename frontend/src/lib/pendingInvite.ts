@@ -7,7 +7,10 @@
 
 export type InviteKind = "guardian" | "student";
 
-export type PendingInvite = { kind: InviteKind; token: string };
+// `refusedFor`: the signed-in account the invite was refused for (a
+// student invite opened while a parent is signed in). AppShell doesn't
+// send that account back to it on every visit; the link itself still works.
+export type PendingInvite = { kind: InviteKind; token: string; refusedFor?: string };
 
 const KEY = "schoolz.pendingInvite";
 
@@ -29,12 +32,21 @@ export function loadPendingInvite(): PendingInvite | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PendingInvite>;
     if ((parsed.kind === "guardian" || parsed.kind === "student") && typeof parsed.token === "string" && parsed.token) {
-      return { kind: parsed.kind, token: parsed.token };
+      return {
+        kind: parsed.kind,
+        token: parsed.token,
+        ...(typeof parsed.refusedFor === "string" ? { refusedFor: parsed.refusedFor } : {}),
+      };
     }
     return null;
   } catch {
     return null;
   }
+}
+
+export function markPendingInviteRefused(userId: string): void {
+  const pending = loadPendingInvite();
+  if (pending) savePendingInvite({ ...pending, refusedFor: userId });
 }
 
 export function clearPendingInvite(): void {

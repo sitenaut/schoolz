@@ -191,13 +191,23 @@ export function initAnalytics(): void {
   ready = true;
 }
 
+const DEFAULT_TITLE = "schoolz";
+
+/** The title GA may see. A page with no SeoHead of its own keeps whatever
+ * title was set last, so after a Localz listing ("<program> · <org> ·
+ * Localz") a visit to /family went to Google under that program's name;
+ * nothing about a Localz visit may (lib/localz.ts). */
+export function analyticsTitle(title: string): string {
+  return /·\s*Localz\s*$/.test(title) ? DEFAULT_TITLE : title;
+}
+
 export function gaPageView(pathname: string, search: string, extra?: GtagParams): void {
   if (!ready) return;
   const path = analyticsPath(pathname, search);
   gtag("event", "page_view", {
     page_location: `${SITE_URL || window.location.origin}${ROUTER_BASENAME}${path}`,
     language: CURRENT_LANG,
-    page_title: document.title,
+    page_title: analyticsTitle(document.title),
     ...extra,
   });
 }

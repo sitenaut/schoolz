@@ -5,7 +5,7 @@ import { DayCard } from "../components/today";
 import { IconPin, IconUpload } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
-import { localDateKey, monthDay } from "../lib/calendar";
+import { localDateKey, monthDay, todayKey } from "../lib/calendar";
 import { useMySchools } from "../lib/mySchools";
 import { SITE_URL } from "../lib/site";
 import { usePrerenderReady } from "../lib/prerenderReady";
@@ -90,6 +90,29 @@ export function TodayPage() {
   useEffect(() => {
     mySchools.forEach((s) => fetchToday(s.slug));
   }, [mySchools, fetchToday]);
+
+  // A tab or home-screen app resumed the next morning still held
+  // yesterday's cards - nothing refetched, so an overnight closure never
+  // showed. Coming back on another day, or after half an hour away, asks
+  // for every card again; the old ones stay up until each answers.
+  const hiddenAt = useRef<number | null>(null);
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt.current = Date.now();
+        return;
+      }
+      const away = hiddenAt.current === null ? 0 : Date.now() - hiddenAt.current;
+      hiddenAt.current = null;
+      const today = todayKey();
+      if (away < 30 * 60_000 && Object.values(cards).every((c) => c.date === today)) return;
+      requested.current.clear();
+      deviceSlugs.forEach(fetchToday);
+      mySchools.forEach((s) => fetchToday(s.slug));
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [cards, deviceSlugs, mySchools, fetchToday]);
 
   useEffect(() => {
     if (readyReported.current || mySchools.length === 0) return;

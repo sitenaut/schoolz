@@ -136,14 +136,32 @@ export function MySchoolsProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const districtsById = useMemo(() => new Map(districts.map((d) => [d.id, d])), [districts]);
 
+  // A network failure here used to leave every page on "Loading…" for good
+  // (apiFetch retries once, then rejects). Keep trying, backing off, and at
+  // once when the browser says it's back online.
+  const [schoolsAttempt, setSchoolsAttempt] = useState(0);
   useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+    const retryNow = () => setSchoolsAttempt((n) => n + 1);
     apiFetch("/schools")
       .then((r) => (r.ok ? r.json() : []))
       .then((s: School[]) => {
+        if (cancelled) return;
         setAllSchools(s);
         setLoadedAll(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        timer = window.setTimeout(retryNow, Math.min(60_000, 3_000 * 2 ** schoolsAttempt));
+        window.addEventListener("online", retryNow, { once: true });
       });
-  }, []);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      window.removeEventListener("online", retryNow);
+    };
+  }, [schoolsAttempt]);
 
   useEffect(() => {
     if (authLoading) return;
