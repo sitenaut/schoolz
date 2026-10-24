@@ -1,3 +1,4 @@
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -38,13 +39,13 @@ async def test_school_newsletters_list_newest_content_first():
     row pinned to an old issue (rescanned weekly, never any new block) must
     sort behind a newer issue added as its own row."""
     import uuid
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import database
     from models import School, SmoreBlock, SmoreNewsletter
     from routers.schools import list_school_newsletters
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     async with database.SessionLocal() as db:
         tag = uuid.uuid4().hex[:6]
         school = School(name=f"Newsletter Order {tag}", slug=f"newsletter-order-{tag}")
