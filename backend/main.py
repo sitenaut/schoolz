@@ -152,6 +152,26 @@ app.add_middleware(
 app.add_middleware(security_headers.SecurityHeadersMiddleware)
 
 
+def _loggable_path(request: Request) -> str:
+    """The request path with any credential in it (an invite token, a
+    device-flow code) replaced by its parameter name, for the log line and
+    the request span. Logged raw, a pending guardian invite's token sat in
+    Loki for anyone with log access to accept. The route template is logged
+    beside it anyway."""
+    path = request.url.path
+    for name, value in (request.scope.get("path_params") or {}).items():
+        if name in audit.SECRET_PATH_PARAMS and value:
+            path = path.replace(str(value), f":{name}")
+    if path != request.url.path:
+        # The instrumentor recorded the raw URL before routing knew which
+        # segment was the token.
+        span = trace.get_current_span()
+        span.set_attribute("http.target", path)
+        span.set_attribute("url.path", path)
+        span.set_attribute("http.url", str(request.url).replace(request.url.path, path, 1).split("?", 1)[0])
+    return path
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     if request.url.path in _SKIP_LOG_PATHS:
@@ -164,6 +184,7 @@ async def log_requests(request: Request, call_next):
     start = time.perf_counter()
     try:
         response = await call_next(request)
+        logged_path = _loggable_path(request)
     except Exception as exc:
         # An unhandled exception never reaches the http_request line below,
         # so a crashed request was missing from every request count and
@@ -174,7 +195,7 @@ async def log_requests(request: Request, call_next):
             "http_request",
             extra={
                 "method": request.method,
-                "path": request.url.path,
+                "path": _loggable_path(request),
                 "route": route.path if route else None,
                 "status": 500,
                 "duration_ms": round((time.perf_counter() - start) * 1000, 1),
@@ -210,7 +231,7 @@ async def log_requests(request: Request, call_next):
         "http_request",
         extra={
             "method": request.method,
-            "path": request.url.path,
+            "path": logged_path,
             "route": route_path,
             "status": response.status_code,
             "duration_ms": round(duration * 1000, 1),

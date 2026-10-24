@@ -1,9 +1,9 @@
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
@@ -157,6 +157,12 @@ async def remove_student(student_id: str, user: User = Depends(get_current_user)
     canonical Student row or any other guardian's link to it."""
     link = await _get_own_link(db, user.id, student_id)
     await db.delete(link)
+    # Removing the child ends this guardian's sharing of them too.
+    await db.execute(
+        update(GuardianInvite)
+        .where(GuardianInvite.inviter_user_id == user.id, GuardianInvite.student_id == student_id, GuardianInvite.status == "pending")
+        .values(status="revoked")
+    )
     await db.commit()
 
 
@@ -175,7 +181,7 @@ async def create_invite(
         invitee_email=payload.invitee_email,
         token=secrets.token_urlsafe(32),
         status="pending",
-        expires_at=datetime.now(timezone.utc) + timedelta(days=INVITE_EXPIRY_DAYS),
+        expires_at=datetime.now(UTC) + timedelta(days=INVITE_EXPIRY_DAYS),
     )
     db.add(invite)
     await db.commit()

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -7,21 +7,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user, mask_email
 from database import get_db
 from models import GuardianInvite, GuardianStudentLink, Notification, Student, User
-from schemas import InvitePreviewOut, StudentOut
 from routers.students import _student_out
+from schemas import InvitePreviewOut, StudentOut
 
 router = APIRouter(prefix="/invites", tags=["invites"])
 
 
 async def _get_live_invite(db: AsyncSession, token: str) -> GuardianInvite:
+    # An invite speaks for its inviter only while they're still linked to the
+    # child: removing the child (students.remove_student revokes these too)
+    # used to leave a working link that made its holder a permanent guardian.
     result = await db.execute(select(GuardianInvite).where(GuardianInvite.token == token))
     invite = result.scalar_one_or_none()
     if not invite:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Invite not found")
-    if invite.expires_at < datetime.now(timezone.utc) and invite.status == "pending":
+    if invite.expires_at < datetime.now(UTC) and invite.status == "pending":
         invite.status = "expired"
         await db.commit()
+    if invite.status == "pending" and not await _is_guardian(db, invite.inviter_user_id, invite.student_id):
+        invite.status = "revoked"
+        await db.commit()
     return invite
+
+
+async def _is_guardian(db: AsyncSession, user_id: str, student_id: str) -> bool:
+    return (
+        await db.execute(
+            select(GuardianStudentLink.id).where(
+                GuardianStudentLink.guardian_user_id == user_id, GuardianStudentLink.student_id == student_id
+            )
+        )
+    ).first() is not None
 
 
 @router.get("/{token}", response_model=InvitePreviewOut)
@@ -54,20 +70,18 @@ async def accept_invite(token: str, user: User = Depends(get_current_user), db: 
     student_result = await db.execute(select(Student).where(Student.id == invite.student_id))
     student = student_result.scalar_one()
 
-    existing_link_result = await db.execute(
-        select(GuardianStudentLink).where(
-            GuardianStudentLink.guardian_user_id == user.id,
-            GuardianStudentLink.student_id == student.id,
+    # The inviter (or anyone already linked) opening the link just to look
+    # at it used it up, and the co-parent it was for got "already used".
+    if await _is_guardian(db, user.id, student.id):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"{student.first_name} is already on your account - this invite is for someone else"
         )
-    )
-    link = existing_link_result.scalar_one_or_none()
-    if not link:
-        link = GuardianStudentLink(guardian_user_id=user.id, student_id=student.id, linked_via="invite_accepted")
-        db.add(link)
+    link = GuardianStudentLink(guardian_user_id=user.id, student_id=student.id, linked_via="invite_accepted")
+    db.add(link)
 
     invite.status = "accepted"
     invite.accepted_by_user_id = user.id
-    invite.accepted_at = datetime.now(timezone.utc)
+    invite.accepted_at = datetime.now(UTC)
 
     if invite.inviter_user_id != user.id:
         db.add(

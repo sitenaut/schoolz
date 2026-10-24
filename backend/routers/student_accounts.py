@@ -10,7 +10,7 @@ email must match the invited email, and a student has at most one account.
 """
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
@@ -55,7 +55,7 @@ class StudentAccountStatusOut(BaseModel):
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def _require_guardian(db: AsyncSession, user: User, student_id: str) -> Student:
@@ -206,7 +206,9 @@ async def accept_student_account_invite(
     if user.email.lower() != invite.invitee_email.lower():
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            f"This invite is for {invite.invitee_email} - sign in with that account to accept it",
+            # Masked like the preview: any account can ask, so the full
+            # address would hand the child's email to whoever has the link.
+            f"This invite was sent to {mask_email(invite.invitee_email)} - sign in with that account to accept it",
         )
 
     student = await db.get(Student, invite.student_id)
