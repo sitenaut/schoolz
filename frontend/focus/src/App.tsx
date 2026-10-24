@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { apiFetch, apiGet, hasSession } from "./api";
 import { localTodayIso } from "./courses";
 import { useCoursePreferences } from "./lib/coursePreferences";
@@ -75,6 +75,11 @@ export function App() {
     })();
   }, []);
 
+  // The child whose data is meant to be on screen. Switching child while a
+  // load was in flight let the slower, previous child's answers land under
+  // the new child's name (and a tick on them POSTed against the wrong one).
+  const currentId = useRef<string | null>(null);
+
   const load = useCallback(async (id: string) => {
     const [todoRes, coursesRes, scheduleRes, kindsRes, policiesRes, syncRes] = await Promise.all([
       apiGet<TodoResponse>(`/students/${id}/bucket3/todo`),
@@ -84,7 +89,10 @@ export function App() {
       apiGet<LatePolicy[]>(`/students/${id}/bucket3/late-policies`),
       apiGet<SyncStatus>(`/students/${id}/bucket3/status`),
     ]);
-    if (!todoRes) setError("Couldn't load assignments.");
+    if (currentId.current !== id) return;
+    // A good load clears an earlier failure's banner, which otherwise stayed
+    // up for the rest of the session.
+    setError(todoRes ? null : "Couldn't load assignments.");
     setTodo(todoRes);
     setCourses(coursesRes ?? []);
     setSchedule(scheduleRes);
@@ -95,8 +103,20 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    currentId.current = studentId;
     if (studentId) void load(studentId);
   }, [studentId, load]);
+
+  const pickStudent = (id: string) => {
+    if (id === studentId) return;
+    // Nothing of the previous child's stays up while the next one loads.
+    setLoading(true);
+    setTodo(null);
+    setCourses([]);
+    setSchedule(null);
+    setSync(null);
+    setStudentId(id);
+  };
 
   const toggleDone = async (item: TodoItem, done: boolean) => {
     if (!studentId) return;
@@ -201,7 +221,7 @@ export function App() {
   }
 
   return (
-    <Shell tab={tab} setTab={setTab} students={students} studentId={studentId} onPick={setStudentId} fresh={fresh}>
+    <Shell tab={tab} setTab={setTab} students={students} studentId={studentId} onPick={pickStudent} fresh={fresh}>
       {error && <div className="banner-error">{error}</div>}
       {fresh?.kind !== "never" && fresh?.needsLogin && (
         <div className="banner-warn">
