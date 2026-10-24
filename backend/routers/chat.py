@@ -80,7 +80,9 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
-    history: list[ChatMessage] = Field(default_factory=list, max_length=40)
+    # Only a size guard: run_chat_turn keeps the most recent turns itself
+    # (chatbot.trim_history). At 40 this refused long conversations outright.
+    history: list[ChatMessage] = Field(default_factory=list, max_length=200)
     escalated: bool = False
 
 
