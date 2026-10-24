@@ -676,6 +676,29 @@ async def test_course_preferences_are_per_account_not_per_student():
 
 
 @pytest.mark.anyio
+async def test_course_preference_put_changes_only_the_fields_it_sends():
+    # Focus wrote both fields from its own copy, so a rename sent before that
+    # copy loaded (or after its load failed) wiped the class's colour.
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        parent = await _register(client, f"parent_{uuid.uuid4().hex[:8]}@example.com")
+        url = "/course-preferences/101-1"
+        await client.put(url, json={"custom_name": "Math", "custom_color": "#ff0000"}, headers=_auth(parent))
+
+        renamed = await client.put(url, json={"custom_name": "Algebra"}, headers=_auth(parent))
+        assert renamed.json() == {"course_key": "101-1", "custom_name": "Algebra", "custom_color": "#ff0000"}
+        recolored = await client.put(url, json={"custom_color": "#00ff00"}, headers=_auth(parent))
+        assert recolored.json() == {"course_key": "101-1", "custom_name": "Algebra", "custom_color": "#00ff00"}
+
+        # An explicit null clears just that field; clearing the last one
+        # removes the row.
+        await client.put(url, json={"custom_name": None}, headers=_auth(parent))
+        mine = (await client.get("/course-preferences", headers=_auth(parent))).json()
+        assert mine == [{"course_key": "101-1", "custom_name": None, "custom_color": "#00ff00"}]
+        await client.put(url, json={"custom_color": None}, headers=_auth(parent))
+        assert (await client.get("/course-preferences", headers=_auth(parent))).json() == []
+
+
+@pytest.mark.anyio
 async def test_detail_page_capture_attaches_points_possible_to_the_matching_item(monkeypatch):
     _freeze(monkeypatch, 2026, 9, 14, 9, 0)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

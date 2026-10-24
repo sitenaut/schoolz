@@ -10,7 +10,7 @@ import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
-import { itemDateKeys, schoolCalendarPath } from "../lib/calendar";
+import { itemDateKeys, schoolCalendarPath, todayKey } from "../lib/calendar";
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
 import type { School, SchoolContentItem } from "../types";
 import styles from "./CalendarPage.module.css";
@@ -18,8 +18,6 @@ import { LOCALE } from "../lib/i18n";
 import { Trans, useTranslation } from "react-i18next";
 
 type ViewMode = "month" | "year";
-
-const TODAY_KEY = dateKey(new Date());
 
 /** /calendar: the dates of every school picked in the ribbon. A ?school=
  * link from before schools had their own calendar page goes to that page. */
@@ -42,6 +40,10 @@ export function SchoolCalendarPage() {
 }
 
 function CalendarView({ school: deepSchool }: { school: string | null }) {
+  // Read on every render, in school time: a module constant was fixed when
+  // the chunk loaded (preloaded at idle), so a tab left open overnight
+  // marked yesterday as today, in the browser's own time zone.
+  const todayIso = todayKey();
   const { t } = useTranslation();
   const { mySchools, activeSchools, activateAll, colorFor, loading, excludeDistrict, setExcludeDistrict, districtsById, myTowns, deviceSlugs } = useMySchools();
   const [params] = useSearchParams();
@@ -106,7 +108,7 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
   // today the same way an explicit school id already wins over the ribbon.
   // A school's "All dates" link (no date) lands on that school's whole month
   // instead, scrolled to today - same as "Show month".
-  const [selectedDay, setSelectedDay] = useState<string | null>(deepDate ?? (deepSchool ? null : TODAY_KEY));
+  const [selectedDay, setSelectedDay] = useState<string | null>(deepDate ?? (deepSchool ? null : todayIso));
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -299,17 +301,17 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
   useEffect(() => {
     if (!scrollToToday || selectedDay || loadedKey !== schoolIdsKey) return;
     setScrollToToday(false);
-    const target = rows.find(({ item }) => itemDateKeys(item).some((k) => k >= TODAY_KEY));
-    if (!target || !TODAY_KEY.startsWith(dateKey(viewDate).slice(0, 7))) return;
+    const target = rows.find(({ item }) => itemDateKeys(item).some((k) => k >= todayIso));
+    if (!target || !todayIso.startsWith(dateKey(viewDate).slice(0, 7))) return;
     document.getElementById(`event-${target.item.id}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }, [scrollToToday, selectedDay, rows, viewDate, loadedKey, schoolIdsKey]);
+  }, [scrollToToday, selectedDay, rows, viewDate, loadedKey, schoolIdsKey, todayIso]);
 
   const selectedLabel = selectedDay
     ? new Date(selectedDay + "T12:00:00Z").toLocaleDateString(LOCALE, {
         weekday: "long",
         month: "long",
         day: "numeric",
-        ...(selectedDay.slice(0, 4) !== TODAY_KEY.slice(0, 4) ? { year: "numeric" } : {}),
+        ...(selectedDay.slice(0, 4) !== todayIso.slice(0, 4) ? { year: "numeric" } : {}),
       })
     : null;
 
@@ -335,7 +337,7 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
       status === "half" && (mini ? styles.miniDayHalf : styles.dayHalf),
       status === "weekend" && (mini ? styles.miniDayWeekend : styles.dayWeekend),
       viewMode === "month" && selectedDay === key && styles.daySelected,
-      key === TODAY_KEY && (mini ? styles.miniDayToday : styles.dayToday),
+      key === todayIso && (mini ? styles.miniDayToday : styles.dayToday),
     ]
       .filter(Boolean)
       .join(" ");
@@ -446,7 +448,7 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
                   type="button"
                   className={dayButtonClasses(d)}
                   aria-pressed={selectedDay === key}
-                  aria-label={d.toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric" }) + (key === TODAY_KEY ? ` (${t("today")})` : "")}
+                  aria-label={d.toLocaleDateString(LOCALE, { weekday: "long", month: "long", day: "numeric" }) + (key === todayIso ? ` (${t("today")})` : "")}
                   onClick={() => tapDay(key, d)}
                 >
                   {d.getDate()}
@@ -457,7 +459,7 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
 
           <div className={styles.dayFilterRow}>
             <span className="note" style={{ margin: 0 }}>
-              {selectedDay ? (selectedDay === TODAY_KEY ? t("Today, {{date}}", { date: selectedLabel }) : selectedLabel) : t("Showing the whole month")}
+              {selectedDay ? (selectedDay === todayIso ? t("Today, {{date}}", { date: selectedLabel }) : selectedLabel) : t("Showing the whole month")}
             </span>
             {selectedDay && (
               <button className="ghost" onClick={showMonth}>

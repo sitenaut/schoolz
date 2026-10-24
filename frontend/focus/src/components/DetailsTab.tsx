@@ -44,7 +44,8 @@ export function DetailsTab({
 }) {
   const [editing, setEditing] = useState<string | null>(null);
 
-  if (!todo || courses.length === 0) {
+  const allItems = todo ? [...todo.missing, ...todo.due, ...todo.no_due_date, ...todo.done] : [];
+  if (!todo || (courses.length === 0 && allItems.length === 0)) {
     return (
       <div className="empty-state">
         <h2>Nothing to show yet</h2>
@@ -53,41 +54,55 @@ export function DetailsTab({
     );
   }
 
-  const allItems = [...todo.missing, ...todo.due, ...todo.no_due_date, ...todo.done];
+  // Grouped by course_key, the identity /progress uses too. Grouping by name
+  // and drawing cards only from /progress lost every item /progress has no
+  // row for: a class with only undated work, and work with no class at all.
   const byCourse = new Map<string, TodoItem[]>();
   for (const item of allItems) {
-    const key = item.course_name ?? "Other";
-    byCourse.set(key, [...(byCourse.get(key) ?? []), item]);
+    byCourse.set(item.course_key, [...(byCourse.get(item.course_key) ?? []), item]);
   }
   const policyFor = (courseKey: string) => policies.find((p) => p.course_key === courseKey) ?? null;
+  const cards: { course_key: string; course_name: string | null; progress: CourseProgress | null }[] = courses.map((course) => ({
+    course_key: course.course_key,
+    course_name: course.course_name,
+    progress: course,
+  }));
+  const shown = new Set(courses.map((c) => c.course_key));
+  for (const [courseKey, items] of byCourse) {
+    if (!shown.has(courseKey)) cards.push({ course_key: courseKey, course_name: items[0].course_name, progress: null });
+  }
 
   return (
     <>
-      {courses.map((course) => {
-        const items = byCourse.get(course.course_name) ?? [];
-        const policy = policyFor(course.course_key);
+      {cards.map(({ course_key: courseKey, course_name: courseName, progress: course }) => {
+        const items = byCourse.get(courseKey) ?? [];
+        const policy = policyFor(courseKey);
+        // A late-work rule needs a class to belong to.
+        const canEditPolicy = Boolean(studentId && courseName);
         return (
-          <section className="card" key={course.course_key}>
+          <section className="card" key={courseKey}>
             <h3 className="card-label">
-              {displayCourseName(course.course_name, courseNames[course.course_key])}
-              {course.grade_percent !== null && ` · ${Math.round(course.grade_percent)}%`}
-              {course.teacher_name && ` · ${course.teacher_name}`}
+              {courseName ? displayCourseName(courseName, courseNames[courseKey]) : "Other"}
+              {course && course.grade_percent !== null && ` · ${Math.round(course.grade_percent)}%`}
+              {course?.teacher_name && ` · ${course.teacher_name}`}
             </h3>
 
-            <div className="policy-row">
-              <span className="policy-current">
-                {policy ? describePolicy(policy) : "No late-work rule on file"}
-              </span>
-              {studentId && editing !== course.course_key && (
-                <button type="button" className="policy-edit" onClick={() => setEditing(course.course_key)}>
-                  {policy ? "Change" : "Add"}
-                </button>
-              )}
-            </div>
-            {studentId && editing === course.course_key && (
+            {courseName && (
+              <div className="policy-row">
+                <span className="policy-current">
+                  {policy ? describePolicy(policy) : "No late-work rule on file"}
+                </span>
+                {canEditPolicy && editing !== courseKey && (
+                  <button type="button" className="policy-edit" onClick={() => setEditing(courseKey)}>
+                    {policy ? "Change" : "Add"}
+                  </button>
+                )}
+              </div>
+            )}
+            {studentId && courseName && editing === courseKey && (
               <LatePolicyEditor
-                courseKey={course.course_key}
-                courseName={course.course_name}
+                courseKey={courseKey}
+                courseName={courseName}
                 studentId={studentId}
                 existing={policy}
                 onSave={onSavePolicy}

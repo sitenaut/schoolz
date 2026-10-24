@@ -17,8 +17,8 @@ export function StudentLoginInvite({ studentId, firstName }: { studentId: string
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await apiFetch(`/students/${studentId}/student-account`);
-    setStatus(res.ok ? await res.json() : null);
+    const res = await apiFetch(`/students/${studentId}/student-account`).catch(() => null);
+    setStatus(res?.ok ? await res.json() : null);
   }, [studentId]);
 
   useEffect(() => {

@@ -25,10 +25,21 @@ export type CourseNameOverrides = Record<string, string>;
 
 type CoursePreference = { course_key: string; custom_name: string | null; custom_color: string | null };
 
+function withOverride(prev: Record<string, string>, courseKey: string, value: string | null): Record<string, string> {
+  const next = { ...prev };
+  if (value) next[courseKey] = value;
+  else delete next[courseKey];
+  return next;
+}
+
 /** One shared fetch, one shared piece of state, for both the color and
  * name overrides together - they're the same backend row. Loaded once per
  * session; a pick updates local state immediately (so it shows up on
- * every tab right away) and persists in the background. */
+ * every tab right away) and persists in the background, sending only the
+ * field it changed: sending both from this copy wiped the other field
+ * whenever the copy hadn't loaded yet (or its load had failed). A save
+ * that fails puts the old value back, rather than showing a pick that is
+ * gone on the next visit. */
 export function useCoursePreferences() {
   const [names, setNames] = useState<CourseNameOverrides>({});
   const [colors, setColors] = useState<CourseColorOverrides>({});
@@ -51,43 +62,40 @@ export function useCoursePreferences() {
     };
   }, []);
 
-  const save = useCallback((courseKey: string, customName: string | null, customColor: string | null) => {
-    void apiFetch(`/course-preferences/${encodeURIComponent(courseKey)}`, {
-      method: "PUT",
-      body: JSON.stringify({ custom_name: customName, custom_color: customColor }),
-    });
+  const save = useCallback(async (courseKey: string, field: Partial<Omit<CoursePreference, "course_key">>) => {
+    try {
+      const res = await apiFetch(`/course-preferences/${encodeURIComponent(courseKey)}`, {
+        method: "PUT",
+        body: JSON.stringify(field),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }, []);
 
   const setName = useCallback(
     (courseKey: string, name: string | null) => {
       const trimmed = name?.trim() || null;
-      setNames((prev) => {
-        const next = { ...prev };
-        if (trimmed) next[courseKey] = trimmed;
-        else delete next[courseKey];
-        return next;
+      const before = names[courseKey] ?? null;
+      setNames((prev) => withOverride(prev, courseKey, trimmed));
+      void save(courseKey, { custom_name: trimmed }).then((ok) => {
+        // Only if nothing newer replaced it meanwhile.
+        if (!ok) setNames((prev) => ((prev[courseKey] ?? null) === trimmed ? withOverride(prev, courseKey, before) : prev));
       });
-      // Reads the LATEST colors via a functional update's escape hatch
-      // isn't available outside setState, so colors is captured from the
-      // closure - safe here since setName and setColor are never called
-      // for the same course_key in the same tick (the color and name
-      // pickers are separate controls, never edited by the same event).
-      save(courseKey, trimmed, colors[courseKey] ?? null);
     },
-    [colors, save],
+    [names, save],
   );
 
   const setColor = useCallback(
     (courseKey: string, hex: string | null) => {
-      setColors((prev) => {
-        const next = { ...prev };
-        if (hex) next[courseKey] = hex;
-        else delete next[courseKey];
-        return next;
+      const before = colors[courseKey] ?? null;
+      setColors((prev) => withOverride(prev, courseKey, hex));
+      void save(courseKey, { custom_color: hex }).then((ok) => {
+        if (!ok) setColors((prev) => ((prev[courseKey] ?? null) === hex ? withOverride(prev, courseKey, before) : prev));
       });
-      save(courseKey, names[courseKey] ?? null, hex);
     },
-    [names, save],
+    [colors, save],
   );
 
   return { names, colors, setName, setColor };

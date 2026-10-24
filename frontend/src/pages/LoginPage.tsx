@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
-import { safeNext } from "../lib/safeNext";
+import { goToNext, returnToFor, safeNext } from "../lib/safeNext";
 
 /** The full-page version - only reached via a direct link (an invite's
  * `?next=` redirect, a bookmark, or landing here with JS routing not yet
@@ -16,7 +16,7 @@ export function LoginPage() {
   const presetEmail = searchParams.get("email") ?? undefined;
 
   useEffect(() => {
-    if (user) navigate(next, { replace: true });
+    if (user) goToNext(next, navigate);
   }, [user, navigate, next]);
 
   return (
@@ -25,7 +25,7 @@ export function LoginPage() {
       <AuthPanel
         mode={mode}
         onModeChange={setMode}
-        returnTo={next === "/" ? undefined : next}
+        returnTo={returnToFor(next)}
         presetEmail={presetEmail}
       />
     </div>

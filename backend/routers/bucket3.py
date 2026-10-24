@@ -2242,9 +2242,23 @@ async def set_course_preference(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Upsert, or delete once both fields go back to null - a row that
-    carries no actual override is nothing to keep around."""
-    if payload.custom_name is None and payload.custom_color is None:
+    """Changes only the fields the request sends (an explicit null clears
+    one), and deletes the row once both are null - a row that carries no
+    actual override is nothing to keep around. Writing both from the
+    client's copy wiped the colour on a rename whenever that copy hadn't
+    loaded."""
+    row = (
+        await db.execute(
+            select(CourseDisplayPreference).where(
+                CourseDisplayPreference.user_id == user.id, CourseDisplayPreference.course_key == course_key
+            )
+        )
+    ).scalar_one_or_none()
+    sent = payload.model_fields_set
+    custom_name = payload.custom_name if "custom_name" in sent else (row.custom_name if row else None)
+    custom_color = payload.custom_color if "custom_color" in sent else (row.custom_color if row else None)
+
+    if custom_name is None and custom_color is None:
         await db.execute(
             delete(CourseDisplayPreference).where(
                 CourseDisplayPreference.user_id == user.id, CourseDisplayPreference.course_key == course_key
@@ -2253,22 +2267,17 @@ async def set_course_preference(
         await db.commit()
         return CoursePreferenceOut(course_key=course_key, custom_name=None, custom_color=None)
 
-    values = {
-        "user_id": user.id,
-        "course_key": course_key,
-        "custom_name": payload.custom_name,
-        "custom_color": payload.custom_color,
-    }
+    values = {"user_id": user.id, "course_key": course_key, "custom_name": custom_name, "custom_color": custom_color}
     await db.execute(
         pg_insert(CourseDisplayPreference)
         .values(**values)
         .on_conflict_do_update(
             index_elements=["user_id", "course_key"],
-            set_={"custom_name": payload.custom_name, "custom_color": payload.custom_color, "updated_at": _now()},
+            set_={"custom_name": custom_name, "custom_color": custom_color, "updated_at": _now()},
         )
     )
     await db.commit()
-    return CoursePreferenceOut(course_key=course_key, custom_name=payload.custom_name, custom_color=payload.custom_color)
+    return CoursePreferenceOut(course_key=course_key, custom_name=custom_name, custom_color=custom_color)
 
 
 @router.get("/admin/capture-page-kinds", response_model=list[CapturePageKindOut])

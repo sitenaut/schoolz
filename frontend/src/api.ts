@@ -81,26 +81,33 @@ function isRetryableStatus(status: number): boolean {
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  // Kept separate from `headers` because init.headers widens the spread to
-  // a HeadersInit union, which isn't indexable by name.
-  const auth = await authHeader();
-  const headers = {
-    "Content-Type": "application/json",
-    ...auth,
-    // Explicit, not Accept-Language: the browser sends its own, and a
-    // Spanish browser on an English URL must still get English content.
-    ...(CURRENT_LANG !== DEFAULT_LANG ? { "X-Schoolz-Lang": CURRENT_LANG } : {}),
-    ...(init.headers ?? {}),
-  };
   const method = (init.method ?? "GET").toUpperCase();
   const url = `${API_URL}${path}`;
 
-  // A cached token can go stale where a per-request getSession() couldn't
-  // (a tab asleep past the token's expiry, waking before supabase-js has
-  // refreshed it). A 401 says the request was rejected before it was
-  // processed, so re-reading the session and replaying it once is safe for
-  // any method - unlike the 502/network retry below, which is GET-only.
-  const retryOn401 = async (res: Response): Promise<Response> => {
+  // One attempt, its headers built fresh each time: the retry below runs
+  // two seconds after the first try, and the token may have been refreshed
+  // in between (a tab waking past its token's expiry). Reusing the first
+  // attempt's headers sent the stale token again and turned a recovered
+  // network blip into a 401.
+  const send = async (): Promise<Response> => {
+    // Kept separate from `headers` because init.headers widens the spread to
+    // a HeadersInit union, which isn't indexable by name.
+    const auth = await authHeader();
+    const headers = {
+      "Content-Type": "application/json",
+      ...auth,
+      // Explicit, not Accept-Language: the browser sends its own, and a
+      // Spanish browser on an English URL must still get English content.
+      ...(CURRENT_LANG !== DEFAULT_LANG ? { "X-Schoolz-Lang": CURRENT_LANG } : {}),
+      ...(init.headers ?? {}),
+    };
+    const res = await fetch(url, { ...init, headers });
+
+    // A cached token can go stale where a per-request getSession() couldn't
+    // (a tab asleep past the token's expiry, waking before supabase-js has
+    // refreshed it). A 401 says the request was rejected before it was
+    // processed, so re-reading the session and replaying it once is safe for
+    // any method - unlike the 502/network retry below, which is GET-only.
     if (res.status !== 401 || !IS_SUPABASE_AUTH || !supabase) return res;
     const fresh = await refreshCachedToken();
     if (!fresh || auth.Authorization === `Bearer ${fresh}`) return res;
@@ -108,14 +115,14 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   };
 
   if (method !== "GET") {
-    return retryOn401(await fetch(url, { ...init, headers }));
+    return send();
   }
 
   try {
-    const res = await retryOn401(await fetch(url, { ...init, headers }));
+    const res = await send();
     if (isRetryableStatus(res.status)) {
       await sleep(RETRY_DELAY_MS);
-      return fetch(url, { ...init, headers });
+      return send();
     }
     return res;
   } catch {
@@ -123,7 +130,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     // itself failed - exactly what a mid-deploy visitor sees. Retry once;
     // if it fails again, let the caller's existing error handling take over.
     await sleep(RETRY_DELAY_MS);
-    return fetch(url, { ...init, headers });
+    return send();
   }
 }
 

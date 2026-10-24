@@ -42,6 +42,15 @@ describe("scrubUrl", () => {
     expect(scrubUrl("/schools/:schoolId")).toBe("/schools/:schoolId");
   });
 
+  it("scrubs a path carried in ?next=, e.g. a connect code during sign-in", () => {
+    const result = scrubUrl("https://schoolz.sitenaut.com/login?next=%2Fconnect%3Fcode%3DWXYZ-1234");
+    expect(result).not.toContain("WXYZ");
+    expect(new URL(result).searchParams.get("next")).toBe("/connect");
+    expect(scrubUrl("/register?next=%2Finvites%2Fabc123")).not.toContain("abc123");
+    // An ordinary next is left exactly as it was.
+    expect(scrubUrl("/login?next=%2Ffamily")).toBe("/login?next=%2Ffamily");
+  });
+
   it("combines hash-stripping and token-stripping together", () => {
     expect(scrubUrl("https://schoolz.sitenaut.com/?code=abc#access_token=def")).toBe(
       "https://schoolz.sitenaut.com/"

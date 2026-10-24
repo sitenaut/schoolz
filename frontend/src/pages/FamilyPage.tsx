@@ -102,10 +102,14 @@ export function FamilyPage() {
     setPanel(null);
     refresh();
   };
-  const remove = async (c: FamilyChild) => {
-    if (!confirm(`Remove ${c.first_name} from your family? This only affects your own view.`)) return;
-    await apiFetch(`/students/${c.id}`, { method: "DELETE" });
-    refresh();
+  /** Resolves false when the removal didn't happen, so the card can say so:
+   * a failed DELETE used to look the same as a removal that hadn't shown up
+   * yet. Undefined when they changed their mind. */
+  const remove = async (c: FamilyChild): Promise<boolean | undefined> => {
+    if (!confirm(`Remove ${c.first_name} from your family? This only affects your own view.`)) return undefined;
+    const r = await apiFetch(`/students/${c.id}`, { method: "DELETE" }).catch(() => null);
+    if (r?.ok) refresh();
+    return Boolean(r?.ok);
   };
   /** Shown at once, put back if the save fails. Resolves to whether it saved. */
   const setGradYear = async (c: FamilyChild, gradYear: number | null): Promise<boolean> => {
@@ -420,7 +424,7 @@ function ChildCard({
   open: PanelKind | null;
   onToggle: (kind: PanelKind) => void;
   onClosePanel: () => void;
-  onRemove: () => void;
+  onRemove: () => Promise<boolean | undefined>;
   onGradYear: (year: number | null) => Promise<boolean>;
 }) {
   const offers = offersSchoolwork(c);
@@ -432,6 +436,8 @@ function ChildCard({
   );
   const login = c.student_login_email ?? c.student_invite_email;
   const [gradYearFailed, setGradYearFailed] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeFailed, setRemoveFailed] = useState(false);
 
   return (
     <div className="card fam-kid">
@@ -547,10 +553,20 @@ function ChildCard({
       {!offers && <p className="fam-none">Homework and grades aren't available{c.school_name ? ` at ${c.school_name}` : ""} yet.</p>}
       <div className="fam-foot">
         <span>Student ID {c.student_id}</span>
-        <button type="button" onClick={onRemove}>
+        <button
+          type="button"
+          disabled={removing}
+          onClick={async () => {
+            setRemoving(true);
+            const ok = await onRemove();
+            setRemoving(false);
+            setRemoveFailed(ok === false);
+          }}
+        >
           Remove from my family
         </button>
       </div>
+      {removeFailed && <p className="fam-report-error">Couldn't remove {c.first_name} just now. Try again in a minute.</p>}
     </div>
   );
 }
