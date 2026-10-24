@@ -168,7 +168,7 @@ export function ApiKeysPage() {
     <div>
       <PageHeader
         title="API keys"
-        subtitle="For scripts and agents such as Claude Code. A key acts as you, limited to what you tick, and can never manage users, roles or other keys."
+        subtitle="For scripts and agents such as Claude Code. A key acts as you, limited to what you tick. It can never manage users, roles or other keys, see your children, or change your account."
         actions={
           <button className="btn btn-primary" onClick={() => setCreating(true)}>
             New key

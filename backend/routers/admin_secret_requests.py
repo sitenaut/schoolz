@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import check_admin_mfa, get_current_user, hash_api_key, require_super_admin
+from auth import check_admin_mfa, get_current_user, hash_api_key, key_gate, require_super_admin
 from database import get_db
 from models import ApiKey, SecretAccessRequest, User
 from routers.admin_api_keys import DEVICE_POLL_INTERVAL_S, _new_user_code, _normalize_user_code
@@ -47,6 +47,7 @@ def _unlock_key() -> str | None:
     return os.environ.get("SECRETS_UNLOCK_KEY") or None
 
 
+@key_gate
 async def require_requester(request: Request, user: User = Depends(get_current_user)) -> User:
     """Whoever asks must be a super admin or a key made by one. A key acts as
     its creator, so a demoted creator's key stops working here too."""

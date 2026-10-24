@@ -4,7 +4,7 @@ import uuid
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -54,6 +54,44 @@ async def test_a_key_is_scoped_to_its_permissions_and_never_reaches_super_admin_
         assert "key" not in mine and mine["last_used_at"] is not None
 
 
+async def test_a_key_never_reaches_the_personal_layer():
+    """A key is narrowed to admin permissions, and none of them covers its
+    creator's children, invites or account. Every route without an admin
+    gate refuses a key (auth.API_KEY_ROUTES), and a public one answers it as
+    an anonymous visitor."""
+    async with _client() as client:
+        boss, boss_id = await _register(client, "keykids", super_admin=True)
+        key = await _create_key(client, boss, ["scans.view"])
+        some_id = str(uuid.uuid4())
+
+        assert (await client.get("/students", headers=_bearer(key))).status_code == 403
+        assert (await client.get(f"/students/{some_id}/bucket3/grades", headers=_bearer(key))).status_code == 403
+        assert (await client.post(f"/students/{some_id}/invites", headers=_bearer(key), json={})).status_code == 403
+        assert (await client.patch("/auth/me", headers=_bearer(key), json={"username": "renamed"})).status_code == 403
+        gone = await client.request("DELETE", "/auth/me", headers=_bearer(key), json={"confirm": "DELETE"})
+        assert gone.status_code == 403
+        assert (await client.get("/auth/me", headers=boss)).json()["id"] == boss_id
+
+        # Public pages still answer, as they would anyone.
+        assert (await client.get("/districts", headers=_bearer(key))).status_code == 200
+        # And the admin routes it was made for still work.
+        assert (await client.get("/scheduled-jobs", headers=_bearer(key))).status_code == 200
+
+
+async def test_the_last_super_admin_cannot_delete_their_account():
+    async with _client() as client:
+        boss, boss_id = await _register(client, "lastboss", super_admin=True)
+        async with database.SessionLocal() as db:
+            await db.execute(update(User).where(User.id != boss_id).values(is_admin=False))
+            await db.commit()
+        res = await client.request("DELETE", "/auth/me", headers=boss, json={"confirm": "DELETE", "password": "password123"})
+        assert res.status_code == 400 and "only super admin" in res.json()["detail"]
+
+        other, other_id = await _register(client, "nextboss", super_admin=True)
+        res = await client.request("DELETE", "/auth/me", headers=boss, json={"confirm": "DELETE", "password": "password123"})
+        assert res.status_code == 204, res.text
+
+
 async def test_only_the_hash_is_stored_and_revoked_or_expired_keys_are_rejected():
     async with _client() as client:
         boss, _ = await _register(client, "keyrevoke", super_admin=True)
@@ -65,7 +103,7 @@ async def test_only_the_hash_is_stored_and_revoked_or_expired_keys_are_rejected(
         expiring = await _create_key(client, boss, ["scans.view"])
         async with database.SessionLocal() as db:
             await db.execute(
-                update(ApiKey).where(ApiKey.id == expiring["id"]).values(expires_at=datetime.now(timezone.utc) - timedelta(minutes=1))
+                update(ApiKey).where(ApiKey.id == expiring["id"]).values(expires_at=datetime.now(UTC) - timedelta(minutes=1))
             )
             await db.commit()
         assert (await client.get("/scheduled-jobs", headers=_bearer(expiring))).status_code == 401
@@ -228,7 +266,7 @@ async def test_device_flow_denied_expired_and_unauthorized_approvals():
             await db.execute(
                 update(ApiKeyRequest)
                 .where(ApiKeyRequest.user_code == stale["user_code"])
-                .values(expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
+                .values(expires_at=datetime.now(UTC) - timedelta(seconds=1))
             )
             await db.commit()
         assert (await client.post(f"/admin/api-keys/requests/{stale['user_code']}/approve", headers=boss, json={"permissions": ["scans.view"]})).status_code == 410

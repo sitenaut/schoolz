@@ -57,6 +57,20 @@ CAPTURE_KEY_ROUTES = frozenset(
     }
 )
 
+# An admin key (szk_) is narrowed to the admin permissions ticked on it, and
+# none of those is the personal layer: whoever holds a key must not read its
+# creator's children, invite someone to them, or delete the account. So, like
+# a capture key, it is refused before it is even looked up on every route that
+# no admin gate (key_gate) guards, apart from these. On a public route that
+# reads as an anonymous visitor (get_optional_user).
+API_KEY_ROUTES = frozenset(
+    {
+        ("GET", "/auth/me"),  # scripts/schoolz-api.sh asks who a key is
+        ("POST", "/submissions"),  # its staff check narrows to the key's scope
+    }
+)
+_key_routes: dict[int, bool] = {}
+
 _jwks_client: PyJWKClient | None = None
 
 
@@ -329,6 +343,30 @@ async def _authenticate_capture_key(request: Request, db: AsyncSession, token: s
     return user
 
 
+def key_gate(dependency):
+    """Mark an admin gate an API key may reach. The gate still decides;
+    a route with none of these refuses keys outright (API_KEY_ROUTES)."""
+    dependency.key_gate = True
+    return dependency
+
+
+def _has_key_gate(dependant) -> bool:
+    return any(getattr(dep.call, "key_gate", False) or _has_key_gate(dep) for dep in dependant.dependencies)
+
+
+def _route_takes_api_keys(request: Request) -> bool:
+    route = request.scope.get("route")
+    if route is None:
+        return False
+    if (request.method, getattr(route, "path", None)) in API_KEY_ROUTES:
+        return True
+    takes = _key_routes.get(id(route))
+    if takes is None:
+        dependant = getattr(route, "dependant", None)
+        takes = _key_routes[id(route)] = dependant is not None and _has_key_gate(dependant)
+    return takes
+
+
 def is_api_key_request(request: Request) -> bool:
     return getattr(request.state, "api_key_scope", None) is not None
 
@@ -342,6 +380,8 @@ async def get_current_user(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
 
     if token.startswith(API_KEY_PREFIX):
+        if not _route_takes_api_keys(request):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "An API key only works on admin endpoints")
         user = await _authenticate_api_key(request, db, token)
     elif token.startswith(CAPTURE_KEY_PREFIX):
         user = await _authenticate_capture_key(request, db, token)
@@ -385,6 +425,7 @@ async def get_optional_user(
         return None
 
 
+@key_gate
 async def require_super_admin(request: Request, user: User = Depends(get_current_user)) -> User:
     """Super admin = `User.is_admin`. Holds every permission and is the only
     tier that can manage users, roles and API keys. An API key never counts,
@@ -466,6 +507,7 @@ def require_permission(permission: str):
     if permission not in PERMISSION_KEYS:
         raise ValueError(f"Unknown permission {permission!r}")
 
+    @key_gate
     async def _dep(request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> User:
         if not (user.is_admin and not is_api_key_request(request)):
             if permission not in await get_effective_permissions(request, db, user):
