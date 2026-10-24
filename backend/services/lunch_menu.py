@@ -26,8 +26,10 @@ from bs4 import BeautifulSoup
 
 import observability
 import scraper_client
+from scheduler.errors import record_parse_issue
 from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
+from services.tool_output import object_list, recover_spilled_input
 
 logger = logging.getLogger(__name__)
 
@@ -712,8 +714,13 @@ async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None 
     if not tool_use:
         return []
 
+    # `days` as a JSON string is a real Haiku answer; read raw, it failed
+    # (and rolled back) the whole district's scan.
+    days, dropped = object_list(recover_spilled_input(tool_use.input, "days").get("days"))
+    if dropped:
+        record_parse_issue("lunch_menu.scan", "unexpected_format", url=pdf_url, sample=str(dropped)[:200])
     items = []
-    for day in tool_use.input.get("days", []):
+    for day in days:
         parsed_date = _parse_date(day.get("date"))
         description = day.get("description")
         if not parsed_date or not description or _PRICE_BOX_RE.search(description):

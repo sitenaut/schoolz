@@ -33,8 +33,10 @@ from anthropic import AsyncAnthropic
 
 import observability
 import scraper_client
+from scheduler.errors import record_parse_issue
 from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
+from services.tool_output import object_list, recover_spilled_input
 
 logger = logging.getLogger(__name__)
 
@@ -219,8 +221,11 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
     if not tool_use:
         return []
 
+    entries, dropped = object_list(recover_spilled_input(tool_use.input).get("items"))
+    if dropped:
+        record_parse_issue("special_events.scan", "unexpected_format", url=pdf_url, sample=str(dropped)[:200])
     items = []
-    for entry in tool_use.input.get("items", []):
+    for entry in entries:
         day = entry.get("day")
         if not isinstance(day, int) or not (1 <= day <= 31):
             continue

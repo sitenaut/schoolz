@@ -14,20 +14,27 @@ here to one specific district feed instead of many general-purpose ones.
 """
 
 import hashlib
-import re
 import logging
-from datetime import date, datetime, time
+import re
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
 from bs4 import BeautifulSoup
+from dateutil.rrule import rrulestr
 from icalendar import Calendar
+from icalendar.prop import vRecur
 
 from services import incidentiq
 
 logger = logging.getLogger(__name__)
 
 _ET = ZoneInfo("America/New_York")
+# Which occurrences of a recurring event are stored: the same span the
+# Apptegy feeds are read over (scheduler/jobs/district_calendar_scan.py).
+_RECUR_PAST = timedelta(days=120)
+_RECUR_FUTURE = timedelta(days=400)
+_MAX_OCCURRENCES = 400
 
 
 def _as_datetime(value) -> tuple[datetime | None, bool]:
@@ -50,10 +57,76 @@ def _as_datetime(value) -> tuple[datetime | None, bool]:
     return None, False
 
 
+def _as_list(value) -> list:
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def _instant(value) -> datetime:
+    """For matching an occurrence to a RECURRENCE-ID or EXDATE however each
+    spells its time (a TZID, UTC, or a bare date)."""
+    return _as_datetime(value)[0].astimezone(UTC)
+
+
+def _occurrences(component, start_value) -> list:
+    """The starts (date or datetime, like DTSTART) of a recurring VEVENT in
+    the stored window: RRULE plus RDATE, minus EXDATE. Read as its master
+    alone, a feed's "Early Dismissal - every Wednesday" showed on the first
+    Wednesday only. UNTIL is applied here rather than by dateutil, which
+    refuses one whose timezone-awareness differs from DTSTART's - and feeds
+    write a UTC UNTIL for an all-day series."""
+    all_day = not isinstance(start_value, datetime)
+    anchor = datetime.combine(start_value, time.min) if all_day else start_value
+
+    def like_anchor(value) -> datetime:
+        if not isinstance(value, datetime):
+            value = datetime.combine(value, time.min)
+        if anchor.tzinfo is None:
+            return value.astimezone(_ET).replace(tzinfo=None) if value.tzinfo else value
+        return value if value.tzinfo else value.replace(tzinfo=_ET)
+
+    now = like_anchor(datetime.now(_ET))
+    first, last = now - _RECUR_PAST, now + _RECUR_FUTURE
+
+    found: list[datetime] = []
+    for recur in _as_list(component.get("RRULE")):
+        parts = dict(recur)
+        until = (parts.pop("UNTIL", None) or [None])[0]
+        if until is not None and not isinstance(until, datetime):
+            until = datetime.combine(until, time.max)  # an UNTIL date includes that whole day
+        stop = like_anchor(until) if until is not None else None
+        rule = rrulestr(vRecur(parts).to_ical().decode(), dtstart=anchor)
+        for occ in rule.xafter(first, count=_MAX_OCCURRENCES, inc=True):
+            if occ > last or (stop is not None and occ > stop):
+                break
+            found.append(occ)
+    for rdate in _as_list(component.get("RDATE")):
+        for d in rdate.dts:
+            value = d.dt[0] if isinstance(d.dt, tuple) else d.dt  # a PERIOD starts the occurrence
+            occ = like_anchor(value)
+            if first <= occ <= last:
+                found.append(occ)
+    excluded = {_instant(d.dt) for exdate in _as_list(component.get("EXDATE")) for d in exdate.dts}
+    out, seen = [], set()
+    for occ in sorted(found):
+        value = occ.date() if all_day else occ
+        key = _instant(value)
+        if key in excluded or key in seen:
+            continue
+        seen.add(key)
+        out.append(value)
+    return out
+
+
+def _cancelled(component) -> bool:
+    return str(component.get("STATUS") or "").upper() == "CANCELLED"
+
+
 def _stable_uid(uid: str | None, title: str, dt: datetime) -> str:
     if uid:
         return uid
-    digest = hashlib.sha1(f"{title}|{dt.isoformat()}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha1(f"{title}|{dt.isoformat()}".encode()).hexdigest()
     return f"hash:{digest[:24]}"
 
 
@@ -111,9 +184,22 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
         logger.warning("district_calendar_parse_failed", extra={"url": ics_url, "error": str(exc)})
         return []
 
+    # Occurrences a series' own override VEVENT replaces (moved, edited or
+    # cancelled): the override stands in for them.
+    overridden: set[tuple[str, datetime]] = set()
+    for component in cal.walk("VEVENT"):
+        recurrence_id = component.get("RECURRENCE-ID")
+        if component.get("UID") and recurrence_id is not None:
+            try:
+                overridden.add((str(component.get("UID")), _instant(recurrence_id.dt)))
+            except Exception:  # noqa: BLE001
+                pass
+
     out: list[dict] = []
     for component in cal.walk("VEVENT"):
         try:
+            if _cancelled(component):
+                continue
             dtstart = component.get("DTSTART")
             if dtstart is None:
                 continue
@@ -135,16 +221,27 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
             if uid and recurrence_id is not None:
                 uid = f"{uid}#{_as_datetime(recurrence_id.dt)[0].isoformat()}"
 
-            out.append(
-                {
-                    "external_uid": _stable_uid(uid, title, start),
-                    "title": title[:300],
-                    "description": description,
-                    "start_date": start,
-                    "end_date": end,
-                    "is_all_day": is_all_day,
-                }
-            )
+            starts = [dtstart.dt]
+            if recurrence_id is None and component.get("RRULE") is not None:
+                starts = _occurrences(component, dtstart.dt)
+            for value in starts:
+                occ_start, _ = _as_datetime(value)
+                if uid and recurrence_id is None and (uid, _instant(value)) in overridden:
+                    continue
+                # The first occurrence keeps the series' UID, so a row stored
+                # before recurrences were read stays the same row; the rest
+                # are keyed like an override of that occurrence would be.
+                occ_uid = uid if occ_start == start or not uid else f"{uid}#{occ_start.isoformat()}"
+                out.append(
+                    {
+                        "external_uid": _stable_uid(occ_uid, title, occ_start),
+                        "title": title[:300],
+                        "description": description,
+                        "start_date": occ_start,
+                        "end_date": end + (occ_start - start) if end is not None else None,
+                        "is_all_day": is_all_day,
+                    }
+                )
         except Exception as exc:  # noqa: BLE001
             logger.warning("district_calendar_vevent_skipped", extra={"url": ics_url, "error": str(exc)})
             continue

@@ -203,11 +203,13 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
 
     client_ai = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
     created = updated = 0
-    max_date_seen = watermark
+    # Day blocks the model didn't read in full (no tool call, or cut off at
+    # max_tokens). The watermark stops short of the first, so the next run
+    # reads it again; its items upsert by uid, so re-reading is harmless.
+    incomplete: list[date] = []
 
     for anchor_date, block_text in new_blocks:
         bullets = [line.strip().lstrip("*").strip() for line in block_text.splitlines() if line.strip().startswith("*")]
-        max_date_seen = anchor_date if max_date_seen is None or anchor_date > max_date_seen else max_date_seen
         if not bullets:
             continue
 
@@ -225,9 +227,11 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
         observability.record_llm_call("hs_announcements_extract", MODEL, response, time.perf_counter() - _llm_started)
         tool_use = next((b for b in response.content if b.type == "tool_use"), None)
         if not tool_use:
+            incomplete.append(anchor_date)
             continue
         if response.stop_reason == "max_tokens":
             record_parse_issue(_JOB_KIND, "llm_max_tokens", school_id=school.id, sample=anchor_date.isoformat())
+            incomplete.append(anchor_date)
 
         items, dropped = object_list(recover_spilled_input(tool_use.input).get("items"))
         if dropped:
@@ -279,8 +283,13 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
             row.is_all_day = True
             row.applies_to_grad_years = _grades_to_grad_years(item.get("audience_grades"))
 
-    if max_date_seen:
-        school.announcements_last_parsed_date = max_date_seen.isoformat()
+    read = [d for d, _ in new_blocks if not incomplete or d < min(incomplete)]
+    if read:
+        school.announcements_last_parsed_date = max(read).isoformat()
     await db.flush()
 
-    return f"announcements: {len(new_blocks)} day block(s) processed, {created} item(s) created, {updated} updated"
+    summary = f"announcements: {len(new_blocks)} day block(s) processed, {created} item(s) created, {updated} updated"
+    if incomplete:
+        days = ", ".join(sorted(d.isoformat() for d in incomplete))
+        return f"WARNING[incomplete_day_block]: {summary}; not fully read, retried next run: {days}"
+    return summary

@@ -30,11 +30,11 @@ from services.content_extractor import (
     ANTHROPIC_API_KEY,
     MODEL,
     _correct_stale_year,
-    _may_supersede,
     _parse_date,
     _title_dedup_key,
     _vision_extract,
     all_day_end,
+    apply_supersede,
 )
 from services.links import unwrap_redirect
 from services.tool_output import object_list, recover_spilled_input
@@ -207,12 +207,9 @@ async def extract_from_pta_page(
             created += 1
             current.append(new_item)
 
-            supersedes_id = item.get("supersedes_item_id")
-            if supersedes_id:
-                old = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.id == supersedes_id))).scalar_one_or_none()
-                if old and old.id != new_item.id and _may_supersede(old, new_item, job_kind=_JOB_KIND):
-                    old.is_current = False
-                    old.superseded_by_id = new_item.id
+            await apply_supersede(
+                db, item.get("supersedes_item_id"), new_item, school_id=school.id, source="givebacks_pta", job_kind=_JOB_KIND
+            )
 
     dupe_note = f", {skipped_dupes} duplicate item(s) already covered" if skipped_dupes else ""
     total_chunks = -(-len(extractable_blocks) // _CHUNK_SIZE)

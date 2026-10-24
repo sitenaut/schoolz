@@ -155,6 +155,19 @@ def source_hash(title: str, description: str | None) -> str:
     return hashlib.sha256(f"{title}\n{description or ''}".encode()).hexdigest()
 
 
+def _complete(row: ContentTranslation | None, item: SchoolContentItem) -> bool:
+    """A stored translation of the item's current English, with everything the
+    English has. The model sometimes returns an item without its description
+    (the tool's "required" isn't enforced); stored as done, every visitor in
+    that language saw the title alone until the school edited the text. Now
+    that item stays English and is translated again."""
+    return (
+        row is not None
+        and row.source_hash == source_hash(item.title, item.description)
+        and (row.description is not None or not item.description)
+    )
+
+
 def _too_old(item: SchoolContentItem) -> bool:
     when = item.end_date or item.start_date
     if when is None:
@@ -219,6 +232,8 @@ async def _translate_chunk(chunk: list[tuple[str, str, str | None]], lang: str) 
         if n not in got:
             continue
         title, translated_description = got[n]
+        if description and not translated_description:
+            continue  # half a translation: left English, asked for again (_complete)
         # An item with no English description never gains one.
         out[item_id] = (title, translated_description if description else None)
     return out
@@ -252,9 +267,11 @@ async def _reuse_by_hash(db: AsyncSession, todo: list[SchoolContentItem], lang: 
             .where(ContentTranslation.lang == lang, ContentTranslation.source_hash.in_(set(hashes.values())))
         )
     ).all()
-    if not rows:
+    # A copy without the description it should have is no translation (_complete).
+    described = {hashes[i.id] for i in todo if i.description}
+    by_hash = {r.source_hash: r for r in rows if r.description is not None or r.source_hash not in described}
+    if not by_hash:
         return set()
-    by_hash = {r.source_hash: r for r in rows}
     now = datetime.now(UTC)
     new_rows = [
         {"item_id": item_id, "lang": lang, "title": by_hash[h].title, "description": by_hash[h].description, "source_hash": h, "model": by_hash[h].model, "created_at": now}
@@ -277,7 +294,7 @@ async def translate_items(db: AsyncSession, items: list[SchoolContentItem], lang
     try:
         wanted = [i for i in items if _needs_model(i, lang)]
         stored = await _stored(db, [i.id for i in wanted], lang)
-        todo = [i for i in wanted if not (stored.get(i.id) and stored[i.id].source_hash == source_hash(i.title, i.description))]
+        todo = [i for i in wanted if not _complete(stored.get(i.id), i)]
         if not todo or time.monotonic() < _cooldown_until:
             return 0
 
@@ -413,8 +430,13 @@ async def translate_texts(texts: list[tuple[str, str | None]], lang: str, guidan
         _cooldown_until = time.monotonic() + _COOLDOWN_S
         logger.warning("content_translation_failed", extra={"lang": lang, "items": len(texts), "error": str(exc)})
         return {}
-    # A text with no English description never gains one.
-    return {n: (title, d if texts[n][1] else None) for n, (title, d) in got.items() if 0 <= n < len(texts)}
+    # A text with no English description never gains one, and one that lost
+    # its description isn't returned (the caller serves English).
+    return {
+        n: (title, d if texts[n][1] else None)
+        for n, (title, d) in got.items()
+        if 0 <= n < len(texts) and (d or not texts[n][1])
+    }
 
 
 async def apply_translations(db: AsyncSession, items: list[SchoolContentItem], lang: str, translate_missing: bool = True) -> dict[str, Localized]:
@@ -436,7 +458,7 @@ async def apply_translations(db: AsyncSession, items: list[SchoolContentItem], l
         row = stored.get(i.id)
         if fixed is not None:
             out[i.id] = Localized(fixed, i.description, False)
-        elif row and row.source_hash == source_hash(i.title, i.description):
+        elif _complete(row, i):
             out[i.id] = Localized(row.title, row.description, True)
         else:
             out[i.id] = Localized(i.title, i.description, False)

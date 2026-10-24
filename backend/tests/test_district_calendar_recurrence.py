@@ -40,7 +40,14 @@ async def test_moved_instance_gets_its_own_uid(monkeypatch):
             return httpx.Response(200, content=ICS, request=httpx.Request("GET", url))
 
     monkeypatch.setattr(district_calendar.httpx, "AsyncClient", FakeClient)
+    # Dated 2026; keep its first occurrence inside the stored window whenever this runs.
+    monkeypatch.setattr(district_calendar, "_RECUR_PAST", district_calendar._RECUR_PAST * 40)
     events = await district_calendar.fetch_district_calendar("https://example.org/basic.ics")
     uids = [e["external_uid"] for e in events]
-    assert len(uids) == 2 and len(set(uids)) == 2
+    assert len(uids) == len(set(uids))
     assert "series1@google.com" in uids
+    # The series is expanded, and the moved instance stands in for the
+    # occurrence it replaces rather than showing beside it.
+    starts = {e["start_date"].date().isoformat() for e in events}
+    assert "2026-10-14" in starts and "2026-10-21" not in starts and "2026-11-18" in starts
+    assert all(e["start_date"].hour == 18 and e["start_date"].minute == 30 for e in events)

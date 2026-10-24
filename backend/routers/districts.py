@@ -20,6 +20,24 @@ router = APIRouter(prefix="/districts", tags=["districts"])
 
 
 
+async def _ensure_lunch_menu_job(db: AsyncSession, district: District, user: User) -> None:
+    """The district's menu scan, the first time it has a food-services menu
+    URL - on create, on a PATCH that adds one, or on a re-import."""
+    if district.scheduled_job_id or not district.food_services_menu_url:
+        return
+    job = ScheduledJob(
+        owner_user_id=user.id,
+        kind="lunch_menu.scan",
+        name=district_job_name("Lunch menu scan", district),
+        cron_expr=public_scan_cron("lunch_menu.scan", district.id),
+        params={"district_id": district.id},
+        enabled=True,
+    )
+    db.add(job)
+    await db.flush()
+    district.scheduled_job_id = job.id
+
+
 async def _ensure_calendar_scan_job(db: AsyncSession, district: District, user: User) -> None:
     """Auto-creates the recurring district-calendar scan the first time a
     district gets an ics_feeds entry - mirrors the lunch_menu.scan pattern."""
@@ -229,19 +247,7 @@ async def create_district(payload: DistrictCreate, user: User = Depends(require_
     db.add(district)
     await db.flush()
 
-    if payload.food_services_menu_url:
-        job = ScheduledJob(
-            owner_user_id=user.id,
-            kind="lunch_menu.scan",
-            name=district_job_name("Lunch menu scan", district),
-            cron_expr=public_scan_cron("lunch_menu.scan", district.id),
-            params={"district_id": district.id},
-            enabled=True,
-        )
-        db.add(job)
-        await db.flush()
-        district.scheduled_job_id = job.id
-
+    await _ensure_lunch_menu_job(db, district, user)
     await _ensure_calendar_scan_job(db, district, user)
     await _ensure_marking_period_job(db, district, user)
     await _ensure_preschool_locations_job(db, district, user)
@@ -289,6 +295,7 @@ async def update_district(
         district.uses_google_classroom = payload.uses_google_classroom
     if payload.genesis_url is not None:
         district.genesis_url = payload.genesis_url or None
+    await _ensure_lunch_menu_job(db, district, user)
     await _ensure_calendar_scan_job(db, district, user)
     await _ensure_marking_period_job(db, district, user)
     await _ensure_preschool_locations_job(db, district, user)
