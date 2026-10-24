@@ -32,7 +32,10 @@ export function App() {
   const [courses, setCourses] = useState<CourseProgress[]>([]);
   const [schedule, setSchedule] = useState<ScheduleResponse | null>(null);
   const [tab, setTab] = useState<Tab>("focus");
-  const [open, setOpen] = useState<TodoItem | null>(null);
+  // The item whose sheet is open, as it was when tapped. What the sheet
+  // shows is read from the current to-do by its id (below), so saving an
+  // exception or asking the teacher shows up without closing it first.
+  const [opened, setOpen] = useState<TodoItem | null>(null);
   const [openCourse, setOpenCourse] = useState<CourseProgress | null>(null);
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
   const [helpKinds, setHelpKinds] = useState<HelpKind[]>([]);
@@ -121,15 +124,21 @@ export function App() {
   const toggleDone = async (item: TodoItem, done: boolean) => {
     if (!studentId) return;
     // Optimistic: the checkbox is the whole interaction on this screen, so
-    // it must feel instant. A failed write re-loads and the row snaps back.
+    // it must feel instant. A failed write re-loads and the row snaps back,
+    // a dropped connection included.
     setTodo((prev) => (prev ? reflectDone(prev, item.id, done) : prev));
     setOpen((prev) => (prev && prev.id === item.id ? { ...prev, done } : prev));
-    const res = await apiFetch(`/students/${studentId}/bucket3/workitems/${item.id}/complete`, {
-      method: "POST",
-      body: JSON.stringify({ done }),
-    });
-    if (!res.ok) setError("Couldn't save that. Reloading…");
-    await load(studentId);
+    try {
+      const res = await apiFetch(`/students/${studentId}/bucket3/workitems/${item.id}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ done }),
+      });
+      if (!res.ok) setError("Couldn't save that. Reloading…");
+    } catch {
+      setError("Couldn't save that. Reloading…");
+    } finally {
+      await load(studentId);
+    }
   };
 
   // Only ever runs when she presses the button - never on load, never for
@@ -138,7 +147,17 @@ export function App() {
   const suggest = async (item: TodoItem) => {
     if (!studentId) return;
     setSuggestions((s) => ({ ...s, [item.id]: { loading: true, text: null, declined: false, error: null } }));
-    const res = await apiFetch(`/students/${studentId}/bucket3/suggestions/assignment/${item.id}`, { method: "POST" });
+    let res: Response;
+    try {
+      res = await apiFetch(`/students/${studentId}/bucket3/suggestions/assignment/${item.id}`, { method: "POST" });
+    } catch {
+      // Not left on "Thinking…" for good.
+      setSuggestions((s) => ({
+        ...s,
+        [item.id]: { loading: false, text: null, declined: false, error: "Couldn't get a suggestion right now." },
+      }));
+      return;
+    }
     const body = await res.json().catch(() => ({}));
     setSuggestions((s) => ({
       ...s,
@@ -164,8 +183,8 @@ export function App() {
     const res = await apiFetch(`/students/${studentId}/bucket3/workitems/${item.id}/ask-teacher`, {
       method: "POST",
       body: JSON.stringify({ kind }),
-    });
-    if (!res.ok) return null;
+    }).catch(() => null);
+    if (!res?.ok) return null;
     const draft = (await res.json()) as HelpDraft;
     void load(studentId);
     return draft;
@@ -177,11 +196,12 @@ export function App() {
   const setException = async (item: TodoItem, accepted_until: string | null, note?: string): Promise<boolean> => {
     if (!studentId) return false;
     const path = `/students/${studentId}/bucket3/workitems/${item.id}/late-exception`;
-    const res = accepted_until
-      ? await apiFetch(path, { method: "PUT", body: JSON.stringify({ accepted_until, granted_note: note || null }) })
-      : await apiFetch(path, { method: "DELETE" });
-    if (res.ok) await load(studentId);
-    return res.ok;
+    const res = await (accepted_until
+      ? apiFetch(path, { method: "PUT", body: JSON.stringify({ accepted_until, granted_note: note || null }) })
+      : apiFetch(path, { method: "DELETE" })
+    ).catch(() => null);
+    if (res?.ok) await load(studentId);
+    return Boolean(res?.ok);
   };
 
   const savePolicy = async (policy: Partial<LatePolicy> & { course_key: string }): Promise<boolean> => {
@@ -189,20 +209,23 @@ export function App() {
     const res = await apiFetch(`/students/${studentId}/bucket3/late-policies`, {
       method: "PUT",
       body: JSON.stringify(policy),
-    });
-    if (res.ok) await load(studentId);
-    return res.ok;
+    }).catch(() => null);
+    if (res?.ok) await load(studentId);
+    return Boolean(res?.ok);
   };
 
   const deletePolicy = async (courseKey: string): Promise<void> => {
     if (!studentId) return;
     await apiFetch(`/students/${studentId}/bucket3/late-policies/${encodeURIComponent(courseKey)}`, {
       method: "DELETE",
-    });
+    }).catch(() => null);
     await load(studentId);
   };
 
   const fresh = freshness(sync);
+
+  const allTodo = todo ? [...todo.missing, ...todo.due, ...todo.no_due_date, ...todo.done] : [];
+  const open = opened ? (allTodo.find((i) => i.id === opened.id) ?? opened) : null;
 
   const suggestionFor = (item: TodoItem): SuggestionState | null =>
     suggestions[item.id] ?? (item.suggestion ? { ...item.suggestion, loading: false, error: null } : null);
@@ -213,7 +236,9 @@ export function App() {
         <div className="empty-state">
           <h2>Not signed in</h2>
           <p>
-            This view shares its session with schoolz. <a href="/login">Sign in</a>, then come back.
+            This view shares its session with schoolz.{" "}
+            <a href={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>Sign in</a>{" "}
+            and you'll come straight back here.
           </p>
         </div>
       </Shell>
@@ -269,9 +294,7 @@ export function App() {
       {openCourse && todo && (
         <CourseSheet
           course={openCourse}
-          items={[...todo.missing, ...todo.due, ...todo.no_due_date, ...todo.done].filter(
-            (i) => i.course_name === openCourse.course_name,
-          )}
+          items={allTodo.filter((i) => i.course_key === openCourse.course_key)}
           todayIso={todayIso}
           onClose={() => setOpenCourse(null)}
           onOpenItem={setOpen}

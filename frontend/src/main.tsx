@@ -14,7 +14,10 @@ initAnalytics();
 if (!redirectToStoredLang()) {
   // The non-English strings are one small JSON fetched before first paint,
   // so a Spanish visitor never sees English flash first.
-  void initI18n().then(() => {
+  // Rendered whatever happens to the strings: a page with none is blank.
+  void initI18n()
+    .catch(() => undefined)
+    .then(() => {
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>
         <HelmetProvider>

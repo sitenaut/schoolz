@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
-import { safeNext } from "../lib/safeNext";
+import { goToNext, returnToFor, safeNext } from "../lib/safeNext";
 
 /** Full-page version, reached the same way LoginPage is - see its note. */
 export function RegisterPage() {
@@ -14,7 +14,7 @@ export function RegisterPage() {
   const presetEmail = searchParams.get("email") ?? undefined;
 
   useEffect(() => {
-    if (user) navigate(next, { replace: true });
+    if (user) goToNext(next, navigate);
   }, [user, navigate, next]);
 
   return (
@@ -23,7 +23,7 @@ export function RegisterPage() {
       <AuthPanel
         mode={mode}
         onModeChange={setMode}
-        returnTo={next === "/" ? undefined : next}
+        returnTo={returnToFor(next)}
         presetEmail={presetEmail}
       />
     </div>

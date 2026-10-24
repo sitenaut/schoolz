@@ -66,10 +66,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authTimedOut, setAuthTimedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Only the newest loadUser (or a sign-out, which bumps it too) may set
+  // the user. A token-refresh /auth/me that answered after sign-out put the
+  // old account back in the header, its token already gone.
+  const loadSeq = useRef(0);
+
   // Takes whether a session exists rather than going and asking for it -
   // the callers that know already shouldn't have to ask again, and the
   // onAuthStateChange caller below mustn't.
   const loadUser = async (hasSession: boolean) => {
+    const seq = ++loadSeq.current;
+    const current = () => seq === loadSeq.current;
     try {
       // Skip the request entirely when we know there's nothing to check -
       // avoids a benign but noisy 401 in devtools on first page load.
@@ -78,11 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const res = await apiFetch("/auth/me");
-      setUser(res.ok ? await res.json() : null);
+      const me = res.ok ? await res.json() : null;
+      if (current()) setUser(me);
     } catch {
-      setUser(null);
+      if (current()) setUser(null);
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   };
 
@@ -268,12 +276,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Any /auth/me still in flight belongs to the account being signed out.
+    loadSeq.current += 1;
     if (IS_SUPABASE_AUTH && supabase) {
       await supabase.auth.signOut();
     } else {
       clearLocalToken();
     }
     setUser(null);
+    setLoading(false);
   };
 
   return (

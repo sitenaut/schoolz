@@ -123,8 +123,15 @@ export function redirectToStoredLang(): boolean {
 export async function initI18n(): Promise<void> {
   const resources: Record<string, { translation: Record<string, string> }> = {};
   if (CURRENT_LANG !== DEFAULT_LANG) {
-    const mod = await import(`../locales/${CURRENT_LANG}.ts`);
-    resources[CURRENT_LANG] = { translation: mod.default };
+    try {
+      const mod = await import(`../locales/${CURRENT_LANG}.ts`);
+      resources[CURRENT_LANG] = { translation: mod.default };
+    } catch {
+      // A failed download (a flaky network, a deploy swapping the files)
+      // used to leave the page blank. English strings are the keys, so
+      // without the file every string reads in English: a page in the wrong
+      // language beats an empty one.
+    }
   }
   await i18n.use(initReactI18next).init({
     resources,

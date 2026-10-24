@@ -7,6 +7,7 @@ import { SeoHead } from "../../components/SeoHead";
 import { useAuth } from "../../context/AuthContext";
 import { localDateKey, monthDay, schoolCalendarPath, todayKey } from "../../lib/calendar";
 import { usePrerenderReady } from "../../lib/prerenderReady";
+import { useViewerEpoch } from "../../lib/viewer";
 import type { ClassPayment, School, SchoolClassYear, SchoolContentItem } from "../../types";
 import { LOCALE } from "../../lib/i18n";
 
@@ -23,14 +24,20 @@ function formatWindow(opensAt: string | null, closesAt: string | null): string |
   return `due ${md.month} ${md.day}`;
 }
 
-function PaymentRow({ payment, onToggle }: { payment: ClassPayment; onToggle: (p: ClassPayment) => void }) {
+function PaymentRow({ payment, onToggle, busy }: { payment: ClassPayment; onToggle: (p: ClassPayment) => void; busy: boolean }) {
   const closed = payment.window_closes_at ? new Date(payment.window_closes_at).getTime() < Date.now() : false;
   const window = formatWindow(payment.window_opens_at, payment.window_closes_at);
   return (
     <div className="row">
       <div className="when" style={{ minWidth: 28 }}>
         {payment.ticked !== null ? (
-          <input type="checkbox" checked={!!payment.ticked} onChange={() => onToggle(payment)} aria-label={`Mark ${payment.label} paid`} />
+          <input
+            type="checkbox"
+            checked={!!payment.ticked}
+            disabled={busy}
+            onChange={() => onToggle(payment)}
+            aria-label={`Mark ${payment.label} paid`}
+          />
         ) : (
           <span aria-hidden="true">{closed ? "✓" : "○"}</span>
         )}
@@ -53,6 +60,9 @@ export function SchoolClassYearPage() {
   const gradYearParam = classSlug?.match(/^class-of-(\d{4})$/)?.[1];
   const gradYear = Number(gradYearParam);
   const { user } = useAuth();
+  // Ticks are the viewer's own, so the payments are read again on sign-in
+  // and sign-out; they used to load only once, at mount.
+  const viewerEpoch = useViewerEpoch();
 
   const [school, setSchool] = useState<School | null>(null);
   const [classYears, setClassYears] = useState<SchoolClassYear[]>([]);
@@ -60,7 +70,13 @@ export function SchoolClassYearPage() {
   const [payments, setPayments] = useState<ClassPayment[]>([]);
   const [myStudents, setMyStudents] = useState<StudentMini[]>([]);
   const [missing, setMissing] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  // Which class the data on screen is for. The class-of tabs change the URL
+  // in place, and the previous class's items stayed up under the new
+  // heading until the new ones arrived.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loaded = loadedFor === `${schoolId}/${gradYearParam}`;
+  // Payment ticks with a save in flight: a second tap on one gave a 500.
+  const [ticking, setTicking] = useState<ReadonlySet<string>>(new Set());
   // The server didn't answer, which says nothing about whether the school or
   // its class page exists. Bumping `attempt` reads again.
   const [failed, setFailed] = useState(false);
@@ -69,6 +85,7 @@ export function SchoolClassYearPage() {
   useEffect(() => {
     if (!schoolId || !gradYearParam) return;
     let current = true;
+    const loading = `${schoolId}/${gradYearParam}`;
     // A 404 is an answer (no such school, or no page for that year); any
     // other failure rejects, so the page offers Try again instead.
     const read = <T,>(path: string, notFound: T): Promise<T> =>
@@ -91,7 +108,7 @@ export function SchoolClassYearPage() {
         setClassYears(cy);
         setItems(c);
         setPayments(p);
-        setLoaded(true);
+        setLoadedFor(loading);
       },
       () => {
         if (current) setFailed(true);
@@ -100,7 +117,7 @@ export function SchoolClassYearPage() {
     return () => {
       current = false;
     };
-  }, [schoolId, gradYearParam, attempt]);
+  }, [schoolId, gradYearParam, attempt, viewerEpoch]);
   // Without it the prerender waited out its timeout on every class page and
   // stored nothing: Googlebot got a 5xx (Search Console listed them) and,
   // once nginx fell back to the bare app, 25s of nothing per page. Not on
@@ -111,11 +128,15 @@ export function SchoolClassYearPage() {
     if (!user) return;
     apiFetch("/students")
       .then((r) => (r.ok ? r.json() : []))
+      .catch(() => [])
       .then(setMyStudents);
   }, [user]);
 
   const thisClassYear = classYears.find((c) => c.grad_year === gradYear);
-  const currentClass = useMemo(() => myStudents.some((s) => s.school_id === school?.id && s.grad_year === gradYear), [myStudents, school, gradYear]);
+  const currentClass = useMemo(
+    () => Boolean(user) && myStudents.some((s) => s.school_id === school?.id && s.grad_year === gradYear),
+    [user, myStudents, school, gradYear],
+  );
 
   const { events, eventsTotal, deadlines, more } = useMemo(() => {
     const allEvents: SchoolContentItem[] = [];
@@ -150,11 +171,23 @@ export function SchoolClassYearPage() {
   const nextDeadline = deadlines.find((d) => !d.start_date || localDateKey(d.start_date) >= today);
 
   const togglePayment = async (payment: ClassPayment) => {
+    if (ticking.has(payment.id)) return;
+    setTicking((cur) => new Set(cur).add(payment.id));
     setPayments((cur) => cur.map((p) => (p.id === payment.id ? { ...p, ticked: !p.ticked } : p)));
-    const res = await apiFetch(`/schools/${schoolId}/class-years/${gradYearParam}/payments/${payment.id}/tick`, { method: "POST" });
-    if (res.ok) {
+    try {
+      const res = await apiFetch(`/schools/${schoolId}/class-years/${gradYearParam}/payments/${payment.id}/tick`, { method: "POST" });
+      if (!res.ok) throw new Error(`tick ${res.status}`);
       const updated: ClassPayment = await res.json();
       setPayments((cur) => cur.map((p) => (p.id === payment.id ? updated : p)));
+    } catch {
+      // Not saved: show it the way it still is.
+      setPayments((cur) => cur.map((p) => (p.id === payment.id ? { ...p, ticked: payment.ticked } : p)));
+    } finally {
+      setTicking((cur) => {
+        const next = new Set(cur);
+        next.delete(payment.id);
+        return next;
+      });
     }
   };
 
@@ -190,7 +223,7 @@ export function SchoolClassYearPage() {
       </div>
     );
   }
-  if (missing) {
+  if (loaded && missing) {
     return (
       <div>
         <Link to="/schools" className="back-link">
@@ -211,7 +244,7 @@ export function SchoolClassYearPage() {
       </div>
     );
   }
-  if (!school || !thisClassYear) return <p>Loading…</p>;
+  if (!loaded || !school || !thisClassYear) return <p>Loading…</p>;
 
   // The trip's real total is what the "official" windows sum to (the
   // amount a family owes if they pay nothing optionally in advance) - NOT
@@ -264,7 +297,7 @@ export function SchoolClassYearPage() {
             <h2>Next for this class</h2>
           </div>
           <div className="list">
-            {nextPayment && <PaymentRow payment={nextPayment} onToggle={togglePayment} />}
+            {nextPayment && <PaymentRow payment={nextPayment} onToggle={togglePayment} busy={ticking.has(nextPayment.id)} />}
             {!nextPayment && nextDeadline && <ItemRow item={nextDeadline} />}
           </div>
         </>
@@ -282,7 +315,7 @@ export function SchoolClassYearPage() {
           </div>
           <div className="list">
             {payments.map((p) => (
-              <PaymentRow payment={p} onToggle={togglePayment} key={p.id} />
+              <PaymentRow payment={p} onToggle={togglePayment} busy={ticking.has(p.id)} key={p.id} />
             ))}
           </div>
         </>

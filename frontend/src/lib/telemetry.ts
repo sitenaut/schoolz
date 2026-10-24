@@ -61,6 +61,17 @@ export function scrubUrl(url: string): string {
         changed = true;
       }
     }
+    // A path carried in a param is a URL of its own: sign-in keeps where to
+    // return in ?next=, so /login?next=/connect?code=... held a live connect
+    // code one level down, where the loop above never looked.
+    for (const [key, value] of [...parsed.searchParams]) {
+      if (!value.startsWith("/")) continue;
+      const inner = scrubUrl(value);
+      if (inner !== value) {
+        parsed.searchParams.set(key, inner);
+        changed = true;
+      }
+    }
     if (changed) {
       const search = parsed.searchParams.toString();
       const path = parsed.pathname + (search ? `?${search}` : "");

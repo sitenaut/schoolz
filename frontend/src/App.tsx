@@ -109,8 +109,10 @@ function AuthGateFallback({ timedOut }: { timedOut: boolean }) {
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { user, loading, authTimedOut } = useAuth();
+  const location = useLocation();
   if (loading) return <AuthGateFallback timedOut={authTimedOut} />;
-  if (!user) return <Navigate to="/login" replace />;
+  // Signing in brings them back here, not to Today.
+  if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   return children;
 }
 

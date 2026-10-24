@@ -5,6 +5,8 @@ import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionCard } from "../components/ui/SectionCard";
 import { useToast } from "../components/ui/Toast";
+import { useAuth } from "../context/AuthContext";
+import { can } from "../lib/permissions";
 import { listSubmissions } from "./submissions/submissionsApi";
 import { loadCampaignReport, loadPageVisits, loadSurveySummary, type CampaignReport, type PageVisitReport } from "./survey/surveyApi";
 
@@ -32,6 +34,10 @@ function FunnelRow({ label, count }: { label: string; count: number }) {
 
 export function AdminOverviewPage() {
   const toast = useToast();
+  const { user } = useAuth();
+  // The summary needs scans.view; without it the 403 read as a healthy
+  // "0 failing" to an admin who can't see scans at all.
+  const seesScans = can(user, "scans.view");
   const [summary, setSummary] = useState<Summary | null>(null);
   // Seconds since the scheduler's last tick, measured when the summary loads.
   const [schedulerAge, setSchedulerAge] = useState<number | null>(null);
@@ -42,6 +48,7 @@ export function AdminOverviewPage() {
   const [campaign, setCampaign] = useState<CampaignReport | null>(null);
 
   useEffect(() => {
+    if (!seesScans) return;
     apiFetch("/scheduled-jobs/runs/summary")
       .then((r) => (r.ok ? r.json() : null))
       .then((data: Summary | null) => {
@@ -50,6 +57,9 @@ export function AdminOverviewPage() {
         setSchedulerAge(seen ? (Date.now() - new Date(seen).getTime()) / 1000 : null);
       })
       .catch(() => setSummary(null));
+  }, [seesScans]);
+
+  useEffect(() => {
     listSubmissions("pending")
       .then((rows) => setPendingSubmissions(rows.length))
       .catch(() => setPendingSubmissions(null));
@@ -83,32 +93,34 @@ export function AdminOverviewPage() {
   return (
     <>
       <PageHeader upperTitle="Admin" title="Overview" subtitle="Scan health, campaign traffic, and shortcuts into the admin tools." />
-      <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/admin/scans">Open jobs</Link>}>
-        <div className="stats" style={{ marginBottom: 0 }}>
-          <Link className="stat" to="/admin/scans">
-            <span className="stat-k">Enabled</span>
-            <span className="stat-v">{summary?.total ?? "—"}</span>
-          </Link>
-          <Link className="stat" to="/admin/scans">
-            <span className="stat-k">Healthy</span>
-            <span className="stat-v ok">{s.success ?? 0}</span>
-          </Link>
-          <Link className="stat" to="/admin/scans">
-            <span className="stat-k">Warnings</span>
-            <span className="stat-v warn">{s.warning ?? 0}</span>
-          </Link>
-          <Link className="stat" to="/admin/scans">
-            <span className="stat-k">Failing</span>
-            <span className="stat-v bad">{s.error ?? 0}</span>
-          </Link>
-          <div className="stat" title="When the scheduler last checked in. It does every 30 seconds; if this is stale, no scan is running.">
-            <span className="stat-k">Scheduler seen</span>
-            <span className={`stat-v ${schedulerAge === null ? "" : schedulerAge > SCHEDULER_STALE_SECONDS ? "bad" : "ok"}`}>
-              {!summary ? "—" : schedulerAge === null ? "never" : ago(schedulerAge)}
-            </span>
+      {seesScans && (
+        <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/admin/scans">Open jobs</Link>}>
+          <div className="stats" style={{ marginBottom: 0 }}>
+            <Link className="stat" to="/admin/scans">
+              <span className="stat-k">Enabled</span>
+              <span className="stat-v">{summary?.total ?? "—"}</span>
+            </Link>
+            <Link className="stat" to="/admin/scans">
+              <span className="stat-k">Healthy</span>
+              <span className="stat-v ok">{summary ? (s.success ?? 0) : "—"}</span>
+            </Link>
+            <Link className="stat" to="/admin/scans">
+              <span className="stat-k">Warnings</span>
+              <span className="stat-v warn">{summary ? (s.warning ?? 0) : "—"}</span>
+            </Link>
+            <Link className="stat" to="/admin/scans">
+              <span className="stat-k">Failing</span>
+              <span className="stat-v bad">{summary ? (s.error ?? 0) : "—"}</span>
+            </Link>
+            <div className="stat" title="When the scheduler last checked in. It does every 30 seconds; if this is stale, no scan is running.">
+              <span className="stat-k">Scheduler seen</span>
+              <span className={`stat-v ${schedulerAge === null ? "" : schedulerAge > SCHEDULER_STALE_SECONDS ? "bad" : "ok"}`}>
+                {!summary ? "—" : schedulerAge === null ? "never" : ago(schedulerAge)}
+              </span>
+            </div>
           </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
 
       <SectionCard
         title="Campaign"

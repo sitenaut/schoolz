@@ -41,6 +41,7 @@ const ready = () => document.body.getAttribute("data-prerender-ready");
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   apiFetch.mockReset();
   auth.user = null;
   document.body.removeAttribute("data-prerender-ready");
@@ -176,6 +177,19 @@ describe("FamilyPage", () => {
     expect(await screen.findByText("Couldn't save the graduating class. Try again in a minute.")).toBeTruthy();
     expect(select.value).toBe("2028");
   });
+
+  it("says so when Remove from my family fails, instead of nothing", async () => {
+    vi.stubGlobal("confirm", () => true);
+    apiFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === "/family") return res(200, [highSchooler]);
+      if (init?.method === "DELETE") throw new TypeError("Failed to fetch");
+      return res(200, null);
+    });
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Remove from my family" }));
+    expect(await screen.findByText("Couldn't remove Sam just now. Try again in a minute.")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Sam Example" })).toBeTruthy();
+  });
 });
 
 describe("KidsDetailPage", () => {
@@ -199,6 +213,17 @@ describe("KidsDetailPage", () => {
     apiFetch.mockRejectedValue(new TypeError("Failed to fetch"));
     open();
     expect(await screen.findByText("Couldn't load this page just now.")).toBeTruthy();
+  });
+
+  it("still shows the child when the other sections fail on the network", async () => {
+    // Announcements, schedule and grades used to reject unhandled.
+    const kid = { id: "kid-1", first_name: "Sam", last_name: "Example", student_id: "000000", school_name: null, viewer_role: "guardian" };
+    apiFetch.mockImplementation(async (url: string) => {
+      if (url.endsWith("/bucket3/student")) return res(200, kid);
+      throw new TypeError("Failed to fetch");
+    });
+    open();
+    expect(await screen.findByRole("heading", { name: "Sam Example" })).toBeTruthy();
   });
 });
 

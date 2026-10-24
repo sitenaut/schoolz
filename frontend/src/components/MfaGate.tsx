@@ -26,18 +26,49 @@ export function MfaGate({ children }: { children: ReactElement }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!needed) return;
     // Can't read the factors: fall back to the banner rather than lock an
-    // admin out over a network blip (the API still decides).
-    verifiedTotpFactorId().then(setFactorId).catch(() => setFactorId(null));
-  }, [needed]);
+    // admin out over a network blip (the API still decides). Once it's
+    // enforced, say so and offer a retry: treating the failure as "no
+    // factor" told an admin who has one to set one up.
+    verifiedTotpFactorId()
+      .then((id) => {
+        setCheckFailed(false);
+        setFactorId(id);
+      })
+      .catch(() => {
+        setCheckFailed(true);
+        setFactorId(null);
+      });
+  }, [needed, attempt]);
 
   if (!user || !needed) return children;
   const enforced = user.mfa_enforced;
 
   if (factorId === undefined) return <p>Checking your sign-in…</p>;
+
+  if (checkFailed && enforced) {
+    return (
+      <div className="auth-card">
+        <h1>Couldn't check your two-step sign-in</h1>
+        <p className="muted">Check your connection and try again.</p>
+        <button
+          className="btn btn-primary"
+          type="button"
+          onClick={() => {
+            setFactorId(undefined);
+            setAttempt((n) => n + 1);
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (factorId) {
     if (skip && !enforced) return children;

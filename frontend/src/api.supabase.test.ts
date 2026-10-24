@@ -29,6 +29,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -119,5 +120,47 @@ describe("apiFetch in Supabase auth mode", () => {
 
     expect(res.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("a retry after a network failure sends the token refreshed meanwhile", async () => {
+    // The retry waits two seconds; a tab waking past its token's expiry
+    // gets a fresh one in that time, and resending the first attempt's
+    // stale header answered 401 after the network had come back.
+    vi.useFakeTimers();
+    const { apiFetch, setCachedAccessToken } = await freshApi();
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("Failed to fetch")).mockResolvedValueOnce(jsonResponse(200));
+    vi.stubGlobal("fetch", fetchMock);
+
+    setCachedAccessToken("stale-token");
+    const pending = apiFetch("/auth/me");
+    await vi.advanceTimersByTimeAsync(0);
+    setCachedAccessToken("refreshed-token");
+    await vi.advanceTimersByTimeAsync(2000);
+    const res = await pending;
+
+    expect(res.status).toBe(200);
+    const retried = (fetchMock.mock.calls[1][1] as RequestInit).headers as Record<string, string>;
+    expect(retried.Authorization).toBe("Bearer refreshed-token");
+  });
+
+  it("a retry after a network failure still replays a 401", async () => {
+    vi.useFakeTimers();
+    const { apiFetch, setCachedAccessToken } = await freshApi();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(jsonResponse(401))
+      .mockResolvedValueOnce(jsonResponse(200));
+    vi.stubGlobal("fetch", fetchMock);
+
+    setCachedAccessToken("stale-token");
+    const pending = apiFetch("/auth/me");
+    await vi.advanceTimersByTimeAsync(2000);
+    const res = await pending;
+
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const replayed = (fetchMock.mock.calls[2][1] as RequestInit).headers as Record<string, string>;
+    expect(replayed.Authorization).toBe("Bearer from-get-session");
   });
 });

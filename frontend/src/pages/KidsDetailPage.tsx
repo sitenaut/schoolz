@@ -194,9 +194,16 @@ function loadMode(role: Student["viewer_role"]): ViewMode {
   return role === "student" ? "focused" : "full";
 }
 
+/** A section's data, or its fallback when the server or the connection
+ * fails: one section failing (a dropped connection included) leaves the rest
+ * of the page standing instead of an unhandled rejection. */
 async function getJson<T>(path: string, fallback: T): Promise<T> {
-  const res = await apiFetch(path);
-  return res.ok ? ((await res.json()) as T) : fallback;
+  try {
+    const res = await apiFetch(path);
+    return res.ok ? ((await res.json()) as T) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 // Classroom hrefs in a capture are relative ("/u/2/c/.../a/.../details").
@@ -320,7 +327,9 @@ export function KidsDetailPage() {
   };
 
   const toggleDone = async (item: TodoItem) => {
-    await apiFetch(`${base}/workitems/${item.id}/complete`, { method: "POST", body: JSON.stringify({ done: !item.done }) });
+    // Reloaded whatever happened, so the box shows what was saved; a dropped
+    // connection used to skip the reload.
+    await apiFetch(`${base}/workitems/${item.id}/complete`, { method: "POST", body: JSON.stringify({ done: !item.done }) }).catch(() => null);
     await loadTodo();
   };
 
@@ -333,7 +342,15 @@ export function KidsDetailPage() {
       return;
     }
     setSuggestions((s) => ({ ...s, [item.id]: { loading: true, text: null, declined: false, error: null, open: true } }));
-    const res = await apiFetch(`${base}/suggestions/assignment/${item.id}`, { method: "POST" });
+    const res = await apiFetch(`${base}/suggestions/assignment/${item.id}`, { method: "POST" }).catch(() => null);
+    if (!res) {
+      // Not left on "Thinking…" for good.
+      setSuggestions((s) => ({
+        ...s,
+        [item.id]: { loading: false, text: null, declined: false, error: "Couldn't get a suggestion right now.", open: true },
+      }));
+      return;
+    }
     const body = await res.json().catch(() => ({}));
     setSuggestions((s) => ({
       ...s,
@@ -752,7 +769,11 @@ function TodoTab({
 
   const makePlan = async () => {
     setPlan({ loading: true, text: null, error: null });
-    const res = await apiFetch(`${base}/suggestions/plan`, { method: "POST" });
+    const res = await apiFetch(`${base}/suggestions/plan`, { method: "POST" }).catch(() => null);
+    if (!res) {
+      setPlan({ loading: false, text: null, error: "Couldn't make a plan right now." });
+      return;
+    }
     const body = await res.json().catch(() => ({}));
     setPlan(
       res.ok
@@ -1172,6 +1193,8 @@ function ManageSection({
       }
       setResult(body);
       await onChanged();
+    } catch {
+      setError("Couldn't re-read imported pages");
     } finally {
       setBusy(null);
     }
