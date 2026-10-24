@@ -277,12 +277,17 @@ async def test_reprocess_reapplies_current_parsing_and_prunes_stale_rows(monkeyp
 
         async with database.SessionLocal() as db:
             # Simulate rows written by an older parser: fields missing, plus a
-            # title-hash duplicate that current parsing no longer produces.
+            # title-hash duplicate that current parsing no longer produces -
+            # from the same capture, so the same class and the same sighting.
             await db.execute(
-                update(ChildWorkItem).where(ChildWorkItem.student_id == sid).values(teacher_name=None, status=None)
+                update(ChildWorkItem)
+                .where(ChildWorkItem.student_id == sid)
+                .values(teacher_name=None, status=None, last_seen_at=ChildWorkItem.last_seen_at)
             )
-            db.add(ChildWorkItem(student_id=sid, external_uid="hash:AAAASLUG:Pre-Test Form", title="Pre-Test Form", item_type="assignment"))
-            kept = ChildWorkItem(student_id=sid, external_uid="hash:AAAASLUG:Marked Thing", title="Marked Thing", item_type="assignment")
+            pre = (await db.execute(select(ChildWorkItem).where(ChildWorkItem.student_id == sid, ChildWorkItem.external_uid == "si:900010"))).scalar_one()
+            same = {"course_external_id": pre.course_external_id, "last_seen_at": pre.last_seen_at}
+            db.add(ChildWorkItem(student_id=sid, external_uid="hash:AAAASLUG:Pre-Test Form", title="Pre-Test Form", item_type="assignment", **same))
+            kept = ChildWorkItem(student_id=sid, external_uid="hash:AAAASLUG:Marked Thing", title="Marked Thing", item_type="assignment", **same)
             db.add(kept)
             await db.flush()
             db.add(ChildWorkItemProgress(student_id=sid, work_item_id=kept.id, done=True))
