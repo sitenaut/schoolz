@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { StudentLoginInvite } from "../components/StudentLoginInvite";
 import { IconCheck, IconChevronLeft, IconMail, IconRefresh, IconUpload } from "../components/icons";
 import { todayKey } from "../lib/calendar";
+import { errorDetail } from "../lib/errorDetail";
 
 // Kids view v2 (docs/KIDS_VIEW_V2_DESIGN.md). Parent and student see the same
 // page and the same data; "Focused" shows only right now / one next thing /
@@ -334,7 +335,7 @@ export function KidsDetailPage() {
             loading: false,
             text: null,
             declined: false,
-            error: res.status === 503 ? "Suggestions aren't set up on this server yet." : body.detail ?? "Couldn't get a suggestion right now.",
+            error: res.status === 503 ? "Suggestions aren't set up on this server yet." : errorDetail(body, "Couldn't get a suggestion right now."),
             open: true,
           },
     }));
@@ -729,7 +730,7 @@ function TodoTab({
     setPlan(
       res.ok
         ? { loading: false, text: body.text ?? null, error: null }
-        : { loading: false, text: null, error: res.status === 503 ? "Suggestions aren't set up on this server yet." : body.detail ?? "Couldn't make a plan right now." },
+        : { loading: false, text: null, error: res.status === 503 ? "Suggestions aren't set up on this server yet." : errorDetail(body, "Couldn't make a plan right now.") },
     );
   };
 
@@ -1119,7 +1120,7 @@ function ManageSection({
       const res = await apiFetch(`${base}/import`, { method: "POST", body: JSON.stringify(parsed) });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.detail ?? "Import failed");
+        setError(errorDetail(body, "Import failed"));
         return;
       }
       setResult(body);
@@ -1139,7 +1140,7 @@ function ManageSection({
       const res = await apiFetch(`${base}/reprocess`, { method: "POST" });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.detail ?? "Couldn't re-read imported pages");
+        setError(errorDetail(body, "Couldn't re-read imported pages"));
         return;
       }
       setResult(body);

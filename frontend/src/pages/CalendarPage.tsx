@@ -179,9 +179,14 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
     if (includeClassSources) q.set("include_class_sources", "true");
     if (includeAthletics) q.set("include_athletics", "true");
     const searchedTerm = isSearching ? searchTerm.trim() : null;
-    apiFetch(`/calendar?${q.toString()}`)
+    // Only the latest request may land: a slow search cleared within a
+    // second, or a month skipped past, used to arrive last and fill the list
+    // with results for a query or month no longer on screen.
+    const controller = new AbortController();
+    apiFetch(`/calendar?${q.toString()}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : []))
       .then((data: SchoolContentItem[]) => {
+        if (controller.signal.aborted) return;
         setItems(data);
         setDataReady(true);
         setLoadedKey(schoolIdsKey);
@@ -193,7 +198,11 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
         if (searchedTerm) {
           trackEvent("calendar_search", { result_count: data.length, query_length: searchedTerm.length });
         }
+      })
+      .catch(() => {
+        /* aborted for a newer request, or failed: the newer one (or a retry) fills the list */
       });
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewDate, viewMode, schoolIdsKey, category, loading, isSearching, searchTerm, includeClassSources, includeAthletics]);
 

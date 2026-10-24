@@ -47,18 +47,19 @@ export function AuthPanel({
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let ok: boolean;
     if (mode === "login") {
-      if (IS_SUPABASE_AUTH) await loginWithPasswordSupabase(identifier, password);
-      else await loginLocal(identifier, password);
+      ok = IS_SUPABASE_AUTH ? await loginWithPasswordSupabase(identifier, password) : await loginLocal(identifier, password);
     } else {
       if (IS_SUPABASE_AUTH) {
-        const ok = await registerWithPasswordSupabase(email, password, returnTo);
-        if (ok) setDone(true);
+        if (await registerWithPasswordSupabase(email, password, returnTo)) setDone(true);
         return;
       }
-      await registerLocal(email, username, password);
+      ok = await registerLocal(email, username, password);
     }
-    onSuccess?.();
+    // Failures resolve too, with the message in `error`: closing the header
+    // popover then hid it, and a mistyped password looked like nothing happened.
+    if (ok) onSuccess?.();
   };
 
   if (done) {

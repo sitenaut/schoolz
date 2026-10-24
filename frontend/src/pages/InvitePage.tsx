@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
+import { errorDetail } from "../lib/errorDetail";
 import { clearPendingInvite, invitePath, markPendingInviteRefused, savePendingInvite, type InviteKind } from "../lib/pendingInvite";
 
 type Preview = {
@@ -61,7 +62,7 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
       .then(async (res) => {
         if (!res.ok) {
           clearPendingInvite();
-          setPhase({ kind: "unavailable", message: (await res.json()).detail ?? "This invite link isn't valid." });
+          setPhase({ kind: "unavailable", message: errorDetail(await res.json().catch(() => null), "This invite link isn't valid.") });
           return;
         }
         const data: Preview = await res.json();

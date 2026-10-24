@@ -1,6 +1,7 @@
 import { apiFetch } from "../api";
 import { IS_SUPABASE_AUTH } from "../authConfig";
 import { supabase } from "../supabase";
+import { errorDetail } from "./errorDetail";
 import { ROUTER_BASENAME } from "./i18n";
 
 /** Account self-service. Every function is mode-aware: in prod the
@@ -10,7 +11,7 @@ import { ROUTER_BASENAME } from "./i18n";
 async function detail(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json();
-    return body.detail ?? fallback;
+    return errorDetail(body, fallback);
   } catch {
     return fallback;
   }

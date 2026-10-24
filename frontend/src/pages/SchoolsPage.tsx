@@ -11,6 +11,7 @@ import { townsLabel } from "../lib/towns";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconSearch } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
+import { errorDetail } from "../lib/errorDetail";
 import { SCHOOL_TYPE_TIERS } from "../lib/schoolType";
 import type { School, SchoolClassYear } from "../types";
 
@@ -77,7 +78,7 @@ export function SchoolsPage() {
     const res = await apiFetch("/schools", { method: "POST", body: JSON.stringify({ name }) });
     const body = await res.json();
     if (!res.ok) {
-      setError(body.detail ?? "Could not add school");
+      setError(errorDetail(body, "Could not add school"));
       return;
     }
     setName("");

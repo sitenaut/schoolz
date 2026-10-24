@@ -102,6 +102,23 @@ describe("CalendarPage with schools picked", () => {
   });
 });
 
+describe("CalendarPage requests", () => {
+  it("lets only the latest one land: a search cleared before it answers is dropped", async () => {
+    schools = { mySchools: [school("east")], loading: false, deviceSlugs: ["east"], slugs: ["east"] };
+    const pending: { url: string; signal?: AbortSignal; resolve: (v: unknown) => void }[] = [];
+    apiFetch.mockImplementation(
+      (url: string, init?: { signal?: AbortSignal }) => new Promise((resolve) => pending.push({ url, signal: init?.signal, resolve })),
+    );
+    at("/calendar");
+    await waitFor(() => expect(calendarCalls()).toHaveLength(1));
+    fireEvent.change(screen.getByPlaceholderText("Search all events…"), { target: { value: "concert" } });
+    await waitFor(() => expect(calendarCalls().some((u) => u.includes("q=concert"))).toBe(true));
+    const [month, search] = pending.filter((p) => p.url.startsWith("/calendar"));
+    expect(month.signal?.aborted).toBe(true);
+    expect(search.signal?.aborted).toBe(false);
+  });
+});
+
 describe("A school's own calendar page", () => {
   beforeEach(() => {
     apiFetch.mockImplementation(async (url: string) => (url === "/schools/beck" ? json(school("beck")) : json([])));
