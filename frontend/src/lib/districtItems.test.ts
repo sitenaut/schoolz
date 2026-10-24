@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { initI18n } from "./i18n";
-import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem, saysClosed } from "./districtItems";
+import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem, otherGradesOnly, saysClosed, statusTitles } from "./districtItems";
 import type { School, SchoolContentItem } from "../types";
 
 beforeAll(() => initI18n());
@@ -148,6 +148,42 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["Board of Education Meeting", "Day 3"])).toBeNull();
     // Still an in-service day for "Exclude district", which never hides one.
     expect(isStatusItem("Staff In-Service")).toBe(true);
+  });
+});
+
+// Same cases as backend/tests/test_school_today.py: the two must agree.
+describe("otherGradesOnly", () => {
+  it("matches a grade span that stops short of the school", () => {
+    expect(otherGradesOnly("DHS Prom & K-8 PCPEP Single Session", "high")).toBe(true);
+    expect(otherGradesOnly("DHS Prom & K-8 PCPEP Single Session", "middle")).toBe(false);
+    expect(otherGradesOnly("Single Session K-12", "high")).toBe(false);
+    expect(otherGradesOnly("K-5 Single Session - Parent Conferences", "middle")).toBe(false);
+    expect(otherGradesOnly("PK-4 Single Session", "middle")).toBe(true);
+    expect(otherGradesOnly("Early Dismissal", "high")).toBe(false);
+  });
+});
+
+describe("statusTitles", () => {
+  const k8 = item({ title: "DHS Prom & K-8 PCPEP Single Session", district_id: "d1" });
+  const high = school({ id: "h", short_name: "Delran High", school_type: "high", district_id: "d1" });
+  const middle = school({ id: "m", short_name: "Delran Middle", school_type: "middle", district_id: "d1" });
+  const elsewhere = school({ id: "e", short_name: "Kresson", school_type: "elementary", district_id: "d2" });
+
+  it("leaves a K-8 half day off a high school's calendar, as the Today card does", () => {
+    expect(dayStatusOf(statusTitles([k8], [high]))).toBeNull();
+  });
+
+  it("keeps it once a school it covers is shown", () => {
+    expect(dayStatusOf(statusTitles([k8], [high, middle]))).toBe("half");
+  });
+
+  it("doesn't count another district's school as covered", () => {
+    expect(dayStatusOf(statusTitles([k8], [high, elsewhere]))).toBeNull();
+  });
+
+  it("reads a school's own item for that school alone", () => {
+    const own = item({ scope: "school", school_name: "Delran High", title: "K-8 Single Session" });
+    expect(statusTitles([own], [high, middle])).toEqual([]);
   });
 });
 
