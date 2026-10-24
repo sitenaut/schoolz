@@ -20,6 +20,8 @@ schedule.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import time
 
@@ -156,6 +158,14 @@ _LATE_POLICY_TOOL = {
         "required": ["understood"],
     },
 }
+
+
+def late_policy_key(text: str) -> str:
+    """The page_extractions key for one paragraph's parse: the same text read
+    the same way is never paid for twice. The prompt and tool are part of it,
+    so changing either reads every paragraph afresh."""
+    reader = json.dumps([MODEL, _LATE_POLICY_SYSTEM, _LATE_POLICY_TOOL], sort_keys=True)
+    return hashlib.sha256(f"kids_late_policy:{reader}:{text[:MAX_POLICY_CHARS]}".encode()).hexdigest()
 
 
 async def parse_late_policy(text: str) -> dict:

@@ -1682,10 +1682,11 @@ class LocalEvent(Base):
 
 class PageExtraction(Base):
     """What Haiku read off one page of prose (local_events/sources/theatre.py,
-    event_pages.py), keyed by a hash of the reader kind and the page text, so
-    a page that hasn't changed is never paid for twice. It was an in-process
-    dict, which every deploy emptied: ~40 model calls re-bought each time.
-    Only the extracted items are kept, never the page itself."""
+    event_pages.py) or one pasted late-work paragraph (routers/bucket3.py),
+    keyed by a hash of the reader kind and the text, so the same text is never
+    paid for twice. It was an in-process dict, which every deploy emptied: ~40
+    model calls re-bought each time. Only the extracted items are kept, never
+    the text itself; only someone holding the same text can look one up."""
 
     __tablename__ = "page_extractions"
 
@@ -2785,6 +2786,21 @@ class ChatRateWindow(Base):
     __tablename__ = "chat_rate_windows"
 
     ip_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True, index=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class RateWindow(Base):
+    """Requests per account or connection per fixed window, for routes where
+    one caller could otherwise do too much (services/rate_limit.py): adding
+    children, the Kids View model calls. In the database for the same reasons
+    as ChatRateWindow. `key` is an account id or a connection's salted hash,
+    never an address; a bucket's old rows are deleted as new windows open."""
+
+    __tablename__ = "rate_windows"
+
+    bucket: Mapped[str] = mapped_column(String(40), primary_key=True)
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
     window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True, index=True)
     count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
