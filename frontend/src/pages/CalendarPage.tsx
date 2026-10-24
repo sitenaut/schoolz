@@ -8,7 +8,7 @@ import { SeoHead } from "../components/SeoHead";
 import { SeasonalBanner } from "../components/SeasonalBanner";
 import { usePrerenderReady } from "../lib/prerenderReady";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
-import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem } from "../lib/districtItems";
+import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, statusTitles } from "../lib/districtItems";
 import { trackEvent, trackMeasurement } from "../lib/track";
 import { itemDateKeys, schoolCalendarPath, todayKey } from "../lib/calendar";
 import { MONTH_NAMES, WEEKDAYS, WEEKDAY_INITIALS, dateKey, endOfMonth, monthCells, startOfMonth } from "../lib/monthGrid";
@@ -317,10 +317,11 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
 
   // "No school" status for one day, from whatever landed on it, by the
   // Today card's rules (dayStatusOf): closed beats half day beats an
-  // ordinary weekend. A closure landing on a weekend still shows as
+  // ordinary weekend, and a "K-8 Single Session" is no half day at a high
+  // school (statusTitles). A closure landing on a weekend still shows as
   // "closed", not "weekend" - the more specific fact wins.
   const dayStatus = (key: string, dow: number): "closed" | "half" | "weekend" | null => {
-    const status = dayStatusOf((eventsByDay.get(key) ?? []).map((e) => e.title));
+    const status = dayStatusOf(statusTitles(eventsByDay.get(key) ?? [], scopedSchools));
     if (status) return status;
     if (dow === 0 || dow === 6) return "weekend";
     return null;
