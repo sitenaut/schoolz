@@ -868,7 +868,7 @@ async def check_verify_code(service_id: str, body: CodeIn, user: User = Depends(
     row, membership = await _membership(db, user, service_id)
     if membership.verified_at is not None:
         return {"verified": True}
-    problem = portal_mail.check_code(membership, body.code)
+    problem = await portal_mail.check_code(db, membership, body.code)
     if problem:
         await db.commit()  # the try counts
         raise HTTPException(422, problem)

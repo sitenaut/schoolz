@@ -8,6 +8,7 @@ import time
 import httpx
 
 import observability
+from services.public_url import PUBLIC_ONLY
 
 SCRAPER_URL = os.getenv("SCRAPER_URL", "")
 SCRAPER_API_KEY = os.getenv("SCRAPER_API_KEY", "")
@@ -287,7 +288,7 @@ async def get_bytes(url: str, *, headers: dict | None = None, timeout_s: float =
     Fly's datacenter addresses usually lets the droplet or the Pi through
     (Wood-Ridge's site, Chesterbrook's Cloudflare: 200 from a home network
     with the very same request). Any other error raises as before."""
-    async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=True, headers=headers) as client:
+    async with httpx.AsyncClient(timeout=timeout_s, follow_redirects=True, headers=headers, event_hooks=PUBLIC_ONLY) as client:
         resp = await client.get(url)
     if resp.status_code != 403:
         resp.raise_for_status()

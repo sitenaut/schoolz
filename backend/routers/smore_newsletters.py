@@ -1,9 +1,9 @@
 from croniter import croniter
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_permission
+from auth import get_optional_user, require_permission, sees_scan_internals
 from database import get_db
 from models import District, ScheduledJob, School, SmoreBlock, SmoreNewsletter, User
 from scheduler.cron import spread_default_smore_cron
@@ -44,7 +44,7 @@ def _validate_source_type(source_type: str) -> None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown source_type: {source_type}")
 
 
-async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter]) -> list[SmoreNewsletterOut]:
+async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter], *, internals: bool = True) -> list[SmoreNewsletterOut]:
     job_ids = [n.scheduled_job_id for n in newsletters if n.scheduled_job_id]
     jobs_by_id: dict[str, ScheduledJob] = {}
     if job_ids:
@@ -66,6 +66,9 @@ async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter]) -> list
     out = []
     for n in newsletters:
         job = jobs_by_id.get(n.scheduled_job_id) if n.scheduled_job_id else None
+        job_out = ScheduledJobOut.model_validate(job) if job else None
+        if job_out and not internals:
+            job_out = job_out.without_internals()
         out.append(
             SmoreNewsletterOut(
                 id=n.id,
@@ -79,7 +82,7 @@ async def _to_outs(db: AsyncSession, newsletters: list[SmoreNewsletter]) -> list
                 last_scanned_at=n.last_scanned_at,
                 latest_summary=n.latest_summary,
                 created_at=n.created_at,
-                scheduled_job=ScheduledJobOut.model_validate(job) if job else None,
+                scheduled_job=job_out,
             )
         )
     return out
@@ -100,11 +103,14 @@ async def _require_manageable(db: AsyncSession, newsletter_id: str) -> SmoreNews
 
 
 @router.get("", response_model=list[SmoreNewsletterOut])
-async def list_newsletters(db: AsyncSession = Depends(get_db)):
+async def list_newsletters(
+    request: Request, user: User | None = Depends(get_optional_user), db: AsyncSession = Depends(get_db)
+):
     # Shared/public data (like Student) - every guardian sees every tracked
     # newsletter, not just their own, since the content itself is public.
     result = await db.execute(select(SmoreNewsletter).order_by(SmoreNewsletter.created_at))
-    return await _to_outs(db, list(result.scalars().all()))
+    internals = await sees_scan_internals(request, db, user, "newsletters.manage")
+    return await _to_outs(db, list(result.scalars().all()), internals=internals)
 
 
 @router.post("", response_model=SmoreNewsletterOut, status_code=status.HTTP_201_CREATED)

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_permission
+from auth import get_optional_user, require_permission, sees_scan_internals
 from database import get_db
 from models import District, DistrictTransportation, ScheduledJob, User
 from scheduler.cron import public_scan_cron
@@ -215,9 +215,13 @@ async def list_district_summaries(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("", response_model=list[DistrictOut])
-async def list_districts(db: AsyncSession = Depends(get_db)):
+async def list_districts(
+    request: Request, user: User | None = Depends(get_optional_user), db: AsyncSession = Depends(get_db)
+):
     districts = list((await db.execute(select(District).order_by(District.name))).scalars().all())
     jobs = await _jobs_by_id(db, districts)
+    if not await sees_scan_internals(request, db, user, "schools.manage"):
+        jobs = {job_id: job.without_internals() for job_id, job in jobs.items()}
     return [_out(d, jobs) for d in districts]
 
 

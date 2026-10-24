@@ -123,3 +123,29 @@ async def test_reextract_can_be_narrowed_to_one_block(monkeypatch):
         assert (await client.post(f"/smore-newsletters/{nl['id']}/reextract-all", headers=admin)).status_code == 200
         assert seen == [[ids[1]], ids]
         assert (await client.post(f"/smore-newsletters/{nl['id']}/reextract-all?block_id={uuid.uuid4()}", headers=admin)).status_code == 404
+
+
+@pytest.mark.anyio
+async def test_public_reads_show_a_scan_jobs_status_but_not_its_error_text():
+    from models import ScheduledJob
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        nl = (await client.post("/smore-newsletters", json={"url": f"https://app.smore.com/n/{uuid.uuid4().hex[:8]}"}, headers=admin)).json()
+        async with database.SessionLocal() as db:
+            await db.execute(
+                update(ScheduledJob)
+                .where(ScheduledJob.id == nl["scheduled_job"]["id"])
+                .values(last_status="error", last_error="ConnectError: http://scraper.internal:8765", last_error_code="scraper_unavailable")
+            )
+            await db.commit()
+
+        anonymous = next(n for n in (await client.get("/smore-newsletters")).json() if n["id"] == nl["id"])
+        assert anonymous["scheduled_job"]["last_status"] == "error"
+        assert anonymous["scheduled_job"]["last_error"] is None
+        assert anonymous["scheduled_job"]["last_error_code"] is None
+        assert anonymous["scheduled_job"]["params"] == {}
+
+        as_admin = next(n for n in (await client.get("/smore-newsletters", headers=admin)).json() if n["id"] == nl["id"])
+        assert as_admin["scheduled_job"]["last_error"].startswith("ConnectError")
+        assert as_admin["scheduled_job"]["params"]["newsletter_id"] == nl["id"]

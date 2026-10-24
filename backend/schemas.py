@@ -246,6 +246,14 @@ class ScheduledJobOut(BaseModel):
     # target's id, so this is where the URL being fetched becomes visible.
     sources: list[JobSourceOut] = Field(default_factory=list)
 
+    def without_internals(self) -> "ScheduledJobOut":
+        """For a public GET that embeds a job (districts, newsletters) and a
+        caller who can't see scans: its status and timing, without the raw
+        error (it can name a scraper host), params or sources."""
+        return self.model_copy(
+            update={"description": None, "params": {}, "last_error": None, "last_error_code": None, "sources": []}
+        )
+
     model_config = {"from_attributes": True}
 
 

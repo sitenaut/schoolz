@@ -4,7 +4,7 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth import require_super_admin
+from auth import lock_super_admins, require_super_admin
 from database import get_db
 from models import Role, RolePermission, User, UserRole
 from permissions import PERMISSION_KEYS, PERMISSIONS
@@ -229,7 +229,7 @@ async def set_user_roles(user_id: str, payload: UserRolesIn, db: AsyncSession = 
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "A role was deleted while you were editing; reload and retry")
+        raise HTTPException(status.HTTP_409_CONFLICT, "A role was deleted while you were editing; reload and retry") from None
     return (await _user_out(db, [user]))[0]
 
 
@@ -245,6 +245,10 @@ async def set_super_admin(
         # Only a super admin can reach this route, so refusing self-demotion
         # is what guarantees there is always at least one super admin left.
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "You can't remove your own super admin access; ask another super admin")
+    if not payload.is_admin and actor.id not in await lock_super_admins(db):
+        # Demoted by someone else a moment ago, in a request that ran alongside
+        # this one: going ahead could remove the last super admin.
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Super admin access required")
     user.is_admin = payload.is_admin
     await db.commit()
     return (await _user_out(db, [user]))[0]
