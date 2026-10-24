@@ -23,7 +23,6 @@ from models import (
     Student,
     User,
     derive_school_short_name,
-    slugify,
 )
 from routers.smore_newsletters import _to_out as _newsletter_to_out
 from scheduler.cron import public_scan_cron
@@ -50,6 +49,7 @@ from services.class_years import CLASS_PAGE_SOURCES
 from services.content_translation import localize_outs
 from services.digitalsports import host_from_athletics_url
 from services.i18n import fold, folded, request_lang
+from services.school_slug import unique_school_slug
 from services.school_today import build_today, resolve_lunch_menu
 from services.transportation import late_bus_for_school
 
@@ -364,16 +364,6 @@ async def _ensure_bulletin_job(db: AsyncSession, school: School, user: User) -> 
     school.bulletin_doc_job_id = job.id
 
 
-async def _unique_slug(db: AsyncSession, base_text: str) -> str:
-    base = slugify(base_text)
-    slug = base
-    suffix = 2
-    while (await db.execute(select(School).where(School.slug == slug))).scalar_one_or_none():
-        slug = f"{base}-{suffix}"
-        suffix += 1
-    return slug
-
-
 async def resolve_school(school_id: str, db: AsyncSession = Depends(get_db)) -> School:
     """Path param is either a School.id (UUID) or its slug - lets a
     school's page be shared as a real URL (/schools/bret-harte-elementary)
@@ -417,7 +407,7 @@ async def create_school(payload: SchoolCreate, user: User = Depends(require_perm
     short_name = payload.short_name or derive_school_short_name(payload.name, district_name)
     school = School(
         name=payload.name,
-        slug=await _unique_slug(db, short_name or payload.name),
+        slug=await unique_school_slug(db, short_name or payload.name),
         short_name=short_name,
         district_id=payload.district_id,
         school_type=payload.school_type,

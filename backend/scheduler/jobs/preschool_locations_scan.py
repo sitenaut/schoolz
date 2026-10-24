@@ -8,6 +8,7 @@ from models import District, School, derive_school_short_name
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
 from services.preschool_locations import parse_preschool_locations
+from services.school_slug import unique_school_slug
 
 
 def _street_key(address: str | None) -> str | None:
@@ -72,17 +73,24 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             updated += 1
             continue
 
-        db.add(
-            School(
-                name=entry["name"],
-                short_name=derive_school_short_name(entry["name"], district.name),
-                district_id=district_id,
-                school_type="other",
-                address=entry["address"],
-                main_phone=entry["main_phone"],
-                website_url=entry["website_url"],
-            )
+        short_name = derive_school_short_name(entry["name"], district.name)
+        school = School(
+            name=entry["name"],
+            # NOT NULL with no default: without one, every new preschool
+            # failed the whole scan (and rolled back its updates) twice a day.
+            slug=await unique_school_slug(db, short_name or entry["name"]),
+            short_name=short_name,
+            district_id=district_id,
+            school_type="other",
+            address=entry["address"],
+            main_phone=entry["main_phone"],
+            website_url=entry["website_url"],
         )
+        db.add(school)
+        # Flushed and indexed at once, so the same name twice on one page
+        # updates the first rather than taking the same slug again.
+        await db.flush()
+        existing_by_name[entry["name"].strip().lower()] = school
         created += 1
 
     return f"preschool locations: {created} new, {updated} updated, {skipped_existing} already tracked (same building), {len(entries)} total on page"

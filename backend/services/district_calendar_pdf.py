@@ -288,6 +288,11 @@ async def extract_events(pdf_bytes: bytes) -> list[dict]:
     )
     observability.record_llm_call("district_calendar_pdf", MODEL, response, time.perf_counter() - started)
     tool_use = next((b for b in response.content if b.type == "tool_use"), None)
+    if response.stop_reason == "max_tokens":
+        # The handler replaces every stored row with what this returns and
+        # keys them by the file's hash, so a read cut off in March deleted
+        # the spring and never looked at the file again.
+        raise RuntimeError("calendar PDF extraction hit max_tokens; keeping the stored rows")
     if not tool_use:
         return []
     return list(tool_use.input.get("events", []))

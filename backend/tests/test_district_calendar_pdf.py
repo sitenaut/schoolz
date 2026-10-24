@@ -1,3 +1,5 @@
+import pytest
+
 from services.district_calendar_pdf import build_items, compose_title, find_pdf_link
 from services.school_today import classify_day
 
@@ -68,3 +70,24 @@ def test_find_pdf_link_prefers_the_school_year_calendar_over_a_monthly_one():
         '<a href="/wp-content/uploads/school-calendar-2026-2027-with-activities.pdf">2026.2027 Calendar</a>'
     )
     assert find_pdf_link(html, "https://x.test/") == "https://x.test/wp-content/uploads/school-calendar-2026-2027-with-activities.pdf"
+
+
+@pytest.mark.anyio
+async def test_a_cut_off_read_raises_instead_of_replacing_the_stored_rows(monkeypatch):
+    from types import SimpleNamespace
+
+    from services import district_calendar_pdf
+
+    class _Messages:
+        async def create(self, **kwargs):
+            partial = {"events": [{"date": "2026-09-07", "kind": "closed", "subject": "Labor Day"}]}
+            return SimpleNamespace(content=[SimpleNamespace(type="tool_use", input=partial)], stop_reason="max_tokens", usage=None)
+
+    class _Client:
+        def __init__(self, **kwargs):
+            self.messages = _Messages()
+
+    monkeypatch.setattr(district_calendar_pdf, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(district_calendar_pdf, "AsyncAnthropic", _Client)
+    with pytest.raises(RuntimeError):
+        await district_calendar_pdf.extract_events(b"%PDF-1.4 not a real calendar")
