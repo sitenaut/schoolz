@@ -208,6 +208,33 @@ def in_current_marking_period(
     return bool(due_date) and due_date >= mp_start
 
 
+def _school_year(iso: str) -> int:
+    d = date.fromisoformat(iso)
+    return d.year if d.month >= 7 else d.year - 1
+
+
+def marking_period_mismatches(genesis_ends: dict[str, str], district_ends: list[str]) -> list[tuple[str, str, str]]:
+    """(label, Genesis end, district end) for each Genesis marking period whose
+    end the district's own dates page gives differently.
+
+    Each district date goes to the nearest Genesis end in the same school
+    year (July to June), and a period keeps the closest of the dates it got.
+    Zipping the two sorted lists shifted every pair, and warned about all of
+    them, as soon as the district corrected a date or posted next year's; and
+    a period the district doesn't list stays unpaired rather than borrowing a
+    neighbour's date."""
+    paired: dict[str, str] = {}
+    for district_end in district_ends:
+        same_year = [label for label, end in genesis_ends.items() if _school_year(end) == _school_year(district_end)]
+        if not same_year:
+            continue
+        label = min(same_year, key=lambda lbl: abs(_days_between(genesis_ends[lbl], district_end)))
+        held = paired.get(label)
+        if held is None or abs(_days_between(genesis_ends[label], district_end)) < abs(_days_between(genesis_ends[label], held)):
+            paired[label] = district_end
+    return [(label, genesis_ends[label], end) for label, end in sorted(paired.items()) if end != genesis_ends[label]]
+
+
 def progress(items: list[dict]) -> dict:
     """Counts only dated, current-MP items (callers pre-filter) - the one bar
     that answers "how close am I to caught up"."""
@@ -289,7 +316,7 @@ def _shape_credit(policy, days_late: int, past_last_band: float = 0.0) -> float 
     return None
 
 
-def _exception_credit(exception, policy, due_date: str | None, today_iso: str, mp_end: str | None) -> dict:
+def _exception_credit(exception, policy, due_date: str | None, today_iso: str, mp_end: str | None) -> dict | None:
     """A teacher's yes on one assignment, which replaces the class rule for
     that item.
 
@@ -305,6 +332,10 @@ def _exception_credit(exception, policy, due_date: str | None, today_iso: str, m
     10% a day) - just without the policy's cutoff. With no policy at all,
     or one with no gradient to apply ("not accepted" has none), the honest
     reading of "I'll take it" is full credit."""
+    if exception.accepted_until == "marking_period_end" and mp_end is None:
+        # No current marking period on file (summer, before MP1, none
+        # captured): when it closes is unknown, which isn't "never".
+        return None
     closes_on = mp_end if exception.accepted_until == "marking_period_end" else exception.accepted_until
     days_left = _days_between(today_iso, closes_on) if closes_on else None
     expired = days_left is not None and days_left < 0
@@ -392,6 +423,9 @@ def late_credit(
 
     closes_on: str | None = None
     if policy.accepted_until == "marking_period_end":
+        if mp_end is None:
+            # Same as _exception_credit: an unknown end, not an open one.
+            return None
         closes_on = mp_end
     elif policy.accepted_until:
         if not valid_accepted_until(policy.accepted_until):

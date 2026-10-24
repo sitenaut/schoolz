@@ -323,6 +323,14 @@ def test_an_exception_expires_on_its_own_date():
     assert (lapsed["accepted"], lapsed["credit_pct"]) == (False, 0)
 
 
+def test_until_the_marking_period_ends_with_no_period_on_file_is_unknown():
+    # July: the last period is over and the next isn't captured. A June item
+    # read "accepted at 80%" here, with no end in sight.
+    mp = _policy("flat", penalty_pct=20, accepted_until="marking_period_end")
+    assert kv.late_credit(mp, "2026-06-10", "2026-07-14") is None
+    assert kv.late_credit(None, "2026-06-10", "2026-07-14", exception=_exception("marking_period_end")) is None
+
+
 def test_an_exception_survives_the_marking_period_filter():
     # "Turn in last month's work by the end of this marking period" names
     # work whose due date sits in the PREVIOUS period - exactly what the

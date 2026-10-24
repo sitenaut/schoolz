@@ -662,6 +662,9 @@ async def _apply_course_grades(
         return
     course_code, course_section = code
     course_name = course_map.by_code.get(code)
+    # The name comes from the student's Classroom captures; with none on file
+    # right now (a co-guardian's account and its captures deleted), keep the
+    # name already resolved rather than blanking it.
     if sheet.marking_period and sheet.marking_period_grade_pct is not None:
         await db.execute(
             pg_insert(ChildCourseGrade)
@@ -677,7 +680,7 @@ async def _apply_course_grades(
             .on_conflict_do_update(
                 index_elements=["student_id", "course_code", "course_section", "marking_period"],
                 set_={
-                    "course_name": course_name,
+                    "course_name": func.coalesce(course_name, ChildCourseGrade.course_name),
                     "grade_percent": sheet.marking_period_grade_pct,
                     "last_grade_posted": sheet.last_grade_posted,
                     "updated_at": _now(),
@@ -711,7 +714,7 @@ async def _apply_course_grades(
             .on_conflict_do_update(
                 index_elements=["student_id", "external_uid"],
                 set_={
-                    "course_name": course_name,
+                    "course_name": func.coalesce(course_name, ChildGradeEntry.course_name),
                     "marking_period": sheet.marking_period,
                     "description": entry.description,
                     "category": entry.category,
@@ -1287,23 +1290,19 @@ async def _marking_period_discrepancies(db: AsyncSession, student: Student, gene
             SchoolContentItem.district_id == school.district_id,
             SchoolContentItem.category == "marking_period",
             SchoolContentItem.title.like("%Marking Period Ends%"),
+            SchoolContentItem.is_current.is_(True),
         )
     )
-    district_end_dates = sorted(
+    district_end_dates = [
         item.start_date.date().isoformat()
         for item in result.scalars().all()
         if not item.applies_to_school_types or school.school_type in item.applies_to_school_types
-    )
-    if not district_end_dates:
-        return []
-
-    discrepancies = []
-    for mp, district_end in zip(genesis_mps, district_end_dates, strict=False):
-        if mp.end_date != district_end:
-            discrepancies.append(
-                f"{mp.label}: Genesis says it ends {mp.end_date}, but the district calendar says {district_end}."
-            )
-    return discrepancies
+    ]
+    mismatches = kids_view.marking_period_mismatches({mp.label: mp.end_date for mp in genesis_mps}, district_end_dates)
+    return [
+        f"{label}: Genesis says it ends {genesis_end}, but the district calendar says {district_end}."
+        for label, genesis_end, district_end in mismatches
+    ]
 
 
 @router.get("/students/{student_id}/bucket3/grades", response_model=Bucket3GradesOut)
@@ -1804,19 +1803,29 @@ async def suggest_for_assignment(
     code, section = kids_view.course_key(item.course_name, item.course_external_id)
     norm = ex.normalize_title(item.title)
 
-    existing = (
-        await db.execute(
-            select(AssignmentSuggestion).where(
-                AssignmentSuggestion.course_code == code,
-                AssignmentSuggestion.course_section == section,
-                AssignmentSuggestion.normalized_title == norm,
+    async def stored() -> AssignmentSuggestion | None:
+        return (
+            await db.execute(
+                select(AssignmentSuggestion).where(
+                    AssignmentSuggestion.course_code == code,
+                    AssignmentSuggestion.course_section == section,
+                    AssignmentSuggestion.normalized_title == norm,
+                )
             )
-        )
-    ).scalar_one_or_none()
-    if existing:
+        ).scalar_one_or_none()
+
+    if existing := await stored():
         return SuggestionOut(text=existing.suggestion_text, declined=existing.declined, cached=True)
 
     await _limit_model_calls(db, user)
+    # Two first asks at once (a Focus double tap, two families in one section)
+    # would each pay the model. The second waits here until the first has
+    # committed its answer, then reads it. The lock is the transaction's, so
+    # the commit below or the rollback of any failure releases it; it keeps
+    # one pooled connection for the length of the model call.
+    await db.execute(select(func.pg_advisory_xact_lock(_suggestion_lock_key(code, section, norm))))
+    if existing := await stored():
+        return SuggestionOut(text=existing.suggestion_text, declined=existing.declined, cached=True)
     try:
         text, declined = await kids_suggestions.assignment_suggestion(item.title, item.course_name)
     except kids_suggestions.SuggestionsUnavailable:
@@ -1839,6 +1848,12 @@ async def suggest_for_assignment(
     )
     await db.commit()
     return SuggestionOut(text=text, declined=declined, cached=False)
+
+
+def _suggestion_lock_key(code: str, section: str, norm: str) -> int:
+    """The tier-A cache key folded into the bigint an advisory lock takes."""
+    digest = hashlib.sha256(f"assignment_suggestion:{code}:{section}:{norm}".encode()).digest()
+    return int.from_bytes(digest[:8], "big", signed=True)
 
 
 @router.post("/students/{student_id}/bucket3/suggestions/plan", response_model=PlanOut)

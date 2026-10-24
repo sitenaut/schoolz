@@ -1,9 +1,14 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, SchoolContentItem
 from scheduler.registry import register_job
 from services.marking_period import fetch_marking_period_page
+
+_ET = ZoneInfo("America/New_York")
 
 
 @register_job(
@@ -50,6 +55,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.title = entry["title"]
             row.start_date = entry["start_date"]
             row.category = "marking_period"
+            row.is_current = True
             updated += 1
             continue
         db.add(
@@ -71,4 +77,29 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         )
         created += 1
 
-    return f"marking period dates: {created} new, {updated} updated, {len(dates)} total across school tiers"
+    retired = _retire_unlisted(dates, existing_by_uid)
+    return (
+        f"marking period dates: {created} new, {updated} updated, {retired} no longer listed, "
+        f"{len(dates)} total across school tiers"
+    )
+
+
+def _retire_unlisted(dates: list[dict], existing_by_uid: dict[str, SchoolContentItem]) -> int:
+    """A date the page stopped listing (corrected, or replaced by next year's)
+    kept showing as upcoming, since the uid carries the date. Retire upcoming
+    rows of the tiers this read found; a tier missing from the read (its table
+    no longer parses) keeps its rows. Retired, not deleted, like the district
+    calendar's (district_calendar_scan._retire_vanished): a date that comes
+    back is made current again above."""
+    seen = {entry["external_uid"] for entry in dates}
+    tiers = {entry["school_type"] for entry in dates}
+    today = datetime.now(_ET).date()
+    retired = 0
+    for uid, row in existing_by_uid.items():
+        tier = row.applies_to_school_types[0] if row.applies_to_school_types else None
+        if uid in seen or tier not in tiers or not row.is_current or row.start_date is None:
+            continue
+        if row.start_date.astimezone(_ET).date() >= today:
+            row.is_current = False
+            retired += 1
+    return retired

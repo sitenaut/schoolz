@@ -61,7 +61,7 @@ def resolve_year(month: int, day: int, today: date) -> date | None:
         try:
             d = date(year, month, day)
         except ValueError:
-            return None
+            continue  # Feb 29 outside a leap year; the next year may be one
         if today - timedelta(days=60) <= d < today - timedelta(days=60) + timedelta(days=365):
             return d
     return None
