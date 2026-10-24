@@ -1,5 +1,7 @@
 {
   "School not found.": "找不到该学校。",
+  "Couldn't load this school just now.": "暂时无法加载这所学校。",
+  "Try again": "重试",
   "Loading…": "加载中…",
   "{{name}} ({{type}})": "{{name}}（{{type}}）",
   "{{name}} in {{town}}, NJ.": "{{name}}，位于新泽西州 {{town}}。",

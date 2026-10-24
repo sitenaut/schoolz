@@ -61,26 +61,50 @@ export function SchoolClassYearPage() {
   const [myStudents, setMyStudents] = useState<StudentMini[]>([]);
   const [missing, setMissing] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // The server didn't answer, which says nothing about whether the school or
+  // its class page exists. Bumping `attempt` reads again.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!schoolId || !gradYearParam) return;
+    let current = true;
+    // A 404 is an answer (no such school, or no page for that year); any
+    // other failure rejects, so the page offers Try again instead.
+    const read = <T,>(path: string, notFound: T): Promise<T> =>
+      apiFetch(path).then((r) => {
+        if (r.status === 404) return notFound;
+        if (!r.ok) throw new Error(`${path} ${r.status}`);
+        return r.json();
+      });
     Promise.all([
-      apiFetch(`/schools/${schoolId}`).then((r) => (r.ok ? r.json() : null)),
-      apiFetch(`/schools/${schoolId}/class-years`).then((r) => (r.ok ? r.json() : [])),
-      apiFetch(`/schools/${schoolId}/class-years/${gradYearParam}/content`).then((r) => (r.ok ? r.json() : [])),
-      apiFetch(`/schools/${schoolId}/class-years/${gradYearParam}/payments`).then((r) => (r.ok ? r.json() : [])),
-    ]).then(([s, cy, c, p]) => {
-      if (!s) setMissing(true);
-      setSchool(s);
-      setClassYears(cy);
-      setItems(c);
-      setPayments(p);
-      setLoaded(true);
-    });
-  }, [schoolId, gradYearParam]);
+      read<School | null>(`/schools/${schoolId}`, null),
+      read<SchoolClassYear[]>(`/schools/${schoolId}/class-years`, []),
+      read<SchoolContentItem[]>(`/schools/${schoolId}/class-years/${gradYearParam}/content`, []),
+      read<ClassPayment[]>(`/schools/${schoolId}/class-years/${gradYearParam}/payments`, []),
+    ]).then(
+      ([s, cy, c, p]) => {
+        if (!current) return;
+        setFailed(false);
+        setMissing(!s);
+        setSchool(s);
+        setClassYears(cy);
+        setItems(c);
+        setPayments(p);
+        setLoaded(true);
+      },
+      () => {
+        if (current) setFailed(true);
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [schoolId, gradYearParam, attempt]);
   // Without it the prerender waited out its timeout on every class page and
   // stored nothing: Googlebot got a 5xx (Search Console listed them) and,
-  // once nginx fell back to the bare app, 25s of nothing per page.
+  // once nginx fell back to the bare app, 25s of nothing per page. Not on
+  // `failed`: that render would replace the stored snapshot with the error.
   usePrerenderReady(loaded || !gradYearParam);
 
   useEffect(() => {
@@ -141,6 +165,28 @@ export function SchoolClassYearPage() {
           <IconChevronLeft /> School
         </Link>
         <div className="empty">Not a class page - class URLs look like ".../class-of-2027".</div>
+      </div>
+    );
+  }
+  if (failed) {
+    return (
+      <div>
+        <Link to={`/schools/${schoolId}`} className="back-link">
+          <IconChevronLeft /> School
+        </Link>
+        <div className="empty">
+          <p>Couldn't load this class page just now.</p>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setFailed(false);
+              setAttempt((n) => n + 1);
+            }}
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }

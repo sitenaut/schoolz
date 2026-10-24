@@ -48,6 +48,9 @@ export function FamilyPage() {
   const { user } = useAuth();
   const isStudent = Boolean(user?.student_profile_id);
   const [data, setData] = useState<Loaded | null>(null);
+  // Kept apart from an empty family: a guardian with children must never be
+  // shown "Add your first child" because a deploy was under way.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [reload, setReload] = useState(0);
   const [panel, setPanel] = useState<Panel>(null);
   const [adding, setAdding] = useState(false);
@@ -58,10 +61,20 @@ export function FamilyPage() {
     if (isStudent) return;
     let live = true;
     apiFetch("/family")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((children: FamilyChild[]) => {
-        if (live) setData({ children, at: Date.now() });
-      });
+      .then((r) => {
+        if (!r.ok) throw new Error(`family ${r.status}`);
+        return r.json();
+      })
+      .then(
+        (children: FamilyChild[]) => {
+          if (!live) return;
+          setData({ children, at: Date.now() });
+          setLoadFailed(false);
+        },
+        () => {
+          if (live) setLoadFailed(true);
+        },
+      );
     apiFetch("/capture-devices/last-update")
       .then((r) => (r.ok ? r.json() : null))
       .then((u: LastUpdate | null) => {
@@ -76,6 +89,10 @@ export function FamilyPage() {
   if (isStudent) return <Navigate to={`/kids/${user!.student_profile_id}`} replace />;
 
   const refresh = () => setReload((n) => n + 1);
+  const retry = () => {
+    setLoadFailed(false);
+    refresh();
+  };
   const toggle = (childId: string, kind: PanelKind) => {
     const closing = panel?.childId === childId && panel.kind === kind;
     setPanel(closing ? null : { childId, kind });
@@ -90,9 +107,15 @@ export function FamilyPage() {
     await apiFetch(`/students/${c.id}`, { method: "DELETE" });
     refresh();
   };
-  const setGradYear = async (c: FamilyChild, gradYear: number | null) => {
-    setData((d) => d && { ...d, children: d.children.map((k) => (k.id === c.id ? { ...k, grad_year: gradYear } : k)) });
-    await apiFetch(`/students/${c.id}`, { method: "PATCH", body: JSON.stringify({ grad_year: gradYear }) });
+  /** Shown at once, put back if the save fails. Resolves to whether it saved. */
+  const setGradYear = async (c: FamilyChild, gradYear: number | null): Promise<boolean> => {
+    const swap = (from: number | null, to: number | null) =>
+      setData((d) => d && { ...d, children: d.children.map((k) => (k.id === c.id && k.grad_year === from ? { ...k, grad_year: to } : k)) });
+    swap(c.grad_year, gradYear);
+    const r = await apiFetch(`/students/${c.id}`, { method: "PATCH", body: JSON.stringify({ grad_year: gradYear }) }).catch(() => null);
+    if (r?.ok) return true;
+    swap(gradYear, c.grad_year);
+    return false;
   };
   const added = (msg: string | null) => {
     setAdding(false);
@@ -114,8 +137,26 @@ export function FamilyPage() {
 
       {notice && <div className="banner">{notice}</div>}
 
+      {data !== null && loadFailed && (
+        <div className="banner bad">
+          <span>Couldn't update this page just now.</span>
+          <button type="button" className="btn sm" onClick={retry}>
+            Try again
+          </button>
+        </div>
+      )}
+
       {data === null ? (
-        <p className="note">Loading…</p>
+        loadFailed ? (
+          <div className="card">
+            <p className="fam-report-error">Couldn't load your family just now.</p>
+            <button type="button" className="btn" onClick={retry}>
+              Try again
+            </button>
+          </div>
+        ) : (
+          <p className="note">Loading…</p>
+        )
       ) : children.length === 0 ? (
         <div className="card">
           <h2 className="fam-h2">Add your first child</h2>
@@ -380,7 +421,7 @@ function ChildCard({
   onToggle: (kind: PanelKind) => void;
   onClosePanel: () => void;
   onRemove: () => void;
-  onGradYear: (year: number | null) => void;
+  onGradYear: (year: number | null) => Promise<boolean>;
 }) {
   const offers = offersSchoolwork(c);
   const seen = (iso: string | null) => (iso ? timeAgo(iso, now) : "Not yet");
@@ -390,6 +431,7 @@ function ChildCard({
     </button>
   );
   const login = c.student_login_email ?? c.student_invite_email;
+  const [gradYearFailed, setGradYearFailed] = useState(false);
 
   return (
     <div className="card fam-kid">
@@ -475,7 +517,10 @@ function ChildCard({
             <Row icon={<IconGradCap />} title="Graduating class" desc={`Class events for ${c.first_name}'s year on the school page`} on={c.grad_year !== null}>
               <select
                 value={c.grad_year ?? ""}
-                onChange={(e) => onGradYear(e.target.value ? Number(e.target.value) : null)}
+                onChange={(e) => {
+                  setGradYearFailed(false);
+                  void onGradYear(e.target.value ? Number(e.target.value) : null).then((ok) => setGradYearFailed(!ok));
+                }}
                 aria-label={`${c.first_name}'s graduating class`}
               >
                 <option value="">Not set</option>
@@ -488,6 +533,7 @@ function ChildCard({
             </Row>
           )}
         </ul>
+        {gradYearFailed && <p className="fam-report-error">Couldn't save the graduating class. Try again in a minute.</p>}
       </div>
 
       {open && (
