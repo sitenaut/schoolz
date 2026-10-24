@@ -137,6 +137,24 @@ def resolve_done(override: bool | None, classroom_status: str | None, has_real_g
     return False, None
 
 
+def genesis_grade_for(entries: list, due_date: str | None, title_repeats: bool):
+    """The Genesis grade that belongs to one Classroom item, from the entries
+    with its class (course code and section) and title, newest first.
+    Matching on title alone, across classes, marked real missing work Done
+    whenever another class had a graded "Quiz 1". When the title repeats
+    within the class ("Exit Ticket", "Do Now"), it can't tell the copies
+    apart, so only an entry dated the item's due day counts. No match leaves
+    the item to Classroom's own status; a wrong one hides missing work."""
+    if not entries:
+        return None
+    if not title_repeats:
+        return entries[0]
+    if not due_date:
+        return None
+    month_day = f"{int(due_date[5:7])}/{int(due_date[8:10])}"
+    return next((e for e in entries if e.weekday_date.split()[-1] == month_day), None)
+
+
 def classes_genesis_doesnt_list(course_names: set[str], genesis_courses: set[tuple[str, str]]) -> set[str]:
     """Classroom classes that aren't schoolwork, because Genesis is the
     authority on which classes are (the owner's rule). A class-council room

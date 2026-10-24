@@ -13,7 +13,15 @@ from sqlalchemy import select, update
 
 import database
 from main import app
-from models import Bucket3Capture, ChildCourseGrade, ChildWorkItem, ChildWorkItemProgress, StaffMember, User
+from models import (
+    Bucket3Capture,
+    ChildCourseGrade,
+    ChildGradeEntry,
+    ChildWorkItem,
+    ChildWorkItemProgress,
+    StaffMember,
+    User,
+)
 from routers import bucket3 as bucket3_router
 from services import help_requests as help_svc
 from services import kids_suggestions
@@ -822,3 +830,40 @@ async def test_a_class_genesis_doesnt_list_never_counts_as_missing(monkeypatch):
         assert await missing() == ["Density Activity", "Summer Reading Essay"]
         courses = (await client.get(f"/students/{sid}/bucket3/progress", headers=_auth(guardian))).json()
         assert "Class of 2029" not in {c["course_name"] for c in courses}
+
+
+@pytest.mark.anyio
+async def test_a_genesis_grade_marks_done_only_its_own_class_and_day(monkeypatch):
+    _freeze(monkeypatch, 2026, 10, 23, 16, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        chem, english = "F: CHEM-1A 331-10", "ENG 2A Block B (26-27) 121-1"
+        async with database.SessionLocal() as db:
+            for uid, course, title, due in [
+                ("chem-quiz", chem, "Unit 3 Quiz", "2026-10-01"),
+                ("eng-quiz", english, "Unit 3 Quiz", "2026-10-01"),
+                ("exit-1", chem, "Exit Ticket", "2026-10-05"),
+                ("exit-2", chem, "Exit Ticket", "2026-10-12"),
+            ]:
+                db.add(
+                    ChildWorkItem(student_id=sid, external_uid=uid, course_name=course, title=title, item_type="assignment", due_date=due)
+                )
+            for uid, code, section, title, day in [
+                ("g-eng-quiz", "121", "1", "Unit 3 Quiz", "Thu 10/1"),
+                ("g-exit-1", "331", "10", "Exit Ticket", "Mon 10/5"),
+            ]:
+                db.add(
+                    ChildGradeEntry(
+                        student_id=sid, external_uid=uid, course_code=code, course_section=section,
+                        weekday_date=day, title=title, percent=90.0, status=None,
+                    )
+                )
+            await db.commit()
+
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        missing = sorted((i["course_name"], i["title"], i["due_date"]) for i in todo["missing"])
+        # English's graded quiz says nothing about Chemistry's, and the graded
+        # Oct 5 exit ticket says nothing about the Oct 12 one.
+        assert missing == [(chem, "Exit Ticket", "2026-10-12"), (chem, "Unit 3 Quiz", "2026-10-01")]
+        done = {(i["course_name"], i["title"], i["due_date"]): i["done_source"] for i in todo["done"]}
+        assert done == {(english, "Unit 3 Quiz", "2026-10-01"): "genesis", (chem, "Exit Ticket", "2026-10-05"): "genesis"}

@@ -337,3 +337,12 @@ def test_an_exception_ignores_the_implausibly_late_guard():
     assert kv.late_credit(_policy("not_accepted"), "2025-09-10", "2026-09-20") is None
     typed = kv.late_credit(_policy("not_accepted"), "2025-09-10", "2026-09-20", exception=_exception("2026-11-06"))
     assert typed["accepted"] is True
+
+
+def test_genesis_grade_for_needs_the_due_day_when_a_title_repeats():
+    newest, older = SimpleNamespace(weekday_date="Mon 10/12"), SimpleNamespace(weekday_date="Mon 10/5")
+    assert kv.genesis_grade_for([], "2026-10-05", False) is None
+    assert kv.genesis_grade_for([older], "2026-10-09", False) is older
+    assert kv.genesis_grade_for([newest, older], "2026-10-05", True) is older
+    assert kv.genesis_grade_for([older], "2026-10-12", True) is None
+    assert kv.genesis_grade_for([older], None, True) is None
