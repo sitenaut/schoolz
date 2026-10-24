@@ -90,3 +90,50 @@ async def test_two_schools_from_one_shared_source_stay_independent():
         cms_rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == cms.id))).scalars().all()
         assert [r.title for r in chs_rows] == ["Comedy Night"]
         assert [r.title for r in cms_rows] == ["Beauty and the Beast"]
+
+
+class _TaggingSource:
+    """A source tagging one school, like a theatre site (school_slug)."""
+
+    def __init__(self, name, slug, raws):
+        self.name, self.school_slug, self.raws, self.fail = name, slug, raws, False
+        self.partial_failures = []
+
+    async def fetch(self):
+        if self.fail:
+            raise RuntimeError("site down")
+        return self.raws
+
+
+@pytest.mark.anyio
+async def test_a_failed_source_never_prunes_a_shared_schools_shows(monkeypatch):
+    import uuid
+
+    from local_events import pipeline
+
+    tag = uuid.uuid4().hex[:8]
+    slug = f"two-sources-{tag}"
+    a = _TaggingSource(f"a-{tag}", slug, [_event(f"a:{tag}", "Spring Musical", slug)])
+    b = _TaggingSource(f"b-{tag}", slug, [_event(f"b:{tag}", "Winter Concert", slug)])
+    monkeypatch.setattr(pipeline, "_build_sources", lambda params: [a, b])
+
+    async def titles():
+        rows = (await db.execute(select(SchoolContentItem.title).where(SchoolContentItem.school_id == school.id))).scalars()
+        return sorted(rows)
+
+    async with database.SessionLocal() as db:
+        school = School(name=f"Two Sources High {tag}", slug=slug, school_type="high")
+        db.add(school)
+        await db.commit()
+
+        await pipeline.run_pipeline(db, {})
+        assert await titles() == ["Spring Musical", "Winter Concert"]
+
+        b.fail = True
+        summary = await pipeline.run_pipeline(db, {})
+        assert await titles() == ["Spring Musical", "Winter Concert"]
+        assert summary["school_content"]["not_pruned"] == [slug]
+
+        b.fail, b.raws = False, []  # fetched fine and the concert is gone
+        await pipeline.run_pipeline(db, {})
+        assert await titles() == ["Spring Musical"]

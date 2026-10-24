@@ -58,6 +58,7 @@ from routers.schools import (
 )
 from routers.smore_newsletters import _JOB_KIND_BY_SOURCE_TYPE, _JOB_LABEL_BY_SOURCE_TYPE, _validate_cron
 from scheduler.cron import spread_default_smore_cron
+from scheduler.job_names import newsletter_job_name
 from schemas import (
     ConfigExport,
     ConfigImportResult,
@@ -308,8 +309,11 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
         school.early_dismissal_time = s.early_dismissal_time or school.early_dismissal_time
         school.delayed_opening_time = s.delayed_opening_time or school.delayed_opening_time
         school.athletics_url = s.athletics_url or school.athletics_url
-        school.arbiter_events_calendar = s.arbiter_events_calendar or school.arbiter_events_calendar
-        school.arbiter_events_district_wide = s.arbiter_events_district_wide or school.arbiter_events_district_wide
+        # Applied only when the file says them: with `or`, a False in the file
+        # could never turn a flag back off.
+        for flag in ("arbiter_events_calendar", "arbiter_events_district_wide"):
+            if flag in s.model_fields_set:
+                setattr(school, flag, getattr(s, flag))
         await _ensure_athletics_calendar_job(db, school, user)
         if s.logo_url and s.logo_url != school.logo_url:
             school.logo_backing = None  # reclassified by the next school_info.scan
@@ -386,10 +390,11 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             db.add(newsletter)
             await db.flush()
 
+            kind = _JOB_KIND_BY_SOURCE_TYPE[n.source_type]
             job = ScheduledJob(
                 owner_user_id=user.id,
-                kind=_JOB_KIND_BY_SOURCE_TYPE[n.source_type],
-                name=f"{_JOB_LABEL_BY_SOURCE_TYPE[n.source_type]}: {n.label or n.url}",
+                kind=kind,
+                name=await newsletter_job_name(db, _JOB_LABEL_BY_SOURCE_TYPE[n.source_type], newsletter, user.id, kind),
                 cron_expr=spread_default_smore_cron(n.cron_expr, newsletter.id),
                 timezone=n.timezone,
                 params={"newsletter_id": newsletter.id},

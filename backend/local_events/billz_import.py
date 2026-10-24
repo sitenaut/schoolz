@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 
-from croniter import croniter
+from scheduler.cron import cron_problem
 
 from .prune import KIND, SOURCE_KEYS
 
@@ -53,8 +53,8 @@ def plan_import(text: str) -> tuple[list[dict], list[dict]]:
             skipped.append({"name": name, "reason": "params missing or not an object"})
             continue
         cron = entry.get("cron_expr") or "0 */6 * * *"
-        if not croniter.is_valid(cron):
-            skipped.append({"name": name, "reason": f"invalid cron {cron!r}"})
+        if problem := cron_problem(cron):
+            skipped.append({"name": name, "reason": problem})
             continue
         jobs.append(
             {

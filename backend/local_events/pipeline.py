@@ -450,6 +450,15 @@ async def _drop_excluded_stored(db: AsyncSession, source_name: str, patterns) ->
     return len(ids)
 
 
+def _tagged_schools(source) -> set[str]:
+    """The school slugs a source can put on its events (RawEvent.school_slug):
+    a Ludus page's label map, a theatre site's one school."""
+    slugs = set((getattr(source, "school_labels", None) or {}).values())
+    if getattr(source, "school_slug", None):
+        slugs.add(source.school_slug)
+    return slugs
+
+
 async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     sources = _build_sources(params)
     if not sources:
@@ -465,6 +474,11 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
     filters = filters_by_source(params)
     partial_failures: dict[str, list[str]] = {}
     school_tagged_raws: list[RawEvent] = []
+    # Schools a source that failed, wholly or in part, could have tagged.
+    # Their school rows don't record which source wrote them, so none of
+    # them is pruned this run: a show missing from a failed fetch hasn't
+    # vanished.
+    unsettled_schools: set[str] = set()
     # Why each -1 source failed. It used to live only in the logs, so the run
     # summary in Scans said "failed" with no way to tell a one-off timeout
     # from a site that changed.
@@ -477,6 +491,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
             logger.warning("event_source_failed", extra={"source": source.name, "error": str(exc)})
             per_source[source.name] = -1
             source_errors[source.name] = f"{type(exc).__name__}: {exc}"[:300]
+            unsettled_schools |= _tagged_schools(source)
             continue
         patterns = filters.get(source.name)
         raws, dropped = apply_filters(raws, patterns)
@@ -488,6 +503,7 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         per_source[source.name] = len(raws)
         if getattr(source, "partial_failures", None):
             partial_failures[source.name] = list(source.partial_failures)
+            unsettled_schools |= _tagged_schools(source)
         school_tagged_raws.extend(raw for raw in raws if raw.school_slug)
 
         for raw in raws:
@@ -563,9 +579,9 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         summary["errors"] = source_errors
 
     if school_tagged_raws:
-        # Grouped across the whole run (not per-source) so pruning a vanished
-        # show is correct even if a school were ever tagged from two sources.
-        school_sync = await sync_school_content(db, group_by_school(school_tagged_raws))
+        # Grouped across the whole run (not per-source), so one source's
+        # shows aren't pruned as "vanished" from another's list.
+        school_sync = await sync_school_content(db, group_by_school(school_tagged_raws), keep=unsettled_schools)
         await db.commit()
         summary["school_content"] = school_sync
 

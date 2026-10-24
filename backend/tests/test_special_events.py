@@ -258,3 +258,46 @@ async def test_a_calendar_pdf_is_read_by_the_model_once(monkeypatch):
     # The prompt names the month, so the same bytes for another month are asked again.
     await special_events.parse_special_events_pdf(url, 2026, 11)
     assert len(calls) == 3
+
+
+@pytest.mark.anyio
+async def test_a_menu_file_is_read_by_the_model_once_even_when_nothing_is_kept(monkeypatch):
+    # An empty menu parse (menu_parse_empty) stored no LunchMenu, so every
+    # weekly scan bought the same model call again.
+    from types import SimpleNamespace
+
+    from services import lunch_menu
+
+    answers = {b"%PDF-1.4 blank menu": [], b"%PDF-1.4 menu": [{"date": "2026-10-05", "description": "Chicken tenders"}]}
+    calls = []
+
+    class FakeMessages:
+        async def create(self, **kwargs):
+            pdf = lunch_menu.base64.b64decode(kwargs["messages"][0]["content"][0]["source"]["data"])
+            calls.append(pdf)
+            return SimpleNamespace(content=[SimpleNamespace(type="tool_use", input={"days": answers[pdf]})])
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.messages = FakeMessages()
+
+    served = {}
+
+    async def fake_bytes(url, **kwargs):
+        return "application/pdf", served[url]
+
+    monkeypatch.setattr(lunch_menu, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(lunch_menu, "AsyncAnthropic", FakeClient)
+    monkeypatch.setattr(lunch_menu.scraper_client, "get_bytes", fake_bytes)
+    monkeypatch.setattr(lunch_menu.observability, "record_llm_call", lambda *a, **k: None)
+
+    url = _UPLOADS + "2026/10/October-2026-Lunch-Menu.pdf"
+    for pdf in answers:
+        served[url] = pdf
+        first = await lunch_menu.parse_menu_pdf(url, "October 2026", "lunch")
+        assert await lunch_menu.parse_menu_pdf(url, "October 2026", "lunch") == first
+    assert calls == list(answers)
+    assert [d["description"] for d in first] == ["Chicken tenders"]
+    # Another meal is another question about the same file.
+    await lunch_menu.parse_menu_pdf(url, "October 2026", "breakfast")
+    assert len(calls) == 3

@@ -312,6 +312,33 @@ async def test_today_in_spanish_uses_translated_closure_reason_and_spanish_label
 
 
 @pytest.mark.anyio
+async def test_a_translated_delay_label_never_comes_from_another_grade_spans_title(monkeypatch):
+    # A high school's feed carrying the K-8 schools' delay beside its own:
+    # English labelled the day with its own, Spanish with the K-8 one's.
+    monkeypatch.setattr(ct, "_call_model", _fake_model([]))
+    run = uuid.uuid4().hex[:8]
+    day = date(2026, 10, 15)
+    async with database.SessionLocal() as db:
+        school = School(name=f"Delay HS {run}", slug=f"delay-hs-{run}", school_type="high")
+        db.add(school)
+        await db.flush()
+        start = datetime.combine(day, datetime.min.time(), LOCAL_TZ)
+        db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title=f"K-8 Delayed Opening - Ice {run}",
+                                 start_date=start, is_all_day=True, is_current=True))
+        db.add(SchoolContentItem(scope="school", school_id=school.id, category="event", title=f"Delayed Opening - Fog {run}",
+                                 start_date=start + timedelta(minutes=1), is_all_day=True, is_current=True))
+        await db.commit()
+
+        await build_today(db, school, day, lang="es")
+        await ct.drain()
+        es = await build_today(db, school, day, lang="es")
+        en = await build_today(db, school, day)
+
+    assert (en.week[3].status, en.week[3].status_label) == ("delayed", f"Delayed Opening - Fog {run}")
+    assert (es.week[3].status, es.week[3].status_label) == ("delayed", f"ES: Delayed Opening - Fog {run}")
+
+
+@pytest.mark.anyio
 async def test_today_hours_and_early_dismissal_labels_in_spanish():
     async with database.SessionLocal():
         school = School(name="x", slug="x", school_type="elementary", early_dismissal_time="12:30 PM")

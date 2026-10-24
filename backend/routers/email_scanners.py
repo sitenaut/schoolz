@@ -1,4 +1,3 @@
-from croniter import croniter
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import require_permission
 from database import get_db
 from models import EmailScanner, GmailToken, ScheduledJob, User
+from scheduler.cron import cron_problem
 from scheduler.registry import registry as job_registry
 from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, LinkKindOut, ScheduledJobOut
 from services.email_links import LINK_KINDS
@@ -25,8 +25,9 @@ def _link_kinds(kinds: list[str]) -> list[str]:
 
 
 def _validate_cron(cron_expr: str) -> None:
-    if not croniter.is_valid(cron_expr):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid cron expression: {cron_expr}")
+    problem = cron_problem(cron_expr)
+    if problem:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, problem)
 
 
 async def _require_own_scanner(db: AsyncSession, user: User, scanner_id: str) -> EmailScanner:

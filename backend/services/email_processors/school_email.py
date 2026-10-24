@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import EmailScanner, EmailScannerMatch, ScheduledJob, SchoolEmailMessage, SmoreNewsletter
 from scheduler.cron import spread_default_smore_cron
+from scheduler.job_names import newsletter_job_name
 from services import email_links
 from services.email_processors import ProcessorResult, register_processor
 
@@ -75,7 +76,7 @@ async def _process(
             job = ScheduledJob(
                 owner_user_id=scanner.owner_user_id,
                 kind=kind,
-                name=f"{label}: {link['url']}",
+                name=await newsletter_job_name(db, label, newsletter, scanner.owner_user_id, kind),
                 cron_expr=spread_default_smore_cron(_DEFAULT_SMORE_CRON, newsletter.id),
                 timezone=_DEFAULT_SMORE_TIMEZONE,
                 params={"newsletter_id": newsletter.id, "stop_after": _stop_after(source_type, match)},

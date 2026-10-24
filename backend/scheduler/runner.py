@@ -16,6 +16,7 @@ import observability
 from database import SessionLocal
 from models import JobRun, ScheduledJob
 from scheduler import backoff, progress
+from scheduler.cron import cron_problem
 from scheduler.errors import classify_exception, parse_warning
 from scheduler.registry import registry
 
@@ -426,7 +427,8 @@ def missed_fire_time(job: ScheduledJob, now: datetime) -> datetime | None:
     queue a whole cycle, and the same minutes lose out every time.
 
     Pure, so it's unit-testable without a scheduler or a DB."""
-    if not job.enabled or job.run_once:
+    if not job.enabled or job.run_once or cron_problem(job.cron_expr):
+        # A cron cron_trigger refuses is never scheduled, so it misses nothing.
         return None
     try:
         tz = ZoneInfo(job.timezone)
@@ -514,20 +516,32 @@ def cron_trigger(cron_expr: str, tz: ZoneInfo):
     every weekly job fired a day late, and a scheduler restart inside that
     day saw a "missed" fire, ran a catch-up, and the job ran again the next
     morning. Numbers are rewritten as names, which both sides agree on;
-    ranges are expanded because "sun-sat" is backwards in APScheduler's order.
+    ranges are expanded because "sun-sat" is backwards in APScheduler's order,
+    and so are steps, which APScheduler counts from Monday ("*/2" is
+    Sun/Tue/Thu/Sat to cron, Mon/Wed/Fri/Sun to it).
+
+    A crontab restricting both the day of the month and the day of the week
+    is refused (scheduler/cron.py:cron_problem): APScheduler can only AND them.
     """
     from apscheduler.triggers.cron import CronTrigger
 
+    problem = cron_problem(cron_expr)
+    if problem:
+        raise ValueError(problem)
     minute, hour, day, month, dow = cron_expr.split()
     parts = []
     for part in dow.split(","):
         span, _, step = part.partition("/")
-        if not span[0].isdigit():  # "*", "*/2" or already a name
+        if span == "*" and step:
+            parts.extend(_WEEKDAYS[n] for n in range(0, 7, int(step)))
+            continue
+        if not span[0].isdigit():  # "*" or already a name
             parts.append(part)
             continue
         first, _, last = span.partition("-")
-        # A bare "N/step" means "from N on", as in cron.
-        end = int(last) if last else (6 if step else int(first))
+        # A bare "N/step" means "from N on", as in cron, whose weekdays run
+        # to 7 (Sunday again): "1/3" is Mon/Thu/Sun.
+        end = int(last) if last else (7 if step else int(first))
         parts.extend(_WEEKDAYS[n % 7] for n in range(int(first), end + 1, int(step or 1)))
     return CronTrigger(minute=minute, hour=hour, day=day, month=month,
                        day_of_week=",".join(dict.fromkeys(parts)), timezone=tz)

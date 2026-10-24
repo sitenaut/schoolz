@@ -35,12 +35,20 @@ def group_by_school(all_raws: list[RawEvent]) -> dict[str, list[RawEvent]]:
     return grouped
 
 
-async def sync_school_content(db: AsyncSession, events_by_school: dict[str, list[RawEvent]]) -> dict:
+async def sync_school_content(
+    db: AsyncSession, events_by_school: dict[str, list[RawEvent]], keep: set[str] | frozenset[str] = frozenset()
+) -> dict:
     """events_by_school: school slug -> every RawEvent tagged for it across
     the whole pipeline run (not just one source), so pruning a vanished show
-    is correct even if a school's slug were ever tagged from two sources."""
+    is correct even if a school's slug were ever tagged from two sources.
+
+    `keep`: schools a failed (or partly failed) source could have tagged.
+    Their rows are upserted but never pruned this run - the rows don't say
+    which source wrote them, so a show missing because its source failed
+    would look vanished."""
     created = updated = removed = 0
     unknown_slugs: set[str] = set()
+    kept: set[str] = set()
     for slug, raws in events_by_school.items():
         school = (await db.execute(select(School).where(School.slug == slug))).scalar_one_or_none()
         if school is None:
@@ -81,10 +89,16 @@ async def sync_school_content(db: AsyncSession, events_by_school: dict[str, list
             row.is_all_day = raw.all_day
             row.link_url = raw.url
             row.is_current = True
+        if slug in keep:
+            kept.add(slug)
+            continue
         for uid, row in existing.items():
             if uid not in seen:
                 await db.delete(row)
                 removed += 1
     if unknown_slugs:
         logger.warning("local_events_unknown_school_slug", extra={"slugs": sorted(unknown_slugs)})
-    return {"created": created, "updated": updated, "removed": removed, "unknown_slugs": sorted(unknown_slugs)}
+    result = {"created": created, "updated": updated, "removed": removed, "unknown_slugs": sorted(unknown_slugs)}
+    if kept:
+        result["not_pruned"] = sorted(kept)
+    return result

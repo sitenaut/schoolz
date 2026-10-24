@@ -2,7 +2,18 @@ import collections
 import importlib.util
 from pathlib import Path
 
-from scheduler.cron import BIWEEKLY_KINDS, DAILY_KINDS, MONTHLY_KINDS, WEEKLY_KINDS, public_scan_cron, smore_scan_cron, spread_default_smore_cron
+import pytest
+
+from scheduler.cron import (
+    BIWEEKLY_KINDS,
+    DAILY_KINDS,
+    MONTHLY_KINDS,
+    WEEKLY_KINDS,
+    cron_problem,
+    public_scan_cron,
+    smore_scan_cron,
+    spread_default_smore_cron,
+)
 
 
 def test_public_scans_spread_across_the_hour_and_stay_put():
@@ -119,7 +130,9 @@ def test_the_trigger_fires_on_the_weekday_cron_names():
     base = datetime(2026, 10, 5, 12, 0, tzinfo=tz)  # a Monday
     exprs = [public_scan_cron("marking_period.scan", f"district-{i}") for i in range(40)]
     exprs += ["35 3 * * 3", "0 3 * * 0", "23 23 * * 6", "0 6 * * 7", "0 6 * * 1-5", "0 6 * * 0-6",
-              "0 6 * * 0,3", "0 6 * * 1-5/2", "0 6 * * mon", "8 */12 * * *", "0 5,17 * * *"]
+              "0 6 * * 0,3", "0 6 * * 1-5/2", "0 6 * * mon", "8 */12 * * *", "0 5,17 * * *",
+              # Steps count from Sunday in cron, from Monday in APScheduler.
+              "0 6 * * */2", "0 6 * * */3", "0 6 * * 1/3", "0 6 * * 2/2"]
     for expr in exprs:
         # Three fires: enough to see the weekday, and short of the November
         # clock change, where croniter itself is an hour out.
@@ -183,3 +196,36 @@ def test_biweekly_and_monthly_triggers_fire_on_the_days_named():
         it = croniter(expr, base)
         assert fires == [it.get_next(datetime) for _ in range(count)], expr
         assert [f.day for f in fires] == [int(d) for d in expr.split()[2].split(",")][:count]
+
+
+def test_a_cron_restricting_both_day_fields_is_refused():
+    # Cron and croniter run on either day matching, APScheduler only on both:
+    # "0 6 1 * 1" would fire every Monday and the 1st to one, only a Monday
+    # the 1st to the other.
+    from zoneinfo import ZoneInfo
+
+    from scheduler.runner import cron_trigger
+
+    for expr in ("0 6 1 * 1", "0 6 */2 * mon", "0 6 1-7 * 1-5"):
+        assert cron_problem(expr), expr
+        with pytest.raises(ValueError):
+            cron_trigger(expr, ZoneInfo("America/New_York"))
+    assert cron_problem("not a cron").startswith("Invalid cron expression")
+    for expr in ("0 6 ? * 1", "0 6 1 * ?", "0 6 1,15 * *", "0 6 * * 1"):
+        assert cron_problem(expr) is None, expr
+
+
+def test_no_default_generated_or_seeded_cron_is_refused():
+    import re
+
+    import scheduler.jobs  # noqa: F401  (registers every kind)
+    from scheduler.registry import registry
+
+    crons = {spec.default_cron for spec in registry.values()}
+    kinds = BIWEEKLY_KINDS | DAILY_KINDS | MONTHLY_KINDS | WEEKLY_KINDS | {"district_calendar.scan"}
+    crons |= {public_scan_cron(k, f"target-{i}") for k in kinds for i in range(50)}
+    # The form default, and the announcements scan's own (routers/schools.py).
+    crons |= {smore_scan_cron(f"newsletter-{i}") for i in range(50)} | {"0 8 * * 1", "0 */12 * * *", "0 6-18/2 * * 1-5"}
+    for seed in (Path(__file__).resolve().parent.parent / "seed").glob("*.json"):
+        crons |= set(re.findall(r'"cron_expr":\s*"([^"]+)"', seed.read_text()))
+    assert [c for c in crons if cron_problem(c)] == []

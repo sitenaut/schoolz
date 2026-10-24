@@ -459,9 +459,13 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
 
     def status_source(d: date, st: str) -> SchoolContentItem | None:
         """The item whose own title is the day's status label (a closure's
-        reason, a delay's wording) - the only labels that aren't fixed text."""
+        reason, a delay's wording) - the only labels that aren't fixed text.
+        Skips what day_status skips, or a K-8 delay's title could label a high
+        school's own in translation."""
         says = {"closed": says_closed, "delayed": _DELAY_RE.search}.get(st)
-        return next((i for i in by_day.get(d, []) if says(i.title)), None) if says else None
+        if not says:
+            return None
+        return next((i for i in by_day.get(d, []) if says(i.title) and not other_grades_only(i.title, school.school_type)), None)
 
     localized: dict[str, Localized] = {}
     if lang != "en":

@@ -213,7 +213,54 @@ async def test_import_never_takes_over_another_districts_school():
         # Same school name, two districts: each gets its own scan jobs, told apart by district.
         async with database.SessionLocal() as db:
             from sqlalchemy import select
+
             from models import ScheduledJob
 
             names = (await db.execute(select(ScheduledJob.name).where(ScheduledJob.kind == "staff_roster.scan", ScheduledJob.name.like(f"%Parkview Test School%({'%'}{run_id})")))).scalars().all()
         assert sorted(names) == [f"Staff roster scan: Parkview Test School (North {run_id})", f"Staff roster scan: Parkview Test School (South {run_id})"]
+
+
+async def _import_headers(client: AsyncClient) -> dict[str, str]:
+    email = f"admin_{uuid.uuid4().hex[:8]}@example.com"
+    reg = await client.post("/auth/register", json={"email": email, "username": _unique("admin"), "password": "password123"})
+    await _make_admin(email)
+    return {"authorization": f"Bearer {reg.json()['access_token']}"}
+
+
+@pytest.mark.anyio
+async def test_a_seed_can_turn_the_arbiter_flags_back_off():
+    run_id = uuid.uuid4().hex[:8]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = await _import_headers(client)
+        district, slug = f"Arbiter {run_id}", f"arbiter-{run_id}"
+
+        async def imported(**flags) -> dict:
+            body = {"exported_at": "2026-01-01T00:00:00Z", "source": "test", "districts": [_district(district)],
+                    "schools": [{**_school(slug, f"Arbiter School {run_id}", district), **flags}], "smore_newsletters": []}
+            res = await client.post("/admin/config/import", json=body, headers=headers)
+            assert res.status_code == 200, res.text
+            return (await client.get(f"/schools/{slug}")).json()
+
+        assert (await imported(arbiter_events_calendar=True, arbiter_events_district_wide=True))["arbiter_events_calendar"] is True
+        assert (await imported())["arbiter_events_calendar"] is True  # a seed that doesn't say leaves it alone
+        school = await imported(arbiter_events_calendar=False, arbiter_events_district_wide=False)
+        assert (school["arbiter_events_calendar"], school["arbiter_events_district_wide"]) == (False, False)
+
+
+@pytest.mark.anyio
+async def test_one_import_can_carry_two_schools_pta_newsletters():
+    run_id = uuid.uuid4().hex[:8]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = await _import_headers(client)
+        district = f"PTA {run_id}"
+
+        def newsletter(slug: str) -> dict:
+            return {"url": f"https://app.smore.com/n/{slug}", "label": "PTA Newsletter", "school_slug": slug,
+                    "cron_expr": "0 8 * * 1", "timezone": "America/New_York", "enabled": True}
+
+        body = {"exported_at": "2026-01-01T00:00:00Z", "source": "test", "districts": [_district(district)],
+                "schools": [_school(f"pta-a-{run_id}", f"PTA A {run_id}", district), _school(f"pta-b-{run_id}", f"PTA B {run_id}", district)],
+                "smore_newsletters": [newsletter(f"pta-a-{run_id}"), newsletter(f"pta-b-{run_id}")]}
+        res = await client.post("/admin/config/import", json=body, headers=headers)
+        assert res.status_code == 200, res.text
+        assert res.json()["smore_created"] == 2

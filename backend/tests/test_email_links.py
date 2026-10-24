@@ -198,6 +198,29 @@ async def test_a_processor_error_never_quotes_the_message(inbox, monkeypatch):
         assert m.processor_status == "error" and m.processor_error == "ValueError"
 
 
+async def test_a_message_that_fails_on_a_db_error_does_not_stop_the_scan_there(inbox):
+    owner_id, school_id = await _owner_and_school()
+    scanner = await _scanner(owner_id, school_id, ["smore"])
+    taken, fine = uuid.uuid4().hex[:8], uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        # A job already holding the name the first link's scan would get.
+        db.add(ScheduledJob(owner_user_id=owner_id, kind="smore.scan", name=f"Smore scan: https://app.smore.com/n/{taken}",
+                            cron_expr="0 8 * * 1", params={}))
+        await db.commit()
+    first, second = _message(plain=f"https://app.smore.com/n/{taken}"), _message(plain=f"https://app.smore.com/n/{fine}")
+    inbox.messages = [first, second]
+
+    async with database.SessionLocal() as db:
+        summary = await email_scanner.run_scanner(db, await db.get(EmailScanner, scanner.id))
+    assert "1 processed ok" in summary
+    async with database.SessionLocal() as db:
+        matches = {m.message_id: m for m in (await db.execute(select(EmailScannerMatch).where(EmailScannerMatch.scanner_id == scanner.id))).scalars()}
+        assert (matches[first["id"]].processor_status, matches[first["id"]].processor_error) == ("error", "IntegrityError")
+        assert matches[second["id"]].processor_status == "ok"
+        urls = set((await db.execute(select(SmoreNewsletter.url).where(SmoreNewsletter.url.like("https://app.smore.com/n/%")))).scalars())
+        assert f"https://app.smore.com/n/{fine}" in urls and f"https://app.smore.com/n/{taken}" not in urls
+
+
 # ---- the API --------------------------------------------------------------------------------
 
 

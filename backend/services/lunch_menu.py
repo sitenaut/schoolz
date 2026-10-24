@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup
 import observability
 import scraper_client
 from scheduler.errors import record_parse_issue
-from services import haiku
+from services import haiku, page_extractions
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 from services.tool_output import object_list, recover_spilled_input
 
@@ -653,16 +653,9 @@ async def list_google_sites_menu_files(page_url: str) -> list[dict]:
 _PRICE_BOX_RE = re.compile(r"\bmeal prices\b", re.IGNORECASE)
 
 
-async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None = None) -> list[dict]:
-    """Returns [{date: datetime, description: str, notes: str|None}, ...].
-    Days marked only 'School Closed' with no meal are still included (with
-    that as the description) so the calendar reads correctly."""
-    if not ANTHROPIC_API_KEY:
-        return []
-
-    # Presence hosts 403 the default UA; a host that 403s Fly's addresses
-    # (Chesterbrook's Cloudflare) is read through the scrapers.
-    _, content = await scraper_client.get_bytes(pdf_url, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}, timeout_s=20.0)
+async def _read_menu_file(pdf_url: str, content: bytes, prompt: str) -> list[dict] | None:
+    """The model's day entries for one menu file, or None when it answered
+    without the tool call (nothing worth keeping)."""
     pdf_b64 = base64.b64encode(content).decode("ascii")
     # Some schools post a month's menu as a picture rather than a PDF
     # (Somerdale Park's October JPGs); sniffed from bytes, never the URL.
@@ -681,44 +674,59 @@ async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None 
         **haiku.CALL_KWARGS,
         tools=[_MENU_TOOL],
         tool_choice={"type": "tool", "name": "record_menu"},
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    file_block,
-                    {
-                        "type": "text",
-                        "text": f"This is the {period_label} school menu calendar. Extract every day that has "
-                        "an entry (a meal offered, or a note like 'School Closed'), resolving each into a full "
-                        "ISO date for that month/year. Go cell by cell through EVERY week row including the "
-                        "first and last, which are often partial (the month may start on a Thursday): a day "
-                        "number in the top-right corner of a cell with a meal in it is an entry even when "
-                        "other cells in the same row hold only a notice or are blank. Ignore sidebar legends "
-                        "and notice boxes that carry no day number. If the file is not a calendar at all but a "
-                        "standing daily menu or order form (the same choices every day plus a special for each "
-                        "weekday), record one entry for every Monday to Friday of that month: the description is "
-                        "that weekday's special followed by the daily choices, summarised briefly."
-                        + (
-                            f" If the file holds more than one meal's calendar (a breakfast page and a lunch "
-                            f"page), record only the {meal_type} calendar."
-                            if meal_type
-                            else ""
-                        ),
-                    },
-                ],
-            }
-        ],
+        messages=[{"role": "user", "content": [file_block, {"type": "text", "text": prompt}]}],
     )
     observability.record_llm_call("lunch_menu", MODEL, response, time.perf_counter() - _llm_started)
     tool_use = next((b for b in response.content if b.type == "tool_use"), None)
     if not tool_use:
-        return []
-
+        return None
     # `days` as a JSON string is a real Haiku answer; read raw, it failed
     # (and rolled back) the whole district's scan.
     days, dropped = object_list(recover_spilled_input(tool_use.input, "days").get("days"))
     if dropped:
         record_parse_issue("lunch_menu.scan", "unexpected_format", url=pdf_url, sample=str(dropped)[:200])
+    return days
+
+
+async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None = None) -> list[dict]:
+    """Returns [{date: datetime, description: str, notes: str|None}, ...].
+    Days marked only 'School Closed' with no meal are still included (with
+    that as the description) so the calendar reads correctly."""
+    if not ANTHROPIC_API_KEY:
+        return []
+
+    # Presence hosts 403 the default UA; a host that 403s Fly's addresses
+    # (Chesterbrook's Cloudflare) is read through the scrapers.
+    _, content = await scraper_client.get_bytes(pdf_url, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}, timeout_s=20.0)
+    prompt = (
+        f"This is the {period_label} school menu calendar. Extract every day that has "
+        "an entry (a meal offered, or a note like 'School Closed'), resolving each into a full "
+        "ISO date for that month/year. Go cell by cell through EVERY week row including the "
+        "first and last, which are often partial (the month may start on a Thursday): a day "
+        "number in the top-right corner of a cell with a meal in it is an entry even when "
+        "other cells in the same row hold only a notice or are blank. Ignore sidebar legends "
+        "and notice boxes that carry no day number. If the file is not a calendar at all but a "
+        "standing daily menu or order form (the same choices every day plus a special for each "
+        "weekday), record one entry for every Monday to Friday of that month: the description is "
+        "that weekday's special followed by the daily choices, summarised briefly."
+        + (
+            f" If the file holds more than one meal's calendar (a breakfast page and a lunch "
+            f"page), record only the {meal_type} calendar."
+            if meal_type
+            else ""
+        )
+    )
+    # Stored by a hash of the prompt and the file's bytes (page_extractions):
+    # a parse that stored no menu (nothing read, or no day left after the
+    # scan's own filtering) left nothing to say the file was read, so the
+    # same file was paid for again on every scan that still listed it.
+    key = page_extractions.file_key("lunch_menu", prompt, _MENU_TOOL, content)
+    days = await page_extractions.stored(key)
+    if days is None:
+        days = await _read_menu_file(pdf_url, content, prompt)
+        if days is None:
+            return []
+        await page_extractions.store(key, days)
     items = []
     for day in days:
         parsed_date = _parse_date(day.get("date"))

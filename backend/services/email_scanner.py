@@ -80,7 +80,11 @@ async def run_scanner(db: AsyncSession, scanner: EmailScanner) -> str:
         await db.flush()
 
         try:
-            result = await processor.process(db, scanner, match, message)
+            # In a SAVEPOINT: a DB error (a scan job's name already taken,
+            # say) used to fail the session, so the commit below raised and
+            # every run stopped at this message, never reaching the rest.
+            async with db.begin_nested():
+                result = await processor.process(db, scanner, match, message)
             match.processor_status = result.status
             match.artifact_kind = result.artifact_kind
             match.artifact_id = result.artifact_id

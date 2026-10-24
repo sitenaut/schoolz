@@ -1,4 +1,3 @@
-from croniter import croniter
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_optional_user, require_permission, sees_scan_internals
 from database import get_db
 from models import District, ScheduledJob, School, SmoreBlock, SmoreNewsletter, User
-from scheduler.cron import spread_default_smore_cron
+from scheduler.cron import cron_problem, spread_default_smore_cron
+from scheduler.job_names import newsletter_job_name
 from schemas import ScheduledJobOut, SmoreBlockOut, SmoreNewsletterCreate, SmoreNewsletterOut, SmoreNewsletterUpdate
 
 router = APIRouter(prefix="/smore-newsletters", tags=["smore-newsletters"])
@@ -35,8 +35,19 @@ _JOB_LABEL_BY_SOURCE_TYPE = {
 
 
 def _validate_cron(cron_expr: str) -> None:
-    if not croniter.is_valid(cron_expr):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid cron expression: {cron_expr}")
+    problem = cron_problem(cron_expr)
+    if problem:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, problem)
+
+
+async def target_id(db: AsyncSession, model: type[School] | type[District], value: str | None) -> str | None:
+    """A school or district id to store: "" clears, and an id naming nothing
+    is a 422 rather than a 500 from the foreign key."""
+    if not value:
+        return None
+    if await db.get(model, value) is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No {model.__tablename__[:-1]} with id {value}")
+    return value
 
 
 def _validate_source_type(source_type: str) -> None:
@@ -127,18 +138,19 @@ async def create_newsletter(
     newsletter = SmoreNewsletter(
         url=payload.url,
         label=payload.label,
-        school_id=payload.school_id,
-        district_id=payload.district_id,
+        school_id=await target_id(db, School, payload.school_id),
+        district_id=await target_id(db, District, payload.district_id),
         source_type=payload.source_type,
         created_by_user_id=user.id,
     )
     db.add(newsletter)
     await db.flush()
 
+    kind = _JOB_KIND_BY_SOURCE_TYPE[payload.source_type]
     job = ScheduledJob(
         owner_user_id=user.id,
-        kind=_JOB_KIND_BY_SOURCE_TYPE[payload.source_type],
-        name=f"{_JOB_LABEL_BY_SOURCE_TYPE[payload.source_type]}: {payload.label or payload.url}",
+        kind=kind,
+        name=await newsletter_job_name(db, _JOB_LABEL_BY_SOURCE_TYPE[payload.source_type], newsletter, user.id, kind),
         cron_expr=spread_default_smore_cron(payload.cron_expr, newsletter.id),
         timezone=payload.timezone,
         params={"newsletter_id": newsletter.id},
@@ -171,10 +183,14 @@ async def update_newsletter(
     db: AsyncSession = Depends(get_db),
 ):
     newsletter = await _require_manageable(db, newsletter_id)
-    if payload.school_id is not None:
-        newsletter.school_id = payload.school_id
-    if payload.district_id is not None:
-        newsletter.district_id = payload.district_id
+    # An explicit null clears, as "" does: the edit form sends null for the
+    # target it didn't pick, and ignoring it kept the old school on a
+    # newsletter moved to its whole district (the extractor kept scoping
+    # items to that school).
+    if "school_id" in payload.model_fields_set:
+        newsletter.school_id = await target_id(db, School, payload.school_id)
+    if "district_id" in payload.model_fields_set:
+        newsletter.district_id = await target_id(db, District, payload.district_id)
     if payload.label is not None:
         newsletter.label = payload.label
 
@@ -185,10 +201,11 @@ async def update_newsletter(
         cron_expr = payload.cron_expr or "0 8 * * 1"
         timezone = payload.timezone or "America/New_York"
         _validate_cron(cron_expr)
+        kind = _JOB_KIND_BY_SOURCE_TYPE[newsletter.source_type]
         job = ScheduledJob(
             owner_user_id=user.id,
-            kind=_JOB_KIND_BY_SOURCE_TYPE[newsletter.source_type],
-            name=f"{_JOB_LABEL_BY_SOURCE_TYPE[newsletter.source_type]}: {newsletter.label or newsletter.url}",
+            kind=kind,
+            name=await newsletter_job_name(db, _JOB_LABEL_BY_SOURCE_TYPE[newsletter.source_type], newsletter, user.id, kind),
             cron_expr=spread_default_smore_cron(cron_expr, newsletter.id),
             timezone=timezone,
             params={"newsletter_id": newsletter.id},

@@ -463,3 +463,34 @@ async def test_an_item_without_a_category_is_skipped_not_fatal(monkeypatch):
         await content_extractor.extract_from_newsletter(db, newsletter, [SmoreBlock(position=0, block_type="text", text_content="x")])
         titles = (await db.execute(select(SchoolContentItem.title).where(SchoolContentItem.district_id == district.id))).scalars().all()
     assert titles == ["Chess club"]
+
+
+@pytest.mark.anyio
+async def test_a_newsletter_over_one_chunk_keeps_every_chunks_summary(monkeypatch):
+    import uuid
+    from types import SimpleNamespace
+
+    import database
+    from services import content_extractor
+
+    summaries = ["Picture day is Friday.", "Contact the office with questions."]
+
+    class _Messages:
+        async def create(self, **kwargs):
+            data = {"summary": summaries.pop(0), "items": []}
+            return SimpleNamespace(content=[SimpleNamespace(type="tool_use", input=data)], stop_reason="tool_use", usage=None)
+
+    class _Client:
+        def __init__(self, **kwargs):
+            self.messages = _Messages()
+
+    monkeypatch.setattr(content_extractor, "ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(content_extractor, "AsyncAnthropic", _Client)
+    async with database.SessionLocal() as db:
+        newsletter = SmoreNewsletter(url=f"https://example.org/{uuid.uuid4().hex}")
+        db.add(newsletter)
+        await db.flush()
+        blocks = [SmoreBlock(position=n, block_type="text", text_content=f"block {n}") for n in range(13)]
+        await content_extractor.extract_from_newsletter(db, newsletter, blocks)
+    assert summaries == []  # two chunks, two calls
+    assert newsletter.latest_summary == "Picture day is Friday. Contact the office with questions."

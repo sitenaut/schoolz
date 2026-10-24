@@ -1,5 +1,7 @@
 import hashlib
 
+from croniter import croniter
+
 # The public-source scans used to all start at :00 every 12h, ~85 of them in
 # the same minute against one 1GB Chromium, and the heaviest sites (West,
 # Knight, Beck, Carusi, Kilmer) routinely timed out mid-burst while
@@ -89,3 +91,20 @@ def public_scan_cron(kind: str, target_id: str) -> str:
     if kind in DAILY_KINDS:
         return f"{minute} {_DAILY_HOURS[(h // 60) % len(_DAILY_HOURS)]} * * *"
     return f"{minute} */12 * * *"
+
+
+def cron_problem(cron_expr: str) -> str | None:
+    """Why a crontab can't be saved, or None.
+
+    Cron and croniter (catch-up, next_run_at) run a job on a day matching
+    *either* the day of the month or the day of the week once both are
+    restricted; APScheduler, which fires the real runs, only on a day matching
+    both, and has no way to say "either". "0 6 1 * 1" is the 1st plus every
+    Monday to one and only a Monday the 1st to the other. No default or
+    generated cron restricts both; a hand-typed one could."""
+    if not croniter.is_valid(cron_expr):
+        return f"Invalid cron expression: {cron_expr}"
+    fields = cron_expr.split()
+    if len(fields) == 5 and fields[2] not in ("*", "?") and fields[4] not in ("*", "?"):
+        return f"Restrict the day of the month or the day of the week, not both: {cron_expr}"
+    return None

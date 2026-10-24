@@ -23,8 +23,6 @@ applies to this one school, never every Cherry Hill school.
 """
 
 import base64
-import hashlib
-import json
 import logging
 import re
 import time
@@ -33,12 +31,10 @@ from datetime import date
 import httpx
 from anthropic import AsyncAnthropic
 
-import database
 import observability
 import scraper_client
-from models import PageExtraction
 from scheduler.errors import record_parse_issue
-from services import haiku
+from services import haiku, page_extractions
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 from services.tool_output import object_list, recover_spilled_input
 
@@ -196,30 +192,6 @@ _PROMPT = (
 )
 
 
-def _extraction_key(prompt: str, pdf: bytes) -> str:
-    tool = json.dumps(_SPECIAL_EVENTS_TOOL, sort_keys=True)
-    return hashlib.sha256(f"special_events\n{prompt}\n{tool}\n{hashlib.sha256(pdf).hexdigest()}".encode()).hexdigest()
-
-
-async def _stored_entries(key: str) -> list | None:
-    try:
-        async with database.SessionLocal() as db:
-            row = await db.get(PageExtraction, key)
-            return list(row.items) if row else None
-    except Exception:  # noqa: BLE001 - a cache miss costs one model call, never the scan
-        logger.warning("page_extraction_cache_read_failed", exc_info=True)
-        return None
-
-
-async def _store_entries(key: str, entries: list) -> None:
-    try:
-        async with database.SessionLocal() as db:
-            await db.merge(PageExtraction(key=key, items=entries))
-            await db.commit()
-    except Exception:  # noqa: BLE001
-        logger.warning("page_extraction_cache_write_failed", exc_info=True)
-
-
 async def _read_pdf(pdf_url: str, pdf: bytes, prompt: str) -> list[dict] | None:
     """The model's entries for one calendar PDF, or None when it answered
     without the tool call (nothing worth keeping)."""
@@ -265,13 +237,13 @@ async def parse_special_events_pdf(pdf_url: str, year: int, month: int) -> list[
 
     _, pdf = await scraper_client.get_bytes(pdf_url, headers=_PDF_UA, timeout_s=20.0)
     prompt = _PROMPT.format(year=year, month=month)
-    key = _extraction_key(prompt, pdf)
-    entries = await _stored_entries(key)
+    key = page_extractions.file_key("special_events", prompt, _SPECIAL_EVENTS_TOOL, pdf)
+    entries = await page_extractions.stored(key)
     if entries is None:
         entries = await _read_pdf(pdf_url, pdf, prompt)
         if entries is None:
             return []
-        await _store_entries(key, entries)
+        await page_extractions.store(key, entries)
 
     items = []
     for entry in entries:

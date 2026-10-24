@@ -112,8 +112,13 @@ async def _reconcile(aps_scheduler: AsyncIOScheduler) -> None:
         jobs = (await db.execute(select(ScheduledJob))).scalars().all()
         seen_ids = set()
         for job in jobs:
-            build_apscheduler_job(aps_scheduler, job)
             seen_ids.add(f"job-{job.id}")
+            try:
+                build_apscheduler_job(aps_scheduler, job)
+            except ValueError:
+                # One unschedulable cron (scheduler/cron.py:cron_problem) must
+                # not stop every job after it from being scheduled.
+                logger.exception("job_cron_unschedulable", extra={"job_id": job.id, "cron_expr": job.cron_expr})
 
         for existing in aps_scheduler.get_jobs():
             if existing.id.startswith("job-") and existing.id not in seen_ids:
