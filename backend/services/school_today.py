@@ -48,20 +48,22 @@ from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.content_translation import Localized, apply_translations, localize_out
 from services.hs_rotation import blocks_from_description
+from services.school_status import says_closed
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 from services.weather import pick_weather_day, today_weather
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
-# Deliberately its own (narrower) patterns, not services/school_status.py's
-# shared ones - that module's CLOSED_RE also matches bare "in-service"/
-# "conference", which would wrongly outrank early_dismissal's precedence
-# here on a real title like "EARLY DISMISSAL - Staff In-Service"
-# (test_school_today.py:test_classify_day_precedence_and_labels pins this).
-# "No Students" (a staff development day) and "Single Session" (a half day)
-# are how Delran and Cinnaminson word it.
-_CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b", re.I)
+# Its own patterns rather than services/school_status.py's is_status_title,
+# which also counts bare "in-service"/"conference" - those would wrongly
+# outrank early_dismissal's precedence here on a real title like "EARLY
+# DISMISSAL - Staff In-Service" (test_school_today.py:
+# test_classify_day_precedence_and_labels pins this). Closed is the shared
+# school_status.says_closed: a bare "closed" counts, as most feeds word a
+# closure, an office's or a gym's doesn't. "No Students" (a staff
+# development day) and "Single Session" (a half day) are how Delran and
+# Cinnaminson word it.
 _EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b", re.I)
 # A status title scoped to grades by its own wording: "PCPEP - K-8 Single
 # Session", "K-5 Single Session - Parent Conferences".
@@ -80,6 +82,24 @@ _ONGOING_STATUS_LOOKBACK_DAYS = 31
 _WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
+def starts_or_runs_from(start_at: datetime):
+    """Items that start at `start_at` or later, or began up to
+    _ONGOING_STATUS_LOOKBACK_DAYS earlier and are still going: a recess
+    stored as one row from Dec 24 still closes Dec 29. Overlap as GET
+    /calendar has it (an all-day end_date is the exclusive day after). The
+    caller keeps only status items among the ones that began earlier."""
+    return or_(
+        SchoolContentItem.start_date >= start_at,
+        and_(
+            SchoolContentItem.start_date >= start_at - timedelta(days=_ONGOING_STATUS_LOOKBACK_DAYS),
+            or_(
+                and_(SchoolContentItem.is_all_day.is_(True), SchoolContentItem.end_date > start_at),
+                and_(SchoolContentItem.is_all_day.is_(False), SchoolContentItem.end_date >= start_at),
+            ),
+        ),
+    )
+
+
 def local_date(dt: datetime) -> date:
     if dt.tzinfo is None:
         return dt.date()
@@ -92,7 +112,7 @@ def classify_day(titles: list[str]) -> tuple[str, str | None]:
     the closure's own reason ("Labor Day") with the boilerplate prefix
     stripped, since the status already says "closed"."""
     for t in titles:
-        if _CLOSED_RE.search(t):
+        if says_closed(t):
             label = re.sub(r"^\s*(schools?|district)\s+closed\s*[-:–]?\s*", "", t, flags=re.I).strip() or None
             return "closed", label
     for t in titles:
@@ -126,7 +146,7 @@ def _item_date_range(item: SchoolContentItem) -> list[date]:
 
 
 def _is_status_item(item: SchoolContentItem) -> bool:
-    return bool(_CLOSED_RE.search(item.title) or _EARLY_RE.search(item.title) or _DELAY_RE.search(item.title))
+    return bool(says_closed(item.title) or _EARLY_RE.search(item.title) or _DELAY_RE.search(item.title))
 
 
 def other_grades_only(title: str, school_type: str | None) -> bool:
@@ -293,20 +313,7 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
                 # their own the way the general calendar's toggle does.
                 SchoolContentItem.source.not_in(ATHLETICS_SOURCES),
                 SchoolContentItem.start_date.is_not(None),
-                # Starts in the window, or began earlier and is still going:
-                # a recess stored as one row from Dec 24 still closes Dec 29.
-                # Overlap as GET /calendar has it (an all-day end_date is the
-                # exclusive day after).
-                or_(
-                    SchoolContentItem.start_date >= range_start_at,
-                    and_(
-                        SchoolContentItem.start_date >= range_start_at - timedelta(days=_ONGOING_STATUS_LOOKBACK_DAYS),
-                        or_(
-                            and_(SchoolContentItem.is_all_day.is_(True), SchoolContentItem.end_date > range_start_at),
-                            and_(SchoolContentItem.is_all_day.is_(False), SchoolContentItem.end_date >= range_start_at),
-                        ),
-                    ),
-                ),
+                starts_or_runs_from(range_start_at),
                 SchoolContentItem.start_date <= datetime.combine(range_end, datetime.max.time(), LOCAL_TZ),
             )
             .order_by(SchoolContentItem.start_date)
@@ -453,8 +460,8 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
     def status_source(d: date, st: str) -> SchoolContentItem | None:
         """The item whose own title is the day's status label (a closure's
         reason, a delay's wording) - the only labels that aren't fixed text."""
-        pattern = {"closed": _CLOSED_RE, "delayed": _DELAY_RE}.get(st)
-        return next((i for i in by_day.get(d, []) if pattern.search(i.title)), None) if pattern else None
+        says = {"closed": says_closed, "delayed": _DELAY_RE.search}.get(st)
+        return next((i for i in by_day.get(d, []) if says(i.title)), None) if says else None
 
     localized: dict[str, Localized] = {}
     if lang != "en":

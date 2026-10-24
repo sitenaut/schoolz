@@ -2,35 +2,47 @@ import type { School, SchoolContentItem } from "../types";
 import { i18n } from "./i18n";
 
 // Same convention as the backend's own closure/half-day/delay detection
-// (backend/services/school_today.py:_CLOSED_RE/_EARLY_RE/_DELAY_RE,
-// frontend/src/pages/CalendarPage.tsx's pre-existing CLOSED_RE/HALF_DAY_RE)
-// - kept here so both the Calendar page and the Today cards agree on what
-// counts as a "no school" / "half day" status item vs. an ordinary
-// district-wide event like a Board of Education meeting.
-export const CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b/i;
+// (backend/services/school_status.py:says_closed/STAFF_DAY_RE/EARLY_RE/
+// DELAY_RE, which school_today.py's classify_day uses) - kept here so both
+// the Calendar page and the Today cards agree on what counts as a "no
+// school" / "half day" status item vs. an ordinary district-wide event like
+// a Board of Education meeting.
 export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
+// Staff and conference days: status items, but not a closed day.
+const STAFF_DAY_RE = /\bin-?service\b|\bconference\b/i;
 // Eastern Regional appends the class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
 const ROTATION_RE = /^\s*Day\s+\d+\s*(?:\([^)]*\))?\s*$/i;
 
-// What closes a whole day, as the Today card decides it
-// (backend/services/school_today.py:_CLOSED_RE and classify_day). Narrower
-// than CLOSED_RE on purpose: "EARLY DISMISSAL - Staff In-Service" and
-// "Early Dismissal - Parent/Teacher Conferences" are half days, and the
-// Calendar grid painted them as closures. CLOSED_RE keeps the wider net for
-// isStatusItem, so "Exclude district" never hides an in-service day.
-const DAY_CLOSED_RE = /\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b/i;
+// "Closed" that belongs to something other than the school day ("OFFICE
+// CLOSED", "GYM 2 CLOSED FOR REPAIRS", "Executive (Closed) Session"), and a
+// school word earlier in the same clause that makes it the school after all
+// ("Schools & Offices Closed, Winter Recess"). Mirrors school_status.py.
+const NOT_THE_SCHOOL_CLOSED_RE =
+  /\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b|\(?\bclosed\)?\s+session\b/gi;
+const SCHOOL_CLOSED_RE = /\b(?:schools?|district|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b/i;
+
+/** No school that day. A bare "closed" counts - most feeds word a closure
+ * that way ("CLOSED - Winter Recess", "Columbus Day, Closed") - but not an
+ * office's or a gym's. */
+export function saysClosed(title: string): boolean {
+  return SCHOOL_CLOSED_RE.test(title) || /\bclosed\b/i.test(title.replace(NOT_THE_SCHOOL_CLOSED_RE, " "));
+}
 
 /** One day's status from the titles landing on it, by the Today card's
- * rules: closed beats half day; anything else is an ordinary day. */
+ * rules: closed beats half day; anything else is an ordinary day. Staff and
+ * conference days don't close it: "EARLY DISMISSAL - Staff In-Service" and
+ * "Early Dismissal - Parent/Teacher Conferences" are half days, and the
+ * Calendar grid painted them as closures. isStatusItem keeps them, so
+ * "Exclude district" never hides an in-service day. */
 export function dayStatusOf(titles: string[]): "closed" | "half" | null {
-  if (titles.some((t) => DAY_CLOSED_RE.test(t))) return "closed";
+  if (titles.some(saysClosed)) return "closed";
   if (titles.some((t) => HALF_DAY_RE.test(t))) return "half";
   return null;
 }
 
 export function isStatusItem(title: string): boolean {
-  return CLOSED_RE.test(title) || HALF_DAY_RE.test(title) || DELAY_RE.test(title);
+  return saysClosed(title) || STAFF_DAY_RE.test(title) || HALF_DAY_RE.test(title) || DELAY_RE.test(title);
 }
 
 export function isRotationItem(title: string): boolean {
