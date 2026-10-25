@@ -151,20 +151,6 @@
    "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_0800.pdf",
    "statements": [
     {
-     "topic": "Budget gap",
-     "quote": "largely from state aid reductions, health benefit increases, and transportation costs",
-     "source": "Budget Clarity Hub 2026-2027",
-     "url": "https://www.chclc.org/fs/pages/6710",
-     "date": null
-    },
-    {
-     "topic": "Health premiums",
-     "quote": "about $10 million",
-     "source": "Budget Clarity Hub 2026-2027",
-     "url": "https://www.chclc.org/fs/pages/6710",
-     "date": null
-    },
-    {
      "topic": "Reserves",
      "quote": "mostly depleted",
      "source": "Budget Clarity Hub 2026-2027",
@@ -300,13 +286,6 @@
      "date": "2026-04-30"
     },
     {
-     "topic": "State aid",
-     "quote": "~$7m annual state funding loss absorbed by ETSD",
-     "source": "2026-27 Tentative Budget Presentation",
-     "url": "https://files.smartsites.parentsquare.com/13602/etsd_2026-27_tentative_budget_presentation_31926.pdf",
-     "date": "2026-03-19"
-    },
-    {
      "topic": "Positions",
      "quote": "the elimination of one of our two Elementary Assistant Principal positions in the 2026-27 budget",
      "source": "Update for ETSD Staff & Families",
@@ -344,7 +323,7 @@
      "date": "2026-05-06"
     },
     {
-     "topic": "Positions eliminated",
+     "topic": "Eliminated positions (slide footnote)",
      "quote": "Unfilled positions from 2024-2025",
      "source": "2026-2027 Budget Presentation",
      "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation",
@@ -455,8 +434,8 @@
      "date": null
     },
     {
-     "topic": "Staff reductions",
-     "quote": "5 paraprofessionals & EAs, 3.5 FTE teaching staff, PT Central Office Staff, 1 Maintenance Position, Summer Paint Crew.",
+     "topic": "Recommended staff reductions",
+     "quote": "5 paraprofessionals & EAs, 3.5 FTE teaching staff, PT Central Office Staff, 1 Maintenance Position, Summer Paint Crew",
      "source": "Budget Recommendation",
      "url": "https://haddonfieldschools.org/wp-content/uploads/2026/03/3_17_26-Budget-Meetings.pdf",
      "date": "2026-03-17"
@@ -648,13 +627,6 @@
     {
      "topic": "Health insurance",
      "quote": "Health insurance - 17.63% confirmed increase",
-     "source": "2026-2027 Budget Introduction",
-     "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf",
-     "date": "2026-03-17"
-    },
-    {
-     "topic": "Budget gap",
-     "quote": "Total Excess Appropriations ($1,635,056)",
      "source": "2026-2027 Budget Introduction",
      "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf",
      "date": "2026-03-17"
@@ -902,28 +874,21 @@
    "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/05/UFB27_5130.pdf",
    "statements": [
     {
-     "topic": "Health insurance",
-     "quote": "Health INsurance increase of 15.35% : $434,853",
-     "source": "School Budget 2026-2027 presentation",
-     "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf",
+     "topic": "Health plan renewal",
+     "quote": "School Health Insurance Fund with an increase of 15.35%",
+     "source": "Board minutes",
+     "url": "https://files.smartsites.parentsquare.com/9070/minutes_04272026.pdf",
      "date": "2026-04-27"
     },
     {
-     "topic": "Prescription coverage",
-     "quote": "Prescription insurance premium Increase of 24% : $177,146",
-     "source": "School Budget 2026-2027 presentation",
-     "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf",
-     "date": "2026-04-27"
-    },
-    {
-     "topic": "Reductions",
+     "topic": "Listed under 'Reductions in the 2026-2027 Budget'",
      "quote": "7-8 staff positions",
      "source": "School Budget 2026-2027 presentation",
      "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf",
      "date": "2026-04-27"
     },
     {
-     "topic": "Reductions",
+     "topic": "Listed under 'Reductions in the 2026-2027 Budget'",
      "quote": "Sports and extracurricular Activities (excluding service activities and Band)",
      "source": "School Budget 2026-2027 presentation",
      "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf",

@@ -19,6 +19,9 @@ live here, not in the import:
     a [primary] bullet of the profile's "What the district says" section, its
     link in that section and off nj.gov (the district's own document). A quote
     that fails stops the build: it means the profile changed under it.
+The profile check is not enough on its own: profiles have paraphrased inside quotation
+marks, so a new quote is read in the district's own document before it goes in the
+statements file.
 """
 
 import argparse

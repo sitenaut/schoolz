@@ -89,8 +89,12 @@ export function BudgetSection({ budget }: { budget: SchoolBudget }) {
           )}
           {b.fund_balance_prior != null && b.fund_balance_budget != null && (
             <li>
-              <b>{t("Savings used to balance the budget")}</b>
+              <b>{t("Surplus budgeted to balance the budget")}</b>
               <span>{t("{{prior}}: {{from}} → {{year}}: {{to}}", { prior, year, from: money(b.fund_balance_prior), to: money(b.fund_balance_budget) })}</span>
+              {/* UFB "Budgeted Fund Balance-Operating Budget": what the district plans to spend, which a parent could easily read as what's left */}
+              <small className="note" style={{ display: "block" }}>
+                {t("Planned amount, not what is left in reserve. Does not include capital or maintenance reserve withdrawals.")}
+              </small>
             </li>
           )}
         </ul>

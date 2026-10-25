@@ -1,49 +1,182 @@
 {
- "_comment": "The district's own words for the school page's budget section: short verbatim quotes from district budget documents, picked by hand from the audit profiles. scripts/build_budget_facts.py checks each quote and link against the profile at the pinned commit and drops a district whose profile no longer qualifies. No named people, no news text.",
+ "_comment": "The district's own words for the school page's budget section: short verbatim quotes from district budget documents, picked by hand from the audit profiles. scripts/build_budget_facts.py checks each quote and link against the profile at the pinned commit and drops a district whose profile no longer qualifies. Before adding a quote, also read it in the district's own document: the profiles sometimes paraphrase inside quotation marks (Cherry Hill's did), and the builder can only check the profile. No named people, no news text.",
  "districts": {
   "1420": [
-   {"topic": "Health benefits", "quote": "Health Benefits … 30-40% Increase ~$4.1M", "source": "2026-27 Final Budget Presentation", "url": "https://files.smartsites.parentsquare.com/13602/etsd_2026-27_final_budget_presentation_boe_meeting_43026.pdf", "date": "2026-04-30"},
-   {"topic": "Health benefits", "quote": "Insurance surplus helps to offset the cost of premiums", "source": "2026-27 Final Budget Presentation", "url": "https://files.smartsites.parentsquare.com/13602/etsd_2026-27_final_budget_presentation_boe_meeting_43026.pdf", "date": "2026-04-30"},
-   {"topic": "State aid", "quote": "~$7m annual state funding loss absorbed by ETSD", "source": "2026-27 Tentative Budget Presentation", "url": "https://files.smartsites.parentsquare.com/13602/etsd_2026-27_tentative_budget_presentation_31926.pdf", "date": "2026-03-19"},
-   {"topic": "Positions", "quote": "the elimination of one of our two Elementary Assistant Principal positions in the 2026-27 budget", "source": "Update for ETSD Staff & Families", "url": "https://files.smartsites.parentsquare.com/13602/update_for_etsd_staff__families_43026.pdf", "date": "2026-04-30"}
+   {
+    "topic": "Health benefits",
+    "quote": "Health Benefits … 30-40% Increase ~$4.1M",
+    "source": "2026-27 Final Budget Presentation",
+    "url": "https://files.smartsites.parentsquare.com/13602/etsd_2026-27_final_budget_presentation_boe_meeting_43026.pdf",
+    "date": "2026-04-30"
+   },
+   {
+    "topic": "Health benefits",
+    "quote": "Insurance surplus helps to offset the cost of premiums",
+    "source": "2026-27 Final Budget Presentation",
+    "url": "https://files.smartsites.parentsquare.com/13602/etsd_2026-27_final_budget_presentation_boe_meeting_43026.pdf",
+    "date": "2026-04-30"
+   },
+   {
+    "topic": "Positions",
+    "quote": "the elimination of one of our two Elementary Assistant Principal positions in the 2026-27 budget",
+    "source": "Update for ETSD Staff & Families",
+    "url": "https://files.smartsites.parentsquare.com/13602/update_for_etsd_staff__families_43026.pdf",
+    "date": "2026-04-30"
+   }
   ],
   "1900": [
-   {"topic": "Budget gap", "quote": "faces a projected budget deficit of $3,447,781", "source": "2026-27 Budget Overview", "url": "https://boe.haddonfieldschools.org/wp-content/uploads/2026/02/BudgetOverview.pdf", "date": null},
-   {"topic": "Budget gap", "quote": "the cost of maintaining current programs and staffing is outpacing traditional revenue sources.", "source": "2026-27 Budget Overview", "url": "https://boe.haddonfieldschools.org/wp-content/uploads/2026/02/BudgetOverview.pdf", "date": null},
-   {"topic": "Health benefits", "quote": "Benefits Increase: +$1,804,313", "source": "2026-27 Budget Overview", "url": "https://boe.haddonfieldschools.org/wp-content/uploads/2026/02/BudgetOverview.pdf", "date": null},
-   {"topic": "Staff reductions", "quote": "5 paraprofessionals & EAs, 3.5 FTE teaching staff, PT Central Office Staff, 1 Maintenance Position, Summer Paint Crew.", "source": "Budget Recommendation", "url": "https://haddonfieldschools.org/wp-content/uploads/2026/03/3_17_26-Budget-Meetings.pdf", "date": "2026-03-17"}
+   {
+    "topic": "Budget gap",
+    "quote": "faces a projected budget deficit of $3,447,781",
+    "source": "2026-27 Budget Overview",
+    "url": "https://boe.haddonfieldschools.org/wp-content/uploads/2026/02/BudgetOverview.pdf",
+    "date": null
+   },
+   {
+    "topic": "Budget gap",
+    "quote": "the cost of maintaining current programs and staffing is outpacing traditional revenue sources.",
+    "source": "2026-27 Budget Overview",
+    "url": "https://boe.haddonfieldschools.org/wp-content/uploads/2026/02/BudgetOverview.pdf",
+    "date": null
+   },
+   {
+    "topic": "Health benefits",
+    "quote": "Benefits Increase: +$1,804,313",
+    "source": "2026-27 Budget Overview",
+    "url": "https://boe.haddonfieldschools.org/wp-content/uploads/2026/02/BudgetOverview.pdf",
+    "date": null
+   },
+   {
+    "topic": "Recommended staff reductions",
+    "quote": "5 paraprofessionals & EAs, 3.5 FTE teaching staff, PT Central Office Staff, 1 Maintenance Position, Summer Paint Crew",
+    "source": "Budget Recommendation",
+    "url": "https://haddonfieldschools.org/wp-content/uploads/2026/03/3_17_26-Budget-Meetings.pdf",
+    "date": "2026-03-17"
+   }
   ],
   "3770": [
-   {"topic": "Budget gap", "quote": "The 2026-27 budget remains structurally imbalanced.", "source": "Budget Sustainability & Multi-Year Forecast", "url": "https://files-backend.assets.thrillshare.com/documents/asset/uploaded_file/1530/Oaklyn/f98b56ac-0c60-402b-9221-f229d8422881/Oaklyn_Budget_Long_Term_Analysis.pdf?disposition=inline", "date": null},
-   {"topic": "Health benefits", "quote": "Health benefits increase by about $204,083 (20.3%)", "source": "Budget Sustainability & Multi-Year Forecast", "url": "https://files-backend.assets.thrillshare.com/documents/asset/uploaded_file/1530/Oaklyn/f98b56ac-0c60-402b-9221-f229d8422881/Oaklyn_Budget_Long_Term_Analysis.pdf?disposition=inline", "date": null},
-   {"topic": "Reserves", "quote": "diminishing financial reserves are being used to balance the annual operating budget", "source": "BOE Budget Update: Long-Term Financial Planning", "url": "https://www.oaklynschool.org/article/3104831", "date": "2026-09-01"}
+   {
+    "topic": "Budget gap",
+    "quote": "The 2026-27 budget remains structurally imbalanced.",
+    "source": "Budget Sustainability & Multi-Year Forecast",
+    "url": "https://files-backend.assets.thrillshare.com/documents/asset/uploaded_file/1530/Oaklyn/f98b56ac-0c60-402b-9221-f229d8422881/Oaklyn_Budget_Long_Term_Analysis.pdf?disposition=inline",
+    "date": null
+   },
+   {
+    "topic": "Health benefits",
+    "quote": "Health benefits increase by about $204,083 (20.3%)",
+    "source": "Budget Sustainability & Multi-Year Forecast",
+    "url": "https://files-backend.assets.thrillshare.com/documents/asset/uploaded_file/1530/Oaklyn/f98b56ac-0c60-402b-9221-f229d8422881/Oaklyn_Budget_Long_Term_Analysis.pdf?disposition=inline",
+    "date": null
+   },
+   {
+    "topic": "Reserves",
+    "quote": "diminishing financial reserves are being used to balance the annual operating budget",
+    "source": "BOE Budget Update: Long-Term Financial Planning",
+    "url": "https://www.oaklynschool.org/article/3104831",
+    "date": "2026-09-01"
+   }
   ],
   "5130": [
-   {"topic": "Health insurance", "quote": "Health INsurance increase of 15.35% : $434,853", "source": "School Budget 2026-2027 presentation", "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf", "date": "2026-04-27"},
-   {"topic": "Prescription coverage", "quote": "Prescription insurance premium Increase of 24% : $177,146", "source": "School Budget 2026-2027 presentation", "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf", "date": "2026-04-27"},
-   {"topic": "Reductions", "quote": "7-8 staff positions", "source": "School Budget 2026-2027 presentation", "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf", "date": "2026-04-27"},
-   {"topic": "Reductions", "quote": "Sports and extracurricular Activities (excluding service activities and Band)", "source": "School Budget 2026-2027 presentation", "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf", "date": "2026-04-27"}
+   {
+    "topic": "Health plan renewal",
+    "quote": "School Health Insurance Fund with an increase of 15.35%",
+    "source": "Board minutes",
+    "url": "https://files.smartsites.parentsquare.com/9070/minutes_04272026.pdf",
+    "date": "2026-04-27"
+   },
+   {
+    "topic": "Listed under 'Reductions in the 2026-2027 Budget'",
+    "quote": "7-8 staff positions",
+    "source": "School Budget 2026-2027 presentation",
+    "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf",
+    "date": "2026-04-27"
+   },
+   {
+    "topic": "Listed under 'Reductions in the 2026-2027 Budget'",
+    "quote": "Sports and extracurricular Activities (excluding service activities and Band)",
+    "source": "School Budget 2026-2027 presentation",
+    "url": "https://files.smartsites.parentsquare.com/9070/budget_presentation_2026-2027.pdf",
+    "date": "2026-04-27"
+   }
   ],
   "5400": [
-   {"topic": "Cost pressures", "quote": "Anticipated increases in health care, transportation, utilities, insurance, etc.", "source": "2026-2027 Budget Presentation", "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf", "date": "2026-03-18"},
-   {"topic": "Health care", "quote": "Adjusted health care and other insurance to reflect actual provider rate increases", "source": "2026-2027 Budget Presentation", "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf", "date": "2026-03-18"},
-   {"topic": "State aid", "quote": "State aid numbers released 3/12/26: Increase of $5,795.00", "source": "2026-2027 Budget Presentation", "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf", "date": "2026-03-18"},
-   {"topic": "Savings", "quote": "Eliminated courtesy busing for non-hazardous roads", "source": "2026-2027 Budget Presentation", "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf", "date": "2026-03-18"}
+   {
+    "topic": "Cost pressures",
+    "quote": "Anticipated increases in health care, transportation, utilities, insurance, etc.",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf",
+    "date": "2026-03-18"
+   },
+   {
+    "topic": "Health care",
+    "quote": "Adjusted health care and other insurance to reflect actual provider rate increases",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf",
+    "date": "2026-03-18"
+   },
+   {
+    "topic": "State aid",
+    "quote": "State aid numbers released 3/12/26: Increase of $5,795.00",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf",
+    "date": "2026-03-18"
+   },
+   {
+    "topic": "Savings",
+    "quote": "Eliminated courtesy busing for non-hazardous roads",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://resources.finalsite.net/images/v1774640352/voorheesk12njus/hacdtn9heb9yoyvvvo1o/2026-2027BudgetPresentation-3_18_261.pdf",
+    "date": "2026-03-18"
+   }
   ],
   "0800": [
-   {"topic": "Budget gap", "quote": "largely from state aid reductions, health benefit increases, and transportation costs", "source": "Budget Clarity Hub 2026-2027", "url": "https://www.chclc.org/fs/pages/6710", "date": null},
-   {"topic": "Health premiums", "quote": "about $10 million", "source": "Budget Clarity Hub 2026-2027", "url": "https://www.chclc.org/fs/pages/6710", "date": null},
-   {"topic": "Reserves", "quote": "mostly depleted", "source": "Budget Clarity Hub 2026-2027", "url": "https://www.chclc.org/fs/pages/6710", "date": null}
+   {
+    "topic": "Reserves",
+    "quote": "mostly depleted",
+    "source": "Budget Clarity Hub 2026-2027",
+    "url": "https://www.chclc.org/fs/pages/6710",
+    "date": null
+   }
   ],
   "1715": [
-   {"topic": "Health benefits", "quote": "Although the renewals were significant this year, the SHIF is still performing better [than] other options available to the district.", "source": "2026-2027 Budget Presentation", "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation", "date": "2026-05-06"},
-   {"topic": "Tax levy", "quote": "Decision was made with Finance Committee to increase the tax levy to maintain all current staffing levels.", "source": "2026-2027 Budget Presentation", "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation", "date": "2026-05-06"},
-   {"topic": "Positions eliminated", "quote": "Unfilled positions from 2024-2025", "source": "2026-2027 Budget Presentation", "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation", "date": "2026-05-06"}
+   {
+    "topic": "Health benefits",
+    "quote": "Although the renewals were significant this year, the SHIF is still performing better [than] other options available to the district.",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation",
+    "date": "2026-05-06"
+   },
+   {
+    "topic": "Tax levy",
+    "quote": "Decision was made with Finance Committee to increase the tax levy to maintain all current staffing levels.",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation",
+    "date": "2026-05-06"
+   },
+   {
+    "topic": "Eliminated positions (slide footnote)",
+    "quote": "Unfilled positions from 2024-2025",
+    "source": "2026-2027 Budget Presentation",
+    "url": "https://www.gatewayhs.com/district/2026-2027_budget_presentation",
+    "date": "2026-05-06"
+   }
   ],
   "3360": [
-   {"topic": "Health insurance", "quote": "Health insurance - 17.63% confirmed increase", "source": "2026-2027 Budget Introduction", "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf", "date": "2026-03-17"},
-   {"topic": "Budget gap", "quote": "Total Excess Appropriations ($1,635,056)", "source": "2026-2027 Budget Introduction", "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf", "date": "2026-03-17"},
-   {"topic": "State aid", "quote": "Initially budgeted flat. Confirmed increase of $397,349", "source": "2026-2027 Budget Introduction", "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf", "date": "2026-03-17"}
+   {
+    "topic": "Health insurance",
+    "quote": "Health insurance - 17.63% confirmed increase",
+    "source": "2026-2027 Budget Introduction",
+    "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf",
+    "date": "2026-03-17"
+   },
+   {
+    "topic": "State aid",
+    "quote": "Initially budgeted flat. Confirmed increase of $397,349",
+    "source": "2026-2027 Budget Introduction",
+    "url": "https://www.mtps.com/UserFiles/Servers/Server_254927/File/Board%20Of%20Education/Budget%20Information/2026-27/2026-2027%20Budget%20Introduction%20Presentation_accessible.pdf",
+    "date": "2026-03-17"
+   }
   ]
  }
 }
