@@ -33,6 +33,7 @@ from schemas import (
     LunchMenuItemOut,
     LunchMenuOut,
     SaccProgramOut,
+    SchoolBudgetOut,
     SchoolContentItemOut,
     SchoolCreate,
     SchoolDocumentOut,
@@ -49,6 +50,7 @@ from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
 from services.content_translation import localize_outs
 from services.digitalsports import host_from_athletics_url
+from services.district_budget import latest_budget
 from services.i18n import fold, folded, request_lang
 from services.school_slug import unique_school_slug
 from services.school_today import build_today, resolve_lunch_menu
@@ -661,6 +663,21 @@ async def get_school_transportation(school: School = Depends(resolve_school), db
         district=DistrictTransportationOut.model_validate(row, from_attributes=True),
         late_bus=SchoolLateBusOut(**late) if late else None,
     )
+
+
+@router.get("/{school_id}/budget", response_model=SchoolBudgetOut | None)
+async def get_school_budget(school: School = Depends(resolve_school), db: AsyncSession = Depends(get_db)):
+    """Public. The district's latest imported budget year (models.DistrictBudget):
+    state figures with their source documents, plus the district's own words
+    where we have them. Null for a school with no district, or a district
+    with no figures on file (a private school, a district not imported yet)."""
+    if not school.district_id:
+        return None
+    budget = await latest_budget(db, school.district_id)
+    if not budget:
+        return None
+    district = await db.get(District, school.district_id)
+    return SchoolBudgetOut(district_name=district.name, **{k: getattr(budget, k) for k in SchoolBudgetOut.model_fields if k != "district_name"})
 
 
 @router.get("/{school_id}/sacc", response_model=SaccProgramOut | None)

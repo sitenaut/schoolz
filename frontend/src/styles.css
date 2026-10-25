@@ -1578,6 +1578,36 @@ h3 {
   color: var(--ink-2);
   white-space: pre-line;
 }
+/* School page budget section: the district's own words under the state figures */
+.budget-quotes {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.budget-quotes ul {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.budget-quotes .topic {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.budget-quotes q {
+  color: var(--ink-2);
+}
+.budget-quotes a {
+  font-size: 12.5px;
+}
+.budget-quotes .note {
+  margin: 10px 0 0;
+}
 details.acc {
   background: var(--card);
   border: 1px solid var(--line);

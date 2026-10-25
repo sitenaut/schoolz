@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -610,7 +611,10 @@ class District(Base):
     # the name alone cannot be the identity. NJ is the default - every district
     # tracked so far is there - and anywhere a district is matched by name
     # (seed imports, results export) the state comes with it.
-    __table_args__ = (UniqueConstraint("state", "name", name="uq_districts_state_name"),)
+    __table_args__ = (
+        UniqueConstraint("state", "name", name="uq_districts_state_name"),
+        UniqueConstraint("state", "state_code", name="uq_districts_state_code"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -678,6 +682,11 @@ class District(Base):
     # permission, so it would promise grades that never arrive.
     uses_google_classroom: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     genesis_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # The state's own id for the district (NJ: the 4-digit NJDOE district code,
+    # "0800" for Cherry Hill), which is what state budget and aid files are
+    # keyed by. Names don't work for that: Monroe Township and Washington
+    # Township each exist in several counties. Null for a private school.
+    state_code: Mapped[str | None] = mapped_column(String(8), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
@@ -1461,6 +1470,42 @@ class DistrictTransportation(Base):
     lost_items_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     closing_info_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
+
+
+class DistrictBudget(Base):
+    """One budget year of a district's figures from the state's own files, for
+    the school page's budget section. Imported (POST /admin/budget/import)
+    from a file built at a pinned commit of the NJ school-funding audit
+    (scripts/build_budget_facts.py), never fetched at request time, and every
+    figure carries the state document it came from.
+
+    `statements` are only the district's own words: short verbatim quotes from
+    its budget documents, each with its link and date, for districts whose
+    audit profile is well supported. Never a news article's text, and never a
+    named person - the audit's own wording and labels stay out of it, since a
+    label reads as a verdict on the district."""
+
+    __tablename__ = "district_budgets"
+    __table_args__ = (UniqueConstraint("district_id", "budget_year", name="uq_district_budgets_year"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    district_id: Mapped[str] = mapped_column(String(36), ForeignKey("districts.id", ondelete="CASCADE"), nullable=False, index=True)
+    budget_year: Mapped[str] = mapped_column(String(7), nullable=False)  # "2026-27"
+    # Whole dollars. The prior year is the state's *revised* figure for it
+    # unless prior_basis says "original" (the revised one wasn't filed).
+    benefits_prior: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    benefits_budget: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    prior_basis: Mapped[str] = mapped_column(String(20), default="revised", server_default="revised", nullable=False)
+    formula_aid_change: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    levy_change_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fund_balance_prior: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    fund_balance_budget: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    budget_report_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    aid_source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # [{"topic", "quote", "source", "url", "date"}]
+    statements: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
+    source_commit: Mapped[str] = mapped_column(String(40), nullable=False)
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
 class CommunitySubmission(Base):

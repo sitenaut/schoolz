@@ -31,6 +31,7 @@ import telemetry  # noqa: E402
 from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
 from routers import admin_audit as admin_audit_router  # noqa: E402
+from routers import admin_budget as admin_budget_router  # noqa: E402
 from routers import admin_chatbot as admin_chatbot_router  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
 from routers import admin_resources as admin_resources_router  # noqa: E402
@@ -255,6 +256,7 @@ request_context.install(app)
 app.include_router(health_router.router)
 app.include_router(csp_report_router.router)
 app.include_router(admin_config_router.router)
+app.include_router(admin_budget_router.router)
 app.include_router(admin_users_router.router)
 app.include_router(admin_audit_router.router)
 app.include_router(admin_api_keys_router.router)

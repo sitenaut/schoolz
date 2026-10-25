@@ -78,7 +78,7 @@ const schoolToday = {
 describe("SchoolDetailPage", () => {
   const open = () => at("/schools/maple", "/schools/:schoolId", <SchoolDetailPage />);
   // What each section answers with when it's empty.
-  const section = (url: string) => res(200, /\/(sacc|transportation)$/.test(url) ? null : []);
+  const section = (url: string) => res(200, /\/(sacc|transportation|budget)$/.test(url) ? null : []);
 
   it("offers Try again on a server error, not 'School not found', and doesn't hand the error to a crawler", async () => {
     apiFetch.mockImplementation(async (url: string) => (url.endsWith("/today") ? res(503) : section(url)));

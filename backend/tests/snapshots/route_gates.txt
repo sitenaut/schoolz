@@ -16,6 +16,7 @@ DELETE /admin/audit/schools/{school_id}/data-points/{key}/not-published  perm:au
 PUT    /admin/audit/schools/{school_id}/data-points/{key}/not-published  perm:audit.manage
 POST   /admin/audit/schools/{school_id}/data-points/{key}/run  perm:audit.manage
 POST   /admin/audit/schools/{school_id}/run-all  perm:audit.manage
+POST   /admin/budget/import  perm:schools.manage
 GET    /admin/capture-page-kinds  perm:kids.view
 GET    /admin/chatbot  perm:chatbot.view
 PUT    /admin/chatbot  perm:chatbot.manage
@@ -193,6 +194,7 @@ PATCH  /schools/{school_id}  perm:schools.manage
 POST   /schools/{school_id}/activities-calendar/run-now  perm:schools.manage
 POST   /schools/{school_id}/activities-site/run-now  perm:schools.manage
 POST   /schools/{school_id}/announcements/run-now  perm:schools.manage
+GET    /schools/{school_id}/budget  public
 POST   /schools/{school_id}/bulletin/run-now  perm:schools.manage
 GET    /schools/{school_id}/class-years  public
 GET    /schools/{school_id}/class-years/{grad_year}  public

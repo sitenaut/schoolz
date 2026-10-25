@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { apiFetch } from "../api";
 import { AbsenceButton } from "../components/AbsenceButton";
+import { BudgetSection } from "../components/BudgetSection";
 import { ContactGrid, CurrentPeriodChip, DayBlocks, ItemRow, StatusPill, WeekStrip, contactHref, rotationLine } from "../components/today";
 import { IconChevronLeft, IconPhone } from "../components/icons";
 import { SeoHead } from "../components/SeoHead";
@@ -18,7 +19,7 @@ import { usePrerenderReady } from "../lib/prerenderReady";
 import { schoolTypeLabel } from "../lib/schoolType";
 import { SITE_URL } from "../lib/site";
 import { trackEvent, trackMeasurement } from "../lib/track";
-import type { SaccProgram, SchoolClassYear, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
+import type { SaccProgram, SchoolBudget, SchoolClassYear, SchoolContentItem, SchoolDocument, SchoolToday, SchoolTransportation, StaffMember } from "../types";
 
 type Newsletter = { id: string; label: string | null; url: string; latest_summary: string | null; last_scanned_at: string | null };
 type StudentMini = { id: string; school_id: string | null; grad_year: number | null };
@@ -52,6 +53,7 @@ export function SchoolDetailPage() {
   const [sacc, setSacc] = useState<SaccProgram | null>(null);
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
   const [transport, setTransport] = useState<SchoolTransportation | null>(null);
+  const [budget, setBudget] = useState<SchoolBudget | null>(null);
   const [classYears, setClassYears] = useState<SchoolClassYear[]>([]);
   const [myStudents, setMyStudents] = useState<StudentMini[]>([]);
   const [missing, setMissing] = useState(false);
@@ -100,7 +102,8 @@ export function SchoolDetailPage() {
       // fetched alongside everything else rather than gated on school_type,
       // which isn't known until `today` itself resolves.
       section<SchoolClassYear[]>("class-years", []),
-    ]).then(([td, c, st, docs, sc, nl, tr, cy]) => {
+      section<SchoolBudget | null>("budget", null),
+    ]).then(([td, c, st, docs, sc, nl, tr, cy, bu]) => {
       if (!current) return;
       setFailed(false);
       setMissing(!td);
@@ -112,6 +115,7 @@ export function SchoolDetailPage() {
       setNewsletters(nl);
       setTransport(tr);
       setClassYears(cy);
+      setBudget(bu);
       if (td) trackMeasurement("school_page_ready", performance.now() - readyStart.current, { school_slug: schoolId! });
     }, () => {
       if (!current) return;
@@ -677,6 +681,8 @@ export function SchoolDetailPage() {
           </div>
         </>
       )}
+
+      {budget && <BudgetSection budget={budget} />}
 
       {(summary || people.length > 0 || MORE_SECTIONS.some((m) => items.some((i) => i.category === m.category))) && (
         <div className="h-row">

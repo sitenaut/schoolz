@@ -1,0 +1,265 @@
+{
+ "_comment": "Our NJ districts and their NJDOE district codes, found by matching each district's schools against the state school directory (seed/njdoe/NJPubSchool.csv). A private school has none.",
+ "districts": [
+  {
+   "name": "Audubon Public School District",
+   "state_code": "0150"
+  },
+  {
+   "name": "Barrington School District",
+   "state_code": "0190"
+  },
+  {
+   "name": "Bellmawr Public School District",
+   "state_code": "0260"
+  },
+  {
+   "name": "Berlin Borough School District",
+   "state_code": "0330"
+  },
+  {
+   "name": "Berlin Township Public Schools",
+   "state_code": "0340"
+  },
+  {
+   "name": "Black Horse Pike Regional School District",
+   "state_code": "0390"
+  },
+  {
+   "name": "Brooklawn Public School District",
+   "state_code": "0580"
+  },
+  {
+   "name": "Burlington City Public School District",
+   "state_code": "0600"
+  },
+  {
+   "name": "Burlington Township School District",
+   "state_code": "0620"
+  },
+  {
+   "name": "Camden City School District",
+   "state_code": "0680"
+  },
+  {
+   "name": "Cherry Hill Public Schools",
+   "state_code": "0800"
+  },
+  {
+   "name": "Cinnaminson Township Public Schools",
+   "state_code": "0840"
+  },
+  {
+   "name": "Clayton Public School District",
+   "state_code": "0860"
+  },
+  {
+   "name": "Clementon School District",
+   "state_code": "0880"
+  },
+  {
+   "name": "Collingswood Public Schools",
+   "state_code": "0940"
+  },
+  {
+   "name": "Delran Township School District",
+   "state_code": "1060"
+  },
+  {
+   "name": "Eastampton Township School District",
+   "state_code": "1250"
+  },
+  {
+   "name": "Eastern Camden County Regional School District",
+   "state_code": "1255"
+  },
+  {
+   "name": "Evesham Township School District",
+   "state_code": "1420"
+  },
+  {
+   "name": "Gateway Regional School District",
+   "state_code": "1715"
+  },
+  {
+   "name": "Gibbsboro School District",
+   "state_code": "1720"
+  },
+  {
+   "name": "Gloucester City Public School District",
+   "state_code": "1770"
+  },
+  {
+   "name": "Gloucester Township School District",
+   "state_code": "1780"
+  },
+  {
+   "name": "Haddon Heights School District",
+   "state_code": "1880"
+  },
+  {
+   "name": "Haddon Township Public Schools",
+   "state_code": "1890"
+  },
+  {
+   "name": "Haddonfield School District",
+   "state_code": "1900"
+  },
+  {
+   "name": "Hainesport Township School District",
+   "state_code": "1910"
+  },
+  {
+   "name": "Laurel Springs School District",
+   "state_code": "2540"
+  },
+  {
+   "name": "Lenape Regional High School District",
+   "state_code": "2610"
+  },
+  {
+   "name": "Lindenwold Public Schools",
+   "state_code": "2670"
+  },
+  {
+   "name": "Lumberton Township School District",
+   "state_code": "2850"
+  },
+  {
+   "name": "Magnolia School District",
+   "state_code": "2890"
+  },
+  {
+   "name": "Maple Shade School District",
+   "state_code": "3010"
+  },
+  {
+   "name": "Medford Lakes School District",
+   "state_code": "3070"
+  },
+  {
+   "name": "Medford Township Public Schools",
+   "state_code": "3080"
+  },
+  {
+   "name": "Merchantville School District",
+   "state_code": "3110"
+  },
+  {
+   "name": "Monroe Township Public School District",
+   "state_code": "3280"
+  },
+  {
+   "name": "Moonachie School District",
+   "state_code": "3350"
+  },
+  {
+   "name": "Moorestown Township Public Schools",
+   "state_code": "3360"
+  },
+  {
+   "name": "Mount Ephraim School District",
+   "state_code": "3420"
+  },
+  {
+   "name": "Mount Holly Township Public School District",
+   "state_code": "3430"
+  },
+  {
+   "name": "Mount Laurel Township Schools",
+   "state_code": "3440"
+  },
+  {
+   "name": "National Park Borough School District",
+   "state_code": "3490"
+  },
+  {
+   "name": "Oaklyn Public School District",
+   "state_code": "3770"
+  },
+  {
+   "name": "Pennsauken Township School District",
+   "state_code": "4060"
+  },
+  {
+   "name": "Pine Hill School District",
+   "state_code": "4110"
+  },
+  {
+   "name": "Rancocas Valley Regional High School District",
+   "state_code": "4320"
+  },
+  {
+   "name": "Runnemede Public School District",
+   "state_code": "4590"
+  },
+  {
+   "name": "Shamong Township School District",
+   "state_code": "4740"
+  },
+  {
+   "name": "Somerdale School District",
+   "state_code": "4790"
+  },
+  {
+   "name": "Southampton Township School District",
+   "state_code": "4930"
+  },
+  {
+   "name": "Sterling High School District",
+   "state_code": "5035"
+  },
+  {
+   "name": "Stratford School District",
+   "state_code": "5080"
+  },
+  {
+   "name": "Tabernacle Township School District",
+   "state_code": "5130"
+  },
+  {
+   "name": "Voorhees Township Public Schools",
+   "state_code": "5400"
+  },
+  {
+   "name": "Washington Township School District",
+   "state_code": "5500"
+  },
+  {
+   "name": "Wenonah Boro School District",
+   "state_code": "5590"
+  },
+  {
+   "name": "Westampton Township Public School District",
+   "state_code": "5720"
+  },
+  {
+   "name": "Westville Boro Public School District",
+   "state_code": "5740"
+  },
+  {
+   "name": "Willingboro Public School District",
+   "state_code": "5805"
+  },
+  {
+   "name": "Wood-Ridge School District",
+   "state_code": "5830"
+  },
+  {
+   "name": "Woodbury City Public School District",
+   "state_code": "5860"
+  },
+  {
+   "name": "Woodbury Heights School District",
+   "state_code": "5870"
+  },
+  {
+   "name": "Woodland Township School District",
+   "state_code": "5890"
+  },
+  {
+   "name": "Woodlynne School District",
+   "state_code": "5900"
+  }
+ ]
+}
