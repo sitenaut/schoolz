@@ -206,6 +206,11 @@ def _is_marked_current(anchor) -> bool:
     return bool(_CURRENT_ISSUE_RE.search(anchor.get_text(" ", strip=True)))
 
 
+_BARE_MONTH_RE = re.compile(
+    r"^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?$", re.IGNORECASE
+)
+
+
 def _pick_current_issue_link(html: str) -> str | None:
     """Confirmed real (Cherry Hill's James F. Cooper Elementary and Clara
     Barton Elementary, both of which publish from a page like this rather
@@ -259,6 +264,11 @@ def _pick_current_issue_link(html: str) -> str | None:
             dated.append((href, found))
     if dated:
         return max(dated, key=lambda pair: pair[1])[0]
+    # Confirmed real (Lawnside): an archive grouped under year headings, newest
+    # first, whose links read only "September", "October". A month with no year
+    # can't be dated, and the last link is the oldest issue, so take the first.
+    if all(_BARE_MONTH_RE.match(a.get_text(strip=True)) for _, a in candidates):
+        return candidates[0][0]
     return candidates[-1][0]
 
 

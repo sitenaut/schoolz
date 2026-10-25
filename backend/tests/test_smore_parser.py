@@ -156,6 +156,19 @@ def test_falls_back_to_last_link_in_document_order_when_no_date_parses():
     assert _pick_current_issue_link(html) == "https://app.smore.com/n/0mhat"
 
 
+def test_month_only_link_text_under_year_headings_picks_the_first_link():
+    # Confirmed real shape: Lawnside's newsletter page lists Smore issues under
+    # school-year headings, newest first, with only the month as link text.
+    html = """
+    <h2>2026-2027</h2>
+    <h3><a href="https://app.smore.com/n/cdq8b">September</a></h3>
+    <h2>2025-2026</h2>
+    <h3><a href="https://app.smore.com/n/phsfr">June</a></h3>
+    <h3><a href="https://app.smore.com/n/6wyz1">May</a></h3>
+    """
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/cdq8b"
+
+
 def test_ignores_a_smore_author_profile_link_not_an_issue_link():
     # Confirmed real: a site nav can link smore.com/u/<username> (an author
     # profile listing every newsletter that author has ever published, not

@@ -1,0 +1,65 @@
+{
+  "exported_at": "2026-10-24T12:00:00Z",
+  "source": "onboarding: Lawnside School District",
+  "districts": [
+    {
+      "name": "Lawnside School District",
+      "website_url": "https://www.lawnside.k12.nj.us",
+      "food_services_menu_url": "https://www.lawnside.k12.nj.us/departments/cafeteria",
+      "ics_feeds": [
+        {
+          "name": "Lawnside District Calendar",
+          "url": "https://www.lawnside.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=4"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Lawnside"
+      ],
+      "schoolcafe_shortname": "LawnsideSDNutriServeMETZ"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "lawnside",
+      "name": "Lawnside School District",
+      "short_name": "Lawnside",
+      "district_name": "Lawnside School District",
+      "school_type": "elementary",
+      "address": "426 East Charleston Avenue, Lawnside, NJ 08045",
+      "main_phone": "(856) 546-4850",
+      "website_url": "https://www.lawnside.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "staff_directory_url": "https://www.lawnside.k12.nj.us/staff-directory/staff-directory"
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://www.lawnside.k12.nj.us/community/school-newsletter",
+      "label": "Lawnside Newsletter",
+      "school_slug": "lawnside",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}
