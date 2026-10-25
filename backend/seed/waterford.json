@@ -5,14 +5,14 @@
     {
       "name": "Waterford Township School District",
       "website_url": "https://www.wtsd.org",
-      "food_services_menu_url": "https://www.wtsd.org/our-district/cafeteria",
+      "food_services_menu_url": null,
       "ics_feeds": [],
       "calendar_pdf_url": "https://www.wtsd.org/fs/resource-manager/view/20599a83-96ad-48ff-b618-8a058e19f267",
       "marking_period_url": null,
       "preschool_locations_url": null,
       "preschool_team_url": null,
       "hs_rotation_url": null,
-      "transportation_url": "https://www.wtsd.org/our-district/transportation",
+      "transportation_url": null,
       "towns": [
         "Waterford Township"
       ],

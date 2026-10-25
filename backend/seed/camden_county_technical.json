@@ -5,7 +5,7 @@
     {
       "name": "Camden County Technical Schools",
       "website_url": "https://www.ccts.org",
-      "food_services_menu_url": "https://ccts.nutrislice.com/",
+      "food_services_menu_url": null,
       "ics_feeds": [
         {
           "name": "Gloucester Township Campus Calendar",
@@ -23,7 +23,7 @@
       "preschool_locations_url": null,
       "preschool_team_url": null,
       "hs_rotation_url": null,
-      "transportation_url": "https://www.ccts.org/apps/pages/index.jsp?uREC_ID=497871&type=d",
+      "transportation_url": null,
       "towns": [
         "Gloucester Township",
         "Pennsauken"

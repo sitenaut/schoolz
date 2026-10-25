@@ -209,6 +209,26 @@ def _is_marked_current(anchor) -> bool:
 _BARE_MONTH_RE = re.compile(
     r"^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?$", re.IGNORECASE
 )
+_SCREEN_READER_ONLY_RE = re.compile(r"sr-?only|visually-hidden", re.IGNORECASE)
+
+
+def _visible_text(anchor) -> str:
+    """The link text a reader sees. Finalsite appends a hidden
+    <span class="fsStyleSROnly">(opens in new window)</span> to every link
+    that opens a new tab (confirmed real: Lawnside), so the full text of a
+    "September" link is "September(opens in new window)"."""
+    kept = []
+    for piece in anchor.find_all(string=True):
+        hidden = False
+        for parent in piece.parents:
+            if parent is anchor:
+                break
+            if _SCREEN_READER_ONLY_RE.search(" ".join(parent.get("class") or [])):
+                hidden = True
+                break
+        if not hidden and piece.strip():
+            kept.append(piece.strip())
+    return " ".join(kept)
 
 
 def _pick_current_issue_link(html: str) -> str | None:
@@ -267,7 +287,7 @@ def _pick_current_issue_link(html: str) -> str | None:
     # Confirmed real (Lawnside): an archive grouped under year headings, newest
     # first, whose links read only "September", "October". A month with no year
     # can't be dated, and the last link is the oldest issue, so take the first.
-    if all(_BARE_MONTH_RE.match(a.get_text(strip=True)) for _, a in candidates):
+    if all(_BARE_MONTH_RE.match(_visible_text(a)) for _, a in candidates):
         return candidates[0][0]
     return candidates[-1][0]
 

@@ -5,7 +5,7 @@
     {
       "name": "Lawnside School District",
       "website_url": "https://www.lawnside.k12.nj.us",
-      "food_services_menu_url": "https://www.lawnside.k12.nj.us/departments/cafeteria",
+      "food_services_menu_url": null,
       "ics_feeds": [
         {
           "name": "Lawnside District Calendar",

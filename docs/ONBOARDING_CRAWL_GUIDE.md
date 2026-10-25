@@ -492,11 +492,22 @@ branded domain itself — fetch the branded site's own homepage and grep its
 links for `arbiterlive.com`; it reliably links back to one of the three real
 shapes above (its own "Calendar" or "Schedule" link).
 
-**When the site links nothing,** `POST https://www.arbiterlive.com/School/Search`
-(form field `searchString`) finds entities by name or address. Middle-school
-ids often come from the owner instead (all four Rancocas Valley feeders'
-were). An entity can hold only the games opponents entered (Eastampton 6533:
-4 of about 14), so count its events against the school's own schedule.
+**When the site links nothing,** search ArbiterLive's own school search:
+`GET https://www.arbiterlive.com/m/search?searchString=<name>&state=NJ`. It is
+server-rendered (a plain GET works, no browser) and each result links
+`/m/team/<id>`, with the town after the name ("Winslow Township Middle School
+Atco, NJ"). Search the district's distinctive word, not the full name: one
+"Winslow" search returned the high school, middle school and all six
+elementaries. `GET /m/searchsuggest?q=<name>` gives the same entities as JSON
+(`entityId`, `name`, `location`) but with no state filter. The older
+`/School/Search` (GET or POST, field `searchString`) now returns a page with no
+results, which is why middle-school ids used to come
+from the owner (all four Rancocas Valley feeders' did). A listed entity is
+not proof of a schedule: count its events (`services/arbiter.fetch_events`)
+before setting `athletics_url`. Most elementary entities have none
+(Winslow's six, Lawnside, Waterford: 0), and an entity can hold only the games
+opponents entered (Eastampton 6533: 4 of about 14), so count them against the
+school's own schedule too.
 
 **Band coverage:** confirmed real — when a school's real ArbiterLive entity
 resolves, band events already come through the *same* combined calendar feed

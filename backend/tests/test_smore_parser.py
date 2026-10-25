@@ -169,6 +169,17 @@ def test_month_only_link_text_under_year_headings_picks_the_first_link():
     assert _pick_current_issue_link(html) == "https://app.smore.com/n/cdq8b"
 
 
+def test_month_only_links_ignore_finalsites_hidden_new_window_text():
+    # Confirmed real: on the live Lawnside page every link carries Finalsite's
+    # screen-reader-only "(opens in new window)", and one month is misspelled.
+    link = '<a href="https://{}" target="_blank">{}<span class="fsStyleSROnly">(opens in new window)</span></a>'
+    html = "<h2>2026-2027</h2>" + "".join(
+        link.format(href, month)
+        for href, month in (("app.smore.com/n/cdq8b", "September"), ("app.smore.com/n/phsfr", "June"), ("www.smore.com/ts01e", "Februrary"))
+    )
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/cdq8b"
+
+
 def test_ignores_a_smore_author_profile_link_not_an_issue_link():
     # Confirmed real: a site nav can link smore.com/u/<username> (an author
     # profile listing every newsletter that author has ever published, not

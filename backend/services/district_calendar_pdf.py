@@ -248,9 +248,16 @@ _PLAIN_PROMPT = (
     "(closures, recesses, early dismissals, delayed openings, first and last student day, conferences, holidays). "
     "A range like '26-27 Thu-Fri' is one entry from the 26th to the 27th; a month-header above the list gives the month, "
     "and the school year in the title gives the year (fall months are the first year, January-June the second). "
-    "Do NOT record the mini month grids, the days-in-session table or the key. Do not record the emergency/snow make-up "
-    "day list. Only mark an entry 'closed' if the printed text says schools are closed."
+    "Do NOT record the mini month grids, the days-in-session table or the key as entries of their own. Do not record the "
+    "emergency/snow make-up day list. Mark an entry 'closed' if the printed text says schools are closed, or if the key "
+    "marks closed days with a colour or symbol and that entry's dates carry that mark in the month grids. Look up each "
+    "entry's own dates in its month's grid one by one, since neighbouring days are often closed for different reasons. "
+    "An entry without such a mark (a holiday the schools stay open for) is 'other'."
 )
+# Confirmed real (Waterford Township): a scanned calendar whose list says only
+# "7 Labor Day", "26 & 27 Thanksgiving Recess", with the closures shown as red
+# grid cells and a key reading "red = School Closed". Read from the text alone,
+# no day was closed and the school page showed every holiday as a school day.
 
 
 async def extract_events(pdf_bytes: bytes) -> list[dict]:

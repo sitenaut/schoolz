@@ -5,15 +5,21 @@
     {
       "name": "Winslow Township School District",
       "website_url": "https://www.winslow-schools.com",
-      "food_services_menu_url": "https://www.winslow-schools.com/apps/pages/index.jsp?uREC_ID=262339&type=d",
+      "food_services_menu_url": null,
       "ics_feeds": [
         {
           "name": "Winslow District Calendar",
-          "url": "https://www.winslow-schools.com/servlet/ICalServlet?id=0"
+          "url": "https://www.winslow-schools.com/servlet/ICalServlet?id=0",
+          "skip_title_prefixes": [
+            "SPECIAL AREA ROTATION"
+          ]
         },
         {
           "name": "Winslow District-wide Events",
-          "url": "https://www.winslow-schools.com/servlet/ICalServlet?id=10"
+          "url": "https://www.winslow-schools.com/servlet/ICalServlet?id=10",
+          "skip_title_prefixes": [
+            "SPECIAL AREA ROTATION"
+          ]
         },
         {
           "name": "Winslow High School Calendar",
@@ -56,7 +62,7 @@
       "preschool_locations_url": null,
       "preschool_team_url": null,
       "hs_rotation_url": null,
-      "transportation_url": "https://www.winslow-schools.com/apps/pages/index.jsp?uREC_ID=259861&type=d",
+      "transportation_url": null,
       "towns": [
         "Winslow Township"
       ],
@@ -84,7 +90,7 @@
       "early_dismissal_time": "11:19 AM",
       "delayed_opening_time": null,
       "bell_periods": null,
-      "athletics_url": null,
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/26096",
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
@@ -110,7 +116,7 @@
       "early_dismissal_time": "12:00 PM",
       "delayed_opening_time": null,
       "bell_periods": null,
-      "athletics_url": null,
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/26097",
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
