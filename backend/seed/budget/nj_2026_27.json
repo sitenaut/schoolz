@@ -138,6 +138,20 @@
   },
   {
    "state": "NJ",
+   "state_code": "0700",
+   "name": "Camden County Technical Schools",
+   "benefits_prior": 10702119,
+   "benefits_budget": 13044265,
+   "prior_basis": "revised",
+   "formula_aid_change": 1910753,
+   "aid_source_url": "https://www.nj.gov/education/stateaid/2627/FY27_GBM_District_Details.xlsx",
+   "levy_change_pct": 0.0,
+   "fund_balance_prior": 5762927,
+   "fund_balance_budget": 4762926,
+   "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_0700.pdf"
+  },
+  {
+   "state": "NJ",
    "state_code": "0800",
    "name": "Cherry Hill Public Schools",
    "benefits_prior": 54067324,
@@ -476,6 +490,20 @@
    "fund_balance_prior": 131207,
    "fund_balance_budget": 498492,
    "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_2540.pdf"
+  },
+  {
+   "state": "NJ",
+   "state_code": "2560",
+   "name": "Lawnside School District",
+   "benefits_prior": 1725072,
+   "benefits_budget": 2132142,
+   "prior_basis": "revised",
+   "formula_aid_change": 411827,
+   "aid_source_url": "https://www.nj.gov/education/stateaid/2627/FY27_GBM_District_Details.xlsx",
+   "levy_change_pct": -1.2,
+   "fund_balance_prior": 1990490,
+   "fund_balance_budget": 2592191,
+   "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_2560.pdf"
   },
   {
    "state": "NJ",
@@ -963,6 +991,20 @@
   },
   {
    "state": "NJ",
+   "state_code": "5560",
+   "name": "Waterford Township School District",
+   "benefits_prior": 3881742,
+   "benefits_budget": 4010820,
+   "prior_basis": "revised",
+   "formula_aid_change": 892790,
+   "aid_source_url": "https://www.nj.gov/education/stateaid/2627/FY27_GBM_District_Details.xlsx",
+   "levy_change_pct": 3.1,
+   "fund_balance_prior": 1795322,
+   "fund_balance_budget": 154285,
+   "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_5560.pdf"
+  },
+  {
+   "state": "NJ",
    "state_code": "5590",
    "name": "Wenonah Boro School District",
    "benefits_prior": 550072,
@@ -1016,6 +1058,20 @@
    "fund_balance_prior": 9588466,
    "fund_balance_budget": 3000000,
    "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/05/UFB27_5805.pdf"
+  },
+  {
+   "state": "NJ",
+   "state_code": "5820",
+   "name": "Winslow Township School District",
+   "benefits_prior": 19494547,
+   "benefits_budget": 23916938,
+   "prior_basis": "revised",
+   "formula_aid_change": 3407926,
+   "aid_source_url": "https://www.nj.gov/education/stateaid/2627/FY27_GBM_District_Details.xlsx",
+   "levy_change_pct": 11.6,
+   "fund_balance_prior": 6761767,
+   "fund_balance_budget": 5512881,
+   "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_5820.pdf"
   },
   {
    "state": "NJ",
