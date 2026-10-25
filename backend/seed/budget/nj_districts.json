@@ -42,6 +42,10 @@
    "state_code": "0680"
   },
   {
+   "name": "Camden County Technical Schools",
+   "state_code": "0700"
+  },
+  {
    "name": "Cherry Hill Public Schools",
    "state_code": "0800"
   },
@@ -112,6 +116,10 @@
   {
    "name": "Laurel Springs School District",
    "state_code": "2540"
+  },
+  {
+   "name": "Lawnside School District",
+   "state_code": "2560"
   },
   {
    "name": "Lenape Regional High School District",
@@ -226,6 +234,10 @@
    "state_code": "5500"
   },
   {
+   "name": "Waterford Township School District",
+   "state_code": "5560"
+  },
+  {
    "name": "Wenonah Boro School District",
    "state_code": "5590"
   },
@@ -240,6 +252,10 @@
   {
    "name": "Willingboro Public School District",
    "state_code": "5805"
+  },
+  {
+   "name": "Winslow Township School District",
+   "state_code": "5820"
   },
   {
    "name": "Wood-Ridge School District",
