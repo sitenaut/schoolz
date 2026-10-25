@@ -984,6 +984,67 @@ class SchoolTransportationOut(BaseModel):
     late_bus: SchoolLateBusOut | None
 
 
+class DistrictBudgetStatement(BaseModel):
+    """A short verbatim quote from the district's own budget documents."""
+
+    topic: str = Field(min_length=1, max_length=80)
+    quote: str = Field(min_length=1, max_length=400)
+    source: str = Field(min_length=1, max_length=200)  # the document's title
+    url: str = Field(pattern=r"^https?://", max_length=1000)
+    date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class SchoolBudgetOut(BaseModel):
+    """Public. The school's district's latest imported budget year."""
+
+    district_name: str
+    budget_year: str
+    benefits_prior: int | None
+    benefits_budget: int | None
+    prior_basis: str
+    formula_aid_change: int | None
+    levy_change_pct: float | None
+    fund_balance_prior: int | None
+    fund_balance_budget: int | None
+    budget_report_url: str | None
+    aid_source_url: str | None
+    statements: list[DistrictBudgetStatement]
+    imported_at: datetime
+
+
+class BudgetImportDistrict(BaseModel):
+    state: str = Field(default="NJ", pattern=r"^[A-Z]{2}$")
+    state_code: str = Field(pattern=r"^[0-9A-Z]{1,8}$")
+    # Our own district name, used only to find a district that has no
+    # state_code yet - the import then sets it.
+    name: str | None = None
+    benefits_prior: int | None = None
+    benefits_budget: int | None = None
+    prior_basis: str = Field(default="revised", pattern=r"^(revised|original)$")
+    formula_aid_change: int | None = None
+    levy_change_pct: float | None = None
+    fund_balance_prior: int | None = None
+    fund_balance_budget: int | None = None
+    budget_report_url: str | None = Field(default=None, pattern=r"^https?://", max_length=1000)
+    aid_source_url: str | None = Field(default=None, pattern=r"^https?://", max_length=1000)
+    statements: list[DistrictBudgetStatement] = []
+
+
+class BudgetImport(BaseModel):
+    """Built by scripts/build_budget_facts.py from one commit of the audit repo."""
+
+    source_commit: str = Field(pattern=r"^[0-9a-f]{7,40}$")
+    budget_year: str = Field(pattern=r"^\d{4}-\d{2}$")
+    districts: list[BudgetImportDistrict]
+
+
+class BudgetImportResult(BaseModel):
+    created: int
+    updated: int
+    codes_set: int
+    unmatched: list[str]  # "state_code name" for each file row with no district here
+
+
 class TodayTransportationOut(BaseModel):
     """Just enough for the Today card's action row - the office line and
     this school's late-bus line, if it has one."""
@@ -1182,6 +1243,8 @@ class ExportDistrictOut(BaseModel):
     # never switches a district's homework and grades off.
     uses_google_classroom: bool = False
     genesis_url: str | None = None
+    # Applied only when the file says it (an older seed never clears it).
+    state_code: str | None = Field(default=None, pattern=r"^[0-9A-Z]{1,8}$")
 
     model_config = {"from_attributes": True}
 

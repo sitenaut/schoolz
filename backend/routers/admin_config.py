@@ -228,6 +228,8 @@ async def import_config(payload: ConfigExport, user: User = Depends(require_perm
             district.uses_google_classroom = d.uses_google_classroom
         if "genesis_url" in d.model_fields_set:
             district.genesis_url = d.genesis_url or None
+        if "state_code" in d.model_fields_set:
+            district.state_code = d.state_code or None
         await _ensure_calendar_scan_job(db, district, user)
         await _ensure_marking_period_job(db, district, user)
         await _ensure_preschool_locations_job(db, district, user)

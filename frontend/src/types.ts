@@ -228,6 +228,31 @@ export type DistrictTransportation = {
   lost_items_url: string | null;
   closing_info_url: string | null;
 };
+export type DistrictBudgetStatement = {
+  topic: string;
+  quote: string;
+  source: string;
+  url: string;
+  date: string | null;
+};
+
+/** GET /schools/{id}/budget: the district's latest budget year from the state's files. */
+export type SchoolBudget = {
+  district_name: string;
+  budget_year: string;
+  benefits_prior: number | null;
+  benefits_budget: number | null;
+  prior_basis: "revised" | "original";
+  formula_aid_change: number | null;
+  levy_change_pct: number | null;
+  fund_balance_prior: number | null;
+  fund_balance_budget: number | null;
+  budget_report_url: string | null;
+  aid_source_url: string | null;
+  statements: DistrictBudgetStatement[];
+  imported_at: string;
+};
+
 export type SchoolTransportation = {
   district: DistrictTransportation;
   late_bus: { contractor: string; phone: string; routes: string[] } | null;

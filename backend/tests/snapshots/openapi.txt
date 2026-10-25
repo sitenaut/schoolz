@@ -65,6 +65,9 @@ POST /admin/audit/schools/{school_id}/data-points/{key}/run
 POST /admin/audit/schools/{school_id}/run-all
   path school_id: string
   -> 200: any
+POST /admin/budget/import
+  body: BudgetImport
+  -> 200: BudgetImportResult
 GET /admin/capture-page-kinds
   -> 200: list[CapturePageKindOut]
 GET /admin/chatbot
@@ -641,6 +644,9 @@ POST /schools/{school_id}/activities-site/run-now
 POST /schools/{school_id}/announcements/run-now
   path school_id: string
   -> 200: any
+GET /schools/{school_id}/budget
+  path school_id: string
+  -> 200: SchoolBudgetOut | null
 POST /schools/{school_id}/bulletin/run-now
   path school_id: string
   -> 200: any
@@ -1010,6 +1016,9 @@ Bucket3ImportResult { captures_processed: integer, captures_skipped_duplicate: i
 Bucket3StudentImportOut { captures_processed: integer, captures_skipped_duplicate: integer, first_name: string, grade_entries_upserted?: integer, identity_mismatches?: list[string], page_kinds_seen: integer, schedule_blocks_upserted: integer, student: string, work_items_upserted: integer }
 Bucket3StudentOut { first_name: string, id: string, last_name: string, school_name: string | null, student_id: string, viewer_role: string }
 Bucket3SyncStatusOut { classroom_seen_at: string(date-time) | null, genesis_seen_at: string(date-time) | null, needs_login: boolean, walk_finished_at: string(date-time) | null, walk_status: string | null }
+BudgetImport { budget_year: string, districts: list[BudgetImportDistrict], source_commit: string }
+BudgetImportDistrict { aid_source_url?: string | null, benefits_budget?: integer | null, benefits_prior?: integer | null, budget_report_url?: string | null, formula_aid_change?: integer | null, fund_balance_budget?: integer | null, fund_balance_prior?: integer | null, levy_change_pct?: number | null, name?: string | null, prior_basis?: string, state?: string, state_code: string, statements?: list[DistrictBudgetStatement] }
+BudgetImportResult { codes_set: integer, created: integer, unmatched: list[string], updated: integer }
 ByIdsIn { ids: list[string] }
 CampaignReport { by_day: list[DayVisits], by_source: dict[integer], chcomms_reads: integer, newsletters_pending: integer, newsletters_submitted: integer, start_page_visits: integer, survey_completed: integer, survey_opened: integer, total_visits: integer, visits_today: integer, visits_yesterday: integer }
 CaptureApproveIn { typed_code?: string | null }
@@ -1084,6 +1093,7 @@ DirectoryFacetOut { count: integer, key: string, label: string }
 DirectoryPageOut { categories: list[DirectoryFacetOut], items: list[DirectoryStaffOut], limit: integer, offset: integer, total: integer }
 DirectorySchoolOut { id: string, name: string, school_type: string | null, short_name: string | null, slug: string }
 DirectoryStaffOut { affiliation: string, category: string, department: string | null, email: string | null, full_name: string, id: string, is_district_wide: boolean, phone: string | null, role: string | null, schools: list[DirectorySchoolOut], title: string | null }
+DistrictBudgetStatement { date?: string | null, quote: string, source: string, topic: string, url: string }
 DistrictCreate { calendar_pdf_url?: string | null, food_services_menu_url?: string | null, genesis_url?: string | null, hs_rotation_url?: string | null, ics_feeds?: list[IcsFeed], marking_period_url?: string | null, name: string, preschool_locations_url?: string | null, preschool_team_url?: string | null, schoolcafe_shortname?: string | null, state?: string, towns?: list[string], transportation_url?: string | null, uses_google_classroom?: boolean, website_url?: string | null }
 DistrictOut { calendar_pdf_url?: string | null, calendar_scan_job?: ScheduledJobOut | null, created_at: string(date-time), food_services_menu_url: string | null, genesis_url?: string | null, hs_rotation_url: string | null, ics_feeds: list[IcsFeed], id: string, marking_period_job?: ScheduledJobOut | null, marking_period_url: string | null, name: string, preschool_locations_url: string | null, preschool_team_url: string | null, scheduled_job?: ScheduledJobOut | null, schoolcafe_shortname: string | null, state: string, towns: list[string], transportation_url: string | null, uses_google_classroom?: boolean, website_url: string | null }
 DistrictSummaryOut { id: string, name: string, state: string, towns: list[string] }
@@ -1094,7 +1104,7 @@ EditIn { private_address?: string | null, submission: Submission }
 EmailScannerCreate { body_contains?: list[string], cron_expr?: string, enabled?: boolean, from_contains?: list[string], google_email: string, link_kinds?: list[string], lookback_days?: integer, name: string, purpose?: string, raw_query?: string | null, school_id?: string | null, subject_contains?: list[string], timezone?: string }
 EmailScannerOut { body_contains: list[string], created_at: string(date-time), enabled: boolean, from_contains: list[string], google_email: string, id: string, link_kinds: list[string], lookback_days: integer, name: string, purpose: string, raw_query: string | null, scheduled_job?: ScheduledJobOut | null, school_id: string | null, subject_contains: list[string] }
 EmailScannerUpdate { body_contains?: list[string] | null, cron_expr?: string | null, enabled?: boolean | null, from_contains?: list[string] | null, link_kinds?: list[string] | null, lookback_days?: integer | null, name?: string | null, raw_query?: string | null, school_id?: string | null, subject_contains?: list[string] | null, timezone?: string | null }
-ExportDistrictOut { calendar_pdf_url?: string | null, food_services_menu_url: string | null, genesis_url?: string | null, hs_rotation_url: string | null, ics_feeds: list[IcsFeed], marking_period_url: string | null, name: string, preschool_locations_url: string | null, preschool_team_url: string | null, schoolcafe_shortname?: string | null, state?: string, towns?: list[string], transportation_url: string | null, uses_google_classroom?: boolean, website_url: string | null }
+ExportDistrictOut { calendar_pdf_url?: string | null, food_services_menu_url: string | null, genesis_url?: string | null, hs_rotation_url: string | null, ics_feeds: list[IcsFeed], marking_period_url: string | null, name: string, preschool_locations_url: string | null, preschool_team_url: string | null, schoolcafe_shortname?: string | null, state?: string, state_code?: string | null, towns?: list[string], transportation_url: string | null, uses_google_classroom?: boolean, website_url: string | null }
 ExportSaccOut { absence_form_url: string | null, absence_phone: string | null, am_hours: string | null, closures_notes: string | null, handbook_url: string | null, late_pickup_policy: string | null, pickup_change_procedure: string | null, pm_hours: string | null, site_phone: string | null }
 ExportSchoolOut { absence_emails: list[string], absence_instructions: string | null, absence_method: string | null, absence_phone: string | null, absence_portal_name: string | null, absence_portal_url: string | null, activities_calendar_ics_url?: string | null, address: string | null, apptegy_org_id?: string | null, arbiter_events_calendar?: boolean, arbiter_events_district_wide?: boolean, athletics_url: string | null, bell_periods: dict[list[BellPeriodEntry]] | null, bulletin_doc_url?: string | null, delayed_opening_time: string | null, district_name: string | null, district_state?: string | null, early_dismissal_time: string | null, end_time: string | null, fdmealplanner_location?: string | null, givebacks_shortname?: string | null, healthepro_location?: string | null, logo_url: string | null, main_phone: string | null, myschoolplate_location?: string | null, name: string, nutrislice_location?: string | null, presence_menu_page_url?: string | null, sacc: ExportSaccOut | null, school_type: string | null, short_name: string | null, slug: string, staff_directory_url?: string | null, start_time: string | null, website_url: string | null }
 ExportSmoreOut { cron_expr: string, district_name?: string | null, district_state?: string | null, enabled: boolean, label: string | null, school_slug: string | null, source_type?: string, timezone: string, url: string }
@@ -1207,6 +1217,7 @@ ScheduleDayOut { blocks: list[ScheduleDayBlockOut], date: string, long_blocks: b
 ScheduledJobCreate { cron_expr: string, description?: string | null, enabled?: boolean, kind: string, name: string, params?: object, run_once?: boolean, timezone?: string }
 ScheduledJobOut { created_at?: string(date-time) | null, cron_expr: string, description?: string | null, enabled: boolean, id: string, kind: string, last_duration_ms?: integer | null, last_error: string | null, last_error_code: string | null, last_run_at: string(date-time) | null, last_status: string | null, name: string, next_run_at: string(date-time) | null, params?: object, run_once?: boolean, sources?: list[JobSourceOut], target_label?: string | null, target_type?: string | null, timezone: string }
 ScheduledJobUpdate { cron_expr?: string | null, description?: string | null, enabled?: boolean | null, name?: string | null, params?: object | null, run_once?: boolean | null, timezone?: string | null }
+SchoolBudgetOut { aid_source_url: string | null, benefits_budget: integer | null, benefits_prior: integer | null, budget_report_url: string | null, budget_year: string, district_name: string, formula_aid_change: integer | null, fund_balance_budget: integer | null, fund_balance_prior: integer | null, imported_at: string(date-time), levy_change_pct: number | null, prior_basis: string, statements: list[DistrictBudgetStatement] }
 SchoolClassYearOut { advisors?: list[StaffMiniOut], grad_year: integer, grade_level_principals?: list[StaffMiniOut], id: string, instagram_url: string | null, label: string, school_id: string, source_page_url: string | null, updated_at: string(date-time) }
 SchoolClassYearUpdate { advisor_staff_ids?: list[string] | null, grade_level_principal_staff_ids?: list[string] | null, instagram_url?: string | null, label?: string | null }
 SchoolContentItemOut { applies_to_grad_years?: list[integer] | null, applies_to_school_types?: list[string] | null, category: string, class_label?: string | null, description: string | null, description_original?: string | null, district_id?: string | null, end_date: string(date-time) | null, extracted_at: string(date-time), id: string, is_all_day: boolean, is_current: boolean, link_url: string | null, person_name: string | null, person_title: string | null, school_name?: string | null, scope: string, source_excerpt: string | null, staff_member_id: string | null, start_date: string(date-time) | null, title: string, title_original?: string | null, translated?: boolean }
