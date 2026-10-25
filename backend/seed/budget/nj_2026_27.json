@@ -1,5 +1,5 @@
 {
- "source_commit": "1af77f0ca190b605afdff1065f93561f6f5b4170",
+ "source_commit": "d627d547bd37a78eaf073e626aa3baa89b6e3f3c",
  "budget_year": "2026-27",
  "districts": [
   {
@@ -150,6 +150,13 @@
    "fund_balance_budget": 3750000,
    "budget_report_url": "https://www.nj.gov/education/budget/ufb/2627/reports/07/UFB27_0800.pdf",
    "statements": [
+    {
+     "topic": "Budget gap",
+     "quote": "largely due to state aid reductions, significant increases in health benefits and rising transportation costs",
+     "source": "Budget Clarity Hub 2026-2027",
+     "url": "https://www.chclc.org/fs/pages/6710",
+     "date": null
+    },
     {
      "topic": "Reserves",
      "quote": "mostly depleted",
