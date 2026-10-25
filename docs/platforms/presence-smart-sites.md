@@ -57,9 +57,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     The high school's sheet has an empty Title column.
   - **Presence header address**: Delran's template has no footer box; address
     and phone are `ul.address` items told apart by their icon.
-  - **ArbiterLive has a school search**:
-    `https://www.arbiterlive.com/School/Search?searchString=<name>` lists
-    `/School/<id>` links. Delran's own "Sports Schedule" page only redirects to
+  - **ArbiterLive has a school search** (see the guide's athletics section):
+    `https://www.arbiterlive.com/m/search?searchString=<name>&state=NJ` lists
+    `/m/team/<id>` links (the older `/School/Search` now returns nothing).
+    Delran's own "Sports Schedule" page only redirects to
     the Arbiter home page, so the ids (and the two middle schools') came from
     there; `Teams?entityId=<id>` is the form the scan reads.
   - **Bell schedules as pictures** (Delran High: three PNGs; Delran Middle:
@@ -111,7 +112,7 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - Nine Google calendars come from `/api/calendars/<calID>/events` (`calIDref`s on each event link): district, BOE, one per school. Non-`@group` ids are plain emails (`mtpsnews@gmail.com`).
 - The directory widget returns a **table** (`tr[data-staff-name]`, Name and sometimes Title columns), one `getOnDemandDirectoryContent` item per grade/department; `smart_sites.parse_directory` reads both this and the card layout. Nav labels vary ("Faculty & Staff", "Oak Knoll Staff Directory"); `find_directory_links` matches both.
 - "Loading document viewer..." pages (handbooks, Kids Choice, specials) hold the file URL as JSON-escaped text (`files.smartsites.parentsquare.com\/<n>\/x.pdf`); a plain href grep misses it.
-- Athletics pages redirect to GoBound; ArbiterLive ids come from `School/Search?searchString=<town>` (other states have same-name schools).
+- Athletics pages redirect to GoBound; ArbiterLive ids come from `/m/search?searchString=<town>&state=NJ` (other states have same-name schools).
 
 
 ## Tabernacle (found onboarding)

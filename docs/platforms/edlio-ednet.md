@@ -248,3 +248,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - `/apps/bell_schedules/` can exist and say "No Bell Schedule found": an empty app is not a source.
 - The `.enf-address` footer can hold the street and town as one text node broken by a newline; `school_info` collapses whitespace inside each part.
 - An old league site link (`burlingtoncountyscholasticleague.org/public/genie/...`) now redirects to Arbiter's marketing page; use the school's own arbiterlive.com link.
+
+## Winslow and Camden County Technical (found onboarding)
+
+- Each school can be its own host (`school1.winslow-schools.com`, `gloucester.ccts.org`) with its own `/servlet/ICalServlet?id=0`; some schools have none (Winslow Schools 2 and 3). A district feed can carry one school level's rotation ("SPECIAL AREA ROTATION DAY N") for every school: skip it there with `skip_title_prefixes`.
+- An `/apps/pages/index.jsp?uREC_ID=<n>&type=d` page can render its body with JavaScript. A plain GET (what `transportation._discover_edlio_transportation` uses) then has only the site menu, so the transportation scan finds nothing; Winslow's and CCTS's pages hold just an office line and rules, so `transportation_url` is null for both.
+- A district calendar PDF with two list columns between two grid columns (CCTS's `District_Calendar.pdf`) defeats `layout_text_by_month`, and the whole-page read can move a right-column entry into the left-column month. Check its closures against the page.
+- `school_info.scan` reads no ednet footer, so address and phone stay typed in the seed (warns `school_info_missing_fields` every run).
