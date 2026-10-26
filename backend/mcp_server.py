@@ -262,6 +262,18 @@ def _prior_year(year: str) -> str:
     return f"{int(start) - 1}-{(int(end) - 1) % 100:02d}"
 
 
+AID_CATEGORIES = {
+    "equalization": "Equalization aid",
+    "special_education": "Special education aid",
+    "transportation": "Transportation aid",
+    "security": "Security aid",
+    "educational_adequacy": "Educational adequacy aid",
+    "school_choice": "School choice aid",
+    "vocational_expansion": "Vocational expansion stabilization aid",
+    "military_impact": "Military impact aid",
+}
+
+
 def _money(n: float) -> str:
     """Millions the way the budget page shows them, read aloud: "$165.9 million"."""
     return f"${n / 1_000_000:,.1f} million" if abs(n) >= 1_000_000 else f"${n:,.0f}"
@@ -339,9 +351,32 @@ def _budget_answer(b: dict, page_url: str) -> dict:
             answer["local_school_tax_levy"] = from_to(b["levy_prior"], b["levy_budget"], median_key="levy_change_pct", change=levy_change)
         else:
             answer["local_school_tax_levy"] = {"change": levy_change, **({"medians_of_the_change": m} if (m := medians("levy_change_pct", _pct)) else {})}
-    if (aid := b.get("formula_aid_change")) is not None:
+    if state_aid := b.get("state_aid"):
+        k12 = state_aid["k12"]
+        extra = {"by_category": {AID_CATEGORIES.get(c["key"], c["key"]): {prior: _money(c["start"]), year: _money(c["end"])} for c in state_aid["categories"]}}
+        if (limit := state_aid.get("limit_pct")) is not None:
+            extra["limit"] = (
+                f"Equalization, special education, transportation and security aid together can {'fall' if limit < 0 else 'rise'} "
+                f"by no more than {abs(limit):g}% a year, and this district is at that limit: the formula alone would have "
+                f"{'cut them further' if limit < 0 else 'given more'}."
+            )
+        answer["state_school_aid_k12"] = from_to(k12["start"]["value"], k12["end"]["value"], median_key="state_aid_change_pct", **extra)
+        if pre := state_aid.get("preschool"):
+            answer["state_preschool_aid"] = from_to(
+                pre["start"]["value"], pre["end"]["value"], what="Paid into a separate fund that can only be spent on preschool."
+            )
+    elif (aid := b.get("formula_aid_change")) is not None:
         answer["state_school_aid"] = (
             f"Up {_money(aid)} from last year" if aid > 0 else f"Down {_money(-aid)} from last year" if aid < 0 else "No change from last year"
+        )
+    if idea := b.get("idea_grant"):
+        extra = {"what": "Federal money for students with disabilities, ages 3 to 21."}
+        if idea.get("preliminary"):
+            extra["note"] = f"The {idea['end']['year']} award is the state's preliminary figure."
+        if idea.get("private_school_share"):
+            extra["set_aside_for_students_placed_in_private_schools_by_their_parents"] = _money(idea["private_school_share"])
+        answer["federal_special_education_grant_idea"] = from_to(
+            idea["start"]["value"], idea["end"]["value"], idea["start"]["year"], idea["end"]["year"], median_key="idea_change_pct", **extra
         )
     if b.get("fund_balance_prior") is not None and b.get("fund_balance_budget") is not None:
         answer["surplus_budgeted_to_balance_the_budget"] = {
@@ -384,6 +419,8 @@ def _budget_answer(b: dict, page_url: str) -> dict:
     sources = {
         "state_budget_report": b.get("budget_report_url"),
         "state_aid_file": b.get("aid_source_url"),
+        "state_aid_files": [y["url"] for c in (state_aid["k12"], state_aid.get("preschool")) if c for y in (c["start"], c["end"]) if y.get("url")] if state_aid else None,
+        "idea_award_files": [y["url"] for y in (idea["start"], idea["end"]) if y.get("url")] if idea else None,
         "audited_reports": [y["url"] for y in (health["start"], health["end"]) if y.get("url")] if health else None,
         "school_performance_reports": staffing.get("url"),
     }

@@ -1648,6 +1648,31 @@ h3 {
   display: block;
   margin-top: 2px;
 }
+/* A figure's parts under it: state aid by category */
+.budget-breakdown {
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+}
+.qa .budget-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.qa .budget-breakdown li:last-child {
+  border-bottom: 0;
+}
+.qa .budget-breakdown li span:first-child {
+  color: var(--ink);
+}
+.qa .budget-breakdown li span:last-child {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .budget-quotes-card {
   margin-top: 12px;
 }

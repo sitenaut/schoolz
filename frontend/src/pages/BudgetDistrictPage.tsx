@@ -6,10 +6,49 @@ import { BudgetQuotes, money, pct, priorYear } from "../components/BudgetSection
 import { SeoHead } from "../components/SeoHead";
 import { LOCALE } from "../lib/i18n";
 import { usePrerenderReady } from "../lib/prerenderReady";
-import type { BudgetDistrict, BudgetMedian } from "../types";
+import type { BudgetChange, BudgetDistrict, BudgetMedian } from "../types";
 
 const ratio = (v: number) => new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(v);
 const change = (from: number, to: number) => (from ? pct((to / from - 1) * 100) : "—");
+const dollars = (v: number) => new Intl.NumberFormat(LOCALE, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
+
+/** Both sides of a change, in full where rounding would print the same
+ * figure twice ("$3M → $3M (-1%)"). */
+function moneyPair(from: number, to: number): [string, string] {
+  const [a, b] = [money(from), money(to)];
+  return a === b && from !== to ? [dollars(from), dollars(to)] : [a, b];
+}
+
+/** The state aid file's categories (keys from scripts/build_budget_facts.py). */
+const AID_CATEGORIES: Record<string, string> = {
+  equalization: "Equalization aid",
+  special_education: "Special education aid",
+  transportation: "Transportation aid",
+  security: "Security aid",
+  educational_adequacy: "Educational adequacy aid",
+  school_choice: "School choice aid",
+  vocational_expansion: "Vocational expansion stabilization aid",
+  military_impact: "Military impact aid",
+};
+
+/** "<label> 2025-26, 2026-27", each year linked to the file it came from. */
+function YearLinks({ label, figures }: { label: string; figures: BudgetChange }) {
+  const years = [figures.start, figures.end].filter((y) => y.url);
+  if (years.length === 0) return null;
+  return (
+    <>
+      {label}{" "}
+      {years.map((y, i) => (
+        <span key={y.year}>
+          {i > 0 && ", "}
+          <a href={y.url ?? undefined} target="_blank" rel="noreferrer" style={{ whiteSpace: "nowrap" }}>
+            {y.year}
+          </a>
+        </span>
+      ))}
+    </>
+  );
+}
 
 /** /budgets/:slug: one district's budget year in full - spending, where the
  * money comes from, audited health costs and staffing - each figure linked
@@ -74,8 +113,14 @@ export function BudgetDistrictPage() {
   const b = budget;
   const year = b.budget_year;
   const prior = priorYear(year);
-  const fromTo = (from: number, to: number, fmt: (n: number) => string = money) =>
-    t("{{prior}}: {{from}} → {{year}}: {{to}} ({{change}})", { prior, year, from: fmt(from), to: fmt(to), change: change(from, to) });
+  const fromTo = (from: number, to: number) => {
+    const [a, z] = moneyPair(from, to);
+    return t("{{prior}}: {{from}} → {{year}}: {{to}} ({{change}})", { prior, year, from: a, to: z, change: change(from, to) });
+  };
+  const amounts = (from: number, to: number) => {
+    const [a, z] = moneyPair(from, to);
+    return t("{{from}} → {{to}}", { from: a, to: z });
+  };
   const median = (m: BudgetMedian | undefined, fmt: (n: number) => string): ReactNode => {
     if (!m || (m.county == null && m.state == null) || !b.comparable) return null;
     const parts = [
@@ -88,8 +133,22 @@ export function BudgetDistrictPage() {
   const spendingBudget = b.benefits_budget != null && b.other_spending_budget != null ? b.benefits_budget + b.other_spending_budget : null;
   const health = b.health_costs;
   const staffing = b.staffing;
+  const aid = b.state_aid;
+  const idea = b.idea_grant;
   const levyChange = (n: number) =>
     n > 0 ? t("Up {{pct}} from last year", { pct: pct(n).replace(/^[+-]/, "") }) : n < 0 ? t("Down {{pct}} from last year", { pct: pct(n).replace(/^[+-]/, "") }) : t("No change from last year");
+  const limitNote = (limit: number) => {
+    const p = pct(Math.abs(limit)).replace(/^[+-]/, "");
+    return limit < 0
+      ? t(
+          "Equalization, special education, transportation and security aid together can fall by no more than {{pct}} a year, and this district is at that limit: the formula alone would have cut them further.",
+          { pct: p },
+        )
+      : t(
+          "Equalization, special education, transportation and security aid together can rise by no more than {{pct}} a year, and this district is at that limit: the formula alone would have given more.",
+          { pct: p },
+        );
+  };
 
   return (
     <div className="budget-page">
@@ -170,21 +229,81 @@ export function BudgetDistrictPage() {
               {median(b.medians.levy_change_pct, pct)}
             </li>
           )}
-          {b.formula_aid_change != null && (
-            <li>
-              <b>{t("State school aid")}</b>
-              <span>
-                {b.formula_aid_change > 0
-                  ? t("Up {{amount}} from last year", { amount: money(b.formula_aid_change) })
-                  : b.formula_aid_change < 0
-                    ? t("Down {{amount}} from last year", { amount: money(-b.formula_aid_change) })
-                    : t("No change from last year")}{" "}
-                {b.aid_source_url && (
-                  <a href={b.aid_source_url} target="_blank" rel="noreferrer">
-                    {t("State aid file")}
-                  </a>
+          {aid ? (
+            <>
+              <li>
+                <b>{t("State school aid, K–12")}</b>
+                <span>{fromTo(aid.k12.start.value, aid.k12.end.value)}</span>
+                {median(b.medians.state_aid_change_pct, pct)}
+                {aid.categories.length > 0 && (
+                  <ul className="budget-breakdown">
+                    {aid.categories.map((c) => (
+                      <li key={c.key}>
+                        <span>{t(AID_CATEGORIES[c.key] ?? c.key)}</span>
+                        <span>{amounts(c.start, c.end)}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </span>
+                <small className="note" style={{ display: "block" }}>
+                  {aid.limit_pct != null && <>{limitNote(aid.limit_pct)} </>}
+                  {aid.categories.some((c) => c.key === "equalization") && (
+                    <>
+                      {t(
+                        "Equalization aid is based on the gap between what the state's formula says a district needs and the share it expects local taxes to raise.",
+                      )}{" "}
+                    </>
+                  )}
+                  <YearLinks label={t("From the state's aid files:")} figures={aid.k12} />
+                </small>
+              </li>
+              {aid.preschool && (
+                <li>
+                  <b>{t("State preschool aid")}</b>
+                  <span>{fromTo(aid.preschool.start.value, aid.preschool.end.value)}</span>
+                  <small className="note" style={{ display: "block" }}>
+                    {t("Paid into a separate fund that can only be spent on preschool.")}{" "}
+                    <YearLinks label={t("From the state's preschool aid files:")} figures={aid.preschool} />
+                  </small>
+                </li>
+              )}
+            </>
+          ) : (
+            b.formula_aid_change != null && (
+              <li>
+                <b>{t("State school aid")}</b>
+                <span>
+                  {b.formula_aid_change > 0
+                    ? t("Up {{amount}} from last year", { amount: money(b.formula_aid_change) })
+                    : b.formula_aid_change < 0
+                      ? t("Down {{amount}} from last year", { amount: money(-b.formula_aid_change) })
+                      : t("No change from last year")}{" "}
+                  {b.aid_source_url && (
+                    <a href={b.aid_source_url} target="_blank" rel="noreferrer">
+                      {t("State aid file")}
+                    </a>
+                  )}
+                </span>
+              </li>
+            )
+          )}
+          {idea && (
+            <li>
+              <b>{t("Federal special education grant (IDEA)")}</b>
+              <span>{fromTo(idea.start.value, idea.end.value)}</span>
+              {median(b.medians.idea_change_pct, pct)}
+              <small className="note" style={{ display: "block" }}>
+                {t("Federal money for students with disabilities, ages 3 to 21.")}{" "}
+                {idea.preliminary && <>{t("The {{year}} award is the state's preliminary figure.", { year: idea.end.year })} </>}
+                {!!idea.private_school_share && (
+                  <>
+                    {t("{{amount}} of it is set aside for students with disabilities whose parents placed them in private schools.", {
+                      amount: money(idea.private_school_share),
+                    })}{" "}
+                  </>
+                )}
+                <YearLinks label={t("From the state's IDEA award files:")} figures={idea} />
+              </small>
             </li>
           )}
           {b.fund_balance_prior != null && b.fund_balance_budget != null && (
@@ -217,17 +336,7 @@ export function BudgetDistrictPage() {
                 </span>
                 {median(b.medians.health_change_pct, pct)}
                 <small className="note" style={{ display: "block" }}>
-                  {t("What the district actually spent, from its audited annual financial reports:")}{" "}
-                  {[health.start, health.end].map((y, i) =>
-                    y.url ? (
-                      <span key={y.year}>
-                        {i > 0 && ", "}
-                        <a href={y.url} target="_blank" rel="noreferrer">
-                          {y.year}
-                        </a>
-                      </span>
-                    ) : null,
-                  )}
+                  <YearLinks label={t("What the district actually spent, from its audited annual financial reports:")} figures={health} />
                 </small>
               </li>
             </ul>

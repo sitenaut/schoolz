@@ -260,6 +260,18 @@ export type SchoolBudget = {
 export type BudgetYearFigure = { year: string; value: number; url?: string | null };
 export type BudgetChange = { start: BudgetYearFigure; end: BudgetYearFigure };
 export type BudgetMedian = { county: number | null; state: number | null };
+/** One of the state aid file's categories (equalization, special_education, ...), both years. */
+export type BudgetAidCategory = { key: string; start: number; end: number };
+export type BudgetStateAid = {
+  k12: BudgetChange;
+  categories: BudgetAidCategory[];
+  /** -3 or 6 where the state's limit on a year's change held the district. */
+  limit_pct: number | null;
+  /** Paid into its own fund, for preschool only. */
+  preschool: BudgetChange | null;
+};
+/** The federal special education grant (IDEA Part B, ages 3 to 21). */
+export type BudgetIdeaGrant = BudgetChange & { private_school_share: number | null; preliminary: boolean };
 
 /** GET /budgets: every district with figures for the latest budget year. */
 export type BudgetIndex = {
@@ -298,9 +310,18 @@ export type BudgetDistrict = {
   aid_source_url: string | null;
   health_costs: BudgetChange | null;
   staffing: { students_per_teacher: BudgetChange | null; median_teacher_salary: BudgetYearFigure | null; url: string } | null;
+  state_aid: BudgetStateAid | null;
+  idea_grant: BudgetIdeaGrant | null;
   statements: DistrictBudgetStatement[];
   medians: Record<
-    "benefits_change_pct" | "other_spending_change_pct" | "levy_change_pct" | "health_change_pct" | "students_per_teacher" | "median_teacher_salary",
+    | "benefits_change_pct"
+    | "other_spending_change_pct"
+    | "levy_change_pct"
+    | "health_change_pct"
+    | "students_per_teacher"
+    | "median_teacher_salary"
+    | "state_aid_change_pct"
+    | "idea_change_pct",
     BudgetMedian
   >;
   imported_at: string;

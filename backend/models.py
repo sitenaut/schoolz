@@ -1552,6 +1552,13 @@ class DistrictBudget(Base):
     # {"students_per_teacher": {"from": {"year", "value"}, "to": {...}} | None,
     #  "median_teacher_salary": {"year", "amount"} | None, "url"}
     staffing: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Both years from the state's aid files: {"k12": {"start", "end"},
+    #  "categories": [{"key", "start", "end"}], "limit_pct": -3.0 | 6.0 | None,
+    #  "preschool": {"start", "end"} | None}. Only where the audit uses the formula figure.
+    state_aid: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # The federal special education grant (IDEA Part B, ages 3 to 21), both years:
+    # {"start", "end", "private_school_share", "preliminary"}
+    idea_grant: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # [{"topic", "quote", "source", "url", "date"}]
     statements: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     source_commit: Mapped[str] = mapped_column(String(40), nullable=False)

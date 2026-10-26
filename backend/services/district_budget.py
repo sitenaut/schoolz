@@ -103,6 +103,8 @@ async def import_budget(db: AsyncSession, payload: BudgetImport) -> BudgetImport
             setattr(budget, field, getattr(row, field))
         budget.health_costs = row.health_costs.model_dump() if row.health_costs else None
         budget.staffing = row.staffing.model_dump() if row.staffing else None
+        budget.state_aid = row.state_aid.model_dump() if row.state_aid else None
+        budget.idea_grant = row.idea_grant.model_dump() if row.idea_grant else None
         budget.statements = [s.model_dump() for s in row.statements]
         budget.source_commit = payload.source_commit
     await db.flush()
@@ -128,6 +130,8 @@ def metrics(budget: DistrictBudget) -> dict[str, float | None]:
     staffing = budget.staffing or {}
     ratio = (staffing.get("students_per_teacher") or {}).get("end") or {}
     salary = staffing.get("median_teacher_salary") or {}
+    k12 = (budget.state_aid or {}).get("k12")
+    idea = budget.idea_grant
     return {
         "benefits_change_pct": _pct(budget.benefits_prior, budget.benefits_budget),
         "other_spending_change_pct": _pct(budget.other_spending_prior, budget.other_spending_budget),
@@ -135,6 +139,8 @@ def metrics(budget: DistrictBudget) -> dict[str, float | None]:
         "health_change_pct": _pct(health["start"]["value"], health["end"]["value"]) if health else None,
         "students_per_teacher": ratio.get("value"),
         "median_teacher_salary": salary.get("value"),
+        "state_aid_change_pct": _pct(k12["start"]["value"], k12["end"]["value"]) if k12 else None,
+        "idea_change_pct": _pct(idea["start"]["value"], idea["end"]["value"]) if idea else None,
     }
 
 
@@ -243,6 +249,8 @@ async def budget_district(db: AsyncSession, slug: str) -> BudgetDistrictOut | No
         schools=schools,
         health_costs=budget.health_costs,
         staffing=budget.staffing,
+        state_aid=budget.state_aid,
+        idea_grant=budget.idea_grant,
         statements=budget.statements or [],
         medians=medians,
         imported_at=budget.imported_at,
