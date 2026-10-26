@@ -1,6 +1,6 @@
 # Base images are pinned by version and digest; Dependabot proposes the
 # bumps. Node matches CI (.github/workflows/ci.yml).
-FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS build
 WORKDIR /app
 
 ARG VITE_AUTH_MODE=local
@@ -49,7 +49,7 @@ RUN find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -
 # because fly deploys with this directory as the Docker build context; a
 # sibling would be invisible here. Shares the API/auth build args above so
 # both apps point at the same backend in the same auth mode.
-FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build-focus
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS build-focus
 WORKDIR /app
 ARG VITE_AUTH_MODE=local
 ARG VITE_API_URL=http://localhost:8000
