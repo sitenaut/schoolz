@@ -74,6 +74,8 @@ async def test_import_sets_the_state_code_by_name_and_the_school_page_shows_the_
         assert body["slug"] == f"district-{code.lower()}"
         assert (body["benefits_prior"], body["benefits_budget"], body["formula_aid_change"]) == (1_000_000, 1_200_000, -50_000)
         assert body["statements"] == [QUOTE]
+        # A preschool filed under the district for the picker isn't one of its schools.
+        assert (await client.get(f"/schools/budget-preschool-{tag}/budget")).json() is None
 
         # Same year again: matched by the code now, figures and quotes replaced.
         r = await client.post("/admin/budget/import", headers=headers, json={

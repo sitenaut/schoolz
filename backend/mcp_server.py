@@ -225,6 +225,172 @@ def _with_gap_note(data: Any, subject: str, name: str, *, submittable: bool = Tr
     return {"result": data, "note": _gap_note(subject, name, submittable=submittable)}
 
 
+# Words that don't tell districts apart ("Cherry Hill Public Schools" -> cherry, hill).
+_GENERIC_DISTRICT_WORDS = {"school", "schools", "district", "public", "the", "of", "and", "board", "education", "nj"}
+# Words a visitor adds or leaves off ("Cherry Hill Township"): matched as said
+# first, then without them.
+_SOFT_DISTRICT_WORDS = {"township", "borough", "city", "regional"}
+# A school's type, dropped as a last try for a school schoolz doesn't track
+# ("Moorestown High" -> Moorestown's district).
+_SCHOOL_TYPE_WORDS = {"high", "middle", "elementary", "intermediate", "primary", "junior", "senior", "hs", "ms", "es"}
+# The state's own spellings ("Alloway Twp School District").
+_DISTRICT_WORD_FORMS = {"twp": "township", "boro": "borough", "mt": "mount", "reg": "regional", "voc": "vocational", "tech": "technical"}
+
+
+def _district_words(text: str, *, soft: bool = False) -> set[str]:
+    words = {_DISTRICT_WORD_FORMS.get(w, w) for w in re.split(r"[^a-z0-9]+", text.lower()) if w}
+    return words - _GENERIC_DISTRICT_WORDS - (_SOFT_DISTRICT_WORDS if soft else set())
+
+
+def _match_districts(ref: str, districts: list[dict]) -> list[dict]:
+    """The budget index's districts that `ref` names: every distinctive word of
+    it in the district's name, as said, then without township/borough/city.
+    A district named by exactly those words beats a longer name ("Medford" is
+    Medford Township, not Medford Lakes)."""
+    strict = _district_words(ref)
+    matches = [d for d in districts if strict and strict <= _district_words(d["name"])]
+    loose = _district_words(ref, soft=True)
+    if not matches:
+        matches = [d for d in districts if loose and loose <= _district_words(d["name"], soft=True)]
+    exact = [d for d in matches if _district_words(d["name"], soft=True) == loose]
+    return exact if len(exact) == 1 else matches
+
+
+def _prior_year(year: str) -> str:
+    """"2026-27" -> "2025-26"."""
+    start, end = year.split("-")
+    return f"{int(start) - 1}-{(int(end) - 1) % 100:02d}"
+
+
+def _money(n: float) -> str:
+    """Millions the way the budget page shows them, read aloud: "$165.9 million"."""
+    return f"${n / 1_000_000:,.1f} million" if abs(n) >= 1_000_000 else f"${n:,.0f}"
+
+
+def _pct(n: float) -> str:
+    return f"{n:+.1f}%"
+
+
+def _ratio(n: float) -> str:
+    return f"{n:.1f}"
+
+
+def _budget_answer(b: dict, page_url: str) -> dict:
+    """GET /budgets/{slug} put the way the district's page puts it: each figure
+    with its years and the page's own explanation, and the county and state
+    medians only where the page shows them (a comparable district). Dollars
+    come formatted so a model never has to read a raw 9-digit number."""
+    year = b["budget_year"]
+    prior = _prior_year(year)
+
+    def medians(key: str, fmt) -> dict:
+        m = (b.get("medians") or {}).get(key) or {}
+        out = {}
+        if b.get("comparable") and m.get("county") is not None and b.get("county"):
+            out[f"{b['county']} County median"] = fmt(m["county"])
+        if b.get("comparable") and m.get("state") is not None:
+            out["New Jersey median"] = fmt(m["state"])
+        return out
+
+    def from_to(start: float, end: float, start_year: str = prior, end_year: str = year, *,
+                fmt=_money, median_key: str | None = None, change: str | None = None, **extra) -> dict:
+        row = {start_year: fmt(start), end_year: fmt(end)}
+        if change or start:
+            row["change"] = change or _pct((end - start) / start * 100)
+        if median_key and (m := medians(median_key, _pct)):
+            row["medians_of_the_change"] = m
+        return {**row, **extra}
+
+    answer: dict[str, Any] = {
+        "district": b["name"],
+        "county": b.get("county"),
+        "budget_year": year,
+        "page": page_url,
+        "about": (
+            "District-wide figures from New Jersey Department of Education files: every school in the district shares "
+            "them. A figure missing here isn't published for this district, or isn't comparable with other districts'. "
+            "Answer what was asked; for a general question give spending, the tax levy and state aid, and link the page "
+            "for the rest. Put a median beside its figure ('up 6.2%; Gloucester County median +4.3%') without "
+            "characterizing the difference, and never rank districts or call a budget high, low, good or bad."
+        ),
+    }
+    spending = None
+    if None not in (b.get("benefits_prior"), b.get("other_spending_prior"), b.get("benefits_budget"), b.get("other_spending_budget")):
+        spending = b["benefits_budget"] + b["other_spending_budget"]
+        answer["day_to_day_spending"] = from_to(
+            b["benefits_prior"] + b["other_spending_prior"], spending,
+            what="The general fund's current expense: salaries, benefits, supplies and services. Not building projects or debt.",
+        )
+    if b.get("benefits_prior") is not None and b.get("benefits_budget") is not None:
+        extra = {}
+        if spending:
+            extra["share_of_day_to_day_spending"] = f"{b['benefits_budget'] / spending * 100:.1f}%"
+        if b.get("prior_basis") == "original":
+            extra["note"] = f"The {prior} figure is the original budget; no revised one was filed."
+        answer["employee_benefits"] = from_to(b["benefits_prior"], b["benefits_budget"], median_key="benefits_change_pct", **extra)
+    if b.get("other_spending_prior") is not None and b.get("other_spending_budget") is not None:
+        answer["everything_else"] = from_to(
+            b["other_spending_prior"], b["other_spending_budget"], median_key="other_spending_change_pct",
+            what="Day-to-day spending other than employee benefits: salaries, supplies and services.",
+        )
+    if b.get("levy_change_pct") is not None:
+        levy_change = _pct(b["levy_change_pct"])
+        if b.get("levy_prior") is not None and b.get("levy_budget") is not None:
+            answer["local_school_tax_levy"] = from_to(b["levy_prior"], b["levy_budget"], median_key="levy_change_pct", change=levy_change)
+        else:
+            answer["local_school_tax_levy"] = {"change": levy_change, **({"medians_of_the_change": m} if (m := medians("levy_change_pct", _pct)) else {})}
+    if (aid := b.get("formula_aid_change")) is not None:
+        answer["state_school_aid"] = (
+            f"Up {_money(aid)} from last year" if aid > 0 else f"Down {_money(-aid)} from last year" if aid < 0 else "No change from last year"
+        )
+    if b.get("fund_balance_prior") is not None and b.get("fund_balance_budget") is not None:
+        answer["surplus_budgeted_to_balance_the_budget"] = {
+            prior: _money(b["fund_balance_prior"]),
+            year: _money(b["fund_balance_budget"]),
+            "what": "Planned amount, not what is left in reserve. Does not include capital or maintenance reserve withdrawals.",
+        }
+    if health := b.get("health_costs"):
+        answer["health_insurance_costs_audited"] = from_to(
+            health["start"]["value"], health["end"]["value"], health["start"]["year"], health["end"]["year"],
+            median_key="health_change_pct",
+            what="What the district actually spent, from its audited annual financial reports.",
+        )
+    staffing = b.get("staffing") or {}
+    if spt := staffing.get("students_per_teacher"):
+        answer["students_per_teacher"] = {
+            **from_to(spt["start"]["value"], spt["end"]["value"], spt["start"]["year"], spt["end"]["year"], fmt=_ratio),
+            **({"medians": m} if (m := medians("students_per_teacher", _ratio)) else {}),
+        }
+    if salary := staffing.get("median_teacher_salary"):
+        answer["median_teacher_salary"] = {
+            salary["year"]: _money(salary["value"]),
+            **({"medians": m} if (m := medians("median_teacher_salary", _money)) else {}),
+        }
+    if b.get("statements"):
+        answer["district_says"] = b["statements"]
+    if b.get("comparable") is False:
+        answer["medians_note"] = (
+            "This district isn't counted in the county and state medians: its budget isn't comparable with a typical "
+            "district's (a services commission, a very small benefits line, or state aid outside the school funding "
+            "formula). Don't compare it with other districts."
+        )
+    elif b.get("comparable"):
+        answer["medians_note"] = (
+            "Medians are across districts whose budgets are comparable; services commissions and districts outside "
+            "the state aid formula are left out."
+        )
+    if b.get("schools"):
+        answer["schools_on_schoolz"] = [s["name"] for s in b["schools"]]
+    sources = {
+        "state_budget_report": b.get("budget_report_url"),
+        "state_aid_file": b.get("aid_source_url"),
+        "audited_reports": [y["url"] for y in (health["start"], health["end"]) if y.get("url")] if health else None,
+        "school_performance_reports": staffing.get("url"),
+    }
+    answer["sources"] = {k: v for k, v in sources.items() if v}
+    return answer
+
+
 def build_mcp_server(app: FastAPI) -> FastMCP:
     """Construct the FastMCP server bound to this app's own routes.
 
@@ -661,6 +827,91 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         return _with_gap_note(data, "transportation information", name, submittable=False)
 
     # -----------------------------------------------------------------
+    # District budgets (every New Jersey district, not only tracked ones)
+    # -----------------------------------------------------------------
+
+    @mcp.tool()
+    async def get_district_budget(district: str, county: str | None = None) -> Any:
+        """A New Jersey school district's budget for this school year against
+        last year: day-to-day spending, employee benefits, the local school
+        tax levy, state aid, surplus used to balance the budget, audited
+        health insurance costs, students per teacher and median teacher
+        salary, with the county and New Jersey medians and the district's
+        own words where there are any. Covers every district in New Jersey,
+        not only the ones schoolz tracks. Budgets are set district-wide, so
+        every school in a district shares these figures.
+
+        `district`: the district's name or its town ("Cherry Hill"), or a
+        school's name or slug (answers for that school's district). Pass
+        `county` when the visitor names one, or to pick between districts
+        the lookup says fit. Give the figures with their years and link the
+        district's page; never rank districts or call a budget high, low,
+        good or bad.
+        """
+        ref = district.strip()
+        index = await _get("/budgets")
+        if not isinstance(index, dict) or "error" in index:
+            return index
+        districts = index.get("districts") or []
+        if county and county.strip():
+            wanted = county.strip().lower().removesuffix(" county").strip()
+            districts = [d for d in districts if (d.get("county") or "").lower() == wanted]
+        slug = next((d["slug"] for d in districts if d["slug"] == ref.lower()), None)
+        matches = [] if slug else _match_districts(ref, districts)
+        if not slug and not matches and ref:
+            # Not a district's name: a school's, answered for its district.
+            school_budget = await _get(f"/schools/{re.sub(r'[^a-z0-9]+', '-', ref.lower()).strip('-')}/budget")
+            if school_budget is None:
+                return {
+                    "error": f"'{ref}' isn't one of a New Jersey district's own elementary, middle or high schools "
+                             "(a preschool, or a private school), so no district budget is listed for it.",
+                    "hint": "If the visitor means the public school district in its town, call again with the town's name.",
+                }
+            if candidates := school_budget.get("did_you_mean"):
+                # Several schools fit; when they're all one district's, that's the answer.
+                found = {((await _get(f"/schools/{c['slug']}/budget")) or {}).get("slug") for c in candidates}
+                if len(found) != 1 or None in found:
+                    return school_budget
+                slug = found.pop()
+            elif school_budget.get("slug"):
+                slug = school_budget["slug"]
+            else:
+                # A school schoolz doesn't track: its town's district, if only one fits.
+                fits = _match_districts(" ".join(_district_words(ref) - _SCHOOL_TYPE_WORDS), districts)
+                matches = fits if len(fits) == 1 else []
+        others: list[dict] = []
+        if not slug and len(matches) > 1 and len(tracked := [d for d in matches if d.get("tracked")]) == 1:
+            # schoolz's visitors are its own districts' families: answer for the
+            # one it covers, and say which others share the name.
+            others = [d for d in matches if d is not tracked[0]]
+            matches = tracked
+        if not slug and len(matches) == 1:
+            slug = matches[0]["slug"]
+        if not slug:
+            if not matches:
+                return {
+                    "error": f"No New Jersey school district or tracked school fits '{ref}'.",
+                    "hint": "Ask the visitor for the district's name or its town (and county, if they know it), then call again.",
+                }
+            return {
+                "error": f"{len(matches)} New Jersey districts fit '{ref}'.",
+                "did_you_mean": [{"slug": d["slug"], "name": d["name"], "county": d.get("county")} for d in matches[:10]],
+                "hint": "Ask the visitor which one they mean, by name and county, then call again with its slug."
+                if len(matches) <= 10 else "Too many fit: ask the visitor for the town and county, then call again.",
+            }
+        budget = await _get(f"/budgets/{slug}")
+        if not isinstance(budget, dict) or "error" in budget:
+            return budget
+        web = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
+        answer = _budget_answer(budget, f"{web}/budgets/{slug}")
+        if others:
+            answer["other_districts_with_this_name"] = {
+                "districts": [f"{d['name']} ({d.get('county')} County)" for d in others[:10]],
+                "hint": "Answered for the district schoolz covers. End the answer with one line naming these, in case the visitor meant one.",
+            }
+        return answer
+
+    # -----------------------------------------------------------------
     # Calendar
     # -----------------------------------------------------------------
 
@@ -841,7 +1092,7 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         topic; call with no topic to get the list of topics.
 
         topic: one of getting_started, today, schools, absence, calendar,
-            lunch, directory, local, account, children, invites,
+            lunch, directory, budgets, local, account, children, invites,
             kids_schoolwork, student_help, notifications, language,
             missing_info, privacy.
         """

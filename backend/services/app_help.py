@@ -93,6 +93,18 @@ TOPICS: dict[str, dict[str, str]] = {
             "teachers at Beck. The chips filter by kind of role (nurse, counselor, and so on)."
         ),
     },
+    "budgets": {
+        "summary": "District budgets: every New Jersey school district's budget, one page each",
+        "text": (
+            f"Open **Schools** and tap **District budgets** at the top (or go to {SITE}/budgets). It lists every "
+            "New Jersey school district by county; search by district or county.\n"
+            "- A district's page shows its spending, employee benefits, the local school tax levy, state aid, "
+            "audited health insurance costs and teachers, each against last year and the county and state medians, "
+            "with a link to the state's own file for every figure.\n"
+            "- Budgets are set for a whole district, so every school in it shares the same figures. A school's page "
+            "has a **District budget** card that links to its district's full page."
+        ),
+    },
     "local": {
         "summary": "Local community events",
         "text": (
