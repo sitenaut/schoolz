@@ -223,6 +223,7 @@ export type DistrictTransportation = {
   bus_stop_change_form_url: string | null;
   lost_items_policy: string | null;
   daily_buses_note?: string | null;
+  office_email?: string | null;
   main_url: string | null;
   late_bus_url: string | null;
   guidelines_url: string | null;

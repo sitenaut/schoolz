@@ -213,7 +213,7 @@ def test_finalsite_single_page_reads_hours_after_hours_line_mailbox_and_stop_for
     assert r["office_phone"] == "856-555-8293 x5041"  # not the First Student line, the footer, or the form's digits
     assert r["office_hours"] == "8am - 4pm"
     assert r["delay_policy"] == "Any transportation emergencies outside of office hours can be directed to First Student at (856)555-0222."
-    assert r["contacts"] == [{"name": "Transportation office", "title": None, "email": "transportation@example.org"}]
+    assert (r["office_email"], r["contacts"]) == ("transportation@example.org", [])
     assert r["bus_stop_change_form_url"] == "https://forms.example/sitter"
 
 
@@ -249,7 +249,7 @@ def test_department_page_reads_a_contact_sentence_and_keeps_the_phone_beside_a_w
     r = parse_department_page({"main": monroe}, {"main": "https://x.test/t"})
     assert r["office_hours"] == "Monday through Friday from 7:00AM - 4:30PM during the school year"
     assert r["office_phone"] == "856-555-6400 EXT. #3"
-    assert r["contacts"][0]["email"] == "Transportation@example.org"
+    assert r["office_email"] == "Transportation@example.org"
 
     walking = _ednet(
         "<p>Pat Doe</p><p>Transportation Coordinator</p><p>Phone: (856) 555-0123 Ext. 225</p>"
@@ -271,6 +271,63 @@ def test_page_without_a_content_container_yields_nothing_rather_than_its_footer(
     r = parse_department_page({"main": html}, {"main": "https://x.test/page/transportation"})
     assert all(not r[k] for k in ("office_phone", "delay_policy", "late_bus_policy", "contacts", "daily_buses_note"))
     assert missing_fields("department_page", r) == ["office_phone"]
+
+
+def test_faq_page_skips_bus_company_numbers_and_reads_the_answers():
+    from services.transportation import missing_fields, parse_department_page
+
+    # Voorhees and Eastern Regional: a FAQ, the office reached by email, and a list of bus companies' numbers.
+    html = (
+        '<main id="fsPageContent"><h2>FREQUENTLY ASKED QUESTIONS</h2>'
+        "<p>Where is the bus stop?</p><p>All stops are in the parent portal. Email the coordinator with questions.</p>"
+        "<p>The morning bus is late. What should I do?</p><p>Call the bus company regarding the status of the bus.</p>"
+        "<p>My student took the late bus from the middle school and they\u2019re not home yet. What should I do?</p>"
+        "<p>All of our late buses (3:30pm and 4:15pm) are operated by Example Bus Co. It can be reached at 856-555-3632.</p>"
+        "<p>How do I retrieve a lost item?</p><p>If your child leaves an item on the school bus, they should check with the driver during their next ride.</p>"
+        "<p>An automated message is sent when the district is notified of a delay of more than 15 minutes.</p>"
+        "<p>I have other questions. Who can I contact?</p>"
+        "<p>The Transportation Department in Example Township is open from 8:00am to 4:00pm. The best means of contact is via email to coord@example.org.</p>"
+        "<p>If you are unsure who operates your child\u2019s bus, please contact the Transportation Department.</p>"
+        "<p>First Student, Berlin Depot 856-555-0222</p><p>Example Bus Service 856-555-1123</p><p>T&amp;L Transportation 856-555-6609</p></main>"
+    )
+    r = parse_department_page({"main": html}, {"main": "https://x.test/t"})
+    assert r["office_phone"] is None  # every number on the page is a bus company's
+    assert (r["office_email"], r["office_hours"]) == ("coord@example.org", "8:00am to 4:00pm")
+    assert r["delay_policy"] == (
+        "Call the bus company regarding the status of the bus. "
+        "An automated message is sent when the district is notified of a delay of more than 15 minutes."
+    )
+    assert r["late_bus_policy"].startswith("All of our late buses (3:30pm and 4:15pm)")
+    assert r["lost_items_policy"].startswith("If your child leaves an item on the school bus")
+    assert missing_fields("department_page", r) == []  # reachable by email
+
+
+def test_label_lines_and_a_phone_under_a_staff_title():
+    from services.transportation import parse_department_page
+
+    # Delran (Presence, `.pageContent`): each value on the line under its label.
+    delran = (
+        '<div class="mainContent"><div class="pageContent"><h2>Transportation &amp; Support Services Department</h2>'
+        "<p>Address</p><p>22 Sample Road, Delran, NJ 08075</p><p>Phone</p><p>856-555-1553</p><p>Fax</p><p>856-555-7750</p>"
+        "<p>Hours</p><p>7:00 AM \u2013 4:00 PM</p><p>Before or after hours, you may reach First Student directly at 856-555-8653.</p>"
+        '<a href="/sitter_stop_requests/">Sitter Stop Requests 2026-27</a></div></div>'
+    )
+    r = parse_department_page({"main": delran}, {"main": "https://x.test/t"})
+    assert (r["office_phone"], r["office_fax"], r["office_hours"]) == ("856-555-1553", "856-555-7750", "7:00 AM \u2013 4:00 PM")
+    assert r["office_address"] == "22 Sample Road, Delran, NJ 08075"
+    assert r["delay_policy"] == "Before or after hours, you may reach First Student directly at 856-555-8653."
+    assert r["bus_stop_change_form_url"] == "https://x.test/sitter_stop_requests/"
+
+    # Cinnaminson (Smart Sites): name, title, a "Contact" button, then the number.
+    cinnaminson = (
+        "<main><p>Transportation Department Staff</p><p>Ann Lee</p><p>Director of Transportation</p><p>Contact Ann</p>"
+        '<p>(856) 555-8812</p><p>Fax: (856) 555-3875</p><a href="/alternate">Request for Alternate Transportation</a><ul>'
+        "<li>Students who ride the late bus, or are provided transportation by the school to attend an event will adhere to these same rules.</li></ul></main>"
+    )
+    r = parse_department_page({"main": cinnaminson}, {"main": "https://x.test/t"})
+    assert (r["office_phone"], r["office_fax"]) == ("(856) 555-8812", "(856) 555-3875")
+    assert r["late_bus_policy"] is None  # a rule pointing back at a list it doesn't show
+    assert r["bus_stop_change_form_url"] == "https://x.test/alternate"
 
 
 @pytest.mark.anyio
@@ -336,6 +393,14 @@ async def test_school_and_district_routes_hide_a_department_with_nothing_to_act_
             await db.commit()
         body = (await client.get(f"/schools/bus-school-{tag}/transportation")).json()
         assert body["district"]["daily_buses_note"].startswith("Daily transportation")
+        assert body["district"]["office_email"] is None
         assert body["late_bus"] is None
         assert body["district"]["contacts"] == [{"name": "Transportation office", "title": None, "email": "transportation@x.test"}]
         assert (await client.get(f"/districts/{district_id}/transportation")).json()["daily_buses_note"].startswith("Daily")
+
+        # An office reached only by email counts too (Voorhees).
+        async with database.SessionLocal() as db:
+            stored = await db.get(DistrictTransportation, row.id)
+            stored.daily_buses_note, stored.office_email = None, "office@x.test"
+            await db.commit()
+        assert (await client.get(f"/schools/bus-school-{tag}/transportation")).json()["district"]["office_email"] == "office@x.test"

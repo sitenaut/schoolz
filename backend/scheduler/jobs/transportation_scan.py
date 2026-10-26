@@ -41,5 +41,5 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     missing = missing_fields(reader, info)
     if missing:
         return f"WARNING[transportation_missing_fields]: parsed the department pages but found no {', '.join(missing)}"
-    office = info["office_phone"] or "none (daily buses are the home district's)"
+    office = info["office_phone"] or info["office_email"] or "none (daily buses are the home district's)"
     return f"transportation: {'created' if created else 'updated'} - {len(info['contacts'])} contacts, {len(info['late_bus_contractors'])} late-bus contractors, office {office}"
