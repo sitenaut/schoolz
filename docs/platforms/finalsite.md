@@ -133,5 +133,6 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 
 - Finalsite appends a hidden `<span class="fsStyleSROnly">(opens in new window)</span>` to every link that opens a new tab, so a link's full text is "September(opens in new window)". Compare link text through `smore_parser._visible_text` (or drop `fsStyleSROnly` spans) before matching it.
 - A district staff directory served on every school host, listing all staff with a Location column (Waterford, `<school>.wtsd.org/staff-directory`), is split per school by that column: each school keeps only its own.
+- A transportation department can be one page (Waterford's `/our-district/transportation`): `transportation.scan` reads Cherry Hill's subpage tree only when the main page links `late-bus-information`, and any other page with `parse_department_page`.
 - A scanned calendar PDF can mark closures only by colour with a key ("red = School Closed"); see the Waterford entry in `docs/DATA_GAPS.md` for how far the image prompt gets.
 

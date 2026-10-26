@@ -55,7 +55,7 @@ from services.district_budget import DISTRICT_SCHOOL_TYPES, latest_budget
 from services.i18n import fold, folded, request_lang
 from services.school_slug import unique_school_slug
 from services.school_today import build_today, resolve_lunch_menu
-from services.transportation import late_bus_for_school
+from services.transportation import has_answers, late_bus_for_school
 
 router = APIRouter(prefix="/schools", tags=["schools"])
 
@@ -653,11 +653,11 @@ async def get_school_transportation(school: School = Depends(resolve_school), db
     """Public. The district's bus info plus this school's own late-bus
     contractor (null for elementary schools, which have no late bus).
     Null altogether for a school with no district, or whose district
-    hasn't been scanned yet."""
+    hasn't been scanned yet or gave the scan nothing a parent can act on."""
     if not school.district_id:
         return None
     row = (await db.execute(select(DistrictTransportation).where(DistrictTransportation.district_id == school.district_id))).scalar_one_or_none()
-    if not row:
+    if not row or not has_answers(row):
         return None
     late = late_bus_for_school(row.late_bus_contractors, school.name, school.short_name)
     return SchoolTransportationOut(

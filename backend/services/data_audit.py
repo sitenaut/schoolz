@@ -27,7 +27,7 @@ from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from croniter import croniter
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import (
@@ -791,7 +791,11 @@ async def load_context(db: AsyncSession, schools: list[School], now: datetime | 
                                                 .join(LunchMenuItem, LunchMenuItem.lunch_menu_id == LunchMenu.id)
                                                 .where(LunchMenu.district_id.in_(district_ids)).group_by(LunchMenu.district_id, LunchMenu.school_type))).all():
             menu_district[(did, stype)] = at
-        transportation = set((await db.execute(select(DistrictTransportation.district_id).where(DistrictTransportation.district_id.in_(district_ids)))).scalars())
+        # Only a department with something to act on counts (services.transportation.has_answers).
+        transportation = set((await db.execute(select(DistrictTransportation.district_id).where(
+            DistrictTransportation.district_id.in_(district_ids),
+            or_(DistrictTransportation.office_phone.is_not(None), DistrictTransportation.daily_buses_note.is_not(None)),
+        ))).scalars())
 
     marks = {}
     if school_ids:

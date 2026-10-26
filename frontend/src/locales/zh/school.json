@@ -54,6 +54,7 @@
   "Transportation office": "交通办公室",
   "Hours": "办公时间",
   "Late bus": "晚班校车",
+  "Daily buses": "日常校车",
   "Bus running late?": "校车晚点了吗？",
   "Call the transportation office ({{hours}}).": "请致电交通办公室（{{hours}}）。",
   "Call the transportation office.": "请致电交通办公室。",
