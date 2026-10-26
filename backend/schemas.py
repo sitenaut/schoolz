@@ -994,10 +994,31 @@ class DistrictBudgetStatement(BaseModel):
     date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 
+class BudgetYearFigure(BaseModel):
+    """One year's figure: dollars, or a ratio for students per teacher."""
+
+    year: str = Field(pattern=r"^\d{4}-\d{2}$")
+    value: float
+    url: str | None = Field(default=None, pattern=r"^https?://", max_length=1000)
+
+
+class BudgetChange(BaseModel):
+    start: BudgetYearFigure
+    end: BudgetYearFigure
+
+
+class BudgetStaffing(BaseModel):
+    students_per_teacher: BudgetChange | None = None
+    median_teacher_salary: BudgetYearFigure | None = None
+    url: str = Field(pattern=r"^https?://", max_length=1000)
+
+
 class SchoolBudgetOut(BaseModel):
     """Public. The school's district's latest imported budget year."""
 
     district_name: str
+    # The district's /budgets page; null for a row imported before there was one.
+    slug: str | None = None
     budget_year: str
     benefits_prior: int | None
     benefits_budget: int | None
@@ -1012,21 +1033,95 @@ class SchoolBudgetOut(BaseModel):
     imported_at: datetime
 
 
+class BudgetIndexDistrict(BaseModel):
+    slug: str
+    name: str
+    county: str | None
+    # One of the districts schoolz tracks (it has school pages here).
+    tracked: bool
+    levy_change_pct: float | None
+    benefits_change_pct: float | None
+
+
+class BudgetIndexOut(BaseModel):
+    """Public. Every district with figures for the latest budget year."""
+
+    budget_year: str | None
+    districts: list[BudgetIndexDistrict]
+
+
+class BudgetMedian(BaseModel):
+    """Medians over the comparable districts that have the figure. Null where
+    fewer than BUDGET_MEDIAN_MIN districts do (a county of a handful)."""
+
+    county: float | None
+    state: float | None
+
+
+class BudgetSchoolLink(BaseModel):
+    slug: str
+    name: str
+
+
+class BudgetDistrictOut(BaseModel):
+    """Public. One district's latest budget year, with the county and state
+    medians to read it against."""
+
+    slug: str
+    name: str
+    county: str | None
+    state: str
+    budget_year: str
+    comparable: bool | None
+    schools: list[BudgetSchoolLink]
+    benefits_prior: int | None
+    benefits_budget: int | None
+    other_spending_prior: int | None
+    other_spending_budget: int | None
+    prior_basis: str
+    formula_aid_change: int | None
+    levy_prior: int | None
+    levy_budget: int | None
+    levy_change_pct: float | None
+    fund_balance_prior: int | None
+    fund_balance_budget: int | None
+    budget_report_url: str | None
+    aid_source_url: str | None
+    health_costs: BudgetChange | None
+    staffing: BudgetStaffing | None
+    statements: list[DistrictBudgetStatement]
+    # benefits_change_pct, other_spending_change_pct, levy_change_pct,
+    # health_change_pct, students_per_teacher, median_teacher_salary
+    medians: dict[str, BudgetMedian]
+    imported_at: datetime
+
+
 class BudgetImportDistrict(BaseModel):
     state: str = Field(default="NJ", pattern=r"^[A-Z]{2}$")
     state_code: str = Field(pattern=r"^[0-9A-Z]{1,8}$")
-    # Our own district name, used only to find a district that has no
-    # state_code yet - the import then sets it.
+    # The district's name: ours where we track it (the import also uses it to
+    # find a tracked district that has no state_code yet, and sets it), the
+    # state's otherwise.
     name: str | None = None
+    county: str | None = Field(default=None, max_length=100)
+    # The /budgets permalink, used only when the district is first created.
+    slug: str | None = Field(default=None, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=200)
+    comparable: bool | None = None
     benefits_prior: int | None = None
     benefits_budget: int | None = None
+    other_spending_prior: int | None = None
+    other_spending_budget: int | None = None
     prior_basis: str = Field(default="revised", pattern=r"^(revised|original)$")
     formula_aid_change: int | None = None
+    levy_prior: int | None = None
+    levy_budget: int | None = None
     levy_change_pct: float | None = None
     fund_balance_prior: int | None = None
     fund_balance_budget: int | None = None
     budget_report_url: str | None = Field(default=None, pattern=r"^https?://", max_length=1000)
     aid_source_url: str | None = Field(default=None, pattern=r"^https?://", max_length=1000)
+    health_costs: BudgetChange | None = None
+    staffing: BudgetStaffing | None = None
     statements: list[DistrictBudgetStatement] = []
 
 
@@ -1035,6 +1130,7 @@ class BudgetImport(BaseModel):
 
     source_commit: str = Field(pattern=r"^[0-9a-f]{7,40}$")
     budget_year: str = Field(pattern=r"^\d{4}-\d{2}$")
+    levy_file_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     districts: list[BudgetImportDistrict]
 
 
@@ -1042,7 +1138,9 @@ class BudgetImportResult(BaseModel):
     created: int
     updated: int
     codes_set: int
-    unmatched: list[str]  # "state_code name" for each file row with no district here
+    # Rows that are one of our districts (the rest get a /budgets page only).
+    tracked: int
+    state_districts_created: int
 
 
 class TodayTransportationOut(BaseModel):

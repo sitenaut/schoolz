@@ -1608,6 +1608,54 @@ h3 {
 .budget-quotes .note {
   margin: 10px 0 0;
 }
+.budget-entry {
+  display: block;
+  margin: 0 0 0.75rem;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.budget-entry b {
+  display: block;
+  color: var(--primary);
+}
+.budget-entry span {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.budget-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.budget-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+.budget-list .note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12.5px;
+}
+.budget-median {
+  display: block;
+  margin-top: 2px;
+}
+.budget-quotes-card {
+  margin-top: 12px;
+}
+.budget-quotes-card .budget-quotes {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
 details.acc {
   background: var(--card);
   border: 1px solid var(--line);

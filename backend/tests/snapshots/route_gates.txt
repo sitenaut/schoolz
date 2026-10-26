@@ -79,6 +79,8 @@ PATCH  /auth/me  login
 POST   /auth/register  public
 POST   /auth/reset-password  public
 POST   /bucket3/import  login
+GET    /budgets  public
+GET    /budgets/{slug}  public
 GET    /calendar  optional
 GET    /capture-devices  login
 GET    /capture-devices/diagnostics  perm:support.view

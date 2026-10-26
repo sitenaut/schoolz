@@ -48,8 +48,8 @@ export const LOCALE: string = LANGUAGES.find((l) => l.code === CURRENT_LANG)?.lo
  * Mirror any change in backend/routers/seo.py. */
 export function isTranslatedPath(routerPath: string): boolean {
   const p = routerPath.split(/[?#]/)[0];
-  if (["/", "/schools", "/lunch", "/directory", "/calendar"].includes(p)) return true;
-  return /^\/schools\/[^/]+(?:\/calendar)?$/.test(p);
+  if (["/", "/schools", "/budgets", "/lunch", "/directory", "/calendar"].includes(p)) return true;
+  return /^\/schools\/[^/]+(?:\/calendar)?$/.test(p) || /^\/budgets\/[^/]+$/.test(p);
 }
 
 /** A router-relative path ("/schools/x?y=1") as a real URL path in `lang`. */

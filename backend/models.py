@@ -1472,12 +1472,35 @@ class DistrictTransportation(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
 
+class StateDistrict(Base):
+    """A school district as the state lists it: every district that files a
+    budget, not only the ones we track (those are `District`s, joined on
+    `state` + `state_code`). Exists for the /budgets pages, so `slug` is a
+    permalink: set when the row is created and never regenerated."""
+
+    __tablename__ = "state_districts"
+    __table_args__ = (
+        UniqueConstraint("state", "state_code", name="uq_state_districts_code"),
+        UniqueConstraint("slug", name="uq_state_districts_slug"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    state: Mapped[str] = mapped_column(String(2), default="NJ", server_default="NJ", nullable=False)
+    state_code: Mapped[str] = mapped_column(String(8), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    county: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    slug: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class DistrictBudget(Base):
     """One budget year of a district's figures from the state's own files, for
-    the school page's budget section. Imported (POST /admin/budget/import)
-    from a file built at a pinned commit of the NJ school-funding audit
-    (scripts/build_budget_facts.py), never fetched at request time, and every
-    figure carries the state document it came from.
+    the /budgets pages and the school page's budget section. Imported (POST
+    /admin/budget/import) from a file built at a pinned commit of the NJ
+    school-funding audit (scripts/build_budget_facts.py), never fetched at
+    request time, and every figure carries the state document it came from.
+    Every row has a `state_district_id`; `district_id` is set too when we
+    track the district (rows imported before 0133 have only that).
 
     `statements` are only the district's own words: short verbatim quotes from
     its budget documents, each with its link and date, for districts whose
@@ -1486,11 +1509,21 @@ class DistrictBudget(Base):
     label reads as a verdict on the district."""
 
     __tablename__ = "district_budgets"
-    __table_args__ = (UniqueConstraint("district_id", "budget_year", name="uq_district_budgets_year"),)
+    __table_args__ = (
+        UniqueConstraint("district_id", "budget_year", name="uq_district_budgets_year"),
+        UniqueConstraint("state_district_id", "budget_year", name="uq_district_budgets_state_year"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    district_id: Mapped[str] = mapped_column(String(36), ForeignKey("districts.id", ondelete="CASCADE"), nullable=False, index=True)
+    state_district_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("state_districts.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    district_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("districts.id", ondelete="CASCADE"), nullable=True, index=True)
     budget_year: Mapped[str] = mapped_column(String(7), nullable=False)  # "2026-27"
+    # False where the audit leaves the district out of comparisons (a services
+    # commission, aid outside the formula, a tiny benefits line): it gets a
+    # page but doesn't count toward the county and state medians.
+    comparable: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     # Whole dollars. The prior year is the state's *revised* figure for it
     # unless prior_basis says "original" (the revised one wasn't filed).
     benefits_prior: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
@@ -1500,8 +1533,19 @@ class DistrictBudget(Base):
     levy_change_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     fund_balance_prior: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     fund_balance_budget: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Total tax levy, and day-to-day spending other than benefits (the rest of
+    # general current expense).
+    levy_prior: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    levy_budget: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    other_spending_prior: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    other_spending_budget: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     budget_report_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     aid_source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Audited health costs, two fiscal years: {"from": {"year", "amount", "url"}, "to": {...}}
+    health_costs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # {"students_per_teacher": {"from": {"year", "value"}, "to": {...}} | None,
+    #  "median_teacher_salary": {"year", "amount"} | None, "url"}
+    staffing: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # [{"topic", "quote", "source", "url", "date"}]
     statements: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     source_commit: Mapped[str] = mapped_column(String(40), nullable=False)

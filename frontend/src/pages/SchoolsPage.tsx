@@ -99,6 +99,11 @@ export function SchoolsPage() {
         <Link to="/start">{t("Manage my schools")}</Link>
       </div>
 
+      <Link className="budget-entry" to="/budgets">
+        <b>{t("District budgets")}</b>
+        <span>{t("Spending, taxes, state aid and teachers for every New Jersey school district")}</span>
+      </Link>
+
       <div className="tabs">
         {activeSchools.length > 0 && (
           <button className={`tab ${tab === "mine" ? "active" : ""}`} onClick={() => setTab("mine")}>
