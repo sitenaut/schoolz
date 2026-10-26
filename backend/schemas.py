@@ -1015,6 +1015,38 @@ class BudgetStaffing(BaseModel):
     url: str = Field(pattern=r"^https?://", max_length=1000)
 
 
+class BudgetAidCategory(BaseModel):
+    """One of the state aid file's categories (equalization, special_education,
+    transportation, security, ...), both years in whole dollars."""
+
+    key: str = Field(pattern=r"^[a-z_]{1,40}$")
+    start: int
+    end: int
+
+
+class BudgetStateAid(BaseModel):
+    """K-12 formula aid in total and by category, and preschool aid, from the
+    state's aid files for both years."""
+
+    k12: BudgetChange
+    categories: list[BudgetAidCategory]
+    # -3.0 or 6.0 where the state's limit on a year's change held the district
+    # (so the formula alone would have moved its aid further).
+    limit_pct: float | None = None
+    # Paid into its own fund, for preschool only.
+    preschool: BudgetChange | None = None
+
+
+class BudgetIdeaGrant(BudgetChange):
+    """The federal special education grant (IDEA Part B, ages 3 to 21)."""
+
+    # The part to be spent on students with disabilities whose parents placed
+    # them in private schools.
+    private_school_share: int | None = None
+    # The budget year's award is the state's preliminary one.
+    preliminary: bool = False
+
+
 class SchoolBudgetOut(BaseModel):
     """Public. The school's district's latest imported budget year."""
 
@@ -1091,9 +1123,12 @@ class BudgetDistrictOut(BaseModel):
     aid_source_url: str | None
     health_costs: BudgetChange | None
     staffing: BudgetStaffing | None
+    state_aid: BudgetStateAid | None
+    idea_grant: BudgetIdeaGrant | None
     statements: list[DistrictBudgetStatement]
     # benefits_change_pct, other_spending_change_pct, levy_change_pct,
-    # health_change_pct, students_per_teacher, median_teacher_salary
+    # health_change_pct, students_per_teacher, median_teacher_salary,
+    # state_aid_change_pct, idea_change_pct
     medians: dict[str, BudgetMedian]
     imported_at: datetime
 
@@ -1124,6 +1159,8 @@ class BudgetImportDistrict(BaseModel):
     aid_source_url: str | None = Field(default=None, pattern=r"^https?://", max_length=1000)
     health_costs: BudgetChange | None = None
     staffing: BudgetStaffing | None = None
+    state_aid: BudgetStateAid | None = None
+    idea_grant: BudgetIdeaGrant | None = None
     statements: list[DistrictBudgetStatement] = []
 
 
@@ -1133,6 +1170,8 @@ class BudgetImport(BaseModel):
     source_commit: str = Field(pattern=r"^[0-9a-f]{7,40}$")
     budget_year: str = Field(pattern=r"^\d{4}-\d{2}$")
     levy_file_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    # The state's aid and IDEA workbooks the figures came from, by file name.
+    state_files_sha256: dict[str, str] = {}
     districts: list[BudgetImportDistrict]
 
 

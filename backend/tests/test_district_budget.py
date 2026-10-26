@@ -2,6 +2,7 @@ import importlib.util
 import json
 import os
 import uuid
+import zipfile
 from pathlib import Path
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
@@ -224,3 +225,104 @@ def test_builder_keeps_audited_health_costs_only_where_both_years_reconcile():
     assert builder.health_costs(row)["end"] == {"year": "2024-25", "value": 120, "url": "https://www.nj.gov/a25.pdf"}
     assert builder.health_costs({**row, "acfr_quality_2023": "unreconciled"}) is None
     assert builder.health_costs({**row, "acfr_quality_2025": "reconciled (not used)"}) is None
+
+
+def _aid(start: int, end: int, limit: float | None = None) -> dict:
+    return {"k12": {"start": {"year": "2025-26", "value": start}, "end": {"year": "2026-27", "value": end}},
+            "categories": [{"key": "equalization", "start": 0, "end": end - start}, {"key": "transportation", "start": start, "end": start}],
+            "limit_pct": limit, "preschool": None}
+
+
+def _idea(start: int, end: int) -> dict:
+    return {"start": {"year": "2025-26", "value": start}, "end": {"year": "2026-27", "value": end}, "private_school_share": 1_000, "preliminary": True}
+
+
+@pytest.mark.anyio
+async def test_state_aid_and_the_idea_grant_are_stored_with_their_medians():
+    tag = uuid.uuid4().hex[:6].upper()
+    county = f"County {tag}"
+    rows = [
+        _row(f"A{tag}", "First", county=county, state_aid=_aid(1_000_000, 970_000, -3.0), idea_grant=_idea(100_000, 101_000)),
+        _row(f"B{tag}", "Second", county=county, state_aid=_aid(1_000_000, 1_060_000, 6.0)),
+        _row(f"C{tag}", "Third", county=county, state_aid=_aid(1_000_000, 1_020_000)),
+    ]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = await _admin(client)
+        r = await client.post("/admin/budget/import", headers=headers, json={"source_commit": "abcdef0", "budget_year": "2026-27", "districts": rows})
+        assert r.status_code == 200, r.text
+        page = (await client.get(f"/budgets/district-a{tag.lower()}")).json()
+        assert page["state_aid"]["limit_pct"] == -3.0 and page["state_aid"]["categories"][0] == {"key": "equalization", "start": 0, "end": -30_000}
+        assert page["idea_grant"]["private_school_share"] == 1_000 and page["idea_grant"]["preliminary"] is True
+        # Median of -3, +6 and +2; only one district has an IDEA grant, too few for a median.
+        assert page["medians"]["state_aid_change_pct"]["county"] == 2.0
+        assert page["medians"]["idea_change_pct"]["county"] is None
+        assert (await client.get(f"/budgets/district-b{tag.lower()}")).json()["idea_grant"] is None
+
+
+def test_committed_aid_figures_agree_with_the_panel_change():
+    data = json.loads((SEED / "nj_2026_27.json").read_text())
+    assert data["state_files_sha256"] and all(len(v) == 64 for v in data["state_files_sha256"].values())
+    for d in data["districts"]:
+        aid = d.get("state_aid")
+        assert (aid is not None) == (d.get("formula_aid_change") is not None), d["state_code"]
+        if aid:
+            assert aid["k12"]["end"]["value"] - aid["k12"]["start"]["value"] == d["formula_aid_change"]
+            assert sum(c["end"] for c in aid["categories"]) == aid["k12"]["end"]["value"]
+            assert aid["limit_pct"] in (None, -3.0, 6.0)
+
+
+def _categories(eq: int, sped: int, choice: int = 0) -> dict:
+    return {"categories": {**dict.fromkeys((key for _, key in builder.AID_CATEGORIES), 0), "equalization": eq, "special_education": sped, "school_choice": choice}}
+
+
+def test_builder_finds_a_district_held_at_the_aid_limit():
+    prior = _categories(400_000, 600_000)
+    assert builder.limit_pct(prior, _categories(388_001, 582_001)) == -3.0  # each category rounded after the limit
+    assert builder.limit_pct(prior, _categories(424_000, 636_000, choice=90_000)) == 6.0  # school choice aid isn't limited
+    assert builder.limit_pct(prior, _categories(390_000, 590_000)) is None
+    assert builder.limit_pct(_categories(0, 0), _categories(0, 0)) is None
+
+
+def test_builder_stops_when_the_two_aid_files_disagree():
+    aid = {"2025-26": {"0001": {"total": 100, "prior_total": 90, **_categories(100, 0)}},
+           "2026-27": {"0001": {"total": 97, "prior_total": 99, **_categories(97, 0)}}}
+    with pytest.raises(SystemExit):
+        builder.state_aid("0001", aid, {"2025-26": {}, "2026-27": {}})
+    aid["2026-27"]["0001"]["prior_total"] = 100
+    out = builder.state_aid("0001", aid, {"2025-26": {}, "2026-27": {}})
+    assert out["categories"] == [{"key": "equalization", "start": 100, "end": 97}] and out["preschool"] is None
+
+
+def _xlsx(path, rows: list[list]) -> object:
+    """A one-sheet workbook with inline strings, the way the state's files store text."""
+    def cell(ref: str, v) -> str:
+        return f'<c r="{ref}" t="inlineStr"><is><t>{v}</t></is></c>' if isinstance(v, str) else f'<c r="{ref}"><v>{v}</v></c>'
+    body = "".join(f'<row r="{i}">' + "".join(cell(f"{chr(65 + j)}{i}", v) for j, v in enumerate(r)) + "</row>" for i, r in enumerate(rows, 1))
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("xl/worksheets/sheet1.xml", f'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>{body}</sheetData></worksheet>')
+    return path
+
+
+IDEA_HEADER = ["County Name", "County Code", "District Code", "District Name", "Basic Grant Ages \n3 to 21", "Basic Grant Nonpublic Share",
+               "Preschool Grant Ages  3 to 5", "Preschool Grant Nonpublic Share"]
+
+
+def test_builder_reads_idea_awards_and_leaves_out_charter_schools(tmp_path):
+    path = _xlsx(tmp_path / "idea.xlsx", [
+        ["SFY 2027 IDEA Basic and Preschool Grant Awards"], ["as of June 23, 2026- preliminary"], IDEA_HEADER,
+        ["Camden", 7, 800, "Somewhere Township", 2_000_000, 300_000, 100_000, 0],
+        # Charter rows: the FY27 file has their county one row out, and one school twice.
+        ["Mercer", 80, 8140, "A Charter School", 90_000, 0, 1_000, 0],
+        ["Hudson", 80, 8140, "A Charter School", 91_000, 0, 1_000, 0],
+    ])
+    preliminary, awards = builder.idea_awards(path)
+    assert preliminary is True
+    assert awards == {"0800": {"total": 2_100_000, "private_school_share": 300_000}}
+
+
+def test_builder_stops_on_a_district_listed_twice_or_a_missing_column(tmp_path):
+    row = ["Camden", 7, 800, "Somewhere Township", 2_000_000, 0, 0, 0]
+    with pytest.raises(SystemExit):
+        builder.idea_awards(_xlsx(tmp_path / "twice.xlsx", [IDEA_HEADER, row, row]))
+    with pytest.raises(SystemExit):
+        builder.idea_awards(_xlsx(tmp_path / "renamed.xlsx", [[*IDEA_HEADER[:4], "Basic Grant"], row]))

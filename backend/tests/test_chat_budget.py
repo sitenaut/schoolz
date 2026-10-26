@@ -94,6 +94,37 @@ def test_the_answer_reads_like_the_page():
     assert "never rank" in a["about"]
 
 
+AID = {
+    "k12": {"start": {"year": "2025-26", "value": 28_592_928, "url": "https://www.nj.gov/aid26.xlsx"},
+            "end": {"year": "2026-27", "value": 27_735_140, "url": "https://www.nj.gov/aid27.xlsx"}},
+    "categories": [{"key": "equalization", "start": 0, "end": 5_413_149}, {"key": "special_education", "start": 19_431_379, "end": 15_154_725}],
+    "limit_pct": -3.0,
+    "preschool": {"start": {"year": "2025-26", "value": 7_489_660, "url": "https://www.nj.gov/pre26.xlsx"},
+                  "end": {"year": "2026-27", "value": 12_634_490, "url": "https://www.nj.gov/pre27.xlsx"}},
+}
+IDEA = {"start": {"year": "2025-26", "value": 2_997_170, "url": "https://www.nj.gov/idea26.xlsx"},
+        "end": {"year": "2026-27", "value": 2_967_017, "url": "https://www.nj.gov/idea27.xlsx"},
+        "private_school_share": 310_427, "preliminary": True}
+
+
+def test_state_aid_by_category_preschool_aid_and_the_idea_grant_read_like_the_page():
+    medians = {**BUDGET["medians"], "state_aid_change_pct": {"county": -1.0, "state": 2.5}}
+    a = _budget_answer({**BUDGET, "state_aid": AID, "idea_grant": IDEA, "medians": medians}, "https://schoolz.example/budgets/x")
+    assert "state_school_aid" not in a
+    k12 = a["state_school_aid_k12"]
+    assert (k12["2025-26"], k12["2026-27"], k12["change"]) == ("$28.6 million", "$27.7 million", "-3.0%")
+    assert k12["by_category"]["Equalization aid"] == {"2025-26": "$0", "2026-27": "$5.4 million"}
+    assert "can fall by no more than 3% a year" in k12["limit"] and "cut them further" in k12["limit"]
+    assert k12["medians_of_the_change"] == {"Camden County median": "-1.0%", "New Jersey median": "+2.5%"}
+    assert a["state_preschool_aid"]["change"] == "+68.7%" and "only be spent on preschool" in a["state_preschool_aid"]["what"]
+    idea = a["federal_special_education_grant_idea"]
+    assert idea["change"] == "-1.0%" and idea["note"] == "The 2026-27 award is the state's preliminary figure."
+    assert idea["set_aside_for_students_placed_in_private_schools_by_their_parents"] == "$310,427"
+    assert a["sources"]["state_aid_files"] == ["https://www.nj.gov/aid26.xlsx", "https://www.nj.gov/aid27.xlsx",
+                                               "https://www.nj.gov/pre26.xlsx", "https://www.nj.gov/pre27.xlsx"]
+    assert a["sources"]["idea_award_files"] == ["https://www.nj.gov/idea26.xlsx", "https://www.nj.gov/idea27.xlsx"]
+
+
 def test_a_district_that_isnt_comparable_gets_no_medians():
     a = _budget_answer({**BUDGET, "comparable": False}, "https://schoolz.example/budgets/x")
     assert "medians_of_the_change" not in a["employee_benefits"] and "medians" not in a["students_per_teacher"]

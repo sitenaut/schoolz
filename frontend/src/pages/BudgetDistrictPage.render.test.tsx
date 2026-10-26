@@ -46,6 +46,8 @@ const district = (over: Partial<BudgetDistrict> = {}): BudgetDistrict => ({
     median_teacher_salary: { year: "2024-25", value: 102_148 },
     url: "https://www.nj.gov/education/spr/download/",
   },
+  state_aid: null,
+  idea_grant: null,
   statements: [],
   medians: {
     benefits_change_pct: median(16, 18.2),
@@ -54,6 +56,8 @@ const district = (over: Partial<BudgetDistrict> = {}): BudgetDistrict => ({
     health_change_pct: median(16.4, 18.1),
     students_per_teacher: median(11.1, 10.7),
     median_teacher_salary: median(75_209.5, 78_586.5),
+    state_aid_change_pct: median(-1, 2.5),
+    idea_change_pct: median(null, 1.7),
   },
   imported_at: "2026-10-25T00:00:00Z",
   ...over,
@@ -90,6 +94,49 @@ describe("BudgetDistrictPage", () => {
     expect(document.body.getAttribute("data-prerender-ready")).toBe("true");
   });
 
+  it("shows state aid by category with the limit that held it, preschool aid and the IDEA grant, each with its files", async () => {
+    const year = (y: string, value: number, url: string) => ({ year: y, value, url });
+    apiFetch.mockResolvedValue(
+      res(
+        200,
+        district({
+          state_aid: {
+            k12: { start: year("2025-26", 28_592_928, "https://www.nj.gov/aid26.xlsx"), end: year("2026-27", 27_735_140, "https://www.nj.gov/aid27.xlsx") },
+            categories: [
+              { key: "equalization", start: 0, end: 5_413_149 },
+              { key: "special_education", start: 19_431_379, end: 15_154_725 },
+            ],
+            limit_pct: -3,
+            preschool: { start: year("2025-26", 7_489_660, "https://www.nj.gov/pre26.xlsx"), end: year("2026-27", 12_634_490, "https://www.nj.gov/pre27.xlsx") },
+          },
+          idea_grant: {
+            start: year("2025-26", 2_997_170, "https://www.nj.gov/idea26.xlsx"),
+            end: year("2026-27", 2_967_017, "https://www.nj.gov/idea27.xlsx"),
+            private_school_share: 310_427,
+            preliminary: true,
+          },
+        }),
+      ),
+    );
+    at("/budgets/cherry-hill-school-district");
+    await screen.findByText("State school aid, K–12");
+    expect(screen.queryByText("State school aid")).toBeNull();
+    expect(screen.getByText("2025-26: $28.6M → 2026-27: $27.7M (-3%)")).toBeTruthy();
+    expect(screen.getByText("Camden County median -1% · New Jersey median +2.5%")).toBeTruthy();
+    expect(screen.getByText("Equalization aid").nextElementSibling?.textContent).toBe("$0 → $5.4M");
+    expect(screen.getByText("Special education aid").nextElementSibling?.textContent).toBe("$19.4M → $15.2M");
+    expect(screen.getByText(/can fall by no more than 3% a year, and this district is at that limit/)).toBeTruthy();
+    expect(screen.getByText(/Equalization aid is based on the gap/)).toBeTruthy();
+    expect(screen.getByText("2025-26: $7.5M → 2026-27: $12.6M (+68.7%)")).toBeTruthy();
+    // Both round to $3M, so both are shown in full.
+    expect(screen.getByText("2025-26: $2,997,170 → 2026-27: $2,967,017 (-1%)")).toBeTruthy();
+    expect(screen.getByText("New Jersey median +1.7%")).toBeTruthy();
+    expect(screen.getByText(/\$310,427 of it is set aside/)).toBeTruthy();
+    expect(screen.getByText(/The 2026-27 award is the state's preliminary figure/)).toBeTruthy();
+    const links = screen.getAllByText("2026-27").map((a) => a.getAttribute("href"));
+    expect(links).toEqual(["https://www.nj.gov/aid27.xlsx", "https://www.nj.gov/pre27.xlsx", "https://www.nj.gov/idea27.xlsx"]);
+  });
+
   it("leaves out what a district has no figures for, and its medians when it isn't comparable", async () => {
     apiFetch.mockResolvedValue(res(200, district({ comparable: false, health_costs: null, staffing: null, schools: [] })));
     at("/budgets/cherry-hill-school-district");
@@ -97,6 +144,9 @@ describe("BudgetDistrictPage", () => {
     expect(screen.queryByText("Health insurance costs")).toBeNull();
     expect(screen.queryByText("Teachers")).toBeNull();
     expect(screen.queryByText("Schools on schoolz")).toBeNull();
+    // No aid by category on file: just the change, as before.
+    expect(screen.getByText("State school aid")).toBeTruthy();
+    expect(screen.queryByText("Federal special education grant (IDEA)")).toBeNull();
     expect(screen.queryByText(/County median/)).toBeNull();
     expect(screen.getByText(/isn't counted in the county and state medians/)).toBeTruthy();
   });
