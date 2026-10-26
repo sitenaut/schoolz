@@ -552,50 +552,66 @@ export function SchoolDetailPage() {
             )}
           </div>
           <div className="sacc">
-            <div className="hours">
-              {transport.district.office_phone && (
-                <div>
-                  <b>{t("Transportation office")}</b>
-                  <a href={telHref(transport.district.office_phone)}>{transport.district.office_phone}</a>
-                </div>
-              )}
-              {transport.district.office_hours && (
-                <div>
-                  <b>{t("Hours")}</b>
-                  {transport.district.office_hours}
-                </div>
-              )}
-              {transport.late_bus && (
-                <div>
-                  <b>{t("Late bus")}</b>
-                  <a href={telHref(transport.late_bus.phone)}>{transport.late_bus.phone}</a>
-                </div>
-              )}
-            </div>
-            <ul className="qa">
-              <li>
-                <b>{t("Bus running late?")}</b>
-                <span>
-                  {transport.district.office_hours
-                    ? t("Call the transportation office ({{hours}}).", { hours: transport.district.office_hours })
-                    : t("Call the transportation office.")}
-                  {transport.district.delay_policy ? ` ${transport.district.delay_policy}` : ""}
-                </span>
-              </li>
-              <li>
-                <b>{t("Late bus after activities")}</b>
-                {transport.late_bus ? (
-                  <span>
-                    {t("{{contractor}} runs this school's late buses (routes {{routes}}). Ask the school secretary which route your child is on.", {
-                      contractor: transport.late_bus.contractor,
-                      routes: transport.late_bus.routes.join(", "),
-                    })}{" "}
-                    {transport.district.late_bus_policy}
-                  </span>
-                ) : (
-                  <span>{t("Late buses only run for the middle and high schools; there is no late bus at this school.")}</span>
+            {(transport.district.office_phone || transport.district.office_hours || transport.late_bus) && (
+              <div className="hours">
+                {transport.district.office_phone && (
+                  <div>
+                    <b>{t("Transportation office")}</b>
+                    <a href={telHref(transport.district.office_phone)}>{transport.district.office_phone}</a>
+                  </div>
                 )}
-              </li>
+                {transport.district.office_hours && (
+                  <div>
+                    <b>{t("Hours")}</b>
+                    {transport.district.office_hours}
+                  </div>
+                )}
+                {transport.late_bus && (
+                  <div>
+                    <b>{t("Late bus")}</b>
+                    <a href={telHref(transport.late_bus.phone)}>{transport.late_bus.phone}</a>
+                  </div>
+                )}
+              </div>
+            )}
+            <ul className="qa">
+              {transport.district.daily_buses_note && (
+                <li>
+                  <b>{t("Daily buses")}</b>
+                  <span>{transport.district.daily_buses_note}</span>
+                </li>
+              )}
+              {transport.district.office_phone && (
+                <li>
+                  <b>{t("Bus running late?")}</b>
+                  <span>
+                    {transport.district.office_hours
+                      ? t("Call the transportation office ({{hours}}).", { hours: transport.district.office_hours })
+                      : t("Call the transportation office.")}
+                    {transport.district.delay_policy ? ` ${transport.district.delay_policy}` : ""}
+                  </span>
+                </li>
+              )}
+              {/* "No late bus here" only where the district lists which schools have one (Cherry Hill);
+                  elsewhere the district's own words, or nothing. */}
+              {(transport.late_bus || transport.district.late_bus_contractors.length > 0 || transport.district.late_bus_policy) && (
+                <li>
+                  <b>{t("Late bus after activities")}</b>
+                  {transport.late_bus ? (
+                    <span>
+                      {t("{{contractor}} runs this school's late buses (routes {{routes}}). Ask the school secretary which route your child is on.", {
+                        contractor: transport.late_bus.contractor,
+                        routes: transport.late_bus.routes.join(", "),
+                      })}{" "}
+                      {transport.district.late_bus_policy}
+                    </span>
+                  ) : transport.district.late_bus_contractors.length > 0 ? (
+                    <span>{t("Late buses only run for the middle and high schools; there is no late bus at this school.")}</span>
+                  ) : (
+                    <span>{transport.district.late_bus_policy}</span>
+                  )}
+                </li>
+              )}
               {transport.district.bus_stop_change_procedure && (
                 <li>
                   <b>{t("Need a different stop for today?")}</b>
@@ -640,7 +656,7 @@ export function SchoolDetailPage() {
                   {transport.district.contacts.map((c) => (
                     <div className="person-card" key={c.email ?? c.name}>
                       <div className="person-name">{c.name}</div>
-                      <div className="person-title">{c.title}</div>
+                      {c.title && <div className="person-title">{c.title}</div>}
                       {c.email && (
                         <div className="person-title">
                           <a href={`mailto:${c.email}`}>{c.email}</a>

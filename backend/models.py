@@ -1464,6 +1464,10 @@ class DistrictTransportation(Base):
     bus_stop_change_deadline: Mapped[str | None] = mapped_column(String, nullable=True)
     bus_stop_change_form_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     lost_items_policy: Mapped[str | None] = mapped_column(String, nullable=True)
+    # The district's own words when its daily buses are someone else's: a
+    # county vocational school's students ride their home district's buses
+    # (Camden County Technical). Set, the page has no office of its own to call.
+    daily_buses_note: Mapped[str | None] = mapped_column(String, nullable=True)
     main_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     late_bus_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     guidelines_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)

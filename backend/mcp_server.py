@@ -645,10 +645,14 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     @mcp.tool()
     async def get_school_transportation(school_id_or_slug: str) -> Any:
         """Bus/transportation info for one school: office contacts, late-bus
-        contractor and route numbers (only middle/high schools have a late
-        bus - null for elementary), bus-stop-change procedure, lost-items
-        policy. Rolled up from the school's district, since almost none of
-        this is genuinely per-school.
+        contractor and route numbers (late_bus is null where the district
+        lists no contractor for this school; late_bus_policy then holds the
+        district's own words, if any), bus-stop-change procedure, lost-items
+        policy. daily_buses_note, when set, is the district saying who runs
+        its daily buses: a county vocational school's students ride their
+        home district's buses, so send the visitor to that district's
+        transportation office. Rolled up from the school's district, since
+        almost none of this is genuinely per-school.
 
         If null, the result includes a `note` pointing at the district's
         transportation office instead of a submission form - this data is

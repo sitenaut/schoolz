@@ -54,6 +54,7 @@
   "Transportation office": "परिवहन कार्यालय",
   "Hours": "समय",
   "Late bus": "देर की बस",
+  "Daily buses": "रोज़ की बसें",
   "Bus running late?": "बस देर से चल रही है?",
   "Call the transportation office ({{hours}}).": "परिवहन कार्यालय को फ़ोन करें ({{hours}})।",
   "Call the transportation office.": "परिवहन कार्यालय को फ़ोन करें।",

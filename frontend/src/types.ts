@@ -207,7 +207,7 @@ export type NextRotation = { label: string; rotation_day: string; blocks: string
 
 export type TodayTransportation = { office_phone: string | null; late_bus_phone: string | null; late_bus_contractor: string | null };
 
-export type TransportationContact = { name: string; title: string; email: string | null };
+export type TransportationContact = { name: string; title: string | null; email: string | null };
 export type LateBusContractor = { name: string; phone: string; routes: Record<string, string[]> };
 export type DistrictTransportation = {
   office_phone: string | null;
@@ -222,6 +222,7 @@ export type DistrictTransportation = {
   bus_stop_change_deadline: string | null;
   bus_stop_change_form_url: string | null;
   lost_items_policy: string | null;
+  daily_buses_note?: string | null;
   main_url: string | null;
   late_bus_url: string | null;
   guidelines_url: string | null;

@@ -54,6 +54,7 @@
   "Transportation office": "Oficina de transporte",
   "Hours": "Horario",
   "Late bus": "Autobús tardío",
+  "Daily buses": "Autobuses diarios",
   "Bus running late?": "¿El autobús se retrasa?",
   "Call the transportation office ({{hours}}).": "Llame a la oficina de transporte ({{hours}}).",
   "Call the transportation office.": "Llame a la oficina de transporte.",

@@ -35,10 +35,10 @@ a clean, stable shape):
 import asyncio
 import html as html_lib
 import re
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 import scraper_client
 
@@ -359,10 +359,9 @@ async def _fetch_edlio_page(url: str) -> str:
         return resp.text
 
 
-async def _discover_edlio_transportation(main_url: str) -> dict:
+async def _discover_edlio_transportation(main_url: str, info_html: str) -> dict:
     """`transportation_url` is any page of the department; the Staff and
     Guidelines pages are found from its left-hand menu by link text."""
-    info_html = await _fetch_edlio_page(main_url)
     menu = {a.get_text(" ", strip=True).lower(): urljoin(main_url, a["href"]) for a in BeautifulSoup(info_html, "lxml").find_all("a", href=True)}
     staff_url, guidelines_url = menu.get("staff"), menu.get("guidelines")
     staff_html = await _fetch_edlio_page(staff_url) if staff_url else ""
@@ -370,19 +369,252 @@ async def _discover_edlio_transportation(main_url: str) -> dict:
     return parse_edlio_transportation(info_html, staff_html, guidelines_html, {"main": menu.get("transportation information", main_url), "guidelines": guidelines_url or main_url})
 
 
-async def discover_transportation(transportation_url: str, base_url: str) -> dict:
-    """Fetches the department page tree and returns every parsed field
-    plus the page URLs themselves (for "read the full policy" links)."""
+# A department that is one page, or one page plus a Staff and a Regulations
+# page (Waterford on Finalsite; Winslow, Burlington City, Woodbury and
+# Camden County Technical on Educational Networks). Their pages share no
+# layout, so this reads only what any of them states in a recognisable
+# form, and only inside the page's own content container: the Cherry Hill
+# parsers read whole pages elsewhere and stored Clayton's and Willingboro's
+# footers, and a Google Site's "page does not exist", as bus policies.
+
+_CONTENT_SELECTORS = ("#fsPageContent", "#pageContentWrapper", "#content_main", "main", "[role=main]")
+_BLOCK_TAGS = {"p", "div", "li", "ul", "ol", "td", "th", "tr", "table", "dt", "dd", "dl", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article", "blockquote"}
+# Finalsite's hidden "(opens in new window)" after a link (smore_parser._visible_text).
+_SCREEN_READER_ONLY_RE = re.compile(r"sr-?only|visually-hidden", re.I)
+# Not inside a longer run of digits: Willingboro's form link (jotform.com/252615042372046) read as a phone.
+_PHONE_EXT_RE = re.compile(r"(?<![\w/])" + _PHONE_RE.pattern + r"(?!\d)(?:\s*,?\s*(?:x|ext\.?|extension)\s*#?\d+(?:\s*(?:or|/|,)\s*(?:x|ext\.?)?\s*\d+)*)?", re.I)
+# Matched per sentence, so the hours run to its end ("are Monday through Friday from 7:00AM - 4:30PM during the school year.").
+_OFFICE_HOURS_RE = re.compile(r"\bhours\b(?: of [\w ]+?)?\s+(?:are|is)\s+(.+?)(?<![ap]\.m)\.?$", re.I)
+_ADDRESS_RE = re.compile(r"^\d+ [\w .'-]+, [\w .'-]+,? (?:NJ|New Jersey)\.? \d{5}(?:-\d{4})?$")
+_AFTER_HOURS_RE = re.compile(r"outside (?:of )?(?:the )?(?:office|business|regular) hours|after hours|bus is running late|bus is late", re.I)
+_LATE_BUS_RE = re.compile(r"after[- ]school (?:activit|event)|activity bus|late bus|club bus", re.I)
+# Who runs the daily buses when it isn't this district: a county vocational
+# school's students ride their home district's buses (Camden County
+# Technical), and a district whose homes all sit inside the walking limit
+# buses only the exceptions (Woodbury).
+_OTHER_DISTRICT_BUSES_RE = re.compile(r"provided by (?:the |your )?(?:student[’']?s[’']? |child[’']?s )?(?:sending|home|local|resident) (?:school )?district", re.I)
+_DAILY_BUSES_RE = re.compile(_OTHER_DISTRICT_BUSES_RE.pattern + r"|not required to (?:provide )?transport", re.I)
+# "If at any time you need assistance, please contact the transportation department at 856-629-6400 EXT. #3" (Monroe).
+_CONTACT_SENTENCE_RE = re.compile(r"\b(?:contact|call|reach)\b[^.]*?\btransportation (?:department|office)\b[^.]*?\bat\s*$", re.I)
+_STOP_FORM_RE = re.compile(r"\bstop\b.*\b(?:request|change)\b|\b(?:sitter|alternate|change of)\b.*\bstop\b", re.I)
+
+
+def _lines(node) -> list[str]:
+    """The text as the browser lays it out: one line per block element or
+    <br>, inline runs joined as written ("21<sup>st</sup>" stays "21st")."""
+    out: list[str] = []
+    buf: list[str] = []
+
+    def flush():
+        line = re.sub(r"\s+", " ", "".join(buf).replace("​", "").replace("﻿", "")).strip()
+        if line:
+            out.append(line)
+        buf.clear()
+
+    def walk(el):
+        for child in el.children:
+            if isinstance(child, NavigableString):
+                if type(child) is NavigableString:  # not a comment or CDATA
+                    buf.append(str(child))
+            elif child.name in ("script", "style", "noscript") or _SCREEN_READER_ONLY_RE.search(" ".join(child.get("class") or [])):
+                continue
+            elif child.name == "br":
+                flush()
+            elif child.name in _BLOCK_TAGS:
+                flush()
+                walk(child)
+                flush()
+            else:
+                walk(child)
+
+    walk(node)
+    flush()
+    return out
+
+
+def _content_box(html: str):
+    soup = BeautifulSoup(html, "lxml")
+    return next((el for sel in _CONTENT_SELECTORS if (el := soup.select_one(sel)) is not None), None)
+
+
+def _sentences(line: str) -> list[str]:
+    return [s for s in re.split(r"(?<=[.!?])\s+(?=[A-Z*(])", line) if s]
+
+
+def _office_phone(lines: list[str]) -> str | None:
+    """The department's number: a phone on a line of its own or behind a
+    short label ("Telephone:", "- Transportation Office"), where that line
+    or the one before it is about transportation. A number inside a
+    sentence is someone else's (Waterford's after-hours First Student line)."""
+    for i, line in enumerate(lines):
+        m = _PHONE_EXT_RE.search(line)
+        if not m:
+            continue
+        label = (line[: m.start()] + line[m.end():]).strip(" -–:,.")
+        if len(label) > 45 or re.search(r"\b(?:fax|cell)\b", label, re.I):
+            continue
+        if re.search(r"transport|\bbus", f"{label} {lines[i - 1] if i else ''}", re.I):
+            return m.group(0).strip()
+    for line in lines:
+        for m in _PHONE_EXT_RE.finditer(line):
+            if _CONTACT_SENTENCE_RE.search(line[: m.start()]):
+                return m.group(0).strip()
+    return None
+
+
+def _late_bus_policy(lines: list[str]) -> str | None:
+    """What a paragraph about getting home after activities says, from its
+    first sentence on the subject. One that ends "...call during the times
+    noted below:" carries on to the line with the number."""
+    kept: list[str] = []
+    for i, line in enumerate(lines):
+        sentences = _sentences(line)
+        # A heading ("Late Bus", "Activity Bus Information") isn't a sentence.
+        first = next((n for n, s in enumerate(sentences) if _LATE_BUS_RE.search(s) and s[-1] in ".!?:"), None)
+        if first is None:
+            continue
+        hits = sentences[first:]
+        kept.extend(hits)
+        if hits[-1].endswith(":"):
+            for follow in lines[i + 1 : i + 4]:
+                kept.append(follow)
+                if _PHONE_RE.search(follow):
+                    break
+    return " ".join(dict.fromkeys(kept)) or None
+
+
+def _ednet_staff(html: str) -> list[dict]:
+    """A department's Staff page on Educational Networks: one
+    `.staff-categoryStaffMember` per person, either a table row (name,
+    position, mailto: Winslow) or a photo card's dt/dd with no address
+    (Burlington City; the profile link opens a form)."""
+    soup = BeautifulSoup(html, "lxml")
+    people = []
+    for card in soup.select(".staff-categoryStaffMember"):
+        cells = card.find_all("td")
+        name_el = card.select_one("dt") or (cells[0] if cells else None)
+        title_el = card.select_one("dd") or (cells[1] if len(cells) > 1 else None)
+        mail = card.select_one("a[href^='mailto:']")
+        name = _text(name_el)
+        if name:
+            people.append({"name": name, "title": _text(title_el) or None, "email": mail["href"][len("mailto:"):].strip() if mail else None})
+    return people
+
+
+def parse_department_page(pages: dict[str, str], page_urls: dict[str, str]) -> dict:
+    """`pages`: the department's main page, and optionally its "staff" and
+    "guidelines" (regulations) pages. Every field is read from the pages'
+    content containers only; a page without one contributes nothing."""
+    result: dict = {
+        "office_phone": None, "office_fax": None, "office_hours": None, "office_address": None, "contacts": [],
+        "delay_policy": None, "late_bus_policy": None, "late_bus_contractors": [], "bus_stop_change_procedure": None,
+        "bus_stop_change_deadline": None, "bus_stop_change_form_url": None, "lost_items_policy": None,
+        "daily_buses_note": None, "main_url": page_urls["main"], "late_bus_url": None,
+        "guidelines_url": page_urls.get("guidelines"), "lost_items_url": None, "closing_info_url": None,
+    }
+    boxes = {key: box for key in ("main", "guidelines") if pages.get(key) and (box := _content_box(pages[key])) is not None}
+    lines = [line for box in boxes.values() for line in _lines(box)]
+    if not lines:
+        return result
+
+    result["daily_buses_note"] = next((line for line in lines if _DAILY_BUSES_RE.search(line)), None)
+    # A school whose daily buses are another district's has no office of its own to call about them.
+    result["office_phone"] = None if _other_district_buses(result) else _office_phone(lines)
+    for line in lines:
+        if not result["office_hours"]:
+            m = next((m for sentence in _sentences(line) if (m := _OFFICE_HOURS_RE.search(sentence))), None)
+            result["office_hours"] = m.group(1).strip()[:200] if m else None
+        if not result["office_address"] and _ADDRESS_RE.match(line):
+            result["office_address"] = line
+    result["delay_policy"] = " ".join(s for line in lines for s in _sentences(line) if _AFTER_HOURS_RE.search(s)) or None
+    result["late_bus_policy"] = _late_bus_policy(lines)
+
+    contacts = _ednet_staff(pages["staff"]) if pages.get("staff") else []
+    # The department's own mailbox (transportation@...), never a person's address read off a staff card.
+    for email in dict.fromkeys(e.rstrip(".") for e in _EMAIL_RE.findall(" ".join(lines))):
+        if re.search(r"transport|bus", email.split("@")[0], re.I) and all(c["email"] != email for c in contacts):
+            contacts.append({"name": "Transportation office", "title": None, "email": email})
+    result["contacts"] = contacts
+
+    for box in boxes.values():
+        for a in box.find_all("a", href=True):
+            if _STOP_FORM_RE.search(a.get_text(" ", strip=True)):
+                result["bus_stop_change_form_url"] = urljoin(page_urls["main"], a["href"])
+                break
+        if result["bus_stop_change_form_url"]:
+            break
+    return result
+
+
+async def _discover_ednet_transportation(main_url: str, main_html: str) -> dict:
+    """Educational Networks: the department page's left-hand menu
+    (`#pageAsideWrapper`) links its Staff and Regulations pages."""
+    aside = BeautifulSoup(main_html, "lxml").find(id="pageAsideWrapper")
+    links = [(a.get_text(" ", strip=True).lower(), urljoin(main_url, a["href"])) for a in (aside.find_all("a", href=True) if aside else [])]
+    staff_url = next((u for t, u in links if t == "staff"), None)
+    guidelines_url = next((u for t, u in links if re.search(r"regulation|guideline|rules", t)), None)
+    pages = {"main": main_html}
+    if staff_url:
+        pages["staff"] = await _fetch_edlio_page(staff_url)
+    if guidelines_url:
+        pages["guidelines"] = await _fetch_edlio_page(guidelines_url)
+    return parse_department_page(pages, {"main": main_url, **({"guidelines": guidelines_url} if guidelines_url else {})})
+
+
+# What each layout is expected to yield; a run that misses one warns.
+_REQUIRED = {
+    "finalsite_tree": ("office_phone", "delay_policy", "late_bus_contractors"),
+    "eschoolview": ("office_phone", "delay_policy"),
+    "edlio": ("office_phone",),
+    "department_page": ("office_phone",),
+}
+
+
+def _other_district_buses(info: dict) -> bool:
+    return bool(info.get("daily_buses_note") and _OTHER_DISTRICT_BUSES_RE.search(info["daily_buses_note"]))
+
+
+def missing_fields(reader: str, info: dict) -> list[str]:
+    if _other_district_buses(info):
+        return []  # there's no office number of its own to find
+    return [k for k in _REQUIRED[reader] if not info.get(k)]
+
+
+def has_answers(row) -> bool:
+    """Whether a stored department gives a parent anything to act on. A row
+    with neither (a layout nothing could read) shows as no data at all,
+    not as "call the transportation office" with no number."""
+    return bool(row.office_phone or row.daily_buses_note)
+
+
+async def discover_transportation(transportation_url: str, base_url: str) -> tuple[str, dict]:
+    """Fetches the department's pages and returns which layout they were
+    read as, with every parsed field plus the page URLs themselves (for
+    "read the full policy" links)."""
+    reader, info = await _discover(transportation_url, base_url)
+    return reader, {"daily_buses_note": None, **info}
+
+
+async def _discover(transportation_url: str, base_url: str) -> tuple[str, dict]:
     main_url = transportation_url.rstrip("/")
     if main_url.lower().endswith(".aspx"):
         async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:
             resp = await client.get(main_url)
             resp.raise_for_status()
-        return parse_eschoolview_page(resp.text, main_url)
+        return "eschoolview", parse_eschoolview_page(resp.text, main_url)
     if "/apps/pages/" in main_url:
-        return await _discover_edlio_transportation(main_url)
+        # Edlio (Medford) and Educational Networks share the URL shape; only Edlio has #content_main.
+        html = await _fetch_edlio_page(main_url)
+        if BeautifulSoup(html, "lxml").find(id="content_main") is not None:
+            return "edlio", await _discover_edlio_transportation(main_url, html)
+        return "department_page", await _discover_ednet_transportation(main_url, html)
     pages: dict[str, str] = {}
     pages["main"] = await _fetch_page(main_url)
+    # Cherry Hill's tree: the main page links its fixed subpages. Anything
+    # else is one page (Waterford), and asking for the subpages there only
+    # fetches the site's not-found page.
+    if f"{urlparse(main_url).path}/{_SUBPAGES['late_bus']}" not in pages["main"]:
+        return "department_page", parse_department_page(pages, {"main": main_url})
     for key, slug in _SUBPAGES.items():
         if key == "closing_info":
             continue  # just a link-out, nothing to parse
@@ -400,7 +632,7 @@ async def discover_transportation(transportation_url: str, base_url: str) -> dic
         "lost_items_url": f"{main_url}/{_SUBPAGES['lost_items']}",
         "closing_info_url": f"{main_url}/{_SUBPAGES['closing_info']}",
     }
-    return result
+    return "finalsite_tree", result
 
 
 def late_bus_for_school(contractors: list[dict] | None, school_name: str, short_name: str | None) -> dict | None:

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, DistrictTransportation
 from scheduler.registry import register_job
-from services.transportation import discover_transportation
+from services.transportation import discover_transportation, missing_fields
 
 
 @register_job(
@@ -28,7 +28,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     parsed = urlparse(district.transportation_url)
     base_url = f"{parsed.scheme}://{parsed.netloc}"
-    info = await discover_transportation(district.transportation_url, base_url)
+    reader, info = await discover_transportation(district.transportation_url, base_url)
 
     row = (await db.execute(select(DistrictTransportation).where(DistrictTransportation.district_id == district.id))).scalar_one_or_none()
     created = row is None
@@ -38,10 +38,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     for field, value in info.items():
         setattr(row, field, value)
 
-    # eSchoolView and Edlio have no late-bus contractor table; Edlio also has no delay page.
-    url = district.transportation_url.lower()
-    required = ("office_phone",) if "/apps/pages/" in url else ("office_phone", "delay_policy") + (() if url.endswith(".aspx") else ("late_bus_contractors",))
-    missing = [k for k in required if not info.get(k)]
+    missing = missing_fields(reader, info)
     if missing:
         return f"WARNING[transportation_missing_fields]: parsed the department pages but found no {', '.join(missing)}"
-    return f"transportation: {'created' if created else 'updated'} - {len(info['contacts'])} contacts, {len(info['late_bus_contractors'])} late-bus contractors, office {info['office_phone']}"
+    office = info["office_phone"] or "none (daily buses are the home district's)"
+    return f"transportation: {'created' if created else 'updated'} - {len(info['contacts'])} contacts, {len(info['late_bus_contractors'])} late-bus contractors, office {office}"

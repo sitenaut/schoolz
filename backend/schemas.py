@@ -937,7 +937,7 @@ class TodaySaccOut(BaseModel):
 
 class TransportationContactOut(BaseModel):
     name: str
-    title: str
+    title: str | None = None  # a department mailbox has none, nor some Edlio staff
     email: str | None
 
 
@@ -960,6 +960,7 @@ class DistrictTransportationOut(BaseModel):
     bus_stop_change_deadline: str | None
     bus_stop_change_form_url: str | None
     lost_items_policy: str | None
+    daily_buses_note: str | None = None
     main_url: str | None
     late_bus_url: str | None
     guidelines_url: str | None

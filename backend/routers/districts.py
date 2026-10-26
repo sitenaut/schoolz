@@ -15,6 +15,7 @@ from schemas import (
     DistrictUpdate,
     ScheduledJobOut,
 )
+from services.transportation import has_answers
 
 router = APIRouter(prefix="/districts", tags=["districts"])
 
@@ -419,6 +420,7 @@ async def run_transportation_scan_now(district_id: str, user: User = Depends(req
 
 @router.get("/{district_id}/transportation", response_model=DistrictTransportationOut | None)
 async def get_district_transportation(district_id: str, db: AsyncSession = Depends(get_db)):
-    """Public. Null until the district's transportation scan has run."""
-    result = await db.execute(select(DistrictTransportation).where(DistrictTransportation.district_id == district_id))
-    return result.scalar_one_or_none()
+    """Public. Null until the district's transportation scan has run, and
+    while it has found nothing a parent can act on."""
+    row = (await db.execute(select(DistrictTransportation).where(DistrictTransportation.district_id == district_id))).scalar_one_or_none()
+    return row if row and has_answers(row) else None

@@ -54,6 +54,7 @@
   "Transportation office": "교통 담당실",
   "Hours": "운영 시간",
   "Late bus": "늦은 버스",
+  "Daily buses": "통학 버스",
   "Bus running late?": "버스가 늦나요?",
   "Call the transportation office ({{hours}}).": "교통 담당실({{hours}})로 전화해 주세요.",
   "Call the transportation office.": "교통 담당실로 전화해 주세요.",
