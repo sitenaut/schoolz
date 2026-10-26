@@ -51,7 +51,7 @@ from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
 from services.content_translation import localize_outs
 from services.digitalsports import host_from_athletics_url
-from services.district_budget import latest_budget
+from services.district_budget import DISTRICT_SCHOOL_TYPES, latest_budget
 from services.i18n import fold, folded, request_lang
 from services.school_slug import unique_school_slug
 from services.school_today import build_today, resolve_lunch_menu
@@ -670,9 +670,11 @@ async def get_school_transportation(school: School = Depends(resolve_school), db
 async def get_school_budget(school: School = Depends(resolve_school), db: AsyncSession = Depends(get_db)):
     """Public. The district's latest imported budget year (models.DistrictBudget):
     state figures with their source documents, plus the district's own words
-    where we have them. Null for a school with no district, or a district
-    with no figures on file (a private school, a district not imported yet)."""
-    if not school.district_id:
+    where we have them. Null for a school with no district, one that isn't the
+    district's own K-12 school (a preschool, private ones among them, filed
+    under the district for the town picker), or a district with no figures on
+    file (a district not imported yet)."""
+    if not school.district_id or school.school_type not in DISTRICT_SCHOOL_TYPES:
         return None
     budget = await latest_budget(db, school.district_id)
     if not budget:
