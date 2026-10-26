@@ -552,12 +552,18 @@ export function SchoolDetailPage() {
             )}
           </div>
           <div className="sacc">
-            {(transport.district.office_phone || transport.district.office_hours || transport.late_bus) && (
+            {(transport.district.office_phone || transport.district.office_email || transport.district.office_hours || transport.late_bus) && (
               <div className="hours">
                 {transport.district.office_phone && (
                   <div>
                     <b>{t("Transportation office")}</b>
                     <a href={telHref(transport.district.office_phone)}>{transport.district.office_phone}</a>
+                  </div>
+                )}
+                {transport.district.office_email && (
+                  <div>
+                    <b>{transport.district.office_phone ? t("Email") : t("Transportation office")}</b>
+                    <a href={`mailto:${transport.district.office_email}`}>{transport.district.office_email}</a>
                   </div>
                 )}
                 {transport.district.office_hours && (
@@ -581,14 +587,16 @@ export function SchoolDetailPage() {
                   <span>{transport.district.daily_buses_note}</span>
                 </li>
               )}
-              {transport.district.office_phone && (
+              {(transport.district.office_phone || transport.district.delay_policy) && (
                 <li>
                   <b>{t("Bus running late?")}</b>
                   <span>
-                    {transport.district.office_hours
-                      ? t("Call the transportation office ({{hours}}).", { hours: transport.district.office_hours })
-                      : t("Call the transportation office.")}
-                    {transport.district.delay_policy ? ` ${transport.district.delay_policy}` : ""}
+                    {transport.district.office_phone &&
+                      (transport.district.office_hours
+                        ? t("Call the transportation office ({{hours}}).", { hours: transport.district.office_hours })
+                        : t("Call the transportation office."))}
+                    {transport.district.office_phone && transport.district.delay_policy ? " " : ""}
+                    {transport.district.delay_policy}
                   </span>
                 </li>
               )}

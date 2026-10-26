@@ -794,7 +794,7 @@ async def load_context(db: AsyncSession, schools: list[School], now: datetime | 
         # Only a department with something to act on counts (services.transportation.has_answers).
         transportation = set((await db.execute(select(DistrictTransportation.district_id).where(
             DistrictTransportation.district_id.in_(district_ids),
-            or_(DistrictTransportation.office_phone.is_not(None), DistrictTransportation.daily_buses_note.is_not(None)),
+            or_(DistrictTransportation.office_phone.is_not(None), DistrictTransportation.office_email.is_not(None), DistrictTransportation.daily_buses_note.is_not(None)),
         ))).scalars())
 
     marks = {}

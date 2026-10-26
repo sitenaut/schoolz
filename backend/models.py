@@ -1452,6 +1452,8 @@ class DistrictTransportation(Base):
     office_fax: Mapped[str | None] = mapped_column(String(50), nullable=True)
     office_hours: Mapped[str | None] = mapped_column(String(200), nullable=True)
     office_address: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # The office's own address: its mailbox, or the one the page says to email (Voorhees, Eastern Regional).
+    office_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     # [{"name", "title", "email"}]
     contacts: Mapped[list[dict]] = mapped_column(JSON, default=list, nullable=False)
     delay_policy: Mapped[str | None] = mapped_column(String, nullable=True)

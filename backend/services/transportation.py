@@ -377,16 +377,26 @@ async def _discover_edlio_transportation(main_url: str, info_html: str) -> dict:
 # parsers read whole pages elsewhere and stored Clayton's and Willingboro's
 # footers, and a Google Site's "page does not exist", as bus policies.
 
-_CONTENT_SELECTORS = ("#fsPageContent", "#pageContentWrapper", "#content_main", "main", "[role=main]")
+# Last, Presence's `.pageContent` (Delran), whose pages have neither of the landmarks before it.
+_CONTENT_SELECTORS = ("#fsPageContent", "#pageContentWrapper", "#content_main", "main", "[role=main]", ".pageContent")
 _BLOCK_TAGS = {"p", "div", "li", "ul", "ol", "td", "th", "tr", "table", "dt", "dd", "dl", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article", "blockquote"}
 # Finalsite's hidden "(opens in new window)" after a link (smore_parser._visible_text).
 _SCREEN_READER_ONLY_RE = re.compile(r"sr-?only|visually-hidden", re.I)
 # Not inside a longer run of digits: Willingboro's form link (jotform.com/252615042372046) read as a phone.
 _PHONE_EXT_RE = re.compile(r"(?<![\w/])" + _PHONE_RE.pattern + r"(?!\d)(?:\s*,?\s*(?:x|ext\.?|extension)\s*#?\d+(?:\s*(?:or|/|,)\s*(?:x|ext\.?)?\s*\d+)*)?", re.I)
-# Matched per sentence, so the hours run to its end ("are Monday through Friday from 7:00AM - 4:30PM during the school year.").
-_OFFICE_HOURS_RE = re.compile(r"\bhours\b(?: of [\w ]+?)?\s+(?:are|is)\s+(.+?)(?<![ap]\.m)\.?$", re.I)
+# Matched per sentence, so the hours run to its end ("are Monday through Friday from 7:00AM - 4:30PM during the school year.",
+# "The Transportation office at Eastern is located in Room 700 and is open from 6:30am to 2:30pm daily.").
+_OFFICE_HOURS_RE = re.compile(
+    r"\bhours\b(?: of [\w ]+?)?\s+(?:are|is)\s+(.+?)(?<![ap]\.m)\.?$|\btransportation (?:office|department)\b[^.]*?\bis open (?:from )?(.+?)(?<![ap]\.m)\.?$", re.I
+)
 _ADDRESS_RE = re.compile(r"^\d+ [\w .'-]+, [\w .'-]+,? (?:NJ|New Jersey)\.? \d{5}(?:-\d{4})?$")
-_AFTER_HOURS_RE = re.compile(r"outside (?:of )?(?:the )?(?:office|business|regular) hours|after hours|bus is running late|bus is late", re.I)
+_DELAY_RE = re.compile(
+    r"outside (?:of )?(?:the )?(?:office|business|regular) hours|after hours|running (?:more than )?\d+ minutes late|delay of (?:more than )?\d+ minutes|delays? of \d+ minutes or more", re.I
+)
+# A FAQ's question ("The morning bus is late. What should I do?") is answered by the line after it.
+# "the late bus" is the after-activities bus, not a late one (Voorhees: "My student took the late bus from VMS...").
+_DELAY_QUESTION_RE = re.compile(r"\bbus\b.*\blate\b(?! bus)|\blate\b(?! bus).*\bbus\b|where (?:is )?the bus\b(?! stop)", re.I)
+_LOST_QUESTION_RE = re.compile(r"\blost\b|\bleft (?:\w+ )?(?:something|an item|items?)\b", re.I)
 _LATE_BUS_RE = re.compile(r"after[- ]school (?:activit|event)|activity bus|late bus|club bus", re.I)
 # Who runs the daily buses when it isn't this district: a county vocational
 # school's students ride their home district's buses (Camden County
@@ -396,7 +406,12 @@ _OTHER_DISTRICT_BUSES_RE = re.compile(r"provided by (?:the |your )?(?:student[�
 _DAILY_BUSES_RE = re.compile(_OTHER_DISTRICT_BUSES_RE.pattern + r"|not required to (?:provide )?transport", re.I)
 # "If at any time you need assistance, please contact the transportation department at 856-629-6400 EXT. #3" (Monroe).
 _CONTACT_SENTENCE_RE = re.compile(r"\b(?:contact|call|reach)\b[^.]*?\btransportation (?:department|office)\b[^.]*?\bat\s*$", re.I)
-_STOP_FORM_RE = re.compile(r"\bstop\b.*\b(?:request|change)\b|\b(?:sitter|alternate|change of)\b.*\bstop\b", re.I)
+_STOP_FORM_RE = re.compile(r"\bstop\b.*\b(?:request|change)\b|\b(?:sitter|alternate|change of)\b.*\bstop\b|alternate transportation", re.I)
+# The address a district names as the way to reach the office, a person's or not:
+# "The best means of contact is via email to transportation@eccrsd.us" (Eastern, Voorhees).
+_OFFICE_EMAIL_SENTENCE_RE = re.compile(r"best (?:means|way) (?:of|to) contact\b|\bemail (?:the |our )?transportation (?:department|office|coordinator)\b", re.I)
+# Labels that name the kind of number, not whose it is ("Office: ...", "Cell: ...").
+_PHONE_KIND_RE = re.compile(r"^(?:phone|telephone|tel\.?|office|main|direct|cell|fax|p|f)\b", re.I)
 
 
 def _lines(node) -> list[str]:
@@ -441,19 +456,35 @@ def _sentences(line: str) -> list[str]:
     return [s for s in re.split(r"(?<=[.!?])\s+(?=[A-Z*(])", line) if s]
 
 
-def _office_phone(lines: list[str]) -> str | None:
-    """The department's number: a phone on a line of its own or behind a
-    short label ("Telephone:", "- Transportation Office"), where that line
-    or the one before it is about transportation. A number inside a
-    sentence is someone else's (Waterford's after-hours First Student line)."""
+def _phone_lines(lines: list[str]) -> dict[int, tuple[re.Match, str]]:
+    """Each line that is a phone behind at most a short label ("Telephone:",
+    "- Transportation Office"), with its match and that label. A number
+    inside a sentence is someone else's (Waterford's after-hours First
+    Student line), and so is one in a run of named numbers, which is a list
+    of bus companies (Voorhees: "First Student, Berlin Depot 856-751-0222",
+    "Hillman's Bus Service 856-751-1123", ...)."""
+    found: dict[int, tuple[re.Match, str]] = {}
     for i, line in enumerate(lines):
         m = _PHONE_EXT_RE.search(line)
-        if not m:
+        if m:
+            label = (line[: m.start()] + line[m.end():]).strip(" -–:,.")
+            if len(label) <= 45:
+                found[i] = (m, label)
+    named = {i for i, (_, label) in found.items() if label and not _PHONE_KIND_RE.match(label)}
+    listed = {i for i in named if i - 1 in named or i + 1 in named}
+    return {i: v for i, v in found.items() if i not in listed}
+
+
+def _office_phone(lines: list[str]) -> str | None:
+    """The department's number: a phone line whose label, or a short line
+    up to four above it (a title, a heading, a "Phone" label), is about
+    transportation. Failing that, a sentence that says to contact the
+    transportation office at a number (Monroe)."""
+    for i, (m, label) in _phone_lines(lines).items():
+        before = lines[max(0, i - 4) : i]
+        if re.search(r"\b(?:fax|cell)\b", label, re.I) or (before and re.fullmatch(r"(?:fax|cell)\W*", before[-1], re.I)):
             continue
-        label = (line[: m.start()] + line[m.end():]).strip(" -–:,.")
-        if len(label) > 45 or re.search(r"\b(?:fax|cell)\b", label, re.I):
-            continue
-        if re.search(r"transport|\bbus", f"{label} {lines[i - 1] if i else ''}", re.I):
+        if re.search(r"transport|\bbus", label, re.I) or any(len(b) <= 60 and re.search(r"transport|\bbus", b, re.I) for b in before):
             return m.group(0).strip()
     for line in lines:
         for m in _PHONE_EXT_RE.finditer(line):
@@ -462,15 +493,95 @@ def _office_phone(lines: list[str]) -> str | None:
     return None
 
 
+def _office_fax(lines: list[str]) -> str | None:
+    for i, line in enumerate(lines):
+        m = _PHONE_EXT_RE.search(line)
+        if m and (re.match(r"fax\b", line, re.I) or (i and re.fullmatch(r"fax\W*", lines[i - 1], re.I))):
+            return m.group(0).strip()
+    return None
+
+
+def _office_hours(lines: list[str]) -> str | None:
+    for i, line in enumerate(lines):
+        for sentence in _sentences(line):
+            if m := _OFFICE_HOURS_RE.search(sentence):
+                return (m.group(1) or m.group(2)).strip()[:200]
+        # A "Hours" label over the times (Delran).
+        if re.fullmatch(r"(?:office )?hours:?", line, re.I) and i + 1 < len(lines) and re.search(r"\d", lines[i + 1]):
+            return lines[i + 1][:200]
+    return None
+
+
+def _office_email(lines: list[str]) -> str | None:
+    """The department's mailbox (transportation@...), or the address the
+    page names as the way to reach the office. Never a person's address
+    just because it appears on the page."""
+    for line in lines:
+        for sentence in _sentences(line):
+            if _OFFICE_EMAIL_SENTENCE_RE.search(sentence) and (m := _EMAIL_RE.search(sentence)):
+                return m.group(0).rstrip(".")
+    for email in _EMAIL_RE.findall(" ".join(lines)):
+        if re.search(r"transport|bus", email.split("@")[0], re.I):
+            return email.rstrip(".")
+    return None
+
+
+def _is_question(line: str) -> bool:
+    return line.endswith("?") or (line.endswith(":") and len(line) <= 80)
+
+
+def _faq_answer(lines: list[str], i: int, wanted: re.Pattern | None = None) -> str | None:
+    """The answer under the question at line `i`: the next line, or with
+    `wanted`, the first of the next three that matches it."""
+    for follow in lines[i + 1 : i + 4]:
+        if _is_question(follow):
+            return None
+        if wanted is None or wanted.search(follow):
+            return follow
+    return None
+
+
+def _delay_policy(lines: list[str]) -> str | None:
+    kept: list[str] = []
+    for i, line in enumerate(lines):
+        if _is_question(line):
+            if _DELAY_QUESTION_RE.search(line) and (answer := _faq_answer(lines, i)):
+                kept.append(answer)
+            continue
+        sentences = _sentences(line)
+        first = next((n for n, s in enumerate(sentences) if _DELAY_RE.search(s)), None)
+        if first is not None:
+            kept.append(" ".join(sentences[first:]))
+    return " ".join(dict.fromkeys(kept)) or None
+
+
+def _lost_items_policy(lines: list[str]) -> str | None:
+    for i, line in enumerate(lines):
+        if _is_question(line) and _LOST_QUESTION_RE.search(line):
+            if answer := _faq_answer(lines, i, re.compile(r"driver|lost|found|left", re.I)):
+                return answer
+        elif re.search(r"\b\d+ days\b", line) and re.search(r"driver", line, re.I):
+            return line
+    return None
+
+
 def _late_bus_policy(lines: list[str]) -> str | None:
     """What a paragraph about getting home after activities says, from its
     first sentence on the subject. One that ends "...call during the times
-    noted below:" carries on to the line with the number."""
+    noted below:" carries on to the line with the number. A FAQ's question
+    and a sentence about things left on a late bus don't count."""
     kept: list[str] = []
     for i, line in enumerate(lines):
+        if line.endswith("?"):
+            continue
         sentences = _sentences(line)
         # A heading ("Late Bus", "Activity Bus Information") isn't a sentence.
-        first = next((n for n, s in enumerate(sentences) if _LATE_BUS_RE.search(s) and s[-1] in ".!?:"), None)
+        # Nor one that points back at a list of rules ("...will adhere to these same rules": Cinnaminson).
+        first = next(
+            (n for n, s in enumerate(sentences)
+             if _LATE_BUS_RE.search(s) and s[-1] in ".!?:" and not _LOST_QUESTION_RE.search(s) and "left" not in s and not re.search(r"\bthese (?:same )?rules\b", s, re.I)),
+            None,
+        )
         if first is None:
             continue
         hits = sentences[first:]
@@ -509,7 +620,7 @@ def parse_department_page(pages: dict[str, str], page_urls: dict[str, str]) -> d
         "office_phone": None, "office_fax": None, "office_hours": None, "office_address": None, "contacts": [],
         "delay_policy": None, "late_bus_policy": None, "late_bus_contractors": [], "bus_stop_change_procedure": None,
         "bus_stop_change_deadline": None, "bus_stop_change_form_url": None, "lost_items_policy": None,
-        "daily_buses_note": None, "main_url": page_urls["main"], "late_bus_url": None,
+        "daily_buses_note": None, "office_email": None, "main_url": page_urls["main"], "late_bus_url": None,
         "guidelines_url": page_urls.get("guidelines"), "lost_items_url": None, "closing_info_url": None,
     }
     boxes = {key: box for key in ("main", "guidelines") if pages.get(key) and (box := _content_box(pages[key])) is not None}
@@ -519,22 +630,16 @@ def parse_department_page(pages: dict[str, str], page_urls: dict[str, str]) -> d
 
     result["daily_buses_note"] = next((line for line in lines if _DAILY_BUSES_RE.search(line)), None)
     # A school whose daily buses are another district's has no office of its own to call about them.
-    result["office_phone"] = None if _other_district_buses(result) else _office_phone(lines)
-    for line in lines:
-        if not result["office_hours"]:
-            m = next((m for sentence in _sentences(line) if (m := _OFFICE_HOURS_RE.search(sentence))), None)
-            result["office_hours"] = m.group(1).strip()[:200] if m else None
-        if not result["office_address"] and _ADDRESS_RE.match(line):
-            result["office_address"] = line
-    result["delay_policy"] = " ".join(s for line in lines for s in _sentences(line) if _AFTER_HOURS_RE.search(s)) or None
+    if not _other_district_buses(result):
+        result["office_phone"] = _office_phone(lines)
+        result["office_email"] = _office_email(lines)
+    result["office_fax"] = _office_fax(lines)
+    result["office_hours"] = _office_hours(lines)
+    result["office_address"] = next((line for line in lines if _ADDRESS_RE.match(line)), None)
+    result["delay_policy"] = _delay_policy(lines)
     result["late_bus_policy"] = _late_bus_policy(lines)
-
-    contacts = _ednet_staff(pages["staff"]) if pages.get("staff") else []
-    # The department's own mailbox (transportation@...), never a person's address read off a staff card.
-    for email in dict.fromkeys(e.rstrip(".") for e in _EMAIL_RE.findall(" ".join(lines))):
-        if re.search(r"transport|bus", email.split("@")[0], re.I) and all(c["email"] != email for c in contacts):
-            contacts.append({"name": "Transportation office", "title": None, "email": email})
-    result["contacts"] = contacts
+    result["lost_items_policy"] = _lost_items_policy(lines)
+    result["contacts"] = _ednet_staff(pages["staff"]) if pages.get("staff") else []
 
     for box in boxes.values():
         for a in box.find_all("a", href=True):
@@ -577,14 +682,17 @@ def _other_district_buses(info: dict) -> bool:
 def missing_fields(reader: str, info: dict) -> list[str]:
     if _other_district_buses(info):
         return []  # there's no office number of its own to find
-    return [k for k in _REQUIRED[reader] if not info.get(k)]
+    missing = [k for k in _REQUIRED[reader] if not info.get(k)]
+    # A department that asks to be emailed (Voorhees, Eastern) is reachable without a number.
+    return [k for k in missing if not (k == "office_phone" and info.get("office_email"))]
 
 
 def has_answers(row) -> bool:
-    """Whether a stored department gives a parent anything to act on. A row
-    with neither (a layout nothing could read) shows as no data at all,
-    not as "call the transportation office" with no number."""
-    return bool(row.office_phone or row.daily_buses_note)
+    """Whether a stored department gives a parent anything to act on: a
+    way to reach the office, or who runs the buses instead. A row with
+    none (a layout nothing could read) shows as no data at all, not as
+    "call the transportation office" with no number."""
+    return bool(row.office_phone or row.office_email or row.daily_buses_note)
 
 
 async def discover_transportation(transportation_url: str, base_url: str) -> tuple[str, dict]:
@@ -592,7 +700,7 @@ async def discover_transportation(transportation_url: str, base_url: str) -> tup
     read as, with every parsed field plus the page URLs themselves (for
     "read the full policy" links)."""
     reader, info = await _discover(transportation_url, base_url)
-    return reader, {"daily_buses_note": None, **info}
+    return reader, {"daily_buses_note": None, "office_email": None, **info}
 
 
 async def _discover(transportation_url: str, base_url: str) -> tuple[str, dict]:

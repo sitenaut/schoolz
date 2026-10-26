@@ -68,10 +68,12 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   - **Checked and not wired**: Delran's MS/HS PTA resolves on Givebacks
     (via its MemberHub link) but has zero blocks; the elementary PTO's site was
     last posted in 2021. Delran's calendar PDF has no marking periods.
-    Neither district's transportation page matches a parser (a phone, staff
-    and bus rules on a Smart Sites page; a phone and "see the parent portal"
-    on Presence).
-  - **Gaps**: transportation; Delran marking periods; no nurse or titles for
+    Both transportation pages are read by `transportation.parse_department_page`:
+    Cinnaminson's `/transportation-home` (the bare `/transportation` page is
+    empty) puts each number a few lines under a staff title, and Delran's
+    Presence page has no `main`, so its content is `.pageContent`, with each
+    value on the line under its label (Phone, Fax, Hours).
+  - **Gaps**: Delran marking periods; no nurse or titles for
     Delran High; no absence method for Eleanor Rush or the preschool; the
     preschool's hours (four programs, one set of flat times) and lunch; Rush's
     newsletter page and the preschool's bulletin page are empty; Delran's
