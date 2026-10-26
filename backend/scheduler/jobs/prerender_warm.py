@@ -32,7 +32,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import services.prerender as prerender
-from routers.seo import school_lastmods, sitemap_paths
+from routers.seo import budget_lastmods, school_lastmods, sitemap_paths
 from scheduler import progress
 from scheduler.registry import register_job
 
@@ -56,6 +56,7 @@ NIGHT_START = dtime(22, 0)
 NIGHT_END = dtime(6, 0)
 
 _SCHOOL_PATH = re.compile(r"^(?:/(?:es|zh|ko|hi))?/schools/([^/]+)(/calendar)?$")
+_BUDGET_PATH = re.compile(r"^/budgets/([^/]+)$")
 
 
 def _now() -> datetime:
@@ -75,15 +76,33 @@ def school_max_age_s(path: str) -> int:
     return SCHOOL_MAX_AGE_S - zlib.crc32(path.encode()) % SCHOOL_AGE_SPREAD_DAYS * 86400
 
 
-def paths_to_render(paths: list[str], rendered: dict[str, datetime], lastmods: dict[str, datetime], now: datetime) -> list[str]:
+def paths_to_render(
+    paths: list[str], rendered: dict[str, datetime], lastmods: dict[str, datetime], now: datetime,
+    budget_lastmods: dict[str, datetime] | None = None,
+) -> list[str]:
     """The pages worth rendering tonight, most needed first: never rendered,
     then school pages whose content changed, then the dated pages, then
-    school pages aging out. Order matters because a run can stop at 6 AM."""
+    school pages aging out, then district budget pages. Order matters because
+    a run can stop at 6 AM.
+
+    Budget pages come last, even unrendered: ~585 of them arrived at once,
+    and a first render of each must never hold back a school page's (the
+    renders share the scraper with the night's scans). Their figures change
+    only on an import, so after that they age out like a school page."""
     picked: list[tuple[int, int, str]] = []
     for order, path in enumerate(paths):
         at = rendered.get(path)
         school = _SCHOOL_PATH.match(path)
-        if at is None:
+        budget = _BUDGET_PATH.match(path)
+        if budget:
+            changed = (budget_lastmods or {}).get(budget.group(1))
+            if at is None:
+                rank = 5
+            elif (changed is not None and changed > at) or (now - at).total_seconds() > school_max_age_s(path):
+                rank = 4
+            else:
+                continue
+        elif at is None:
             rank = 0
         elif school:
             changed = lastmods.get(school.group(1))
@@ -113,7 +132,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not is_night(_now()):
         return "daytime: nothing rendered (renders run 10 PM - 6 AM Eastern)"
     all_paths = await sitemap_paths(db)
-    paths = paths_to_render(all_paths, await prerender.rendered_at(all_paths), await school_lastmods(db), _now())
+    paths = paths_to_render(all_paths, await prerender.rendered_at(all_paths), await school_lastmods(db), _now(), await budget_lastmods(db))
     rendered = failed = 0
     failed_paths: list[str] = []
     stopped_at: int | None = None

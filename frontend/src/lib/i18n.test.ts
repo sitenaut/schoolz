@@ -34,6 +34,12 @@ describe("language paths", () => {
     expect(isTranslatedPath("/schools/x/calendar?date=2026-10-22")).toBe(true);
     expect(isTranslatedPath("/schools/x/class-of-2027")).toBe(false);
   });
+
+  it("translates the district budget pages", () => {
+    expect(isTranslatedPath("/budgets")).toBe(true);
+    expect(isTranslatedPath("/budgets/cherry-hill-school-district")).toBe(true);
+    expect(isTranslatedPath("/budgets/x/y")).toBe(false);
+  });
 });
 
 describe.each([["es", es], ["zh", zh], ["ko", ko], ["hi", hi]] as const)("%s translations", (_lang, dict) => {

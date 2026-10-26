@@ -25,7 +25,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 import database
 import scraper_client
-from models import PrerenderedPage, School, SeasonalAttraction, SeasonalGuide
+from models import PrerenderedPage, School, SeasonalAttraction, SeasonalGuide, StateDistrict
 from services import class_years
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,7 @@ _RENDER_TIMEOUT_MS = 10_000
 _ALLOWED_PATHS = {
     "/",
     "/schools",
+    "/budgets",
     "/directory",
     "/calendar",
     "/lunch",
@@ -85,7 +86,7 @@ _ALLOWED_PATHS = {
     "/chcomms",
     "/survey",
 }
-_ALLOWED_PREFIXES = ("/schools/", "/seasonal/")
+_ALLOWED_PREFIXES = ("/schools/", "/seasonal/", "/budgets/")
 
 
 class PathNotAllowed(ValueError):
@@ -106,8 +107,8 @@ _CLASS_SLUG = re.compile(r"^class-of-(\d{4})$")
 
 async def _names_something(path: str) -> bool:
     """Whether a path under an allowed prefix is a real page: a school (by
-    slug or id), its calendar, one of its class pages, or a season that has
-    guides or attractions. The prefix alone let anyone have a render made and
+    slug or id), its calendar, one of its class pages, a season that has
+    guides or attractions, or a district's budget page. The prefix alone let anyone have a render made and
     stored for every made-up /schools/<anything>, each holding one of the
     three scraper slots the scans share."""
     path = _LANG_PREFIX.sub("", path) or "/"
@@ -125,6 +126,10 @@ async def _names_something(path: str) -> bool:
                     select(SeasonalAttraction.id).where(SeasonalAttraction.season == parts[0]),
                 ).limit(1)
                 return (await db.execute(found)).first() is not None
+            if section == "budgets":
+                if len(parts) != 1:
+                    return False
+                return (await db.execute(select(StateDistrict.id).where(StateDistrict.slug == parts[0]))).first() is not None
             if not 1 <= len(parts) <= 2:
                 return False
             if len(parts) == 2 and parts[1] != "calendar":

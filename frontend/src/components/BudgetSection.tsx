@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { LOCALE } from "../lib/i18n";
-import type { SchoolBudget } from "../types";
+import type { DistrictBudgetStatement, SchoolBudget } from "../types";
 
 /** "2026-27" -> "2025-26" */
 export function priorYear(year: string): string {
@@ -19,7 +20,7 @@ export function money(v: number): string {
   }).format(v);
 }
 
-function pct(v: number): string {
+export function pct(v: number): string {
   return new Intl.NumberFormat(LOCALE, { style: "percent", maximumFractionDigits: 1, signDisplay: "exceptZero" }).format(v / 100);
 }
 
@@ -27,10 +28,38 @@ function day(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString(LOCALE, { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** A few lines quoted from the district's own budget documents, each linked
+ * to its source - shown only for districts whose audit profile supports them. */
+export function BudgetQuotes({ statements }: { statements: DistrictBudgetStatement[] }) {
+  const { t } = useTranslation();
+  if (statements.length === 0) return null;
+  return (
+    <div className="budget-quotes">
+      <b>{t("In the district's words")}</b>
+      <ul>
+        {statements.map((s) => (
+          <li key={s.quote}>
+            <span className="topic">{t(s.topic)}</span>
+            <q lang="en">{s.quote}</q>{" "}
+            <a href={s.url} target="_blank" rel="noreferrer">
+              {s.date ? t("{{source}}, {{date}}", { source: s.source, date: day(s.date) }) : s.source}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="note">
+        {t("Quoted from the district's own budget documents. The district may count costs differently from the state's figures above.")}
+      </p>
+    </div>
+  );
+}
+
 /** The school page's budget section: the district's figures from the state's
  * own files, each linked to its source, then (for some districts) a few lines
- * quoted from the district's own budget documents. Numbers and sources only:
- * no rankings, and nothing that reads as a verdict on the district. */
+ * quoted from the district's own budget documents, and a link to the
+ * district's full /budgets page. Every figure is the whole district's: the
+ * state publishes none per school. Numbers and sources only: no rankings, and
+ * nothing that reads as a verdict on the district. */
 export function BudgetSection({ budget }: { budget: SchoolBudget }) {
   const { t } = useTranslation();
   const year = budget.budget_year;
@@ -41,7 +70,7 @@ export function BudgetSection({ budget }: { budget: SchoolBudget }) {
   return (
     <>
       <div className="h-row">
-        <h2>{t("School budget")}</h2>
+        <h2>{t("District budget")}</h2>
         {b.budget_report_url && (
           <a href={b.budget_report_url} target="_blank" rel="noreferrer">
             {t("State budget report")}
@@ -98,24 +127,11 @@ export function BudgetSection({ budget }: { budget: SchoolBudget }) {
             </li>
           )}
         </ul>
-        {b.statements.length > 0 && (
-          <div className="budget-quotes">
-            <b>{t("In the district's words")}</b>
-            <ul>
-              {b.statements.map((s) => (
-                <li key={s.quote}>
-                  <span className="topic">{t(s.topic)}</span>
-                  <q lang="en">{s.quote}</q>{" "}
-                  <a href={s.url} target="_blank" rel="noreferrer">
-                    {s.date ? t("{{source}}, {{date}}", { source: s.source, date: day(s.date) }) : s.source}
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p className="note">
-              {t("Quoted from the district's own budget documents. The district may count costs differently from the state's figures above.")}
-            </p>
-          </div>
+        <BudgetQuotes statements={b.statements} />
+        {b.slug && (
+          <p style={{ margin: "12px 0 0" }}>
+            <Link to={`/budgets/${b.slug}`}>{t("See the full {{district}} budget", { district: b.district_name })}</Link>
+          </p>
         )}
       </div>
     </>

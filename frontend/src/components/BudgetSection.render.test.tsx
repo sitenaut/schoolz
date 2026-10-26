@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import type { SchoolBudget } from "../types";
 
 vi.mock("react-i18next", () => ({
@@ -11,6 +12,7 @@ import { BudgetSection, money, priorYear } from "./BudgetSection";
 
 const budget = (over: Partial<SchoolBudget> = {}): SchoolBudget => ({
   district_name: "Cherry Hill Public Schools",
+  slug: null,
   budget_year: "2026-27",
   benefits_prior: 54_067_324,
   benefits_budget: 61_423_410,
@@ -54,6 +56,16 @@ describe("BudgetSection", () => {
     expect(screen.getByText(/No change from last year/)).toBeTruthy();
     expect(screen.getByText("mostly depleted").tagName).toBe("Q");
     expect(screen.getByText("Budget Clarity Hub 2026-2027").getAttribute("href")).toBe("https://district.example/hub");
+  });
+
+  it("links to the district's full budget page", () => {
+    render(
+      <MemoryRouter>
+        <BudgetSection budget={budget({ slug: "cherry-hill-school-district" })} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("District budget")).toBeTruthy();
+    expect(screen.getByText("See the full Cherry Hill Public Schools budget").getAttribute("href")).toBe("/budgets/cherry-hill-school-district");
   });
 
   it("formats small amounts in full and finds the prior year", () => {

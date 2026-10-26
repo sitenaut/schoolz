@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import database
 import services.prerender as prerender
 from database import get_db
-from models import School, SchoolContentItem
+from models import DistrictBudget, School, SchoolContentItem, StateDistrict
 from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(tags=["seo"])
@@ -23,12 +23,15 @@ _SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "36
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)
 # isn't indexable content and is kept out of the sitemap and out of
 # robots.txt (frontend/public/robots.txt).
-_STATIC_PATHS = ["/", "/schools", "/directory", "/calendar", "/lunch", "/local", "/privacy", "/contact", "/upload", "/chcomms", "/survey"]
+_STATIC_PATHS = ["/", "/schools", "/budgets", "/directory", "/calendar", "/lunch", "/local", "/privacy", "/contact", "/upload", "/chcomms", "/survey"]
 
 # Only pages with a real translation get a /<lang> entry (and hreflang
 # pairing) - listing an English page under /es would invite duplicate-content
 # treatment. Mirror frontend/src/lib/i18n.ts:isTranslatedPath.
-_TRANSLATED_STATIC = {"/", "/schools", "/directory", "/lunch", "/calendar"}
+_TRANSLATED_STATIC = {"/", "/schools", "/budgets", "/directory", "/lunch", "/calendar"}
+# A district's budget page is translated too, but listed in English only:
+# ~585 pages times five languages would be most of the sitemap, and every
+# one a render for the nightly warm job, for searches that come in English.
 _TRANSLATED_PREFIX = "/schools/"
 _ALT_LANGS = ("es", "zh", "ko", "hi")
 
@@ -77,6 +80,19 @@ async def school_lastmods(db: AsyncSession) -> dict[str, datetime]:
     return lastmods
 
 
+async def budget_lastmods(db: AsyncSession) -> dict[str, datetime]:
+    """slug -> when that district's budget page last changed: its newest import."""
+    rows = (
+        await db.execute(
+            select(StateDistrict.slug, func.max(DistrictBudget.imported_at))
+            .join(DistrictBudget, DistrictBudget.state_district_id == StateDistrict.id)
+            .group_by(StateDistrict.slug)
+            .order_by(StateDistrict.slug)
+        )
+    ).all()
+    return dict(rows)
+
+
 def _school_paths(slug: str) -> tuple[str, str]:
     """A school's page and its own calendar page (/calendar?school= used to be
     the only way in, and every one of those canonicalized to /calendar)."""
@@ -90,7 +106,8 @@ async def sitemap_paths(db: AsyncSession) -> list[str]:
     slugs = [s for s in (await db.execute(select(School.slug).order_by(School.name))).scalars().all() if s]
     pages = [f"/schools/{slug}" for slug in slugs]
     calendars = [_school_paths(slug)[1] for slug in slugs]
-    return [v for path in _STATIC_PATHS + pages + calendars for v in _variants(path)]
+    budgets = [f"/budgets/{slug}" for slug in await budget_lastmods(db)]
+    return [v for path in _STATIC_PATHS + pages + calendars for v in _variants(path)] + budgets
 
 
 async def _sitemap_xml(db: AsyncSession) -> bytes:
@@ -98,6 +115,7 @@ async def _sitemap_xml(db: AsyncSession) -> bytes:
     lastmods = await school_lastmods(db)
     entries = "".join(_entry(base_url, path, None) for path in _STATIC_PATHS)
     entries += "".join(_entry(base_url, path, mod) for slug, mod in lastmods.items() for path in _school_paths(slug))
+    entries += "".join(_entry(base_url, f"/budgets/{slug}", mod) for slug, mod in (await budget_lastmods(db)).items())
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'

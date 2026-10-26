@@ -24,6 +24,8 @@ import { AccountLayout } from "./pages/account/AccountLayout";
 // Every other page is its own chunk, fetched when it's first opened.
 const PickSchoolsPage = lazyPage(() => import("./pages/PickSchoolsPage").then((m) => m.PickSchoolsPage));
 const LunchPage = lazyPage(() => import("./pages/LunchPage").then((m) => m.LunchPage));
+const BudgetsPage = lazyPage(() => import("./pages/BudgetsPage").then((m) => m.BudgetsPage));
+const BudgetDistrictPage = lazyPage(() => import("./pages/BudgetDistrictPage").then((m) => m.BudgetDistrictPage));
 const LocalPage = lazyPage(() => import("./pages/LocalPage").then((m) => m.LocalPage));
 const LocalzHomePage = lazyPage(() => import("./pages/localz/LocalzHomePage").then((m) => m.LocalzHomePage));
 const LocalzCategoryPage = lazyPage(() => import("./pages/localz/LocalzCategoryPage").then((m) => m.LocalzCategoryPage));
@@ -210,6 +212,8 @@ function Routed() {
             and parsed client-side, to keep the URL shape
             /schools/{slug}/class-of-{year} intact. */}
         <Route path="/schools/:schoolId/:classSlug" element={<SchoolClassYearPage />} />
+        <Route path="/budgets" element={<BudgetsPage />} />
+        <Route path="/budgets/:slug" element={<BudgetDistrictPage />} />
         <Route path="/directory" element={<DirectoryPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/backpack-capture/privacy" element={<BackpackCapturePrivacyPage />} />

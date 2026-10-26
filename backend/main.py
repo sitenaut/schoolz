@@ -40,6 +40,7 @@ from routers import admin_users as admin_users_router  # noqa: E402
 from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
+from routers import budgets as budgets_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
 from routers import capture_devices as capture_devices_router  # noqa: E402
 from routers import chat as chat_router  # noqa: E402
@@ -257,6 +258,7 @@ app.include_router(health_router.router)
 app.include_router(csp_report_router.router)
 app.include_router(admin_config_router.router)
 app.include_router(admin_budget_router.router)
+app.include_router(budgets_router.router)
 app.include_router(admin_users_router.router)
 app.include_router(admin_audit_router.router)
 app.include_router(admin_api_keys_router.router)

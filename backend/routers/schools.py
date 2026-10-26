@@ -20,6 +20,7 @@ from models import (
     SmoreBlock,
     SmoreNewsletter,
     StaffMember,
+    StateDistrict,
     Student,
     User,
     derive_school_short_name,
@@ -677,7 +678,12 @@ async def get_school_budget(school: School = Depends(resolve_school), db: AsyncS
     if not budget:
         return None
     district = await db.get(District, school.district_id)
-    return SchoolBudgetOut(district_name=district.name, **{k: getattr(budget, k) for k in SchoolBudgetOut.model_fields if k != "district_name"})
+    state_district = await db.get(StateDistrict, budget.state_district_id) if budget.state_district_id else None
+    return SchoolBudgetOut(
+        district_name=district.name,
+        slug=state_district.slug if state_district else None,
+        **{k: getattr(budget, k) for k in SchoolBudgetOut.model_fields if k not in ("district_name", "slug")},
+    )
 
 
 @router.get("/{school_id}/sacc", response_model=SaccProgramOut | None)

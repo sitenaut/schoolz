@@ -359,6 +359,25 @@ def test_a_school_calendar_follows_its_school_and_the_month():
     assert paths_to_render(paths, rendered, lastmods, now) == ["/schools/a/calendar", "/es/schools/a/calendar", "/schools/c/calendar"]
 
 
+def test_budget_pages_render_after_every_school_page_even_the_first_time():
+    from scheduler.jobs.prerender_warm import paths_to_render
+
+    now = NIGHT
+    hours = lambda h: now - timedelta(hours=h)  # noqa: E731
+    paths = ["/budgets/new", "/budgets/reimported", "/budgets/aged", "/budgets/fresh", "/schools/c", "/schools/d"]
+    rendered = {
+        "/budgets/reimported": hours(30),  # imported since: redo
+        "/budgets/aged": hours(7 * 24 - 12),  # unchanged but ageing out: redo
+        "/budgets/fresh": hours(30),  # unchanged: skip
+        "/schools/c": hours(7 * 24 - 12),  # ageing school page: before any budget page
+    }
+    lastmods = {"c": hours(400)}
+    budget_lastmods = {"new": hours(2), "reimported": hours(2), "aged": hours(400), "fresh": hours(400)}
+    assert paths_to_render(paths, rendered, lastmods, now, budget_lastmods) == [
+        "/schools/d", "/schools/c", "/budgets/reimported", "/budgets/aged", "/budgets/new",
+    ]
+
+
 def test_unchanged_school_pages_come_due_on_different_nights():
     from scheduler.jobs.prerender_warm import school_max_age_s
 

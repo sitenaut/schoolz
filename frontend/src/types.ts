@@ -239,6 +239,8 @@ export type DistrictBudgetStatement = {
 /** GET /schools/{id}/budget: the district's latest budget year from the state's files. */
 export type SchoolBudget = {
   district_name: string;
+  /** The district's /budgets page. */
+  slug: string | null;
   budget_year: string;
   benefits_prior: number | null;
   benefits_budget: number | null;
@@ -250,6 +252,55 @@ export type SchoolBudget = {
   budget_report_url: string | null;
   aid_source_url: string | null;
   statements: DistrictBudgetStatement[];
+  imported_at: string;
+};
+
+export type BudgetYearFigure = { year: string; value: number; url?: string | null };
+export type BudgetChange = { start: BudgetYearFigure; end: BudgetYearFigure };
+export type BudgetMedian = { county: number | null; state: number | null };
+
+/** GET /budgets: every district with figures for the latest budget year. */
+export type BudgetIndex = {
+  budget_year: string | null;
+  districts: {
+    slug: string;
+    name: string;
+    county: string | null;
+    tracked: boolean;
+    levy_change_pct: number | null;
+    benefits_change_pct: number | null;
+  }[];
+};
+
+/** GET /budgets/{slug}: one district's latest budget year with county and state medians. */
+export type BudgetDistrict = {
+  slug: string;
+  name: string;
+  county: string | null;
+  state: string;
+  budget_year: string;
+  comparable: boolean | null;
+  schools: { slug: string; name: string }[];
+  benefits_prior: number | null;
+  benefits_budget: number | null;
+  other_spending_prior: number | null;
+  other_spending_budget: number | null;
+  prior_basis: "revised" | "original";
+  formula_aid_change: number | null;
+  levy_prior: number | null;
+  levy_budget: number | null;
+  levy_change_pct: number | null;
+  fund_balance_prior: number | null;
+  fund_balance_budget: number | null;
+  budget_report_url: string | null;
+  aid_source_url: string | null;
+  health_costs: BudgetChange | null;
+  staffing: { students_per_teacher: BudgetChange | null; median_teacher_salary: BudgetYearFigure | null; url: string } | null;
+  statements: DistrictBudgetStatement[];
+  medians: Record<
+    "benefits_change_pct" | "other_spending_change_pct" | "levy_change_pct" | "health_change_pct" | "students_per_teacher" | "median_teacher_salary",
+    BudgetMedian
+  >;
   imported_at: string;
 };
 

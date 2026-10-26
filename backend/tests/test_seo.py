@@ -120,3 +120,30 @@ async def test_sitemap_paths_match_the_sitemap():
     import re
 
     assert sorted(paths) == sorted(loc[len(_WEB_URL):] or "/" for loc in re.findall(r"<loc>([^<]+)</loc>", res.text))
+
+
+@pytest.mark.anyio
+async def test_sitemap_lists_each_district_budget_page_in_english_only():
+    from datetime import UTC, datetime
+
+    from models import DistrictBudget, StateDistrict
+
+    async with database.SessionLocal() as db:
+        state_district = StateDistrict(state="NJ", state_code="TSEO1", name="Seo Test District", slug="seo-test-district")
+        db.add(state_district)
+        await db.flush()
+        db.add(DistrictBudget(state_district_id=state_district.id, budget_year="2026-27", source_commit="abcdef0", statements=[],
+                              imported_at=datetime(2026, 10, 25, tzinfo=UTC)))
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+        assert f"<loc>{_WEB_URL}/budgets</loc>" in res.text and f"<loc>{_WEB_URL}/es/budgets</loc>" in res.text
+        assert f"<loc>{_WEB_URL}/budgets/seo-test-district</loc><lastmod>2026-10-25</lastmod></url>" in res.text
+        assert f"{_WEB_URL}/es/budgets/seo-test-district" not in res.text
+        # A crawler can have the page rendered; a made-up district can't.
+        import services.prerender as prerender
+
+        assert await prerender._names_something("/budgets/seo-test-district")
+        assert not await prerender._names_something("/budgets/no-such-district")
