@@ -133,6 +133,9 @@ Docs:
   - Only a *complete* list crawl may mark records missing; free-text search stays in POST bodies, never URLs.
   - `status = "hidden"` is a reviewer's takedown of a listing (a hijacked account, a closed program): anything that sets a listing's status, a refresh above all, must leave a hidden one alone.
   - ChildCareNJ (job `resources.childcarenj`): a family child care listing is someone's home - never store its street address or any provider email. Bump `childcarenj.NORMALIZE_VERSION` when `fields()` changes, or stored rows never pick it up.
+- **`docs/NEIGHBORZ_DESIGN.md`** — Neighborz, a Localz section where strangers pay someone's utility bill straight to the utility (`bills` in code and paths); design, states, limits, guards.
+  - **We never touch money**: no card form, payout or balance. Givers pay through the utility's own guest payment; that's what keeps this out of money-transmitter licensing.
+  - The account number reaches only the one giver holding that bill, and no free text ever crosses between giver and requester (the confirmation number included).
 - **`docs/BACKUPS.md`** — nightly encrypted `pg_dump` to R2 (`.github/workflows/backup.yml`), the restore drill, restoring for real.
   - The age private key exists only in the `schoolz-prod` vault; lose it and no backup can be restored.
   - The local database is dumped by `compose-local.sh` before `up`/`down`/`rm` (`scripts/backup-local.sh`); calling `docker compose` directly skips that.

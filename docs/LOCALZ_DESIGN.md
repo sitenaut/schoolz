@@ -6,7 +6,9 @@ Gradez (`frontend/focus/`): a lightweight app that helps people in South
 Jersey find food, housing, utility, health and family help without asking in
 public and without fighting state websites. Resources are ingested and kept
 fresh by scheduled jobs, the same way `/local` events are
-(`backend/local_events/`, `docs/LOCAL_EVENTS_SOURCES.md`).
+(`backend/local_events/`, `docs/LOCAL_EVENTS_SOURCES.md`). Neighborz, where
+neighbors pay each other's utility bills, is a Localz section with its own
+design: `docs/NEIGHBORZ_DESIGN.md`.
 
 ## Principles (these are rules, not styling)
 
