@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_permission
 from database import get_db
-from models import CommunitySubmission, PageVisit, School, SurveyResponse, User
+from models import CommunitySubmission, PageVisit, School, StateDistrict, SurveyResponse, User
 from resources.categories import CATEGORIES as LOCALZ_CATEGORIES
 
 router = APIRouter(prefix="/page-views", tags=["analytics"])
@@ -23,11 +23,15 @@ _SCHOOL_TZ = ZoneInfo("America/New_York")
 # turned into a scratchpad by anyone who finds the endpoint.
 _TRACKED_PATHS = {
     "/", "/chcomms", "/survey", "/schools", "/calendar", "/lunch", "/contact", "/start", "/privacy", "/local", "/directory",
+    "/budgets",
 }
 # A school's own page is counted per school, but only for a school that
 # exists: the slug is looked up and the row keyed on it, so the table stays
 # bounded by the number of tracked schools whatever a client sends.
 _SCHOOL_PAGE_RE = re.compile(r"^/schools/([^/]{1,100})$")
+# A district's budget page the same way, against the state districts that
+# have one (every NJ district, tracked by schoolz or not).
+_BUDGET_PAGE_RE = re.compile(r"^/budgets/([^/]{1,100})$")
 # Localz is counted here because it never loads GA (docs/LOCALZ_DESIGN.md):
 # its home, its category pages, the provider landing page, and every listing
 # as one row. Which listing someone opened is never recorded - the privacy
@@ -43,6 +47,12 @@ async def _tracked_path(path: str, db: AsyncSession) -> str | None:
         return path
     if _LOCALZ_LISTING_RE.match(path):
         return "/localz/r/:id"
+    match = _BUDGET_PAGE_RE.match(path)
+    if match:
+        slug = (
+            await db.execute(select(StateDistrict.slug).where(StateDistrict.slug == match.group(1)))
+        ).scalar_one_or_none()
+        return f"/budgets/{slug}" if slug else None
     match = _SCHOOL_PAGE_RE.match(path)
     if not match:
         return None

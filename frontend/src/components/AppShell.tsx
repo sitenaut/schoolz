@@ -34,6 +34,7 @@ const ROUTE_TEMPLATES: [RegExp, string][] = [
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
   [/^\/seasonal\/[^/]+$/, "/seasonal/:season"],
   [/^\/localz\/r\/[^/]+$/, "/localz/r/:id"],
+  [/^\/budgets\/[^/]+$/, "/budgets/:slug"],
 ];
 
 const GA_HOLD_MS = 3000;
@@ -148,16 +149,19 @@ export function AppShell() {
   useEffect(() => {
     const route = routeTemplate(pathname);
     const schoolMatch = pathname.match(/^\/schools\/([^/]+)$/);
+    const budgetMatch = pathname.match(/^\/budgets\/([^/]+)$/);
     trackEvent("page_view", {
       route,
       source: visitSource(),
       ...(fromRouteRef.current ? { from_route: fromRouteRef.current } : {}),
       ...(schoolMatch ? { school_slug: schoolMatch[1] } : {}),
+      ...(budgetMatch ? { budget_slug: budgetMatch[1] } : {}),
     });
     // Server-side counterpart to the RUM event above: RUM is the richer
     // signal, this is the one that still works behind an ad blocker. A
-    // school page is counted per school (the backend checks the slug).
-    countVisit(schoolMatch ? pathname : route);
+    // school page is counted per school and a budget page per district (the
+    // backend checks the slug).
+    countVisit(schoolMatch || budgetMatch ? pathname : route);
     fromRouteRef.current = route;
   }, [pathname]);
 
