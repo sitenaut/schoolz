@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import auth as auth_module
 import observability
 from auth import create_local_token, get_current_user, hash_password_async, verify_password_async
+from bills import flow as bills_flow
 from database import get_db
 from models import (
     Bucket3Capture,
@@ -293,6 +294,10 @@ async def delete_me(payload: DeleteAccountRequest, user: User = Depends(get_curr
     # Localz provider portal: memberships and unfinished requests go; an
     # approved listing stays, no longer pointing at this person.
     await provider_portal_data.delete_user_data(db, uid)
+
+    # Neighborz: bills they posted go, except ones a giver paid (kept,
+    # unlinked and erased, for the giver's history); their holds let go.
+    await bills_flow.delete_user_data(db, uid)
 
     # Centrally-managed data this user happened to create stays; only the
     # "who created it" pointer goes.

@@ -1,5 +1,6 @@
 from . import (
     athletics_calendar_scan,  # noqa: F401
+    bills_sweep,  # noqa: F401
     district_calendar_pdf_scan,  # noqa: F401
     district_calendar_scan,  # noqa: F401
     documents_scan,  # noqa: F401

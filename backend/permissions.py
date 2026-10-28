@@ -57,6 +57,14 @@ PERMISSIONS: tuple[Permission, ...] = (
         "Approve, merge or reject Localz listings, review held edits, verify providers by phone, revert changes.",
         "write",
     ),
+    Permission(
+        "bills.manage",
+        "Neighborz review",
+        "Check Neighborz bills held for review (the bill image shows a name and address), decide disputed payments, "
+        "lift a paused giver.",
+        "write",
+        sensitive=True,
+    ),
     Permission("seasonal.manage", "Seasonal guides", "Add, edit and delete the seasonal guide links and attractions (haunts, light shows, Santa) behind the season badge.", "write"),
     Permission(
         "config.manage",

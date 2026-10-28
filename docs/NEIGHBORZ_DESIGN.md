@@ -1,6 +1,8 @@
 # Neighborz — neighbors paying each other's utility bills (design)
 
-Design only; nothing is built yet. Neighborz is a section of Localz
+Backend built (`backend/bills/`, `routers/bills.py`, `routers/admin_bills.py`,
+migration 0137, `tests/test_bills.py`); the frontend and the review screen
+are next. Neighborz is a section of Localz
 (`docs/LOCALZ_DESIGN.md`) where someone behind on a utility bill posts it,
 anonymously, and a stranger pays it straight to the utility. It starts with
 PSE&G; gas, water, heating and internet companies follow one at a time (see
@@ -121,9 +123,10 @@ email nudges.
 - **The model only reads; code decides** (the `services/submission_review.py`
   pattern). One vision call with a tool schema: `utility`, `account_number`,
   `service_zip`, `amount_due`, `due_date`, `statement_date`,
-  `shutoff_notice`, `residential` (true/false/unknown). `items`-first and
-  `item.get(...)` rules from the `content-extraction` skill apply to the
-  schema.
+  `shutoff_notice`, `residential` (true/false/unknown), `is_utility_bill`,
+  as structured output (`bills/reader.py`, Opus with the server-side refusal
+  fallback). Every field is read with `.get()`: a schema's "required" isn't
+  relied on.
 - **Checks in code**, each a named flag: the utility is in the catalog; the
   account number matches that utility's format; the ZIP is in New Jersey
   (`resources/places.zip_county`); an amount due above zero; a due date not
@@ -146,7 +149,7 @@ email nudges.
 
 ## Data model
 
-- **`bill_requests`**: `id` (UUID), `requester_id` (users, cascade),
+- **`bill_requests`**: `id` (UUID), `requester_id` (users, set null),
   `utility`, `status`, `amount_cents` (asked), `amount_due_cents` (read),
   `due_date`, `shutoff_notice`, `county`, `avatar` (catalog key),
   `account_number` and `service_zip`
@@ -155,15 +158,20 @@ email nudges.
   `crypto.derived_key("bill_account_fingerprint")`: a plain hash of a
   10-digit number is reversed by trying them all), `image` (encrypted,
   nullable), `image_sha256`, `extraction` (encrypted JSON), `flags`,
-  `thanks` (emoji key), and times: `created_at`, `listed_at`, `closed_at`,
-  `answered_at`.
-- **`bill_claims`**: `id`, `request_id`, `giver_id` (users, cascade),
-  `status` (`active|released|expired|reported|confirmed|disputed|upheld`),
-  `claimed_at`, `expires_at`, `revealed_at`, `reported_at`, `paid_cents`,
-  `paid_on`, `confirmation_number`
-  (`EncryptedText(purpose="bill_confirmation", required=True)`). A partial
-  unique index allows one live claim (`active` or `reported`) per request
-  and one `active` claim per giver.
+  `refused` (an upload that can't be posted, kept so a re-upload isn't read
+  again), `reject_reason`, `thanks` (emoji key), and times: `created_at`,
+  `posted_at`, `closed_at`, `answered_at`, `erased_at`.
+- **`bill_holds`**: `id`, `request_id`, `giver_id` (users, set null),
+  `status` (`active` → `released` | `expired` (a strike) | `withdrawn` |
+  `reported` → `confirmed` | `disputed` → `confirmed` or `struck` (a
+  strike)), `held_at`, `expires_at`, `revealed_at`, `warned_at`,
+  `reported_at`, `disputed_at`, `settled_at`, `paid_cents`, `paid_on`,
+  `confirmation_number`
+  (`EncryptedText(purpose="bill_confirmation", required=True)`). Partial
+  unique indexes allow one live hold (`active`, `reported`, `disputed`) per
+  bill and one `active` hold per giver.
+- **`bill_givers`**: `user_id`, `strikes_cleared_at`. A reviewer lifting a
+  pause sets it; strikes before it stop counting.
 - **With no `DATA_ENCRYPTION_KEYS`, posting and holding are off** (503
   `encryption_unavailable`), the way the saved profile works. Set a local
   key to try it locally.
@@ -173,10 +181,13 @@ email nudges.
   giver's history. A giver's confirmation number is their own record and
   stays until they delete it or their account. Backups hold only
   ciphertext for every encrypted column.
-- **Account deletion** (`routers/auth.py`): the requester's open listing is
-  withdrawn (its holder told "not needed any more") and every request row
-  of theirs is deleted; a giver's claims are deleted, and a bill they'd
-  reported stays `reported` until its requester answers.
+- **Account deletion** (`routers/auth.py` → `bills.flow.delete_user_data`):
+  a requester's bill that a giver paid, or says they paid, stays, closed as
+  paid, with `requester_id` cleared and the account erased, so the giver
+  keeps that line in their history; every other bill of theirs is deleted
+  (a giver holding one is told "not needed any more"). A giver's active
+  hold is let go; their other holds keep the bill's record but lose
+  `giver_id` and the confirmation number.
 
 ## API
 
@@ -193,10 +204,12 @@ route here, admin ones included (a key could otherwise open bill images).
 - Giver: `POST /bills/{id}/hold`, `GET /bills/holds/{id}` (the payment
   details; reveals the account number, `audit.note("bills.account_revealed")`),
   `POST /bills/holds/{id}/paid`, `POST /bills/holds/{id}/release`.
-- Both: `GET /bills/mine` → `{posted: [...], paid: [...]}`.
+- Both: `GET /bills/mine` → `{posted: [...], gifts: [...], hold_blocker}`.
 - Review (`bills.manage`, browser sessions only): `GET /admin/bills`
-  (held and disputed), `GET /admin/bills/{id}/image`,
-  `POST /admin/bills/{id}/decision`, `POST /admin/bills/givers/{id}/unpause`.
+  (held, disputed, paused givers), `GET /admin/bills/{id}/image`,
+  `POST /admin/bills/{id}/decision` (`approve|reject` a held bill,
+  `relist|close_paid` a dispute), `POST /admin/bills/givers/{id}/unpause`.
+  The image, each decision and each unpause are in `AUDITED`.
 
 ## Review
 
@@ -218,8 +231,9 @@ route here, admin ones included (a key could otherwise open bill images).
 
 Through `services/mailer.py` (nothing sent where SMTP isn't set), generic
 like Localz alerts: subject "An update on schoolz", body "Something on
-your account needs a look. Sign in to see it", no amounts, no utility, no
-word about bills.
+your schoolz account needs a look. Sign in to see it" and the site's
+address (not a `/bills` link), no amounts, no utility, no word about
+bills.
 
 - Requester: a giver reported paid; the listing expired.
 - Giver: their hold has 2 hours left; the bill they held was withdrawn.

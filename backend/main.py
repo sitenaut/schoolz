@@ -31,6 +31,7 @@ import telemetry  # noqa: E402
 from auth import check_deployed_auth_mode, is_deployed, prewarm_supabase_jwks, seed_admin  # noqa: E402
 from routers import admin_api_keys as admin_api_keys_router  # noqa: E402
 from routers import admin_audit as admin_audit_router  # noqa: E402
+from routers import admin_bills as admin_bills_router  # noqa: E402
 from routers import admin_budget as admin_budget_router  # noqa: E402
 from routers import admin_chatbot as admin_chatbot_router  # noqa: E402
 from routers import admin_config as admin_config_router  # noqa: E402
@@ -39,6 +40,7 @@ from routers import admin_secret_requests as admin_secret_requests_router  # noq
 from routers import admin_users as admin_users_router  # noqa: E402
 from routers import analytics as analytics_router  # noqa: E402
 from routers import auth as auth_router  # noqa: E402
+from routers import bills as bills_router  # noqa: E402
 from routers import bucket3 as bucket3_router  # noqa: E402
 from routers import budgets as budgets_router  # noqa: E402
 from routers import calendar as calendar_router  # noqa: E402
@@ -290,6 +292,8 @@ app.include_router(resources_router.router)
 app.include_router(saved_profile_router.router)
 app.include_router(provider_portal_router.router)
 app.include_router(admin_resources_router.router)
+app.include_router(bills_router.router)
+app.include_router(admin_bills_router.router)
 app.include_router(seasonal_guides_router.router)
 app.include_router(seasonal_attractions_router.router)
 app.include_router(community_submissions_router.router)

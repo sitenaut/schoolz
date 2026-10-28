@@ -2936,3 +2936,96 @@ class AuditEvent(Base):
     target: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class BillRequest(Base):
+    """A utility bill someone posted on Neighborz for a neighbor to pay
+    (docs/NEIGHBORZ_DESIGN.md). Anonymous on the public list: avatar,
+    utility, amount, due date, county, shutoff notice and nothing else.
+
+    The account number and ZIP are the one secret that has to reach a giver,
+    so they are encrypted with their own derived key and erased 30 days
+    after the bill closes; `account_fingerprint` (a keyed HMAC, not a plain
+    hash: a 10-digit number is reversed by trying them all) is what the
+    limits match on after that. The uploaded image is kept, encrypted, only
+    until the bill is listed or rejected. No column holds free text another
+    person sees.
+
+    `requester_id` goes NULL when a paid bill's requester deletes their
+    account, so the giver keeps the line in their own history; every other
+    bill of theirs is deleted (bills.flow.delete_user_data)."""
+
+    __tablename__ = "bill_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    requester_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    utility: Mapped[str] = mapped_column(String(20), nullable=False)
+    # draft | held | available | claimed | reported | disputed | paid | withdrawn | rejected | expired
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    amount_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)  # asked
+    amount_due_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)  # read from the bill
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    shutoff_notice: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    county: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    avatar: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    account_number: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_account", required=True), nullable=True)
+    service_zip: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_account", required=True), nullable=True)
+    account_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    # What was read from the bill (JSON), for the reviewer and for reusing
+    # the read when the same file is uploaded again.
+    extraction: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_account", required=True), nullable=True)
+    image: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_image", required=True), nullable=True)  # base64
+    image_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    image_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    flags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    refused: Mapped[str | None] = mapped_column(String(30), nullable=True)  # why an upload can't be posted
+    reject_reason: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    thanks: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    erased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BillHold(Base):
+    """A giver saying "I'll pay this": they hold the bill for 24 hours and,
+    while the hold is active, only they can see its account number. Partial
+    unique indexes (migration 0137) allow one live hold per bill and one
+    active hold per giver.
+
+    status: active -> released (let go, no strike) | expired (timed out,
+    a strike) | withdrawn (the requester took the bill down) | reported
+    ("I paid it") -> confirmed (requester said paid, or 7 days of silence) |
+    disputed ("Not yet") -> confirmed or struck (a reviewer's call; struck
+    is a strike).
+
+    The confirmation number is the giver's own record of the gift, never
+    shown to the requester: a "confirmation number" can carry a message."""
+
+    __tablename__ = "bill_holds"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    request_id: Mapped[str] = mapped_column(String(36), ForeignKey("bill_requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    giver_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    held_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    warned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    disputed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    paid_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    confirmation_number: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_confirmation", required=True), nullable=True)
+
+
+class BillGiver(Base):
+    """A giver's standing: strikes before `strikes_cleared_at` don't count,
+    which is how a reviewer lifts a pause."""
+
+    __tablename__ = "bill_givers"
+
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    strikes_cleared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

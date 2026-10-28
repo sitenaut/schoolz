@@ -80,6 +80,10 @@ AUDITED: dict[tuple[str, str], str] = {
     ("POST", "/admin/resources/log/{log_id}/revert"): "resources.revert",
     ("POST", "/admin/resources/memberships/{membership_id}/verify"): "resources.membership_verify",
     ("POST", "/admin/resources/services/{service_id}/members"): "resources.member_add",
+    # Neighborz review: bill images show a name and address
+    ("GET", "/admin/bills/{bill_id}/image"): "bills.image_viewed",
+    ("POST", "/admin/bills/{bill_id}/decision"): "bills.decision",
+    ("POST", "/admin/bills/givers/{user_id}/unpause"): "bills.giver_unpause",
 }
 
 # Path parameters that are secrets in their own right: kept out of the target.
