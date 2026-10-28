@@ -50,6 +50,13 @@ def outside(c: collections.Counter) -> int:
     return sum(c.values()) - c.get(TEAM, 0)
 
 
+def group(path: str) -> int:
+    """Sort order: site pages, then /budgets and each district's budget page, then school pages."""
+    if path == "/budgets" or path.startswith("/budgets/"):
+        return 1
+    return 2 if path.startswith("/schools/") else 0
+
+
 print(f"As of {now:%a %b %-d, %-I:%M %p} Eastern\n")
 print("## Daily (outside = everything but 'team', the team's flagged browsers)")
 print(f"{'day':<16}{'outside':>8}{'team':>6}  sources (outside)")
@@ -67,12 +74,14 @@ for day, name in ((yesterday, "Yesterday"), (today, "Today so far")):
     if not paths:
         print(f"## {name}: no visits\n")
         continue
-    print(f"## {name} by page (outside visits; school pages at the bottom)")
-    ordered = sorted(paths.items(), key=lambda kv: (kv[0].startswith("/schools/"), -outside(kv[1])))
+    print(f"## {name} by page (outside visits; budget pages, then school pages, at the bottom)")
+    ordered = sorted(paths.items(), key=lambda kv: (group(kv[0]), -outside(kv[1])))
     for path, c in ordered:
         if outside(c) == 0:
             continue
         srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != TEAM)
         print(f"  {path:<45}{outside(c):>4}  {srcs}")
-    schools = sum(outside(c) for p, c in paths.items() if p.startswith("/schools/"))
+    budgets = sum(outside(c) for p, c in paths.items() if group(p) == 1)
+    schools = sum(outside(c) for p, c in paths.items() if group(p) == 2)
+    print(f"  {'(all budget pages)':<45}{budgets:>4}")
     print(f"  {'(all school pages)':<45}{schools:>4}\n")

@@ -10,7 +10,7 @@ from sqlalchemy import update
 
 import database
 from main import app
-from models import School, User
+from models import School, StateDistrict, User
 
 
 async def _admin_headers(client: AsyncClient) -> dict[str, str]:
@@ -99,6 +99,25 @@ async def test_school_page_counted_per_school_by_slug():
     assert f"/schools/{school_id}" not in report["totals_by_path"]
     assert f"/schools/no-such-school-{tag}" not in report["totals_by_path"]
     assert "/local" in report["totals_by_path"]
+
+
+@pytest.mark.anyio
+async def test_budget_page_counted_per_state_district():
+    tag = uuid.uuid4().hex[:10]
+    async with database.SessionLocal() as db:
+        db.add(StateDistrict(state="NJ", state_code=f"T{tag[:6]}", name=f"Visit Test {tag}", slug=f"visit-budget-{tag}"))
+        await db.commit()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        for path in ("/budgets", f"/budgets/visit-budget-{tag}", f"/budgets/visit-budget-{tag}", f"/budgets/no-such-district-{tag}"):
+            await client.post("/page-views", json={"path": path, "source": "direct"})
+        headers = await _admin_headers(client)
+        report = (await client.get("/page-views", headers=headers)).json()
+
+    totals = report["totals_by_path"]
+    assert totals["/budgets"] >= 1
+    assert totals[f"/budgets/visit-budget-{tag}"] == 2
+    assert f"/budgets/no-such-district-{tag}" not in totals
 
 
 @pytest.mark.anyio
