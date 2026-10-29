@@ -136,3 +136,16 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - A transportation department can be one page (Waterford's `/our-district/transportation`): `transportation.scan` reads Cherry Hill's subpage tree only when the main page links `late-bus-information`, and any other page with `parse_department_page`.
 - A scanned calendar PDF can mark closures only by colour with a key ("red = School Closed"); see the Waterford entry in `docs/DATA_GAPS.md` for how far the image prompt gets.
 
+## Chesterfield, Springfield and Mansfield (found onboarding)
+
+- Older calendar module: `data-calendar-ids` can be unquoted and comma-separated (`data-calendar-ids=351,350`); `calendar_<id>.ics` windows vary from ~2.5 to ~7 months, so a year PDF may be needed for later closures.
+- A calendar id can be a lunch menu (Springfield's 352: daily entrées, "HALF DAY - Hot Dog"): never wire it as an ics feed.
+- A specials rotation can be "Cycle Day N" (Chesterfield); `district_calendar` stores it as "Day N".
+- The home page's calendar can be a Drive link labelled only by its own text (`<a>2026-2027 School Calendar</a>`), which `_drive_calendar_link` now reads.
+- A Finalsite district can put each school on a Google Site (Mansfield): no `.fsLocationAddress`, and the district's constituent directory is out of the roster scan's reach.
+
+## Pemberton (found onboarding)
+
+- Every `calendar_ids[]` value can return the same event union under the same UIDs, buildings told apart only by a title prefix ("PTHS - "). Neither the UID subtraction nor `skip_title_prefixes` can split that; the feed's `school_title_prefixes` ({prefix: school slug}) does, and a scan moves existing rows when the map changes.
+- `.fsLocationAddress` can hold only the street, and the footer `tel:` carries the extension.
+

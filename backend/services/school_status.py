@@ -16,7 +16,7 @@ CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed
 # regular one ("2:30pm Dismissal") or a preschool-only one. "1/2 Day -
 # District" is Paulsboro's half day. Mirrored in
 # school_today._EARLY_RE and districtItems.ts HALF_DAY_RE.
-EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Staff days and conference days: status facts, but not closures of the day
 # (school_today's classify_day doesn't count them).

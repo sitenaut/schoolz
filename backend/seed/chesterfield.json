@@ -1,0 +1,68 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Chesterfield Township School District",
+  "districts": [
+    {
+      "name": "Chesterfield Township School District",
+      "state": "NJ",
+      "website_url": "https://www.chesterfieldschool.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://www.chesterfieldschool.com/",
+      "ics_feeds": [
+        {
+          "name": "Chesterfield School Calendar",
+          "url": "https://www.chesterfieldschool.com/calendar/calendar_353.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Chesterfield"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "chesterfield-elementary",
+      "name": "Chesterfield Township Elementary School",
+      "short_name": "Chesterfield",
+      "district_name": "Chesterfield Township School District",
+      "school_type": "elementary",
+      "address": "30 Saddle Way, Chesterfield, NJ 08515",
+      "main_phone": "(609) 298-6900",
+      "website_url": "https://www.chesterfieldschool.com",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-6900",
+      "absence_portal_name": "Genesis Parent Access",
+      "absence_portal_url": "https://parents.c1.genesisedu.net/chesterfield",
+      "absence_instructions": "Submit the absence in Genesis Parent Access (Attendance). The handbook also asks parents to phone the school on the day of the absence, preferably before 9:00 AM, and to send a signed note when the child returns.",
+      "start_time": "8:35 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1722268805/chesterfieldschoolcom/hjmvlgjad1hd8qro8mz6/ChesterfieldTownshipSchoolDistrictPrimaryLogoImage.png",
+      "staff_directory_url": null,
+      "nutrislice_location": "chesterfieldschool/chesterfield-elementary",
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(800) 350-5034",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Before- and after-school care is run on site by Champions (an outside provider), not the district; the phone is Champions' office. Hours are not published on the district site.",
+        "handbook_url": "https://www.discoverchampions.com/"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

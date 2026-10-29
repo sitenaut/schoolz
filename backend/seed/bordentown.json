@@ -1,0 +1,474 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Bordentown Regional School District",
+  "districts": [
+    {
+      "name": "Bordentown Regional School District",
+      "state": "NJ",
+      "website_url": "https://www.bordentown.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "BRHS Calendar",
+          "url": "https://brhs.bordentown.k12.nj.us/sndreq/generateCalendarICS.php?calendar_id=150787",
+          "school_slug": "bordentown-regional-high"
+        },
+        {
+          "name": "BRMS Calendar",
+          "url": "https://brms.bordentown.k12.nj.us/sndreq/generateCalendarICS.php?calendar_id=147538",
+          "school_slug": "bordentown-regional-middle"
+        },
+        {
+          "name": "Clara Barton Calendar",
+          "url": "https://cbs.bordentown.k12.nj.us/sndreq/generateCalendarICS.php?calendar_id=147539",
+          "school_slug": "clara-barton-elementary"
+        },
+        {
+          "name": "MacFarland Calendar",
+          "url": "https://mis.bordentown.k12.nj.us/sndreq/generateCalendarICS.php?calendar_id=147540",
+          "school_slug": "macfarland-intermediate"
+        },
+        {
+          "name": "Peter Muschal Calendar",
+          "url": "https://pms.bordentown.k12.nj.us/sndreq/generateCalendarICS.php?calendar_id=147541",
+          "school_slug": "peter-muschal-elementary"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.bordentown.k12.nj.us/transportation-home",
+      "towns": [
+        "Bordentown City",
+        "Bordentown Township",
+        "Fieldsboro",
+        "New Hanover"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "bordentown-regional-high",
+      "name": "Bordentown Regional High School",
+      "short_name": "Bordentown High",
+      "district_name": "Bordentown Regional School District",
+      "school_type": "high",
+      "address": "318 Ward Avenue, Bordentown, NJ 08505",
+      "main_phone": "(609) 298-0025",
+      "website_url": "https://brhs.bordentown.k12.nj.us",
+      "logo_url": "https://files.smartsites.parentsquare.com/12817/header_logo_img_1qe6f4do49qv3fmkome.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-0025 ext. 1112",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the BRHS attendance office at (609) 298-0025 ext. 1112, or email the attendance office, to report your child absent. Doctor's notes are due within 3 days of returning; documentation for an excused absence within 5 days.",
+      "start_time": "7:40 AM",
+      "end_time": "1:59 PM",
+      "early_dismissal_time": "11:45 AM",
+      "delayed_opening_time": "9:40 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:40",
+            "end": "09:00"
+          },
+          {
+            "name": "Homeroom",
+            "start": "09:03",
+            "end": "09:10"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "10:33"
+          },
+          {
+            "name": "3A Lunch",
+            "start": "10:36",
+            "end": "11:14"
+          },
+          {
+            "name": "3A/B Class",
+            "start": "10:36",
+            "end": "11:56"
+          },
+          {
+            "name": "3B/C Class",
+            "start": "11:16",
+            "end": "12:36"
+          },
+          {
+            "name": "3C Lunch",
+            "start": "11:58",
+            "end": "12:36"
+          },
+          {
+            "name": "4",
+            "start": "12:39",
+            "end": "13:59"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:40",
+            "end": "08:37"
+          },
+          {
+            "name": "Homeroom",
+            "start": "08:40",
+            "end": "08:45"
+          },
+          {
+            "name": "2",
+            "start": "08:48",
+            "end": "09:45"
+          },
+          {
+            "name": "3 (no lunch)",
+            "start": "09:48",
+            "end": "10:45"
+          },
+          {
+            "name": "4",
+            "start": "10:48",
+            "end": "11:45"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:40",
+            "end": "10:34"
+          },
+          {
+            "name": "Homeroom",
+            "start": "10:37",
+            "end": "10:42"
+          },
+          {
+            "name": "2",
+            "start": "10:45",
+            "end": "11:39"
+          },
+          {
+            "name": "3A Lunch",
+            "start": "11:42",
+            "end": "12:08"
+          },
+          {
+            "name": "3A/B Class",
+            "start": "11:42",
+            "end": "12:36"
+          },
+          {
+            "name": "3B/C Class",
+            "start": "12:09",
+            "end": "13:03"
+          },
+          {
+            "name": "3C Lunch",
+            "start": "12:37",
+            "end": "13:03"
+          },
+          {
+            "name": "4",
+            "start": "13:06",
+            "end": "13:59"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=2202",
+      "staff_directory_url": "https://files.smartsites.parentsquare.com/12817/brhs_staff_directory.pdf",
+      "nutrislice_location": "bordentown/bordentown-regional-high",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "bordentown-regional-middle",
+      "name": "Bordentown Regional Middle School",
+      "short_name": "Bordentown Middle",
+      "district_name": "Bordentown Regional School District",
+      "school_type": "middle",
+      "address": "50 Dunns Mill Road, Bordentown, NJ 08505",
+      "main_phone": "(609) 298-0674",
+      "website_url": "https://brms.bordentown.k12.nj.us",
+      "logo_url": "https://files.smartsites.parentsquare.com/12818/header_logo_img_pcsk7l1o73vsbieeboh.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-0674 ext. 2008",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the BRMS Attendance Office at 609-298-0674 ext. 2008 for any absence (excused, sick, etc.); calls outside school hours are returned if needed. Bring medical forms or doctor's notes to the attendance office when the student returns.",
+      "start_time": "8:00 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:15 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Band & Orchestra (Tue/Thu)",
+            "start": "07:30",
+            "end": "08:00"
+          },
+          {
+            "name": "Student Entry",
+            "start": "08:00",
+            "end": "08:05"
+          },
+          {
+            "name": "Class 1",
+            "start": "08:10",
+            "end": "09:15"
+          },
+          {
+            "name": "Class 2",
+            "start": "09:19",
+            "end": "10:24"
+          },
+          {
+            "name": "Lunch 1",
+            "start": "10:28",
+            "end": "11:03"
+          },
+          {
+            "name": "Class 3 (with Lunch 2)",
+            "start": "10:28",
+            "end": "11:33"
+          },
+          {
+            "name": "Class 3 (with Lunch 1)",
+            "start": "11:07",
+            "end": "12:12"
+          },
+          {
+            "name": "Lunch 2",
+            "start": "11:37",
+            "end": "12:12"
+          },
+          {
+            "name": "Class 4",
+            "start": "12:16",
+            "end": "13:21"
+          },
+          {
+            "name": "Class 5",
+            "start": "13:25",
+            "end": "14:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Band & Orchestra (Tue/Thu)",
+            "start": "09:30",
+            "end": "10:00"
+          },
+          {
+            "name": "Student Entry",
+            "start": "10:00",
+            "end": "10:05"
+          },
+          {
+            "name": "Class 1",
+            "start": "10:10",
+            "end": "10:51"
+          },
+          {
+            "name": "Class 2",
+            "start": "10:55",
+            "end": "11:36"
+          },
+          {
+            "name": "Lunch 1",
+            "start": "11:40",
+            "end": "12:15"
+          },
+          {
+            "name": "Class 3 (with Lunch 2)",
+            "start": "11:40",
+            "end": "12:21"
+          },
+          {
+            "name": "Class 3 (with Lunch 1)",
+            "start": "12:19",
+            "end": "13:00"
+          },
+          {
+            "name": "Lunch 2",
+            "start": "12:25",
+            "end": "13:00"
+          },
+          {
+            "name": "Class 4",
+            "start": "13:04",
+            "end": "13:45"
+          },
+          {
+            "name": "Class 5",
+            "start": "13:49",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Band & Orchestra (Tue/Thu)",
+            "start": "07:30",
+            "end": "08:00"
+          },
+          {
+            "name": "Student Entry",
+            "start": "08:00",
+            "end": "08:05"
+          },
+          {
+            "name": "Class 1",
+            "start": "08:08",
+            "end": "08:55"
+          },
+          {
+            "name": "Class 2",
+            "start": "08:58",
+            "end": "09:45"
+          },
+          {
+            "name": "Class 3",
+            "start": "09:48",
+            "end": "10:35"
+          },
+          {
+            "name": "Class 4",
+            "start": "10:38",
+            "end": "11:25"
+          },
+          {
+            "name": "Class 5",
+            "start": "11:28",
+            "end": "12:15"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=26819",
+      "staff_directory_url": "https://files.smartsites.parentsquare.com/12818/brms_staff_directory.pdf",
+      "nutrislice_location": "bordentown/bordentown-regional-middle",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "clara-barton-elementary",
+      "name": "Clara Barton Elementary School",
+      "short_name": "Clara Barton",
+      "district_name": "Bordentown Regional School District",
+      "school_type": "elementary",
+      "address": "100 Crosswicks Street, Bordentown, NJ 08505",
+      "main_phone": "(609) 298-0676",
+      "website_url": "https://cbs.bordentown.k12.nj.us",
+      "logo_url": "https://files.smartsites.parentsquare.com/12819/header_logo_img_hbl4o3keenp1adhdlol.png",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-0676 ext. 3102",
+      "absence_portal_name": "CBS Absences and Tardy Parent Sheet (Google Form)",
+      "absence_portal_url": "https://docs.google.com/forms/d/e/1FAIpQLSdnNOEoqyW9k3IBSRvRHkCRpi8m8bv4LHiq44qnJAjeKLHJqg/viewform",
+      "absence_instructions": "Complete the CBS Absences and Tardy Parent Sheet (linked from the school's School Hours page) by 8:00 AM. After 9:00 AM call 609-298-0676 x 3102. A signed note goes to the homeroom teacher on return; more than five consecutive days needs a doctor's certificate. Dismissal changes need a signed note, or a call to the office by 2:30 PM.",
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "staff_directory_url": null,
+      "nutrislice_location": "bordentown/clara-barton-elementary",
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(609) 533-1504",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "handbook_url": "https://www.bordentown.k12.nj.us/before-and-after-school-programs-20",
+        "closures_notes": "District-run CDA Before & After School Care (grades K-5), monthly auto-billing via cda.asapconnected.com; enrollment and emergency care through the CDA office, (609) 298-0025 ext. 1200. Morning care (from 7:00 AM, small breakfast) runs at PMES and CBS; aftercare (to 6:00 PM) at PMES and MIS. The (609) 533-1504 line is the Clara Barton/MacFarland PM site."
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "macfarland-intermediate",
+      "name": "MacFarland Intermediate School",
+      "short_name": "MacFarland",
+      "district_name": "Bordentown Regional School District",
+      "school_type": "elementary",
+      "address": "87 Crosswicks Street, Bordentown, NJ 08505",
+      "main_phone": "(609) 291-7192",
+      "website_url": "https://mis.bordentown.k12.nj.us",
+      "logo_url": "https://files.smartsites.parentsquare.com/12820/header_logo_img_jlhrs867m97q4mddnic.png",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "MIS Student Absence Reporting (Google Form)",
+      "absence_portal_url": "https://mis.bordentown.k12.nj.us/report-your-child-absent-tardy",
+      "absence_instructions": "Report every absence with the MIS Student Absence Reporting form (nav item 'Report Your Child Absent/Tardy') before 8:00 AM each school day, one form per student.",
+      "start_time": "8:30 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "staff_directory_url": null,
+      "nutrislice_location": "bordentown/macfarland-intermediate",
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(609) 533-1504",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "handbook_url": "https://www.bordentown.k12.nj.us/before-and-after-school-programs-20",
+        "closures_notes": "District-run CDA Before & After School Care (grades K-5), monthly auto-billing via cda.asapconnected.com; enrollment and emergency care through the CDA office, (609) 298-0025 ext. 1200. Morning care (from 7:00 AM, small breakfast) runs at PMES and CBS; aftercare (to 6:00 PM) at PMES and MIS."
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "peter-muschal-elementary",
+      "name": "Peter Muschal Elementary School",
+      "short_name": "Peter Muschal",
+      "district_name": "Bordentown Regional School District",
+      "school_type": "elementary",
+      "address": "323 Ward Avenue, Bordentown, NJ 08505",
+      "main_phone": "(609) 298-2600",
+      "website_url": "https://pms.bordentown.k12.nj.us",
+      "logo_url": "https://files.smartsites.parentsquare.com/12821/header_logo_img_p1vqms58v5264fioifp.png",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Student Attendance Report (Google Form)",
+      "absence_portal_url": "https://pms.bordentown.k12.nj.us/attendance-reporting",
+      "absence_instructions": "Report every absence with the Student Attendance Report form (nav item 'Attendance Reporting') as soon as possible; it can be filed in advance, one per student. The form is only a verification: an excused absence needs a doctor's note. Keep a child home until 24 hours fever-free and vomiting-free without medication.",
+      "start_time": "9:00 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "11:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "staff_directory_url": "https://files.smartsites.parentsquare.com/12821/directory_3.pdf",
+      "nutrislice_location": "bordentown/peter-muschal-elementary",
+      "sacc": {
+        "am_hours": "7:00 AM - 9:00 AM",
+        "pm_hours": "3:30 PM - 6:00 PM",
+        "site_phone": "(609) 820-5178",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "handbook_url": "https://www.bordentown.k12.nj.us/before-and-after-school-programs-20",
+        "closures_notes": "District-run CDA Before & After School Care (grades K-5), monthly auto-billing via cda.asapconnected.com; enrollment and emergency care through the CDA office, (609) 298-0025 ext. 1200. Morning care (from 7:00 AM, small breakfast) runs at PMES and CBS; aftercare (to 6:00 PM) at PMES and MIS."
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

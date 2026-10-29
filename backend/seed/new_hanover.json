@@ -1,0 +1,61 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: New Hanover Township School District",
+  "districts": [
+    {
+      "name": "New Hanover Township School District",
+      "state": "NJ",
+      "website_url": "https://www.newhanover.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "New Hanover Township School District",
+          "platform": "apptegy",
+          "org_id": "20309"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "New Hanover",
+        "Wrightstown"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "new-hanover-township",
+      "name": "New Hanover Township School",
+      "short_name": "New Hanover",
+      "district_name": "New Hanover Township School District",
+      "school_type": "elementary",
+      "address": "122 Fort Dix Street, Wrightstown, NJ 08562",
+      "main_phone": "(609) 723-2139",
+      "website_url": "https://www.newhanover.k12.nj.us",
+      "apptegy_org_id": "20309",
+      "nutrislice_location": "newhanover/new-hanover-township-elementary",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 723-2139",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school at (609) 723-2139 by 9:00 AM when your child is absent. On return, send a signed note to the homeroom teacher; absences of more than four consecutive days need a doctor's note.",
+      "start_time": "9:00 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:30 PM",
+      "delayed_opening_time": "11:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20309/logo/23193/new-hanover.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

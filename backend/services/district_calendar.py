@@ -123,6 +123,9 @@ def _cancelled(component) -> bool:
     return str(component.get("STATUS") or "").upper() == "CANCELLED"
 
 
+_CYCLE_DAY_RE = re.compile(r"^\s*Cycle\s+(Day\s+\d+)\s*$", re.I)
+
+
 def _stable_uid(uid: str | None, title: str, dt: datetime) -> str:
     if uid:
         return uid
@@ -211,6 +214,9 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
             end, _ = _as_datetime(dtend.dt) if dtend is not None else (None, False)
 
             title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
+            # Chesterfield's specials rotation is "Cycle Day 3": the same
+            # marker every rotation reader expects as "Day 3".
+            title = _CYCLE_DAY_RE.sub(r"\1", title)
             description = description_text(str(component.get("DESCRIPTION") or ""))
             # Smart Sites' generated feed mints every UID afresh each time it
             # rebuilds the file (Palmyra: PHP uniqid, every few hours), which

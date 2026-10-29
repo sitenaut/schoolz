@@ -57,3 +57,13 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - A district can prefix every event title with a building code ("GHS:", "TEBMS:"); nothing scopes by it yet, so a building's status items land district-wide.
 - Some footers keep the address and phone as free text in `.footer-columns p.textfield` with no `a.tel-link`, so `discover_school_info` finds only the logo.
 
+## Northern Burlington (found onboarding)
+
+- The calendar and bell-schedule PDFs can be linked only from the site header's nav data (5il.co short links); the school sites' headers point at different bell PDFs than the district's.
+- A district's Apptegy events can stop months before the school year ends; check the last event date before relying on the feed for closures.
+
+## New Hanover (found onboarding)
+
+- **An all-day event's `end_at` is its last day** ("2026-11-27T00:00" for Thanksgiving Nov 26-27; a one-day closure ends on its start), unlike ICS. `apptegy.fetch_events` adds a day so `end_date` means the day after, as everywhere else; before that, every multi-day Apptegy closure's last day read as a school day.
+- The rendered home page carries the whole nav tree as JSON (`"menu":[...]`), the quickest list of page slugs; `/documents/<folder>/<id>` pages list unsigned `files-backend.assets.thrillshare.com` PDF URLs.
+

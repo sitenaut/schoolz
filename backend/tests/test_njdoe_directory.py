@@ -50,3 +50,17 @@ def test_same_person_ignores_honorifics_and_needs_the_surname():
 def test_a_vacant_post_filed_as_na_is_nobody():
     row = {"Principal First Name": "N/A", "Principal Last Name": "N/A"}
     assert nj._person(row, "Principal", "School Principal", "N/A") is None
+
+
+def test_an_exactly_named_district_wins_over_one_that_contains_its_name():
+    rows = [
+        {"District Name": "Mansfield Township School District", "School Name": "Mansfield Township Elementary School"},
+        {"District Name": "Mansfield Township Elementary School District", "School Name": "Mansfield Township Elementary"},
+    ]
+    assert nj.match_row(rows, "Mansfield Township School District", "Mansfield Township Elementary School") is rows[0]
+
+
+def test_a_name_split_differently_still_matches():
+    rows = [{"District Name": "Bordentown Regional School District", "School Name": "Mac Farland Intermediate"},
+            {"District Name": "Bordentown Regional School District", "School Name": "Clara Barton Elementary"}]
+    assert nj.match_row(rows, "Bordentown Regional School District", "MacFarland Intermediate School") is rows[0]

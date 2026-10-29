@@ -14,7 +14,7 @@ read off the page's own network requests once, by hand, same as Finalsite's
 calendar `feed_id`.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from urllib.parse import urljoin
 
 import httpx
@@ -56,6 +56,12 @@ async def fetch_events(org_id: str, start: date, end: date, timeout: float = 30.
                 end = datetime.fromisoformat(end_at)
             except ValueError:
                 end = None
+        # An all-day event's end_at is its last day (Thanksgiving Nov 26-27
+        # ends "2026-11-27T00:00"; a one-day closure ends on its start), but
+        # an all-day end_date means the day after, as in ICS: without this
+        # every multi-day closure's last day read as a school day.
+        if end and event.get("all_day"):
+            end += timedelta(days=1)
         out.append(
             {
                 "external_uid": str(event.get("id")),

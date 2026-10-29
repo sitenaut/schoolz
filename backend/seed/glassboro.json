@@ -12,7 +12,14 @@
         {
           "name": "Glassboro District",
           "platform": "apptegy",
-          "org_id": "26867"
+          "org_id": "26867",
+          "school_title_prefixes": {
+            "GHS:": "glassboro-high",
+            "TEBMS:": "thomas-e-bowe-middle",
+            "DLB:": "dorothy-l-bullock",
+            "JHR/MECC:": "j-harvey-rodgers",
+            "JHR:": "j-harvey-rodgers"
+          }
         }
       ],
       "marking_period_url": null,

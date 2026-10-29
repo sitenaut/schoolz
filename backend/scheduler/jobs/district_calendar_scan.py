@@ -81,6 +81,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         return "district has no ics_feeds configured"
 
     slugs = [f["school_slug"] for f in district.ics_feeds if f.get("school_slug")]
+    slugs += [slug for f in district.ics_feeds for slug in (f.get("school_title_prefixes") or {}).values()]
     school_id_by_slug = dict(
         (await db.execute(select(School.slug, School.id).where(School.slug.in_(slugs)))).all()
     ) if slugs else {}
@@ -129,6 +130,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # applies district-wide regardless of school type, same as the
         # main holidays/closures calendar.
         school_types = feed.get("school_types") or None
+        # Longest prefix first, so "PTHS - " can't be taken by a shorter "P".
+        by_prefix = sorted(((p.lower(), slug) for p, slug in (feed.get("school_title_prefixes") or {}).items()), key=lambda ps: -len(ps[0]))
         for event in feed_events:
             # A Finalsite per-school feed repeats every district event
             # under the same UID (Voorhees: 63 of Kresson's 65 are the
@@ -140,8 +143,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             # Namespace the uid by feed - two different feeds could
             # otherwise coincidentally produce the same hash-based uid.
             event["external_uid"] = f"{feed_name}:{event['external_uid']}"
-            event["school_id"] = school_id
-            event["applies_to_school_types"] = None if school_id else (school_types or school_types_from_title(event["title"]))
+            own_school = school_id or next(
+                (school_id_by_slug.get(slug) for p, slug in by_prefix if event["title"].lower().startswith(p) and school_id_by_slug.get(slug)), None
+            )
+            event["school_id"] = own_school
+            event["applies_to_school_types"] = None if own_school else (school_types or school_types_from_title(event["title"]))
             events.append(event)
 
     if not events and held_back:
@@ -179,6 +185,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             row.end_date = event["end_date"]
             row.is_all_day = event["is_all_day"]
             row.applies_to_school_types = event["applies_to_school_types"]
+            # A school_title_prefixes change moves a row between the
+            # district and one school.
+            if row.school_id != event["school_id"]:
+                row.scope, row.school_id, row.district_id = (
+                    ("school", event["school_id"], None) if event["school_id"] else ("district", None, district_id)
+                )
             updated += 1
             continue
 

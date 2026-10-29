@@ -1,0 +1,105 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Mansfield Township School District (Burlington County)",
+  "districts": [
+    {
+      "name": "Mansfield Township School District",
+      "state": "NJ",
+      "website_url": "https://www.mansfieldschool.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Mansfield Township Calendar",
+          "url": "https://www.mansfieldschool.com/calendar/calendar_350.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Mansfield"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "john-hydock-elementary",
+      "name": "John Hydock Elementary School",
+      "short_name": "John Hydock",
+      "district_name": "Mansfield Township School District",
+      "school_type": "elementary",
+      "address": "19 Locust Avenue, Columbus, NJ 08022",
+      "main_phone": "(609) 298-0308",
+      "website_url": "https://sites.google.com/mansfieldschool.com/john-hydock-elementary-school/home",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-0308",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before 9:00 AM, call (609) 298-0308 and choose option 2 to leave a message about the absence. For an illness, give your child's symptoms and, if there is a fever, the temperature.",
+      "start_time": "8:45 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "10:45 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "staff_directory_url": null,
+      "nutrislice_location": "mansfieldschool/john-hydock-elementary",
+      "sacc": {
+        "am_hours": "6:45 AM - start of school (at Mansfield Township Elementary; John Hydock students are bused)",
+        "pm_hours": "Dismissal - 6:00 PM (at Mansfield Township Elementary)",
+        "site_phone": "(609) 694-5648",
+        "absence_phone": "(609) 694-5648",
+        "absence_form_url": null,
+        "late_pickup_policy": "All children must be picked up by 6:00 PM. $5 for every 5 minutes late, plus $10 on the second late pickup and $20 on the third; a child may be removed from the program after 3 late pickups.",
+        "pickup_change_procedure": "Only adults listed on the enrollment forms may pick up; send a note to authorize anyone else. For an emergency authorization, call or text the program's cell. If your child is in school but skipping the program, tell the school secretary and the program.",
+        "closures_notes": "Mansfield Village Program (MVP), run by the district at Mansfield Township Elementary for grades K-6; John Hydock students are bused to and from it. No program when schools close for snow or ice or close early for weather; no before-care on delayed openings; on early-dismissal days care starts at dismissal.",
+        "handbook_url": "https://sites.google.com/mansfieldschool.com/mvp/family-handbook"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "mansfield-township-elementary",
+      "name": "Mansfield Township Elementary School",
+      "short_name": "Mansfield Township Elementary",
+      "district_name": "Mansfield Township School District",
+      "school_type": "elementary",
+      "address": "200 Mansfield Road East, Columbus, NJ 08022",
+      "main_phone": "(609) 298-2037",
+      "website_url": "https://sites.google.com/mansfieldschool.com/mtes/home",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-2037",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before 9:00 AM, call the absentee line at (609) 298-2037 and leave a message about the absence. For an illness, give your child's symptoms and, if there is a fever, the temperature.",
+      "start_time": "8:35 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "10:35 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1678282350/mansfieldschoolcom/xdz8erean0dsjm4dvg8n/MTESLOGO.png",
+      "staff_directory_url": null,
+      "nutrislice_location": "mansfieldschool/mansfield-township-elementary",
+      "sacc": {
+        "am_hours": "6:45 AM - start of school",
+        "pm_hours": "Dismissal (3:25 PM) - 6:00 PM",
+        "site_phone": "(609) 694-5648",
+        "absence_phone": "(609) 694-5648",
+        "absence_form_url": null,
+        "late_pickup_policy": "All children must be picked up by 6:00 PM. $5 for every 5 minutes late, plus $10 on the second late pickup and $20 on the third; a child may be removed from the program after 3 late pickups.",
+        "pickup_change_procedure": "Only adults listed on the enrollment forms may pick up; send a note to authorize anyone else. For an emergency authorization, call or text the program's cell. If your child is in school but skipping the program, tell the school secretary and the program.",
+        "closures_notes": "Mansfield Village Program (MVP), run by the district at Mansfield Township Elementary for grades K-6. No program when schools close for snow or ice or close early for weather; no before-care on delayed openings; on early-dismissal days care starts at dismissal.",
+        "handbook_url": "https://sites.google.com/mansfieldschool.com/mvp/family-handbook"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

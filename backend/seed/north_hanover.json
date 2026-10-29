@@ -1,0 +1,164 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: North Hanover Township School District",
+  "districts": [
+    {
+      "name": "North Hanover Township School District",
+      "state": "NJ",
+      "website_url": "https://www.nhanover.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "North Hanover District Calendar",
+          "url": "https://www.nhanover.com/ICalendarHandler?calendarId=286865"
+        },
+        {
+          "name": "C.B. Lamb Elementary Calendar",
+          "url": "https://cbl.nhanover.com/ICalendarHandler?calendarId=25201908",
+          "school_slug": "cb-lamb-elementary"
+        },
+        {
+          "name": "Endeavour Elementary Calendar",
+          "url": "https://end.nhanover.com/ICalendarHandler?calendarId=287062",
+          "school_slug": "endeavour-elementary"
+        },
+        {
+          "name": "Upper Elementary School Calendar",
+          "url": "https://ues.nhanover.com/ICalendarHandler?calendarId=287576",
+          "school_slug": "north-hanover-upper-elementary"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.nhanover.com/our_district/transportation",
+      "towns": [
+        "North Hanover"
+      ],
+      "schoolcafe_shortname": "NORTHHANOVERTOWNSHIPSDNUTRISER"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "cb-lamb-elementary",
+      "name": "Clarence B. Lamb Elementary School",
+      "short_name": "C.B. Lamb",
+      "district_name": "North Hanover Township School District",
+      "school_type": "elementary",
+      "address": "46 Schoolhouse Road, Wrightstown, NJ 08562",
+      "main_phone": "(609) 738-2630",
+      "website_url": "https://cbl.nhanover.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 738-2630",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 738-2630 and choose option 5 before 8:00 AM, giving the reason for the absence.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_287080/Image/Logo/CBLES.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "Dismissal (2:45 PM) - 6:00 PM",
+        "site_phone": "(215) 220-9199",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the YMCA (Philadelphia Freedom Valley YMCA), not the district; register with the YMCA. Preschool after-care pickup is 2:10-6:00 PM.",
+        "handbook_url": "https://www.nhanover.com/for_parents/y_m_c_a_enrichment_program"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "endeavour-elementary",
+      "name": "Endeavour Elementary School",
+      "short_name": "Endeavour",
+      "district_name": "North Hanover Township School District",
+      "school_type": "elementary",
+      "address": "1 School Road, Joint Base McGuire-Dix-Lakehurst, NJ 08641",
+      "main_phone": "(609) 738-6301",
+      "website_url": "https://end.nhanover.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 738-6302",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the absence line at (609) 738-6302 before 8:00 AM, giving the reason for the absence.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_286903/Image/Logo/Endeavor-300Logo.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "Dismissal (2:45 PM) - 6:00 PM",
+        "site_phone": "(215) 220-9199",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the YMCA (Philadelphia Freedom Valley YMCA), not the district; register with the YMCA. Preschool after-care pickup is 2:10-6:00 PM.",
+        "handbook_url": "https://www.nhanover.com/for_parents/y_m_c_a_enrichment_program"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "north-hanover-upper-elementary",
+      "name": "North Hanover Township Upper Elementary School",
+      "short_name": "Upper Elementary",
+      "district_name": "North Hanover Township School District",
+      "school_type": "elementary",
+      "address": "351 Monmouth Road, Wrightstown, NJ 08562",
+      "main_phone": "(609) 738-2622",
+      "website_url": "https://ues.nhanover.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 738-2649",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the 24-hour absence line at (609) 738-2649 before 8:00 AM and leave your child's full name, grade and the reason for the absence.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "11:50 AM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_287425/Image/Logo/UES.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "Dismissal (2:45 PM) - 6:00 PM",
+        "site_phone": "(215) 220-9199",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the YMCA (Philadelphia Freedom Valley YMCA), not the district; register with the YMCA. Preschool after-care pickup is 2:10-6:00 PM.",
+        "handbook_url": "https://www.nhanover.com/for_parents/y_m_c_a_enrichment_program"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://end.nhanover.com/",
+      "label": "Endeavour Explorer",
+      "school_slug": "endeavour-elementary",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

@@ -908,6 +908,8 @@ _DIRECTORY_PATHS = (
     # Haddon Township Public Schools - confirmed same .fsConstituentItem
     # cards, just a different Finalsite nav path.
     "/our-school/staff-directory",
+    # Springfield Township (Burlington): /staff-directory 301s home.
+    "/directory",
 )
 
 

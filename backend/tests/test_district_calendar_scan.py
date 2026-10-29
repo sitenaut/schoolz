@@ -210,3 +210,58 @@ async def test_school_feeds_wait_when_the_district_feed_comes_back_empty(monkeyp
         await db.flush()
         school_rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == school.id))).scalars().all()
         assert sorted(r.title for r in school_rows) == ["Day 1", "Picture Day"]
+
+
+@pytest.mark.anyio
+async def test_a_title_prefix_puts_a_union_feed_event_on_its_school(monkeypatch):
+    # Pemberton: one feed for every building, told apart only by "PTHS - ".
+    feed = [_event("u-closed", "No School - Labor Day", 7), _event("u-delay", "PTHS - Delayed Opening (Testing)", 15)]
+
+    async def fake_fetch(url: str) -> list[dict]:
+        return [dict(e) for e in feed]
+
+    monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Prefix District {tag}")
+        db.add(district)
+        await db.flush()
+        hs = School(name=f"Prefix High {tag}", slug=f"prefix-hs-{tag}", district_id=district.id, school_type="high")
+        db.add(hs)
+        await db.flush()
+        district.ics_feeds = [{"name": "District", "url": "https://x/d.ics", "school_title_prefixes": {"PTHS": hs.slug}}]
+        await db.commit()
+
+        await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+        district_rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.district_id == district.id))).scalars().all()
+        school_rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == hs.id))).scalars().all()
+        assert [r.title for r in district_rows] == ["No School - Labor Day"]
+        assert [(r.title, r.scope) for r in school_rows] == [("PTHS - Delayed Opening (Testing)", "school")]
+
+
+@pytest.mark.anyio
+async def test_adding_a_prefix_later_moves_the_existing_row_to_the_school(monkeypatch):
+    feed = [_event("u-half", "GHS: Half Day", 23)]
+
+    async def fake_fetch(url: str) -> list[dict]:
+        return [dict(e) for e in feed]
+
+    monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Move District {tag}", ics_feeds=[{"name": "District", "url": "https://x/d.ics"}])
+        db.add(district)
+        await db.flush()
+        hs = School(name=f"Move High {tag}", slug=f"move-hs-{tag}", district_id=district.id, school_type="high")
+        db.add(hs)
+        await db.commit()
+        await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+
+        district.ics_feeds = [{"name": "District", "url": "https://x/d.ics", "school_title_prefixes": {"GHS:": hs.slug}}]
+        await db.commit()
+        await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+        rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.external_uid == "District:u-half"))).scalars().all()
+        assert [(r.scope, r.school_id, r.district_id) for r in rows] == [("school", hs.id, None)]

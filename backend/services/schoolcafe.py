@@ -10,8 +10,8 @@ district id 4651): one "Lunch" meal type and one "Regular" line per school.
 
 import asyncio
 import re
-from difflib import SequenceMatcher
 from datetime import date
+from difflib import SequenceMatcher
 
 import httpx
 
@@ -99,6 +99,21 @@ def match_school(our_name: str, cafe_schools: list[dict]) -> dict | None:
     # Wilbur): same core, each name token equal or a near-miss.
     fuzzy = [s for s in cafe_schools if core and _tokens_nearly_equal(core, _core_tokens(s["SchoolName"]))]
     return fuzzy[0] if len(fuzzy) == 1 else None
+
+
+_SITE_TYPE = {"elementary": "elementary", "middle": "middle", "high": "high"}
+
+
+def match_by_site_type(school, district_schools, cafe_schools: list[dict]) -> dict | None:
+    """When no name matches (Northern Burlington's "NBC Regional High School"
+    for "Northern Burlington County Regional High School"), the one site of
+    the school's own type, if the district has exactly one school of that
+    type and SchoolCafé exactly one site of it."""
+    wanted = _SITE_TYPE.get(school.school_type or "")
+    if not wanted or sum(1 for s in district_schools if s.school_type == school.school_type) != 1:
+        return None
+    sites = [c for c in cafe_schools if (c.get("SiteTypeDescription") or "").strip().lower() == wanted]
+    return sites[0] if len(sites) == 1 else None
 
 
 def _tokens_nearly_equal(a: set[str], b: set[str]) -> bool:

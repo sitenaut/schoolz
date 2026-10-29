@@ -1,0 +1,443 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Northern Burlington County Regional School District",
+  "districts": [
+    {
+      "name": "Northern Burlington County Regional School District",
+      "state": "NJ",
+      "website_url": "https://www.nburlington.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://5il.co/3vac3",
+      "ics_feeds": [
+        {
+          "name": "Northern Burlington District",
+          "platform": "apptegy",
+          "org_id": "3262"
+        },
+        {
+          "name": "Northern Burlington PTSC",
+          "url": "https://calendar.google.com/calendar/ical/nburlingtonptsc%40gmail.com/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.nburlington.com/page/transportation",
+      "towns": [
+        "Chesterfield",
+        "Mansfield",
+        "North Hanover",
+        "Springfield"
+      ],
+      "schoolcafe_shortname": "NORTHERNBURLINGTONRSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "northern-burlington-high",
+      "name": "Northern Burlington County Regional High School",
+      "short_name": "Northern Burlington High",
+      "district_name": "Northern Burlington County Regional School District",
+      "school_type": "high",
+      "address": "160 Mansfield Road East, Columbus, NJ 08022",
+      "main_phone": "(609) 298-3900",
+      "website_url": "https://www.nburlington.com/o/nbc-hs",
+      "apptegy_org_id": "3263",
+      "absence_method": "phone",
+      "absence_emails": [
+        "NBHSAttendance@nburlington.com"
+      ],
+      "absence_phone": "(609) 298-3900 ext. 2029",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call or email the Attendance Office ((609) 298-3900 ext. 2029 or NBHSAttendance@nburlington.com) to report every absence. An automated call goes out each day about students who are not in school; if you get one and believe your child is in school, contact the Attendance Office right away.",
+      "start_time": "7:20 AM",
+      "end_time": "2:28 PM",
+      "early_dismissal_time": "11:55 AM",
+      "delayed_opening_time": "9:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:20",
+            "end": "07:35"
+          },
+          {
+            "name": "Block 1 (1a/1b)",
+            "start": "07:40",
+            "end": "09:00"
+          },
+          {
+            "name": "Block 2 (2a/2b)",
+            "start": "09:05",
+            "end": "10:25"
+          },
+          {
+            "name": "Opportunity Period / Lunch",
+            "start": "10:30",
+            "end": "11:38"
+          },
+          {
+            "name": "Block 3 (3a/3b)",
+            "start": "11:43",
+            "end": "13:03"
+          },
+          {
+            "name": "Block 4 (4a/4b)",
+            "start": "13:08",
+            "end": "14:28"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:20",
+            "end": "09:35"
+          },
+          {
+            "name": "Block 1 (1a/1b)",
+            "start": "09:40",
+            "end": "10:30"
+          },
+          {
+            "name": "Block 2 (2a/2b)",
+            "start": "10:35",
+            "end": "11:25"
+          },
+          {
+            "name": "Opportunity Period / Lunch",
+            "start": "11:30",
+            "end": "12:38"
+          },
+          {
+            "name": "Block 3 (3a/3b)",
+            "start": "12:43",
+            "end": "13:33"
+          },
+          {
+            "name": "Block 4 (4a/4b)",
+            "start": "13:38",
+            "end": "14:28"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:20",
+            "end": "07:35"
+          },
+          {
+            "name": "Block 1 (1a/1b)",
+            "start": "07:40",
+            "end": "08:40"
+          },
+          {
+            "name": "Block 2 (2a/2b)",
+            "start": "08:45",
+            "end": "09:45"
+          },
+          {
+            "name": "Block 3 (3a/3b)",
+            "start": "09:50",
+            "end": "10:50"
+          },
+          {
+            "name": "Block 4 (4a/4b)",
+            "start": "10:55",
+            "end": "11:55"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/16464",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3263/logo/6212/burlington_high_school_header_with_logo.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "northern-burlington-middle",
+      "name": "Northern Burlington County Regional Middle School",
+      "short_name": "Northern Burlington Middle",
+      "district_name": "Northern Burlington County Regional School District",
+      "school_type": "middle",
+      "address": "180 Mansfield Road East, Columbus, NJ 08022",
+      "main_phone": "(609) 298-3900",
+      "website_url": "https://www.nburlington.com/o/nbc-ms",
+      "apptegy_org_id": "3264",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 298-3900 ext. 4060",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Attendance Hotline ((609) 298-3900 ext. 4060) to report every absence. Attendance notes go to the main office within two days of the student's return.",
+      "start_time": "7:30 AM",
+      "end_time": "2:38 PM",
+      "early_dismissal_time": "12:05 PM",
+      "delayed_opening_time": "9:30 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:30",
+            "end": "07:40"
+          },
+          {
+            "name": "Periods 1-2",
+            "start": "07:44",
+            "end": "08:28"
+          },
+          {
+            "name": "Periods 3-4",
+            "start": "08:32",
+            "end": "09:16"
+          },
+          {
+            "name": "Periods 5-6",
+            "start": "09:20",
+            "end": "10:04"
+          },
+          {
+            "name": "Periods 7-8",
+            "start": "10:08",
+            "end": "10:52"
+          },
+          {
+            "name": "Periods 9-10",
+            "start": "10:56",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 11 / Lunch",
+            "start": "11:44",
+            "end": "12:14"
+          },
+          {
+            "name": "Periods 12-13",
+            "start": "12:18",
+            "end": "13:02"
+          },
+          {
+            "name": "Periods 14-15",
+            "start": "13:06",
+            "end": "13:50"
+          },
+          {
+            "name": "Periods 16-17",
+            "start": "13:54",
+            "end": "14:38"
+          }
+        ],
+        "regular_grades_7": [
+          {
+            "name": "Homeroom",
+            "start": "07:30",
+            "end": "07:40"
+          },
+          {
+            "name": "Periods 1-2",
+            "start": "07:44",
+            "end": "08:28"
+          },
+          {
+            "name": "Periods 3-4",
+            "start": "08:32",
+            "end": "09:16"
+          },
+          {
+            "name": "Periods 5-6",
+            "start": "09:20",
+            "end": "10:04"
+          },
+          {
+            "name": "Periods 7-8",
+            "start": "10:08",
+            "end": "10:52"
+          },
+          {
+            "name": "Periods 9-10",
+            "start": "10:56",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 11 / Lunch",
+            "start": "11:44",
+            "end": "12:14"
+          },
+          {
+            "name": "Periods 12-13",
+            "start": "12:18",
+            "end": "13:02"
+          },
+          {
+            "name": "Periods 14-15",
+            "start": "13:06",
+            "end": "13:50"
+          },
+          {
+            "name": "Periods 16-17",
+            "start": "13:54",
+            "end": "14:38"
+          }
+        ],
+        "regular_grades_8": [
+          {
+            "name": "Homeroom",
+            "start": "07:30",
+            "end": "07:40"
+          },
+          {
+            "name": "Periods 1-2",
+            "start": "07:44",
+            "end": "08:28"
+          },
+          {
+            "name": "Periods 3-4",
+            "start": "08:32",
+            "end": "09:16"
+          },
+          {
+            "name": "Periods 5-6",
+            "start": "09:20",
+            "end": "10:04"
+          },
+          {
+            "name": "Periods 7-8",
+            "start": "10:08",
+            "end": "10:52"
+          },
+          {
+            "name": "Period 9 / Lunch",
+            "start": "10:56",
+            "end": "11:26"
+          },
+          {
+            "name": "Periods 10-11",
+            "start": "11:30",
+            "end": "12:14"
+          },
+          {
+            "name": "Periods 12-13",
+            "start": "12:18",
+            "end": "13:02"
+          },
+          {
+            "name": "Periods 14-15",
+            "start": "13:06",
+            "end": "13:50"
+          },
+          {
+            "name": "Periods 16-17",
+            "start": "13:54",
+            "end": "14:38"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:30",
+            "end": "09:34"
+          },
+          {
+            "name": "Periods 1-2",
+            "start": "09:36",
+            "end": "10:06"
+          },
+          {
+            "name": "Periods 3-4",
+            "start": "10:10",
+            "end": "10:40"
+          },
+          {
+            "name": "Periods 5-6",
+            "start": "10:44",
+            "end": "11:14"
+          },
+          {
+            "name": "Periods 7-8",
+            "start": "11:18",
+            "end": "11:48"
+          },
+          {
+            "name": "Periods 9-10",
+            "start": "11:52",
+            "end": "12:22"
+          },
+          {
+            "name": "Period 11 / Lunch",
+            "start": "12:26",
+            "end": "12:56"
+          },
+          {
+            "name": "Periods 12-13",
+            "start": "13:00",
+            "end": "13:30"
+          },
+          {
+            "name": "Periods 14-15",
+            "start": "13:34",
+            "end": "14:04"
+          },
+          {
+            "name": "Periods 16-17",
+            "start": "14:08",
+            "end": "14:38"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:30",
+            "end": "07:35"
+          },
+          {
+            "name": "Periods 1-2",
+            "start": "07:37",
+            "end": "08:07"
+          },
+          {
+            "name": "Periods 3-4",
+            "start": "08:11",
+            "end": "08:41"
+          },
+          {
+            "name": "Periods 5-6",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "Periods 7-8",
+            "start": "09:19",
+            "end": "09:49"
+          },
+          {
+            "name": "Period 10",
+            "start": "09:53",
+            "end": "10:23"
+          },
+          {
+            "name": "Period 12",
+            "start": "10:27",
+            "end": "10:57"
+          },
+          {
+            "name": "Periods 14-15",
+            "start": "11:01",
+            "end": "11:31"
+          },
+          {
+            "name": "Periods 16-17",
+            "start": "11:35",
+            "end": "12:05"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/16463",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3264/logo/6213/burlington_middle_school_header_with_logo.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

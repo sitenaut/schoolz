@@ -81,3 +81,26 @@ async def test_smart_sites_generated_feed_is_keyed_on_title_and_start(monkeypatc
     second = await district_calendar.fetch_district_calendar(url)
     assert first[0]["external_uid"] == second[0]["external_uid"]
     assert first[0]["external_uid"].startswith("hash:")
+
+
+@pytest.mark.anyio
+async def test_cycle_day_titles_become_rotation_days(monkeypatch):
+    """Chesterfield's specials rotation is "Cycle Day 3"."""
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, headers=None):
+            body = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nUID:c1\nDTSTART;VALUE=DATE:20261103\nSUMMARY:Cycle Day 3\nEND:VEVENT\nEND:VCALENDAR\n"
+            return httpx.Response(200, content=body.encode(), request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(district_calendar.httpx, "AsyncClient", FakeClient)
+    events = await district_calendar.fetch_district_calendar("https://www.chesterfieldschool.com/calendar/calendar_353.ics")
+    assert [e["title"] for e in events] == ["Day 3"]

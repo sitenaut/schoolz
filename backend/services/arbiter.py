@@ -37,7 +37,7 @@ _ENTITY_ID_QUERY_RE = re.compile(r"arbiterlive\.com/.*[?&]entityId=(\d+)")
 # site's own "Calendar" link): a third real shape, "/School/Calendar/<id>" -
 # same entity id the calendar API takes, just yet another page the
 # ArbiterLive site itself generates depending on the current UI/entry point.
-_SCHOOL_CALENDAR_URL_RE = re.compile(r"arbiterlive\.com/School/Calendar/(\d+)")
+_SCHOOL_CALENDAR_URL_RE = re.compile(r"arbiterlive\.com/School/(?:Calendar/)?(\d+)")
 
 
 def entity_id_from_athletics_url(athletics_url: str | None) -> str | None:
@@ -47,7 +47,7 @@ def entity_id_from_athletics_url(athletics_url: str | None) -> str | None:
     or audubonathletics.com this doesn't resolve directly - the real
     arbiterlive.com entity link has to be found on *that* site instead) -
     only a real ArbiterLive team/entity URL has anything this module can
-    fetch."""
+    fetch. Bordentown High links the bare /School/<id> form."""
     if not athletics_url:
         return None
     m = (

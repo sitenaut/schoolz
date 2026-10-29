@@ -111,3 +111,13 @@ def test_a_pdf_whose_link_text_says_calendar_wins_over_the_first_pdf():
         '<a href="https://content.myconnectsuite.com/api/documents/a1a415c3.pdf"><span>Printable District Calendar</span></a>'
     )
     assert find_pdf_link(html, "https://x.test/calendars") == "https://content.myconnectsuite.com/api/documents/a1a415c3.pdf"
+
+
+def test_a_drive_file_labelled_by_its_own_link_text():
+    # Chesterfield: <h2>Calendars</h2><p><strong><a href=drive...>2026-2027 School Calendar</a>
+    html = (
+        '<a href="/f/Newstudentregistrationimage.pdf">New Student Registration</a>'
+        '<h2>Calendars</h2><p><strong><a href="https://drive.google.com/file/d/1SP4taZ_SGmAfS6fYK8qIIe-SY0cbxmBZ/view">'
+        "2026-2027 School Calendar</a></strong></p>"
+    )
+    assert find_pdf_link(html, "https://x.test/") == "https://drive.google.com/uc?export=download&id=1SP4taZ_SGmAfS6fYK8qIIe-SY0cbxmBZ"
