@@ -39,6 +39,7 @@ const BillsReviewPage = lazyPage(() => import("./pages/BillsReviewPage").then((m
 const BillsPage = lazyPage(() => import("./pages/localz/bills/BillsPage").then((m) => m.BillsPage));
 const MyBillsPage = lazyPage(() => import("./pages/localz/bills/MyBillsPage").then((m) => m.MyBillsPage));
 const HoldPage = lazyPage(() => import("./pages/localz/bills/HoldPage").then((m) => m.HoldPage));
+const BillsTermsPage = lazyPage(() => import("./pages/localz/bills/TermsPage").then((m) => m.TermsPage));
 const LocalzReviewDetailPage = lazyPage(() => import("./pages/LocalzReviewDetailPage").then((m) => m.LocalzReviewDetailPage));
 const LocalzListingAdminPage = lazyPage(() => import("./pages/LocalzListingAdminPage").then((m) => m.LocalzListingAdminPage));
 const SeasonalPage = lazyPage(() => import("./pages/SeasonalPage").then((m) => m.SeasonalPage));
@@ -241,6 +242,7 @@ function Routed() {
           <Route path="/localz/bills" element={<BillsPage />} />
           <Route path="/localz/bills/mine" element={<RequireAuth><MyBillsPage /></RequireAuth>} />
           <Route path="/localz/bills/hold/:holdId" element={<RequireAuth><HoldPage /></RequireAuth>} />
+          <Route path="/localz/bills/terms" element={<BillsTermsPage />} />
           <Route path="/localz/:category" element={<LocalzCategoryPage />} />
         </Route>
         <Route path="/audit" element={<AuditShell pub />}>

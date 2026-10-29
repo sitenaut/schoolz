@@ -4494,6 +4494,26 @@ select {
 }
 .bills-card-side {
   align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.bills-confirm {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.bills-other-help {
+  margin: 8px 0 12px;
+}
+.bills-terms h3 {
+  margin: 20px 0 6px;
+  font-size: 16px;
+}
+.bills-terms li {
+  margin: 5px 0;
+  line-height: 1.5;
 }
 @media (max-width: 480px) {
   .bills-card {

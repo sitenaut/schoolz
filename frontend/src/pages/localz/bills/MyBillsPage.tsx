@@ -14,8 +14,9 @@ import {
   thankGiver,
   withdrawBill,
 } from "../../../lib/bills";
+import { OtherHelp } from "./OtherHelp";
 import { PostBillFlow } from "./PostBillFlow";
-import { Avatar, EMOJIS, errorText, timeLeft } from "./shared";
+import { Avatar, EMOJIS, errorText, placeName, timeLeft } from "./shared";
 
 /** /localz/bills/mine - both sides of Neighborz on one page, so browser
  * history on a shared device can't tell someone asking for help from
@@ -34,7 +35,8 @@ export function MyBillsPage() {
   }, [t]);
   useEffect(load, [load]);
 
-  const hasOpen = !!mine?.posted.some((p) => ["held", "available", "claimed", "reported", "disputed"].includes(p.status));
+  const open = mine?.posted.find((p) => ["held", "available", "claimed", "reported", "disputed"].includes(p.status));
+  const hasOpen = !!open;
   const setPosting = (on: boolean) => setParams(on ? { post: "1" } : {}, { replace: true });
 
   return (
@@ -79,6 +81,14 @@ export function MyBillsPage() {
                   <PostedRow key={p.id} bill={p} onChange={load} />
                 ))}
               </ul>
+            </section>
+          )}
+
+          {open && open.status !== "reported" && (
+            <section>
+              <h3 className="bills-section">{t("Other help while you wait")}</h3>
+              <p className="bills-small">{t("A neighbor may pick up your bill, but there's no promise. These programs can help too.")}</p>
+              <OtherHelp county={open.county} limit={5} />
             </section>
           )}
 
@@ -153,7 +163,7 @@ function PostedRow({ bill, onChange }: { bill: Posted; onChange: () => void }) {
       <div className="bills-card-body">
         <div className="bills-amount">{dollars(bill.amount_cents)}</div>
         <div className="bills-meta">
-          {[bill.utility_name, bill.due_date ? t("Due {{date}}", { date: shortDate(bill.due_date) }) : null].filter(Boolean).join(" · ")}
+          {[bill.utility_name, placeName(t, bill), bill.due_date ? t("Due {{date}}", { date: shortDate(bill.due_date) }) : null].filter(Boolean).join(" · ")}
         </div>
         <p className="bills-status">{postedText(t, bill)}</p>
         {bill.can_answer && (
@@ -223,7 +233,7 @@ function GiftRow({ gift }: { gift: Gift }) {
       <div className="bills-card-body">
         <div className="bills-amount">{dollars(gift.paid_cents ?? gift.amount_cents)}</div>
         <div className="bills-meta">
-          {[gift.utility_name, gift.paid_on ? t("Paid {{date}}", { date: shortDate(gift.paid_on) }) : null].filter(Boolean).join(" · ")}
+          {[gift.utility_name, placeName(t, gift), gift.paid_on ? t("Paid {{date}}", { date: shortDate(gift.paid_on) }) : null].filter(Boolean).join(" · ")}
         </div>
         <p className="bills-status">{giftText(t, gift)}</p>
         {gift.confirmation_number && (

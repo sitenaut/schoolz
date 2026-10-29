@@ -426,6 +426,18 @@ async def test_searching_english_classes_finds_listings_that_say_esl():
 
 
 @pytest.mark.anyio
+async def test_search_takes_any_of_several_codes():
+    marker = uuid.uuid4().hex[:10]
+    electric = await _seed(name=f"Electric help {marker}", categories=["housing-bills"], taxonomy_codes=["BV-8900.9300-180"])
+    shutoff = await _seed(name=f"Shutoff help {marker}", categories=["housing-bills"], taxonomy_codes=["BV-8900.9220"])
+    await _seed(name=f"Pantry {marker}")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        found = await client.post("/resources/search", json={"query": marker, "types": ["BV-8900.9300-180", "BV-8900.9220"]})
+        assert sorted(i["id"] for i in found.json()["items"]) == sorted([electric, shutoff])
+        assert (await client.post("/resources/search", json={"types": ["BV-8900.9300-180"] * 13})).status_code == 422
+
+
+@pytest.mark.anyio
 async def test_search_filters_by_category_county_and_text():
     marker = uuid.uuid4().hex[:10]
     pantry = await _seed(name=f"Pantry {marker}")

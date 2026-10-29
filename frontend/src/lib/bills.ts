@@ -14,6 +14,8 @@ export type PublicBill = {
   amount_cents: number;
   due_date: string | null;
   shutoff_notice: boolean;
+  /** The service ZIP's town ("Cherry Hill"); county when the ZIP has none on file. */
+  town: string | null;
   county: string | null;
   avatar: string | null;
   state: "open" | "being_paid" | "paid";
@@ -26,6 +28,8 @@ export type BillsCatalog = {
   min_ask_cents: number;
   max_ask_cents: number;
   hold_hours: number;
+  terms_version: string;
+  help_codes: string[];
 };
 
 export type Draft = {
@@ -40,6 +44,8 @@ export type Draft = {
   max_ask_cents: number;
   due_date: string | null;
   shutoff_notice: boolean;
+  county: string | null;
+  town: string | null;
   flags: string[];
 };
 
@@ -52,6 +58,7 @@ export type Posted = {
   amount_cents: number | null;
   due_date: string | null;
   shutoff_notice: boolean;
+  town: string | null;
   county: string | null;
   avatar: string | null;
   thanks: string | null;
@@ -75,6 +82,7 @@ export type Hold = {
   amount_cents: number | null;
   due_date: string | null;
   shutoff_notice: boolean;
+  town: string | null;
   county: string | null;
   avatar: string | null;
   /** Only while the hold is active. */
@@ -97,6 +105,7 @@ export type Gift = {
   paid_on: string | null;
   confirmation_number: string | null;
   avatar: string | null;
+  town: string | null;
   county: string | null;
   thanks: string | null;
   held_at: string;
@@ -149,13 +158,17 @@ export async function uploadBill(file: File): Promise<Draft> {
   return read<Draft>(await fetch(`${API_URL}/bills/upload`, { method: "POST", body: form, headers: await authHeader() }));
 }
 
-export const postBill = (id: string, body: { account_number: string; service_zip: string; amount_cents: number; avatar: string; understood: boolean }) =>
+export const postBill = (
+  id: string,
+  body: { account_number: string; service_zip: string; amount_cents: number; avatar: string; understood: boolean; terms: string },
+) =>
   post(`/bills/${id}/post`, body).then((r) => read<Posted>(r));
 export const withdrawBill = (id: string) => apiFetch(`/bills/${id}`, { method: "DELETE" }).then((r) => read<Posted>(r));
 export const answerBill = (id: string, answer: "paid" | "not_yet") => post(`/bills/${id}/answer`, { answer }).then((r) => read<Posted>(r));
 export const thankGiver = (id: string, emoji: string) => post(`/bills/${id}/thanks`, { emoji }).then((r) => read<Posted>(r));
 
-export const holdBill = (id: string) => post(`/bills/${id}/hold`).then((r) => read<Hold>(r));
+/** `terms`: the version of the terms the giver just agreed to. */
+export const holdBill = (id: string, terms: string) => post(`/bills/${id}/hold`, { terms }).then((r) => read<Hold>(r));
 export const fetchHold = (id: string) => apiFetch(`/bills/holds/${id}`).then((r) => read<Hold>(r));
 export const reportPaid = (id: string, body: { confirmation_number: string; paid_cents: number; paid_on: string }) =>
   post(`/bills/holds/${id}/paid`, body).then((r) => read<Hold>(r));

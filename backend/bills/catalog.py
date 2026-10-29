@@ -54,6 +54,24 @@ EMOJIS: dict[str, str] = {
     "sunflower": "\U0001f33b",
 }
 
+# The Neighborz terms (frontend/src/pages/localz/bills/TermsPage.tsx). A
+# requester agrees on every post and a giver on every hold, and the row
+# keeps which version: change this whenever the terms' meaning changes.
+TERMS_VERSION = "2026-10-28"
+
+# Localz listings shown to a requester before they post ("other help"):
+# utility payment assistance, shutoff protection and discounted service
+# (Inform USA codes, as NJ 211 files them).
+HELP_CODES: tuple[str, ...] = (
+    "BV-8900.9300-180",  # electric service payment assistance
+    "BV-8900.9300-250",  # gas service payment assistance
+    "BV-8900.9300-300",  # heating fuel payment assistance
+    "BV-8900.9300-950",  # water service payment assistance
+    "BV-8900.9220",  # utility disconnection protection
+    "BV-8900.1700-300",  # discounted heating fuel
+    "BV-8900.1700-900",  # discounted water service
+)
+
 # Limits (design, "Limits"). The owner sets the numbers.
 MIN_ASK_CENTS = 500
 MAX_ASK_CENTS = 50_000

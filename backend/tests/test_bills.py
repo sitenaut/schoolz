@@ -36,6 +36,7 @@ pytestmark = pytest.mark.anyio
 ACCOUNT = "7319046628"
 ZIP = "08002"
 CONFIRMATION = "PSEG55K7Q2"
+TERMS = {"terms": catalog.TERMS_VERSION}
 
 
 def _nj_today() -> str:
@@ -98,7 +99,7 @@ async def _post(client, h, reads, seed=0, account=ACCOUNT, zip_code=ZIP, amount=
     assert draft.status_code == 200, draft.text
     res = await client.post(
         f"/bills/{draft.json()['id']}/post", headers=h,
-        json={"account_number": account, "service_zip": zip_code, "amount_cents": amount, "avatar": "fox", "understood": True},
+        json={"account_number": account, "service_zip": zip_code, "amount_cents": amount, "avatar": "fox", "understood": True, "terms": catalog.TERMS_VERSION},
     )
     return draft.json(), res
 
@@ -146,10 +147,10 @@ async def test_the_whole_flow_and_who_sees_what(reads):
         listing = _public((await client.get("/bills")).json(), bill_id)
         assert listing == {
             "id": bill_id, "utility": "pseg", "utility_name": "PSE&G", "amount_cents": 21247, "due_date": listing["due_date"],
-            "shutoff_notice": False, "county": "Camden", "avatar": "fox", "state": "open",
+            "shutoff_notice": False, "town": "Cherry Hill", "county": "Camden", "avatar": "fox", "state": "open",
         }
 
-        held = await client.post(f"/bills/{bill_id}/hold", headers=giver)
+        held = await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)
         assert held.status_code == 200, held.text
         hold = held.json()
         assert hold["account_number"] == ACCOUNT and hold["service_zip"] == ZIP and hold["pay_url"]
@@ -189,6 +190,40 @@ async def test_the_whole_flow_and_who_sees_what(reads):
         assert sent[0].subject == flow.SUBJECT
         for word in ("bill", "pse", "212", "paid", "neighbor"):
             assert word not in (sent[0].subject + sent[0].body).lower()
+
+
+async def test_the_terms_are_agreed_to_on_every_post_and_hold(reads):
+    async with _client() as client:
+        asker, _ = await _person(client, "nb_terms_a")
+        giver, _ = await _person(client, "nb_terms_g")
+        catalog_out = (await client.get("/bills/catalog")).json()
+        assert catalog_out["terms_version"] == catalog.TERMS_VERSION
+
+        reads.next = {**reads.next, "account_number": ACCOUNT}
+        draft = (await _upload(client, asker)).json()
+        assert draft["town"] == "Cherry Hill" and draft["county"] == "Camden"
+        body = {"account_number": ACCOUNT, "service_zip": ZIP, "amount_cents": 5000, "avatar": "fox", "understood": True}
+        for terms in (None, "2001-01-01"):
+            res = await client.post(f"/bills/{draft['id']}/post", headers=asker, json={**body, "terms": terms})
+            assert res.json()["code"] == "terms_not_agreed"
+        posted = await client.post(f"/bills/{draft['id']}/post", headers=asker, json={**body, **TERMS})
+        assert posted.status_code == 200, posted.text
+        bill_id = posted.json()["id"]
+        assert (await _bill(bill_id)).terms_version == catalog.TERMS_VERSION
+
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()["code"] == "terms_not_agreed"
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver, json={"terms": "old"})).json()["code"] == "terms_not_agreed"
+        hold = await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)
+        assert hold.status_code == 200 and hold.json()["town"] == "Cherry Hill"
+        async with database.SessionLocal() as db:
+            assert (await db.get(BillHold, hold.json()["id"])).terms_version == catalog.TERMS_VERSION
+
+
+def test_other_help_codes_are_housing_and_bills_listings():
+    from resources.categories import categories_for_code
+
+    for code in catalog.HELP_CODES:
+        assert "housing-bills" in categories_for_code(code), code
 
 
 async def test_anonymous_callers_can_only_browse():
@@ -239,7 +274,7 @@ async def test_not_a_bill_or_another_utility_is_refused_and_cant_be_posted(reads
         draft = (await _upload(client, h, 1)).json()
         assert draft["refused"] == "not_a_bill" and draft["account_number"] is None
         res = await client.post(f"/bills/{draft['id']}/post", headers=h,
-                                json={"account_number": ACCOUNT, "service_zip": ZIP, "amount_cents": 5000, "avatar": "fox", "understood": True})
+                                json={"account_number": ACCOUNT, "service_zip": ZIP, "amount_cents": 5000, "avatar": "fox", "understood": True, "terms": catalog.TERMS_VERSION})
         assert res.status_code == 409
         reads.next = _raw(company="Atlantic City Electric")
         assert (await _upload(client, h, 2)).json()["refused"] == "utility_not_supported"
@@ -249,7 +284,7 @@ async def test_amount_limits(reads):
     async with _client() as client:
         h, _ = await _person(client, "nb_amount")
         draft = (await _upload(client, h, 1)).json()
-        body = {"account_number": ACCOUNT, "service_zip": ZIP, "avatar": "fox", "understood": True}
+        body = {"account_number": ACCOUNT, "service_zip": ZIP, "avatar": "fox", "understood": True, "terms": catalog.TERMS_VERSION}
         for amount in (21248, catalog.MIN_ASK_CENTS - 1):
             res = await client.post(f"/bills/{draft['id']}/post", headers=h, json={**body, "amount_cents": amount})
             assert res.json()["code"] == "amount_not_allowed"
@@ -275,7 +310,7 @@ async def test_one_open_listing_per_utility_account_and_one_paid_per_60_days(rea
         _, again = await _post(client, b, reads, seed=1)
         assert again.status_code == 409 and again.json()["code"] == "account_listed"
 
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
                           json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         await client.post(f"/bills/{bill_id}/answer", headers=a, json={"answer": "paid"})
@@ -366,15 +401,15 @@ async def test_giver_rules(reads):
         _, second = await _post(client, other, reads, seed=1, account="5550001111")
         second_id = second.json()["id"]
 
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=fresh)).json()["code"] == "account_too_new"
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=asker)).json()["code"] == "own_bill"
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=other)).status_code == 200
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=fresh, json=TERMS)).json()["code"] == "account_too_new"
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=asker, json=TERMS)).json()["code"] == "own_bill"
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=other, json=TERMS)).status_code == 200
         # One hold at a time, and a held bill can't be taken by someone else.
-        assert (await client.post(f"/bills/{second_id}/hold", headers=other)).json()["code"] in ("own_bill", "holding_one")
+        assert (await client.post(f"/bills/{second_id}/hold", headers=other, json=TERMS)).json()["code"] in ("own_bill", "holding_one")
         giver, _ = await _person(client, "nb_rules_giver")
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()["code"] == "not_available"
-        assert (await client.post(f"/bills/{second_id}/hold", headers=giver)).status_code == 200
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()["code"] == "holding_one"
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()["code"] == "not_available"
+        assert (await client.post(f"/bills/{second_id}/hold", headers=giver, json=TERMS)).status_code == 200
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()["code"] == "holding_one"
 
 
 async def test_a_giver_who_posted_the_same_account_cant_hold_it(reads):
@@ -385,7 +420,7 @@ async def test_a_giver_who_posted_the_same_account_cant_hold_it(reads):
         await client.delete(f"/bills/{first.json()['id']}", headers=a)
         _, mine = await _post(client, b, reads)  # same account, posted by someone else now
         assert mine.status_code == 200
-        assert (await client.post(f"/bills/{mine.json()['id']}/hold", headers=a)).json()["code"] == "own_bill"
+        assert (await client.post(f"/bills/{mine.json()['id']}/hold", headers=a, json=TERMS)).json()["code"] == "own_bill"
 
 
 async def test_letting_go_is_free_running_out_is_a_strike_and_two_pause(reads):
@@ -396,14 +431,14 @@ async def test_letting_go_is_free_running_out_is_a_strike_and_two_pause(reads):
         _, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
 
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         released = await client.post(f"/bills/holds/{hold['id']}/release", headers=giver)
         assert released.json()["status"] == "released" and released.json()["account_number"] is None
         assert (await client.get(f"/bills/holds/{hold['id']}", headers=giver)).json()["account_number"] is None
         assert (await _bill(bill_id)).status == "available"
 
         for n in (1, 2):
-            hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+            hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
             assert hold["status"] == "active", hold
             done = await _settle(datetime.now(UTC) + catalog.HOLD + timedelta(minutes=n))
             assert done["holds_expired"] >= 1
@@ -415,13 +450,13 @@ async def test_letting_go_is_free_running_out_is_a_strike_and_two_pause(reads):
             await db.execute(update(BillHold).where(BillHold.giver_id == giver_id).values(held_at=datetime.now(UTC) - timedelta(days=2)))
             await db.commit()
             assert await flow.strikes(db, giver_id) == 2
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()["code"] == "paused"
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()["code"] == "paused"
         assert (await client.get("/bills/mine", headers=giver)).json()["hold_blocker"] == "paused"
 
         queue = (await client.get("/admin/bills", headers=boss)).json()
         assert {"giver_id": giver_id, "strikes": 2} in queue["paused"]
         assert (await client.post(f"/admin/bills/givers/{giver_id}/unpause", headers=boss)).status_code == 200
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).status_code == 200
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).status_code == 200
 
 
 async def test_three_holds_a_day_however_they_end(reads):
@@ -433,10 +468,10 @@ async def test_three_holds_a_day_however_they_end(reads):
         _, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
         for _ in range(catalog.HOLDS_PER_DAY):
-            hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+            hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
             assert hold["account_number"] == ACCOUNT
             await client.post(f"/bills/holds/{hold['id']}/release", headers=giver)
-        res = await client.post(f"/bills/{bill_id}/hold", headers=giver)
+        res = await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)
         assert res.status_code == 409 and res.json()["code"] == "too_many_holds"
         assert (await client.get("/bills/mine", headers=giver)).json()["hold_blocker"] == "too_many_holds"
 
@@ -446,7 +481,7 @@ async def test_reporting_paid_checks_the_amount_and_date(reads):
         asker, _ = await _person(client, "nb_report")
         giver, _ = await _person(client, "nb_report_giver")
         _, posted = await _post(client, asker, reads)
-        hold = (await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver, json=TERMS)).json()
         url = f"/bills/holds/{hold['id']}/paid"
         good = {"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()}
         assert (await client.post(url, headers=giver, json={**good, "paid_cents": 20000})).json()["code"] == "amount_mismatch"
@@ -466,7 +501,7 @@ async def test_not_yet_goes_to_a_reviewer(reads):
         giver, giver_id = await _person(client, "nb_dispute_giver")
         _, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
                           json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         assert (await client.post(f"/bills/{bill_id}/answer", headers=asker, json={"answer": "not_yet"})).json()["status"] == "disputed"
@@ -489,7 +524,7 @@ async def test_silence_means_paid_after_a_week_and_closed_bills_are_erased(reads
         giver, _ = await _person(client, "nb_silence_giver")
         _, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
                           json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         later = datetime.now(UTC) + catalog.ANSWER_WAIT + timedelta(hours=1)
@@ -531,7 +566,7 @@ async def test_a_hold_ending_soon_gets_one_reminder(reads):
         asker, _ = await _person(client, "nb_warn")
         giver, giver_id = await _person(client, "nb_warn_giver")
         _, posted = await _post(client, asker, reads)
-        await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver)
+        await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver, json=TERMS)
         soon = datetime.now(UTC) + catalog.HOLD - timedelta(hours=1)
         async with database.SessionLocal() as db:
             assert await flow.warn_ending_holds(db, soon) == 1
@@ -546,7 +581,7 @@ async def test_withdrawing_tells_the_giver_without_a_strike(reads):
         giver, giver_id = await _person(client, "nb_withdraw_giver")
         _, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         res = await client.delete(f"/bills/{bill_id}", headers=asker)
         assert res.json()["status"] == "withdrawn"
         assert (await client.get(f"/bills/holds/{hold['id']}", headers=giver)).json()["status"] == "withdrawn"
@@ -554,7 +589,7 @@ async def test_withdrawing_tells_the_giver_without_a_strike(reads):
             assert await flow.strikes(db, giver_id) == 0
             kinds = (await db.execute(select(OutboundEmail.kind).where(OutboundEmail.user_id == giver_id))).scalars().all()
         assert kinds == ["bills.withdrawn"]
-        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).status_code == 404
+        assert (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).status_code == 404
 
 
 async def test_nobody_else_reaches_a_bill_or_a_hold(reads):
@@ -565,7 +600,7 @@ async def test_nobody_else_reaches_a_bill_or_a_hold(reads):
         giver, _ = await _person(client, "nb_owner_giver")
         draft, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         for who in (stranger, boss):
             assert (await client.get(f"/bills/holds/{hold['id']}", headers=who)).status_code == 404
             assert (await client.post(f"/bills/holds/{hold['id']}/release", headers=who)).status_code == 404
@@ -574,7 +609,7 @@ async def test_nobody_else_reaches_a_bill_or_a_hold(reads):
             mine = (await client.get("/bills/mine", headers=who)).json()
             assert ACCOUNT not in json.dumps(mine)
         # A draft is never public or holdable.
-        assert (await client.post(f"/bills/{draft['id']}/hold", headers=stranger)).status_code in (404, 409)
+        assert (await client.post(f"/bills/{draft['id']}/hold", headers=stranger, json=TERMS)).status_code in (404, 409)
         assert ACCOUNT not in (await client.get("/bills")).text and ZIP not in (await client.get("/bills")).text
 
 
@@ -600,7 +635,7 @@ async def test_without_an_encryption_key_nothing_is_posted_or_held(reads, monkey
         monkeypatch.delenv("DATA_ENCRYPTION_KEYS")
         res = await _upload(client, h)
         assert res.status_code == 503 and res.json()["code"] == "encryption_unavailable"
-        assert (await client.post(f"/bills/{uuid.uuid4()}/hold", headers=h)).json()["code"] == "encryption_unavailable"
+        assert (await client.post(f"/bills/{uuid.uuid4()}/hold", headers=h, json=TERMS)).json()["code"] == "encryption_unavailable"
         assert reads.calls == 0
 
 
@@ -621,7 +656,7 @@ async def test_secrets_are_ciphertext_at_rest(reads):
         assert len(row[4]) == 64 and "7319046620" not in row[4]
 
         _, listed = await _post(client, giver, reads, seed=5)
-        hold = (await client.post(f"/bills/{listed.json()['id']}/hold", headers=asker)).json()
+        hold = (await client.post(f"/bills/{listed.json()['id']}/hold", headers=asker, json=TERMS)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=asker,
                           json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         async with database.SessionLocal() as db:
@@ -640,7 +675,7 @@ async def test_no_account_number_zip_or_confirmation_reaches_a_log(reads, caplog
         caplog.clear()
         _, posted = await _post(client, asker, reads)
         bill_id = posted.json()["id"]
-        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver, json=TERMS)).json()
         await client.get(f"/bills/holds/{hold['id']}", headers=giver)
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
                           json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
@@ -659,7 +694,7 @@ async def test_a_reveal_is_in_the_audit_log(reads):
         asker, _ = await _person(client, "nb_audit")
         giver, giver_id = await _person(client, "nb_audit_giver")
         _, posted = await _post(client, asker, reads)
-        hold = (await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver, json=TERMS)).json()
         await client.get(f"/bills/holds/{hold['id']}", headers=giver)
     async with database.SessionLocal() as db:
         rows = (await db.execute(
@@ -680,13 +715,13 @@ async def test_deleting_an_account(reads):
         # A paid bill and an open one held by the giver.
         _, paid = await _post(client, asker, reads)
         paid_id = paid.json()["id"]
-        hold = (await client.post(f"/bills/{paid_id}/hold", headers=giver)).json()
+        hold = (await client.post(f"/bills/{paid_id}/hold", headers=giver, json=TERMS)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
                           json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         await client.post(f"/bills/{paid_id}/answer", headers=asker, json={"answer": "paid"})
         _, open_bill = await _post(client, asker, reads, seed=1, account="5550001115")
         open_id = open_bill.json()["id"]
-        held = (await client.post(f"/bills/{open_id}/hold", headers=giver)).json()
+        held = (await client.post(f"/bills/{open_id}/hold", headers=giver, json=TERMS)).json()
 
         assert (await client.request("DELETE", "/auth/me", headers=asker, json={"confirm": "DELETE", "password": "password123"})).status_code in (200, 204)
         assert await _bill(open_id) is None
@@ -698,7 +733,7 @@ async def test_deleting_an_account(reads):
 
         # A giver leaving lets go of what they hold.
         _, third = await _post(client, other, reads, seed=2, account="5550001116")
-        await client.post(f"/bills/{third.json()['id']}/hold", headers=giver)
+        await client.post(f"/bills/{third.json()['id']}/hold", headers=giver, json=TERMS)
         assert (await client.request("DELETE", "/auth/me", headers=giver, json={"confirm": "DELETE", "password": "password123"})).status_code in (200, 204)
         assert (await _bill(third.json()["id"])).status == "available"
         async with database.SessionLocal() as db:

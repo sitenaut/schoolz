@@ -5,6 +5,8 @@ portal has none either; the ZIP's center (Census ZCTA internal point) is
 close enough to sort "closest first" - and for a family child care home it
 is deliberately not the home. `nj_zips.json` is the same table the browser
 uses for "Set my location" (scripts/build_nj_zips.py writes both copies).
+`nj_zip_towns.json` is the post office's town name for each of those ZIPs
+(scripts/build_nj_zip_towns.py, from GeoNames, CC BY 4.0).
 """
 from __future__ import annotations
 
@@ -18,6 +20,11 @@ def _zips() -> dict[str, list]:
     return json.loads((Path(__file__).with_name("nj_zips.json")).read_text(encoding="utf-8"))
 
 
+@cache
+def _towns() -> dict[str, str]:
+    return json.loads((Path(__file__).with_name("nj_zip_towns.json")).read_text(encoding="utf-8"))
+
+
 def zip_point(postal_code: str | None) -> tuple[float, float] | None:
     """(lat, lon) of a New Jersey ZIP's center, or None if it isn't one."""
     row = _zips().get((postal_code or "").strip()[:5])
@@ -28,3 +35,8 @@ def zip_county(postal_code: str | None) -> str | None:
     """The county a New Jersey ZIP is in ("Camden"), or None."""
     row = _zips().get((postal_code or "").strip()[:5])
     return row[0] if row else None
+
+
+def zip_town(postal_code: str | None) -> str | None:
+    """The town a New Jersey ZIP is known by ("Cherry Hill"), or None."""
+    return _towns().get((postal_code or "").strip()[:5])

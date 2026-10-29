@@ -1,14 +1,16 @@
 import { type FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { type Draft, dollars, parseDollars, postBill, shortDate, uploadBill } from "../../../lib/bills";
-import { AVATAR_KEYS, Avatar, errorText } from "./shared";
+import { whereForZip } from "../../../lib/localzWhere";
+import { OtherHelp } from "./OtherHelp";
+import { AVATAR_KEYS, Avatar, TERMS_VERSION, TermsBox, errorText } from "./shared";
 
-type Step = "intro" | "upload" | "check";
+type Step = "intro" | "upload" | "check" | "help" | "agree";
 
-/** Posting a bill: other help first (a suggestion, not a gate), then the
- * upload, then checking what was read, an avatar, and saying out loud who
- * sees what. */
+/** Posting a bill: the upload, checking what was read and picking an
+ * avatar, then Localz's other help for the bill's county (every requester
+ * passes through it: a program can do more than one neighbor), then saying
+ * out loud who sees what and agreeing to the terms. */
 export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onCancel: () => void }) {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>("intro");
@@ -18,6 +20,8 @@ export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onC
   const [amount, setAmount] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
   const [understood, setUnderstood] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [county, setCounty] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,10 +43,11 @@ export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onC
     }
   };
 
-  const submit = async (e: FormEvent) => {
+  const cents = parseDollars(amount);
+
+  const checked = async (e: FormEvent) => {
     e.preventDefault();
     if (!draft) return;
-    const cents = parseDollars(amount);
     if (cents === null || cents > draft.max_ask_cents || cents < 500) {
       setError(t("Ask for between $5 and {{max}}.", { max: dollars(draft.max_ask_cents) }));
       return;
@@ -51,10 +56,20 @@ export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onC
       setError(t("Pick an avatar."));
       return;
     }
+    setError(null);
+    // The ZIP as corrected, if it was; the one read otherwise.
+    setCounty((await whereForZip(zip))?.county ?? draft.county);
+    setStep("help");
+    window.scrollTo(0, 0);
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!draft || cents === null || !avatar) return;
     setBusy(true);
     setError(null);
     try {
-      await postBill(draft.id, { account_number: account, service_zip: zip, amount_cents: cents, avatar, understood });
+      await postBill(draft.id, { account_number: account, service_zip: zip, amount_cents: cents, avatar, understood, terms: TERMS_VERSION });
       onPosted();
     } catch (err) {
       setError(errorText(t, err));
@@ -67,10 +82,8 @@ export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onC
       <section className="bills-flow">
         <h3>{t("Before you post")}</h3>
         <p>{t("Programs like USF, LIHEAP, NJ SHARES and PAGE can pay more than one bill, and PSE&G offers payment plans. They're worth a look first.")}</p>
+        <p>{t("Once we've read your bill, we'll show you the help listed in Localz for your county.")}</p>
         <div className="bills-actions">
-          <Link className="btn" to="/localz/housing-bills">
-            {t("See help with bills")}
-          </Link>
           <button type="button" className="btn btn-primary" onClick={() => setStep("upload")}>
             {t("Continue")}
           </button>
@@ -118,8 +131,62 @@ export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onC
     );
   }
 
+  if (step === "help") {
+    return (
+      <section className="bills-flow">
+        <h3>{county ? t("Other help with bills in {{county}} County", { county }) : t("Other help with bills")}</h3>
+        <p>
+          {t(
+            "These programs and offices help with utility bills. Many can pay more than one neighbor can, or stop a shutoff. You can apply to them and post your bill too.",
+          )}
+        </p>
+        <OtherHelp county={county} />
+        <div className="bills-actions">
+          <button type="button" className="btn btn-primary" onClick={() => setStep("agree")}>
+            {t("I've seen these. Continue")}
+          </button>
+          <button type="button" className="btn" onClick={() => setStep("check")}>
+            {t("Back")}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (step === "agree") {
+    return (
+      <form className="bills-flow" onSubmit={submit}>
+        <h3>{t("Your listing")}</h3>
+        <div className="bills-card">
+          <Avatar name={avatar} size={52} />
+          <div className="bills-card-body">
+            <div className="bills-amount">{dollars(cents)}</div>
+            <div className="bills-meta">{[draft?.utility_name, zip === draft?.service_zip ? draft?.town : null].filter(Boolean).join(" · ")}</div>
+          </div>
+        </div>
+        <p className="bills-small">{t("This is all anyone browsing sees: the avatar, the amount, the town, the due date and whether there's a shutoff notice.")}</p>
+        <label className="bills-understand">
+          <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} />
+          <span>
+            {t("I understand: the person who pays will see my account number and ZIP code. That's all PSE&G needs. They won't see my name or address, and I won't see theirs.")}
+          </span>
+        </label>
+        <TermsBox checked={agreed} onChange={setAgreed} />
+        {error && <p className="bills-error">{error}</p>}
+        <div className="bills-actions">
+          <button type="submit" className="btn btn-primary" disabled={busy || !understood || !agreed}>
+            {busy ? t("One moment…") : t("Post my bill")}
+          </button>
+          <button type="button" className="btn" onClick={() => setStep("help")}>
+            {t("Back")}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   return (
-    <form className="bills-flow" onSubmit={submit}>
+    <form className="bills-flow" onSubmit={checked}>
       <h3>{t("Check what we read")}</h3>
       <p>{t("Compare these with your bill. If you change the account number or ZIP code, someone checks it against your bill before it's listed.")}</p>
       <label className="bills-field">
@@ -162,16 +229,10 @@ export function PostBillFlow({ onPosted, onCancel }: { onPosted: () => void; onC
         ))}
       </fieldset>
 
-      <label className="bills-understand">
-        <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} />
-        <span>
-          {t("I understand: the person who pays will see my account number and ZIP code. That's all PSE&G needs. They won't see my name or address, and I won't see theirs.")}
-        </span>
-      </label>
       {error && <p className="bills-error">{error}</p>}
       <div className="bills-actions">
-        <button type="submit" className="btn btn-primary" disabled={busy || !understood}>
-          {busy ? t("One moment…") : t("Post my bill")}
+        <button type="submit" className="btn btn-primary">
+          {t("Next")}
         </button>
         <button type="button" className="btn" onClick={onCancel}>
           {t("Cancel")}

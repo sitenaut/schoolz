@@ -2941,7 +2941,9 @@ class AuditEvent(Base):
 class BillRequest(Base):
     """A utility bill someone posted on Neighborz for a neighbor to pay
     (docs/NEIGHBORZ_DESIGN.md). Anonymous on the public list: avatar,
-    utility, amount, due date, county, shutoff notice and nothing else.
+    utility, amount, due date, town, shutoff notice and nothing else. `town`
+    is the service ZIP's post-office name and `county` its county, both
+    set from the ZIP when it's posted (resources.places).
 
     The account number and ZIP are the one secret that has to reach a giver,
     so they are encrypted with their own derived key and erased 30 days
@@ -2967,6 +2969,7 @@ class BillRequest(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     shutoff_notice: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     county: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    town: Mapped[str | None] = mapped_column(String(60), nullable=True)
     avatar: Mapped[str | None] = mapped_column(String(30), nullable=True)
     account_number: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_account", required=True), nullable=True)
     service_zip: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_account", required=True), nullable=True)
@@ -2981,6 +2984,8 @@ class BillRequest(Base):
     refused: Mapped[str | None] = mapped_column(String(30), nullable=True)  # why an upload can't be posted
     reject_reason: Mapped[str | None] = mapped_column(String(30), nullable=True)
     thanks: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # The Neighborz terms the requester agreed to when posting (bills.catalog.TERMS_VERSION).
+    terms_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -3019,6 +3024,8 @@ class BillHold(Base):
     paid_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     paid_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     confirmation_number: Mapped[str | None] = mapped_column(EncryptedText(purpose="bill_confirmation", required=True), nullable=True)
+    # The Neighborz terms the giver agreed to when holding the bill.
+    terms_version: Mapped[str] = mapped_column(String(20), nullable=False)
 
 
 class BillGiver(Base):

@@ -25,8 +25,8 @@ hand-off. "Neighborz" is a display name only: code, tables and paths say
    money-transmitter licensing. Never add a "pay here" button that does.
 2. **Anonymous both ways.** A giver never learns who they helped; a requester
    never learns who paid. A listing shows a chosen avatar, the utility, the
-   amount asked, the due date, the county and whether it's a shutoff notice.
-   Nothing else, ever.
+   amount asked, the due date, the town (the service ZIP's post-office name,
+   owner's call) and whether it's a shutoff notice. Nothing else, ever.
 3. **No text between people.** The only things that cross are the giver's
    "I paid it", the requester's "Paid" or "Not yet", and one emoji from a
    fixed set. No free-text field reaches the other side, including the
@@ -48,17 +48,22 @@ hand-off. "Neighborz" is a display name only: code, tables and paths say
 **Someone who needs help (the requester):**
 
 1. From Localz's bills category or the Neighborz page: **Get help with a
-   bill**. First a short, skippable card: programs that can pay more than one
-   bill (USF, LIHEAP, NJ SHARES, PAGE), straight from Localz's listings.
+   bill**. First a short card naming programs that can pay more than one
+   bill (USF, LIHEAP, NJ SHARES, PAGE).
 2. Sign in or register.
 3. Upload a photo or PDF of the bill. The fields are read from it (see
    "Reading the bill").
 4. Check what was read: account number, service ZIP, amount due, due date,
    shutoff notice. Choose how much to ask for: the amount due or less, up to
-   the cap.
-5. Pick an avatar.
+   the cap. Pick an avatar.
+5. **Other help** (every requester passes through it; owner's call): Localz's
+   own listings for utility payment assistance, shutoff protection and
+   discounted service in the bill's county, statewide programs included
+   (`catalog.HELP_CODES`, through `POST /resources/search` with `types`),
+   plus 211. The same list stays on My Neighborz while the bill is up.
 6. Read and tick: "The person who pays will see your account number and ZIP
-   code. That's all PSE&G needs. They won't see your name or address." Post.
+   code. That's all PSE&G needs. They won't see your name or address." Tick
+   the terms box (see "Terms"). Post.
 7. On **My Neighborz**: "Waiting for a neighbor", then "Someone is paying
    this now", then "A neighbor says they paid. Check your PSE&G account: did
    it arrive?" **Paid** or **Not yet**. Then, if they like, one emoji.
@@ -67,8 +72,8 @@ hand-off. "Neighborz" is a display name only: code, tables and paths say
 
 1. Browse the list (public): filter by county; shutoff notices first, then
    by due date.
-2. **I'll pay this** (sign-in needed). The bill is held for them for 24
-   hours, and the page shows the account number, ZIP, amount, and how to pay
+2. **I'll pay this** (sign-in needed), then tick the terms box. The bill is
+   held for them for 24 hours, and the page shows the account number, ZIP, amount, and how to pay
    (the utility's guest-pay link and phone number, step by step).
 3. Pay the utility. Back on the page, enter the confirmation number, the
    amount paid and the date. The bill moves to "awaiting confirmation".
@@ -109,6 +114,12 @@ email nudges.
 - **Amount:** at most the amount due on the bill, and at most **$500**. A
   bigger balance lists $500, and the requester can post again after it's
   paid. One giver pays the whole listing; splitting comes later, if ever.
+  Why a cap at all: it bounds what one false or someone-else's bill can
+  draw before a person notices; a listing one neighbor can pay in one go
+  gets picked up, where a $2,000 balance would sit until it expires; it
+  spreads gifts across more households; and a balance that size is what
+  USF, NJ SHARES and a payment plan are for. The number is the owner's (it
+  could go up, or the cap could go, without changing anything else).
 - **Requester:** one open listing at a time.
 - **Per utility account** (by fingerprint, across every user): one open
   listing, and one paid listing per **60 days**. Stops one bill being
@@ -121,6 +132,30 @@ email nudges.
   lifts it.
 - **Uploads:** 5 a day per account (each one is a model call), 10 MB, image
   or PDF judged from the bytes, as `/upload` does.
+
+## Terms
+
+- `/localz/bills/terms` (`TermsPage.tsx`, translated, English governs): what
+  Neighborz is and isn't, who can use it, each side's promises, anonymity,
+  what's not allowed, no warranties, a **waiver and release of liability**,
+  a $100 liability cap, responsibility for one's own breaches, data, changes
+  and New Jersey law.
+- Clickwrap, not browsewrap: an unticked box, "I have read and agree to the
+  Neighborz terms, including the waiver and release of liability", with the
+  terms a tap away, on every post and every hold. The server refuses a post
+  or hold without `terms` equal to `catalog.TERMS_VERSION`
+  (`terms_not_agreed`) and keeps the version on the row (`bill_requests` /
+  `bill_holds.terms_version`).
+- Change the meaning, change the version, in `catalog.py` and `shared.tsx`
+  together (a test keeps them equal): everyone agrees again on their next
+  post or hold.
+- **A draft for counsel.** Written to stay inside what New Jersey enforces
+  as I understand it: the release excludes gross negligence and willful
+  misconduct, every limit says "as far as New Jersey law allows" rather than
+  "void where prohibited", and there is no arbitration clause or class
+  waiver. Counsel should check it against the Truth-in-Consumer Contract,
+  Warranty and Notice Act, name the legal entity that runs schoolz, and say
+  whether the translations need their own review.
 
 ## Reading the bill
 
@@ -155,7 +190,10 @@ email nudges.
 
 - **`bill_requests`**: `id` (UUID), `requester_id` (users, set null),
   `utility`, `status`, `amount_cents` (asked), `amount_due_cents` (read),
-  `due_date`, `shutoff_notice`, `county`, `avatar` (catalog key),
+  `due_date`, `shutoff_notice`, `county` and `town` (from the service ZIP:
+  `resources/places.zip_county` / `zip_town`, the town from GeoNames' postal
+  names, CC BY 4.0, credited on the list), `avatar` (catalog key),
+  `terms_version`,
   `account_number` and `service_zip`
   (`EncryptedText(purpose="bill_account", required=True)`),
   `account_fingerprint` (HMAC-SHA256 of utility + digits with
@@ -199,13 +237,15 @@ Paths say `bills`, never anything about need. API keys are refused on every
 route here, admin ones included (a key could otherwise open bill images).
 
 - Public: `GET /bills` (the list: avatar, utility, amount, due date,
-  shutoff, county, status; filters `county`, `utility`), `GET /bills/catalog`
-  (utilities, avatars, emojis).
+  shutoff, town, county, status; filters `county`, `utility`), `GET
+  /bills/catalog` (utilities, avatars, emojis, limits, `terms_version`,
+  `help_codes`).
 - Requester: `POST /bills/upload` (multipart → draft with the read fields),
-  `POST /bills/{id}/post` (confirmed fields, amount, avatar, the tick),
+  `POST /bills/{id}/post` (confirmed fields, amount, avatar, the tick,
+  `terms`),
   `DELETE /bills/{id}`, `POST /bills/{id}/answer` (`paid|not_yet`),
   `POST /bills/{id}/thanks` (emoji key).
-- Giver: `POST /bills/{id}/hold`, `GET /bills/holds/{id}` (the payment
+- Giver: `POST /bills/{id}/hold` (`{terms}`), `GET /bills/holds/{id}` (the payment
   details; reveals the account number, `audit.note("bills.account_revealed")`),
   `POST /bills/holds/{id}/paid`, `POST /bills/holds/{id}/release`.
 - Both: `GET /bills/mine` → `{posted: [...], gifts: [...], hold_blocker}`.
@@ -277,7 +317,7 @@ address, or a login, would break principle 2.
 | 5 | **Holding a bill and never paying** | 24-hour hold; strikes; one hold at a time |
 | 6 | **A false "I paid"**, or a requester denying a real payment to get it paid twice | The requester checks their own utility account; disputes go to a reviewer; strikes on either side |
 | 7 | **A message smuggled between the two** | No free text crosses; the confirmation number is never shown to the requester; avatars and emojis are fixed keys |
-| 8 | **Re-identification from the listing** | County, not town or ZIP; no free text; amounts are whatever the bill says |
+| 8 | **Re-identification from the listing** | The ZIP's post-office town, never the ZIP or street; no free text; amounts are whatever the bill says |
 | 9 | **Database dump, backup, pooler leak** | Account number, ZIP, image, extraction and confirmation number are encrypted with their own derived keys; fingerprints are keyed HMACs; `ENCRYPTION_REQUIRE=1` before launch |
 | 10 | **Insider, admin, API key** | No endpoint returns an account number except to its current holder; review needs `bills.manage` and a browser session; keys refused; the Data Audit portal excludes these tables |
 | 11 | **Server logs** | No account number, ZIP or confirmation number in a URL or a log record (a test asserts it, as for the saved profile) |
@@ -291,8 +331,8 @@ address, or a login, would break principle 2.
    from a private window and note what the page shows after the account
    number and ZIP (row 2), any card fee, the exact guest-pay URL and phone
    number; set the numbers under "Limits"; write the `/privacy` Neighborz
-   section and a data protection assessment addendum; counsel review, as
-   for Localz.
+   section and a data protection assessment addendum; counsel review of the
+   terms (see "Terms") and the rest, as for Localz.
 1. **Backend:** tables and migration, utility catalog, bill reading,
    the endpoints and limits, encryption, audit notes, account deletion, the
    sweep job, tests.
@@ -312,14 +352,16 @@ address, or a login, would break principle 2.
 - The list is public to browse; holding a bill needs an account.
 - Requesters choose an avatar from a fixed catalog of cartoon avatars.
 - PSE&G first.
+- A listing shows the requester's town, from the ZIP.
+- Requesters see their other options from Localz's listings before posting.
+- Terms with a waiver of liability, agreed with a checkbox.
 
 ## Open questions for the owner
 
 - The name: Neighborz is proposed, not decided ("Billz" is taken by the
   owner's other app).
-- The numbers under "Limits" (the $500 cap, 24-hour hold, 60-day
-  per-account limit, two strikes) and the 7-day auto-confirm.
+- The numbers under "Limits" (the $500 cap: keep, raise or drop; 24-hour
+  hold, 60-day per-account limit, two strikes) and the 7-day auto-confirm.
 - Auto-list after the code checks, holding only flagged bills (proposed), or
   a reviewer approving every bill before it's listed?
-- County on the listing (proposed), or town? Town needs a ZIP-to-town table
-  and narrows who it could be.
+- Counsel's changes to the terms, and the legal name to put in them.

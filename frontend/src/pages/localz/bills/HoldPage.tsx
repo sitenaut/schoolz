@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { IconCopy } from "../../../components/icons";
 import { type Hold, dollars, fetchHold, parseDollars, releaseHold, reportPaid, shortDate, todayIso } from "../../../lib/bills";
-import { Avatar, EMOJIS, errorText, timeLeft } from "./shared";
+import { Avatar, EMOJIS, errorText, placeName, timeLeft } from "./shared";
 
 /** /localz/bills/hold/:holdId - what the utility's guest payment needs,
  * shown only to the giver holding the bill and only while they hold it;
@@ -83,7 +83,7 @@ export function HoldPage() {
             <div>
               <h2 className="localz-title">{dollars(hold.amount_cents)}</h2>
               <div className="bills-meta">
-                {[hold.utility_name, hold.county ? t("{{county}} County", { county: hold.county }) : null, hold.due_date ? t("Due {{date}}", { date: shortDate(hold.due_date) }) : null]
+                {[hold.utility_name, placeName(t, hold), hold.due_date ? t("Due {{date}}", { date: shortDate(hold.due_date) }) : null]
                   .filter(Boolean)
                   .join(" · ")}
               </div>

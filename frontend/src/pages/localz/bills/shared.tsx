@@ -1,5 +1,44 @@
 import type { TFunction } from "i18next";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { BillsError } from "../../../lib/bills";
+
+/** The Neighborz terms a box is ticked for (TermsPage). Must equal the
+ * server's catalog.TERMS_VERSION, which refuses any other. */
+export const TERMS_VERSION = "2026-10-28";
+
+/** Localz listing codes for "other help" (the server's catalog.HELP_CODES). */
+export const HELP_CODES = [
+  "BV-8900.9300-180",
+  "BV-8900.9300-250",
+  "BV-8900.9300-300",
+  "BV-8900.9300-950",
+  "BV-8900.9220",
+  "BV-8900.1700-300",
+  "BV-8900.1700-900",
+];
+
+/** Where a bill is, as a listing says it: the ZIP's town, or its county. */
+export function placeName(t: TFunction, bill: { town: string | null; county: string | null }): string | null {
+  return bill.town ?? (bill.county ? t("{{county}} County", { county: bill.county }) : null);
+}
+
+/** "I agree to the terms" - the box a requester ticks to post and a giver
+ * to hold. The terms open in a new tab so a half-filled form survives. */
+export function TermsBox({ checked, onChange }: { checked: boolean; onChange: (on: boolean) => void }) {
+  const { t } = useTranslation();
+  return (
+    <label className="bills-understand">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        {t("I have read and agree to the Neighborz terms, including the waiver and release of liability.")}{" "}
+        <Link to="/localz/bills/terms" target="_blank" rel="noopener">
+          {t("Read the terms")}
+        </Link>
+      </span>
+    </label>
+  );
+}
 
 // One SVG per avatar key (backend/bills/catalog.py AVATARS). Fluent Emoji,
 // MIT: avatars/LICENSE.txt. Shown as <img>, so an SVG can't run anything.
@@ -67,6 +106,8 @@ export function errorText(t: TFunction, err: unknown): string {
       return t("Check the date you paid.");
     case "hold_ended":
       return t("This hold has ended.");
+    case "terms_not_agreed":
+      return t("Tick the box to agree to the Neighborz terms.");
     case "encryption_unavailable":
       return t("Neighborz isn't available right now.");
     default:

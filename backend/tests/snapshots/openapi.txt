@@ -310,6 +310,7 @@ POST /bills/{bill_id}/answer
   -> 200: PostedOut
 POST /bills/{bill_id}/hold
   path bill_id: string
+  body?: HoldIn | null
   -> 200: HoldOut
 POST /bills/{bill_id}/post
   path bill_id: string
@@ -1105,7 +1106,7 @@ CaptureStatusOut { notified: boolean }
 CaptureStudentOut { first_name: string, id: string, last_name: string }
 CaptureTokenIn { device_code: string }
 CaptureTokenOut { device_id?: string | null, key?: string | null, status: string }
-CatalogOut { avatars: list[string], emojis: dict[string], hold_hours: integer, max_ask_cents: integer, min_ask_cents: integer, utilities: list[UtilityOut] }
+CatalogOut { avatars: list[string], emojis: dict[string], help_codes: list[string], hold_hours: integer, max_ask_cents: integer, min_ask_cents: integer, terms_version: string, utilities: list[UtilityOut] }
 CategoryOut { count: integer, key: string, label: string }
 ChangeOut { before: object, changes: object, created_at: string(date-time), has_private_address: boolean, id: string, kind: string, note: string | null, private_address: string | null, requested_by: string | null, service: ListingBriefOut | null, source: string | null, status: string }
 ChangePasswordRequest { current_password: string, new_password: string }
@@ -1171,7 +1172,7 @@ DistrictOut { calendar_pdf_url?: string | null, calendar_scan_job?: ScheduledJob
 DistrictSummaryOut { id: string, name: string, state: string, towns: list[string] }
 DistrictTransportationOut { bus_stop_change_deadline: string | null, bus_stop_change_form_url: string | null, bus_stop_change_procedure: string | null, closing_info_url: string | null, contacts: list[TransportationContactOut], daily_buses_note?: string | null, delay_policy: string | null, guidelines_url: string | null, late_bus_contractors: list[LateBusContractorOut], late_bus_policy: string | null, late_bus_url: string | null, lost_items_policy: string | null, lost_items_url: string | null, main_url: string | null, office_address: string | null, office_email?: string | null, office_fax: string | null, office_hours: string | null, office_phone: string | null, updated_at: string(date-time) }
 DistrictUpdate { calendar_pdf_url?: string | null, food_services_menu_url?: string | null, genesis_url?: string | null, hs_rotation_url?: string | null, ics_feeds?: list[IcsFeed] | null, marking_period_url?: string | null, preschool_locations_url?: string | null, preschool_team_url?: string | null, schoolcafe_shortname?: string | null, towns?: list[string] | null, transportation_url?: string | null, uses_google_classroom?: boolean | null, website_url?: string | null }
-DraftOut { account_number: string | null, amount_due_cents: integer | null, due_date: string(date) | null, flags: list[string], id: string, max_ask_cents: integer, refused: string | null, service_zip: string | null, shutoff_notice: boolean, utility: string | null, utility_name: string | null }
+DraftOut { account_number: string | null, amount_due_cents: integer | null, county: string | null, due_date: string(date) | null, flags: list[string], id: string, max_ask_cents: integer, refused: string | null, service_zip: string | null, shutoff_notice: boolean, town: string | null, utility: string | null, utility_name: string | null }
 DuplicateOut { address: string | null, city: string | null, id: string, location_confidential: boolean, name: string, organization_name: string | null, phone: string | null, reasons: list[string], source: string, status: string }
 EditIn { private_address?: string | null, submission: Submission }
 EmailScannerCreate { body_contains?: list[string], cron_expr?: string, enabled?: boolean, from_contains?: list[string], google_email: string, link_kinds?: list[string], lookback_days?: integer, name: string, purpose?: string, raw_query?: string | null, school_id?: string | null, subject_contains?: list[string], timezone?: string }
@@ -1187,14 +1188,15 @@ FamilyTodayOut { course_name?: string | null, room?: string | null, state: strin
 FetchHtmlRequest { block_assets?: boolean, url: string, wait_for_selector?: string | null }
 FlagOut { code: string, level: string, message: string }
 ForgotPasswordRequest { email: string(email) }
-GiftOut { amount_cents: integer | null, avatar: string | null, confirmation_number: string | null, county: string | null, expires_at: string(date-time), held_at: string(date-time), hold_id: string, paid_cents: integer | null, paid_on: string(date) | null, status: string, thanks: string | null, utility_name: string | null }
+GiftOut { amount_cents: integer | null, avatar: string | null, confirmation_number: string | null, county: string | null, expires_at: string(date-time), held_at: string(date-time), hold_id: string, paid_cents: integer | null, paid_on: string(date) | null, status: string, thanks: string | null, town: string | null, utility_name: string | null }
 HTTPValidationError { detail?: list[ValidationError] }
 HeldOut { account_number: string | null, amount_cents: integer | null, amount_due_cents: integer | null, county: string | null, due_date: string(date) | null, flag_text: list[string], flags: list[string], has_image: boolean, id: string, posted_at: string(date-time) | null, read: object, requester_disputes: integer, service_zip: string | null, shutoff_notice: boolean }
 HelpDraftOut { body: string, kind: string, label: string, logged: boolean, subject: string, teacher_email: string | null }
 HelpDraftRequest { kind: string }
 HelpKindOut { kind: string, label: string }
 HideIn { note: string }
-HoldOut { account_number: string | null, amount_cents: integer | null, avatar: string | null, bill_id: string, confirmation_number: string | null, county: string | null, due_date: string(date) | null, expires_at: string(date-time), held_at: string(date-time), id: string, paid_cents: integer | null, paid_on: string(date) | null, pay_phone: string | null, pay_url: string | null, service_zip: string | null, shutoff_notice: boolean, status: string, thanks: string | null, utility_name: string | null }
+HoldIn { terms?: string | null }
+HoldOut { account_number: string | null, amount_cents: integer | null, avatar: string | null, bill_id: string, confirmation_number: string | null, county: string | null, due_date: string(date) | null, expires_at: string(date-time), held_at: string(date-time), id: string, paid_cents: integer | null, paid_on: string(date) | null, pay_phone: string | null, pay_url: string | null, service_zip: string | null, shutoff_notice: boolean, status: string, thanks: string | null, town: string | null, utility_name: string | null }
 Hours { alternate_weeks_from?: string(date) | null, mode?: enum(weekly,monthly,24_7,appointment,call) | null, monthly?: list[MonthlyRule], note?: string | null, season?: Season | null, seasonal?: string | null, weekly?: dict[list[HoursRange]] }
 HoursRange { close: string, open: string }
 IcsFeed { name: string, org_id?: string | null, platform?: string | null, school_slug?: string | null, school_types?: list[string] | null, skip_title_prefixes?: list[string] | null, url?: string | null }
@@ -1257,15 +1259,15 @@ PermissionOut { access: string, description: string, key: string, label: string,
 PlaceIn { q: string }
 PlaceOut { label: string, latitude: number, longitude: number }
 PlanOut { text: string }
-PostIn { account_number: string, amount_cents: integer, avatar: string, service_zip: string, understood: boolean }
-PostedOut { amount_cents: integer | null, avatar: string | null, can_answer: boolean, can_thank: boolean, can_withdraw: boolean, closed_at: string(date-time) | null, county: string | null, due_date: string(date) | null, id: string, posted_at: string(date-time) | null, reject_reason: string | null, shutoff_notice: boolean, status: string, thanks: string | null, utility_name: string | null }
+PostIn { account_number: string, amount_cents: integer, avatar: string, service_zip: string, terms?: string | null, understood: boolean }
+PostedOut { amount_cents: integer | null, avatar: string | null, can_answer: boolean, can_thank: boolean, can_withdraw: boolean, closed_at: string(date-time) | null, county: string | null, due_date: string(date) | null, id: string, posted_at: string(date-time) | null, reject_reason: string | null, shutoff_notice: boolean, status: string, thanks: string | null, town: string | null, utility_name: string | null }
 ProblemReportIn { diagnostic_id?: string | null, note?: string | null }
 ProblemReportOut { reference: string | null }
 ProgramPlace { address?: string | null, city?: string | null, place_name?: string | null, postal_code?: string | null }
 ProgressOut { done: integer, due: integer, missing: integer, percent: integer | null, total: integer }
 ProviderStatus { configured: boolean, name: string }
 ProviderTypeOut { category: string, confidential_hint: boolean, key: string, label: string, normally_free: boolean }
-PublicBill { amount_cents: integer, avatar: string | null, county: string | null, due_date: string(date) | null, id: string, shutoff_notice: boolean, state: enum(open,being_paid,paid), utility: string, utility_name: string | null }
+PublicBill { amount_cents: integer, avatar: string | null, county: string | null, due_date: string(date) | null, id: string, shutoff_notice: boolean, state: enum(open,being_paid,paid), town: string | null, utility: string, utility_name: string | null }
 QueueItemOut { claim: boolean, created_at: string(date-time), id: string, missing_core: list[string], organization_name: string | null, origin: string, percent: integer, status: string, submitted_at: string(date-time) | null, town: string | null }
 QueueOut { disputed: list[DisputeOut], held: list[HeldOut], paused: list[PausedOut] }
 RegisterRequest { email: string(email), password: string, username: string }
@@ -1274,7 +1276,7 @@ RequestIn { bot_token?: string | null, claimed_service_id?: string | null, conta
 RequestOut { claimed_service: ListingBriefOut | null, completeness: CompletenessOut, contact_name: string | null, contact_phone: string | null, created_at: string(date-time), decision_note: string | null, fields_to_fix: list[string], has_private_address: boolean, id: string, origin: string, reject_reason: string | null, service_ids: list[string], status: string, submission: object, submitted_at: string(date-time) | null, updated_at: string(date-time) }
 ResetPasswordRequest { new_password: string, token: string }
 ResourceDetailOut { accessibility: string | null, address: string | null, alert: string | null, application_process: string | null, categories: list[string], city: string | null, closure?: ClosureOut | null, complete: boolean, delivery?: string | null, description: string | null, eligibility?: object | null, eligibility_text: string | null, email: string | null, fees: string | null, hours_text: string | null, id: string, languages: list[string], last_assured_on: string(date) | null, latitude: number | null, location_confidential?: boolean, location_name: string | null, longitude: number | null, missing_core: list[string], name: string, next_open?: list[NextOpenOut], organization_name: string | null, phone: string | null, postal_code: string | null, required_documents: list[string], service_areas: list[string], signup?: SignupOut | null, source: string, source_url: string | null, statewide: boolean, taxonomy_names: list[string], transportation: string | null, upcoming_dates?: list[UpcomingDateOut], updated_at: string(date-time), ways_to_help?: object | null, website: string | null, week_hours_text?: string | null }
-ResourceSearchIn { category?: string | null, county?: string | null, offset?: integer | null, outside?: Box | null, page?: integer, page_size?: integer, query?: string | null, type?: string | null }
+ResourceSearchIn { category?: string | null, county?: string | null, offset?: integer | null, outside?: Box | null, page?: integer, page_size?: integer, query?: string | null, type?: string | null, types?: list[string] | null }
 ResourceSearchOut { items: list[ResourceSummaryOut], total: integer }
 ResourceSummaryOut { address: string | null, categories: list[string], city: string | null, closure?: ClosureOut | null, complete: boolean, delivery?: string | null, description: string | null, eligibility?: object | null, hours_text: string | null, id: string, last_assured_on: string(date) | null, location_confidential?: boolean, location_name: string | null, name: string, next_open?: list[NextOpenOut], organization_name: string | null, phone: string | null, signup?: SignupOut | null, statewide: boolean }
 ResourceTypeOut { code: string, count: integer, name: string }

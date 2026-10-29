@@ -44,6 +44,7 @@ def upgrade() -> None:
         sa.Column("due_date", sa.Date(), nullable=True),
         sa.Column("shutoff_notice", sa.Boolean(), server_default=sa.text("false"), nullable=False),
         sa.Column("county", sa.String(40), nullable=True),
+        sa.Column("town", sa.String(60), nullable=True),
         sa.Column("avatar", sa.String(30), nullable=True),
         sa.Column("account_number", sa.String(), nullable=True),
         sa.Column("service_zip", sa.String(), nullable=True),
@@ -56,6 +57,7 @@ def upgrade() -> None:
         sa.Column("refused", sa.String(30), nullable=True),
         sa.Column("reject_reason", sa.String(30), nullable=True),
         sa.Column("thanks", sa.String(20), nullable=True),
+        sa.Column("terms_version", sa.String(20), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("posted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("closed_at", sa.DateTime(timezone=True), nullable=True),
@@ -82,6 +84,7 @@ def upgrade() -> None:
         sa.Column("paid_cents", sa.Integer(), nullable=True),
         sa.Column("paid_on", sa.Date(), nullable=True),
         sa.Column("confirmation_number", sa.String(), nullable=True),
+        sa.Column("terms_version", sa.String(20), nullable=False),
     )
     op.create_index("ix_bill_holds_request_id", "bill_holds", ["request_id"])
     op.create_index("ix_bill_holds_giver_id", "bill_holds", ["giver_id"])

@@ -28,7 +28,7 @@ from bills import catalog, flow, reader
 from database import get_db
 from models import BillHold, BillRequest, User
 from request_context import CodedHTTPException
-from resources.places import zip_county
+from resources.places import zip_county, zip_town
 from services import audit
 from services.upload_guard import sniff_file_type
 
@@ -67,6 +67,9 @@ class CatalogOut(BaseModel):
     min_ask_cents: int
     max_ask_cents: int
     hold_hours: int
+    terms_version: str
+    # Localz listing codes for "other help" (POST /resources/search `types`).
+    help_codes: list[str]
 
 
 class PublicBill(BaseModel):
@@ -76,6 +79,7 @@ class PublicBill(BaseModel):
     amount_cents: int
     due_date: date | None
     shutoff_notice: bool
+    town: str | None
     county: str | None
     avatar: str | None
     state: Literal["open", "being_paid", "paid"]
@@ -90,6 +94,8 @@ async def get_catalog():
         min_ask_cents=catalog.MIN_ASK_CENTS,
         max_ask_cents=catalog.MAX_ASK_CENTS,
         hold_hours=int(catalog.HOLD.total_seconds() // 3600),
+        terms_version=catalog.TERMS_VERSION,
+        help_codes=list(catalog.HELP_CODES),
     )
 
 
@@ -107,7 +113,7 @@ async def list_bills(county: str | None = None, utility: str | None = None, db: 
     # Only the listing's own columns: a public request never decrypts anything.
     q = select(
         BillRequest.id, BillRequest.utility, BillRequest.status, BillRequest.amount_cents, BillRequest.due_date,
-        BillRequest.shutoff_notice, BillRequest.county, BillRequest.avatar,
+        BillRequest.shutoff_notice, BillRequest.town, BillRequest.county, BillRequest.avatar,
     ).where(
         or_(
             BillRequest.status.in_(("available", "claimed", "reported", "disputed")),
@@ -125,7 +131,7 @@ async def list_bills(county: str | None = None, utility: str | None = None, db: 
     return [
         PublicBill(
             id=r.id, utility=r.utility, utility_name=_utility_name(r.utility), amount_cents=r.amount_cents, due_date=r.due_date,
-            shutoff_notice=r.shutoff_notice, county=r.county, avatar=r.avatar, state=names.get(r.status, "being_paid"),
+            shutoff_notice=r.shutoff_notice, town=r.town, county=r.county, avatar=r.avatar, state=names.get(r.status, "being_paid"),
         )
         for r in rows
     ]
@@ -146,6 +152,9 @@ class DraftOut(BaseModel):
     max_ask_cents: int
     due_date: date | None
     shutoff_notice: bool
+    # From the ZIP that was read, for the "other help" step.
+    county: str | None
+    town: str | None
     flags: list[str]
 
 
@@ -156,6 +165,12 @@ class PostIn(BaseModel):
     avatar: str = Field(max_length=30)
     # "The person who pays will see your account number and ZIP code."
     understood: bool
+    # The version of the Neighborz terms the box was ticked for.
+    terms: str | None = Field(default=None, max_length=20)
+
+
+class HoldIn(BaseModel):
+    terms: str | None = Field(default=None, max_length=20)
 
 
 class PostedOut(BaseModel):
@@ -165,6 +180,7 @@ class PostedOut(BaseModel):
     amount_cents: int | None
     due_date: date | None
     shutoff_notice: bool
+    town: str | None
     county: str | None
     avatar: str | None
     thanks: str | None
@@ -184,6 +200,12 @@ class ThanksIn(BaseModel):
     emoji: str = Field(max_length=20)
 
 
+def _need_terms(version: str | None) -> None:
+    # The box ticked for an older version doesn't count: the page shows the new terms first.
+    if version != catalog.TERMS_VERSION:
+        raise CodedHTTPException(status.HTTP_400_BAD_REQUEST, "Agree to the Neighborz terms first", "terms_not_agreed")
+
+
 def _max_ask(amount_due_cents: int | None) -> int:
     return min(amount_due_cents, catalog.MAX_ASK_CENTS) if amount_due_cents else catalog.MAX_ASK_CENTS
 
@@ -192,14 +214,16 @@ def _draft_out(req: BillRequest) -> DraftOut:
     return DraftOut(
         id=req.id, refused=req.refused, utility=None if req.refused else req.utility, utility_name=_utility_name(req.utility),
         account_number=req.account_number, service_zip=req.service_zip, amount_due_cents=req.amount_due_cents,
-        max_ask_cents=_max_ask(req.amount_due_cents), due_date=req.due_date, shutoff_notice=req.shutoff_notice, flags=list(req.flags or []),
+        max_ask_cents=_max_ask(req.amount_due_cents), due_date=req.due_date, shutoff_notice=req.shutoff_notice,
+        county=req.county, town=req.town, flags=list(req.flags or []),
     )
 
 
 def _posted_out(req: BillRequest) -> PostedOut:
     return PostedOut(
         id=req.id, status=req.status, utility_name=_utility_name(req.utility), amount_cents=req.amount_cents, due_date=req.due_date,
-        shutoff_notice=req.shutoff_notice, county=req.county, avatar=req.avatar, thanks=req.thanks, reject_reason=req.reject_reason,
+        shutoff_notice=req.shutoff_notice, town=req.town, county=req.county, avatar=req.avatar, thanks=req.thanks,
+        reject_reason=req.reject_reason,
         posted_at=req.posted_at, closed_at=req.closed_at,
         can_withdraw=req.status in ("held", "available", "claimed"),
         can_answer=req.status == "reported",
@@ -279,6 +303,7 @@ async def upload_bill(file: UploadFile = File(...), user: User = Depends(get_cur
         req.due_date = cleaned["due_date"]
         req.shutoff_notice = cleaned["shutoff_notice"]
         req.county = zip_county(cleaned["service_zip"])
+        req.town = zip_town(cleaned["service_zip"])
         req.flags = cleaned["flags"]
         req.extraction = json.dumps(raw)
         if stored is not None:
@@ -301,6 +326,7 @@ async def post_bill(bill_id: str, body: PostIn, user: User = Depends(get_current
         raise CodedHTTPException(status.HTTP_409_CONFLICT, "This bill can't be posted", "not_a_draft")
     if not body.understood:
         raise CodedHTTPException(status.HTTP_400_BAD_REQUEST, "Tick the box to say you understand who sees what", "not_understood")
+    _need_terms(body.terms)
     if body.avatar not in catalog.AVATARS:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Pick an avatar from the list")
     if not catalog.MIN_ASK_CENTS <= body.amount_cents <= _max_ask(req.amount_due_cents):
@@ -335,10 +361,12 @@ async def post_bill(bill_id: str, body: PostIn, user: User = Depends(get_current
     req.account_number = account
     req.service_zip = zip_code
     req.county = zip_county(zip_code)
+    req.town = zip_town(zip_code)
     req.account_fingerprint = fp
     req.amount_cents = body.amount_cents
     req.avatar = body.avatar
     req.flags = flags
+    req.terms_version = catalog.TERMS_VERSION
     req.posted_at = at
     if flags:
         req.status = "held"
@@ -410,6 +438,7 @@ class HoldOut(BaseModel):
     amount_cents: int | None
     due_date: date | None
     shutoff_notice: bool
+    town: str | None
     county: str | None
     avatar: str | None
     # Only while the hold is active, and only to its giver.
@@ -435,7 +464,7 @@ def _hold_out(hold: BillHold, req: BillRequest) -> HoldOut:
     return HoldOut(
         id=hold.id, bill_id=req.id, status=hold.status, held_at=hold.held_at, expires_at=hold.expires_at,
         utility_name=utility.name if utility else None, amount_cents=req.amount_cents, due_date=req.due_date,
-        shutoff_notice=req.shutoff_notice, county=req.county, avatar=req.avatar,
+        shutoff_notice=req.shutoff_notice, town=req.town, county=req.county, avatar=req.avatar,
         account_number=req.account_number if active else None, service_zip=req.service_zip if active else None,
         pay_url=utility.pay_url if utility else None, pay_phone=utility.pay_phone if utility else None,
         paid_cents=hold.paid_cents, paid_on=hold.paid_on, confirmation_number=hold.confirmation_number,
@@ -462,10 +491,13 @@ async def _own_hold(db: AsyncSession, user: User, hold_id: str, *, lock: bool = 
 
 
 @router.post("/{bill_id}/hold", response_model=HoldOut)
-async def hold_bill(bill_id: str, request: Request, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def hold_bill(
+    bill_id: str, request: Request, body: HoldIn | None = None, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     """"I'll pay this": the bill is this giver's for 24 hours, and they see
     what the utility's guest payment needs."""
     _need_encryption()
+    _need_terms(body.terms if body else None)
     at = flow.now()
     await flow.settle(db, at)
     blocker = await flow.hold_blocker(db, user, at)
@@ -484,7 +516,10 @@ async def hold_bill(bill_id: str, request: Request, user: User = Depends(get_cur
         raise CodedHTTPException(status.HTTP_409_CONFLICT, "This is your own bill", "own_bill")
     if req.status != "available":
         raise CodedHTTPException(status.HTTP_409_CONFLICT, "Someone else is already paying this one", "not_available")
-    hold = BillHold(request_id=req.id, giver_id=user.id, status="active", held_at=at, expires_at=at + catalog.HOLD, revealed_at=at)
+    hold = BillHold(
+        request_id=req.id, giver_id=user.id, status="active", held_at=at, expires_at=at + catalog.HOLD, revealed_at=at,
+        terms_version=catalog.TERMS_VERSION,
+    )
     db.add(hold)
     req.status = "claimed"
     try:
@@ -562,6 +597,7 @@ class GiftOut(BaseModel):
     paid_on: date | None
     confirmation_number: str | None
     avatar: str | None
+    town: str | None
     county: str | None
     thanks: str | None
     held_at: datetime
@@ -600,7 +636,7 @@ async def mine(user: User = Depends(get_current_user), db: AsyncSession = Depend
             GiftOut(
                 hold_id=h.id, status=h.status, utility_name=_utility_name(r.utility), amount_cents=r.amount_cents,
                 paid_cents=h.paid_cents, paid_on=h.paid_on, confirmation_number=h.confirmation_number, avatar=r.avatar,
-                county=r.county, thanks=r.thanks if r.status == "paid" else None, held_at=h.held_at, expires_at=h.expires_at,
+                town=r.town, county=r.county, thanks=r.thanks if r.status == "paid" else None, held_at=h.held_at, expires_at=h.expires_at,
             )
             for h, r in gifts
         ],

@@ -86,6 +86,8 @@ export type ResourceSearch = {
   query?: string;
   county?: string;
   type?: string;
+  /** Any of these taxonomy codes (Neighborz's "other help"). */
+  types?: string[];
   /** Only what a closest-first list couldn't place inside this box. */
   outside?: Box;
   page?: number;

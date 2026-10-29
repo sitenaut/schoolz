@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 from datetime import date, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
@@ -96,6 +97,8 @@ class ResourceSearchIn(BaseModel):
     county: str | None = Field(default=None, max_length=40)
     # A taxonomy code from POST /resources/types ("BD-1800.2000").
     type: str | None = Field(default=None, max_length=40)
+    # Any of these codes (Neighborz's "other help": catalog.HELP_CODES).
+    types: list[Annotated[str, Field(max_length=40)]] | None = Field(default=None, max_length=12)
     # The rest of a "closest first" list: only what /nearby couldn't place
     # in this box (no location, or statewide and located elsewhere).
     outside: Box | None = None
@@ -327,6 +330,8 @@ def _filters(body: ResourceSearchIn, *, with_type: bool = True) -> list:
         filters.append(or_(ResourceService.latitude.is_(None), and_(_statewide_sql(), ~body.outside.contains())))
     if with_type and body.type:
         filters.append(ResourceService.taxonomy_codes.contains([body.type]))
+    if body.types:
+        filters.append(ResourceService.taxonomy_codes.overlap(body.types))
     query = (body.query or "").strip()
     if query:
         pattern = f"%{_escape_like(query)}%"

@@ -26,7 +26,7 @@ export function PrivacyPage() {
         path="/privacy"
       />
       <h2>Privacy &amp; cookies</h2>
-      <p className="note">Last updated October 23, 2026.</p>
+      <p className="note">Last updated October 28, 2026.</p>
 
       <p>
         schoolz ("we", "us") helps parents and guardians in South Jersey keep up with their kids' schools, and
@@ -278,12 +278,14 @@ export function PrivacyPage() {
           <tr>
             <td>
               If you post a bill on Neighborz: the photo or PDF of your bill, what's read from it (account number,
-              service ZIP code, amount due, due date, whether it's a shutoff notice), and the amount and avatar you choose
+              service ZIP code, amount due, due date, whether it's a shutoff notice), the amount and avatar you choose,
+              and which version of the Neighborz terms you agreed to
             </td>
             <td>Our database; the photo, account number and ZIP code encrypted with keys of their own</td>
             <td>
               To list your bill without saying who you are: the public list shows only your avatar, the utility, the
-              amount, the due date, your county and whether it's a shutoff notice. Anthropic's Claude reads the photo
+              amount, the due date, your town (the post office's name for your ZIP code, never the ZIP code itself)
+              and whether it's a shutoff notice. Anthropic's Claude reads the photo
               once to fill in the details. The photo is deleted as soon as your bill is listed. If a check holds it for
               a reviewer first, the reviewer sees the photo, which shows your name and address, and it's deleted once
               they decide (within 7 days). The one person who says they'll pay your bill sees the account number and
@@ -294,7 +296,10 @@ export function PrivacyPage() {
             </td>
           </tr>
           <tr>
-            <td>If you pay a bill on Neighborz: which bills you held, and the confirmation number, amount and date you enter</td>
+            <td>
+              If you pay a bill on Neighborz: which bills you held, the version of the Neighborz terms you agreed to, and
+              the confirmation number, amount and date you enter
+            </td>
             <td>Our database; the confirmation number encrypted</td>
             <td>
               So you have a list of the bills you've paid, and so a reviewer can look into it if your neighbor says a
