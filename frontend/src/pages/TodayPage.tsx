@@ -6,6 +6,7 @@ import { IconPin, IconUpload } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
 import { localDateKey, monthDay, todayKey } from "../lib/calendar";
+import { affectedSchools, mergeAlerts } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
 import { SITE_URL } from "../lib/site";
 import { usePrerenderReady } from "../lib/prerenderReady";
@@ -215,13 +216,7 @@ export function TodayPage() {
 
   // District-wide alerts appear on every card - show each once, only for
   // the schools currently active in the ribbon filter.
-  const alerts = new Map<string, SchoolContentItem>();
-  for (const s of activeSchools) {
-    for (const a of cards[s.slug]?.alerts ?? []) {
-      const key = `${localDateKey(a.start_date!)}|${a.scope === "district" ? "d" : s.id}|${a.title}`;
-      if (!alerts.has(key)) alerts.set(key, a);
-    }
-  }
+  const alerts = mergeAlerts(activeSchools.map((s) => ({ school: s, alerts: cards[s.slug]?.alerts ?? [] })));
 
   return (
     <>
@@ -231,8 +226,16 @@ export function TodayPage() {
         {isFiltered && <span style={{ marginLeft: 8, fontWeight: 600 }}>· {t("showing {{a}} of {{b}}", { a: activeSchools.length, b: mySchools.length })}</span>}
       </h1>
 
-      {[...alerts.values()].map((a) => {
+      {alerts.map((a) => {
         const md = monthDay(localDateKey(a.start_date!));
+        // Who it is for: a district item scoped to some school types (a high-school-only
+        // early dismissal) names those schools, never "all <district> schools".
+        const audience = (item: SchoolContentItem) => {
+          const named = item.applies_to_school_types?.length ? affectedSchools(item, activeSchools) : [];
+          return named.length
+            ? t("({{schools}} only)", { schools: named.map((s) => s.short_name || s.name).join(", ") })
+            : t("(all {{district}} schools)", { district: districtsById.get(item.district_id!)?.name ?? t("district") });
+        };
         const closed = /closed/i.test(a.title);
         return (
           <div className={`banner ${closed ? "bad" : ""}`} key={a.id}>
@@ -242,7 +245,7 @@ export function TodayPage() {
                 {md.month} {md.day}
               </b>{" "}
               · {a.title}
-              {a.scope === "district" && a.district_id ? t("(all {{district}} schools)", { district: districtsById.get(a.district_id)?.name ?? t("district") }) : ""}
+              {a.scope === "district" && a.district_id ? ` ${audience(a)}` : ""}
             </span>
           </div>
         );

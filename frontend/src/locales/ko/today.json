@@ -68,6 +68,7 @@
   "Pick your schools": "학교 선택",
   "showing {{a}} of {{b}}": "{{b}}개 중 {{a}}개 표시",
   "(all {{district}} schools)": "({{district}}의 모든 학교)",
+  "({{schools}} only)": "({{schools}}만 해당)",
   "Pulled from each school's newsletter and website, the district calendar, and the district lunch menu.": "각 학교의 소식지와 웹사이트, 교육구 캘린더, 교육구 급식 메뉴에서 가져왔습니다.",
   "All schools": "모든 학교",
   "Updated": "업데이트됨",
