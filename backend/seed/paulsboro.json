@@ -1,0 +1,405 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Paulsboro School District",
+  "districts": [
+    {
+      "name": "Paulsboro School District",
+      "state": "NJ",
+      "website_url": "https://paulsboroschools.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Paulsboro District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_3891a3c9b7e17730b661f5ce26657bc6647c3d2248eaafd1d1bf16cd1704bbbe%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "Billingsport School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_2694d4608fdd0130d6d1483a9af5f15776dde94cd3cb0ab0d2c180658e06464c%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "billingsport"
+        },
+        {
+          "name": "Loudenslager School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_2aad98559f98b8970842ddf1e92ed21119fb1fc99e1799c8fccf8079ca9c045d%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "loudenslager"
+        },
+        {
+          "name": "Paulsboro Jr/Sr High Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_416ca6dfcdf73ae6a1093768cc0f502082b0ab98a185d34488e062dcd08306e1%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "paulsboro-high"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Paulsboro",
+        "Gibbstown"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "billingsport",
+      "name": "Billingsport Early Childhood Center",
+      "short_name": "Billingsport",
+      "district_name": "Paulsboro School District",
+      "school_type": "elementary",
+      "address": "441 Nassau Avenue, Paulsboro, NJ 08066",
+      "main_phone": "(856) 423-2226",
+      "website_url": "https://becc.paulsboroschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 423-2226",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school whenever your child is absent, and send a note explaining the absence when your child returns.",
+      "start_time": "7:45 AM",
+      "end_time": "2:47 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://becc.paulsboroschools.org/wp-content/uploads/2026/03/billingsport-logo.webp",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "loudenslager",
+      "name": "Loudenslager Elementary School",
+      "short_name": "Loudenslager",
+      "district_name": "Paulsboro School District",
+      "school_type": "elementary",
+      "address": "100 Baird Avenue, Paulsboro, NJ 08066",
+      "main_phone": "(856) 423-2228",
+      "website_url": "https://les.paulsboroschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 423-2228 ext. 4203",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school between 7:30 and 8:00 AM at (856) 423-2228 ext. 4203 to report the absence, and send a signed note when your child returns.",
+      "start_time": "7:55 AM",
+      "end_time": "2:57 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://les.paulsboroschools.org/wp-content/uploads/2026/03/loudenslager-logo.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "paulsboro-junior-high",
+      "name": "Paulsboro Junior High School",
+      "short_name": "Paulsboro Junior High",
+      "district_name": "Paulsboro School District",
+      "school_type": "middle",
+      "address": "670 North Delaware Street, Paulsboro, NJ 08066",
+      "main_phone": "(856) 423-2222",
+      "website_url": "https://phs.paulsboroschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:57 AM",
+      "end_time": "2:37 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "9:57 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom/1st",
+            "start": "07:57",
+            "end": "08:47"
+          },
+          {
+            "name": "2nd Period",
+            "start": "08:50",
+            "end": "09:37"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:40",
+            "end": "10:27"
+          },
+          {
+            "name": "4th Period",
+            "start": "10:30",
+            "end": "11:17"
+          },
+          {
+            "name": "5th Period",
+            "start": "11:20",
+            "end": "12:07"
+          },
+          {
+            "name": "6th Period",
+            "start": "12:10",
+            "end": "12:57"
+          },
+          {
+            "name": "7th Period",
+            "start": "13:00",
+            "end": "13:47"
+          },
+          {
+            "name": "8th Period",
+            "start": "13:50",
+            "end": "14:37"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom/1st",
+            "start": "07:57",
+            "end": "08:29"
+          },
+          {
+            "name": "2nd Period",
+            "start": "08:32",
+            "end": "09:03"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:06",
+            "end": "09:37"
+          },
+          {
+            "name": "4th Period",
+            "start": "09:40",
+            "end": "10:12"
+          },
+          {
+            "name": "5th Period",
+            "start": "10:15",
+            "end": "10:47"
+          },
+          {
+            "name": "6th Period",
+            "start": "10:50",
+            "end": "11:22"
+          },
+          {
+            "name": "7th Period",
+            "start": "11:25",
+            "end": "11:56"
+          },
+          {
+            "name": "8th Period",
+            "start": "11:59",
+            "end": "12:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom/1st",
+            "start": "09:57",
+            "end": "10:32"
+          },
+          {
+            "name": "2nd Period",
+            "start": "10:35",
+            "end": "11:07"
+          },
+          {
+            "name": "3rd Period",
+            "start": "11:10",
+            "end": "11:42"
+          },
+          {
+            "name": "4th Period",
+            "start": "11:45",
+            "end": "12:17"
+          },
+          {
+            "name": "5th Period",
+            "start": "12:20",
+            "end": "12:52"
+          },
+          {
+            "name": "6th Period",
+            "start": "12:55",
+            "end": "13:27"
+          },
+          {
+            "name": "7th Period",
+            "start": "13:30",
+            "end": "14:02"
+          },
+          {
+            "name": "8th Period",
+            "start": "14:05",
+            "end": "14:37"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/17694",
+      "logo_url": "https://phs.paulsboroschools.org/wp-content/uploads/2026/03/jr-sr-logo.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "paulsboro-high",
+      "name": "Paulsboro High School",
+      "short_name": "Paulsboro High",
+      "district_name": "Paulsboro School District",
+      "school_type": "high",
+      "address": "670 North Delaware Street, Paulsboro, NJ 08066",
+      "main_phone": "(856) 423-2222",
+      "website_url": "https://phs.paulsboroschools.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:57 AM",
+      "end_time": "2:37 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "9:57 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom/1st",
+            "start": "07:57",
+            "end": "08:47"
+          },
+          {
+            "name": "2nd Period",
+            "start": "08:50",
+            "end": "09:37"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:40",
+            "end": "10:27"
+          },
+          {
+            "name": "4th Period",
+            "start": "10:30",
+            "end": "11:17"
+          },
+          {
+            "name": "5th Period",
+            "start": "11:20",
+            "end": "12:07"
+          },
+          {
+            "name": "6th Period",
+            "start": "12:10",
+            "end": "12:57"
+          },
+          {
+            "name": "7th Period",
+            "start": "13:00",
+            "end": "13:47"
+          },
+          {
+            "name": "8th Period",
+            "start": "13:50",
+            "end": "14:37"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom/1st",
+            "start": "07:57",
+            "end": "08:29"
+          },
+          {
+            "name": "2nd Period",
+            "start": "08:32",
+            "end": "09:03"
+          },
+          {
+            "name": "3rd Period",
+            "start": "09:06",
+            "end": "09:37"
+          },
+          {
+            "name": "4th Period",
+            "start": "09:40",
+            "end": "10:12"
+          },
+          {
+            "name": "5th Period",
+            "start": "10:15",
+            "end": "10:47"
+          },
+          {
+            "name": "6th Period",
+            "start": "10:50",
+            "end": "11:22"
+          },
+          {
+            "name": "7th Period",
+            "start": "11:25",
+            "end": "11:56"
+          },
+          {
+            "name": "8th Period",
+            "start": "11:59",
+            "end": "12:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom/1st",
+            "start": "09:57",
+            "end": "10:32"
+          },
+          {
+            "name": "2nd Period",
+            "start": "10:35",
+            "end": "11:07"
+          },
+          {
+            "name": "3rd Period",
+            "start": "11:10",
+            "end": "11:42"
+          },
+          {
+            "name": "4th Period",
+            "start": "11:45",
+            "end": "12:17"
+          },
+          {
+            "name": "5th Period",
+            "start": "12:20",
+            "end": "12:52"
+          },
+          {
+            "name": "6th Period",
+            "start": "12:55",
+            "end": "13:27"
+          },
+          {
+            "name": "7th Period",
+            "start": "13:30",
+            "end": "14:02"
+          },
+          {
+            "name": "8th Period",
+            "start": "14:05",
+            "end": "14:37"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/17694",
+      "logo_url": "https://phs.paulsboroschools.org/wp-content/uploads/2026/03/jr-sr-logo.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

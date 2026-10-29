@@ -50,3 +50,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - **District and school orgs can each hold a full copy of the same event list under different event ids** (Westampton 4387/4388/4390, 49 events each). Seed the district org only, or every item appears three times; school orgs still go in `apptegy_org_id` for their rosters.
 - The current calendar PDF can be linked only from the header as an `aptg.co` short link to an unsigned thrillshare asset, while the "Dismissal Times/Calendar" page still lists a prior year. The feed carries the same closures, so `calendar_pdf_url` stays null.
 - A plain GET gets a "Client Challenge" page; page bodies come from `thrillshare-cmsv2.services.thrillshare.com/api/v4/o/<org>/cms/pages/<slug>` without auth.
+
+## Glassboro (found onboarding)
+
+- A plain GET can return a Finalsite-style "Client Challenge" even though the site is Apptegy (as at Bellmawr, Clayton, Wood-Ridge); org ids are in the home page's serialized org list (`'Glassboro High School','/o/ghs','ghs','www.gpsd.us/o/ghs',26997`).
+- A district can prefix every event title with a building code ("GHS:", "TEBMS:"); nothing scopes by it yet, so a building's status items land district-wide.
+- Some footers keep the address and phone as free text in `.footer-columns p.textfield` with no `a.tel-link`, so `discover_school_info` finds only the logo.
+

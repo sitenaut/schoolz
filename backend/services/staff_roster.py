@@ -83,18 +83,19 @@ def _parse_ednet_page(html: str) -> list[dict]:
             link = card.select_one("a[href]")
             # Stratford's school sites render the same list as a table: name
             # and position in `td[data-label]` cells rather than dt/dd.
-            name_el = card.select_one("dt") or card.select_one("td[data-label^='Name'] a")
-            if not link or not name_el:
+            # Deptford's rows have no profile link at all, just a <span>.
+            name_el = card.select_one("dt") or card.select_one("td[data-label^='Name'] a") or card.select_one("td[data-label^='Name'] span")
+            if not name_el:
                 continue
-            ids = parse_qs(urlparse(link["href"]).query).get("uREC_ID")
+            ids = parse_qs(urlparse(link["href"]).query).get("uREC_ID") if link else None
             name = re.sub(r"\s+", " ", name_el.get_text(" ", strip=True))
-            if not ids or not name:
+            if not name or (link and not ids):
                 continue
             title_el = card.select_one("dd") or card.select_one("td[data-label^='Position']")
             title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True)) if title_el else ""
             items.append(
                 {
-                    "constituent_id": f"ednet:{ids[0]}",
+                    "constituent_id": f"ednet:{ids[0]}" if ids else f"ednet:{_slug(name)[:34]}|{_slug(title)[:20]}",
                     "full_name": name,
                     "title": title or None,
                     "department": department or None,
@@ -217,11 +218,12 @@ def _parse_table_page(html: str) -> list[dict]:
         if not rows:
             continue
         header = [re.sub(r"\s+", " ", c.get_text(" ", strip=True)).lower() for c in rows[0].select("td,th")]
-        name_col = next((i for i, h in enumerate(header) if "staff member" in h), None)
+        # Paulsboro's cs-table: "Contact Name | Job Title", names "Last, First".
+        name_col = next((i for i, h in enumerate(header) if "staff member" in h or h == "contact name"), None)
         if name_col is None:
             continue
         # Gibbsboro: "Staff Member | Position", names typed "Last, First".
-        title_col = next((i for i, h in enumerate(header) if h in ("position", "title", "assignment")), None)
+        title_col = next((i for i, h in enumerate(header) if h in ("position", "title", "assignment", "job title")), None)
         email_col = next((i for i, h in enumerate(header) if h == "email"), None)
         phone_col = next((i for i, h in enumerate(header) if "ext" in h or "room" in h), None)
         for row in rows[1:]:
@@ -235,7 +237,8 @@ def _parse_table_page(html: str) -> list[dict]:
                 title = cells[0] if name_col > 0 else ""
             email_match = _EMAIL_RE.search(cells[email_col]) if email_col is not None and email_col < len(cells) else None
             phone = cells[phone_col] if phone_col is not None and phone_col < len(cells) else ""
-            key = f"table:{_slug(name)}|{_slug(title)}"
+            # source_constituent_id is String(64); Billingsport's longest title ran past it.
+            key = f"table:{_slug(name)}|{_slug(title)}"[:64]
             items[key] = {
                 "constituent_id": key,
                 "full_name": name,
@@ -770,6 +773,8 @@ _PRESENCE_PATHS = (
     "/for_staff/ues_staff_directory",
     # Gateway Regional: a district-level page, same React component.
     "/district/staff_directory",
+    # West Deptford: /staff_directory is a nav page; the component is one level down.
+    "/staff_directory/searchable_directory",
 )
 # Groups every Presence site has for its own accounts, not for staff:
 # "Registered Users" is everyone with a login. Gateway: 157, of whom 131 are in

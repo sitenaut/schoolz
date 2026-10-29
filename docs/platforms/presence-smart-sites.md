@@ -139,3 +139,9 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - Riverside is the Tabernacle/Edgewater shape (school pages on one host), but all three buildings share one campus address, so the district footer is right for each. Its directory widget returns the `.staff-item` carousel (no emails). A district calendar that unions school calendars can hide one school's missing closures: check each feed.
 - A Smart Sites slug can 302 straight to an `app.smore.com/n/<code>` issue (Riverside's `/ramfam-review`), so tracking that page is tracking a literal issue.
 
+## West Deptford (found onboarding)
+
+- A school's `/staff_directory` can be a plain nav page with the component at `/staff_directory/searchable_directory` (now in `_PRESENCE_PATHS`); the district's is at `/district_info/staff_directory`.
+- The district calendar PDF can be served straight from a dated page URL (`/calendar/2026_2027_District_calendar`); `/calendar` itself links that page, not a `.pdf`.
+- Bell schedules can be page URLs that redirect to CDN JPGs.
+

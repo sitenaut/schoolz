@@ -130,3 +130,24 @@ def test_elementor_staff_wrap_cards_are_parsed():
     people = {p["full_name"]: p for p in staff_roster._parse_staff_wrap_page(html)}
     assert people["Ms. Example"]["title"] == "School Nurse" and people["Ms. Example"]["email"] == "nurse@example.org"
     assert people["Mr. Sample"]["email"] is None
+
+
+def test_ednet_table_rows_without_profile_links_are_parsed():
+    # Deptford's elementary sites (names here are made up).
+    html = """<div class="staff-category"><table><caption><div><h1>Administration</h1></div></caption><tbody>
+      <tr class="light staff-categoryStaffMember"><td data-label="Name :"><span> Ms. Example </span></td>
+      <td data-label="Position :"><span>Principal</span></td></tr>
+      <tr class="light staff-categoryStaffMember"><td data-label="Name :"><span> Mr. Sample </span></td>
+      <td data-label="Position :"><span>School Nurse</span></td></tr></tbody></table></div>"""
+    people = {p["full_name"]: p for p in staff_roster._parse_ednet_page(html)}
+    assert people["Ms. Example"]["title"] == "Principal" and people["Ms. Example"]["department"] == "Administration"
+    assert people["Mr. Sample"]["constituent_id"] != people["Ms. Example"]["constituent_id"]
+
+
+def test_cs_table_contact_name_and_job_title_columns():
+    # Paulsboro's WordPress /staff/ (names here are made up).
+    html = """<table class="table cs-table"><thead><tr><th scope="col">Contact Name</th><th scope="col">Job Title</th></tr></thead>
+      <tbody><tr><th scope="row">Example, Pat</th><td>School Nurse</td></tr>
+      <tr><th scope="row">Sample, Lee</th><td>Principal</td></tr></tbody></table>"""
+    people = {p["full_name"]: p["title"] for p in staff_roster._parse_table_page(html)}
+    assert people == {"Pat Example": "School Nurse", "Lee Sample": "Principal"}

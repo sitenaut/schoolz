@@ -1,0 +1,524 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Glassboro Public School District",
+  "districts": [
+    {
+      "name": "Glassboro Public School District",
+      "state": "NJ",
+      "website_url": "https://www.gpsd.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Glassboro District",
+          "platform": "apptegy",
+          "org_id": "26867"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.gpsd.us/page/transportationparent",
+      "towns": [
+        "Glassboro"
+      ],
+      "schoolcafe_shortname": "GLASSBOROPSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "j-harvey-rodgers",
+      "name": "J. Harvey Rodgers School",
+      "short_name": "Rodgers",
+      "district_name": "Glassboro Public School District",
+      "school_type": "elementary",
+      "address": "301 Georgetown Road, Glassboro, NJ 08028",
+      "main_phone": "(856) 652-2700 ext. 5100",
+      "website_url": "https://www.gpsd.us/o/res",
+      "apptegy_org_id": "27000",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 652-2700 ext. 5111",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Rodgers School attendance line, (856) 652-2700 ext. 5111, to report an absence; if no call is received the school nurse may call you. Send a written note on return; illness documentation is due within five school days or the absence is unexcused.",
+      "start_time": "8:30 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27000/file/4942722/75eae271-e733-489d-8fba-e5a5d6ed90e2.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 881-3331",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "RASKEL before- and after-school care for Pre-K and kindergarten, run by Glassboro Child Development Centers (not the district) at J. Harvey Rodgers School. Hours and fees are not published; the phone is the centers' main line.",
+        "handbook_url": "https://southjerseykids.org/pre-k-kindergarten/"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "dorothy-l-bullock",
+      "name": "Dorothy L. Bullock School",
+      "short_name": "Bullock",
+      "district_name": "Glassboro Public School District",
+      "school_type": "elementary",
+      "address": "370 East New Street, Glassboro, NJ 08028",
+      "main_phone": "(856) 652-2700 ext. 4100",
+      "website_url": "https://www.gpsd.us/o/bues",
+      "apptegy_org_id": "26999",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 652-2700 ext. 4101",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school by 10:00 AM (voicemail is fine) with your child's name, teacher and the reason; otherwise the school secretary will call you. A written parent note is required for an absence or late arrival.",
+      "start_time": "9:00 AM",
+      "end_time": "3:15 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "11:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/26999/file/4234598/044f93bd-5623-4547-8597-cd086803c927.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "thomas-e-bowe-middle",
+      "name": "Thomas E. Bowe Middle School",
+      "short_name": "Bowe",
+      "district_name": "Glassboro Public School District",
+      "school_type": "middle",
+      "address": "7 Mancuso Lane, Glassboro, NJ 08028",
+      "main_phone": "(856) 652-2700 ext. 3100",
+      "website_url": "https://www.gpsd.us/o/bms",
+      "apptegy_org_id": "26998",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 652-2700 ext. 3100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school by 7:45 AM (voicemail is fine); if no call is received by 8:00 AM the school secretary will call you. A written parent note is required for an absence or late arrival.",
+      "start_time": "8:00 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom (Period 1)",
+            "start": "08:00",
+            "end": "08:05"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:05",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:47",
+            "end": "09:27"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:29",
+            "end": "10:09"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:11",
+            "end": "10:51"
+          },
+          {
+            "name": "Period 5A (Lunch)",
+            "start": "10:53",
+            "end": "11:13"
+          },
+          {
+            "name": "Period 5B (Lunch)",
+            "start": "11:15",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 6A (Lunch)",
+            "start": "11:37",
+            "end": "11:57"
+          },
+          {
+            "name": "Period 6B (Lunch)",
+            "start": "11:59",
+            "end": "12:19"
+          },
+          {
+            "name": "Period 7A (Lunch)",
+            "start": "12:21",
+            "end": "12:41"
+          },
+          {
+            "name": "Period 7B (Lunch)",
+            "start": "12:43",
+            "end": "13:03"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:05",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:47",
+            "end": "14:27"
+          },
+          {
+            "name": "Prepare for Dismissal",
+            "start": "14:27",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom (Period 1)",
+            "start": "08:00",
+            "end": "08:05"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:05",
+            "end": "08:25"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:27",
+            "end": "08:47"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:49",
+            "end": "09:09"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:11",
+            "end": "09:31"
+          },
+          {
+            "name": "Period 5A (Lunch)",
+            "start": "09:33",
+            "end": "09:48"
+          },
+          {
+            "name": "Period 5B (Lunch)",
+            "start": "09:50",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 6A (Lunch)",
+            "start": "10:07",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 6B (Lunch)",
+            "start": "10:24",
+            "end": "10:39"
+          },
+          {
+            "name": "Period 7A (Lunch)",
+            "start": "10:41",
+            "end": "10:56"
+          },
+          {
+            "name": "Period 7B (Lunch)",
+            "start": "10:58",
+            "end": "11:13"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:15",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 9",
+            "start": "11:37",
+            "end": "11:57"
+          },
+          {
+            "name": "Prepare for Dismissal",
+            "start": "11:57",
+            "end": "12:00"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom (Period 1)",
+            "start": "10:00",
+            "end": "10:02"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:02",
+            "end": "10:26"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:28",
+            "end": "10:52"
+          },
+          {
+            "name": "Period 5A (Lunch)",
+            "start": "10:54",
+            "end": "11:11"
+          },
+          {
+            "name": "Period 5B (Lunch)",
+            "start": "11:13",
+            "end": "11:30"
+          },
+          {
+            "name": "Period 6A (Lunch)",
+            "start": "11:32",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 6B (Lunch)",
+            "start": "11:51",
+            "end": "12:08"
+          },
+          {
+            "name": "Period 7A (Lunch)",
+            "start": "12:10",
+            "end": "12:27"
+          },
+          {
+            "name": "Period 7B (Lunch)",
+            "start": "12:29",
+            "end": "12:46"
+          },
+          {
+            "name": "Period 3",
+            "start": "12:48",
+            "end": "13:12"
+          },
+          {
+            "name": "Period 4",
+            "start": "13:14",
+            "end": "13:38"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:40",
+            "end": "14:04"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:06",
+            "end": "14:30"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/8549",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/26998/file/4234436/6952378e-3fca-4cf7-9916-159b7b83f5ef.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "glassboro-high",
+      "name": "Glassboro High School",
+      "short_name": "Glassboro High",
+      "district_name": "Glassboro Public School District",
+      "school_type": "high",
+      "address": "550 Joseph L. Bowe Boulevard, Glassboro, NJ 08028",
+      "main_phone": "(856) 652-2700 ext. 1100",
+      "website_url": "https://www.gpsd.us/o/ghs",
+      "apptegy_org_id": "26997",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:30 AM",
+      "end_time": "2:00 PM",
+      "early_dismissal_time": "11:30 AM",
+      "delayed_opening_time": "9:30 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:30",
+            "end": "07:36"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:36",
+            "end": "08:16"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:19",
+            "end": "08:59"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:02",
+            "end": "09:42"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:45",
+            "end": "10:25"
+          },
+          {
+            "name": "Period 5 / Lunch",
+            "start": "10:28",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 6 / Lunch",
+            "start": "11:11",
+            "end": "11:51"
+          },
+          {
+            "name": "Period 7 / Lunch",
+            "start": "11:54",
+            "end": "12:34"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:37",
+            "end": "13:17"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:20",
+            "end": "14:00"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:30",
+            "end": "07:36"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:36",
+            "end": "07:59"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:03",
+            "end": "08:26"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:29",
+            "end": "08:52"
+          },
+          {
+            "name": "Period 4",
+            "start": "08:55",
+            "end": "09:18"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:21",
+            "end": "09:44"
+          },
+          {
+            "name": "Period 6",
+            "start": "09:47",
+            "end": "10:10"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:13",
+            "end": "10:36"
+          },
+          {
+            "name": "Period 8",
+            "start": "10:39",
+            "end": "11:02"
+          },
+          {
+            "name": "Period 9",
+            "start": "11:05",
+            "end": "11:28"
+          },
+          {
+            "name": "Announcements",
+            "start": "11:28",
+            "end": "11:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:30",
+            "end": "09:33"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:33",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:03",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:33",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:03",
+            "end": "11:30"
+          },
+          {
+            "name": "Period 5 / Lunch",
+            "start": "11:33",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 6 / Lunch",
+            "start": "12:03",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 7 / Lunch",
+            "start": "12:33",
+            "end": "13:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:03",
+            "end": "13:30"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:33",
+            "end": "14:00"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/8548",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/26997/file/4199250/caa50c35-7c24-4c59-80e9-afb5635b9a7a.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

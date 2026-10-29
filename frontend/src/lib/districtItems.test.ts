@@ -147,6 +147,7 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["4 Hour Day for Students"])).toBe("half");
     expect(dayStatusOf(["12:50 Dismissal"])).toBe("half");
     expect(dayStatusOf(["2 PM Dismissal"])).toBe("half");
+    expect(dayStatusOf(["1/2 Day - District"])).toBe("half");
     expect(dayStatusOf(["Full Day of School - AHS ( 2:30pm Dismissal)"])).toBeNull();
     expect(dayStatusOf(["1:30 Dismissal All Preschools"])).toBeNull();
     expect(dayStatusOf(["Science conference night"])).toBeNull();
@@ -210,7 +211,7 @@ describe("saysClosed", () => {
   });
 
   it("closes the day for a title that is only the break's name, not an edge of it", () => {
-    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22"]) {
+    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "NJEA Convention", "District: Winter Break", "Teacher Inservice - Students Off"]) {
       expect(saysClosed(t)).toBe(true);
     }
     for (const t of [

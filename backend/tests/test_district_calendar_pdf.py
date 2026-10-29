@@ -102,3 +102,12 @@ def test_the_latest_school_year_wins_over_last_years_listed_first():
     assert find_pdf_link(html, "https://x.test/calendar.html") == "https://x.test/uploads/8/3/2/0/83203070/2026-2027_school_calendar.pdf"
     monthly = '<a href="/f/2026-10-Calendar.pdf">Oct</a><a href="/f/school-calendar-2026-2027.pdf">Year</a>'
     assert find_pdf_link(monthly, "https://x.test/p") == "https://x.test/f/school-calendar-2026-2027.pdf"
+
+
+def test_a_pdf_whose_link_text_says_calendar_wins_over_the_first_pdf():
+    # Greenwich Township: opaque document ids, a permission slip listed first.
+    html = (
+        '<a href="https://content.schoolinsites.com/api/documents/fa2f64ae.pdf">Bike Permission Slip</a>'
+        '<a href="https://content.myconnectsuite.com/api/documents/a1a415c3.pdf"><span>Printable District Calendar</span></a>'
+    )
+    assert find_pdf_link(html, "https://x.test/calendars") == "https://content.myconnectsuite.com/api/documents/a1a415c3.pdf"

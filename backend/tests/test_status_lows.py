@@ -104,7 +104,12 @@ def test_a_four_hour_day_is_a_half_day_status():
     assert is_status_title("4 Hour Day for Students") and is_status_title("4 Hour Day for All")
 
 
-@pytest.mark.parametrize("title", ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "Winter Break  HAPPY HOLIDAYS"])
+@pytest.mark.parametrize(
+    "title",
+    ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "Winter Break  HAPPY HOLIDAYS",
+     "NJEA Convention", "OFF TEACHERS CONVENTION", "NJEA Teacher's Convention", "District: Winter Break",
+     "District: Teacher Inservice - Students Off"],
+)
 def test_a_title_that_is_only_the_break_closes_the_day(title):
     # Riverton's and Beverly's calendars put nothing else on those days.
     assert says_closed(title) and classify_day([title])[0] == "closed" and is_status_title(title)
@@ -133,7 +138,8 @@ def test_a_half_day_wins_over_a_break_that_starts_that_day():
 @pytest.mark.parametrize(
     "title",
     ["12:50 Dismissal", "1pm Dismissal", "2 PM Dismissal", "12:45 Dismissal Day", "Final Exams--12:00 pm dismissal",
-     "Conferences/12:50 Dismissal", "12:09pm Student Dismissal (Staff PD 2:27pm Dismissal)", "1:00 PM  Dismissal - Students Only"],
+     "Conferences/12:50 Dismissal", "12:09pm Student Dismissal (Staff PD 2:27pm Dismissal)", "1:00 PM  Dismissal - Students Only",
+     "1/2 Day - District", "1/2 Day - Parent/Teacher Conf", "District ½ Day"],
 )
 def test_a_midday_dismissal_time_is_a_half_day(title):
     assert classify_day([title])[0] == "early_dismissal" and is_status_title(title)

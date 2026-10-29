@@ -263,3 +263,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - `/apps/staff/` is district-wide (51 people, "Elementary School Teachers" and "Middle School Teachers" categories, no emails), so both schools get the whole list.
 - ArbiterLive search matches entity names, not towns: "Delanco" finds nothing, "Walnut Street" finds 24664 ("Walnut Street Elementary School", really the middle school's games) and an empty duplicate 113506.
 
+## Deptford (found onboarding)
+
+- Schools on their own hosts like Winslow; page content is client-rendered (`#pageContentWrapper` is empty on a plain GET), though an inline `docPathsList.push([...])` still names attached PDFs.
+- `/apps/staff/` can be a table whose rows have no profile link (name in `td[data-label^='Name'] span`); `_parse_ednet_page` keys those on name and title.
+- `/apps/bell_schedules/` rows are divs (`.col1`-`.col4`), not a `<table>`, and their year labels can lag the times.
+- On `www`, per-school `ICalServlet` ids can all be copies of the district feed; a school's own events are on its host's id 0.
+
