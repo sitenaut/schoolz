@@ -91,3 +91,14 @@ async def test_a_cut_off_read_raises_instead_of_replacing_the_stored_rows(monkey
     monkeypatch.setattr(district_calendar_pdf, "AsyncAnthropic", _Client)
     with pytest.raises(RuntimeError):
         await district_calendar_pdf.extract_events(b"%PDF-1.4 not a real calendar")
+
+
+def test_the_latest_school_year_wins_over_last_years_listed_first():
+    # Beverly's calendar page links the 2025-26 calendar above 2026-27.
+    html = (
+        '<a href="/uploads/8/3/2/0/83203070/2025-2026_revised_school_calendar.pdf">2025-26</a>'
+        '<a href="/uploads/8/3/2/0/83203070/2026-2027_school_calendar.pdf">2026-27</a>'
+    )
+    assert find_pdf_link(html, "https://x.test/calendar.html") == "https://x.test/uploads/8/3/2/0/83203070/2026-2027_school_calendar.pdf"
+    monthly = '<a href="/f/2026-10-Calendar.pdf">Oct</a><a href="/f/school-calendar-2026-2027.pdf">Year</a>'
+    assert find_pdf_link(monthly, "https://x.test/p") == "https://x.test/f/school-calendar-2026-2027.pdf"

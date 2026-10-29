@@ -101,3 +101,29 @@ async def test_a_recess_that_began_weeks_ago_still_closes_the_schedule():
 def test_a_four_hour_day_is_a_half_day_status():
     # Edgewater Park words every early dismissal this way.
     assert is_status_title("4 Hour Day for Students") and is_status_title("4 Hour Day for All")
+
+
+@pytest.mark.parametrize("title", ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "Winter Break  HAPPY HOLIDAYS"])
+def test_a_title_that_is_only_the_break_closes_the_day(title):
+    # Riverton's and Beverly's calendars put nothing else on those days.
+    assert says_closed(title) and classify_day([title])[0] == "closed" and is_status_title(title)
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["Spring Break Begins", "Return from Winter Break", "Winter Recess Ends", "ONE SESSION WINTER RECESS",
+     "1/2 DAY WINTER RECESS", "Recess Runners Fun Run", "Student Lunch and Recess Schedule", "Musical Set Break Down"],
+)
+def test_an_edge_of_a_break_or_a_recess_period_is_not_closed(title):
+    assert not says_closed(title)
+
+
+def test_a_short_day_before_a_break_is_an_early_dismissal():
+    assert classify_day(["Winter Recess - Early Dismissal"])[0] == "early_dismissal"
+    assert classify_day(["THANKSGIVING RECESS (EARLY DISMISSAL)"])[0] == "early_dismissal"
+
+
+def test_a_half_day_wins_over_a_break_that_starts_that_day():
+    # Gloucester Township's "Winter Recess" item starts on its single-session day.
+    assert classify_day(["Winter Recess", "SINGLE SESSION DAY"])[0] == "early_dismissal"
+    assert classify_day(["Winter Recess"]) == ("closed", "Winter Recess")

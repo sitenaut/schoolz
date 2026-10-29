@@ -48,7 +48,7 @@ from services.bell_schedule import current_period as _compute_current_period
 from services.bell_schedule import is_long_block_day, lettered_day
 from services.content_translation import Localized, apply_translations, localize_out
 from services.hs_rotation import blocks_from_description
-from services.school_status import says_closed
+from services.school_status import is_break_only, says_closed
 from services.staff_roles import CONTACT_ROLES
 from services.transportation import late_bus_for_school
 from services.weather import pick_weather_day, today_weather
@@ -108,16 +108,21 @@ def local_date(dt: datetime) -> date:
 
 def classify_day(titles: list[str]) -> tuple[str, str | None]:
     """Returns (status, label) from the titles of every item landing on a
-    day. Closed beats early dismissal beats delay beats open. The label is
-    the closure's own reason ("Labor Day") with the boilerplate prefix
-    stripped, since the status already says "closed"."""
+    day. Closed beats early dismissal beats delay beats open, except that a
+    closure known only from a break's name ("Winter Recess") loses to an
+    early dismissal that day. The label is the closure's own reason ("Labor
+    Day") with the boilerplate prefix stripped, since the status already
+    says "closed"."""
     for t in titles:
-        if says_closed(t):
+        if says_closed(t) and not is_break_only(t):
             label = re.sub(r"^\s*(schools?|district)\s+closed\s*[-:–]?\s*", "", t, flags=re.I).strip() or None
             return "closed", label
     for t in titles:
         if _EARLY_RE.search(t):
             return "early_dismissal", "Early dismissal"
+    for t in titles:
+        if is_break_only(t):
+            return "closed", t.strip()
     for t in titles:
         if _DELAY_RE.search(t):
             return "delayed", t

@@ -127,3 +127,12 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   - **Address and phone** sit in a `#headerinfo` block at the top of every page
     ("101 Evans Rd. / Marlton, NJ 08053 / 856-983-0774"), not a footer;
     `_parse_wp_header_info` reads it.
+
+## Riverton (found onboarding)
+
+- Elementor on Kinsta: internal links mix `rivertonschool.com` and `rivertonschoolcom.kinsta.cloud` (same content). Bell schedules, handbook, nurse info, menus and the calendar PDF are Google Docs/Drive files linked from thin pages.
+- `/staff-directory/` is `.staff_row > .single_staff > .staff_wrap` cards (`h5` name, `.staff_designation`, "Ext. N", `mailto:`), read by `staff_roster._parse_staff_wrap_page`.
+- A Simple Calendar (`simcal`) widget wraps a plain Google Calendar; the id is in the embed link.
+- A Wix hit on a WordPress school site can be just a librarian's own Wix page, not a platform signal.
+- Lunch is Drive PDFs titled "November 2026 Lunch.pdf" on `/lunch-menu/`, read by the unbanded path; the "... Breakfast.pdf" files are not classified.
+

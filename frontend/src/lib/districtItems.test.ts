@@ -205,6 +205,28 @@ describe("saysClosed", () => {
     }
   });
 
+  it("closes the day for a title that is only the break's name, not an edge of it", () => {
+    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22"]) {
+      expect(saysClosed(t)).toBe(true);
+    }
+    for (const t of [
+      "Spring Break Begins",
+      "Return from Winter Break",
+      "Winter Recess - Early Dismissal",
+      "ONE SESSION WINTER RECESS",
+      "1/2 DAY WINTER RECESS",
+      "Recess Runners Fun Run",
+    ]) {
+      expect(saysClosed(t)).toBe(false);
+    }
+  });
+
+  it("lets a half day win over a break that starts that day", () => {
+    expect(dayStatusOf(["Winter Recess", "SINGLE SESSION DAY"])).toBe("half");
+    expect(dayStatusOf(["Winter Recess"])).toBe("closed");
+    expect(dayStatusOf(["SCHOOLS CLOSED - Snow", "Early Dismissal"])).toBe("closed");
+  });
+
   it("doesn't close the day for an office, a portal, a gym or a closed session", () => {
     for (const t of [
       "OFFICE CLOSED",

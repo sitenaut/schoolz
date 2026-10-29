@@ -114,3 +114,19 @@ def test_mailto_card_page_reads_name_title_and_email():
     assert people["Becky Lemanowicz"]["email"] == "b.lemanowicz@stjoansk-8.org"
     assert people["Ciara Rogovich"]["email"] == "c.rogovich@stjoansk-8.org"  # the displayed address, not the link's
     assert len(people) == 6
+
+
+def test_elementor_staff_wrap_cards_are_parsed():
+    # Riverton's /staff-directory/ layout (names here are made up).
+    html = """<div class="staff_row">
+      <div class="single_staff"><div class="staff_wrap"><h5>Ms. Example</h5>
+        <div class="staff_designation">School Nurse</div>
+        <div class="contact_numbers"><span class="phone_number">Phone: <a href="tel:856-555-0100">856-555-0100</a></span>
+        <span class="phone_number">Ext. 108</span></div>
+        <div class="email_address">Email: <a href="mailto:Nurse@example.org">Nurse@example.org</a></div></div></div>
+      <div class="single_staff"><div class="staff_wrap"><h5>Mr. Sample</h5>
+        <div class="staff_designation">Middle school social studies</div></div></div>
+    </div>"""
+    people = {p["full_name"]: p for p in staff_roster._parse_staff_wrap_page(html)}
+    assert people["Ms. Example"]["title"] == "School Nurse" and people["Ms. Example"]["email"] == "nurse@example.org"
+    assert people["Mr. Sample"]["email"] is None

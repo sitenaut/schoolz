@@ -367,6 +367,35 @@ def _parse_mailto_card_page(html: str) -> list[dict]:
     return list(items.values())
 
 
+def _parse_staff_wrap_page(html: str) -> list[dict]:
+    """Riverton's Elementor `/staff-directory/`: one `.single_staff` card per
+    person - an `h5` name ("Ms. Acito"), a `.staff_designation` title, the
+    main line with an "Ext. N" and a `mailto:`."""
+    soup = BeautifulSoup(html, "lxml")
+    items = {}
+    for card in soup.select(".single_staff"):
+        name_el = card.find("h5")
+        if not name_el:
+            continue
+        name = re.sub(r"\s+", " ", name_el.get_text(" ", strip=True))
+        title_el = card.select_one(".staff_designation")
+        title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True)) if title_el else ""
+        link = card.select_one("a[href^='mailto:']")
+        email = link["href"][len("mailto:"):].strip() if link else None
+        if not name or not (title or email):
+            continue
+        key = f"sw:{_slug(name)[:34]}|{_slug(title)[:22]}"
+        items[key] = {
+            "constituent_id": key,
+            "full_name": name,
+            "title": title or None,
+            "department": None,
+            "email": email.lower() if email else None,
+            "phone": None,
+        }
+    return list(items.values())
+
+
 _PLAIN_PAGE_PATHS = ("/about-us/staff", "/about-us/ourfaculty/", "/staff-directory/", "/staff-directory-2/", "/staff/", "/faculty-staff/")
 
 _HONORIFIC_RE = re.compile(r"^(?:mr|mrs|ms|miss|mx|dr)\.?\s+", re.I)
@@ -439,7 +468,7 @@ async def _fetch_plain_page_roster(base: str) -> list[dict]:
                 resp = await client.get(base + path)
                 if resp.status_code != 200:
                     continue
-                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text) or _parse_pc_list_page(resp.text) or _parse_mailto_card_page(resp.text)
+                items = _parse_table_page(resp.text) or _parse_wp_card_page(resp.text) or _parse_tablepress_directory(resp.text) or _parse_pc_list_page(resp.text) or _parse_mailto_card_page(resp.text) or _parse_staff_wrap_page(resp.text)
                 if items:
                     return items
     except httpx.HTTPError:

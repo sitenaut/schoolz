@@ -98,6 +98,15 @@ def _drive_calendar_link(text: str) -> str | None:
     return None
 
 
+def _school_year_start(filename: str) -> int | None:
+    """2026 for "2026-2027_school_calendar.pdf", "2026-27_etsd..." or
+    "Calendar 26-27.pdf"; None for a month ("2026-10-Calendar.pdf")."""
+    for m in re.finditer(r"(?<!\d)(?:20)?(\d\d)[-_.](?:20)?(\d\d)(?!\d)", filename):
+        if int(m.group(2)) == int(m.group(1)) + 1:
+            return 2000 + int(m.group(1))
+    return None
+
+
 def find_pdf_link(html: str, page_url: str) -> str | None:
     """The calendar PDF on a page. Smart Sites' document-viewer pages are
     client-rendered but carry the file URL JSON-escaped ("https:\\/\\/files...")
@@ -125,8 +134,10 @@ def find_pdf_link(html: str, page_url: str) -> str | None:
             found.append(url)
     named_all = [u for u in found if "calendar" in u.lower()]
     # St. Joan of Arc's homepage links a monthly "2026-10-Calendar.pdf" above
-    # the year's "school-calendar-2026-2027-....pdf": prefer the school-year name.
-    named = next((u for u in named_all if re.search(r"20\d\d[-_.]20\d\d|\b\d\d-\d\d\b", u.rsplit("/", 1)[-1])), None) or (named_all[0] if named_all else None)
+    # the year's "school-calendar-2026-2027-....pdf": prefer the school-year
+    # name, and the latest year of those (Beverly lists last year's first).
+    by_year = [(y, u) for u in named_all if (y := _school_year_start(u.rsplit("/", 1)[-1])) is not None]
+    named = (max(by_year, key=lambda yu: yu[0])[1] if by_year else None) or (named_all[0] if named_all else None)
     if named:
         return named
     return _drive_calendar_link(text) or (found[0] if found else None)
@@ -249,7 +260,7 @@ _PLAIN_PROMPT = (
     "A range like '26-27 Thu-Fri' is one entry from the 26th to the 27th; a month-header above the list gives the month, "
     "and the school year in the title gives the year (fall months are the first year, January-June the second). "
     "Do NOT record the mini month grids, the days-in-session table or the key as entries of their own. Do not record the "
-    "emergency/snow make-up day list. Mark an entry 'closed' if the printed text says schools are closed, or if the key "
+    "emergency/snow make-up day list. Skip an entry printed with a month but no day ('Report Cards Issued: November'). Mark an entry 'closed' if the printed text says schools are closed, or if the key "
     "marks closed days with a colour or symbol and that entry's dates carry that mark in the month grids. Look up each "
     "entry's own dates in its month's grid one by one, since neighbouring days are often closed for different reasons. "
     "An entry without such a mark (a holiday the schools stay open for) is 'other'."

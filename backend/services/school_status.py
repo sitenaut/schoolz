@@ -34,13 +34,38 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 # "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
 _SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
+# A title that is only the break's name ("Winter Recess", "Spring Break",
+# "Chews Spring Break", "Thanksgiving Recess (SC)") is a closed day: Riverton
+# and Beverly put nothing else on those days. Not when it marks an edge of
+# the break or a short day before it ("Spring Break Begins", "Return from
+# Winter Break", "Winter Recess - Early Dismissal", "ONE SESSION WINTER RECESS").
+_BREAK_RE = re.compile(
+    r"^\s*(?:[\w'.]+\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b", re.I
+)
+_BREAK_EDGE_RE = re.compile(
+    r"\b(?:begins?|starts?|ends?|over|returns?|reopens?|resumes?|last\s+day|dismissal|sessions?|half|1/2)\b", re.I
+)
+
+
+def _says_closed_outright(title: str) -> bool:
+    return bool(_SCHOOL_CLOSED_RE.search(title) or _BARE_CLOSED_RE.search(NOT_THE_SCHOOL_CLOSED_RE.sub(" ", title)))
+
+
+def is_break_only(title: str) -> bool:
+    """A closure known only from the break's name. It yields to a half day
+    on the same day: Gloucester Township's "Winter Recess" item starts on
+    its single-session day."""
+    return bool(
+        _BREAK_RE.search(title) and not _BREAK_EDGE_RE.search(title) and not EARLY_RE.search(title)
+        and not _says_closed_outright(title)
+    )
 
 
 def says_closed(title: str) -> bool:
     """True when a title says there's no school that day. Matching any
     "closed" made a newsletter's "Main Office Closed" a district-wide row
     (is_status_title) that closed every school's Today card."""
-    return bool(_SCHOOL_CLOSED_RE.search(title) or _BARE_CLOSED_RE.search(NOT_THE_SCHOOL_CLOSED_RE.sub(" ", title)))
+    return _says_closed_outright(title) or is_break_only(title)
 
 
 def is_status_title(title: str) -> bool:
