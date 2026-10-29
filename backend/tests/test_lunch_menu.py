@@ -318,3 +318,20 @@ def test_band_in_words_with_breakfast_in_the_name(monkeypatch):
         ("middle", "lunch", "October 2026", "MS-HS"),
         ("high", "lunch", "October 2026", "MS-HS"),
     }
+
+
+def test_month_band_meal_filenames_with_no_year():
+    # Riverside's /breakfast-lunch-menu document list.
+    from datetime import date
+
+    from services.lunch_menu import _classify_month_band_pdf_link as c
+
+    today = date(2026, 10, 29)
+    base = "https://files.smartsites.parentsquare.com/10346/"
+    hsms = c(base + "oct_hsms_lunch_menu.pdf", today)
+    assert sorted(x["school_type"] for x in hsms) == ["high", "middle"]
+    assert {x["period_label"] for x in hsms} == {"October 2026"}
+    elem = c(base + "nov_elementary_breakfast_menu.pdf", today)
+    assert [(x["school_type"], x["meal_type"], x["period_label"]) for x in elem] == [("elementary", "breakfast", "November 2026")]
+    assert c(base + "oct_prek_lunch_menu.pdf", today)[0]["school_type"] == "other"
+    assert c(base + "October-Lunch-Menu.pdf", today) == []

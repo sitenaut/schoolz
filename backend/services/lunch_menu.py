@@ -118,6 +118,35 @@ def _classify_band_words_pdf_link(url: str) -> list[dict]:
     ]
 
 
+# Riverside: "oct_hsms_lunch_menu.pdf", "oct_elementary_breakfast_menu.pdf",
+# "oct_prek_lunch_menu.pdf" - a month abbreviation, a band and the meal, no
+# year (inferred as the nearest, like Magnolia's).
+_MONTH_BAND_MENU_RE = re.compile(
+    r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*_(elementary|hsms|mshs|hs|ms|prek|pre-k)_(breakfast|lunch)_menu\b",
+    re.IGNORECASE,
+)
+
+
+def _classify_month_band_pdf_link(url: str, today: date | None = None) -> list[dict]:
+    match = _MONTH_BAND_MENU_RE.search(unquote(url.rsplit("/", 1)[-1].split("?", 1)[0]))
+    if not match:
+        return []
+    month_abbr, band, meal = match.groups()
+    month_idx = next(i for i, m in enumerate(_MONTHS) if m.startswith(month_abbr.lower()))
+    year_num = _infer_year(month_idx, today or datetime.now(ZoneInfo("America/New_York")).date())
+    band_key = re.sub(r"[^A-Za-z]", "", band).upper().replace("HSMS", "MSHS")
+    return [
+        {
+            "school_type": school_type,
+            "meal_type": meal.lower(),
+            "period_label": f"{_MONTHS[month_idx].title()} {year_num}",
+            "pdf_url": url,
+            "_sort": (year_num, month_idx),
+        }
+        for school_type in _BAND_WORDS[band_key]
+    ]
+
+
 def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
     filename = url.rsplit("/", 1)[-1]
     if _NOT_A_MENU_RE.search(filename):
@@ -506,7 +535,9 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     for u in urls:
         one = _classify_pdf_link(u) or _classify_coded_pdf_link(u)
         # A band no school in the district has (Burlington City's Pre-K) would only cost a parse.
-        classified_links += [one] if one else [c for c in _classify_band_words_pdf_link(u) if not school_types or c["school_type"] in school_types]
+        classified_links += [one] if one else [
+            c for c in _classify_band_words_pdf_link(u) + _classify_month_band_pdf_link(u) if not school_types or c["school_type"] in school_types
+        ]
     for _url, classified in [(c["pdf_url"], c) for c in classified_links] + [(c["pdf_url"], c) for c in _classify_image_menu_links(menu_page_url, result["html"])]:
         if classified:
             key = (classified["school_type"], classified["meal_type"])

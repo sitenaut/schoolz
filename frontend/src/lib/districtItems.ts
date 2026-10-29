@@ -7,7 +7,7 @@ import { i18n } from "./i18n";
 // the Calendar page and the Today cards agree on what counts as a "no
 // school" / "half day" status item vs. an ordinary district-wide event like
 // a Board of Education meeting.
-export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b/i;
+export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Staff and conference days: status items, but not a closed day.
 const STAFF_DAY_RE = /\bin-?service\b|\bconference\b/i;
@@ -22,7 +22,7 @@ const GRADES_THROUGH_RE = /\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b/i;
 // ("Schools & Offices Closed, Winter Recess"). Mirrors school_status.py.
 const NOT_THE_SCHOOL_CLOSED_RE =
   /\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b|\(?\bclosed\)?\s+session\b/gi;
-const SCHOOL_CLOSED_RE = /\b(?:schools?|district|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b/i;
+const SCHOOL_CLOSED_RE = /\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b/i;
 
 /** No school that day. A bare "closed" counts - most feeds word a closure
  * that way ("CLOSED - Winter Recess", "Columbus Day, Closed") - but not an

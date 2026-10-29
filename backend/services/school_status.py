@@ -11,7 +11,11 @@ import re
 # Whether a title says the school is closed is says_closed's job: this also
 # matches an office or a gym being closed.
 CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b", re.I)
-EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b", re.I)
+# A time before "Dismissal" is a short day when it falls from 10:00 to 2:00
+# ("12:50 Dismissal", "1pm Dismissal", Palmyra's "2 PM Dismissal"), not a
+# regular one ("2:30pm Dismissal") or a preschool-only one. Mirrored in
+# school_today._EARLY_RE and districtItems.ts HALF_DAY_RE.
+EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Staff days and conference days: status facts, but not closures of the day
 # (school_today's classify_day doesn't count them).
@@ -32,7 +36,8 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 )
 # A school word earlier in the same clause makes it the school after all:
 # "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
-_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b", re.I)
+# Not Palmyra's summer "District Offices Closed".
+_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # A title that is only the break's name ("Winter Recess", "Spring Break",
 # "Chews Spring Break", "Thanksgiving Recess (SC)") is a closed day: Riverton

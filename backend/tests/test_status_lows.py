@@ -47,6 +47,7 @@ NOT_THE_SCHOOL = [
     "Board of Education Meeting - Executive (Closed) Session",
     "Main Office Closed",
     "Library Closed for Inventory",
+    "ALL District Offices Closed",
 ]
 
 
@@ -127,3 +128,19 @@ def test_a_half_day_wins_over_a_break_that_starts_that_day():
     # Gloucester Township's "Winter Recess" item starts on its single-session day.
     assert classify_day(["Winter Recess", "SINGLE SESSION DAY"])[0] == "early_dismissal"
     assert classify_day(["Winter Recess"]) == ("closed", "Winter Recess")
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["12:50 Dismissal", "1pm Dismissal", "2 PM Dismissal", "12:45 Dismissal Day", "Final Exams--12:00 pm dismissal",
+     "Conferences/12:50 Dismissal", "12:09pm Student Dismissal (Staff PD 2:27pm Dismissal)", "1:00 PM  Dismissal - Students Only"],
+)
+def test_a_midday_dismissal_time_is_a_half_day(title):
+    assert classify_day([title])[0] == "early_dismissal" and is_status_title(title)
+
+
+@pytest.mark.parametrize(
+    "title", ["Full Day of School - AHS ( 2:30pm Dismissal)", "3:20pm Dismissal Begins", "1:30 Dismissal All Preschools", "Dismissal Procedures"]
+)
+def test_a_regular_or_preschool_dismissal_time_is_not_a_half_day(title):
+    assert classify_day([title])[0] == "open"

@@ -51,3 +51,33 @@ async def test_moved_instance_gets_its_own_uid(monkeypatch):
     starts = {e["start_date"].date().isoformat() for e in events}
     assert "2026-10-14" in starts and "2026-10-21" not in starts and "2026-11-18" in starts
     assert all(e["start_date"].hour == 18 and e["start_date"].minute == 30 for e in events)
+
+
+@pytest.mark.anyio
+async def test_smart_sites_generated_feed_is_keyed_on_title_and_start(monkeypatch):
+    """Palmyra's generateCalendarICS.php mints new UIDs on every rebuild."""
+    builds = iter(["6a1f00aa11", "6a1f99bb22"])
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, headers=None):
+            body = (
+                "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nUID:" + next(builds) + "\n"
+                "DTSTART;VALUE=DATE:20261224\nSUMMARY:CLOSED - Winter Break\nEND:VEVENT\nEND:VCALENDAR\n"
+            )
+            return httpx.Response(200, content=body.encode(), request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(district_calendar.httpx, "AsyncClient", FakeClient)
+    url = "https://www.palmyraschools.com/sndreq/generateCalendarICS.php?calendar_id=139376"
+    first = await district_calendar.fetch_district_calendar(url)
+    second = await district_calendar.fetch_district_calendar(url)
+    assert first[0]["external_uid"] == second[0]["external_uid"]
+    assert first[0]["external_uid"].startswith("hash:")

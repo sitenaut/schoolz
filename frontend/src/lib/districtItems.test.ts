@@ -145,6 +145,10 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["EARLY DISMISSAL - Staff In-Service"])).toBe("half");
     expect(dayStatusOf(["Early Dismissal - Parent/Teacher Conferences"])).toBe("half");
     expect(dayStatusOf(["4 Hour Day for Students"])).toBe("half");
+    expect(dayStatusOf(["12:50 Dismissal"])).toBe("half");
+    expect(dayStatusOf(["2 PM Dismissal"])).toBe("half");
+    expect(dayStatusOf(["Full Day of School - AHS ( 2:30pm Dismissal)"])).toBeNull();
+    expect(dayStatusOf(["1:30 Dismissal All Preschools"])).toBeNull();
     expect(dayStatusOf(["Science conference night"])).toBeNull();
     expect(dayStatusOf(["Board of Education Meeting", "Day 3"])).toBeNull();
     // Still an in-service day for "Exclude district", which never hides one.
@@ -235,6 +239,7 @@ describe("saysClosed", () => {
       "Weight Room Closed",
       "Board of Education Meeting - Executive (Closed) Session",
       "Main Office Closed",
+      "ALL District Offices Closed",
     ]) {
       expect(saysClosed(t)).toBe(false);
       expect(dayStatusOf([t])).toBeNull();

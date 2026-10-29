@@ -1,0 +1,330 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Palmyra Public School District",
+  "districts": [
+    {
+      "name": "Palmyra Public School District",
+      "state": "NJ",
+      "website_url": "https://www.palmyraschools.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Palmyra District Calendar",
+          "url": "https://www.palmyraschools.com/sndreq/generateCalendarICS.php?calendar_id=139376"
+        },
+        {
+          "name": "Palmyra High School Calendar",
+          "url": "https://phs.palmyraschools.com/sndreq/generateCalendarICS.php?calendar_id=139377",
+          "school_slug": "palmyra-high"
+        },
+        {
+          "name": "Charles Street School Calendar",
+          "url": "https://css.palmyraschools.com/sndreq/generateCalendarICS.php?calendar_id=139378",
+          "school_slug": "charles-street-school"
+        },
+        {
+          "name": "Delaware Avenue School Calendar",
+          "url": "https://das.palmyraschools.com/sndreq/generateCalendarICS.php?calendar_id=139379",
+          "school_slug": "delaware-avenue-school"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Palmyra",
+        "Riverton",
+        "Beverly"
+      ],
+      "schoolcafe_shortname": "PalmyraSDNutriServeMETZ"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "palmyra-high",
+      "name": "Palmyra High School",
+      "short_name": "Palmyra High",
+      "district_name": "Palmyra Public School District",
+      "school_type": "high",
+      "address": "311 West Fifth Street, Palmyra, NJ 08065",
+      "main_phone": "(856) 786-9300",
+      "website_url": "https://phs.palmyraschools.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 786-9300",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the district main number, choose option 2 for the high/middle school, then option 1, then option 1 again to report an absence. A written note from a parent/guardian is required for each absence; an extended illness needs a physician's statement.",
+      "start_time": "7:50 AM",
+      "end_time": "2:21 PM",
+      "early_dismissal_time": "12:11 PM",
+      "delayed_opening_time": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:50",
+            "end": "08:30"
+          },
+          {
+            "name": "2",
+            "start": "08:33",
+            "end": "09:13"
+          },
+          {
+            "name": "3",
+            "start": "09:16",
+            "end": "09:56"
+          },
+          {
+            "name": "4",
+            "start": "09:59",
+            "end": "10:39"
+          },
+          {
+            "name": "5",
+            "start": "10:43",
+            "end": "11:28"
+          },
+          {
+            "name": "HS Lunch 1",
+            "start": "11:32",
+            "end": "11:52"
+          },
+          {
+            "name": "HS Lunch 2",
+            "start": "11:52",
+            "end": "12:12"
+          },
+          {
+            "name": "6",
+            "start": "12:15",
+            "end": "12:55"
+          },
+          {
+            "name": "7",
+            "start": "12:58",
+            "end": "13:38"
+          },
+          {
+            "name": "8",
+            "start": "13:41",
+            "end": "14:21"
+          }
+        ],
+        "regular_grades_7_8": [
+          {
+            "name": "1",
+            "start": "07:50",
+            "end": "08:30"
+          },
+          {
+            "name": "2",
+            "start": "08:33",
+            "end": "09:13"
+          },
+          {
+            "name": "3",
+            "start": "09:16",
+            "end": "09:56"
+          },
+          {
+            "name": "4",
+            "start": "09:59",
+            "end": "10:39"
+          },
+          {
+            "name": "Grade 7 Lunch",
+            "start": "10:43",
+            "end": "11:03"
+          },
+          {
+            "name": "Grade 8 Lunch",
+            "start": "11:03",
+            "end": "11:23"
+          },
+          {
+            "name": "MS 5",
+            "start": "11:27",
+            "end": "12:12"
+          },
+          {
+            "name": "6",
+            "start": "12:15",
+            "end": "12:55"
+          },
+          {
+            "name": "7",
+            "start": "12:58",
+            "end": "13:38"
+          },
+          {
+            "name": "8",
+            "start": "13:41",
+            "end": "14:21"
+          }
+        ],
+        "long_block": [
+          {
+            "name": "Office Hours",
+            "start": "07:35",
+            "end": "08:05"
+          },
+          {
+            "name": "1 (Day 2) / 2 (Day 3)",
+            "start": "08:10",
+            "end": "09:26"
+          },
+          {
+            "name": "3 (Day 2) / 4 (Day 3)",
+            "start": "09:29",
+            "end": "10:45"
+          },
+          {
+            "name": "5 (Day 2) / 6 (Day 3)",
+            "start": "10:48",
+            "end": "12:04"
+          },
+          {
+            "name": "HS Lunch 1",
+            "start": "12:05",
+            "end": "12:33"
+          },
+          {
+            "name": "HS Lunch 2",
+            "start": "12:34",
+            "end": "13:02"
+          },
+          {
+            "name": "7 (Day 2) / 8 (Day 3)",
+            "start": "13:05",
+            "end": "14:21"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:50",
+            "end": "08:20"
+          },
+          {
+            "name": "2",
+            "start": "08:23",
+            "end": "08:53"
+          },
+          {
+            "name": "3",
+            "start": "08:56",
+            "end": "09:26"
+          },
+          {
+            "name": "4",
+            "start": "09:29",
+            "end": "09:59"
+          },
+          {
+            "name": "5",
+            "start": "10:02",
+            "end": "10:32"
+          },
+          {
+            "name": "6",
+            "start": "10:35",
+            "end": "11:05"
+          },
+          {
+            "name": "7",
+            "start": "11:08",
+            "end": "11:38"
+          },
+          {
+            "name": "8",
+            "start": "11:41",
+            "end": "12:11"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=17466",
+      "logo_url": "https://files.smartsites.parentsquare.com/9796/header_logo_img_g3rae5l574idejihodd.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "charles-street-school",
+      "name": "Charles Street School",
+      "short_name": "Charles Street",
+      "district_name": "Palmyra Public School District",
+      "school_type": "elementary",
+      "address": "100 West Charles Street, Palmyra, NJ 08065",
+      "main_phone": "(856) 786-9300",
+      "website_url": "https://css.palmyraschools.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 786-9300 ext. 2002",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the main office at (856) 786-9300 ext. 2002 as soon as possible and give the reason for the absence. Keep the school informed about extended absences.",
+      "start_time": "8:15 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/9797/header_logo_img_qa9e9nfvl9r3fhpdlfa.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:00 AM",
+        "pm_hours": "2:30 PM - 5:45 PM",
+        "site_phone": "(609) 828-2056",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pickup by 5:45 PM. $5 late fee for pickup after 5:45 but before 6:00; after 6:00 a $15 minimum plus another $15 after 6:15. A child not picked up by 6:30 PM: the program contacts Palmyra Police and DCF.",
+        "pickup_change_procedure": null,
+        "handbook_url": "https://css.palmyraschools.com/child-care",
+        "closures_notes": "Palmyra Child Care Program (district-run, billed through Brightwheel). The school office closes at 3:30 PM; after that call the program's cell. No program when school closes before the day starts or is cut short (snow or emergency); a delayed opening runs as a regular day."
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "delaware-avenue-school",
+      "name": "Delaware Avenue School",
+      "short_name": "Delaware Avenue",
+      "district_name": "Palmyra Public School District",
+      "school_type": "other",
+      "address": "301 Delaware Avenue, Palmyra, NJ 08065",
+      "main_phone": "(856) 786-9300",
+      "website_url": "https://das.palmyraschools.com",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 786-9300",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Delaware Avenue School main office before 9:00 AM with your child's name, teacher's name, the reason for the absence and the expected return date. Tell the office in advance about planned absences; documentation may be requested after two consecutive days.",
+      "start_time": "8:45 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/9798/header_logo_img_d8ehp7cilf016kfbphk.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 5:45 PM",
+        "site_phone": "(609) 828-2056",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pickup by 5:45 PM. $5 late fee for pickup after 5:45 but before 6:00; after 6:00 a $15 minimum plus another $15 after 6:15. A child not picked up by 6:30 PM: the program contacts Palmyra Police and DCF.",
+        "pickup_change_procedure": "Only people listed as authorized on the registration form may pick up; changes must be in writing, not by phone.",
+        "handbook_url": "https://das.palmyraschools.com/before-after-care-pccp",
+        "closures_notes": "DAS Cub Care (Palmyra Child Care Program) in the DAS gym, front door. No program when DAS closes before the day starts or is cut short (snow or emergency); a delayed opening runs as a regular day. Billing through Brightwheel."
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}
