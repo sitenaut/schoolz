@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { initI18n } from "./i18n";
-import { dayStatusOf, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem, otherGradesOnly, saysClosed, statusTitles } from "./districtItems";
+import { affectedSchools, dayStatusOf, mergeAlerts, expandItemRows, isNoisyDistrictItem, isRotationItem, isStatusItem, otherGradesOnly, saysClosed, statusTitles } from "./districtItems";
 import type { School, SchoolContentItem } from "../types";
 
 beforeAll(() => initI18n());
@@ -260,5 +260,59 @@ describe("saysClosed", () => {
     }
     // Asked twice: the global replace pattern keeps no state between calls.
     expect(saysClosed("OFFICE CLOSED")).toBe(false);
+  });
+});
+
+describe("affectedSchools", () => {
+  const east = school({ id: "e", name: "Cherry Hill High School East", short_name: "East", school_type: "high", district_id: "d1" });
+  const harte = school({ id: "h", name: "Bret Harte Elementary", short_name: "Bret Harte", school_type: "elementary", district_id: "d1" });
+  const other = school({ id: "o", name: "Other High", short_name: "Other", school_type: "high", district_id: "d2" });
+
+  it("names only the schools of the types a district item applies to, in its own district", () => {
+    const early = item({ title: "Early Dismissal", scope: "district", district_id: "d1", applies_to_school_types: ["high"] });
+    expect(affectedSchools(early, [east, harte, other]).map((s) => s.id)).toEqual(["e"]);
+  });
+
+  it("is every school of the district when the item names no types", () => {
+    const closed = item({ title: "SCHOOLS CLOSED", scope: "district", district_id: "d1", applies_to_school_types: null });
+    expect(affectedSchools(closed, [east, harte, other]).map((s) => s.id)).toEqual(["e", "h"]);
+  });
+});
+
+describe("mergeAlerts", () => {
+  const east = school({ id: "e", slug: "east", name: "Cherry Hill High School East", short_name: "East", school_type: "high", district_id: "d1" });
+  const harte = school({ id: "h", slug: "harte", name: "Bret Harte Elementary", short_name: "Bret Harte", school_type: "elementary", district_id: "d1" });
+  const njea = item({ id: "n", title: "SCHOOLS CLOSED - NJEA Convention", scope: "district", district_id: "d1", start_date: "2026-11-05T05:00:00Z" });
+  const eastClosed = item({ id: "ec", title: "SCHOOL CLOSED", scope: "school", district_id: null, start_date: "2026-11-05T05:00:00Z" });
+  const early = item({ id: "ed", title: "Early Dismissal", scope: "district", district_id: "d1", applies_to_school_types: ["high"], start_date: "2026-10-29T04:00:00Z" });
+
+  it("shows a district alert once however many cards carry it, in date order", () => {
+    const got = mergeAlerts([
+      { school: harte, alerts: [njea] },
+      { school: east, alerts: [early, njea] },
+    ]);
+    expect(got.map((a) => a.id)).toEqual(["ed", "n"]);
+  });
+
+  it("drops a school's own closure on a day the district already closed it", () => {
+    const got = mergeAlerts([
+      { school: harte, alerts: [njea] },
+      { school: east, alerts: [early, eastClosed] },
+    ]);
+    expect(got.map((a) => a.id)).toEqual(["ed", "n"]);
+  });
+
+  it("keeps a school's own closure when the district said nothing of the kind that day", () => {
+    const got = mergeAlerts([{ school: east, alerts: [early, eastClosed] }]);
+    expect(got.map((a) => a.id)).toEqual(["ed", "ec"]);
+  });
+
+  it("keeps a closure the district's closure doesn't cover (another district's school)", () => {
+    const elsewhere = school({ id: "x", slug: "x", name: "Elsewhere High", school_type: "high", district_id: "d2" });
+    const got = mergeAlerts([
+      { school: harte, alerts: [njea] },
+      { school: elsewhere, alerts: [eastClosed] },
+    ]);
+    expect(got.map((a) => a.id).sort()).toEqual(["ec", "n"]);
   });
 });

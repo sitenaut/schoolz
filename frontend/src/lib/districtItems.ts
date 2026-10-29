@@ -1,4 +1,5 @@
 import type { School, SchoolContentItem } from "../types";
+import { localDateKey } from "./calendar";
 import { i18n } from "./i18n";
 
 // Same convention as the backend's own closure/half-day/delay detection
@@ -94,6 +95,42 @@ function schoolsOf(item: SchoolContentItem, schools: School[]): School[] {
   const own = item.district_id ? schools.filter((s) => s.district_id === item.district_id) : schools;
   const types = item.applies_to_school_types;
   return types?.length ? own.filter((s) => s.school_type != null && types.includes(s.school_type)) : own;
+}
+
+/** The shown schools a district item is about (see schoolsOf). Names who an
+ * alert is for: an item scoped to high schools is not "all schools". */
+export function affectedSchools(item: SchoolContentItem, schools: School[]): School[] {
+  return schoolsOf(item, schools);
+}
+
+/** The alert banners for the schools shown, once each and in date order.
+ * A district alert is on every card of the district, so it is kept once; a
+ * school's own alert for a day the district already said the same thing about
+ * (High School East's "SCHOOL CLOSED" on the day of the district's NJEA
+ * closure) says nothing new for that school and is dropped. */
+export function mergeAlerts(entries: { school: School; alerts: SchoolContentItem[] }[]): SchoolContentItem[] {
+  const merged = new Map<string, SchoolContentItem>();
+  const own: { alert: SchoolContentItem; school: School }[] = [];
+  for (const { school, alerts } of entries) {
+    for (const alert of alerts) {
+      if (alert.scope !== "district") own.push({ alert, school });
+      else if (!merged.has(alertKey(alert, "d"))) merged.set(alertKey(alert, "d"), alert);
+    }
+  }
+  const district = [...merged.values()];
+  for (const { alert, school } of own) {
+    const closed = /closed/i.test(alert.title);
+    const covered = district.some(
+      (d) => localDateKey(d.start_date!) === localDateKey(alert.start_date!) && /closed/i.test(d.title) === closed && schoolsOf(d, [school]).length > 0,
+    );
+    const key = alertKey(alert, school.id);
+    if (!covered && !merged.has(key)) merged.set(key, alert);
+  }
+  return [...merged.values()].sort((a, b) => localDateKey(a.start_date!).localeCompare(localDateKey(b.start_date!)));
+}
+
+function alertKey(alert: SchoolContentItem, owner: string): string {
+  return `${localDateKey(alert.start_date!)}|${owner}|${alert.title}`;
 }
 
 /** The titles that set a day's status for the schools shown. One naming

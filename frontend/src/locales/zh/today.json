@@ -68,6 +68,7 @@
   "Pick your schools": "选择学校",
   "showing {{a}} of {{b}}": "显示 {{a}}/{{b}}",
   "(all {{district}} schools)": "（{{district}}的所有学校）",
+  "({{schools}} only)": "（仅{{schools}}）",
   "Pulled from each school's newsletter and website, the district calendar, and the district lunch menu.": "内容取自各校的通讯简报和网站、学区日历以及学区午餐菜单。",
   "All schools": "所有学校",
   "Updated": "更新于",
