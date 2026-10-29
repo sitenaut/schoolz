@@ -64,9 +64,10 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 # closure, an office's or a gym's doesn't. "No Students" (a staff
 # development day) and "Single Session" (a half day) are how Delran and
 # Cinnaminson word it, "4 Hour Day for Students" Edgewater Park.
-_EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+_EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 # A status title scoped to grades by its own wording: "PCPEP - K-8 Single
 # Session", "K-5 Single Session - Parent Conferences".
+_PRESCHOOL_ONLY_RE = re.compile(r"\bpre-?(?:school|k)\b.*\bonly\b|\bonly\b.*\bpre-?(?:school|k)\b", re.I)
 _GRADES_THROUGH_RE = re.compile(r"\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b", re.I)
 _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Eastern Regional's feed appends the day's class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
@@ -115,7 +116,14 @@ def classify_day(titles: list[str]) -> tuple[str, str | None]:
     says "closed"."""
     for t in titles:
         if says_closed(t) and not is_break_only(t):
-            label = re.sub(r"^\s*(schools?|district)\s+closed\s*[-:–]?\s*", "", t, flags=re.I).strip() or None
+            # "District Closed for Students - FALL RECESS" is labelled "FALL RECESS",
+            # Mantua's "DIST: Schools Closed - Storm Damage" "Storm Damage".
+            label = re.sub(
+                r"^\s*(?:[\w'./]+:\s*)?(schools?|district)(?:\s+(?:is|are))?\s+closed(?:\s+(?:for|to)\s+(?:all\s+)?students)?\s*[-:–]?\s*",
+                "",
+                t,
+                flags=re.I,
+            ).strip() or None
             return "closed", label
     for t in titles:
         if _EARLY_RE.search(t):
@@ -160,6 +168,9 @@ def other_grades_only(title: str, school_type: str | None) -> bool:
     which is a half day for the K-8 schools and a full one for the high
     school. Only the unambiguous cases count - a span ending by 8th grade at a
     high school, by 4th at a middle school."""
+    # East Greenwich's "Preschool Only Early Dismissal": not a K-6 school's day.
+    if _PRESCHOOL_ONLY_RE.search(title):
+        return school_type in ("elementary", "middle", "high")
     m = _GRADES_THROUGH_RE.search(title)
     if not m:
         return False

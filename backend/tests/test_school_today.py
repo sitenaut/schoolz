@@ -27,6 +27,9 @@ def test_classify_role_keyword_map():
 def test_classify_day_precedence_and_labels():
     assert classify_day([]) == ("open", None)
     assert classify_day(["Day 3", "SCHOOLS CLOSED - Labor Day"]) == ("closed", "Labor Day")
+    assert classify_day(["District Closed for Students - FALL RECESS"]) == ("closed", "FALL RECESS")
+    assert classify_day(["District is closed - Juneteenth"]) == ("closed", "Juneteenth")
+    assert classify_day(["DIST: Schools Closed - Storm Damage"]) == ("closed", "Storm Damage")
     assert classify_day(["DISTRICT CLOSED"]) == ("closed", None)
     assert classify_day(["EARLY DISMISSAL - Staff In-Service"]) == ("early_dismissal", "Early dismissal")
     # Closed wins over early dismissal on the same day.
@@ -51,6 +54,9 @@ def test_a_grade_span_that_stops_short_of_the_school_is_not_its_status():
     assert not other_grades_only("Single Session K-12", "high")
     assert not other_grades_only("K-5 Single Session - Parent Conferences", "middle")
     assert other_grades_only("PK-4 Single Session", "middle")
+    assert other_grades_only("Preschool Only Early Dismissal", "elementary")
+    assert other_grades_only("Preschool Early Dismissal Only", "elementary")
+    assert not other_grades_only("Preschool Only Early Dismissal", "other")
     assert not other_grades_only("Early Dismissal", "high")
 
 
@@ -264,3 +270,21 @@ async def test_a_closure_that_began_before_this_week_still_closes_today():
 
         back = await build_today(db, school, date(2027, 1, 4))
         assert back.status == "open"
+
+
+def test_a_title_that_says_only_applies_to_the_schools_it_names():
+    from services.district_calendar import school_types_from_title
+
+    pitman = [
+        ("Pitman Jr./Sr. High School", "Pitman Jr./Sr. High", "high"),
+        ("Pitman Elementary School", "Pitman Elementary", "elementary"),
+        ("Memorial Elementary School", "Memorial", "elementary"),
+    ]
+    assert school_types_from_title("Early Dismissal- Jr. Sr. High Only ", pitman) == ["high"]
+    assert school_types_from_title("Early Dismissal Jr./Sr. HS only", pitman) == ["high"]
+    assert school_types_from_title("Early Dismissal - Conferences- PES and Memorial Only", pitman) == ["elementary"]
+    assert school_types_from_title("Early Dismissal/Memorial Only", pitman) == ["elementary"]
+    # no "only", or every kind of school named: the whole district
+    assert school_types_from_title("Memorial Day Schools Closed", pitman) is None
+    assert school_types_from_title("Early Dismissal - PES, Memorial and Jr./Sr. High only", pitman) is None
+    assert school_types_from_title("Early Dismissal Middle School Only") == ["middle"]

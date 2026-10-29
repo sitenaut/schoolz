@@ -170,10 +170,12 @@ def description_text(raw: str | None) -> str | None:
     return cleaned or None
 
 
-async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[dict]:
+async def fetch_district_calendar(ics_url: str, timeout: float = 30.0, since: datetime | None = None) -> list[dict]:
     """Returns a list of {external_uid, title, description, start_date,
     end_date, is_all_day} dicts, one per VEVENT. An Incident IQ feed key
-    (Pine Hill's facilities calendars) is routed to its own adapter."""
+    (Pine Hill's facilities calendars) is routed to its own adapter.
+    `since` drops events over before it: Mantua's Google calendars go back to
+    2010 (5,944 events)."""
     if incidentiq.is_incidentiq_feed(ics_url):
         return await incidentiq.fetch_events(ics_url, timeout)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
@@ -236,6 +238,9 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
                 starts = _occurrences(component, dtstart.dt)
             for value in starts:
                 occ_start, _ = _as_datetime(value)
+                occ_end = end + (occ_start - start) if end is not None else None
+                if since and _instant(occ_end or occ_start) < since:
+                    continue
                 if uid and recurrence_id is None and (uid, _instant(value)) in overridden:
                     continue
                 # The first occurrence keeps the series' UID, so a row stored
@@ -248,7 +253,7 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
                         "title": title[:300],
                         "description": description,
                         "start_date": occ_start,
-                        "end_date": end + (occ_start - start) if end is not None else None,
+                        "end_date": occ_end,
                         "is_all_day": is_all_day,
                     }
                 )
@@ -266,7 +271,7 @@ _GRADE_SPAN_RE = re.compile(
 _TYPE_GRADES = [(-1, -1, "other"), (0, 5, "elementary"), (6, 8, "middle"), (9, 12, "high"), (9, 12, "alternative")]
 
 
-def school_types_from_title(title: str) -> list[str] | None:
+def school_types_from_title(title: str, schools: list[tuple[str, str | None, str | None]] | None = None) -> list[str] | None:
     """School types a district-wide feed event is really scoped to, when its
     title names a grade span - confirmed real: "STUDENT EARLY DISMISSAL
     (PRESCHOOL-8): Pre-K, Elementary, and Middle Conferences" sits on the
@@ -275,10 +280,45 @@ def school_types_from_title(title: str) -> list[str] | None:
     after "Grade(s)" counts, so a stray number pair can't narrow a closure."""
     m = _GRADE_SPAN_RE.search(title or "")
     if not m:
-        return None
+        return _types_named_only(title or "", schools)
     lo_raw, hi = m.group(1).lower(), int(m.group(2))
     lo = -1 if lo_raw.startswith("p") else 0 if lo_raw == "k" else int(lo_raw)
     if hi < lo or hi > 12:
         return None
     types = [t for g_lo, g_hi, t in _TYPE_GRADES if g_lo <= hi and lo <= g_hi]
     return types or None
+
+
+# "Early Dismissal- Jr. Sr. High Only", "Early Dismissal - Conferences- PES and
+# Memorial Only" (Pitman): a title that says "only" is for the schools it names,
+# by type word or by one of the district's own schools (its short name, its
+# name, or the initials Pitman writes, "PES").
+_ONLY_RE = re.compile(r"\bonly\b", re.I)
+_ONLY_TYPE_WORDS = [
+    (re.compile(r"\bjr\.?\s*/?\s*sr\.?\s*(?:high|hs)\b|\bhigh\s+schools?\b|\bhs\b", re.I), "high"),
+    (re.compile(r"\bmiddle\s+schools?\b|\bms\b", re.I), "middle"),
+    (re.compile(r"\belementar(?:y|ies)\b", re.I), "elementary"),
+]
+
+
+def _school_tells(name: str, short_name: str | None) -> tuple[list[str], str | None]:
+    """(names matched case-insensitively, initials matched exactly)."""
+    words = [w for w in re.split(r"[\s/.]+", name) if w]
+    names = [n for n in (short_name, re.sub(r"\s+school$", "", name, flags=re.I), name) if n and len(n) >= 4]
+    initials = "".join(w[0] for w in words if w[0].isupper())
+    return names, initials if len(initials) >= 3 else None
+
+
+def _types_named_only(title: str, schools: list[tuple[str, str | None, str | None]] | None) -> list[str] | None:
+    if not _ONLY_RE.search(title):
+        return None
+    types = {t for rx, t in _ONLY_TYPE_WORDS if rx.search(title)}
+    for name, short_name, school_type in schools or []:
+        names, initials = _school_tells(name, short_name)
+        named = any(re.search(rf"\b{re.escape(n)}\b", title, re.I) for n in names)
+        if school_type and (named or (initials and re.search(rf"\b{initials}\b", title))):
+            types.add(school_type)
+    # Naming every kind of school the district has narrows nothing.
+    if not types or (schools and types >= {t for _, _, t in schools if t}):
+        return None
+    return sorted(types)

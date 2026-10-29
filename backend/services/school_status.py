@@ -10,17 +10,17 @@ import re
 # The closure words, for taking them out of a title (district_calendar_pdf).
 # Whether a title says the school is closed is says_closed's job: this also
 # matches an office or a gym being closed.
-CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b", re.I)
+CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin[\s-]?service\b|\bconference\b", re.I)
 # A time before "Dismissal" is a short day when it falls from 10:00 to 2:00
 # ("12:50 Dismissal", "1pm Dismissal", Palmyra's "2 PM Dismissal"), not a
 # regular one ("2:30pm Dismissal") or a preschool-only one. "1/2 Day -
 # District" is Paulsboro's half day. Mirrored in
 # school_today._EARLY_RE and districtItems.ts HALF_DAY_RE.
-EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Staff days and conference days: status facts, but not closures of the day
 # (school_today's classify_day doesn't count them).
-STAFF_DAY_RE = re.compile(r"\bin-?service\b|\bconference\b", re.I)
+STAFF_DAY_RE = re.compile(r"\bin[\s-]?service\b|\bconference\b", re.I)
 
 # "Closed" that belongs to something other than the school day. Real titles:
 # "OFFICE CLOSED", "GYM 2 CLOSED FOR REPAIRS", "Genesis Parent & Student
@@ -37,9 +37,9 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 )
 # A school word earlier in the same clause makes it the school after all:
 # "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
-# Not Palmyra's summer "District Offices Closed". Glassboro's in-service
+# Not Palmyra's summer "District Offices Closed" or Pitman's "School Offices Closed". Glassboro's in-service
 # days are "Teacher Inservice - Students Off".
-_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b", re.I)
+_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # A title that is only the break's name ("Winter Recess", "Spring Break",
 # "NJEA Convention",
@@ -97,7 +97,7 @@ def is_status_title(title: str) -> bool:
 # calendar for both Yom Kippur and Labor Day.
 _BOILERPLATE_RE = re.compile(
     r"\b(schools?\s+closed|district\s+closed|no\s+school|closed"
-    r"|in-?service(\s+days?)?|conferences?"
+    r"|in[\s-]?service(\s+days?)?|conferences?"
     r"|early\s+dismissal|half[\s-]day|single[\s-]session(\s+days?)?|no\s+students|delayed\s+opening|\d\s*-?\s*hour\s+delay)\b",
     re.I,
 )

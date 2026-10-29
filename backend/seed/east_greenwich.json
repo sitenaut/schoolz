@@ -1,0 +1,293 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: East Greenwich Township School District",
+  "districts": [
+    {
+      "name": "East Greenwich Township School District",
+      "state": "NJ",
+      "website_url": "https://www.eastgreenwich.k12.nj.us",
+      "food_services_menu_url": "https://www.eastgreenwich.k12.nj.us/departments/food-services",
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "East Greenwich District Calendar",
+          "url": "https://www.eastgreenwich.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=10"
+        },
+        {
+          "name": "East Greenwich Rotation Days",
+          "url": "https://www.eastgreenwich.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=7"
+        },
+        {
+          "name": "East Greenwich Home & School",
+          "url": "https://www.eastgreenwich.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=6"
+        },
+        {
+          "name": "Jeffrey Clark Calendar",
+          "url": "https://www.eastgreenwich.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=5",
+          "school_slug": "jeffrey-clark"
+        },
+        {
+          "name": "Samuel Mickle Calendar",
+          "url": "https://www.eastgreenwich.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=11",
+          "school_slug": "samuel-mickle"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.eastgreenwich.k12.nj.us/departments/transportation",
+      "towns": [
+        "East Greenwich"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "jeffrey-clark",
+      "name": "Jeffrey Clark School",
+      "short_name": "Jeffrey Clark",
+      "district_name": "East Greenwich Township School District",
+      "school_type": "elementary",
+      "address": "7 Quaker Road, Mickleton, NJ 08056",
+      "main_phone": "(856) 423-0613",
+      "website_url": "https://jcs.eastgreenwich.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 423-0613",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office at (856) 423-0613 before 9:00 AM with your child's name, homeroom teacher and any homework request; send a signed note explaining the absence on return. A doctor's note is required after 3 consecutive days.",
+      "start_time": "8:40 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "12:55 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1757862006/eastgreenwichk12njus/nxthuni787d3gqmfxlii/JeffreyClarkSchoolPrimaryLogoImage.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:30 AM - 8:25 AM",
+        "pm_hours": "Dismissal (3:20 PM; Pre-K 2:40 PM) - 6:00 PM",
+        "site_phone": "(856) 423-0412 ext. 1075",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Afternoon session 1 pickup by 4:40 PM, session 2 by 6:00 PM. From the third late pickup a $25 per-child charge applies.",
+        "pickup_change_procedure": null,
+        "closures_notes": "Beyond the Bell is the district's own before- and after-school program at both schools, open whenever school is in session; on a 2-hour delay the morning program starts at 8:30 AM. The posted handbook is the 2025-26 edition.",
+        "handbook_url": "https://www.eastgreenwich.k12.nj.us/for-parents/beyond-the-bell/btb-handbook"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "samuel-mickle",
+      "name": "Samuel Mickle School",
+      "short_name": "Samuel Mickle",
+      "district_name": "East Greenwich Township School District",
+      "school_type": "elementary",
+      "address": "559 Kings Highway, Mickleton, NJ 08056",
+      "main_phone": "(856) 423-0412",
+      "website_url": "https://sms.eastgreenwich.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 423-0412",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office at (856) 423-0412 before 9:00 AM with your child's name, homeroom teacher and any homework request; send a signed note explaining the absence on return. A doctor's note is required after 3 consecutive days.",
+      "start_time": "8:40 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "12:55 PM",
+      "delayed_opening_time": "10:40 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:40",
+            "end": "08:46"
+          },
+          {
+            "name": "1",
+            "start": "08:48",
+            "end": "09:29"
+          },
+          {
+            "name": "2",
+            "start": "09:31",
+            "end": "10:12"
+          },
+          {
+            "name": "3",
+            "start": "10:14",
+            "end": "10:55"
+          },
+          {
+            "name": "4 (Grade 3 lunch)",
+            "start": "10:57",
+            "end": "11:38"
+          },
+          {
+            "name": "5 (Grade 5 lunch)",
+            "start": "11:40",
+            "end": "12:21"
+          },
+          {
+            "name": "6 (Grade 6 lunch)",
+            "start": "12:23",
+            "end": "13:04"
+          },
+          {
+            "name": "7 (Grade 4 lunch)",
+            "start": "13:06",
+            "end": "13:47"
+          },
+          {
+            "name": "8",
+            "start": "13:49",
+            "end": "14:30"
+          },
+          {
+            "name": "9",
+            "start": "14:32",
+            "end": "15:13"
+          },
+          {
+            "name": "HR",
+            "start": "15:15",
+            "end": "15:20"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "08:40",
+            "end": "08:46"
+          },
+          {
+            "name": "1",
+            "start": "08:48",
+            "end": "09:09"
+          },
+          {
+            "name": "2",
+            "start": "09:11",
+            "end": "09:32"
+          },
+          {
+            "name": "3",
+            "start": "09:34",
+            "end": "09:55"
+          },
+          {
+            "name": "4 (Grade 3 snack)",
+            "start": "09:57",
+            "end": "10:27"
+          },
+          {
+            "name": "5 (Grade 5 snack)",
+            "start": "10:29",
+            "end": "10:59"
+          },
+          {
+            "name": "6 (Grade 6 snack)",
+            "start": "11:01",
+            "end": "11:31"
+          },
+          {
+            "name": "7 (Grade 4 snack)",
+            "start": "11:33",
+            "end": "12:03"
+          },
+          {
+            "name": "8",
+            "start": "12:05",
+            "end": "12:26"
+          },
+          {
+            "name": "9",
+            "start": "12:28",
+            "end": "12:49"
+          },
+          {
+            "name": "HR",
+            "start": "12:50",
+            "end": "12:55"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "10:40",
+            "end": "10:48"
+          },
+          {
+            "name": "1",
+            "start": "10:50",
+            "end": "11:15"
+          },
+          {
+            "name": "2",
+            "start": "11:17",
+            "end": "11:42"
+          },
+          {
+            "name": "3",
+            "start": "11:44",
+            "end": "12:09"
+          },
+          {
+            "name": "4 (Grade 3 lunch)",
+            "start": "12:11",
+            "end": "12:41"
+          },
+          {
+            "name": "5 (Grade 5 lunch)",
+            "start": "12:43",
+            "end": "13:13"
+          },
+          {
+            "name": "6 (Grade 6 lunch)",
+            "start": "13:15",
+            "end": "13:45"
+          },
+          {
+            "name": "7 (Grade 4 lunch)",
+            "start": "13:47",
+            "end": "14:17"
+          },
+          {
+            "name": "8",
+            "start": "14:19",
+            "end": "14:44"
+          },
+          {
+            "name": "9",
+            "start": "14:46",
+            "end": "15:11"
+          },
+          {
+            "name": "HR",
+            "start": "15:13",
+            "end": "15:20"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1757859896/eastgreenwichk12njus/qebll3f13ylvz6uu2qta/SamuelMickleSchoolPrimaryLogoImage.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:30 AM - 8:25 AM",
+        "pm_hours": "Dismissal (3:20 PM; Pre-K 2:40 PM) - 6:00 PM",
+        "site_phone": "(856) 423-0412 ext. 1880",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Afternoon session 1 pickup by 4:40 PM, session 2 by 6:00 PM. From the third late pickup a $25 per-child charge applies.",
+        "pickup_change_procedure": null,
+        "closures_notes": "Beyond the Bell is the district's own before- and after-school program at both schools, open whenever school is in session; on a 2-hour delay the morning program starts at 8:30 AM. The posted handbook is the 2025-26 edition.",
+        "handbook_url": "https://www.eastgreenwich.k12.nj.us/for-parents/beyond-the-bell/btb-handbook"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

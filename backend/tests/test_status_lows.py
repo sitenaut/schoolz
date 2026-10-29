@@ -48,6 +48,7 @@ NOT_THE_SCHOOL = [
     "Main Office Closed",
     "Library Closed for Inventory",
     "ALL District Offices Closed",
+    "School Offices Closed on Fridays",
 ]
 
 
@@ -139,7 +140,8 @@ def test_a_half_day_wins_over_a_break_that_starts_that_day():
     "title",
     ["12:50 Dismissal", "1pm Dismissal", "2 PM Dismissal", "12:45 Dismissal Day", "Final Exams--12:00 pm dismissal",
      "Conferences/12:50 Dismissal", "12:09pm Student Dismissal (Staff PD 2:27pm Dismissal)", "1:00 PM  Dismissal - Students Only",
-     "1/2 Day - District", "1/2 Day - Parent/Teacher Conf", "District ½ Day", "One Session Day - Students"],
+     "1/2 Day - District", "1/2 Day - Parent/Teacher Conf", "District ½ Day", "One Session Day - Students",
+     "Students Half Days - Staff Full Days", "Early Dismiss Students"],
 )
 def test_a_midday_dismissal_time_is_a_half_day(title):
     assert classify_day([title])[0] == "early_dismissal" and is_status_title(title)
@@ -150,3 +152,8 @@ def test_a_midday_dismissal_time_is_a_half_day(title):
 )
 def test_a_regular_or_preschool_dismissal_time_is_not_a_half_day(title):
     assert classify_day([title])[0] == "open"
+
+
+def test_in_service_spelled_with_a_space_is_a_status_title():
+    # Clearview writes it both ways on one calendar.
+    assert is_status_title("Teacher In Service") and is_status_title("Teacher In-Service")

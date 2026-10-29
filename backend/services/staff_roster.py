@@ -910,6 +910,9 @@ _DIRECTORY_PATHS = (
     "/our-school/staff-directory",
     # Springfield Township (Burlington): /staff-directory 301s home.
     "/directory",
+    # East Greenwich's school sub-sites and South Harrison.
+    "/our-school/about-us/staff-directory",
+    "/about-us/staff-directory",
 )
 
 

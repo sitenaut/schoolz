@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, func, select
@@ -9,11 +9,10 @@ from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
 from services.lunch_menu import discover_current_menus, parse_menu_pdf
 
-
 # Menus stored before this had their partial first week dropped by the parser
 # (Cherry Hill's October menu lost Oct 1-2); there is no admin path to delete a
 # stored menu, so one older than this is re-parsed in place on its next scan.
-_REPARSE_BEFORE = datetime(2026, 10, 1, 5, 30, tzinfo=timezone.utc)
+_REPARSE_BEFORE = datetime(2026, 10, 1, 5, 30, tzinfo=UTC)
 _TZ = ZoneInfo("America/New_York")
 _MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
 
@@ -91,7 +90,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
         if stored:
             menu = stored
-            menu.parsed_at = datetime.now(timezone.utc)
+            menu.parsed_at = datetime.now(UTC)
             await db.execute(delete(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu.id))
         else:
             menu = LunchMenu(
@@ -103,7 +102,17 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             )
             db.add(menu)
         await db.flush()
+        # The model can list one date twice (Kingsway's HS menu); one row per
+        # date is a constraint, so a repeat's dishes join the first's.
+        by_date: dict = {}
         for day in days:
+            if day["date"] in by_date:
+                first = by_date[day["date"]]
+                if day["description"] and day["description"] not in first["description"]:
+                    first["description"] = f"{first['description']}; {day['description']}"
+                continue
+            by_date[day["date"]] = dict(day)
+        for day in by_date.values():
             db.add(LunchMenuItem(lunch_menu_id=menu.id, menu_date=day["date"], description=day["description"], notes=day.get("notes")))
         new_menus += 1
 

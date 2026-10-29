@@ -44,14 +44,18 @@ _TYPE_DEPARTMENTS = {"elementary": "ES", "middle": "MS", "high": "HS"}
 
 def apptegy_school_departments(school: School, same_type_siblings: int) -> set[str]:
     """Department chips on a district org's directory that mean this school:
-    its own `/o/<alias>` (Shamong: IMS, IMMS), or its type code (Clayton: ES,
-    MS, HS) when no sibling shares the type."""
+    its own `/o/<alias>` (Shamong: IMS, IMMS), its type code (Clayton: ES,
+    MS, HS) when no sibling shares the type, or its own name."""
     codes = set()
     alias = re.search(r"/o/([A-Za-z0-9_-]+)", school.website_url or "")
     if alias:
         codes.add(alias.group(1).upper())
     if not same_type_siblings and school.school_type in _TYPE_DEPARTMENTS:
         codes.add(_TYPE_DEPARTMENTS[school.school_type])
+    # Township of Franklin's chips are the building's full name ("Mary F. Janvier School").
+    if school.name:
+        codes.add(school.name.upper())
+        codes.add(re.sub(r"\s+SCHOOL$", "", school.name.upper()))
     return codes
 
 

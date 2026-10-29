@@ -61,6 +61,7 @@ function school(overrides: Partial<School>): School {
 describe("isStatusItem", () => {
   it("recognizes closures, half days, and delays", () => {
     expect(isStatusItem("SCHOOLS CLOSED - Labor Day")).toBe(true);
+    expect(isStatusItem("Teacher In Service")).toBe(true);
     expect(isStatusItem("Early Dismissal")).toBe(true);
     expect(isStatusItem("2 Hour Delay")).toBe(true);
   });
@@ -163,6 +164,8 @@ describe("otherGradesOnly", () => {
     expect(otherGradesOnly("DHS Prom & K-8 PCPEP Single Session", "high")).toBe(true);
     expect(otherGradesOnly("DHS Prom & K-8 PCPEP Single Session", "middle")).toBe(false);
     expect(otherGradesOnly("Single Session K-12", "high")).toBe(false);
+    expect(otherGradesOnly("Preschool Only Early Dismissal", "elementary")).toBe(true);
+    expect(otherGradesOnly("Preschool Only Early Dismissal", "other")).toBe(false);
     expect(otherGradesOnly("K-5 Single Session - Parent Conferences", "middle")).toBe(false);
     expect(otherGradesOnly("PK-4 Single Session", "middle")).toBe(true);
     expect(otherGradesOnly("Early Dismissal", "high")).toBe(false);
@@ -241,6 +244,7 @@ describe("saysClosed", () => {
       "Board of Education Meeting - Executive (Closed) Session",
       "Main Office Closed",
       "ALL District Offices Closed",
+      "School Offices Closed on Fridays",
     ]) {
       expect(saysClosed(t)).toBe(false);
       expect(dayStatusOf([t])).toBeNull();

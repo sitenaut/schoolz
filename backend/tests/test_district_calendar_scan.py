@@ -31,7 +31,7 @@ SCHOOL_FEED = DISTRICT_FEED + [_event("u-picture", "Picture Day", 16), _event("u
 
 @pytest.mark.anyio
 async def test_school_feed_keeps_only_its_own_events_scoped_to_the_school(monkeypatch):
-    async def fake_fetch(url: str) -> list[dict]:
+    async def fake_fetch(url: str, **_) -> list[dict]:
         return [dict(e) for e in (SCHOOL_FEED if "school" in url else DISTRICT_FEED)]
 
     monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
@@ -73,7 +73,7 @@ async def test_school_feed_drops_district_events_copied_under_new_uids(monkeypat
     # school feed with fresh UIDs; the same day and title still marks a copy.
     copied = [_event("s-labor", "District  closed for Labor Day", 7), _event("s-picture", "Picture Day", 16)]
 
-    async def fake_fetch(url: str) -> list[dict]:
+    async def fake_fetch(url: str, **_) -> list[dict]:
         return [dict(e) for e in (copied if "school" in url else DISTRICT_FEED)]
 
     monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
@@ -110,7 +110,7 @@ async def test_apptegy_feed_uses_org_id_not_url(monkeypatch):
         seen_org_ids.append(org_id)
         return [_event("u-apptegy", "Staff PD", 5)]
 
-    async def fail_if_called(url):
+    async def fail_if_called(url, **_):
         raise AssertionError("ics fetcher should not be called for an apptegy feed")
 
     monkeypatch.setattr(district_calendar_scan, "fetch_apptegy_events", fake_apptegy_fetch)
@@ -142,7 +142,7 @@ async def test_an_event_gone_from_the_feed_is_retired_but_a_failed_fetch_retires
     closure, fair, past = _upcoming("u-closed", "SCHOOLS CLOSED", 3), _upcoming("u-fair", "Book Fair", 10), _event("u-old", "Old Event", 2)
     feed = {"events": [closure, fair, past]}
 
-    async def fake_fetch(url: str) -> list[dict]:
+    async def fake_fetch(url: str, **_) -> list[dict]:
         return [dict(e) for e in feed["events"]]
 
     monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
@@ -181,7 +181,7 @@ async def test_an_event_gone_from_the_feed_is_retired_but_a_failed_fetch_retires
 async def test_school_feeds_wait_when_the_district_feed_comes_back_empty(monkeypatch):
     district_feed = {"events": []}  # a maintenance page parses to no events
 
-    async def fake_fetch(url: str) -> list[dict]:
+    async def fake_fetch(url: str, **_) -> list[dict]:
         return [dict(e) for e in (SCHOOL_FEED if "school" in url else district_feed["events"])]
 
     monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
@@ -217,7 +217,7 @@ async def test_a_title_prefix_puts_a_union_feed_event_on_its_school(monkeypatch)
     # Pemberton: one feed for every building, told apart only by "PTHS - ".
     feed = [_event("u-closed", "No School - Labor Day", 7), _event("u-delay", "PTHS - Delayed Opening (Testing)", 15)]
 
-    async def fake_fetch(url: str) -> list[dict]:
+    async def fake_fetch(url: str, **_) -> list[dict]:
         return [dict(e) for e in feed]
 
     monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
@@ -244,7 +244,7 @@ async def test_a_title_prefix_puts_a_union_feed_event_on_its_school(monkeypatch)
 async def test_adding_a_prefix_later_moves_the_existing_row_to_the_school(monkeypatch):
     feed = [_event("u-half", "GHS: Half Day", 23)]
 
-    async def fake_fetch(url: str) -> list[dict]:
+    async def fake_fetch(url: str, **_) -> list[dict]:
         return [dict(e) for e in feed]
 
     monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
@@ -265,3 +265,27 @@ async def test_adding_a_prefix_later_moves_the_existing_row_to_the_school(monkey
         await db.flush()
         rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.external_uid == "District:u-half"))).scalars().all()
         assert [(r.scope, r.school_id, r.district_id) for r in rows] == [("school", hs.id, None)]
+
+
+@pytest.mark.anyio
+async def test_skip_sections_drops_an_apptegy_section(monkeypatch):
+    # Clearview: facility bookings filed under their own section on the same org.
+    feed = [{**_event("a-closed", "School Closed", 7), "section": "District Calendar"},
+            {**_event("a-practice", "Boys Soccer Practice", 7), "section": "Activities and Athletics"}]
+
+    async def fake_fetch(org_id, start, end) -> list[dict]:
+        return [dict(e) for e in feed]
+
+    monkeypatch.setattr(district_calendar_scan, "fetch_apptegy_events", fake_fetch)
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Section District {tag}")
+        db.add(district)
+        await db.flush()
+        district.ics_feeds = [{"name": "District", "platform": "apptegy", "org_id": "1", "skip_sections": ["activities and athletics"]}]
+        await db.commit()
+
+        await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+        rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.district_id == district.id))).scalars().all()
+        assert [r.title for r in rows] == ["School Closed"]

@@ -1,0 +1,156 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Township of Franklin School District (Gloucester County)",
+  "districts": [
+    {
+      "name": "Township of Franklin School District",
+      "state": "NJ",
+      "website_url": "https://www.franklintwpschools.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Township of Franklin District",
+          "platform": "apptegy",
+          "org_id": "20991",
+          "school_title_prefixes": {
+            "CLR": "caroline-l-reutter",
+            "MFJ": "mary-f-janvier",
+            "MRS": "main-road",
+            "Main Road": "main-road"
+          }
+        },
+        {
+          "name": "Caroline L. Reutter School",
+          "platform": "apptegy",
+          "org_id": "21151",
+          "school_slug": "caroline-l-reutter"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.franklintwpschools.org/page/transportation",
+      "towns": [
+        "Franklin Township",
+        "Newfield"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "mary-f-janvier",
+      "name": "Mary F. Janvier School",
+      "short_name": "Janvier",
+      "district_name": "Township of Franklin School District",
+      "school_type": "elementary",
+      "address": "1532 Pennsylvania Avenue, Franklinville, NJ 08322",
+      "main_phone": "(856) 629-0431",
+      "website_url": "https://janvier.franklintwpschools.org/o/mfjs",
+      "apptegy_org_id": "21153",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 629-0431",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before the school day starts, call the 24-hour absence line at (856) 629-0431 and press 5. Leave your name, your child's name, homeroom teacher, the reason and how many days you expect the absence to last. Doctor's notes are due within 10 days of return.",
+      "start_time": "8:55 AM",
+      "end_time": "3:40 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": "10:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/21153/logo/23967/New_Janvier_Jackrabbit.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 768-8190",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "AM and PM care at Janvier by Just Kids (Archway Programs), run independently of the district; register with them directly.",
+        "handbook_url": "https://www.franklintwpschools.org/documents/parents-students/before-%26-after-school-care/572156"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "main-road",
+      "name": "Main Road School",
+      "short_name": "Main Road",
+      "district_name": "Township of Franklin School District",
+      "school_type": "elementary",
+      "address": "1452 Main Road, Newfield, NJ 08344",
+      "main_phone": "(856) 697-0220",
+      "website_url": "https://mainroad.franklintwpschools.org/o/mrs",
+      "apptegy_org_id": "21152",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 629-9500 ext. 2500",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before the school day starts, call Main Road School's 24-hour voice mailbox at (856) 629-9500 ext. 2500 with your name, your child's name and grade, and how many days you expect the absence to last.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/21152/logo/23966/Marley_the_Mustang.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 768-8190",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "AM and PM care at Main Road by Just Kids (Archway Programs), run independently of the district; Reutter students are bused here for PM care.",
+        "handbook_url": "https://www.franklintwpschools.org/documents/parents-students/before-%26-after-school-care/572156"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "caroline-l-reutter",
+      "name": "Caroline L. Reutter School",
+      "short_name": "Reutter",
+      "district_name": "Township of Franklin School District",
+      "school_type": "elementary",
+      "address": "2150 Delsea Drive, Franklinville, NJ 08322",
+      "main_phone": "(856) 694-0223",
+      "website_url": "https://reutter.franklintwpschools.org/o/clrs",
+      "apptegy_org_id": "21151",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 629-9500 ext. 3500",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before the school day starts, call Reutter School's 24-hour voice mailbox at (856) 629-9500 ext. 3500 with your name, your child's name and grade, and how many days you expect the absence to last. Physician notes go to the main office within 10 days of return.",
+      "start_time": "7:20 AM",
+      "end_time": "2:05 PM",
+      "early_dismissal_time": "12:05 PM",
+      "delayed_opening_time": "9:20 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/21151/logo/23965/Caroline_L._REUTTER.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 768-8190",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "PM care only, by Just Kids (Archway Programs): students are bused to Main Road School at the end of the day. No AM care at Reutter.",
+        "handbook_url": "https://www.franklintwpschools.org/documents/parents-students/before-%26-after-school-care/572156"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

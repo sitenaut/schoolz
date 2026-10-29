@@ -70,6 +70,8 @@ async def fetch_events(org_id: str, start: date, end: date, timeout: float = 30.
                 "start_date": start,
                 "end_date": end,
                 "is_all_day": bool(event.get("all_day")),
+                # The calendar section the event is filed under, for a feed's skip_sections.
+                "section": (event.get("custom_section_name") or "").strip() or None,
                 # Only local_events reads these (town sites on Apptegy).
                 "venue": (event.get("venue") or event.get("address") or "").strip().rstrip(",") or None,
                 "latitude": _float_or_none(event.get("latitude")),

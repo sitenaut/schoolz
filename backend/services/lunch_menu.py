@@ -65,8 +65,9 @@ _MONTH_YEAR_FORMS_RE = re.compile(r"(" + "|".join(_MONTHS) + r")-(\d{4})-lunch-f
 
 # Evesham publishes the menu PDF beside per-band "..._lunch_spreadsheet.pdf" /
 # "..._breakfast_spreadsheet.pdf" nutrition tables with the same month prefix;
-# those aren't menus.
-_NOT_A_MENU_RE = re.compile(r"spreadsheet|nutrition|breakfast|allergen", re.IGNORECASE)
+# those aren't menus. East Greenwich's "October2026-Preschool.pdf" sits beside
+# "October2026-Lunch.pdf" and is the preschool's, not the school's.
+_NOT_A_MENU_RE = re.compile(r"spreadsheet|nutrition|breakfast|allergen|pre-?school|pre-?k", re.IGNORECASE)
 
 
 # Laurel Springs: "2026-09-Lunch-Menu-LSS.pdf" - numeric month, and one PDF
@@ -145,6 +146,53 @@ def _classify_month_band_pdf_link(url: str, today: date | None = None) -> list[d
         }
         for school_type in _BAND_WORDS[band_key]
     ]
+
+
+# Kingsway: "HSOctoberLunchMenu.pdf", "MSOctoberLunchMenu.pdf",
+# "HSBreakfastOctoberMenu.pdf", "MiddleSchoolBreakfastOctoberMenu.pdf" - a
+# band glued to the month (the meal before or after it), no year.
+_GLUED_BAND_MENU_RE = re.compile(
+    r"^(HS|MS|HighSchool|MiddleSchool)(Breakfast|Lunch)?(" + "|".join(_MONTHS) + r")(Breakfast|Lunch)?Menu\b",
+    re.IGNORECASE,
+)
+_GLUED_BAND = {"HS": "high", "HIGHSCHOOL": "high", "MS": "middle", "MIDDLESCHOOL": "middle"}
+# South Harrison: "OctoberK-6Menu.pdf" (lunch, no meal word, no year);
+# its "OctoberPreKMenu.pdf" and "OctoberBreakfastMenu.pdf" twins don't match.
+# Logan: "LOG ELEM Lunch Menu 2026 OCT.pdf", "LOG Middle Lunch Menu 2026 OCT.pdf"
+# (its "FED PRE-K & K ..." twin is skipped: Pre-K/K would collide with ELEM).
+_BAND_YEAR_MONTH_MENU_RE = re.compile(
+    r"\b(ELEM|Elementary|Middle|MS|HS|High)\b[\w &-]*?\b(Breakfast|Lunch)\s+Menu\s+(\d{4})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEPT?|OCT|NOV|DEC)\b",
+    re.IGNORECASE,
+)
+_BAND_YEAR_MONTH = {"ELEM": "elementary", "ELEMENTARY": "elementary", "MIDDLE": "middle", "MS": "middle", "HS": "high", "HIGH": "high"}
+_MONTH_GRADES_MENU_RE = re.compile(r"^(" + "|".join(_MONTHS) + r")K-?\d+Menu\b", re.IGNORECASE)
+
+
+def _classify_glued_band_pdf_link(url: str, today: date | None = None) -> dict | None:
+    filename = unquote(url.rsplit("/", 1)[-1].split("?", 1)[0])
+    banded = _BAND_YEAR_MONTH_MENU_RE.search(filename)
+    if banded:
+        band, meal, year, mon = banded.groups()
+        month_idx = next(i for i, m in enumerate(_MONTHS) if m.startswith(mon.lower()[:3]))
+        return {"school_type": _BAND_YEAR_MONTH[band.upper()], "meal_type": meal.lower(), "period_label": f"{_MONTHS[month_idx].title()} {year}", "pdf_url": url, "_sort": (int(year), month_idx)}
+    grades = _MONTH_GRADES_MENU_RE.search(filename)
+    if grades:
+        month_idx = _MONTHS.index(grades.group(1).lower())
+        year_num = _infer_year(month_idx, today or datetime.now(ZoneInfo("America/New_York")).date())
+        return {"school_type": "elementary", "meal_type": "lunch", "period_label": f"{_MONTHS[month_idx].title()} {year_num}", "pdf_url": url, "_sort": (year_num, month_idx)}
+    match = _GLUED_BAND_MENU_RE.search(filename)
+    if not match or not (match.group(2) or match.group(4)):
+        return None
+    band, meal_before, month, meal_after = match.groups()
+    month_idx = _MONTHS.index(month.lower())
+    year_num = _infer_year(month_idx, today or datetime.now(ZoneInfo("America/New_York")).date())
+    return {
+        "school_type": _GLUED_BAND[band.upper()],
+        "meal_type": (meal_before or meal_after).lower(),
+        "period_label": f"{month.title()} {year_num}",
+        "pdf_url": url,
+        "_sort": (year_num, month_idx),
+    }
 
 
 def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
@@ -533,7 +581,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     by_key: dict[tuple, dict] = {}
     classified_links = []
     for u in urls:
-        one = _classify_pdf_link(u) or _classify_coded_pdf_link(u)
+        one = _classify_pdf_link(u) or _classify_coded_pdf_link(u) or _classify_glued_band_pdf_link(u)
         # A band no school in the district has (Burlington City's Pre-K) would only cost a parse.
         classified_links += [one] if one else [
             c for c in _classify_band_words_pdf_link(u) + _classify_month_band_pdf_link(u) if not school_types or c["school_type"] in school_types

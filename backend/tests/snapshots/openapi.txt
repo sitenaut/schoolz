@@ -1137,7 +1137,7 @@ HelpKindOut { kind: string, label: string }
 HideIn { note: string }
 Hours { alternate_weeks_from?: string(date) | null, mode?: enum(weekly,monthly,24_7,appointment,call) | null, monthly?: list[MonthlyRule], note?: string | null, season?: Season | null, seasonal?: string | null, weekly?: dict[list[HoursRange]] }
 HoursRange { close: string, open: string }
-IcsFeed { name: string, org_id?: string | null, platform?: string | null, school_slug?: string | null, school_title_prefixes?: dict[string] | null, school_types?: list[string] | null, skip_title_prefixes?: list[string] | null, url?: string | null }
+IcsFeed { name: string, org_id?: string | null, platform?: string | null, school_slug?: string | null, school_title_prefixes?: dict[string] | null, school_types?: list[string] | null, skip_sections?: list[string] | null, skip_title_prefixes?: list[string] | null, url?: string | null }
 InquiryIn { bot_token?: string | null, contact_name: string, email?: string | null, organization_name: string, phone: string, town: string, website?: string | null, what_you_provide: string }
 InviteCreate { invitee_email: string(email) }
 InviteOut { accept_url: string, expires_at: string(date-time), id: string, invitee_email: string, status: string, token: string }

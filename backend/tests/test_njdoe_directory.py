@@ -64,3 +64,11 @@ def test_a_name_split_differently_still_matches():
     rows = [{"District Name": "Bordentown Regional School District", "School Name": "Mac Farland Intermediate"},
             {"District Name": "Bordentown Regional School District", "School Name": "Clara Barton Elementary"}]
     assert nj.match_row(rows, "Bordentown Regional School District", "MacFarland Intermediate School") is rows[0]
+
+
+def test_twp_and_township_are_the_same_school():
+    rows = [{"District Name": "South Harrison Township School District", "School Name": "South Harrison Twp School"}]
+    d = "South Harrison Township School District"
+    assert nj.match_row(rows, d, "South Harrison Township Elementary School") is rows[0]
+    # a name made only of generic words is no name at all
+    assert nj.match_row([*rows, {**rows[0], "School Name": "Other School"}], d, "Elementary School") is None

@@ -1,0 +1,87 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Harrison Township School District",
+  "districts": [
+    {
+      "name": "Harrison Township School District",
+      "state": "NJ",
+      "website_url": "https://www.harrisontwp.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://www.harrisontwp.k12.nj.us/harrison-township-school-district-calendar",
+      "ics_feeds": [
+        {
+          "name": "Harrison Township District Calendar",
+          "url": "https://www.harrisontwp.k12.nj.us/calendar/calendar_350.ics",
+          "skip_title_prefixes": [
+            "Day 0"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.harrisontwp.k12.nj.us/district/transportation/transportation",
+      "towns": [
+        "Harrison Township"
+      ],
+      "schoolcafe_shortname": "HARRISONTOWNSHIPSDNUTRISERVEME"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "harrison-township-elementary",
+      "name": "Harrison Township Elementary School",
+      "short_name": "Harrison Elementary",
+      "district_name": "Harrison Township School District",
+      "school_type": "elementary",
+      "address": "120 N. Main St., Mullica Hill, NJ 08062",
+      "main_phone": "(856) 478-2016",
+      "website_url": "https://hts.harrisontwp.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 478-2016 ext. 1000",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line as far in advance as possible, and no later than 9:00 AM on the day of the absence; then send in a note explaining the reason.",
+      "start_time": "8:25 AM",
+      "end_time": "3:10 PM",
+      "early_dismissal_time": "1:05 PM",
+      "delayed_opening_time": "10:25 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "givebacks_shortname": "harrisontownshippta"
+    },
+    {
+      "slug": "pleasant-valley",
+      "name": "Pleasant Valley School",
+      "short_name": "Pleasant Valley",
+      "district_name": "Harrison Township School District",
+      "school_type": "elementary",
+      "address": "401 Cedar Rd., Mullica Hill, NJ 08062",
+      "main_phone": "(856) 223-5120",
+      "website_url": "https://pvs.harrisontwp.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 223-5120 ext. 2000",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line as far in advance as possible, and no later than 9:00 AM on the day of the absence; then send in a note explaining the reason.",
+      "start_time": "7:45 AM",
+      "end_time": "2:25 PM",
+      "early_dismissal_time": "12:20 PM",
+      "delayed_opening_time": "9:45 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

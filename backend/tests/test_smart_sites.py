@@ -101,6 +101,15 @@ def test_role_pages_name_a_person_only_where_the_page_places_one():
     assert role_pages.parse_page(_fx("role_page_nurse"), "School Nurse") is None
 
 
+def test_a_heading_above_the_address_is_not_the_nurse():
+    from services import role_pages
+
+    # Delsea's and Aura's nurse pages: a heading, then the nurse's address.
+    for heading in ("Contact Information", "Health Forms"):
+        html = f"<main><h2>{heading}</h2><p><a href='mailto:nurse@example.org'>nurse@example.org</a></p></main>"
+        assert role_pages.parse_page(html, "Nurse") is None
+
+
 def test_role_links_come_from_the_nav_and_principals_message_is_the_principal():
     from services import role_pages
 

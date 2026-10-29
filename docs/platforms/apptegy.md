@@ -67,3 +67,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - **An all-day event's `end_at` is its last day** ("2026-11-27T00:00" for Thanksgiving Nov 26-27; a one-day closure ends on its start), unlike ICS. `apptegy.fetch_events` adds a day so `end_date` means the day after, as everywhere else; before that, every multi-day Apptegy closure's last day read as a school day.
 - The rendered home page carries the whole nav tree as JSON (`"menu":[...]`), the quickest list of page slugs; `/documents/<folder>/<id>` pages list unsigned `files-backend.assets.thrillshare.com` PDF URLs.
 
+
+## Township of Franklin and Clearview (found onboarding)
+
+- Each school org can carry a near-full copy of the district's union feed under different event ids (the Westampton shape) and add a few events of its own: wire the district org with `school_title_prefixes`, plus only the school orgs that add events after dedup.
+- Every org of a district can also return one facility/activities section (Clearview: 1,758 practices, rentals and games under "Activities and Athletics" beside a 22-event "District Calendar"). The API ignores `slug=`, `custom_section_id=` and `section_id=`; each event's `custom_section_name` is read into `section`, and the feed's `skip_sections` drops it.
+- A district roster's department chips can be full building names (Township of Franklin), a third shape after alias codes (Shamong) and type codes (Clayton); or building membership can live only in `meta.filters`/`filter_ids` with a uniform department (Clearview), which nothing reads yet.
+- Lunch menus can sit in a documents folder whose file links render only client-side (`cms/documents` 404s).
+- A calendar PDF short link can resolve to a file named for the prior year whose content is the current year.

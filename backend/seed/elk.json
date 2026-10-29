@@ -1,0 +1,77 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Elk Township School District",
+  "districts": [
+    {
+      "name": "Elk Township School District",
+      "state": "NJ",
+      "website_url": "https://www.auraelementary.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://www.auraelementary.us/76522_1",
+      "ics_feeds": [
+        {
+          "name": "Aura School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_4d012371d6c32bf9f7bdb46d88bec96e9c6db29fa5211d276594e302cc1f1906%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.auraelementary.us/434650_2",
+      "towns": [
+        "Elk"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "aura-elementary",
+      "name": "Aura Elementary School",
+      "short_name": "Aura",
+      "district_name": "Elk Township School District",
+      "school_type": "elementary",
+      "address": "900 Clems Run, Glassboro, NJ 08028",
+      "main_phone": "(856) 881-4551",
+      "website_url": "https://www.auraelementary.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 881-4551",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school on the first day of the absence, before the school day begins; otherwise an automated call goes out. Send a signed note (name, date, reason) when the student returns; a doctor's note is required after three consecutive days.",
+      "start_time": "8:20 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "10:20 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/6075/header_logo_img_6bcatd.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 5:30 PM",
+        "site_phone": "(856) 863-4900",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Golden Gate Adventure Club (Golden Gate Inc.), held at Aura Elementary; register through Golden Gate.",
+        "handbook_url": "https://www.thegoldengateinc.com/golden-gate-schools"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://www.auraelementary.us/126215_2",
+      "label": "From the Principal's Desk (Aura Elementary)",
+      "school_slug": "aura-elementary",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

@@ -12,9 +12,10 @@ from services.school_status import is_status_title, same_status_fact
 
 # Apptegy's events API needs an explicit date range, unlike an .ics feed
 # which just hands over everything it has. Wide enough to cover a school
-# year looking both directions from whenever this happens to run.
+# year looking both directions from whenever this happens to run; an .ics
+# feed's past is cut at the same point.
 _ET = ZoneInfo("America/New_York")
-_APPTEGY_WINDOW_PAST_DAYS = 120
+_WINDOW_PAST_DAYS = 120
 _APPTEGY_WINDOW_FUTURE_DAYS = 400
 
 
@@ -22,9 +23,10 @@ async def _fetch_feed(feed: dict) -> list[dict]:
     if feed.get("platform") == "apptegy":
         today = date.today()
         return await fetch_apptegy_events(
-            feed["org_id"], today - timedelta(days=_APPTEGY_WINDOW_PAST_DAYS), today + timedelta(days=_APPTEGY_WINDOW_FUTURE_DAYS)
+            feed["org_id"], today - timedelta(days=_WINDOW_PAST_DAYS), today + timedelta(days=_APPTEGY_WINDOW_FUTURE_DAYS)
         )
-    return await fetch_district_calendar(feed["url"])
+    since = datetime.now(_ET) - timedelta(days=_WINDOW_PAST_DAYS)
+    return await fetch_district_calendar(feed["url"], since=since)
 
 
 def _retire_vanished(fetched: list[tuple[dict, list[dict]]], events: list[dict], existing_by_uid: dict) -> int:
@@ -86,6 +88,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         (await db.execute(select(School.slug, School.id).where(School.slug.in_(slugs)))).all()
     ) if slugs else {}
 
+    district_schools = (await db.execute(select(School.name, School.short_name, School.school_type).where(School.district_id == district.id))).all()
+
     fetched = []
     district_wide_uids: set[str] = set()
     district_wide_keys: set[tuple] = set()
@@ -107,6 +111,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         skip = tuple(p.lower() for p in feed.get("skip_title_prefixes") or [])
         if skip:
             feed_events = [e for e in feed_events if not e["title"].lower().startswith(skip)]
+        if skip_sections := {s.lower() for s in feed.get("skip_sections") or []}:
+            feed_events = [e for e in feed_events if (e.get("section") or "").lower() not in skip_sections]
         fetched.append((feed, feed_events))
         if not slug:
             district_wide_uids.update(e["external_uid"] for e in feed_events)
@@ -147,7 +153,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 (school_id_by_slug.get(slug) for p, slug in by_prefix if event["title"].lower().startswith(p) and school_id_by_slug.get(slug)), None
             )
             event["school_id"] = own_school
-            event["applies_to_school_types"] = None if own_school else (school_types or school_types_from_title(event["title"]))
+            event["applies_to_school_types"] = None if own_school else (school_types or school_types_from_title(event["title"], district_schools))
             events.append(event)
 
     if not events and held_back:

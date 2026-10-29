@@ -23,7 +23,12 @@ _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _GENERIC_EMAIL_RE = re.compile(r"^(info|office|contact|webmaster|noreply)@", re.I)
 _TITLE_LINE_RE = re.compile(r"^(assistant\s+)?principal$|^school\s+(nurse|counselor)$|^nurse$|\bschool counselor$", re.I)
 _MAX_ROLE_PAGES = 8
-_HEADING_WORDS = {"message", "welcome", "dear", "families", "family", "letter", "greetings"}
+# "Contact Information" and "Health Forms" head Delsea's and Aura's nurse pages,
+# right above the nurse's address.
+_HEADING_WORDS = {
+    "message", "welcome", "dear", "families", "family", "letter", "greetings", "contact", "information", "health",
+    "forms",
+}
 
 
 def _is_name(line: str) -> bool:

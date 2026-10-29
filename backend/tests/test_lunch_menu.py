@@ -57,6 +57,9 @@ def test_classifies_audubon_prek_lunch():
 def test_unbanded_skips_spreadsheet_siblings():
     assert _classify_unbanded_pdf_link(".../September2026_lunch_spreadsheet.pdf", "elementary") is None
     assert _classify_unbanded_pdf_link(".../September_2026_Breakfast.pdf", "elementary") is None
+    assert _classify_unbanded_pdf_link(".../October2026-Preschool.pdf", "elementary") is None
+    assert _classify_unbanded_pdf_link(".../NOV2026PreKMenu.pdf", "elementary") is None
+    assert _classify_unbanded_pdf_link(".../October2026-Lunch.pdf", "elementary")["period_label"] == "October 2026"
     assert _classify_unbanded_pdf_link(".../September_2026.pdf", "elementary")["period_label"] == "September 2026"
 
 
@@ -335,3 +338,28 @@ def test_month_band_meal_filenames_with_no_year():
     assert [(x["school_type"], x["meal_type"], x["period_label"]) for x in elem] == [("elementary", "breakfast", "November 2026")]
     assert c(base + "oct_prek_lunch_menu.pdf", today)[0]["school_type"] == "other"
     assert c(base + "October-Lunch-Menu.pdf", today) == []
+
+
+def test_band_glued_to_the_month_with_no_year():
+    # Kingsway's menus page.
+    from datetime import date
+
+    from services.lunch_menu import _classify_glued_band_pdf_link as c
+
+    today = date(2026, 10, 29)
+    base = "https://resources.finalsite.net/images/v1/kingswayk12njus/"
+    hs = c(base + "HSOctoberLunchMenu.pdf", today)
+    assert (hs["school_type"], hs["meal_type"], hs["period_label"]) == ("high", "lunch", "October 2026")
+    ms = c(base + "MiddleSchoolBreakfastOctoberMenu.pdf", today)
+    assert (ms["school_type"], ms["meal_type"]) == ("middle", "breakfast")
+    assert c(base + "HSBreakfastNovemberMenu.pdf", today)["period_label"] == "November 2026"
+    assert c(base + "OctoberLunchMenu.pdf", today) is None
+    # South Harrison's K-6 lunch, no meal word.
+    sh = c("https://x/OctoberK-6Menu.pdf", today)
+    assert (sh["school_type"], sh["meal_type"], sh["period_label"]) == ("elementary", "lunch", "October 2026")
+    assert c("https://x/OctoberPreKMenu.pdf", today) is None
+    # Logan: band, meal, year, month.
+    lg = c("https://x/LOG%20Middle%20Lunch%20Menu%202026%20OCT.pdf", today)
+    assert (lg["school_type"], lg["meal_type"], lg["period_label"]) == ("middle", "lunch", "October 2026")
+    assert c("https://x/LOG ELEM Lunch Menu 2026 OCT.pdf", today)["school_type"] == "elementary"
+    assert c("https://x/FED PRE-K & K Lunch Menu 2026 OCT.pdf", today) is None
