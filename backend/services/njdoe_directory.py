@@ -102,6 +102,10 @@ def match_row(rows: list[dict], district_name: str, school_name: str) -> dict | 
     exact = [r for r in in_district if _norm(r["School Name"]) == _norm(school_name)]
     if len(exact) == 1:
         return exact[0]
+    # The state's "Mac Farland Intermediate" is our "MacFarland Intermediate School".
+    squashed = [r for r in in_district if _norm(r["School Name"]).replace(" ", "") in _norm(school_name).replace(" ", "")]
+    if len(squashed) == 1:
+        return squashed[0]
     theirs = set(_norm(school_name).split())
     loose = [r for r in in_district if _either_contains(theirs, set(_norm(r["School Name"]).split()))]
     if len(loose) == 1:

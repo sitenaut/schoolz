@@ -30,6 +30,8 @@ def test_entity_id_from_school_calendar_url():
     # links this shape ("/School/Calendar/<id>") to its own real
     # arbiterlive.com entity.
     assert entity_id_from_athletics_url("https://arbiterlive.com/School/Calendar/975") == "975"
+    # Bordentown High links the bare "/School/<id>" form.
+    assert entity_id_from_athletics_url("https://www.arbiterlive.com/School/2202") == "2202"
 
 
 def _game(uid, team, opponent="vs Delran High School"):

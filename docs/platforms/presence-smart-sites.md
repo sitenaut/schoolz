@@ -145,3 +145,9 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - The district calendar PDF can be served straight from a dated page URL (`/calendar/2026_2027_District_calendar`); `/calendar` itself links that page, not a `.pdf`.
 - Bell schedules can be page URLs that redirect to CDN JPGs.
 
+## North Hanover and Bordentown (found onboarding)
+
+- Presence (North Hanover): the district feed can be its own calendar, not a union of the school feeds, and the only one covering the whole year: wire it with the school feeds. A nav item can be a link page that 302s to a Smore issue.
+- Smart Sites (Bordentown): the district host's calendar can be the union of every school's Google calendar plus district events, while each school host's calendar holds only its own: wire the school feeds, not the union.
+- A Smart Sites directory page can hold a document-viewer PDF and an empty `getOnDemandDirectoryContent` widget ("No Staff") side by side.
+
