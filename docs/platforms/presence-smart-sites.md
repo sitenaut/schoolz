@@ -123,3 +123,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - **Legacy directory** (`/directory`, a `/<page>_2` slug): server-rendered `li.ss-directory-ppl-list__card` cards (first `<br>` last name, `div.dir_title` role like "Principal - TES", empty `data-staff-email`), paged by plain `?offset=24&ppl=2` links. There is no `getOnDemandDirectoryContent` widget; `smart_sites.fetch_roster` reads this layout and follows the offset links.
 - Document-list pages (sports schedules, HSA newsletters, district calendar) link `files.smartsites.parentsquare.com` PDFs directly.
 - The home-page calendar widget's `/api/calendars/<id>/events` gives the Google `calIDref`; its public `basic.ics` is the feed.
+
+## Edgewater Park (found onboarding)
+
+- **Schools as pages of one district host** (`edgewaterparksd.org/mildred-magowan-elementary-school`): the site-relative AJAX endpoints (`/includes/ajax/load_stack_staff_directory.php`, `/api/calendars/<id>/events`) answer only at the host root (under the page they 404), and every page's footer is the district office. `smart_sites.fetch_roster` posts to the origin, and `discover_school_info` flags a sub-page as `shared_footer` so `school_info.scan` only fills blanks.
+- A contacts page can hold both a hand-typed role list (name, title, `mailto:`) and a `getOnDemandDirectoryContent` widget whose titles are a group label ("MES Teachers"); `fetch_roster` reads only the widget, and the contact-page fallback found the nurse but not the principal (NJ DOE CSV fills that).
+- `staff_directory_url` is for a directory published as a document (PDF, Google Sheet or Slides); setting it to a contacts page makes the roster scan parse that HTML as a PDF and fail.
+- Everything else is Google Drive `file/d/<id>/view` links (menus, the district calendar PDF, forms). `district_calendar_pdf._drive_calendar_link` reads only text before the anchor, so a link whose own text is "District Calendar" is missed.
+

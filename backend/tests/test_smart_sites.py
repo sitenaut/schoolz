@@ -15,6 +15,12 @@ def test_recognises_smart_sites_only():
     assert not smart_sites.is_smart_sites('<html><div class="fsLocationAddress">1 Main St</div></html>')
 
 
+def test_school_page_on_a_district_host_is_a_subpage():
+    assert smart_sites.is_subpage("https://www.edgewaterparksd.org/mildred-magowan-elementary-school")
+    assert not smart_sites.is_subpage("https://hgs.monroetwp.k12.nj.us/")
+    assert smart_sites._origin("https://www.edgewaterparksd.org/mildred-magowan-elementary-school") == "https://www.edgewaterparksd.org"
+
+
 def test_footer_address_and_phone():
     assert smart_sites.parse_footer(HOME) == {"address": "190 Tomlinson Mill Road, Marlton, NJ 08053", "main_phone": "856-988-9811"}
 

@@ -96,3 +96,8 @@ async def test_a_recess_that_began_weeks_ago_still_closes_the_schedule():
         days = await upcoming_days(db, school, student.id, today, 2)
         assert [d["date"] for d in days] == ["2027-01-04", "2027-01-05"]
         assert (await build_today(db, school, today)).status == "closed"
+
+
+def test_a_four_hour_day_is_a_half_day_status():
+    # Edgewater Park words every early dismissal this way.
+    assert is_status_title("4 Hour Day for Students") and is_status_title("4 Hour Day for All")

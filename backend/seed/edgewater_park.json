@@ -1,0 +1,203 @@
+{
+  "exported_at": "2026-10-28T12:00:00Z",
+  "source": "onboarding: Edgewater Park Township School District",
+  "districts": [
+    {
+      "name": "Edgewater Park Township School District",
+      "state": "NJ",
+      "website_url": "https://www.edgewaterparksd.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Edgewater Park District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/webdept%40edgewaterparksd.org/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.edgewaterparksd.org/transportation-office",
+      "towns": [
+        "Edgewater Park"
+      ],
+      "schoolcafe_shortname": "EDGEWATERPARKTSNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "magowan-elementary",
+      "name": "Mildred Magowan Elementary School",
+      "short_name": "Magowan",
+      "district_name": "Edgewater Park Township School District",
+      "school_type": "elementary",
+      "address": "405 Cherrix Avenue, Edgewater Park, NJ 08010",
+      "main_phone": "(609) 877-1430",
+      "website_url": "https://www.edgewaterparksd.org/mildred-magowan-elementary-school",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 871-3434",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call before 10:00 AM on each day of absence; if the absence will last more than one day, tell the office so further calls aren't needed. For a religious holiday, send a note or email to the main office in advance.",
+      "start_time": "8:40 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:42 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/13725/header_logo_img_o45qnq1slpcraamjeme.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "absence_phone": "(609) 267-1406 ext. 2004",
+        "absence_form_url": null,
+        "late_pickup_policy": "Extended Day Care closes at 6:00 PM. Two courtesy late pickups a year if picked up by 6:15 PM; after that $10 for the first 15 minutes and $1 a minute, with suspension after repeated late pickups.",
+        "pickup_change_procedure": "Email or call the EDC office ((609) 267-1406 ext. 2004) for any schedule or pickup change, not the school's main office. Changes to who may pick up must be sent to the EDC office in writing by email.",
+        "handbook_url": "https://www.edgewaterparksd.org/extended-day-care-edc-services",
+        "pm_hours": "Dismissal (3:00 PM) - 6:00 PM",
+        "site_phone": "(609) 410-5981",
+        "closures_notes": "Extended Day Care is run by Lumberton Township School District for Edgewater Park and held at Magowan School. Registration and scheduling through EZChildTrack. No afternoon care on the first day, the half days before holidays or the last day; on a weather early dismissal care closes two hours after school does; closed on snow days and extended holidays. Opens later on a delayed opening (the program page says 9:00 AM, its handbook 8:35 AM)."
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "ridgway-middle",
+      "name": "Samuel M. Ridgway Middle School",
+      "short_name": "Ridgway Middle",
+      "district_name": "Edgewater Park Township School District",
+      "school_type": "middle",
+      "address": "300 Delanco Road, Edgewater Park, NJ 08010",
+      "main_phone": "(609) 871-3434",
+      "website_url": "https://www.edgewaterparksd.org/samuel-m-ridgway-middle-school",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 871-3434",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call before 10:00 AM each day your child is absent; if the absence will last more than one day, tell the office so further calls aren't needed. For a religious holiday, send a note, email or ParentSquare message to the main office in advance.",
+      "start_time": "8:15 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:28 PM",
+      "delayed_opening_time": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Lockers",
+            "start": "08:15",
+            "end": "08:30"
+          },
+          {
+            "name": "HR",
+            "start": "08:30",
+            "end": "08:37"
+          },
+          {
+            "name": "1",
+            "start": "08:40",
+            "end": "09:23"
+          },
+          {
+            "name": "2",
+            "start": "09:26",
+            "end": "10:09"
+          },
+          {
+            "name": "3",
+            "start": "10:12",
+            "end": "10:55"
+          },
+          {
+            "name": "4 (Lunch grades 5-6)",
+            "start": "10:58",
+            "end": "11:41"
+          },
+          {
+            "name": "5 (Lunch grades 7-8)",
+            "start": "11:44",
+            "end": "12:27"
+          },
+          {
+            "name": "6",
+            "start": "12:30",
+            "end": "13:13"
+          },
+          {
+            "name": "7",
+            "start": "13:16",
+            "end": "13:59"
+          },
+          {
+            "name": "8",
+            "start": "14:02",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Lockers",
+            "start": "08:15",
+            "end": "08:30"
+          },
+          {
+            "name": "HR",
+            "start": "08:30",
+            "end": "08:37"
+          },
+          {
+            "name": "1",
+            "start": "08:40",
+            "end": "09:10"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:43"
+          },
+          {
+            "name": "3",
+            "start": "09:46",
+            "end": "10:16"
+          },
+          {
+            "name": "5 (grades 5-6) / 4 (grades 7-8)",
+            "start": "10:19",
+            "end": "10:49"
+          },
+          {
+            "name": "6",
+            "start": "10:52",
+            "end": "11:22"
+          },
+          {
+            "name": "7",
+            "start": "11:25",
+            "end": "11:55"
+          },
+          {
+            "name": "8",
+            "start": "11:58",
+            "end": "12:28"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/37365",
+      "logo_url": "https://files.smartsites.parentsquare.com/13725/header_logo_img_o45qnq1slpcraamjeme.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "absence_phone": "(609) 267-1406 ext. 2004",
+        "absence_form_url": null,
+        "late_pickup_policy": "Extended Day Care closes at 6:00 PM. Two courtesy late pickups a year if picked up by 6:15 PM; after that $10 for the first 15 minutes and $1 a minute, with suspension after repeated late pickups.",
+        "pickup_change_procedure": "Email or call the EDC office ((609) 267-1406 ext. 2004) for any schedule or pickup change, not the school's main office. Changes to who may pick up must be sent to the EDC office in writing by email.",
+        "handbook_url": "https://www.edgewaterparksd.org/extended-day-care-edc-services",
+        "pm_hours": "Dismissal (2:45 PM) - 6:00 PM",
+        "site_phone": "(609) 410-5981",
+        "closures_notes": "Extended Day Care is run by Lumberton Township School District for Edgewater Park and held at Magowan School; Ridgway students are bused to and from it. Registration and scheduling through EZChildTrack. No afternoon care on the first day, the half days before holidays or the last day; on a weather early dismissal care closes two hours after school does; closed on snow days and extended holidays. Opens later on a delayed opening (the program page says 9:00 AM, its handbook 8:35 AM)."
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}
