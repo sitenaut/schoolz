@@ -16,7 +16,12 @@ from services.schoolcafe import _either_contains, _norm
 
 _DISTRICT_NOISE = {"district", "public", "schools", "school", "township", "twp", "regional", "board", "of", "education"}
 
-_SCHOOL_NOISE = {"elementary", "middle", "high", "jr", "sr", "junior", "senior", "preschool", "center", "early", "childhood", "learning", "academy"}
+# "township"/"twp"/"school": the state's "South Harrison Twp School" is our
+# "South Harrison Township Elementary School".
+_SCHOOL_NOISE = {
+    "elementary", "middle", "high", "jr", "sr", "junior", "senior", "preschool", "center", "early", "childhood",
+    "learning", "academy", "township", "twp", "school",
+}
 
 
 def _clean(v: str | None) -> str:
@@ -113,5 +118,7 @@ def match_row(rows: list[dict], district_name: str, school_name: str) -> dict | 
     # "Beeler Elementary School" vs the state's "Helen L Beeler": compare what's left
     # once generic level words are gone. Ambiguous (two schools share a name) -> none.
     core = theirs - _SCHOOL_NOISE
+    if not core:
+        return None
     named = [r for r in in_district if _either_contains(core, set(_norm(r["School Name"]).split()) - _SCHOOL_NOISE)]
     return named[0] if len(named) == 1 else None

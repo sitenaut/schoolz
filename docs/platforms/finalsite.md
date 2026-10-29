@@ -149,3 +149,14 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - Every `calendar_ids[]` value can return the same event union under the same UIDs, buildings told apart only by a title prefix ("PTHS - "). Neither the UID subtraction nor `skip_title_prefixes` can split that; the feed's `school_title_prefixes` ({prefix: school slug}) does, and a scan moves existing rows when the map changes.
 - `.fsLocationAddress` can hold only the street, and the footer `tel:` carries the extension.
 
+
+## Kingsway, Swedesboro-Woolwich, East Greenwich, South Harrison and Harrison Township (found onboarding)
+
+- A district can host every school on its one site with no school hosts (Kingsway): `.fsLocationAddress` is then the district office, so school addresses come from the NJ DOE CSV and rely on the shared-`website_url` guard.
+- Resource-manager menu anchors can carry a stale `title` attribute ("March High School Lunch Menu" on `HSOctoberLunchMenu.pdf`): classify by `data-file-name` or the redirect target, never the title.
+- `data-calendar-ids` can be unquoted (`data-calendar-ids=357`); a grep for `data-calendar-ids="…"` misses it.
+- On the older calendar module the calendars may sync from Google, and the embedded Google ICS covers the whole year where icalcache covers about three months: prefer the Google feed (Swedesboro-Woolwich). The new module (`data-use-new="true"`, `~occur-id` links) answers `/fs/calendar-manager/events.ics?calendar_ids[]=N` as a plain GET (East Greenwich).
+- A school logo can sit in a `.logo-image` element as lazy-load JSON with no `<img>` in `<header>`.
+- School subdomains (`jcs.`, `sms.`) put the constituent directory at `/our-school/about-us/staff-directory`; a one-school site at `/about-us/staff-directory`. A directory element can be configured but empty ("There are no constituents to display").
+- A rotation-only calendar can carry one event per school day titled "Day N" ("Day 0" = no school, "Day 3 (Half Day)"), with every real event and closure only in the DESCRIPTION as `* School Closed * NJEA Convention` (Harrison Township). The titles feed the rotation; "Day 0" is skipped by prefix and closures come from the calendar PDF.
+- A Backpack Mail page can be direct `resources.finalsite.net` PDF links with no resource-manager wrappers, which `backpack_parser` doesn't read.

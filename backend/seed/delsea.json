@@ -1,0 +1,109 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Delsea Regional High School District",
+  "districts": [
+    {
+      "name": "Delsea Regional High School District",
+      "state": "NJ",
+      "website_url": "https://www.delsearegional.us",
+      "food_services_menu_url": "https://www.delsearegional.us/102149_2",
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Delsea Regional District Calendar",
+          "url": "https://www.delsearegional.us/sndreq/generateCalendarICS.php?calendar_id=132919",
+          "skip_title_prefixes": [
+            "Boys ",
+            "Girls ",
+            "Coed ",
+            "Football:",
+            "Baseball:",
+            "Softball:",
+            "Cross Country",
+            "CANCELLED - Boys ",
+            "CANCELLED - Girls ",
+            "CANCELLED - Coed ",
+            "CANCELLED - Football",
+            "CANCELLED - Baseball",
+            "CANCELLED - Softball",
+            "POSTPONED - ",
+            "Franklin Township Fall Basketball",
+            "Franklin Township Basketball",
+            "CANCELLED - Franklin Township"
+          ],
+          "school_title_prefixes": {
+            "HS ": "delsea-regional-high",
+            "MS ": "delsea-regional-middle",
+            "DMS ": "delsea-regional-middle"
+          }
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.delsearegional.us/102153_2",
+      "towns": [
+        "Franklin Township",
+        "Elk",
+        "Newfield"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "delsea-regional-high",
+      "name": "Delsea Regional High School",
+      "short_name": "Delsea High",
+      "district_name": "Delsea Regional High School District",
+      "school_type": "high",
+      "address": "242 Fries Mill Road, Franklinville, NJ 08322",
+      "main_phone": "(856) 694-0100",
+      "website_url": "https://highschool.delsearegional.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 694-0100 ext. 275",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance office ((856) 694-0100 ext. 275) before the school day starts and give the reason for the absence. Excused absences need a doctor's note, accepted up to 30 calendar days after the absence.",
+      "start_time": "7:22 AM",
+      "end_time": "2:15 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=5775",
+      "logo_url": "https://files.smartsites.parentsquare.com/6074/header_logo_img_u46jgb.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "delsea-regional-middle",
+      "name": "Delsea Regional Middle School",
+      "short_name": "Delsea Middle",
+      "district_name": "Delsea Regional High School District",
+      "school_type": "middle",
+      "address": "250 Fries Mill Road, Franklinville, NJ 08322",
+      "main_phone": "(856) 694-0100",
+      "website_url": "https://middleschool.delsearegional.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 694-0100 ext. 275",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the absentee line ((856) 694-0100 ext. 275) and give the reason for the absence. No absence is excused without a physician's note.",
+      "start_time": "8:20 AM",
+      "end_time": "3:17 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=115829",
+      "logo_url": "https://files.smartsites.parentsquare.com/6073/header_logo_img_u7pfah.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

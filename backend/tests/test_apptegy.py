@@ -24,6 +24,7 @@ async def test_fetch_events_maps_fields(monkeypatch):
                         "start_at": "2026-09-01T09:30:00.000-04:00",
                         "end_at": "2026-09-01T10:30:00.000-04:00",
                         "all_day": False,
+                        "custom_section_name": "District Calendar",
                     },
                     {"id": 2, "title": "No start", "start_at": None},
                 ]
@@ -39,6 +40,7 @@ async def test_fetch_events_maps_fields(monkeypatch):
     assert e["external_uid"] == "61418802"
     assert e["start_date"].isoformat() == "2026-09-01T09:30:00-04:00"
     assert e["is_all_day"] is False
+    assert e["section"] == "District Calendar"
 
 
 @pytest.mark.anyio

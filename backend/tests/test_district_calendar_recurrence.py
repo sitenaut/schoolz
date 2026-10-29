@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import httpx
 import pytest
 
@@ -104,3 +106,33 @@ async def test_cycle_day_titles_become_rotation_days(monkeypatch):
     monkeypatch.setattr(district_calendar.httpx, "AsyncClient", FakeClient)
     events = await district_calendar.fetch_district_calendar("https://www.chesterfieldschool.com/calendar/calendar_353.ics")
     assert [e["title"] for e in events] == ["Day 3"]
+
+
+@pytest.mark.anyio
+async def test_since_drops_events_over_before_it(monkeypatch):
+    """Mantua's Google calendars go back to 2010."""
+    body = (
+        b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+        b"BEGIN:VEVENT\r\nUID:old\r\nDTSTART;VALUE=DATE:20100907\r\nDTEND;VALUE=DATE:20100908\r\nSUMMARY:First Day 2010\r\nEND:VEVENT\r\n"
+        b"BEGIN:VEVENT\r\nUID:long\r\nDTSTART;VALUE=DATE:20260601\r\nDTEND;VALUE=DATE:20261231\r\nSUMMARY:Still running\r\nEND:VEVENT\r\n"
+        b"END:VCALENDAR\r\n"
+    )
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, headers=None):
+            return httpx.Response(200, content=body, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(district_calendar.httpx, "AsyncClient", FakeClient)
+    url = "https://example.org/basic.ics"
+    assert len(await district_calendar.fetch_district_calendar(url)) == 2
+    since = datetime(2026, 10, 1, tzinfo=UTC)
+    assert [e["title"] for e in await district_calendar.fetch_district_calendar(url, since=since)] == ["Still running"]

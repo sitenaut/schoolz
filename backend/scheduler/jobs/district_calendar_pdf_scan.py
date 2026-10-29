@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import District, SchoolContentItem
+from models import District, School, SchoolContentItem
 from scheduler.registry import register_job
 from services import district_calendar_pdf as svc
 
@@ -41,7 +41,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         return f"calendar PDF unchanged ({digest}), {len(existing)} items on file"
 
     events = await svc.extract_events(data)
-    wanted, skipped = svc.build_items(events, pdf_url, digest)
+    schools = (await db.execute(select(School.name, School.short_name, School.school_type).where(School.district_id == district.id))).all()
+    wanted, skipped = svc.build_items(events, pdf_url, digest, schools)
     if not wanted:
         return f"WARNING[calendar_pdf_empty]: {pdf_url} produced no calendar entries"
 

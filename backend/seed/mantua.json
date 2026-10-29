@@ -1,0 +1,170 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Mantua Township School District",
+  "districts": [
+    {
+      "name": "Mantua Township School District",
+      "state": "NJ",
+      "website_url": "https://www.mantuaschools.com",
+      "food_services_menu_url": null,
+      "ics_feeds": [
+        {
+          "name": "Mantua District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_au5pfrlpkho1f2odhte83rst54%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "Sewell School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_v7dfq862u55fn0jknvssi5so9o%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "sewell-elementary"
+        },
+        {
+          "name": "Centre City Calendar",
+          "url": "https://calendar.google.com/calendar/ical/mantuaschools.com_4d93b4fdk82eu09bm7m3a3lun4%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "centre-city-elementary"
+        },
+        {
+          "name": "JMT School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/mantuaschools.com_tunvh594gj9n2drp2oq8vomvq4%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "j-mason-tomlin-elementary"
+        }
+      ],
+      "calendar_pdf_url": null,
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.mantuaschools.com/apps/pages/index.jsp?uREC_ID=320721&type=d",
+      "towns": [
+        "Mantua"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "sewell-elementary",
+      "name": "Sewell Elementary School",
+      "short_name": "Sewell",
+      "district_name": "Mantua Township School District",
+      "school_type": "elementary",
+      "address": "40 McAnally Drive, Sewell, NJ 08080",
+      "main_phone": "(856) 468-0626",
+      "website_url": "https://sewell.mantuaschools.com",
+      "absence_method": "phone",
+      "absence_emails": [
+        "ssmainoffice@mantuaschools.com"
+      ],
+      "absence_phone": "(856) 468-0626",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call 856-468-0626 and press 2 when prompted, or email ssmainoffice@mantuaschools.com, with the student's name, grade, homeroom teacher, date and reason for the absence. Late after 9:10 a.m.",
+      "start_time": "9:00 AM",
+      "end_time": "3:45 PM",
+      "early_dismissal_time": "1:30 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://sewell.mantuaschools.com/_MASTER/common_pics/header_logo.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 9:00 AM",
+        "pm_hours": "3:45 PM - 6:00 PM",
+        "site_phone": "(856) 468-0626 ext. 3519",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "No changes to student pickup after 3:00 p.m. (Parent Handbook).",
+        "closures_notes": "District-run Child Care Program (CCP); registration through Sawyer. Program contact: (856) 468-0818 ext. 4422.",
+        "handbook_url": "https://www.mantuaschools.com/apps/pages/index.jsp?uREC_ID=320706&type=d"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "centre-city-elementary",
+      "name": "Centre City Elementary School",
+      "short_name": "Centre City",
+      "district_name": "Mantua Township School District",
+      "school_type": "elementary",
+      "address": "301 Columbus Drive, Mantua, NJ 08051",
+      "main_phone": "(856) 468-2100",
+      "website_url": "https://centre.mantuaschools.com",
+      "absence_method": "phone",
+      "absence_emails": [
+        "ccmainoffice@mantuaschools.com"
+      ],
+      "absence_phone": "(856) 468-2100 ext. 2550",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call 856-468-2100 ext. 2550, or email ccmainoffice@mantuaschools.com, with the student's name, grade, homeroom teacher, date and reason for the absence. Late after 9:10 a.m.",
+      "start_time": "9:00 AM",
+      "end_time": "3:45 PM",
+      "early_dismissal_time": "1:30 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://centre.mantuaschools.com/_MASTER/common_pics/header_logo.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 9:00 AM",
+        "pm_hours": "3:45 PM - 6:00 PM",
+        "site_phone": "(856) 468-2100 ext. 2704",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "No changes to student pickup after 3:00 p.m. Sibling Dismissal 3:45-4:00 PM, sign up through the main office (Parent Handbook).",
+        "closures_notes": "District-run Child Care Program (CCP); registration through Sawyer. Program contact: (856) 468-0818 ext. 4422.",
+        "handbook_url": "https://www.mantuaschools.com/apps/pages/index.jsp?uREC_ID=320706&type=d"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "j-mason-tomlin-elementary",
+      "name": "J. Mason Tomlin Elementary School",
+      "short_name": "JMT",
+      "district_name": "Mantua Township School District",
+      "school_type": "elementary",
+      "address": "393 Main Street, Mantua, NJ 08051",
+      "main_phone": "(856) 468-0818",
+      "website_url": "https://tomlin.mantuaschools.com",
+      "absence_method": "phone",
+      "absence_emails": [
+        "jmtmainoffice@mantuaschools.com"
+      ],
+      "absence_phone": "(856) 468-0818",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call 856-468-0818 and press 2 when prompted, or email jmtmainoffice@mantuaschools.com, with the student's name, grade, homeroom teacher, date and reason for the absence. Late after 8:35 a.m.",
+      "start_time": "8:30 AM",
+      "end_time": "3:15 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://tomlin.mantuaschools.com/_MASTER/common_pics/header_logo.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "3:15 PM - 6:00 PM",
+        "site_phone": "(856) 468-0818 ext. 4422",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "No changes to student pickup after 2:30 p.m. (Parent Handbook).",
+        "closures_notes": "District-run Child Care Program (CCP) at JMT and Evergreen Preschool; registration through Sawyer.",
+        "handbook_url": "https://www.mantuaschools.com/apps/pages/index.jsp?uREC_ID=320706&type=d"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://tomlin.mantuaschools.com/apps/pages/index.jsp?uREC_ID=320761&type=d",
+      "label": "JMT's Main Street News",
+      "school_slug": "j-mason-tomlin-elementary",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

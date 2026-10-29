@@ -1,0 +1,318 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Pitman Boro School District",
+  "districts": [
+    {
+      "name": "Pitman Boro School District",
+      "state": "NJ",
+      "website_url": "https://www.pitman.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://aptg.co/ffpZlX",
+      "ics_feeds": [
+        {
+          "name": "Pitman District",
+          "platform": "apptegy",
+          "org_id": "31534",
+          "skip_sections": [
+            "Pitman Jr./Sr. High School",
+            "Pitman Elementary School",
+            "Memorial Elementary School",
+            "Board of Education"
+          ]
+        },
+        {
+          "name": "Pitman Jr./Sr. High",
+          "platform": "apptegy",
+          "org_id": "31678",
+          "school_slug": "pitman-jr-sr-high",
+          "skip_sections": [
+            "Pitman School District"
+          ]
+        },
+        {
+          "name": "Pitman Elementary",
+          "platform": "apptegy",
+          "org_id": "31679",
+          "school_slug": "pitman-elementary",
+          "skip_sections": [
+            "Pitman School District"
+          ]
+        },
+        {
+          "name": "Memorial Elementary",
+          "platform": "apptegy",
+          "org_id": "31680",
+          "school_slug": "pitman-memorial-elementary",
+          "skip_sections": [
+            "Pitman School District"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Pitman"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "pitman-jr-sr-high",
+      "name": "Pitman Jr./Sr. High School",
+      "short_name": "Pitman Jr./Sr. High",
+      "district_name": "Pitman Boro School District",
+      "school_type": "high",
+      "address": "225 Linden Avenue, Pitman, NJ 08071",
+      "main_phone": "(856) 589-2121",
+      "website_url": "https://phs.pitman.k12.nj.us/o/jrsrhs",
+      "apptegy_org_id": "31678",
+      "absence_method": "other",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Hand in a written excuse note for an absence or late arrival at the main office within 10 days of your child's return. Early-dismissal notes go to the main office before homeroom; phone calls are not accepted. A doctor's note is needed after 3 or more consecutive days absent or a contagious illness.",
+      "start_time": "7:35 AM",
+      "end_time": "2:22 PM",
+      "early_dismissal_time": "12:22 PM",
+      "delayed_opening_time": "9:35 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:35",
+            "end": "07:42"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:45",
+            "end": "08:32"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:35",
+            "end": "09:22"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:25",
+            "end": "10:12"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:15",
+            "end": "11:02"
+          },
+          {
+            "name": "Period 5A (Jr High lunch)",
+            "start": "11:05",
+            "end": "11:27"
+          },
+          {
+            "name": "Period 5B (Jr High lunch)",
+            "start": "11:30",
+            "end": "11:52"
+          },
+          {
+            "name": "Period 6A (Sr High lunch)",
+            "start": "11:55",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 6B (Sr High lunch)",
+            "start": "12:20",
+            "end": "12:42"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:45",
+            "end": "13:32"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:35",
+            "end": "14:22"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:35",
+            "end": "07:42"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:45",
+            "end": "08:17"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:20",
+            "end": "08:52"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:55",
+            "end": "09:27"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:30",
+            "end": "10:02"
+          },
+          {
+            "name": "Period 5 (Jr High lunch)",
+            "start": "10:05",
+            "end": "10:37"
+          },
+          {
+            "name": "Period 6 (Sr High lunch)",
+            "start": "10:40",
+            "end": "11:12"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:15",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:50",
+            "end": "12:22"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:35",
+            "end": "09:42"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:45",
+            "end": "10:17"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:20",
+            "end": "10:52"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:55",
+            "end": "11:27"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:30",
+            "end": "12:02"
+          },
+          {
+            "name": "Period 5 (Jr High lunch)",
+            "start": "12:05",
+            "end": "12:37"
+          },
+          {
+            "name": "Period 6 (Sr High lunch)",
+            "start": "12:40",
+            "end": "13:12"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "13:47"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:50",
+            "end": "14:22"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/18174",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/31678/logo/34758/Pitman_Seal_Logo%282%29.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "pitman-elementary",
+      "name": "Pitman Elementary School",
+      "short_name": "Pitman Elementary",
+      "district_name": "Pitman Boro School District",
+      "school_type": "elementary",
+      "address": "138 E Holly Ave, Pitman, NJ 08071",
+      "main_phone": "(856) 589-0636",
+      "website_url": "https://pes.pitman.k12.nj.us/o/pes",
+      "apptegy_org_id": "31679",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/31679/logo/34759/LogoPaw.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:45 AM - 8:15 AM",
+        "pm_hours": "2:50 PM - 6:00 PM",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pickup is by 6:00 PM. After that there is a $10 fee for every 15 minutes, staff start calling other authorized pickups, and more than three late pickups in a year can end enrollment.",
+        "pickup_change_procedure": "Cancel a scheduled session in the Brightwheel app by 8:00 PM the evening before for full credit; email is not accepted.",
+        "handbook_url": "https://www.pitman.k12.nj.us/page/panther-club-child-care-program",
+        "site_phone": "(856) 589-2145 ext. 6006",
+        "closures_notes": "Panther Club is the district's own before- and after-school program. Early-dismissal days run 12:50-2:50 PM. There is no care on school closings (including emergency closings), no AM session on delayed openings, and no PM session on an emergency early dismissal."
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "pitman-memorial-elementary",
+      "name": "Memorial Elementary School",
+      "short_name": "Memorial",
+      "district_name": "Pitman Boro School District",
+      "school_type": "elementary",
+      "address": "400 Hudson Avenue, Pitman, NJ 08071",
+      "main_phone": "(856) 589-2526",
+      "website_url": "https://mes.pitman.k12.nj.us/o/mes",
+      "apptegy_org_id": "31680",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/31680/logo/34760/MemorialPanther.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:45 AM - 8:45 AM",
+        "pm_hours": "3:15 PM - 6:00 PM",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pickup is by 6:00 PM. After that there is a $10 fee for every 15 minutes, staff start calling other authorized pickups, and more than three late pickups in a year can end enrollment.",
+        "pickup_change_procedure": "Cancel a scheduled session in the Brightwheel app by 8:00 PM the evening before for full credit; email is not accepted.",
+        "handbook_url": "https://www.pitman.k12.nj.us/page/panther-club-child-care-program",
+        "site_phone": "(856) 589-2145 ext. 6006",
+        "closures_notes": "Panther Club is the district's own before- and after-school program. Early-dismissal days run 1:10-3:10 PM. There is no care on school closings (including emergency closings), no AM session on delayed openings, and no PM session on an emergency early dismissal."
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

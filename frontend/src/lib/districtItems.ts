@@ -7,10 +7,10 @@ import { i18n } from "./i18n";
 // the Calendar page and the Today cards agree on what counts as a "no
 // school" / "half day" status item vs. an ordinary district-wide event like
 // a Board of Education meeting.
-export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1\/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
+export const HALF_DAY_RE = /\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1\/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Staff and conference days: status items, but not a closed day.
-const STAFF_DAY_RE = /\bin-?service\b|\bconference\b/i;
+const STAFF_DAY_RE = /\bin[\s-]?service\b|\bconference\b/i;
 // Eastern Regional appends the class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
 const ROTATION_RE = /^\s*Day\s+\d+\s*(?:\([^)]*\))?\s*$/i;
 // A grade span: "K-8", "PK-4". Mirrors school_today.py:_GRADES_THROUGH_RE.
@@ -22,7 +22,7 @@ const GRADES_THROUGH_RE = /\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b/i;
 // ("Schools & Offices Closed, Winter Recess"). Mirrors school_status.py.
 const NOT_THE_SCHOOL_CLOSED_RE =
   /\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b|\(?\bclosed\)?\s+session\b/gi;
-const SCHOOL_CLOSED_RE = /\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b/i;
+const SCHOOL_CLOSED_RE = /\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b/i;
 
 /** No school that day. A bare "closed" counts - most feeds word a closure
  * that way ("CLOSED - Winter Recess", "Columbus Day, Closed") - but not an
@@ -71,7 +71,11 @@ export function isRotationItem(title: string): boolean {
  * High's own feed carries "DHS Prom & K-8 PCPEP Single Session", a half day
  * for the K-8 schools and a full one for the high school. Only the
  * unambiguous cases, as school_today.py:other_grades_only. */
+// "Preschool Only Early Dismissal" (East Greenwich). Mirrors school_today._PRESCHOOL_ONLY_RE.
+const PRESCHOOL_ONLY_RE = /\bpre-?(?:school|k)\b.*\bonly\b|\bonly\b.*\bpre-?(?:school|k)\b/i;
+
 export function otherGradesOnly(title: string, schoolType: string | null): boolean {
+  if (PRESCHOOL_ONLY_RE.test(title)) return schoolType === "elementary" || schoolType === "middle" || schoolType === "high";
   const m = GRADES_THROUGH_RE.exec(title);
   if (!m) return false;
   const through = Number(m[1]);

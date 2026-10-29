@@ -1,0 +1,298 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Kingsway Regional School District",
+  "districts": [
+    {
+      "name": "Kingsway Regional School District",
+      "state": "NJ",
+      "website_url": "https://www.krsd.org",
+      "food_services_menu_url": "https://www.krsd.org/departments/food-service/menus-and-nutrition-information",
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Kingsway School Year Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_c6dca31cc4b9fe7bd6b8546c66c4ea6b818b7530d37a4ffaaf87f493252aaaa2%40group.calendar.google.com/public/basic.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.krsd.org/departments/student-transportation",
+      "towns": [
+        "East Greenwich",
+        "South Harrison",
+        "Swedesboro",
+        "Woolwich",
+        "Logan"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "kingsway-regional-high",
+      "name": "Kingsway Regional High School",
+      "short_name": "Kingsway High",
+      "district_name": "Kingsway Regional School District",
+      "school_type": "high",
+      "address": "201 Kings Highway, Woolwich Township, NJ 08085",
+      "main_phone": "(856) 467-3300",
+      "website_url": "https://www.krsd.org",
+      "absence_method": "phone",
+      "absence_emails": [
+        "hsattendance@krsd.us"
+      ],
+      "absence_phone": "(856) 467-3300",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (856) 467-3300 and press 1, or email hsattendance@krsd.us. Leave your name, your child's name, grade and the reason for the absence. For an early pickup, send a note, email hsattendance@krsd.us or call ext. 4220 with the date, time and who is picking up.",
+      "start_time": "7:54 AM",
+      "end_time": "2:28 PM",
+      "early_dismissal_time": "11:59 AM",
+      "delayed_opening_time": "9:54 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1st Bell",
+            "start": "07:54",
+            "end": "08:44"
+          },
+          {
+            "name": "2nd Bell",
+            "start": "08:49",
+            "end": "09:39"
+          },
+          {
+            "name": "3rd Bell",
+            "start": "09:44",
+            "end": "10:34"
+          },
+          {
+            "name": "Homeroom",
+            "start": "10:34",
+            "end": "10:47"
+          },
+          {
+            "name": "4th Bell (S.M.A.R.T. Lunch 1)",
+            "start": "10:50",
+            "end": "11:15"
+          },
+          {
+            "name": "5th Bell (S.M.A.R.T. Lunch 2)",
+            "start": "11:18",
+            "end": "11:43"
+          },
+          {
+            "name": "6th Bell",
+            "start": "11:48",
+            "end": "12:38"
+          },
+          {
+            "name": "7th Bell",
+            "start": "12:43",
+            "end": "13:33"
+          },
+          {
+            "name": "8th Bell",
+            "start": "13:38",
+            "end": "14:28"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1st Bell",
+            "start": "07:54",
+            "end": "08:29"
+          },
+          {
+            "name": "2nd Bell",
+            "start": "08:34",
+            "end": "09:09"
+          },
+          {
+            "name": "3rd Bell",
+            "start": "09:14",
+            "end": "09:49"
+          },
+          {
+            "name": "Homeroom",
+            "start": "09:49",
+            "end": "09:59"
+          },
+          {
+            "name": "4th Bell",
+            "start": "10:04",
+            "end": "10:39"
+          },
+          {
+            "name": "5th Bell",
+            "start": "10:44",
+            "end": "11:19"
+          },
+          {
+            "name": "6th Bell",
+            "start": "11:24",
+            "end": "11:59"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1st Bell",
+            "start": "09:54",
+            "end": "10:25"
+          },
+          {
+            "name": "2nd Bell",
+            "start": "10:30",
+            "end": "11:01"
+          },
+          {
+            "name": "3rd Bell",
+            "start": "11:06",
+            "end": "11:37"
+          },
+          {
+            "name": "Homeroom",
+            "start": "11:37",
+            "end": "11:44"
+          },
+          {
+            "name": "4th Bell (S.M.A.R.T. Lunch 1)",
+            "start": "11:47",
+            "end": "12:12"
+          },
+          {
+            "name": "5th Bell (S.M.A.R.T. Lunch 2)",
+            "start": "12:15",
+            "end": "12:40"
+          },
+          {
+            "name": "6th Bell",
+            "start": "12:45",
+            "end": "13:16"
+          },
+          {
+            "name": "7th Bell",
+            "start": "13:21",
+            "end": "13:52"
+          },
+          {
+            "name": "8th Bell",
+            "start": "13:57",
+            "end": "14:28"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/11862",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1765917542/kingswayk12njus/kingswayk12njus/bxuw6quguiyhxkvpgr4b/ScreenShot2023-05-10at23302PM.jpg",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "kingsway-regional-middle",
+      "name": "Kingsway Regional Middle School",
+      "short_name": "Kingsway Middle",
+      "district_name": "Kingsway Regional School District",
+      "school_type": "middle",
+      "address": "203 Kings Highway, Woolwich Township, NJ 08085",
+      "main_phone": "(856) 467-3300",
+      "website_url": "https://www.krsd.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 467-3300",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (856) 467-3300 and press 2, or email the attendance office. Leave your name, your child's name, grade and the reason for the absence. Students may not enter before 7:40 AM and must be in homeroom by 8:00 AM.",
+      "start_time": "8:00 AM",
+      "end_time": "2:38 PM",
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Arrival & Enrichment",
+            "start": "07:40",
+            "end": "08:08"
+          },
+          {
+            "name": "HR/1",
+            "start": "08:08",
+            "end": "09:09"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:13",
+            "end": "10:09"
+          },
+          {
+            "name": "Period 3 (Lunch A)",
+            "start": "10:13",
+            "end": "10:38"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:42",
+            "end": "11:09"
+          },
+          {
+            "name": "Period 5 (Lunch B)",
+            "start": "11:13",
+            "end": "11:38"
+          },
+          {
+            "name": "Period 6 (Lunch C 11:44-12:09)",
+            "start": "11:42",
+            "end": "12:09"
+          },
+          {
+            "name": "Period 7 (Lunch D)",
+            "start": "12:13",
+            "end": "12:38"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:42",
+            "end": "13:07"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:11",
+            "end": "13:38"
+          },
+          {
+            "name": "Period 10",
+            "start": "13:42",
+            "end": "14:38"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1765917542/kingswayk12njus/kingswayk12njus/bxuw6quguiyhxkvpgr4b/ScreenShot2023-05-10at23302PM.jpg",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://www.krsd.org/our-schools/high-school/principals-newsletter-daily-announcements",
+      "label": "Kingsway High Principal's Newsletter",
+      "school_slug": "kingsway-regional-high",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://www.krsd.org/our-schools/middle-school/middle-school-principals-newsletter-daily-announcements",
+      "label": "Kingsway Middle Principal's Newsletter",
+      "school_slug": "kingsway-regional-middle",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

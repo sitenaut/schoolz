@@ -1,0 +1,259 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Swedesboro-Woolwich School District",
+  "districts": [
+    {
+      "name": "Swedesboro-Woolwich School District",
+      "state": "NJ",
+      "website_url": "https://www.swedesboro-woolwich.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "SWSD District Calendar",
+          "url": "https://calendar.google.com/calendar/ical/swsdk6.com_79dv2kaa7biucpmfpqjgkb7ius%40group.calendar.google.com/public/basic.ics",
+          "skip_title_prefixes": [
+            "Clifford School",
+            "Stratton School",
+            "Harker School",
+            "Hill School"
+          ]
+        },
+        {
+          "name": "Clifford School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_cc1ae4c5064aa0360bb3bde1c84a9dceea42f695e946f7e3f650ba4684fb8ed5%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "margaret-clifford"
+        },
+        {
+          "name": "Harker School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_beed50f14be785da322cf4dbd2f35d02779ab61efc4eaab56bd986ee90b7228c%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "charles-harker"
+        },
+        {
+          "name": "Hill School Calendar",
+          "url": "https://calendar.google.com/calendar/ical/c_3a1fbc06fadbc03566cb46b78afb8f3de9cfcfc139249a8351eaefd9d83f6c6d%40group.calendar.google.com/public/basic.ics",
+          "school_slug": "walter-hill"
+        },
+        {
+          "name": "SWSD PTO Calendar",
+          "url": "https://swpto.ptboard.com/ical/ptboard.ics",
+          "school_title_prefixes": {
+            "Clifford": "margaret-clifford",
+            "Stratton": "charles-stratton",
+            "Harker": "charles-harker",
+            "Hill": "walter-hill"
+          }
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.swedesboro-woolwich.com/departments/transportation",
+      "towns": [
+        "Swedesboro",
+        "Woolwich"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "margaret-clifford",
+      "name": "Margaret C. Clifford School",
+      "short_name": "Clifford",
+      "district_name": "Swedesboro-Woolwich School District",
+      "school_type": "elementary",
+      "address": "601 Auburn Avenue, Swedesboro, NJ 08085",
+      "main_phone": "(856) 241-1552",
+      "website_url": "https://mcs.swedesboro-woolwich.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district parent handbook asks parents to notify the school as soon as possible when a student will be absent and to send a written note on return. No dedicated attendance line or email is published.",
+      "start_time": "8:45 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:25 PM",
+      "delayed_opening_time": "10:45 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Kindergarten & Full Day Pre-K",
+            "start": "08:45",
+            "end": "15:25"
+          },
+          {
+            "name": "AM Pre-K",
+            "start": "08:45",
+            "end": "11:20"
+          },
+          {
+            "name": "PM Pre-K",
+            "start": "12:50",
+            "end": "15:25"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Kindergarten & Full Day Pre-K",
+            "start": "08:45",
+            "end": "13:25"
+          },
+          {
+            "name": "AM Pre-K",
+            "start": "08:45",
+            "end": "10:35"
+          },
+          {
+            "name": "PM Pre-K",
+            "start": "11:35",
+            "end": "13:25"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Kindergarten & Full Day Pre-K",
+            "start": "10:45",
+            "end": "15:25"
+          },
+          {
+            "name": "AM Pre-K",
+            "start": "10:45",
+            "end": "12:30"
+          },
+          {
+            "name": "PM Pre-K",
+            "start": "13:45",
+            "end": "15:25"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1687938690/swedesborowoolwichcom/oakw96pjws9qiqtuerts/Clifford_noBkg.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 922-9354",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Comet Care is the district's own before- and after-school program (main number (856) 922-9353). The numbers come from the 2024-25 district parent handbook; no hours are published.",
+        "handbook_url": "https://www.swedesboro-woolwich.com/fs/resource-manager/view/2b4764b7-78d8-4cbe-955a-0737306567a2"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "charles-stratton",
+      "name": "Gov. Charles C. Stratton School",
+      "short_name": "Stratton",
+      "district_name": "Swedesboro-Woolwich School District",
+      "school_type": "elementary",
+      "address": "15 Fredrick Boulevard, Woolwich Township, NJ 08085",
+      "main_phone": "(856) 241-1552",
+      "website_url": "https://ccs.swedesboro-woolwich.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district parent handbook asks parents to notify the school as soon as possible when a student will be absent and to send a written note on return. No dedicated attendance line or email is published.",
+      "start_time": "8:35 AM",
+      "end_time": "3:10 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": "9:35 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1790714387/swedesborowoolwichcom/t2lmpupam81ruu9zjiyl/slogonew.jpg",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 922-9355",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Comet Care is the district's own before- and after-school program (main number (856) 922-9353). The numbers come from the 2024-25 district parent handbook; no hours are published.",
+        "handbook_url": "https://www.swedesboro-woolwich.com/fs/resource-manager/view/2b4764b7-78d8-4cbe-955a-0737306567a2"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "charles-harker",
+      "name": "Gen. Charles G. Harker School",
+      "short_name": "Harker",
+      "district_name": "Swedesboro-Woolwich School District",
+      "school_type": "elementary",
+      "address": "1771 Oldmans Creek Road, Woolwich Township, NJ 08085",
+      "main_phone": "(856) 241-1552 ext. 4002",
+      "website_url": "https://chs.swedesboro-woolwich.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district parent handbook asks parents to notify the school as soon as possible when a student will be absent and to send a written note on return. No dedicated attendance line or email is published.",
+      "start_time": "8:35 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:35 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1687782287/swedesborowoolwichcom/zdb7pmhciqdmh3yqzpfg/Harker-NoBkg.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(856) 922-9356",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Comet Care is the district's own before- and after-school program (main number (856) 922-9353). The numbers come from the 2024-25 district parent handbook; no hours are published.",
+        "handbook_url": "https://www.swedesboro-woolwich.com/fs/resource-manager/view/2b4764b7-78d8-4cbe-955a-0737306567a2"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "walter-hill",
+      "name": "Walter H. Hill School",
+      "short_name": "Walter Hill",
+      "district_name": "Swedesboro-Woolwich School District",
+      "school_type": "elementary",
+      "address": "1815 Kings Highway, Swedesboro, NJ 08085",
+      "main_phone": "(856) 241-1552",
+      "website_url": "https://whs.swedesboro-woolwich.com",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district parent handbook asks parents to notify the school as soon as possible when a student will be absent and to send a written note on return. No dedicated attendance line or email is published.",
+      "start_time": "8:45 AM",
+      "end_time": "3:22 PM",
+      "early_dismissal_time": "1:22 PM",
+      "delayed_opening_time": "10:45 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1789583753/swedesborowoolwichcom/jtc4xtwtpixri8lx2gff/HillLogo2026WhiteBackground.jpg",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://mcs.swedesboro-woolwich.com/the-clifford-comet-connection",
+      "label": "Clifford Comet Connection",
+      "school_slug": "margaret-clifford",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

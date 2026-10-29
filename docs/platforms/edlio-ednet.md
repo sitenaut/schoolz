@@ -270,3 +270,12 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - `/apps/bell_schedules/` rows are divs (`.col1`-`.col4`), not a `<table>`, and their year labels can lag the times.
 - On `www`, per-school `ICalServlet` ids can all be copies of the district feed; a school's own events are on its host's id 0.
 
+
+## Logan and Mantua (found onboarding)
+
+- A district can answer on two domains with identical pages (`logantownshipschools.org`, `logan.k12.nj.us`). On `www` the per-school `ICalServlet` ids can be named but empty while each school host's id 0 is a byte-identical copy of the district feed: wire the district feed once, with `school_title_prefixes` for its building prefixes.
+- A district can instead embed one Google calendar per building on every host (Mantua: district plus three schools, prefixed `DIST:`, `CC:`, `JMT:`, `SS - `), distinct rather than copies: wire each per `school_slug`. Those calendars can go back to 2010; the scan stores 120 days back. The `www` servlet there is a current-year union missing one school.
+- An embedded Google calendar can be free/busy-only (every event "Busy"): check summaries before wiring.
+- A newsletter page can link Smore issues only through SchoolMessenger tracker URLs that 302 to `app.smore.com/n/<code>`, beside an empty leftover anchor holding an old literal Smore href: `smore_archive` would pick the stale one (Mantua's Sewell).
+- `/apps/staff/` can be filtered with `?excludeStaffCatREC_IDs=` (JMT hides Pre-K categories); the plain path lists everyone.
+- A school's Attendance page can be an older letter contradicting the dated handbook; prefer the handbook.

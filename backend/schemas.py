@@ -415,6 +415,11 @@ class IcsFeed(BaseModel):
     # Opening", Glassboro's "GHS: Half Day"): those events land on that
     # school (scope="school") instead of every school. Case-insensitive.
     school_title_prefixes: dict[str, str] | None = None
+    # Apptegy only: drop events filed under one of these calendar sections
+    # (case-insensitive). Clearview files 1,758 facility bookings - practices,
+    # league rentals - under "Activities and Athletics" beside a 22-event
+    # "District Calendar", on every org, and the API ignores section filters.
+    skip_sections: list[str] | None = None
 
 
 class DistrictCreate(BaseModel):

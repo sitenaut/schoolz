@@ -151,3 +151,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - Smart Sites (Bordentown): the district host's calendar can be the union of every school's Google calendar plus district events, while each school host's calendar holds only its own: wire the school feeds, not the union.
 - A Smart Sites directory page can hold a document-viewer PDF and an empty `getOnDemandDirectoryContent` widget ("No Staff") side by side.
 
+
+## Delsea and Elk (found onboarding)
+
+- A district ICS can carry ArbiterLive games copied in by ParentSquare ("Football: A vs B (Varsity)", "CANCELLED - Boys …"), duplicating the Arbiter scan: skip them with `skip_title_prefixes`.
+- The directory widget can return a Name/Department table with every department "-" and no titles.
+- A nurse page can put a heading ("Contact Information", "Health Forms") right above the nurse's address; `role_pages` refuses heading words as names, and the contact-page pass then finds the real nurse.
+- A Drive calendar link's own text ("District Calendar") is what names it; monthly lunch menus can be Drive PNGs (`<band> <School> LunchMenu_YYYY-MM-MON.pptx.png`) that nothing reads.
+- SchoolCafé Nutri-Serve ISDs can resolve with menus published in search yet return `[]` from `GetSchoolsList` (Delsea 4705, Elk 4698).

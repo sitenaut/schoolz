@@ -31,6 +31,7 @@ import observability
 import scraper_client
 from services import haiku
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
+from services.district_calendar import school_types_from_title
 from services.school_status import CLOSED_RE
 from services.tool_output import object_list, recover_spilled_input
 
@@ -363,10 +364,11 @@ def _iso(value: object) -> date | None:
         return None
 
 
-def build_items(events: list[dict], pdf_url: str, digest: str) -> tuple[dict[str, dict], int]:
+def build_items(events: list[dict], pdf_url: str, digest: str, schools: list | None = None) -> tuple[dict[str, dict], int]:
     """({external_uid: SchoolContentItem fields}, skipped) from the model's
     events. An entry with an unreadable or implausible date is skipped, not
-    guessed."""
+    guessed. `schools` - the district's (name, short_name, school_type) - lets
+    "Early Dismissal Memorial/PES only" apply to those schools' type alone."""
     wanted: dict[str, dict] = {}
     skipped = 0
     for ev in events:
@@ -382,6 +384,7 @@ def build_items(events: list[dict], pdf_url: str, digest: str) -> tuple[dict[str
             "description": (str(ev.get("printed") or "").strip() or None),
             "start_date": datetime.combine(start, dtime.min, TZ),
             "link_url": pdf_url,
+            "applies_to_school_types": school_types_from_title(f"{title} {ev.get('printed') or ''}", schools),
         }
         if end > start:
             fields["end_date"] = datetime.combine(end + timedelta(days=1), dtime.min, TZ)
