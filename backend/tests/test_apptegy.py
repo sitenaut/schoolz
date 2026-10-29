@@ -42,6 +42,21 @@ async def test_fetch_events_maps_fields(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_an_all_day_end_is_the_day_after_the_last_day(monkeypatch):
+    # New Hanover: Thanksgiving Nov 26-27 ends "2026-11-27T00:00"; a one-day closure ends on its start.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"events": [
+            {"id": 1, "title": "School Closed - Thanksgiving Recess", "start_at": "2026-11-26T00:00:00.000-05:00", "end_at": "2026-11-27T00:00:00.000-05:00", "all_day": True},
+            {"id": 2, "title": "School Closed - NJEA Convention", "start_at": "2026-11-05T00:00:00.000-05:00", "end_at": "2026-11-05T00:00:00.000-05:00", "all_day": True},
+        ]})
+
+    monkeypatch.setattr(apptegy.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(handler)))
+    by_id = {e["external_uid"]: e for e in await apptegy.fetch_events("20309", date(2026, 11, 1), date(2026, 11, 30))}
+    assert by_id["1"]["end_date"].date() == date(2026, 11, 28)
+    assert by_id["2"]["end_date"].date() == date(2026, 11, 6)
+
+
+@pytest.mark.anyio
 async def test_fetch_staff_paginates_and_drops_nameless_entries(monkeypatch):
     page1 = {
         "directories": [
