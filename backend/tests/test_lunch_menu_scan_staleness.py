@@ -31,7 +31,7 @@ def _fake(monkeypatch, month: int, today: date):
     label = f"{lunch_menu_scan._MONTHS[month - 1]} 2026"
     url = f"https://x.test/{label.replace(' ', '')}.pdf"
 
-    async def discover(page_url, school_types=None):
+    async def discover(page_url, school_types=None, schools=None):
         return [{"school_type": "high", "meal_type": "lunch", "period_label": label, "pdf_url": url}]
 
     async def parse(pdf_url, period_label, meal_type=None):

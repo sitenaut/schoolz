@@ -1,39 +1,44 @@
 """Elementary specials (Art, PE, Music, …) by rotation day, per student."""
 
-import re
 from datetime import date
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import School, SchoolContentItem, StudentSpecial
-
-_DAY_RE = re.compile(r"^\s*Day\s+(\d+)\s*$", re.I)
+from services import rotation_day
 
 
 def rotation_number(title: str | None) -> int | None:
-    m = _DAY_RE.match(title or "")
-    return int(m.group(1)) if m else None
+    """The number a day's specials are stored under: 3 for "Day 3", for
+    "Day C" and for "Day 3 (Half Day)". None for anything else."""
+    rd = rotation_day.parse(title)
+    return rd.number if rd else None
 
 
-async def rotation_day_numbers(db: AsyncSession, school: School) -> list[int]:
+async def rotation_days(db: AsyncSession, school: School) -> tuple[list[int], bool]:
     """The rotation days this school's calendar actually uses (1-5 for
-    Cherry Hill elementary), from the "Day N" items that apply to it."""
+    Cherry Hill elementary, 1-6 for Mantua's A-F), from the "Day N" / "Day C"
+    items that apply to it, and whether it names them by letter."""
     scope = SchoolContentItem.school_id == school.id
     if school.district_id:
         scope = or_(scope, SchoolContentItem.district_id == school.district_id)
     rows = (
         await db.execute(
             select(SchoolContentItem.title, SchoolContentItem.applies_to_school_types)
-            .where(scope, SchoolContentItem.is_current.is_(True), SchoolContentItem.title.op("~*")(r"^\s*Day\s+[0-9]+\s*$"))
+            .where(scope, SchoolContentItem.is_current.is_(True), SchoolContentItem.title.op("~*")(r"^\s*(day\s+[0-9a-l]+|[a-l]\s+day)\s*(\([^)]*\))?\s*$"))
         )
     ).all()
-    numbers = {
-        n
-        for title, types in rows
-        if (n := rotation_number(title)) and n > 0 and (not types or not school.school_type or school.school_type in types)
-    }
-    return sorted(numbers)
+    numbers: set[int] = set()
+    lettered = numbered = 0
+    for title, types in rows:
+        if (n := rotation_number(title)) and n > 0 and (not types or not school.school_type or school.school_type in types):
+            numbers.add(n)
+            if rotation_day.parse(title).lettered:
+                lettered += 1
+            else:
+                numbered += 1
+    return sorted(numbers), lettered > numbered
 
 
 async def specials_by_student(db: AsyncSession, student_ids: list[str]) -> dict[str, dict[int, str]]:

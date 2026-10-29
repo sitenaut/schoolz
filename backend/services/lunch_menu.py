@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup
 import observability
 import scraper_client
 from scheduler.errors import record_parse_issue
-from services import haiku, page_extractions
+from services import haiku, menu_filenames, page_extractions
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL, _parse_date
 from services.tool_output import object_list, recover_spilled_input
 
@@ -222,8 +222,13 @@ def _classify_unbanded_pdf_link(url: str, school_type: str) -> dict | None:
 # month closest to today. Berlin Township's are "October-Lunch-Menu.pdf" (words
 # separated, no year); its "October-Pre-K-Lunch-Menu.pdf" twin doesn't match
 # because only a separator, not another word, may sit before the meal.
+#
+# The month is a whole month or its abbreviation, followed by a non-letter or the
+# meal: with any letters allowed after "Jan", Franklin's "FTS-OCT-2026-Janvier-
+# BreakfastMenu.pdf" (a school's name) read as January.
 _ABBREV_MENU_RE = re.compile(
-    r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*?[-_ ]?(\d{4}|\d{2})?[-_ ]?(Breakfast|Lunch)[-_ ]?Menu(?!_?SPA)",
+    r"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+    r"(?=[^a-z]|breakfast|lunch)[-_ ]?(\d{4}|\d{2})?[-_ ]?(Breakfast|Lunch)[-_ ]?Menu(?!_?SPA)",
     re.IGNORECASE,
 )
 
@@ -406,6 +411,30 @@ async def _discover_embedded_menus(page_url: str, html: str) -> list[dict]:
     return found
 
 
+# Township of Franklin (Apptegy): a documents folder's file list is fetched by
+# the page's own script, so its HTML links no files. The same public endpoint
+# answers a plain GET - section id from the page's script, folder id from the
+# last path segment of its URL.
+_APPTEGY_DOCUMENTS_API_RE = re.compile(r"thrillshare-cmsv2\.services\.thrillshare\.com/api/v2/s/(\d+)/documents")
+
+
+async def _apptegy_document_urls(page_url: str, html: str) -> set[str]:
+    section = _APPTEGY_DOCUMENTS_API_RE.search(html)
+    folder = re.search(r"/(\d+)/?$", urlparse(page_url).path)
+    if not (section and folder):
+        return set()
+    try:
+        async with httpx.AsyncClient(timeout=20.0, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as client:
+            resp = await client.get(
+                f"https://thrillshare-cmsv2.services.thrillshare.com/api/v2/s/{section.group(1)}/documents", params={"folder_id": folder.group(1)}
+            )
+            resp.raise_for_status()
+            return {d["url"] for d in resp.json().get("documents", []) if d.get("url")}
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("apptegy documents folder %s unreadable: %s", page_url, exc)
+        return set()
+
+
 async def _resolve_resource_manager_links(page_url: str, html: str) -> set[str]:
     """Follows each Finalsite resource-manager wrapper link to its real
     PDF URL. Non-PDF resources (a handbook, a USDA notice) resolve fine but
@@ -552,10 +581,54 @@ async def _discover_myschoolplate_menus(menu_page_url: str) -> list[dict]:
     return entries
 
 
-async def discover_current_menus(menu_page_url: str, school_types: list[str] | None = None) -> list[dict]:
+def _classify_loose_menu_links(urls: set[str], school_types: list[str], schools: list[dict] | None, today: date | None = None) -> list[dict]:
+    """menu_filenames.classify over every link, as entries ready to store.
+    A file that names one school of several of its type ("SWE-HILLLUNCHMENU")
+    is that school's own (`school_id` set); one that names a band is every
+    school of that type's; one naming neither is every school's. Beside
+    band-specific files for the same meal, a bandless one is dropped: it is
+    some other school's. Per group only this month and later are kept - the
+    next month is up before this one ends - else the latest."""
+    today = today or datetime.now(ZoneInfo("America/New_York")).date()
+    groups: dict[tuple, list[dict]] = {}
+    for url in sorted(urls):
+        c = menu_filenames.classify(url, today)
+        if not c:
+            continue
+        school = menu_filenames.named_school(c["stem"], schools) if schools else None
+        if school and school.get("school_type") and sum(1 for s in schools if s.get("school_type") == school["school_type"]) > 1:
+            key = ("school", school["id"], c["meal_type"])
+            types = [school["school_type"]]
+        elif c["bands"]:
+            types = [t for t in c["bands"] if t in school_types]
+            if not types:
+                continue  # a band no school here has (Pre-K)
+            key = (c["bands"], c["meal_type"])
+        else:
+            key, types, school = ((), c["meal_type"]), list(school_types), None
+        groups.setdefault(key, []).append({**c, "pdf_url": url, "_types": types, "_school": school if key[0] == "school" else None})
+
+    specific_meals = {key[-1] for key in groups if key[0] and key[0] != "school"}
+    out = []
+    for key, entries in groups.items():
+        if key[0] == () and key[-1] in specific_meals:
+            continue
+        current = [e for e in entries if e["_sort"] >= (today.year, today.month - 1)]
+        for e in sorted(current or [max(entries, key=lambda e: e["_sort"])], key=lambda e: e["_sort"]):
+            for school_type in e["_types"]:
+                entry = {"school_type": school_type, "meal_type": e["meal_type"], "period_label": e["period_label"], "pdf_url": e["pdf_url"], "_sort": e["_sort"], "_specific": key[0] != ()}
+                if e["_school"]:
+                    entry["school_id"] = e["_school"]["id"]
+                out.append(entry)
+    return out
+
+
+async def discover_current_menus(menu_page_url: str, school_types: list[str] | None = None, schools: list[dict] | None = None) -> list[dict]:
     """Returns one entry per (school_type, meal_type) found on the page,
     e.g. {"school_type": "elementary", "meal_type": "lunch",
-    "period_label": "September 2026", "pdf_url": "..."}.
+    "period_label": "September 2026", "pdf_url": "..."}. A file named for one
+    school of several (`schools`: dicts with id, name, short_name, school_type)
+    comes back with that school's `school_id` instead.
 
     `school_types` is the district's school types, for a district whose menu
     PDFs carry no grade band (Eastern: one high school; Evesham: one
@@ -569,6 +642,7 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
     # ("/ourpages/auto/.../File.pdf?rnd=1773934928084") once a file is replaced.
     urls = {urljoin(menu_page_url, u) for u in re.findall(r'href="([^"]+\.pdf(?:\?[^"]*)?)"', result["html"], re.IGNORECASE)}
     urls |= await _resolve_resource_manager_links(menu_page_url, result["html"])
+    urls |= await _apptegy_document_urls(menu_page_url, result["html"])
     # Drive files have no filename in their URL, so each is classified under a
     # stand-in URL ending in its Drive title, then swapped back to the real one.
     table = _classify_menu_table(result["html"], (school_types or ["elementary"])[0])
@@ -617,9 +691,20 @@ async def discover_current_menus(menu_page_url: str, school_types: list[str] | N
         if by_meal:
             return restore(fan_out([c for entries in by_meal.values() for c in current_or_latest(entries)]))
 
+        def public(entries: list[dict]) -> list[dict]:
+            return [{k: v for k, v in c.items() if not k.startswith("_")} for c in entries]
+
+        # Names that say which band or school a file is for outrank a bare month
+        # and year: Deptford's "Elementary Menu October 2026.pdf" and "Secondary
+        # Menu October 2026.pdf" would both read as every school's menu.
+        loose = _classify_loose_menu_links(urls, school_types, schools)
+        if any(c["_specific"] or c.get("school_id") for c in loose):
+            return restore(public(loose))
         unbanded = [c for c in (_classify_unbanded_pdf_link(u, school_types[0]) for u in urls) if c]
         if unbanded:
             return restore(fan_out(current_or_latest(unbanded)))
+        if loose:
+            return restore(public(loose))
     if not by_key:
         for c in await _discover_embedded_menus(menu_page_url, result["html"]):
             key = (c["school_type"], c["meal_type"])
@@ -676,16 +761,21 @@ def classify_presence_menu(item: dict) -> dict | None:
     title = item["title"]
     if item.get("extension") not in _PRESENCE_MENU_EXTS or not re.search(r"menu|lunch|breakfast", title, re.IGNORECASE):
         return None
+    meal_type = "breakfast" if re.search(r"breakfast", title, re.IGNORECASE) else "lunch"
     month_m = _MONTH_WORD_RE.search(title)
     year_m = re.search(r"\b(20\d{2})\b", title)
     if not month_m or not year_m:
+        # A picture replaced each month under a fixed heading ("PES Lunch Menu")
+        # has its month only in the picture; the scan reads it from there.
+        if item.get("undated"):
+            return {"meal_type": meal_type, "prek": False, "month": None, "year": None, "url": item["url"], "period_label": None}
         return None
     month = next(i for i, name in enumerate(_MONTHS, 1) if name.startswith(month_m.group(1).lower()))
     year = int(year_m.group(1))
     prek = bool(_PREK_RE.search(title))
     label = f"{_MONTHS[month - 1].title()} {year}" + (" (Pre-K)" if prek else "")
     return {
-        "meal_type": "breakfast" if re.search(r"breakfast", title, re.IGNORECASE) else "lunch",
+        "meal_type": meal_type,
         "prek": prek,
         "month": month,
         "year": year,
@@ -702,9 +792,10 @@ def pick_presence_menus(items: list[dict], today: date) -> list[dict]:
     best: dict[tuple[int, int, str], dict] = {}
     for item in items:
         c = classify_presence_menu(item)
-        if not c or (c["year"], c["month"]) < (today.year, today.month):
+        if not c or (c["month"] and (c["year"], c["month"]) < (today.year, today.month)):
             continue
-        key = (c["year"], c["month"], c["meal_type"])
+        # An undated picture's month is unknown until it is read, so each is its own candidate.
+        key = (c["year"], c["month"], c["meal_type"]) if c["month"] else (0, len(best) + 1, c["meal_type"])
         if key not in best or (best[key]["prek"] and not c["prek"]):
             best[key] = c
     return [best[k] for k in sorted(best)]
@@ -726,6 +817,68 @@ async def list_google_sites_menu_files(page_url: str) -> list[dict]:
         stem, dot, ext = name.rpartition(".")
         items.append({"title": stem if dot else name, "extension": ext.lower() if dot else "", "url": url})
     return items
+
+
+# Pitman (Apptegy): each school's menu page is pictures under headings
+# ("PES Breakfast Menu", "PES Lunch Menu"), replaced every month, and the
+# page's body is not in its HTML: the page's script asks Apptegy's public pages
+# API for it (org id from that script, slug from the URL). A two-column block
+# keeps one column per meal - Memorial stacks two pictures (two months) under
+# each heading, the high school sets a heading and its picture side by side -
+# so a picture belongs to the latest heading in its own column.
+_APPTEGY_PAGE_API_RE = re.compile(r"thrillshare-cmsv2\.services\.thrillshare\.com/api/v4/o/(\d+)/cms")
+_PICTURE_EXTS = {"png", "jpg", "jpeg", "webp", "pdf"}
+
+
+def _apptegy_page_media(content) -> list[tuple[str, str]]:
+    """[(heading, picture url)] in page order, for pictures with a heading above them."""
+    found: list[tuple[str, str]] = []
+    headings: dict[int | None, str] = {}
+
+    def walk(node, column: int | None = None) -> None:
+        if isinstance(node, list):
+            for value in node:
+                walk(value, column)
+        elif isinstance(node, dict):
+            kind, config = node.get("component"), node.get("config")
+            if kind == "ts-heading" and isinstance(config, dict):
+                headings[column] = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", unescape(config.get("content") or ""))).strip()
+            elif kind == "ts-image" and isinstance(config, dict):
+                image = config.get("image")
+                if isinstance(image, dict) and image.get("url") and headings.get(column):
+                    found.append((headings[column], image["url"]))
+            elif isinstance(config, list):
+                if kind == "ts-two-column":
+                    for index, block in enumerate(config):
+                        walk(block, index)
+                else:
+                    walk(config, column)
+            else:
+                for value in node.values():
+                    walk(value, column)
+
+    walk(content)
+    return found
+
+
+async def list_apptegy_page_images(page_url: str) -> list[dict]:
+    """[{title, extension, url, undated}] for the menu pictures on an Apptegy
+    page, each titled by the heading above it. [] when the page isn't one."""
+    slug = re.search(r"/page/([\w-]+)", urlparse(page_url).path)
+    if not slug:
+        return []
+    html = (await scraper_client.fetch_html(page_url, wait_for_selector="a", block_assets=True))["html"]
+    org = _APPTEGY_PAGE_API_RE.search(html)
+    if not org:
+        return []
+    async with httpx.AsyncClient(timeout=20.0, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}) as http_client:
+        resp = await http_client.get(f"https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/{org.group(1)}/cms/pages/{slug.group(1)}")
+        resp.raise_for_status()
+    return [
+        {"title": heading, "extension": urlparse(url).path.rsplit(".", 1)[-1].lower(), "url": url, "undated": True}
+        for heading, url in _apptegy_page_media(resp.json().get("content"))
+        if urlparse(url).path.rsplit(".", 1)[-1].lower() in _PICTURE_EXTS
+    ]
 
 
 # A price legend the model sometimes files under a real date ("Lunch Meal Prices: $3.25 ...").
@@ -767,7 +920,7 @@ async def _read_menu_file(pdf_url: str, content: bytes, prompt: str) -> list[dic
     return days
 
 
-async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None = None) -> list[dict]:
+async def parse_menu_pdf(pdf_url: str, period_label: str | None, meal_type: str | None = None) -> list[dict]:
     """Returns [{date: datetime, description: str, notes: str|None}, ...].
     Days marked only 'School Closed' with no meal are still included (with
     that as the description) so the calendar reads correctly."""
@@ -778,7 +931,8 @@ async def parse_menu_pdf(pdf_url: str, period_label: str, meal_type: str | None 
     # (Chesterbrook's Cloudflare) is read through the scrapers.
     _, content = await scraper_client.get_bytes(pdf_url, headers={"User-Agent": "Mozilla/5.0 (schoolz menu sync)"}, timeout_s=20.0)
     prompt = (
-        f"This is the {period_label} school menu calendar. Extract every day that has "
+        (f"This is the {period_label} school menu calendar." if period_label else "This is a school menu calendar; the month and year are printed on it.")
+        + " Extract every day that has "
         "an entry (a meal offered, or a note like 'School Closed'), resolving each into a full "
         "ISO date for that month/year. Go cell by cell through EVERY week row including the "
         "first and last, which are often partial (the month may start on a Thursday): a day "

@@ -11,8 +11,11 @@ export const HALF_DAY_RE = /\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:s
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Staff and conference days: status items, but not a closed day.
 const STAFF_DAY_RE = /\bin[\s-]?service\b|\bconference\b/i;
-// Eastern Regional appends the class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
-const ROTATION_RE = /^\s*Day\s+\d+\s*(?:\([^)]*\))?\s*$/i;
+// "Day 3", "Day C", "DAY C" and "C Day" (lettered rotations, A-F in Mantua and
+// Swedesboro-Woolwich); the letter must be capital. Eastern Regional appends the
+// class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)". Mirrors services/rotation_day.py
+// (JS has no inline (?-i:), so "day" is spelled out to leave the letter case-sensitive).
+const ROTATION_RE = /^\s*(?:[Dd][Aa][Yy]\s+(?:\d+|[A-L])|[A-L]\s+[Dd][Aa][Yy])\s*(?:\([^)]*\))?\s*$/;
 // A grade span: "K-8", "PK-4". Mirrors school_today.py:_GRADES_THROUGH_RE.
 const GRADES_THROUGH_RE = /\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b/i;
 

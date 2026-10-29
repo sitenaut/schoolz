@@ -237,7 +237,8 @@
       "logo_url": "https://cmsv2-assets.apptegy.net/uploads/31678/logo/34758/Pitman_Seal_Logo%282%29.png",
       "staff_directory_url": null,
       "sacc": null,
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://www.pitman.k12.nj.us/page/jshs-menu"
     },
     {
       "slug": "pitman-elementary",
@@ -274,7 +275,8 @@
         "site_phone": "(856) 589-2145 ext. 6006",
         "closures_notes": "Panther Club is the district's own before- and after-school program. Early-dismissal days run 12:50-2:50 PM. There is no care on school closings (including emergency closings), no AM session on delayed openings, and no PM session on an emergency early dismissal."
       },
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://www.pitman.k12.nj.us/page/pes-menu"
     },
     {
       "slug": "pitman-memorial-elementary",
@@ -311,7 +313,8 @@
         "site_phone": "(856) 589-2145 ext. 6006",
         "closures_notes": "Panther Club is the district's own before- and after-school program. Early-dismissal days run 1:10-3:10 PM. There is no care on school closings (including emergency closings), no AM session on delayed openings, and no PM session on an emergency early dismissal."
       },
-      "activities_calendar_ics_url": null
+      "activities_calendar_ics_url": null,
+      "presence_menu_page_url": "https://www.pitman.k12.nj.us/page/mem-menu"
     }
   ],
   "smore_newsletters": []

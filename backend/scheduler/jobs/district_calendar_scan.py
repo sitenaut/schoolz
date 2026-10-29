@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, School, SchoolContentItem
 from scheduler.registry import register_job
+from services import rotation_day
 from services.apptegy import fetch_events as fetch_apptegy_events
 from services.district_calendar import fetch_district_calendar, school_types_from_title
 from services.school_status import is_status_title, same_status_fact
@@ -58,6 +59,15 @@ def _retire_vanished(fetched: list[tuple[dict, list[dict]]], events: list[dict],
             row.is_current = False
             retired += 1
     return retired
+
+
+def _without_school_prefix(title: str, feed: dict) -> str:
+    """`title` minus a school_title_prefixes prefix when what is left is a
+    day-rotation marker (canonical: "HS C Day" -> "Day C"); else as it came."""
+    for prefix in sorted(feed.get("school_title_prefixes") or {}, key=len, reverse=True):
+        if title.lower().startswith(prefix.lower()) and rotation_day.is_rotation_title(title[len(prefix) :]):
+            return rotation_day.canonical_title(title[len(prefix) :])
+    return title
 
 
 def _same_event_key(event: dict) -> tuple:
@@ -113,6 +123,8 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             feed_events = [e for e in feed_events if not e["title"].lower().startswith(skip)]
         if skip_sections := {s.lower() for s in feed.get("skip_sections") or []}:
             feed_events = [e for e in feed_events if (e.get("section") or "").lower() not in skip_sections]
+        if feed.get("rotation_only"):
+            feed_events = [e for e in feed_events if rotation_day.is_rotation_title(_without_school_prefix(e["title"], feed))]
         fetched.append((feed, feed_events))
         if not slug:
             district_wide_uids.update(e["external_uid"] for e in feed_events)
@@ -152,6 +164,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             own_school = school_id or next(
                 (school_id_by_slug.get(slug) for p, slug in by_prefix if event["title"].lower().startswith(p) and school_id_by_slug.get(slug)), None
             )
+            # "HS C Day" is the high school's Day C: a rotation marker is read
+            # as one only without the building's prefix.
+            if own_school and not school_id:
+                event["title"] = _without_school_prefix(event["title"], feed)
             event["school_id"] = own_school
             event["applies_to_school_types"] = None if own_school else (school_types or school_types_from_title(event["title"], district_schools))
             events.append(event)

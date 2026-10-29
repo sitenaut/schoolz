@@ -420,6 +420,11 @@ class IcsFeed(BaseModel):
     # league rentals - under "Activities and Athletics" beside a 22-event
     # "District Calendar", on every org, and the API ignores section filters.
     skip_sections: list[str] | None = None
+    # Keep only the feed's day-rotation markers ("Day C", "C Day", or with a
+    # school_title_prefixes prefix: "HS C Day"), dropping the rest. Kingsway's
+    # "Teaching and Learning" calendar holds the high school's A-D rotation
+    # beside staff meetings and IEP deadlines.
+    rotation_only: bool = False
 
 
 class DistrictCreate(BaseModel):
@@ -2017,6 +2022,7 @@ class StudentSpecialOut(StudentSpecialIn):
 
 class StudentSpecialsOut(BaseModel):
     rotation_days: list[int]  # the rotation days this child's school actually uses
+    rotation_letters: bool = False  # the school names them A, B, C ... (day 3 is "C")
     specials: list[StudentSpecialOut]
 
 

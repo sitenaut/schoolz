@@ -289,3 +289,35 @@ async def test_skip_sections_drops_an_apptegy_section(monkeypatch):
         await db.flush()
         rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.district_id == district.id))).scalars().all()
         assert [r.title for r in rows] == ["School Closed"]
+
+
+@pytest.mark.anyio
+async def test_rotation_only_keeps_the_high_schools_lettered_days_and_drops_the_prefix(monkeypatch):
+    # Kingsway: the high school's A-D rotation shares a calendar with staff meetings.
+    feed = [
+        _event("k-a", "HS A Day", 8),
+        _event("k-b", "HS B Day ", 9),
+        _event("k-plt", "PLT/Dept (HS: 2:44 - 3:24 pm; MS: 2:50 - 3:30 pm)", 9),
+        _event("k-iep", "IEP Benchmark 1", 10),
+    ]
+
+    async def fake_fetch(url: str, **_) -> list[dict]:
+        return [dict(e) for e in feed]
+
+    monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Rotation Only District {tag}")
+        db.add(district)
+        await db.flush()
+        hs = School(name=f"Rotation Only High {tag}", slug=f"rotation-only-hs-{tag}", district_id=district.id, school_type="high")
+        db.add(hs)
+        await db.flush()
+        district.ics_feeds = [{"name": "T&L", "url": "https://x/t.ics", "rotation_only": True, "school_title_prefixes": {"HS ": hs.slug}}]
+        await db.commit()
+
+        await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+        rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == hs.id).order_by(SchoolContentItem.start_date))).scalars().all()
+        assert [(r.title, r.scope) for r in rows] == [("Day A", "school"), ("Day B", "school")]
+        assert (await db.execute(select(SchoolContentItem).where(SchoolContentItem.district_id == district.id))).scalars().all() == []

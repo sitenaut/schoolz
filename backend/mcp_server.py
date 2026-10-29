@@ -91,9 +91,9 @@ def _is_empty(data: Any) -> bool:
     return data is None or data == []
 
 
-# Same rule as services/school_today.py:_ROTATION_RE - kept local because this
-# module reaches the app only through its HTTP routes.
-_ROTATION_TITLE_RE = re.compile(r"^\s*Day\s+\d\s*$", re.I)
+# Same rule as services/rotation_day.py - kept local because this module
+# reaches the app only through its HTTP routes. "Day 3", "Day C", "C Day".
+_ROTATION_TITLE_RE = re.compile(r"^\s*(?:day\s+(?:\d|(?-i:[A-L]))|(?-i:[A-L])\s+day)\s*$", re.I)
 
 _SCHOOL_PATH_RE = re.compile(r"^/schools/([^/?]+)")
 # Words that don't tell schools apart, dropped when matching a guessed slug to names.
@@ -984,7 +984,7 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         Each item's day_effect says whether it changes the school day (no
         school / early dismissal / delayed opening / none) - an event named
         after a holiday or an election is not a closing unless it says so.
-        include_rotation_days: the "Day 1".."Day 6" rotation markers (which
+        include_rotation_days: the "Day 1".."Day 6" (or "Day A".."Day F") rotation markers (which
            letter-day it is) are left out by default - there's one on nearly
            every school day, and listed as events they buried the real ones.
            Set true only when asked which rotation day a date is.

@@ -77,6 +77,14 @@ describe("isRotationItem", () => {
     expect(isRotationItem("Day 12")).toBe(true);
     expect(isRotationItem("First Day of School")).toBe(false);
   });
+
+  it("matches lettered days, however the feed spells them", () => {
+    for (const t of ["Day C", "DAY C", "C Day", "C  Day", "DAY E (Snow Day)"]) expect(isRotationItem(t)).toBe(true);
+  });
+
+  it("does not take a sentence or a lowercase letter for a rotation day", () => {
+    for (const t of ["A Day with Dad", "Day Off", "a day", "Day c", "Day M"]) expect(isRotationItem(t)).toBe(false);
+  });
 });
 
 describe("isNoisyDistrictItem", () => {

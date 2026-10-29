@@ -7,7 +7,7 @@ from database import get_db
 from models import School, StudentSpecial, User
 from routers.bucket3 import _get_own_student
 from schemas import StudentSpecialIn, StudentSpecialOut, StudentSpecialsOut
-from services.specials import rotation_day_numbers
+from services.specials import rotation_days
 
 router = APIRouter(prefix="/students", tags=["specials"])
 
@@ -17,8 +17,10 @@ async def _out(db: AsyncSession, student) -> StudentSpecialsOut:
     rows = (
         await db.execute(select(StudentSpecial).where(StudentSpecial.student_id == student.id).order_by(StudentSpecial.rotation_day))
     ).scalars().all()
+    days, lettered = await rotation_days(db, school) if school else ([], False)
     return StudentSpecialsOut(
-        rotation_days=await rotation_day_numbers(db, school) if school else [],
+        rotation_days=days,
+        rotation_letters=lettered,
         specials=[StudentSpecialOut.model_validate(r) for r in rows],
     )
 

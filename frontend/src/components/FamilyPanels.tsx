@@ -79,6 +79,7 @@ type Special = { rotation_day: number; subject: string; teacher: string | null }
  * Shared with every guardian of the child; a blank day is "unknown". */
 export function SpecialsEditor({ student, onClose }: { student: ChildRef; onClose: () => void }) {
   const [days, setDays] = useState<number[] | null>(null);
+  const [letters, setLetters] = useState(false);
   const [rows, setRows] = useState<Record<number, { subject: string; teacher: string }>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,11 +88,15 @@ export function SpecialsEditor({ student, onClose }: { student: ChildRef; onClos
   useEffect(() => {
     apiFetch(`/students/${student.id}/specials`)
       .then((r) => (r.ok ? r.json() : { rotation_days: [], specials: [] }))
-      .then((d: { rotation_days: number[]; specials: Special[] }) => {
+      .then((d: { rotation_days: number[]; rotation_letters?: boolean; specials: Special[] }) => {
         setDays(d.rotation_days);
+        setLetters(!!d.rotation_letters);
         setRows(Object.fromEntries(d.specials.map((s) => [s.rotation_day, { subject: s.subject, teacher: s.teacher ?? "" }])));
       });
   }, [student.id]);
+
+  // A school that names its days A-F stores them as 1-6.
+  const dayName = (day: number) => (letters ? String.fromCharCode(64 + day) : String(day));
 
   const set = (day: number, field: "subject" | "teacher", value: string) => {
     setSaved(false);
@@ -136,18 +141,18 @@ export function SpecialsEditor({ student, onClose }: { student: ChildRef; onClos
       <div className="specials-grid">
         {days.map((day) => (
           <div className="specials-row" key={day}>
-            <span className="specials-day">Day {day}</span>
+            <span className="specials-day">Day {dayName(day)}</span>
             <input
               list="specials-subjects"
               placeholder="Special"
-              aria-label={`Day ${day} special`}
+              aria-label={`Day ${dayName(day)} special`}
               value={rows[day]?.subject ?? ""}
               onChange={(e) => set(day, "subject", e.target.value)}
               maxLength={100}
             />
             <input
               placeholder="Teacher (optional)"
-              aria-label={`Day ${day} teacher`}
+              aria-label={`Day ${dayName(day)} teacher`}
               value={rows[day]?.teacher ?? ""}
               onChange={(e) => set(day, "teacher", e.target.value)}
               maxLength={200}
