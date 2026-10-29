@@ -104,7 +104,11 @@ def test_a_four_hour_day_is_a_half_day_status():
     assert is_status_title("4 Hour Day for Students") and is_status_title("4 Hour Day for All")
 
 
-@pytest.mark.parametrize("title", ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "Winter Break  HAPPY HOLIDAYS"])
+@pytest.mark.parametrize(
+    "title",
+    ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "Winter Break  HAPPY HOLIDAYS",
+     "NJEA Convention", "OFF TEACHERS CONVENTION", "NJEA Teacher's Convention"],
+)
 def test_a_title_that_is_only_the_break_closes_the_day(title):
     # Riverton's and Beverly's calendars put nothing else on those days.
     assert says_closed(title) and classify_day([title])[0] == "closed" and is_status_title(title)

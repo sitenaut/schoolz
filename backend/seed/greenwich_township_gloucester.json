@@ -1,0 +1,88 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Greenwich Township School District (Gloucester County)",
+  "districts": [
+    {
+      "name": "Greenwich Township School District",
+      "state": "NJ",
+      "website_url": "https://www.gtsdk8.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://www.gtsdk8.us/calendars",
+      "ics_feeds": [],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Gibbstown"
+      ],
+      "schoolcafe_shortname": "GREENWICHTOWNSHIPNUTRISERVE"
+    }
+  ],
+  "schools": [
+    {
+      "slug": "broad-street-elementary",
+      "name": "Broad Street Elementary School",
+      "short_name": "Broad Street",
+      "district_name": "Greenwich Township School District",
+      "school_type": "elementary",
+      "address": "255 West Broad Street, Gibbstown, NJ 08027",
+      "main_phone": "(856) 224-4900 ext. 1131",
+      "website_url": "https://elementary.gtsdk8.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 224-4900 ext. 1113",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school nurse's office at (856) 224-4900 ext. 1113 by 9:00 AM on the morning of the absence. A doctor's note is required for an absence to be excused. For an absence of 3 or more days (for example a family vacation), fill out the Anticipated Absence Form under the Parents tab.",
+      "start_time": "8:20 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "12:20 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://content.schoolinsites.com/api/documents/a7b406e5e3f046aa93d5d7264c2b1cb9.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "nehaunsey-middle",
+      "name": "Nehaunsey Middle School",
+      "short_name": "Nehaunsey",
+      "district_name": "Greenwich Township School District",
+      "school_type": "middle",
+      "address": "415 Swedesboro Road, Gibbstown, NJ 08027",
+      "main_phone": "(856) 224-4920 ext. 2140",
+      "website_url": "https://middle.gtsdk8.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 224-4900 ext. 2137",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school nurse's office at (856) 224-4900 ext. 2137 by 9:00 AM on the morning of the absence. A doctor's note is required for an absence to be excused. For an absence of 3 or more days (for example a family vacation), fill out the Anticipated Absence Form under the Parents tab.",
+      "start_time": "7:55 AM",
+      "end_time": "3:01 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://content.schoolinsites.com/api/documents/9b54653fbe90454e9728d069cecea2ee.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://linktr.ee/gibbstownpto",
+      "label": "Gibbstown PTO Bulldog Bulletin",
+      "school_slug": "broad-street-elementary",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

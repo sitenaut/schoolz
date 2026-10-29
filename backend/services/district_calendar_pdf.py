@@ -140,6 +140,11 @@ def find_pdf_link(html: str, page_url: str) -> str | None:
     named = (max(by_year, key=lambda yu: yu[0])[1] if by_year else None) or (named_all[0] if named_all else None)
     if named:
         return named
+    # Greenwich Township's document ids are opaque hex, so only the link text
+    # ("Printable District Calendar") says which one is the calendar.
+    for m in re.finditer(r"""<a\b[^>]*href=["']([^"']+\.pdf[^"']*)["'][^>]*>(.*?)</a>""", text, re.I | re.S):
+        if "calendar" in re.sub(r"<[^>]+>", " ", m.group(2)).lower():
+            return urljoin(base_url, m.group(1))
     return _drive_calendar_link(text) or (found[0] if found else None)
 
 

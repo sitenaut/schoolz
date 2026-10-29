@@ -41,12 +41,16 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 _SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # A title that is only the break's name ("Winter Recess", "Spring Break",
+# "NJEA Convention",
 # "Chews Spring Break", "Thanksgiving Recess (SC)") is a closed day: Riverton
 # and Beverly put nothing else on those days. Not when it marks an edge of
 # the break or a short day before it ("Spring Break Begins", "Return from
 # Winter Break", "Winter Recess - Early Dismissal", "ONE SESSION WINTER RECESS").
 _BREAK_RE = re.compile(
-    r"^\s*(?:[\w'.]+\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b", re.I
+    r"^\s*(?:[\w'.]+\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b"
+    # NJ schools close by law for the NJEA convention: "NJEA Convention", "OFF TEACHERS CONVENTION".
+    r"|\bNJEA\b|\bteachers?'?s?\s+convention\b",
+    re.I,
 )
 _BREAK_EDGE_RE = re.compile(
     r"\b(?:begins?|starts?|ends?|over|returns?|reopens?|resumes?|last\s+day|dismissal|sessions?|half|1/2)\b", re.I
