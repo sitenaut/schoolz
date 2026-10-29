@@ -7,7 +7,7 @@ import { i18n } from "./i18n";
 // the Calendar page and the Today cards agree on what counts as a "no
 // school" / "half day" status item vs. an ordinary district-wide event like
 // a Board of Education meeting.
-export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
+export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1\/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Staff and conference days: status items, but not a closed day.
 const STAFF_DAY_RE = /\bin-?service\b|\bconference\b/i;

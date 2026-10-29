@@ -136,3 +136,10 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - A Wix hit on a WordPress school site can be just a librarian's own Wix page, not a platform signal.
 - Lunch is Drive PDFs titled "November 2026 Lunch.pdf" on `/lunch-menu/`, read by the unbanded path; the "... Breakfast.pdf" files are not classified.
 
+## Paulsboro (found onboarding)
+
+- WordPress multisite on WP Cloud (Automattic, Avada theme): three quick requests with a full Chrome user agent got 429s; a bare `Mozilla/5.0` and ~2 s spacing were fine.
+- Staff pages are `table.cs-table` under `h3.cs-widget-title` headings ("Contact Name" `th` as "Last, First", "Job Title" `td`), read by `_parse_table_page`.
+- ParentSquare's `/schools/<id>/rss_widget` and `/districts/<id>/rss_widget` are public server-rendered posts: a possible newsletter source, not read today.
+- Athletics on rSchoolToday (`paulsboroathletics.com`) link `arbiterlive.com/School/Calendar/<id>`.
+
