@@ -29,7 +29,7 @@ const SCHOOL_CLOSED_RE = /\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[
  * office's or a gym's. */
 // Only the break's name ("Winter Recess", "Spring Break") is a closed day,
 // not an edge of it or a short day before it. Mirrors school_status.py:_BREAK_RE.
-const BREAK_RE = /^\s*(?:[\w'.\/]+:?\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b|\bNJEA\b|\bteachers?'?s?\s+convention\b/i;
+const BREAK_RE = /^\s*(?:[\w'./]+:?\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b|\bNJEA\b|\bteachers?'?s?\s+convention\b/i;
 const BREAK_EDGE_RE = /\b(?:begins?|starts?|ends?|over|returns?|reopens?|resumes?|last\s+day|dismissal|sessions?|half|1\/2)\b/i;
 
 function saysClosedOutright(title: string): boolean {
