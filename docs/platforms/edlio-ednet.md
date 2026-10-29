@@ -255,3 +255,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - An `/apps/pages/index.jsp?uREC_ID=<n>&type=d` page is server-rendered, but its content sits in `#pageContentWrapper`, not Edlio's `#content_main` (an earlier note here said it needed JavaScript; it doesn't). `transportation._discover` tells the two apart by that container and reads Educational Networks with `parse_department_page`; the department's left menu (`#pageAsideWrapper`) links a Staff page (`.staff-categoryStaffMember` table rows with emails, or photo cards without) and a Regulations page.
 - A district calendar PDF with two list columns between two grid columns (CCTS's `District_Calendar.pdf`) defeats `layout_text_by_month`, and the whole-page read can move a right-column entry into the left-column month. Check its closures against the page.
 - `school_info.scan` reads no ednet footer, so address and phone stay typed in the seed (warns `school_info_missing_fields` every run).
+
+## Delanco (found onboarding)
+
+- One shared site (`www.delanco.com`, title verified), each school a `/apps/pages/index.jsp?uREC_ID=<n>` page like Runnemede's; the footer is the district's, so `school_info.scan` warns and the seed's addresses stand.
+- The district calendar is a one-page Google Sheets PDF in an `<object>` plus a plain href on a Parent Resources sub-page (`pREC_ID=1146346`); `ICalServlet?id=0` is stock RRULE holidays plus a few events, so it is not wired.
+- `/apps/staff/` is district-wide (51 people, "Elementary School Teachers" and "Middle School Teachers" categories, no emails), so both schools get the whole list.
+- ArbiterLive search matches entity names, not towns: "Delanco" finds nothing, "Walnut Street" finds 24664 ("Walnut Street Elementary School", really the middle school's games) and an empty duplicate 113506.
+

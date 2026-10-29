@@ -728,6 +728,7 @@ file for the platform you identified in step 2 of "How to actually do a crawl"
 | eSchoolView / LINQ (`*_home.aspx`) | `docs/platforms/eschoolview.md` |
 | WordPress (Beaver Builder, TablePress, multisite) | `docs/platforms/wordpress.md` |
 | Catapult CMS (`catapultcms`, `/<Section>/<Page>/index.html`) | `docs/platforms/catapult.md` |
+| Weebly (`cdn*.editmysite.com`, `/<slug>.html`) | `docs/platforms/weebly.md` |
 | Sterling group, Eastern/Overbrook group (several platforms each) | `docs/platforms/mixed-districts.md` |
 
 A platform not in this table is new: create `docs/platforms/<name>.md` and add a

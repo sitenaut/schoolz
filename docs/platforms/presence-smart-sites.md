@@ -131,3 +131,11 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - `staff_directory_url` is for a directory published as a document (PDF, Google Sheet or Slides); setting it to a contacts page makes the roster scan parse that HTML as a PDF and fail.
 - Everything else is Google Drive `file/d/<id>/view` links (menus, the district calendar PDF, forms). `district_calendar_pdf._drive_calendar_link` reads only text before the anchor, so a link whose own text is "District Calendar" is missed.
 
+## Palmyra and Riverside (found onboarding)
+
+- **Every Smart Sites calendar has a public ICS**, Google-backed or not: the calendar app's Subscribe button (`/page/subscribe?calendar_id=<id>`) prints `https://<host>/sndreq/generateCalendarICS.php?calendar_id=<id>`. The API's `feed_source` says `ics` (imported from ParentSquare, no `calIDref`) or `ss` (native). The generated file's UIDs are PHP `uniqid()` values minted at each rebuild (cached for hours), so `district_calendar` keys that URL's events on title and start.
+- `parentsquare.com/feeds/<id>` returns 401 anonymously; the same post is public at `<host>/index.php?pageID=smartSiteFeed&psqFeed=true&articleID=<id>`.
+- A nav item can redirect straight to a Google Sheet whose default export is the first tab (Palmyra's is a 2024 draft): pick the tab's gid.
+- Riverside is the Tabernacle/Edgewater shape (school pages on one host), but all three buildings share one campus address, so the district footer is right for each. Its directory widget returns the `.staff-item` carousel (no emails). A district calendar that unions school calendars can hide one school's missing closures: check each feed.
+- A Smart Sites slug can 302 straight to an `app.smore.com/n/<code>` issue (Riverside's `/ramfam-review`), so tracking that page is tracking a literal issue.
+

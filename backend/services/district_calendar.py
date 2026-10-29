@@ -195,6 +195,7 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
             except Exception:  # noqa: BLE001
                 pass
 
+    regenerated_uids = "/sndreq/generateCalendarICS.php" in ics_url
     out: list[dict] = []
     for component in cal.walk("VEVENT"):
         try:
@@ -211,7 +212,10 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0) -> list[d
 
             title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
             description = description_text(str(component.get("DESCRIPTION") or ""))
-            uid = str(component.get("UID")) if component.get("UID") else None
+            # Smart Sites' generated feed mints every UID afresh each time it
+            # rebuilds the file (Palmyra: PHP uniqid, every few hours), which
+            # would retire and re-add every row; key those on title and start.
+            uid = str(component.get("UID")) if component.get("UID") and not regenerated_uids else None
             # A moved/edited instance of a recurring series is its own VEVENT
             # carrying the series' UID plus a RECURRENCE-ID. Keyed on the UID
             # alone it collides with the master (Woodbury's board meeting

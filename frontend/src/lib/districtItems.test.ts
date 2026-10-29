@@ -145,6 +145,10 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["EARLY DISMISSAL - Staff In-Service"])).toBe("half");
     expect(dayStatusOf(["Early Dismissal - Parent/Teacher Conferences"])).toBe("half");
     expect(dayStatusOf(["4 Hour Day for Students"])).toBe("half");
+    expect(dayStatusOf(["12:50 Dismissal"])).toBe("half");
+    expect(dayStatusOf(["2 PM Dismissal"])).toBe("half");
+    expect(dayStatusOf(["Full Day of School - AHS ( 2:30pm Dismissal)"])).toBeNull();
+    expect(dayStatusOf(["1:30 Dismissal All Preschools"])).toBeNull();
     expect(dayStatusOf(["Science conference night"])).toBeNull();
     expect(dayStatusOf(["Board of Education Meeting", "Day 3"])).toBeNull();
     // Still an in-service day for "Exclude district", which never hides one.
@@ -205,6 +209,28 @@ describe("saysClosed", () => {
     }
   });
 
+  it("closes the day for a title that is only the break's name, not an edge of it", () => {
+    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22"]) {
+      expect(saysClosed(t)).toBe(true);
+    }
+    for (const t of [
+      "Spring Break Begins",
+      "Return from Winter Break",
+      "Winter Recess - Early Dismissal",
+      "ONE SESSION WINTER RECESS",
+      "1/2 DAY WINTER RECESS",
+      "Recess Runners Fun Run",
+    ]) {
+      expect(saysClosed(t)).toBe(false);
+    }
+  });
+
+  it("lets a half day win over a break that starts that day", () => {
+    expect(dayStatusOf(["Winter Recess", "SINGLE SESSION DAY"])).toBe("half");
+    expect(dayStatusOf(["Winter Recess"])).toBe("closed");
+    expect(dayStatusOf(["SCHOOLS CLOSED - Snow", "Early Dismissal"])).toBe("closed");
+  });
+
   it("doesn't close the day for an office, a portal, a gym or a closed session", () => {
     for (const t of [
       "OFFICE CLOSED",
@@ -213,6 +239,7 @@ describe("saysClosed", () => {
       "Weight Room Closed",
       "Board of Education Meeting - Executive (Closed) Session",
       "Main Office Closed",
+      "ALL District Offices Closed",
     ]) {
       expect(saysClosed(t)).toBe(false);
       expect(dayStatusOf([t])).toBeNull();

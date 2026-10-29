@@ -7,7 +7,7 @@ import { i18n } from "./i18n";
 // the Calendar page and the Today cards agree on what counts as a "no
 // school" / "half day" status item vs. an ordinary district-wide event like
 // a Board of Education meeting.
-export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b/i;
+export const HALF_DAY_RE = /\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Staff and conference days: status items, but not a closed day.
 const STAFF_DAY_RE = /\bin-?service\b|\bconference\b/i;
@@ -22,13 +22,28 @@ const GRADES_THROUGH_RE = /\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b/i;
 // ("Schools & Offices Closed, Winter Recess"). Mirrors school_status.py.
 const NOT_THE_SCHOOL_CLOSED_RE =
   /\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b|\(?\bclosed\)?\s+session\b/gi;
-const SCHOOL_CLOSED_RE = /\b(?:schools?|district|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b/i;
+const SCHOOL_CLOSED_RE = /\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b/i;
 
 /** No school that day. A bare "closed" counts - most feeds word a closure
  * that way ("CLOSED - Winter Recess", "Columbus Day, Closed") - but not an
  * office's or a gym's. */
-export function saysClosed(title: string): boolean {
+// Only the break's name ("Winter Recess", "Spring Break") is a closed day,
+// not an edge of it or a short day before it. Mirrors school_status.py:_BREAK_RE.
+const BREAK_RE = /^\s*(?:[\w'.]+\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b/i;
+const BREAK_EDGE_RE = /\b(?:begins?|starts?|ends?|over|returns?|reopens?|resumes?|last\s+day|dismissal|sessions?|half|1\/2)\b/i;
+
+function saysClosedOutright(title: string): boolean {
   return SCHOOL_CLOSED_RE.test(title) || /\bclosed\b/i.test(title.replace(NOT_THE_SCHOOL_CLOSED_RE, " "));
+}
+
+/** A closure known only from the break's name; it yields to a half day the
+ * same day (Gloucester Township's "Winter Recess" starts on its single-session day). */
+function isBreakOnly(title: string): boolean {
+  return BREAK_RE.test(title) && !BREAK_EDGE_RE.test(title) && !HALF_DAY_RE.test(title) && !saysClosedOutright(title);
+}
+
+export function saysClosed(title: string): boolean {
+  return saysClosedOutright(title) || isBreakOnly(title);
 }
 
 /** One day's status from the titles landing on it, by the Today card's
@@ -38,8 +53,9 @@ export function saysClosed(title: string): boolean {
  * Calendar grid painted them as closures. isStatusItem keeps them, so
  * "Exclude district" never hides an in-service day. */
 export function dayStatusOf(titles: string[]): "closed" | "half" | null {
-  if (titles.some(saysClosed)) return "closed";
+  if (titles.some((t) => saysClosed(t) && !isBreakOnly(t))) return "closed";
   if (titles.some((t) => HALF_DAY_RE.test(t))) return "half";
+  if (titles.some(isBreakOnly)) return "closed";
   return null;
 }
 
