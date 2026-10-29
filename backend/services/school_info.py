@@ -259,7 +259,9 @@ async def discover_school_info(school_website_url: str) -> dict:
     base = school_website_url.rstrip("/")
     smart_home = await smart_sites.fetch_home(base)
     if smart_home:
-        return {**smart_sites.parse_footer(smart_home), "logo_url": _find_logo_url(smart_home, base)}
+        # A school that is one page of the district's site shows the district
+        # office in its footer; the caller treats that like a shared site.
+        return {**smart_sites.parse_footer(smart_home), "logo_url": _find_logo_url(smart_home, base), "shared_footer": smart_sites.is_subpage(base)}
     if base.lower().endswith(".aspx"):
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz directory sync)"}) as client:

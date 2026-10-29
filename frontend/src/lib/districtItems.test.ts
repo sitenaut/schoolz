@@ -144,6 +144,7 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["SCHOOLS CLOSED - Labor Day"])).toBe("closed");
     expect(dayStatusOf(["EARLY DISMISSAL - Staff In-Service"])).toBe("half");
     expect(dayStatusOf(["Early Dismissal - Parent/Teacher Conferences"])).toBe("half");
+    expect(dayStatusOf(["4 Hour Day for Students"])).toBe("half");
     expect(dayStatusOf(["Science conference night"])).toBeNull();
     expect(dayStatusOf(["Board of Education Meeting", "Day 3"])).toBeNull();
     // Still an in-service day for "Exclude district", which never hides one.

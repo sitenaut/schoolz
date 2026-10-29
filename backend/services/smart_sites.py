@@ -19,11 +19,15 @@ Confirmed structure (all ten Evesham sites):
   `data-staff-email` (the site hides them from scrapers, not from us).
 - Some schools instead hand-type the directory into the page body ("Principal -
   Jane Doe", no emails; parsed by `handtyped_directory`) or embed a document
-  viewer, which is reported as empty rather than guessed at."""
+  viewer, which is reported as empty rather than guessed at.
+- A district may run one site with each school as a page on it
+  (`edgewaterparksd.org/mildred-magowan-elementary-school`). The AJAX endpoint
+  then lives only at the host root (under the page it 404s), and the footer is
+  the district office's, not the school's (`is_subpage`)."""
 
 import base64
 import re
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import httpx
 from bs4 import BeautifulSoup
@@ -47,6 +51,16 @@ _MIN_HANDTYPED = 5
 
 def is_smart_sites(html: str) -> bool:
     return _MARKER in html
+
+
+def is_subpage(url: str) -> bool:
+    """True when the school's site is a page on a shared host, not a site of its own."""
+    return urlsplit(url).path.strip("/") != ""
+
+
+def _origin(url: str) -> str:
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}"
 
 
 async def fetch_home(base_url: str) -> str | None:
@@ -218,7 +232,7 @@ async def fetch_roster(base_url: str, home_html: str) -> list[dict]:
                         by_id[cid] = {"constituent_id": cid, **p, "department": None, "email": None, "phone": None}
             for item_id in item_ids:
                 r = await client.post(
-                    base + _DIRECTORY_AJAX,
+                    _origin(base) + _DIRECTORY_AJAX,
                     data={"item_id": item_id, "search_term": "", "use_mongo": "false", "revision_time": ""},
                     headers={"X-Requested-With": "XMLHttpRequest", "Referer": page_url},
                 )

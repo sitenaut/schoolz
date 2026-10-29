@@ -37,6 +37,10 @@ def test_classify_day_precedence_and_labels():
     assert classify_day(["PCPEP - K-8 Single Session"])[0] == "early_dismissal"
     assert classify_day(["Staff Development Day - No Students"])[0] == "closed"
     assert classify_day(["K-5 Single Session - Parent Conferences"])[0] == "early_dismissal"
+    # Edgewater Park's.
+    assert classify_day(["4 Hour Day for Students"])[0] == "early_dismissal"
+    assert classify_day(["4-Hour Day for All"])[0] == "early_dismissal"
+    assert classify_day(["24 hour day of giving"])[0] == "open"
 
 
 def test_a_grade_span_that_stops_short_of_the_school_is_not_its_status():

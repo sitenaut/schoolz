@@ -32,7 +32,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     # Schools with no page of their own share the district's site, whose
     # footer is one building's (Tabernacle Elementary took Olson Middle's
     # address and phone), so a shared site only fills blanks.
-    shared_site = (
+    shared_site = info.get("shared_footer") or (
         await db.execute(select(School.id).where(School.website_url == school.website_url, School.id != school.id).limit(1))
     ).first() is not None
     if shared_site:

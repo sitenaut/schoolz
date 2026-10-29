@@ -11,7 +11,7 @@ import re
 # Whether a title says the school is closed is says_closed's job: this also
 # matches an office or a gym being closed.
 CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed\b|\bno students\b|\bin-?service\b|\bconference\b", re.I)
-EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b", re.I)
+EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Staff days and conference days: status facts, but not closures of the day
 # (school_today's classify_day doesn't count them).

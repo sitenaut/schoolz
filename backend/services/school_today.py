@@ -63,8 +63,8 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 # school_status.says_closed: a bare "closed" counts, as most feeds word a
 # closure, an office's or a gym's doesn't. "No Students" (a staff
 # development day) and "Single Session" (a half day) are how Delran and
-# Cinnaminson word it.
-_EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b", re.I)
+# Cinnaminson word it, "4 Hour Day for Students" Edgewater Park.
+_EARLY_RE = re.compile(r"\bearly\s+dismissal\b|\bhalf[\s-]day\b|\bsingle[\s-]session\b|\b\d\s*-?\s*hour\s+day\b", re.I)
 # A status title scoped to grades by its own wording: "PCPEP - K-8 Single
 # Session", "K-5 Single Session - Parent Conferences".
 _GRADES_THROUGH_RE = re.compile(r"\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b", re.I)
