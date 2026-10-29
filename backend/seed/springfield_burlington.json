@@ -1,0 +1,182 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Springfield Township School District (Burlington County)",
+  "districts": [
+    {
+      "name": "Springfield Township School District",
+      "state": "NJ",
+      "website_url": "https://www.springfieldschool.org",
+      "food_services_menu_url": "https://www.springfieldschool.org/lunch",
+      "calendar_pdf_url": "https://www.springfieldschool.org/our-district/district-calendar",
+      "ics_feeds": [
+        {
+          "name": "Springfield Township School Events",
+          "url": "https://www.springfieldschool.org/calendar/calendar_350.ics"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Springfield"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "springfield-township-school",
+      "name": "Springfield Township School",
+      "short_name": "Springfield Township",
+      "district_name": "Springfield Township School District",
+      "school_type": "elementary",
+      "address": "2146 Jacksonville-Jobstown Road, Jobstown, NJ 08041",
+      "main_phone": "(609) 723-2479",
+      "website_url": "https://www.springfieldschool.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 723-2479 ext. 106",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Nurse's Absence Line, (609) 723-2479 ext. 106, between 8:00 and 9:45 AM whenever your child will be absent or late. Send a parent or doctor note to the teacher when the child returns.",
+      "start_time": "8:30 AM",
+      "end_time": "3:20 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": {
+        "early_dismissal": [
+          {
+            "name": "Homeroom & Academic Success",
+            "start": "08:30",
+            "end": "09:00"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:00",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:00",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 8",
+            "start": "10:30",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:30"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:30",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:00",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:30",
+            "end": "13:00"
+          },
+          {
+            "name": "PM Homeroom",
+            "start": "13:00",
+            "end": "13:20"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom & Academic Success",
+            "start": "10:30",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:40",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "11:15",
+            "end": "11:50"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:50",
+            "end": "12:25"
+          },
+          {
+            "name": "Period 4",
+            "start": "12:25",
+            "end": "13:00"
+          },
+          {
+            "name": "Period 5",
+            "start": "13:00",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:35",
+            "end": "14:10"
+          },
+          {
+            "name": "Period 7",
+            "start": "14:10",
+            "end": "14:45"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:45",
+            "end": "15:15"
+          },
+          {
+            "name": "PM Homeroom",
+            "start": "15:15",
+            "end": "15:20"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1687540717/springfieldschoolorg/pdjkk9zfnov8r86bmqie/Springfieldbulldog.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "3:20 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Extended Day Care is run by school staff. It does not operate when the district closes, on a late start, or on an unscheduled early dismissal (it does run on scheduled early dismissals). Registration and payment online only.",
+        "handbook_url": "https://www.springfieldschool.org/departments/before-after-school-child-care"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://www.springfieldschool.org/newsletter",
+      "label": "Springfield Township School Newsletter",
+      "school_slug": "springfield-township-school",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

@@ -86,14 +86,16 @@ _DRIVE_ANCHOR_RE = re.compile(r"""<a\s[^>]*href=["'][^"']*drive\.google\.com/fil
 def _drive_calendar_link(text: str) -> str | None:
     """Clementon posts "2026-27 Calendar (Approved 2.12.26) - English / Spanish"
     as Drive links, no .pdf anywhere. The first Drive file whose preceding
-    text says calendar is the English one."""
+    text (or its own link text) says calendar is the English one."""
     for m in _DRIVE_ANCHOR_RE.finditer(text):
         before = text[max(0, m.start() - 300) : m.start()]
         # Only the text sitting right against the link: back to the previous
         # link or block, so a nav bar's "Calendar" can't label a later file.
         boundary = max((mm.end() for mm in re.finditer(r"</a>|</?(?:p|div|li|br|td|tr|h\d)\b[^>]*>", before, re.I)), default=0)
         lead = re.sub(r"<[^>]+>|\s+", " ", before[boundary:]).strip()
-        if "calendar" in lead.lower():
+        # Chesterfield's link is its own label: <a ...>2026-2027 School Calendar</a>.
+        own = re.sub(r"<[^>]+>|\s+", " ", text[m.end() : text.find("</a>", m.end())]).strip()
+        if "calendar" in lead.lower() or "calendar" in own.lower():
             return f"https://drive.google.com/uc?export=download&id={m.group(1)}"
     return None
 

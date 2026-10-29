@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import District, LunchMenu, LunchMenuItem, School
 from scheduler.errors import record_parse_issue
 from scheduler.registry import register_job
-from services.schoolcafe import SchoolCafeClient, match_school
+from services.schoolcafe import SchoolCafeClient, match_by_site_type, match_school
 
 _DAYS_AHEAD = 21
 _SOURCE_PREFIX = "https://www.schoolcafe.com/"
@@ -48,7 +48,11 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
         for school in schools:
             # A district that lists one site under its own name (Lenape) publishes a single district-wide menu.
-            cafe_school = match_school(school.name, cafe_schools) or (cafe_schools[0] if len(cafe_schools) == 1 else None)
+            cafe_school = (
+                match_school(school.name, cafe_schools)
+                or (cafe_schools[0] if len(cafe_schools) == 1 else None)
+                or match_by_site_type(school, schools, cafe_schools)
+            )
             if not cafe_school:
                 unmatched.append(school.name)
                 record_parse_issue("schoolcafe_menu.scan", "school_not_matched", school=school.name)
@@ -72,7 +76,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                     menu = LunchMenu(school_id=school.id, meal_type=meal, period_label="SchoolCafé", source_pdf_url=source_url)
                     db.add(menu)
                     await db.flush()
-                menu.parsed_at = datetime.now(timezone.utc)
+                menu.parsed_at = datetime.now(UTC)
                 # Rolling window: the fetched days are replaced wholesale,
                 # so a menu change on SchoolCafé shows up on the next run.
                 window_start = datetime.combine(days[0], time(0), _TZ)
