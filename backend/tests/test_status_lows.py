@@ -107,7 +107,8 @@ def test_a_four_hour_day_is_a_half_day_status():
 @pytest.mark.parametrize(
     "title",
     ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "Winter Break  HAPPY HOLIDAYS",
-     "NJEA Convention", "OFF TEACHERS CONVENTION", "NJEA Teacher's Convention"],
+     "NJEA Convention", "OFF TEACHERS CONVENTION", "NJEA Teacher's Convention", "District: Winter Break",
+     "District: Teacher Inservice - Students Off"],
 )
 def test_a_title_that_is_only_the_break_closes_the_day(title):
     # Riverton's and Beverly's calendars put nothing else on those days.

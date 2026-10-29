@@ -773,6 +773,8 @@ _PRESENCE_PATHS = (
     "/for_staff/ues_staff_directory",
     # Gateway Regional: a district-level page, same React component.
     "/district/staff_directory",
+    # West Deptford: /staff_directory is a nav page; the component is one level down.
+    "/staff_directory/searchable_directory",
 )
 # Groups every Presence site has for its own accounts, not for staff:
 # "Registered Users" is everyone with a login. Gateway: 157, of whom 131 are in

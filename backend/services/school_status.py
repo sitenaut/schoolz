@@ -37,8 +37,9 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 )
 # A school word earlier in the same clause makes it the school after all:
 # "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
-# Not Palmyra's summer "District Offices Closed".
-_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b", re.I)
+# Not Palmyra's summer "District Offices Closed". Glassboro's in-service
+# days are "Teacher Inservice - Students Off".
+_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # A title that is only the break's name ("Winter Recess", "Spring Break",
 # "NJEA Convention",
@@ -47,7 +48,7 @@ _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # the break or a short day before it ("Spring Break Begins", "Return from
 # Winter Break", "Winter Recess - Early Dismissal", "ONE SESSION WINTER RECESS").
 _BREAK_RE = re.compile(
-    r"^\s*(?:[\w'.]+\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b"
+    r"^\s*(?:[\w'./]+:?\s+)?(?:winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b"
     # NJ schools close by law for the NJEA convention: "NJEA Convention", "OFF TEACHERS CONVENTION".
     r"|\bNJEA\b|\bteachers?'?s?\s+convention\b",
     re.I,

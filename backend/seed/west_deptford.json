@@ -1,0 +1,457 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: West Deptford Township School District",
+  "districts": [
+    {
+      "name": "West Deptford Township School District",
+      "state": "NJ",
+      "website_url": "https://www.wdeptford.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://www.wdeptford.k12.nj.us/calendar/2026_2027_District_calendar",
+      "ics_feeds": [
+        {
+          "name": "West Deptford District Activities",
+          "url": "https://www.wdeptford.k12.nj.us/ICalendarHandler?calendarId=310266"
+        },
+        {
+          "name": "West Deptford High School Calendar",
+          "url": "https://hs.wdeptford.k12.nj.us/ICalendarHandler?calendarId=310297",
+          "school_slug": "west-deptford-high"
+        },
+        {
+          "name": "West Deptford Middle School Calendar",
+          "url": "https://ms.wdeptford.k12.nj.us/ICalendarHandler?calendarId=310321",
+          "school_slug": "west-deptford-middle"
+        },
+        {
+          "name": "Green-Fields Calendar",
+          "url": "https://ges.wdeptford.k12.nj.us/ICalendarHandler?calendarId=368855",
+          "school_slug": "green-fields"
+        },
+        {
+          "name": "Oakview Calendar",
+          "url": "https://oes.wdeptford.k12.nj.us/ICalendarHandler?calendarId=310699",
+          "school_slug": "oakview"
+        },
+        {
+          "name": "Red Bank Calendar",
+          "url": "https://rbes.wdeptford.k12.nj.us/ICalendarHandler?calendarId=368913",
+          "school_slug": "red-bank-elementary"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.wdeptford.k12.nj.us/district_info/transportation",
+      "towns": [
+        "West Deptford"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "west-deptford-high",
+      "name": "West Deptford High School",
+      "short_name": "West Deptford High",
+      "district_name": "West Deptford Township School District",
+      "school_type": "high",
+      "address": "1600 Old Crown Point Road, West Deptford, NJ 08093",
+      "main_phone": "(856) 848-6110",
+      "website_url": "https://hs.wdeptford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [
+        "WDHSAttedance@wdeptford.k12.nj.us"
+      ],
+      "absence_phone": "(856) 848-6110",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance office at (856) 848-6110, press 2, before 8:30 AM if your child will be absent or late. Notes can be emailed or faxed to (856) 845-5774 and are due within 3 school days of return.",
+      "start_time": "7:15 AM",
+      "end_time": "1:50 PM",
+      "early_dismissal_time": "11:37 AM",
+      "delayed_opening_time": "9:15 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:15",
+            "end": "07:26"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:30",
+            "end": "08:14"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:18",
+            "end": "09:02"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:06",
+            "end": "09:50"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:54",
+            "end": "10:38"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:42",
+            "end": "11:26"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:30",
+            "end": "12:14"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:18",
+            "end": "13:02"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:06",
+            "end": "13:50"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:15",
+            "end": "07:20"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:23",
+            "end": "07:52"
+          },
+          {
+            "name": "Period 2",
+            "start": "07:55",
+            "end": "08:24"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:27",
+            "end": "08:57"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:00",
+            "end": "09:29"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:32",
+            "end": "10:01"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:04",
+            "end": "10:33"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:36",
+            "end": "11:05"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:08",
+            "end": "11:37"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:15",
+            "end": "09:19"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:22",
+            "end": "09:53"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:56",
+            "end": "10:27"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:30",
+            "end": "11:01"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:04",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:38",
+            "end": "12:09"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:12",
+            "end": "12:43"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:46",
+            "end": "13:17"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:20",
+            "end": "13:50"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/25204",
+      "logo_url": "https://cdnsm5-ss9.sharpschool.com/UserFiles/Servers/Server_3602/Image/Logo/WDHS%20eagle%20logo%20green%20(1).png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "wdeptfordk12/west-deptford-high-school"
+    },
+    {
+      "slug": "west-deptford-middle",
+      "name": "West Deptford Middle School",
+      "short_name": "West Deptford Middle",
+      "district_name": "West Deptford Township School District",
+      "school_type": "middle",
+      "address": "675 Grove Road, West Deptford, NJ 08066",
+      "main_phone": "(856) 848-1200",
+      "website_url": "https://ms.wdeptford.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:45 AM",
+      "end_time": "2:27 PM",
+      "early_dismissal_time": "12:09 PM",
+      "delayed_opening_time": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:45",
+            "end": "08:03"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:06",
+            "end": "08:51"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:54",
+            "end": "09:39"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:42",
+            "end": "10:27"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:30",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:18",
+            "end": "12:03"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:06",
+            "end": "12:51"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:54",
+            "end": "13:39"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:42",
+            "end": "14:27"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:45",
+            "end": "07:53"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:55",
+            "end": "08:25"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:27",
+            "end": "08:57"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:59",
+            "end": "09:29"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:31",
+            "end": "10:01"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:03",
+            "end": "10:33"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:35",
+            "end": "11:05"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:07",
+            "end": "11:37"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:39",
+            "end": "12:09"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=25205",
+      "logo_url": "https://cdnsm5-ss9.sharpschool.com/UserFiles/Servers/Server_3744/Image/Logo/LogoWestMiddle.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "wdeptfordk12/west-deptford-middle-school"
+    },
+    {
+      "slug": "green-fields",
+      "name": "Green-Fields Elementary School",
+      "short_name": "Green-Fields",
+      "district_name": "West Deptford Township School District",
+      "school_type": "elementary",
+      "address": "15 Hill Lane, West Deptford, NJ 08096",
+      "main_phone": "(856) 845-7929",
+      "website_url": "https://ges.wdeptford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 845-7929",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Green-Fields absentee line, (856) 845-7929, prompt 2, before 8:40 AM. Send a signed parent or doctor's note on the first day back.",
+      "start_time": "9:00 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss9.sharpschool.com/UserFiles/Servers/Server_4171/Image/Logo/Greenfields.jpg",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "wdeptfordk12/greenfield-elementary"
+    },
+    {
+      "slug": "oakview",
+      "name": "Oakview Elementary School",
+      "short_name": "Oakview",
+      "district_name": "West Deptford Township School District",
+      "school_type": "elementary",
+      "address": "350 DuBois Avenue, West Deptford, NJ 08096",
+      "main_phone": "(856) 845-1856",
+      "website_url": "https://oes.wdeptford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 845-1856",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Oakview absentee line, (856) 845-1856, prompt 2, before 8:45 AM. The school calls home if an absence isn't verified by a note or call.",
+      "start_time": "9:10 AM",
+      "end_time": "3:45 PM",
+      "early_dismissal_time": "1:30 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss9.sharpschool.com/UserFiles/Servers/Server_4028/Image/OV_Eagle1_edited3.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "wdeptfordk12/oakview-elementary"
+    },
+    {
+      "slug": "red-bank-elementary",
+      "name": "Red Bank Elementary School",
+      "short_name": "Red Bank",
+      "district_name": "West Deptford Township School District",
+      "school_type": "elementary",
+      "address": "192 Philadelphia Avenue, West Deptford, NJ 08086",
+      "main_phone": "(856) 845-2727",
+      "website_url": "https://rbes.wdeptford.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(856) 845-2727",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Red Bank absentee line, (856) 845-2727, prompt 2, before 8:30 AM. Send a signed note on return.",
+      "start_time": "8:50 AM",
+      "end_time": "3:25 PM",
+      "early_dismissal_time": "1:10 PM",
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss9.sharpschool.com/UserFiles/Servers/Server_3886/Image/Logo/Red%20Bank%20202-2027%20Logo.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "wdeptfordk12/red-bank-elementary"
+    },
+    {
+      "slug": "west-deptford-early-childhood-center",
+      "name": "West Deptford Early Childhood Center",
+      "short_name": "Early Childhood Center",
+      "district_name": "West Deptford Township School District",
+      "school_type": "other",
+      "address": "1261 Red Bank Avenue, West Deptford, NJ 08086",
+      "main_phone": "(856) 848-6450",
+      "website_url": "https://ps.wdeptford.k12.nj.us",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": null
+    }
+  ],
+  "smore_newsletters": []
+}

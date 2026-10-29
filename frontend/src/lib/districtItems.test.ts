@@ -211,7 +211,7 @@ describe("saysClosed", () => {
   });
 
   it("closes the day for a title that is only the break's name, not an edge of it", () => {
-    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "NJEA Convention"]) {
+    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "NJEA Convention", "District: Winter Break", "Teacher Inservice - Students Off"]) {
       expect(saysClosed(t)).toBe(true);
     }
     for (const t of [
