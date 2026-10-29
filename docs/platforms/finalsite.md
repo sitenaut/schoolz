@@ -144,3 +144,8 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - The home page's calendar can be a Drive link labelled only by its own text (`<a>2026-2027 School Calendar</a>`), which `_drive_calendar_link` now reads.
 - A Finalsite district can put each school on a Google Site (Mansfield): no `.fsLocationAddress`, and the district's constituent directory is out of the roster scan's reach.
 
+## Pemberton (found onboarding)
+
+- Every `calendar_ids[]` value can return the same event union under the same UIDs, buildings told apart only by a title prefix ("PTHS - "). Neither the UID subtraction nor `skip_title_prefixes` can split that; the feed's `school_title_prefixes` ({prefix: school slug}) does, and a scan moves existing rows when the map changes.
+- `.fsLocationAddress` can hold only the street, and the footer `tel:` carries the extension.
+

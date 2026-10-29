@@ -1,0 +1,742 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Pemberton Township School District",
+  "districts": [
+    {
+      "name": "Pemberton Township School District",
+      "state": "NJ",
+      "website_url": "https://www.pemberton.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Pemberton Township District Calendar",
+          "url": "https://www.pemberton.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=4",
+          "school_title_prefixes": {
+            "PTHS": "pemberton-township-high",
+            "HFMS": "helen-a-fort-middle",
+            "Newcomb": "marcus-w-newcomb-middle",
+            "PECEC": "pemberton-early-childhood-education-center",
+            "Ft. Dix": "fort-dix-elementary",
+            "Emmons": "emmons",
+            "Stackhouse": "stackhouse",
+            "DNCR": "denbo-crichton",
+            "Busansky": "busansky"
+          }
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": "https://www.pemberton.k12.nj.us/departments/early-childhood/locations",
+      "preschool_team_url": "https://www.pemberton.k12.nj.us/departments/early-childhood/early-childhood-staff",
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.pemberton.k12.nj.us/departments/transportation/welcome",
+      "towns": [
+        "Pemberton Township",
+        "Pemberton Borough"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "pemberton-township-high",
+      "name": "Pemberton Township High School",
+      "short_name": "Pemberton Township High",
+      "district_name": "Pemberton Township School District",
+      "school_type": "high",
+      "address": "148 Arney's Mount Road, Pemberton, NJ 08068",
+      "main_phone": "(609) 893-8141 ext. 1800",
+      "website_url": "https://pths.pemberton.k12.nj.us",
+      "absence_method": "other",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "No call-in line is published. The handbook asks for original notes (doctor, dental, court) to be turned in to your student's grade-level assistant principal's office after the absence; faxes must come directly from the doctor's office. Attendance can be followed in the Genesis Parent Portal.",
+      "start_time": "7:25 AM",
+      "end_time": "2:05 PM",
+      "early_dismissal_time": "11:50 AM",
+      "delayed_opening_time": "9:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:25",
+            "end": "07:30"
+          },
+          {
+            "name": "Block 1",
+            "start": "07:30",
+            "end": "08:44"
+          },
+          {
+            "name": "Block 2",
+            "start": "08:48",
+            "end": "10:02"
+          },
+          {
+            "name": "Block 3",
+            "start": "10:06",
+            "end": "11:24"
+          },
+          {
+            "name": "Block 4",
+            "start": "11:28",
+            "end": "12:46"
+          },
+          {
+            "name": "Block 5",
+            "start": "12:50",
+            "end": "14:05"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:25",
+            "end": "07:30"
+          },
+          {
+            "name": "Block 1",
+            "start": "07:30",
+            "end": "08:15"
+          },
+          {
+            "name": "Block 2",
+            "start": "08:19",
+            "end": "09:04"
+          },
+          {
+            "name": "Block 3",
+            "start": "09:08",
+            "end": "10:02"
+          },
+          {
+            "name": "Block 4",
+            "start": "10:06",
+            "end": "11:00"
+          },
+          {
+            "name": "Block 5",
+            "start": "11:04",
+            "end": "11:50"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:20",
+            "end": "09:35"
+          },
+          {
+            "name": "Block 1",
+            "start": "09:35",
+            "end": "10:20"
+          },
+          {
+            "name": "Block 2",
+            "start": "10:25",
+            "end": "11:10"
+          },
+          {
+            "name": "Block 3",
+            "start": "11:15",
+            "end": "12:10"
+          },
+          {
+            "name": "Block 4",
+            "start": "12:15",
+            "end": "13:10"
+          },
+          {
+            "name": "Block 5",
+            "start": "13:15",
+            "end": "14:05"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/17778",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/t_image_size_1/v1723645786/pembertonk12njus/h3oiz5afletzz2sszjmu/Pemberton_HornetcutouNEWTEMPLATE.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16462",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "helen-a-fort-middle",
+      "name": "Helen A. Fort Middle School",
+      "short_name": "Helen Fort",
+      "district_name": "Pemberton Township School District",
+      "school_type": "middle",
+      "address": "301 Fort Dix Road, Pemberton, NJ 08068",
+      "main_phone": "(609) 893-8141 ext. 1600",
+      "website_url": "https://hfms.pemberton.k12.nj.us",
+      "absence_method": "other",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "No call-in line is published. The handbook asks for original notes (doctor, dental, court) to be turned in to the counseling office secretary by the end of the marking period after the absence; faxes must come directly from the doctor's office. Attendance can be followed in the Genesis Parent Portal.",
+      "start_time": "7:55 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:13"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:16",
+            "end": "08:56"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:59",
+            "end": "09:39"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:42",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:25",
+            "end": "11:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:08",
+            "end": "11:48"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:51",
+            "end": "12:31"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:34",
+            "end": "13:14"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:17",
+            "end": "13:57"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:55",
+            "end": "08:16"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:18",
+            "end": "08:39"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:41",
+            "end": "09:02"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:04",
+            "end": "09:41"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:43",
+            "end": "10:20"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:22",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:01",
+            "end": "11:38"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:40",
+            "end": "12:01"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:03",
+            "end": "12:25"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:55",
+            "end": "10:03"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:06",
+            "end": "10:32"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:35",
+            "end": "11:01"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:04",
+            "end": "11:30"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:33",
+            "end": "12:03"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:06",
+            "end": "12:36"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:39",
+            "end": "13:09"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:12",
+            "end": "13:42"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:45",
+            "end": "14:11"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:14",
+            "end": "14:40"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/t_image_size_1/v1723645768/pembertonk12njus/yrngtofrgctwz9t87fqy/HFMShornetNEWTEMPLATE.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16464",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "marcus-w-newcomb-middle",
+      "name": "Marcus W. Newcomb Middle School",
+      "short_name": "Newcomb",
+      "district_name": "Pemberton Township School District",
+      "school_type": "middle",
+      "address": "300 Fort Dix Road, Pemberton, NJ 08068",
+      "main_phone": "(609) 893-8141 ext. 1700",
+      "website_url": "https://newcomb.pemberton.k12.nj.us",
+      "absence_method": "other",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "No call-in line is published. The handbook asks for original notes (doctor, dental, court) to be turned in to the attendance office by the end of the marking period after the absence; faxes must come directly from the doctor's office. Attendance can be followed in the Genesis Parent Portal.",
+      "start_time": "7:55 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:12"
+          },
+          {
+            "name": "Block 1",
+            "start": "08:15",
+            "end": "08:55"
+          },
+          {
+            "name": "Block 2",
+            "start": "08:58",
+            "end": "09:38"
+          },
+          {
+            "name": "Block 3",
+            "start": "09:41",
+            "end": "10:21"
+          },
+          {
+            "name": "Block 4",
+            "start": "10:24",
+            "end": "11:04"
+          },
+          {
+            "name": "Block 5",
+            "start": "11:07",
+            "end": "11:47"
+          },
+          {
+            "name": "Block 6",
+            "start": "11:50",
+            "end": "12:30"
+          },
+          {
+            "name": "Block 7",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "Block 8",
+            "start": "13:16",
+            "end": "13:56"
+          },
+          {
+            "name": "Block 9",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:04"
+          },
+          {
+            "name": "Block 1",
+            "start": "08:07",
+            "end": "08:31"
+          },
+          {
+            "name": "Block 2",
+            "start": "08:34",
+            "end": "08:58"
+          },
+          {
+            "name": "Block 3",
+            "start": "09:01",
+            "end": "09:25"
+          },
+          {
+            "name": "Block 4",
+            "start": "09:28",
+            "end": "09:52"
+          },
+          {
+            "name": "Block 5",
+            "start": "09:55",
+            "end": "10:25"
+          },
+          {
+            "name": "Block 6",
+            "start": "10:28",
+            "end": "10:58"
+          },
+          {
+            "name": "Block 7",
+            "start": "11:01",
+            "end": "11:31"
+          },
+          {
+            "name": "Block 8",
+            "start": "11:34",
+            "end": "11:58"
+          },
+          {
+            "name": "Block 9",
+            "start": "12:01",
+            "end": "12:25"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:55",
+            "end": "10:04"
+          },
+          {
+            "name": "Block 1",
+            "start": "10:07",
+            "end": "10:30"
+          },
+          {
+            "name": "Block 2",
+            "start": "10:33",
+            "end": "10:56"
+          },
+          {
+            "name": "Block 3",
+            "start": "10:59",
+            "end": "11:22"
+          },
+          {
+            "name": "Block 4",
+            "start": "11:25",
+            "end": "11:48"
+          },
+          {
+            "name": "Block 5",
+            "start": "11:51",
+            "end": "12:28"
+          },
+          {
+            "name": "Block 6",
+            "start": "12:31",
+            "end": "13:08"
+          },
+          {
+            "name": "Block 7",
+            "start": "13:11",
+            "end": "13:48"
+          },
+          {
+            "name": "Block 8",
+            "start": "13:51",
+            "end": "14:14"
+          },
+          {
+            "name": "Block 9",
+            "start": "14:17",
+            "end": "14:40"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/t_image_size_1/v1723645773/pembertonk12njus/fligrb6h4dynubgje67u/NewcombNewtemplate.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16465",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "pemberton-early-childhood-education-center",
+      "name": "Pemberton Early Childhood Education Center",
+      "short_name": "PECEC",
+      "district_name": "Pemberton Township School District",
+      "school_type": "other",
+      "address": "100 Arney's Mount Road, Pemberton, NJ 08068",
+      "main_phone": "(609) 893-8141 ext. 1500",
+      "website_url": "https://pecec.pemberton.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 893-8141 ext. 1561",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "If your child is absent because of illness or injury, call the school nurse ((609) 893-8141 ext. 1561 or 1562). A doctor's note is needed when your child returns.",
+      "start_time": "9:10 AM",
+      "end_time": "3:40 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": "11:10 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/t_image_size_1/v1724425583/pembertonk12njus/nkduojo0nrgvnfemcmjn/PECEC_PandaBackpack.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16463",
+      "sacc": {
+        "am_hours": "6:30 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(609) 346-3574",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Champions (KinderCare), not the district; the phone is the Champions site director's line (Family Support (800) 246-2154). Registration at connect.klcschoolpartnerships.com. The district calendar lists 'No PM Champions Childcare' days.",
+        "handbook_url": "https://www.discoverchampions.com/our-locations/pemberton/nj/001863"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "busansky",
+      "name": "Samuel T. Busansky School",
+      "short_name": "Busansky",
+      "district_name": "Pemberton Township School District",
+      "school_type": "elementary",
+      "address": "16 Scrapetown Road, Pemberton, NJ 08068",
+      "main_phone": "(609) 893-8141 ext. 1300",
+      "website_url": "https://busansky.pemberton.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 893-8141 ext. 1300",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Elementary Handbook asks parents to call the school if a child is absent because of illness or injury; a doctor's note is needed on return. No separate attendance line is published; this is the school's office extension.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1724425694/pembertonk12njus/t5xxe2bvuuhsv5aexllw/BusanskyLionNEWTEMPLATE.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16461",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "denbo-crichton",
+      "name": "Denbo-Crichton School",
+      "short_name": "Denbo-Crichton",
+      "district_name": "Pemberton Township School District",
+      "school_type": "elementary",
+      "address": "2 Learning Way, Browns Mills, NJ 08015",
+      "main_phone": "(609) 893-8141 ext. 1200",
+      "website_url": "https://denbo-crichton.pemberton.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 893-8141 ext. 1200",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Elementary Handbook asks parents to call the school if a child is absent because of illness or injury; a doctor's note is needed on return. No separate attendance line is published; this is the school's office extension.",
+      "start_time": "9:00 AM",
+      "end_time": "3:45 PM",
+      "early_dismissal_time": "1:45 PM",
+      "delayed_opening_time": "11:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1723645747/pembertonk12njus/ede5uhvoehsunz8ggpxx/Denbo_Crichton.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16468",
+      "sacc": {
+        "am_hours": "6:30 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(609) 346-3360",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Champions (KinderCare), not the district; the phone is the Champions site director's line (Family Support (800) 246-2154). Registration at connect.klcschoolpartnerships.com. The district calendar lists 'No PM Champions Childcare' days.",
+        "handbook_url": "https://www.discoverchampions.com/our-locations/browns-mills/nj/001862"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "emmons",
+      "name": "Howard L. Emmons School",
+      "short_name": "Emmons",
+      "district_name": "Pemberton Township School District",
+      "school_type": "elementary",
+      "address": "14 Scrapetown Road, Pemberton, NJ 08068",
+      "main_phone": "(609) 893-8141 ext. 1350",
+      "website_url": "https://emmons.pemberton.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 893-8141 ext. 1350",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "If your child is sick, keep them home and contact the school about the symptoms and the absence. A doctor's note is required on return from an absence for illness or injury. No separate attendance line is published; this is the school's office extension.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1723645758/pembertonk12njus/hxhmidpdari1fsiobv05/EmmonsraccoonNEWTEMPLATE.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16466",
+      "sacc": {
+        "am_hours": "6:30 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(732) 979-7033",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Champions (KinderCare), not the district; the phone is the Champions site director's line (Family Support (800) 246-2154). Registration at connect.klcschoolpartnerships.com. The district calendar lists 'No PM Champions Childcare' days.",
+        "handbook_url": "https://www.discoverchampions.com/our-locations/pemberton/nj/001859"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "fort-dix-elementary",
+      "name": "Fort Dix Elementary School",
+      "short_name": "Fort Dix",
+      "district_name": "Pemberton Township School District",
+      "school_type": "elementary",
+      "address": "1199 Fort Dix-Juliustown Road, Joint Base McGuire-Dix-Lakehurst, NJ 08640",
+      "main_phone": "(609) 893-8141 ext. 1450",
+      "website_url": "https://fortdix.pemberton.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 893-8141 ext. 1450",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Elementary Handbook asks parents to call the school if a child is absent because of illness or injury; a doctor's note is needed on return. No separate attendance line is published; this is the school's office extension.",
+      "start_time": "8:00 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1723645763/pembertonk12njus/ihvnzkd57c1rg9unutjg/FortDix.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16467",
+      "sacc": {
+        "am_hours": "6:30 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(732) 979-7003",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Champions (KinderCare), not the district; the phone is the Champions site director's line (Family Support (800) 246-2154). Registration at connect.klcschoolpartnerships.com. The district calendar lists 'No PM Champions Childcare' days.",
+        "handbook_url": "https://www.discoverchampions.com/our-locations/jb-mdl/nj/001860"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "stackhouse",
+      "name": "Joseph S. Stackhouse School",
+      "short_name": "Stackhouse",
+      "district_name": "Pemberton Township School District",
+      "school_type": "elementary",
+      "address": "125A Trenton Road, Browns Mills, NJ 08015",
+      "main_phone": "(609) 893-8141 ext. 1750",
+      "website_url": "https://stackhouse.pemberton.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 893-8141 ext. 1750",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Elementary Handbook asks parents to call the school if a child is absent because of illness or injury; a doctor's note is needed on return. No separate attendance line is published; this is the school's office extension.",
+      "start_time": "9:15 AM",
+      "end_time": "4:00 PM",
+      "early_dismissal_time": "2:00 PM",
+      "delayed_opening_time": "11:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1724425801/pembertonk12njus/gw5yogm9mard2amuxfpk/StackhouseStars2020NEWTEMPLATE.png",
+      "staff_directory_url": null,
+      "healthepro_location": "3008/16469",
+      "sacc": {
+        "am_hours": "6:30 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(609) 346-3327",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Champions (KinderCare), not the district; the phone is the Champions site director's line (Family Support (800) 246-2154). Registration at connect.klcschoolpartnerships.com. The district calendar lists 'No PM Champions Childcare' days.",
+        "handbook_url": "https://www.discoverchampions.com/our-locations/browns-mills/nj/001861"
+      },
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

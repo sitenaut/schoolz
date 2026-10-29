@@ -1,0 +1,417 @@
+{
+  "exported_at": "2026-10-29T12:00:00Z",
+  "source": "onboarding: Florence Township School District",
+  "districts": [
+    {
+      "name": "Florence Township School District",
+      "state": "NJ",
+      "website_url": "https://www.florence.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Florence Township District",
+          "platform": "apptegy",
+          "org_id": "32345"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Florence"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "roebling-elementary",
+      "name": "Roebling Elementary School",
+      "short_name": "Roebling",
+      "district_name": "Florence Township School District",
+      "school_type": "elementary",
+      "address": "1330 Hornberger Avenue, Roebling, NJ 08554",
+      "main_phone": "(609) 499-4640",
+      "website_url": "https://www.florence.k12.nj.us/o/res",
+      "apptegy_org_id": "33324",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 499-4640",
+      "absence_portal_name": "Genesis",
+      "absence_portal_url": "https://parents.c1.genesisedu.net/florence/sis/view?gohome=true",
+      "absence_instructions": "By 8:20 AM, call (609) 499-4640 and follow the voicemail prompts for attendance, or mark the absence in Genesis. You can also text or call the district attendance officer at (609) 374-4838. Send a doctor's note within 10 days for the absence to be excused.",
+      "start_time": "8:20 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:20",
+            "end": "08:25"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:27",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:12",
+            "end": "09:55"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:57",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 4A",
+            "start": "10:42",
+            "end": "11:07"
+          },
+          {
+            "name": "Period 4B",
+            "start": "11:08",
+            "end": "11:33"
+          },
+          {
+            "name": "Period 5A",
+            "start": "11:35",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 5B",
+            "start": "12:01",
+            "end": "12:26"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:28",
+            "end": "13:11"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:13",
+            "end": "13:57"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:59",
+            "end": "14:43"
+          },
+          {
+            "name": "Homeroom",
+            "start": "14:45",
+            "end": "14:50"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "nutrislice_location": "florencek12nj/roebling-elementary-school-k-4",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33324/logo/36391/logo_Roebling_web.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - start of school",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": "(609) 499-4647 ext. 2030",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run EMP/EDP, registration through ezchildtrack. Open on regular school days and most half days; closed for weather or emergency closings and on the one-session days before Thanksgiving, winter and spring recess.",
+        "handbook_url": "https://docs.google.com/document/d/1VA625SZZBOvi3xUIx8XbAbpTO-vKL0LLwDhzfNd2CAg/edit?usp=sharing"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "florence-riverfront",
+      "name": "Riverfront School",
+      "short_name": "Riverfront",
+      "district_name": "Florence Township School District",
+      "school_type": "middle",
+      "address": "500 East Front Street, Florence, NJ 08518",
+      "main_phone": "(609) 499-4647",
+      "website_url": "https://www.florence.k12.nj.us/o/rms",
+      "apptegy_org_id": "33325",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 499-4647",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "By 8:00 AM on the day of the absence or lateness, call (609) 499-4647 and follow the voicemail prompt for attendance, or text or call the district attendance officer at (609) 374-4838. Documentation goes to the main office; you have ten days to change an unexcused absence to excused.",
+      "start_time": "7:55 AM",
+      "end_time": "2:28 PM",
+      "early_dismissal_time": "12:05 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:05"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:08",
+            "end": "09:05"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:08",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:08",
+            "end": "11:05"
+          },
+          {
+            "name": "Period 4A (6th lunch)",
+            "start": "11:08",
+            "end": "11:46"
+          },
+          {
+            "name": "Period 4B (7th/8th lunch)",
+            "start": "11:50",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:31",
+            "end": "13:28"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:31",
+            "end": "14:28"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/7616",
+      "nutrislice_location": "florencek12nj/riverfront-intermediate-school-5-8",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33325/logo/36390/logo_Riverfront_web.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 7:50 AM, grades 4-8",
+        "pm_hours": "Dismissal - 6:00 PM, grades 4-6",
+        "site_phone": "(609) 499-4647 ext. 2030",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run EMP/EDP, registration through ezchildtrack. Open on regular school days and most half days; closed for weather or emergency closings and on the one-session days before Thanksgiving, winter and spring recess. The school handbook says EDP runs until 5:00 PM, the district page 6:00 PM.",
+        "handbook_url": "https://docs.google.com/document/d/1VA625SZZBOvi3xUIx8XbAbpTO-vKL0LLwDhzfNd2CAg/edit?usp=sharing"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "florence-township-memorial-high",
+      "name": "Florence Township Memorial High School",
+      "short_name": "Florence High",
+      "district_name": "Florence Township School District",
+      "school_type": "high",
+      "address": "1050 Cedar Lane, Burlington, NJ 08016",
+      "main_phone": "(609) 499-4620",
+      "website_url": "https://www.florence.k12.nj.us/o/fhs",
+      "apptegy_org_id": "33323",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 499-4620",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report an absence, call (609) 499-4620 or text or call the district attendance officer at (609) 374-4838. Documentation to excuse an absence goes to the main office within ten days of the student's return.",
+      "start_time": "7:40 AM",
+      "end_time": "2:05 PM",
+      "early_dismissal_time": "11:40 AM",
+      "delayed_opening_time": "9:40 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom/Period 1",
+            "start": "07:40",
+            "end": "08:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:38",
+            "end": "09:23"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:26",
+            "end": "10:11"
+          },
+          {
+            "name": "Period 4 (Lunch)",
+            "start": "10:14",
+            "end": "10:44"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:47",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 6 (Lunch)",
+            "start": "11:02",
+            "end": "11:32"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:35",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 8 (Lunch)",
+            "start": "11:50",
+            "end": "12:20"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:23",
+            "end": "13:08"
+          },
+          {
+            "name": "Period 10",
+            "start": "13:11",
+            "end": "13:56"
+          },
+          {
+            "name": "Homeroom 2",
+            "start": "13:59",
+            "end": "14:05"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom/Period 1",
+            "start": "07:40",
+            "end": "08:14"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:17",
+            "end": "08:47"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:50",
+            "end": "09:20"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:23",
+            "end": "09:53"
+          },
+          {
+            "name": "Period 7",
+            "start": "09:56",
+            "end": "10:26"
+          },
+          {
+            "name": "Period 9",
+            "start": "10:29",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 10",
+            "start": "11:02",
+            "end": "11:32"
+          },
+          {
+            "name": "Homeroom 2",
+            "start": "11:35",
+            "end": "11:40"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom/Period 1",
+            "start": "09:40",
+            "end": "10:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:13",
+            "end": "10:42"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:45",
+            "end": "11:14"
+          },
+          {
+            "name": "Period 4 (Lunch)",
+            "start": "11:17",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 6 (Lunch)",
+            "start": "11:50",
+            "end": "12:20"
+          },
+          {
+            "name": "Period 8 (Lunch)",
+            "start": "12:23",
+            "end": "12:53"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:56",
+            "end": "13:25"
+          },
+          {
+            "name": "Period 10",
+            "start": "13:28",
+            "end": "13:57"
+          },
+          {
+            "name": "Homeroom 2",
+            "start": "14:00",
+            "end": "14:05"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=39783",
+      "nutrislice_location": "florencek12nj/florence-memorial-hs-9-12",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33323/logo/36392/logo_HS_web.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://www.florence.k12.nj.us/o/res/page/roebing-school-2025-2026-newsletters",
+      "label": "Roebling School Newsletter",
+      "school_slug": "roebling-elementary",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://www.florence.k12.nj.us/o/rms/page/riverfront-school-2025-2026-newsletters",
+      "label": "Riverfront School Newsletter",
+      "school_slug": "florence-riverfront",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://www.florence.k12.nj.us/o/fhs/page/florencehs-2025-2026-newsletters",
+      "label": "Florence Township Memorial HS Newsletter",
+      "school_slug": "florence-township-memorial-high",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

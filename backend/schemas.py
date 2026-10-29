@@ -410,6 +410,11 @@ class IcsFeed(BaseModel):
     # Drop events whose title starts with one of these (case-insensitive) -
     # for a district-wide feed that is really a union of every school's feed.
     skip_title_prefixes: list[str] | None = None
+    # {title prefix: school slug} for a district-wide feed whose buildings
+    # are told apart only by a title prefix (Pemberton's "PTHS - Delayed
+    # Opening", Glassboro's "GHS: Half Day"): those events land on that
+    # school (scope="school") instead of every school. Case-insensitive.
+    school_title_prefixes: dict[str, str] | None = None
 
 
 class DistrictCreate(BaseModel):
