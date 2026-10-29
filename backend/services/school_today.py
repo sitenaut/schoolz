@@ -41,7 +41,7 @@ from schemas import (
     TodaySaccOut,
     TodayTransportationOut,
 )
-from services import i18n_strings
+from services import i18n_strings, rotation_day
 from services import specials as specials_svc
 from services.arbiter import ATHLETICS_SOURCES
 from services.bell_schedule import current_period as _compute_current_period
@@ -70,8 +70,6 @@ _EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:sing
 _PRESCHOOL_ONLY_RE = re.compile(r"\bpre-?(?:school|k)\b.*\bonly\b|\bonly\b.*\bpre-?(?:school|k)\b", re.I)
 _GRADES_THROUGH_RE = re.compile(r"\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b", re.I)
 _DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
-# Eastern Regional's feed appends the day's class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)".
-_ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(?:\([^)]*\))?\s*$", re.I)
 _UPCOMING_CATEGORIES = ("event", "deadline", "initiative", "reminder", "marking_period")
 _UPCOMING_WINDOW_DAYS = 60
 _ALERT_WINDOW_DAYS = 7
@@ -179,7 +177,7 @@ def other_grades_only(title: str, school_type: str | None) -> bool:
 
 
 def _is_rotation_item(item: SchoolContentItem) -> bool:
-    return bool(_ROTATION_RE.match(item.title))
+    return rotation_day.is_rotation_title(item.title)
 
 
 def _applies(item: SchoolContentItem, school: School) -> bool:
@@ -355,13 +353,13 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
 
     def rotation(d: date) -> str | None:
         item = rotation_item(d)
-        return i18n_strings.rotation_label(_ROTATION_RE.match(item.title).group(1), lang) if item else None
+        return i18n_strings.rotation_label(rotation_day.parse(item.title).key, lang) if item else None
 
     def rotation_en(d: date) -> str | None:
-        # What specials.rotation_number parses ("Day N"); `rotation` is
-        # localized for display ("Día N") and never matches it.
+        # What specials.rotation_number parses ("Day N", "Day C"); `rotation`
+        # is localized for display ("Día N") and never matches it.
         item = rotation_item(d)
-        return i18n_strings.rotation_label(_ROTATION_RE.match(item.title).group(1), "en") if item else None
+        return i18n_strings.rotation_label(rotation_day.parse(item.title).key, "en") if item else None
 
     def rotation_blocks(d: date) -> list[str] | None:
         item = rotation_item(d)

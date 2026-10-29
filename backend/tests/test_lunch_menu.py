@@ -363,3 +363,220 @@ def test_band_glued_to_the_month_with_no_year():
     assert (lg["school_type"], lg["meal_type"], lg["period_label"]) == ("middle", "lunch", "October 2026")
     assert c("https://x/LOG ELEM Lunch Menu 2026 OCT.pdf", today)["school_type"] == "elementary"
     assert c("https://x/FED PRE-K & K Lunch Menu 2026 OCT.pdf", today) is None
+
+
+# --- districts whose menus are pictures or scans (see services/menu_filenames.py) ---
+
+
+def _page(monkeypatch, html: str, drive: dict | None = None, api_urls: set | None = None):
+    async def fake_fetch(url, **kw):
+        return {"html": html}
+
+    async def fake_rm(url, html):
+        return set()
+
+    async def fake_drive(html):
+        return drive or {}
+
+    async def fake_api(url, html):
+        return api_urls or set()
+
+    monkeypatch.setattr(lunch_menu.scraper_client, "fetch_html", fake_fetch)
+    monkeypatch.setattr(lunch_menu, "_resolve_resource_manager_links", fake_rm)
+    monkeypatch.setattr(lunch_menu, "_resolve_drive_links", fake_drive)
+    monkeypatch.setattr(lunch_menu, "_apptegy_document_urls", fake_api)
+
+
+def test_mantuas_unnamed_band_files_serve_every_school(monkeypatch):
+    _page(
+        monkeypatch,
+        '<a href="/ourpages/auto/2099/10/1/9/2099_Oct_Breakfast_2.pdf?rnd=1">Open in new tab</a>'
+        '<a href="/ourpages/auto/2099/10/1/9/october%20rough%20lunch.pdf?rnd=2">Open in new tab</a>',
+    )
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x/cafeteria", school_types=["elementary"]))
+    # The lunch file names no year, so it is read as the nearest October.
+    assert sorted((e["meal_type"], e["period_label"].split()[0], e["school_type"]) for e in found) == [
+        ("breakfast", "October", "elementary"),
+        ("lunch", "October", "elementary"),
+    ]
+
+
+def test_elks_drive_titles_are_read_and_its_prek_twin_is_not_a_school_here(monkeypatch):
+    drive = {
+        "https://drive.google.com/uc?id=K6": "K-6 Aura LunchMenu_2099-10-OCT.pptx.png",
+        "https://drive.google.com/uc?id=PK": "PREK-V-LunchMenu_2099-10-OCT.pptx.png",
+        "https://drive.google.com/uc?id=ST": "Static Breakfast Menu (2).pptx.pdf",
+        "https://drive.google.com/uc?id=PO": "8500 Food Services (M).pdf",
+    }
+    _page(monkeypatch, "<html></html>", drive=drive)
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x/menus", school_types=["elementary"]))
+    assert [(e["school_type"], e["meal_type"], e["pdf_url"]) for e in found] == [("elementary", "lunch", "https://drive.google.com/uc?id=K6")]
+
+
+def test_a_file_named_for_one_school_is_that_schools_alone(monkeypatch):
+    # Swedesboro-Woolwich: three schools share the ELEM menu, Hill has its own, breakfast is for all.
+    schools = [
+        {"id": "s1", "name": "Margaret Clifford School", "short_name": "Clifford", "school_type": "elementary"},
+        {"id": "s2", "name": "Charles Stratton School", "short_name": "Stratton", "school_type": "elementary"},
+        {"id": "s3", "name": "Walter Hill School", "short_name": "Hill", "school_type": "elementary"},
+    ]
+    base = "https://resources.finalsite.net/images/v1/swe"
+    _page(
+        monkeypatch,
+        "".join(
+            f'<a href="{base}/SWE-{name}-{month}2099.pdf">x</a>'
+            for month in ("OCT", "NOV")
+            for name in ("ELEMLUNCHMENU", "HILLLUNCHMENU", "ALLBREAKFASTMENU")
+        ),
+    )
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x/menus", school_types=["elementary"], schools=schools))
+    got = sorted((e["meal_type"], e["period_label"], e.get("school_id") or "", e["pdf_url"].rsplit("/", 1)[-1]) for e in found)
+    assert got == [
+        ("breakfast", "November 2099", "", "SWE-ALLBREAKFASTMENU-NOV2099.pdf"),
+        ("breakfast", "October 2099", "", "SWE-ALLBREAKFASTMENU-OCT2099.pdf"),
+        ("lunch", "November 2099", "", "SWE-ELEMLUNCHMENU-NOV2099.pdf"),
+        ("lunch", "November 2099", "s3", "SWE-HILLLUNCHMENU-NOV2099.pdf"),
+        ("lunch", "October 2099", "", "SWE-ELEMLUNCHMENU-OCT2099.pdf"),
+        ("lunch", "October 2099", "s3", "SWE-HILLLUNCHMENU-OCT2099.pdf"),
+    ]
+    assert all(e["school_type"] == "elementary" for e in found)
+
+
+def test_a_school_named_file_does_not_hide_the_districts_own(monkeypatch):
+    # Township of Franklin: the lunch menu is for every school; Janvier alone has a breakfast menu.
+    schools = [
+        {"id": "a", "name": "Mary F. Janvier School", "short_name": "Janvier", "school_type": "elementary"},
+        {"id": "b", "name": "Main Road School", "short_name": "Main Road", "school_type": "elementary"},
+    ]
+    api = {
+        "https://files.x/d/FTS-OCT-2099-Janvier-BreakfastMenu.pdf?disposition=inline",
+        "https://files.x/d/FTS-LunchMenu_2099-10-OCT.pdf?disposition=inline",
+    }
+    _page(monkeypatch, "<html></html>", api_urls=api)
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x/documents/lunch/572162", school_types=["elementary"], schools=schools))
+    assert sorted((e["meal_type"], e.get("school_id")) for e in found) == [("breakfast", "a"), ("lunch", None)]
+
+
+def test_deptfords_secondary_menu_is_for_the_middle_and_high_school_only(monkeypatch):
+    _page(
+        monkeypatch,
+        '<a href="https://deptfordschools.org/Lunch%20Menus/26-27/Elementary%20Menu%20October%202099.pdf">x</a>'
+        '<a href="https://deptfordschools.org/Lunch%20Menus/26-27/Secondary%20Menu%20October%202099.pdf">x</a>',
+    )
+    found = asyncio.run(lunch_menu.discover_current_menus("http://x/lunchmenus", school_types=["elementary", "high", "middle", "other"]))
+    assert sorted((e["school_type"], e["pdf_url"].rsplit("/", 1)[-1]) for e in found) == [
+        ("elementary", "Elementary%20Menu%20October%202099.pdf"),
+        ("high", "Secondary%20Menu%20October%202099.pdf"),
+        ("middle", "Secondary%20Menu%20October%202099.pdf"),
+    ]
+
+
+def test_apptegy_documents_folder_lists_files_its_html_does_not(monkeypatch):
+    html = '<script>fetch("https://thrillshare-cmsv2.services.thrillshare.com/api/v2/s/355780/documents")</script>'
+    seen = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"documents": [{"url": "https://files.x/FTS-LunchMenu_2099-10-OCT.pdf?disposition=inline"}, {"file_name": "no url"}]}
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, params=None):
+            seen["call"] = (url, params)
+            return FakeResponse()
+
+    monkeypatch.setattr(lunch_menu.httpx, "AsyncClient", FakeClient)
+    page = "https://www.franklintwpschools.org/documents/parents-students/district-menus/572162"
+    assert asyncio.run(lunch_menu._apptegy_document_urls(page, html)) == {"https://files.x/FTS-LunchMenu_2099-10-OCT.pdf?disposition=inline"}
+    assert seen["call"] == ("https://thrillshare-cmsv2.services.thrillshare.com/api/v2/s/355780/documents", {"folder_id": "572162"})
+    # A page whose script names no documents API, or whose URL names no folder, is left alone.
+    assert asyncio.run(lunch_menu._apptegy_document_urls(page, "<html></html>")) == set()
+    assert asyncio.run(lunch_menu._apptegy_document_urls("https://x/documents", html)) == set()
+
+
+def test_a_school_name_that_begins_like_a_month_is_not_one():
+    # "Janvier" is a Township of Franklin school, not January.
+    assert _classify_abbreviated_pdf_link("https://x/FTS-OCT-2026-Janvier-BreakfastMenu.pdf", "elementary") is None
+    assert _classify_abbreviated_pdf_link("https://x/January2026LunchMenu.pdf", "elementary")["period_label"] == "January 2026"
+    assert _classify_abbreviated_pdf_link("https://x/SEPTLUNCHMENU.pdf", "elementary")["period_label"].startswith("September")
+
+
+def test_a_dated_menus_prompt_is_the_one_stored_extractions_are_keyed_on(monkeypatch):
+    # Every stored menu read is keyed by a hash of this prompt: rewording it makes
+    # each one be paid for again, so the text of a dated menu's prompt is pinned.
+    import hashlib
+
+    from services import page_extractions
+
+    seen = []
+
+    async def fake_bytes(*a, **k):
+        return "x", b"%PDF-1.4 fake"
+
+    async def fake_read(url, content, prompt):
+        seen.append(prompt)
+        return []
+
+    async def stored(key):
+        return None
+
+    async def store(key, value):
+        pass
+
+    monkeypatch.setattr(lunch_menu.scraper_client, "get_bytes", fake_bytes)
+    monkeypatch.setattr(lunch_menu, "_read_menu_file", fake_read)
+    monkeypatch.setattr(lunch_menu, "ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(page_extractions, "stored", stored)
+    monkeypatch.setattr(page_extractions, "store", store)
+    for label, meal in (("October 2026", "lunch"), ("October 2026", None), ("May 2027", "breakfast"), (None, "lunch")):
+        asyncio.run(lunch_menu.parse_menu_pdf("http://x/a.pdf", label, meal))
+    assert [hashlib.sha1(p.encode()).hexdigest()[:12] for p in seen[:3]] == ["a431b07b68a5", "5bcacac3926c", "f40852593344"]
+    assert "the month and year are printed on it" in seen[3]
+
+
+def test_apptegy_page_pictures_belong_to_the_heading_in_their_column():
+    def heading(text):
+        return {"component": "ts-heading", "config": {"content": f"<h1>{text}</h1>"}}
+
+    def image(url):
+        return {"component": "ts-image", "config": {"image": {"url": url}}}
+
+    content = {
+        "component": "BASE_COLUMN",
+        "config": [
+            [{"component": "ts-two-column", "config": [[heading("MES Breakfast Menu")], [heading("MES Lunch Menu")]]}],
+            [{"component": "ts-two-column", "config": [[image("b1.jpeg"), image("b2.jpeg")], [image("l1.jpeg"), image("l2.jpeg")]]}],
+            [{"component": "ts-image", "config": {"image": {"url": "orphan.jpeg"}}}],
+        ],
+    }
+    assert lunch_menu._apptegy_page_media(content) == [
+        ("MES Breakfast Menu", "b1.jpeg"),
+        ("MES Breakfast Menu", "b2.jpeg"),
+        ("MES Lunch Menu", "l1.jpeg"),
+        ("MES Lunch Menu", "l2.jpeg"),
+    ]
+
+
+def test_undated_pictures_are_each_a_candidate_and_dated_titles_still_filter_by_month():
+    from datetime import date
+
+    items = [
+        {"title": "PES Lunch Menu", "extension": "jpeg", "url": "a.jpeg", "undated": True},
+        {"title": "PES Lunch Menu", "extension": "jpeg", "url": "b.jpeg", "undated": True},
+        {"title": "October 2026 Lunch", "extension": "pdf", "url": "old.pdf"},
+        {"title": "November 2026 Lunch", "extension": "pdf", "url": "new.pdf"},
+        {"title": "PES Lunch Menu", "extension": "jpeg", "url": "c.jpeg"},  # untitled by a month and not marked undated
+    ]
+    got = lunch_menu.pick_presence_menus(items, date(2026, 11, 3))
+    assert sorted(c["url"] for c in got) == ["a.jpeg", "b.jpeg", "new.pdf"]

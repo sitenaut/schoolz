@@ -966,15 +966,15 @@ async def extract_from_newsletter(
                 # excluded here: matching them either crashed this lookup
                 # (two rotation rows -> MultipleResultsFound, seen in prod)
                 # or, worse, silently skipped the newsletter's event as a
-                # duplicate of "Day 3". Same ^Day \d$ convention
-                # school_today.py uses to recognise rotation markers.
+                # duplicate of "Day 3". Same convention
+                # services/rotation_day.py uses to recognise rotation markers.
                 district_candidates = (
                     await db.execute(
                         select(SchoolContentItem).where(
                             SchoolContentItem.scope == "district",
                             SchoolContentItem.district_id == district_id,
                             SchoolContentItem.start_date == item_start_date,
-                            ~SchoolContentItem.title.regexp_match(r"^Day \d$"),
+                            ~SchoolContentItem.title.regexp_match(r"^(Day (\d|[A-L])|[A-L] Day)( \(.*\))?$"),
                         )
                     )
                 ).scalars().all()

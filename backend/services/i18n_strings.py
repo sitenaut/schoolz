@@ -10,6 +10,8 @@ by services/content_translation.py."""
 
 import re
 
+from services import rotation_day
+
 _WEEKDAYS = {
     "es": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
     "zh": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
@@ -76,8 +78,6 @@ _KO_CLOSED_PREFIX_RE = re.compile(r"^\s*(전\s*)?(학교|학군)\s*(전체\s*)?(
 
 _HI_CLOSED_PREFIX_RE = re.compile(r"^\s*(सभी\s+)?(स्कूल|विद्यालय)\s*(बंद|बन्द)\s*[-:：–—]?\s*")
 
-_ROTATION_RE = re.compile(r"^\s*Day\s+(\d+)\s*(\([^)]*\))?\s*$", re.I)
-
 
 def is_localized(lang: str) -> bool:
     return lang in _WEEKDAYS
@@ -99,19 +99,20 @@ def contact_label(label: str, lang: str) -> str:
 
 
 def rotation_label(number: str, lang: str) -> str:
+    """`number` is the day's key as the calendar prints it: "3", or "C"."""
     return {"es": f"Día {number}", "zh": f"第{number}天", "ko": f"{number}일차", "hi": f"दिन {number}"}.get(lang, f"Day {number}")
 
 
 def rotation_title(title: str, lang: str) -> str | None:
-    """A rotation-feed title ("Day 3", "Day 3 ( 3, 4, 1, LL)") in `lang`, or
-    None if it isn't one. These are the bulk of a district calendar and need
-    no model."""
+    """A rotation-feed title ("Day 3", "Day C", "Day 3 ( 3, 4, 1, LL)") in
+    `lang`, or None if it isn't one. These are the bulk of a district
+    calendar and need no model."""
     if not is_localized(lang):
         return None
-    m = _ROTATION_RE.match(title)
-    if not m:
+    rd = rotation_day.parse(title)
+    if not rd:
         return None
-    return rotation_label(m.group(1), lang) + (f" {m.group(2)}" if m.group(2) else "")
+    return rotation_label(rd.key, lang) + (f" {rd.extra}" if rd.extra else "")
 
 
 def early_dismissal_label(lang: str) -> str:

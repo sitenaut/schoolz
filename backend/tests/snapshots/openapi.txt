@@ -1137,7 +1137,7 @@ HelpKindOut { kind: string, label: string }
 HideIn { note: string }
 Hours { alternate_weeks_from?: string(date) | null, mode?: enum(weekly,monthly,24_7,appointment,call) | null, monthly?: list[MonthlyRule], note?: string | null, season?: Season | null, seasonal?: string | null, weekly?: dict[list[HoursRange]] }
 HoursRange { close: string, open: string }
-IcsFeed { name: string, org_id?: string | null, platform?: string | null, school_slug?: string | null, school_title_prefixes?: dict[string] | null, school_types?: list[string] | null, skip_sections?: list[string] | null, skip_title_prefixes?: list[string] | null, url?: string | null }
+IcsFeed { name: string, org_id?: string | null, platform?: string | null, rotation_only?: boolean, school_slug?: string | null, school_title_prefixes?: dict[string] | null, school_types?: list[string] | null, skip_sections?: list[string] | null, skip_title_prefixes?: list[string] | null, url?: string | null }
 InquiryIn { bot_token?: string | null, contact_name: string, email?: string | null, organization_name: string, phone: string, town: string, website?: string | null, what_you_provide: string }
 InviteCreate { invitee_email: string(email) }
 InviteOut { accept_url: string, expires_at: string(date-time), id: string, invitee_email: string, status: string, token: string }
@@ -1275,7 +1275,7 @@ StudentCreate { first_name: string, last_name: string, school_id: string, studen
 StudentOut { first_name: string, grad_year?: integer | null, guardian_count: integer, id: string, last_name: string, linked_via: string, matched_existing?: boolean, school_id?: string | null, school_name: string | null, school_type?: string | null, student_id: string }
 StudentSpecialIn { rotation_day: integer, subject: string, teacher?: string | null }
 StudentSpecialOut { rotation_day: integer, subject: string, teacher?: string | null }
-StudentSpecialsOut { rotation_days: list[integer], specials: list[StudentSpecialOut] }
+StudentSpecialsOut { rotation_days: list[integer], rotation_letters?: boolean, specials: list[StudentSpecialOut] }
 StudentUpdate { grad_year?: integer | null }
 Submission { access?: enum(walk_in,appointment,both) | null, accessibility?: string | null, address?: string | null, address_kind?: enum(public,confidential,service_area) | null, city?: string | null, cost?: Cost, documents?: list[string], email?: string | null, hours?: Hours, how_to_apply?: string | null, languages?: list[string], organization_name?: string | null, phone?: string | null, postal_code?: string | null, public_contact_role?: string | null, service_area_counties?: list[string], services?: list[ServiceEntry], town?: string | null, ways_to_help?: WaysToHelp | null, website?: string | null, what_you_provide?: string | null, who?: WhoCanCome }
 SubmissionAttemptOut { accept_language: string | null, bot_check: object | null, created_at: string(date-time), detail: string | null, edge_region: string | null, file_declared_type: string | null, file_detected_type: string | null, file_name: string | null, file_sha256: string | null, file_size: integer | null, forwarded_for: string | null, id: string, ip: string | null, kind: string | null, origin: string | null, outcome: string, referer: string | null, submission_id: string | null, submitter_email: string | null, submitter_name: string | null, url: string | null, user_agent: string | null, user_email?: string | null, user_id: string | null }

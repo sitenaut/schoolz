@@ -54,7 +54,7 @@ async def test_specials_shared_across_guardians_and_shown_on_today_and_schedule(
         assert res.json()["school_type"] == "elementary"
 
         empty = (await client.get(f"/students/{student_id}/specials", headers=auth(mom))).json()
-        assert empty == {"rotation_days": [1, 2, 3, 4, 5], "specials": []}
+        assert empty == {"rotation_days": [1, 2, 3, 4, 5], "rotation_letters": False, "specials": []}
 
         body = [
             {"rotation_day": 1, "subject": "Art"},
@@ -75,8 +75,9 @@ async def test_specials_shared_across_guardians_and_shown_on_today_and_schedule(
 
     async with database.SessionLocal() as db:
         school = await db.get(School, school_id)
-        from models import User
         from sqlalchemy import select
+
+        from models import User
 
         mom_id = (await db.execute(select(User.id).where(User.email == f"mom_{run}@example.com"))).scalar_one()
         today = await build_today(db, school, date(2026, 10, 5), user_id=mom_id)
@@ -93,3 +94,64 @@ async def test_specials_shared_across_guardians_and_shown_on_today_and_schedule(
 
         days = await upcoming_days(db, school, student_id, date(2026, 10, 5), 3)
         assert [(d["rotation_day"], [b["course_name"] for b in d["blocks"]]) for d in days] == [("Day 1", ["Art"]), ("Day 2", ["PE"]), ("Day 3", [])]
+
+
+@pytest.mark.anyio
+async def test_lettered_days_carry_specials_through_today_and_the_schedule():
+    """Mantua and Swedesboro-Woolwich run specials on A-F, spelled three ways in
+    their feeds ("Day A", "DAY A", "A Day"); the child's specials are still
+    stored by number (A = 1)."""
+    run = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Lettered District {run}")
+        db.add(district)
+        await db.flush()
+        school = School(name=f"Lettered Elementary {run}", slug=f"lettered-elem-{run}", school_type="elementary", district_id=district.id)
+        db.add(school)
+        await db.flush()
+        common = dict(scope="district", district_id=district.id, category="event", is_current=True, is_all_day=True, source="ics_feed")
+        # Mon Oct 5 - Thu Oct 8 2026: A, B, C and a snow-day make-up that stands in for D.
+        for title, d in [("Day A", 5), ("B Day", 6), ("DAY C", 7), ("DAY D (Snow Day)", 8)]:
+            db.add(SchoolContentItem(title=title, start_date=_day(date(2026, 10, d)), **common))
+        # Not rotation markers, whatever they look like.
+        db.add(SchoolContentItem(title="A Day with Dad", start_date=_day(date(2026, 10, 5)), **common))
+        await db.commit()
+        school_id = school.id
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        mom = await _register(client, f"lmom_{run}@example.com", f"lmom_{run}")
+        res = await client.post("/students", json={"first_name": "Zoe", "last_name": "Q", "student_id": f"ls-{run}", "school_id": school_id}, headers=auth(mom))
+        assert res.status_code == 201, res.text
+        student_id = res.json()["id"]
+
+        empty = (await client.get(f"/students/{student_id}/specials", headers=auth(mom))).json()
+        assert empty == {"rotation_days": [1, 2, 3, 4], "rotation_letters": True, "specials": []}
+
+        body = [{"rotation_day": 1, "subject": "Art"}, {"rotation_day": 3, "subject": "Music"}, {"rotation_day": 4, "subject": "PE"}]
+        assert (await client.put(f"/students/{student_id}/specials", json=body, headers=auth(mom))).status_code == 200
+
+    async with database.SessionLocal() as db:
+        from sqlalchemy import select
+
+        from models import User
+
+        school = await db.get(School, school_id)
+        mom_id = (await db.execute(select(User.id).where(User.email == f"lmom_{run}@example.com"))).scalar_one()
+
+        today = await build_today(db, school, date(2026, 10, 5), user_id=mom_id)
+        assert today.rotation_day == "Day A"
+        [kid] = today.my_specials
+        assert (kid.today, kid.next) == ("Art", None)  # Tuesday is Day B: not on file
+        assert kid.by_date == {"2026-10-05": "Art", "2026-10-07": "Music", "2026-10-08": "PE"}
+
+        spanish = await build_today(db, school, date(2026, 10, 5), user_id=mom_id, lang="es")
+        assert spanish.rotation_day == "Día A"
+        assert spanish.my_specials[0].today == "Art"
+
+        days = await upcoming_days(db, school, student_id, date(2026, 10, 5), 4)
+        assert [(d["rotation_day"], [b["course_name"] for b in d["blocks"]]) for d in days] == [
+            ("Day A", ["Art"]),
+            ("B Day", []),
+            ("DAY C", ["Music"]),
+            ("DAY D (Snow Day)", ["PE"]),
+        ]

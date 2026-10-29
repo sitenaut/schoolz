@@ -57,23 +57,27 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if not district.food_services_menu_url:
         return "district has no food_services_menu_url configured"
 
-    school_types = set(
-        (await db.execute(select(School.school_type).where(School.district_id == district.id).distinct())).scalars().all()
-    )
-    discovered = await discover_current_menus(district.food_services_menu_url, school_types=sorted(t for t in school_types if t))
+    schools = [
+        {"id": s.id, "name": s.name, "short_name": s.short_name, "school_type": s.school_type}
+        for s in (await db.execute(select(School).where(School.district_id == district.id))).scalars()
+    ]
+    school_types = sorted({s["school_type"] for s in schools if s["school_type"]})
+    discovered = await discover_current_menus(district.food_services_menu_url, school_types=school_types, schools=schools)
     if not discovered:
         return "WARNING[no_menu_pdfs]: no menu PDFs found on the food-services page"
     new_menus = 0
     empty: list[str] = []
     parsed_days: dict[str, list[dict]] = {}  # one PDF can serve several school types
     for entry in discovered:
+        # A file named for one school (Swedesboro's Hill, Franklin's Janvier)
+        # is that school's own menu, which outranks the district's.
+        owner = (
+            (LunchMenu.school_id == entry["school_id"])
+            if entry.get("school_id")
+            else (LunchMenu.district_id == district.id) & (LunchMenu.school_type == entry["school_type"])
+        )
         existing = await db.execute(
-            select(LunchMenu).where(
-                LunchMenu.district_id == district.id,
-                LunchMenu.school_type == entry["school_type"],
-                LunchMenu.meal_type == entry["meal_type"],
-                LunchMenu.source_pdf_url == entry["pdf_url"],
-            )
+            select(LunchMenu).where(owner, LunchMenu.meal_type == entry["meal_type"], LunchMenu.source_pdf_url == entry["pdf_url"])
         )
         stored = existing.scalar_one_or_none()
         if stored and stored.parsed_at >= _REPARSE_BEFORE:
@@ -94,8 +98,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             await db.execute(delete(LunchMenuItem).where(LunchMenuItem.lunch_menu_id == menu.id))
         else:
             menu = LunchMenu(
-                district_id=district.id,
-                school_type=entry["school_type"],
+                **({"school_id": entry["school_id"]} if entry.get("school_id") else {"district_id": district.id, "school_type": entry["school_type"]}),
                 meal_type=entry["meal_type"],
                 period_label=entry["period_label"],
                 source_pdf_url=entry["pdf_url"],

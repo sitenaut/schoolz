@@ -14,10 +14,10 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ChildMarkingPeriod, ChildScheduleBlock, School, SchoolContentItem, StudentSpecial
+from services import rotation_day as rotation
 from services.bell_schedule import _parse_hm, is_long_block_day, lettered_day
 from services.hs_rotation import blocks_from_description
 from services.school_today import (
-    _ROTATION_RE,
     _WEEKDAYS,
     LOCAL_TZ,
     _applies,
@@ -65,11 +65,19 @@ def courses_for(letter: str, day_number: int | None, term: str | None, list_bloc
     return out
 
 
+def _day_number(title: str | None) -> int | None:
+    """The numbered day `courses_for` filters a split block by. A lettered
+    day has none: Genesis numbers its days, so a letter can't be matched
+    against `days` and must not filter anything out."""
+    rd = rotation.parse(title)
+    return rd.number if rd and not rd.lettered else None
+
+
 def special_day(d: date, status: str, rotation_day: str | None, specials: dict[int, StudentSpecial]) -> dict:
     """An elementary day: the one special that meets on this rotation day,
     or an empty day when the rotation (or the special for it) is unknown."""
-    m = _ROTATION_RE.match(rotation_day or "")
-    special = specials.get(int(m.group(1))) if m else None
+    rd = rotation.parse(rotation_day)
+    special = specials.get(rd.number) if rd else None
     return {
         "date": d.isoformat(),
         "weekday": _WEEKDAYS[d.weekday()],
@@ -84,8 +92,7 @@ def special_day(d: date, status: str, rotation_day: str | None, specials: dict[i
 
 
 def build_day(d: date, status: str, rotation_day: str | None, letters: list[str] | None, bell_periods: dict | None, list_blocks: list, term: str | None) -> dict:
-    m = _ROTATION_RE.match(rotation_day or "")
-    day_number = int(m.group(1)) if m else None
+    day_number = _day_number(rotation_day)
     fit = lettered_day(bell_periods, status, letters)
     blocks = []
     if fit:
@@ -177,8 +184,7 @@ async def current_class_for_student(db: AsyncSession, school: School, student_id
     if not fit:
         return None
 
-    m = _ROTATION_RE.match(rot.title.strip())
-    day_number = int(m.group(1)) if m else None
+    day_number = _day_number(rot.title)
     mps = (await db.execute(select(ChildMarkingPeriod).where(ChildMarkingPeriod.student_id == student_id))).scalars().all()
     term = term_for(today, mps)
 

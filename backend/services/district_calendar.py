@@ -25,7 +25,7 @@ from dateutil.rrule import rrulestr
 from icalendar import Calendar
 from icalendar.prop import vRecur
 
-from services import incidentiq
+from services import incidentiq, rotation_day
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +219,9 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0, since: da
             # Chesterfield's specials rotation is "Cycle Day 3": the same
             # marker every rotation reader expects as "Day 3".
             title = _CYCLE_DAY_RE.sub(r"\1", title)
+            # Mantua writes its lettered days "DAY A", Swedesboro-Woolwich
+            # "A Day" and "Day A": one spelling for every reader.
+            title = rotation_day.canonical_title(title)
             description = description_text(str(component.get("DESCRIPTION") or ""))
             # Smart Sites' generated feed mints every UID afresh each time it
             # rebuilds the file (Palmyra: PHP uniqid, every few hours), which

@@ -12,6 +12,14 @@
         {
           "name": "Kingsway School Year Calendar",
           "url": "https://calendar.google.com/calendar/ical/c_c6dca31cc4b9fe7bd6b8546c66c4ea6b818b7530d37a4ffaaf87f493252aaaa2%40group.calendar.google.com/public/basic.ics"
+        },
+        {
+          "name": "Kingsway High School Day Rotation",
+          "url": "https://www.krsd.org/fs/calendar-manager/events.ics?calendar_ids[]=2",
+          "rotation_only": true,
+          "school_title_prefixes": {
+            "HS ": "kingsway-regional-high"
+          }
         }
       ],
       "marking_period_url": null,

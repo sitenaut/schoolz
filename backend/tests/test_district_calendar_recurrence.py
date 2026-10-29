@@ -109,6 +109,33 @@ async def test_cycle_day_titles_become_rotation_days(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_lettered_day_titles_get_one_spelling(monkeypatch):
+    """Mantua words its days "DAY A", Swedesboro-Woolwich "A Day"."""
+    events = "".join(
+        f"BEGIN:VEVENT\nUID:e{i}\nDTSTART;VALUE=DATE:2026110{i}\nSUMMARY:{title}\nEND:VEVENT\n"
+        for i, title in enumerate(["DAY A", "B  Day", "Day C", "DAY E (Snow Day)", "A Day with Dad"], start=1)
+    )
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, headers=None):
+            body = f"BEGIN:VCALENDAR\nVERSION:2.0\n{events}END:VCALENDAR\n"
+            return httpx.Response(200, content=body.encode(), request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(district_calendar.httpx, "AsyncClient", FakeClient)
+    got = await district_calendar.fetch_district_calendar("https://example.org/cal.ics")
+    assert sorted(e["title"] for e in got) == ["A Day with Dad", "Day A", "Day B", "Day C", "Day E (Snow Day)"]
+
+
+@pytest.mark.anyio
 async def test_since_drops_events_over_before_it(monkeypatch):
     """Mantua's Google calendars go back to 2010."""
     body = (
