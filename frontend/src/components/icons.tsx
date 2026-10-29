@@ -183,6 +183,17 @@ export const IconUsers = ({ className }: P) => (
     <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-5-6.3" />
   </svg>
 );
+// Neighborz: two houses side by side, neighbors. Not a people glyph
+// (IconUsers is "my kids", IconFamily is Kids & Family) and not a heart
+// (Health).
+export const IconNeighbors = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M2 20.5v-7l4.5-4 4.5 4v7" />
+    <path d="M11 20.5v-9.5l5.5-5 5.5 5v9.5" />
+    <path d="M1 20.5h22" />
+    <path d="M15 20.5v-4h3v4" />
+  </svg>
+);
 // The district-wide staff directory. An address-book card (person on a
 // page) rather than another people glyph - IconUsers already means "my
 // kids" in the same tab bar, and two variations on the same silhouette

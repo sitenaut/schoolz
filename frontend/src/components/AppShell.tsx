@@ -11,7 +11,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
-import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconSearch, IconUsers, IconWrench } from "./icons";
+import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconNeighbors, IconPin, IconSchool, IconSearch, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
 import { CURRENT_LANG } from "../lib/i18n";
 import { gaEvent, gaPageView, gaSetUserProperties, schoolViews, setInternalTraffic } from "../lib/analytics";
@@ -34,6 +34,7 @@ const ROUTE_TEMPLATES: [RegExp, string][] = [
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
   [/^\/seasonal\/[^/]+$/, "/seasonal/:season"],
   [/^\/localz\/r\/[^/]+$/, "/localz/r/:id"],
+  [/^\/localz\/bills\/hold\/[^/]+$/, "/localz/bills/hold/:id"],
   [/^\/budgets\/[^/]+$/, "/budgets/:slug"],
 ];
 
@@ -389,6 +390,10 @@ export function AppShell() {
           <NavLink to="/local">
             <IconCalendar />
             {t("Events")}
+          </NavLink>
+          <NavLink to="/localz/bills">
+            <IconNeighbors />
+            {t("Neighborz")}
           </NavLink>
           {LOCALZ_CATEGORIES.filter((c) => c.inNav).map((c) => (
             <NavLink to={`/localz/${c.key}`} key={c.key}>

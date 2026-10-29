@@ -124,7 +124,8 @@ async def test_budget_page_counted_per_state_district():
 async def test_localz_pages_counted_without_the_listing():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        for path in ("/localz", "/localz/", "/localz/food", "/localz/providers", "/localz/r/:id", "/localz/r/abc123", "/localz/no-such-category"):
+        for path in ("/localz", "/localz/", "/localz/food", "/localz/providers", "/localz/r/:id", "/localz/r/abc123", "/localz/no-such-category",
+                     "/localz/bills", "/localz/bills/mine", "/localz/bills/hold/abc123"):
             await client.post("/page-views", json={"path": path, "source": "direct"})
         headers = await _admin_headers(client)
         report = (await client.get("/page-views", headers=headers)).json()
@@ -136,6 +137,9 @@ async def test_localz_pages_counted_without_the_listing():
     assert totals["/localz/r/:id"] >= 2
     assert "/localz/r/abc123" not in totals
     assert "/localz/no-such-category" not in totals
+    # The public Neighborz list counts; its personal pages never do.
+    assert totals["/localz/bills"] >= 1
+    assert not [p for p in totals if p.startswith("/localz/bills/")]
 
 
 @pytest.mark.anyio

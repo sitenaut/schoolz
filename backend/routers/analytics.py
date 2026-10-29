@@ -33,10 +33,12 @@ _SCHOOL_PAGE_RE = re.compile(r"^/schools/([^/]{1,100})$")
 # have one (every NJ district, tracked by schoolz or not).
 _BUDGET_PAGE_RE = re.compile(r"^/budgets/([^/]{1,100})$")
 # Localz is counted here because it never loads GA (docs/LOCALZ_DESIGN.md):
-# its home, its category pages, the provider landing page, and every listing
-# as one row. Which listing someone opened is never recorded - the privacy
-# page promises that - so /localz/r/<id> always lands on /localz/r/:id.
-_LOCALZ_PATHS = {"/localz", "/localz/providers"} | {f"/localz/{key}" for key in LOCALZ_CATEGORIES}
+# its home, its category pages, the provider landing page, the public
+# Neighborz list, and every listing as one row. Which listing someone opened
+# is never recorded - the privacy page promises that - so /localz/r/<id>
+# always lands on /localz/r/:id. Neighborz's own pages (/localz/bills/mine,
+# a hold) aren't counted: a visit there says someone asked for or gave help.
+_LOCALZ_PATHS = {"/localz", "/localz/providers", "/localz/bills"} | {f"/localz/{key}" for key in LOCALZ_CATEGORIES}
 _LOCALZ_LISTING_RE = re.compile(r"^/localz/r/[^/]{1,100}$")
 
 

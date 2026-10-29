@@ -6,7 +6,7 @@
  *
  * Every row here is a promise: when what a feature stores, sends or logs
  * changes, this page changes in the same PR. The Localz rows follow
- * docs/LOCALZ_DESIGN.md; the upload row is the deliberate exception to "no
+ * docs/LOCALZ_DESIGN.md, the Neighborz rows docs/NEIGHBORZ_DESIGN.md; the upload row is the deliberate exception to "no
  * IPs" (frontend/CLAUDE.md). The codes that stand in for an address (survey,
  * audit, chat) can be turned back into it on purpose, and "Illegal content"
  * says so (CLAUDE.md, "IP codes are reversible on purpose"). */
@@ -275,6 +275,35 @@ export function PrivacyPage() {
               one in our sent mail. People looking for help are never emailed.
             </td>
           </tr>
+          <tr>
+            <td>
+              If you post a bill on Neighborz: the photo or PDF of your bill, what's read from it (account number,
+              service ZIP code, amount due, due date, whether it's a shutoff notice), and the amount and avatar you choose
+            </td>
+            <td>Our database; the photo, account number and ZIP code encrypted with keys of their own</td>
+            <td>
+              To list your bill without saying who you are: the public list shows only your avatar, the utility, the
+              amount, the due date, your county and whether it's a shutoff notice. Anthropic's Claude reads the photo
+              once to fill in the details. The photo is deleted as soon as your bill is listed. If a check holds it for
+              a reviewer first, the reviewer sees the photo, which shows your name and address, and it's deleted once
+              they decide (within 7 days). The one person who says they'll pay your bill sees the account number and
+              ZIP code while they hold it, for up to 24 hours, because that's all the utility needs; each time it's
+              shown is recorded. The account number, ZIP code and what was read are erased 30 days after the bill is
+              closed. A scrambled code made from the account number stays, so the same account can't be posted again
+              too soon. Emails about it say only that something on your account needs a look.
+            </td>
+          </tr>
+          <tr>
+            <td>If you pay a bill on Neighborz: which bills you held, and the confirmation number, amount and date you enter</td>
+            <td>Our database; the confirmation number encrypted</td>
+            <td>
+              So you have a list of the bills you've paid, and so a reviewer can look into it if your neighbor says a
+              payment hasn't arrived. The person you helped never learns who you are and never sees your confirmation
+              number; you never learn who they are. We never handle the money: you pay the utility on its own site or
+              phone line, and that payment is between you and the utility. Paying someone's bill is a gift to a person,
+              not a donation to a charity, so it isn't tax-deductible.
+            </td>
+          </tr>
         </tbody>
       </table>
 
@@ -391,7 +420,7 @@ export function PrivacyPage() {
       <p>
         We use Anthropic's Claude for the assistant (above), to read public school newsletters, calendars and
         flyers, to translate public school content into Spanish, Chinese, Korean and Hindi, to read who a Localz
-        listing serves, and for three Kids View helpers. Those three send the least they can: a "how to approach
+        listing serves, to read the utility bill you upload to Neighborz, and for three Kids View helpers. Those three send the least they can: a "how to approach
         this" tip gets only an assignment's title and class name, shared by everyone in that class; "help me plan"
         gets only your child's open assignment titles, class names and due dates, with no name or student ID; and
         reading a late-work policy gets only the syllabus paragraph you paste. Your Localz answers (on your device
@@ -455,6 +484,12 @@ export function PrivacyPage() {
         <li>
           Saved Localz answers are kept until you delete them, withdraw your consent, or delete your account,
           whichever comes first. Answers remembered on your device expire after 90 days.
+        </li>
+        <li>
+          A Neighborz bill's photo is deleted when the bill is listed, or within 7 days if it waits for a reviewer; its
+          account number and ZIP code are erased 30 days after it closes. Deleting your account deletes the bills you
+          posted, except ones a neighbor paid: those stay, with nothing linking them to you, so the person who paid keeps
+          their own record.
         </li>
         <li>
           Our database is backed up every night, and each backup is encrypted before it's stored. Daily backups are kept 35

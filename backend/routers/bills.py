@@ -12,7 +12,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -104,7 +104,11 @@ async def list_bills(county: str | None = None, utility: str | None = None, db: 
         (BillRequest.status.in_(("claimed", "reported", "disputed")), 1),
         else_=2,
     )
-    q = select(BillRequest).where(
+    # Only the listing's own columns: a public request never decrypts anything.
+    q = select(
+        BillRequest.id, BillRequest.utility, BillRequest.status, BillRequest.amount_cents, BillRequest.due_date,
+        BillRequest.shutoff_notice, BillRequest.county, BillRequest.avatar,
+    ).where(
         or_(
             BillRequest.status.in_(("available", "claimed", "reported", "disputed")),
             and_(BillRequest.status == "paid", BillRequest.closed_at >= at - catalog.PAID_SHOWN),
@@ -116,7 +120,7 @@ async def list_bills(county: str | None = None, utility: str | None = None, db: 
     if utility:
         q = q.where(BillRequest.utility == utility[:20])
     q = q.order_by(state, BillRequest.shutoff_notice.desc(), BillRequest.due_date.asc().nulls_last(), BillRequest.posted_at.asc()).limit(300)
-    rows = (await db.execute(q)).scalars().all()
+    rows = (await db.execute(q)).all()
     names = {"available": "open", "paid": "paid"}
     return [
         PublicBill(
@@ -470,6 +474,7 @@ async def hold_bill(bill_id: str, request: Request, user: User = Depends(get_cur
             "account_too_new": "New accounts can hold a bill after a day",
             "paused": "Holding bills is paused on your account",
             "holding_one": "Finish or let go of the bill you're holding first",
+            "too_many_holds": "You've held a few bills today. Try again tomorrow",
         }
         raise CodedHTTPException(status.HTTP_409_CONFLICT, texts[blocker], blocker)
     req = (await db.execute(select(BillRequest).where(BillRequest.id == bill_id).with_for_update())).scalar_one_or_none()
@@ -513,7 +518,10 @@ async def report_paid(hold_id: str, body: PaidIn, user: User = Depends(get_curre
         raise CodedHTTPException(status.HTTP_409_CONFLICT, "This hold has ended", "hold_ended")
     if body.paid_cents != req.amount_cents:
         raise CodedHTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Enter the amount the bill asked for", "amount_mismatch")
-    if not hold.held_at.astimezone(_TZ).date() <= body.paid_on <= _today():
+    # The date is the giver's own, whose day may start before or after New
+    # Jersey's: a day of slack either way.
+    held_on = hold.held_at.astimezone(_TZ).date()
+    if not held_on - timedelta(days=1) <= body.paid_on <= _today() + timedelta(days=1):
         raise CodedHTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Check the date you paid", "paid_on_invalid")
     hold.status = "reported"
     hold.reported_at = at

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,17 +121,14 @@ async def settle(db: AsyncSession, at: datetime | None = None) -> dict:
         await notify(db, requester_id, "bills.expired", req_id)
     done["listings_expired"] = len(old)
 
-    # Closed for 30 days: erase the account number, ZIP, extraction, image.
-    to_erase = (
-        await db.execute(
-            select(BillRequest).where(
-                BillRequest.status.in_(CLOSED), BillRequest.erased_at.is_(None), BillRequest.closed_at <= at - catalog.ERASE_AFTER
-            )
-        )
-    ).scalars().all()
-    for req in to_erase:
-        erase(req, at)
-    done["erased"] = len(to_erase)
+    # Closed for 30 days: erase the account number, ZIP, extraction, image
+    # (an UPDATE, so nothing is decrypted to be thrown away).
+    erased = await db.execute(
+        update(BillRequest).where(
+            BillRequest.status.in_(CLOSED), BillRequest.erased_at.is_(None), BillRequest.closed_at <= at - catalog.ERASE_AFTER
+        ).values(account_number=None, service_zip=None, extraction=None, image=None, image_type=None, erased_at=at)
+    )
+    done["erased"] = erased.rowcount or 0
 
     await db.commit()
     return done
@@ -180,6 +177,13 @@ async def hold_blocker(db: AsyncSession, user: User, at: datetime | None = None)
     ).scalar_one_or_none()
     if holding:
         return "holding_one"
+    today = (
+        await db.execute(
+            select(func.count()).select_from(BillHold).where(BillHold.giver_id == user.id, BillHold.held_at > at - timedelta(hours=24))
+        )
+    ).scalar_one()
+    if today >= catalog.HOLDS_PER_DAY:
+        return "too_many_holds"
     return None
 
 

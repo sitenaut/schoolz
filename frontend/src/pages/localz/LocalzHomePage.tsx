@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SeoHead } from "../../components/SeoHead";
-import { IconSearch, IconX } from "../../components/icons";
+import { IconNeighbors, IconSearch, IconX } from "../../components/icons";
 import { LOCALZ_CATEGORIES, type ResourceCategoryCount, fetchResourceCategories } from "../../lib/localz";
 import { useLocalzScope } from "../../lib/localzWhere";
 import { usePrerenderReady } from "../../lib/prerenderReady";
@@ -121,6 +121,11 @@ export function LocalzHomePage() {
               ) : null}
             </Link>
           ))}
+          <Link to="/localz/bills" className="localz-tile">
+            <IconNeighbors />
+            <span className="localz-tile-label">{t("Neighborz")}</span>
+            <span className="localz-tile-blurb">{t("Neighbors paying each other's utility bills")}</span>
+          </Link>
         </nav>
       )}
 

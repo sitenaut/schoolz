@@ -1,8 +1,11 @@
 # Neighborz — neighbors paying each other's utility bills (design)
 
-Backend built (`backend/bills/`, `routers/bills.py`, `routers/admin_bills.py`,
-migration 0137, `tests/test_bills.py`); the frontend and the review screen
-are next. Neighborz is a section of Localz
+Built, not launched: backend (`backend/bills/`, `routers/bills.py`,
+`routers/admin_bills.py`, migration 0137, `tests/test_bills.py`) and
+frontend (`frontend/src/pages/localz/bills/`, `/localz/bills`,
+`/localz/bills/mine`, `/localz/bills/hold/:id`; review at Admin → Neighborz,
+`pages/BillsReviewPage.tsx`). Build order step 0 is still the owner's.
+Locally, set `DATA_ENCRYPTION_KEYS` to try it. Neighborz is a section of Localz
 (`docs/LOCALZ_DESIGN.md`) where someone behind on a utility bill posts it,
 anonymously, and a stranger pays it straight to the utility. It starts with
 PSE&G; gas, water, heating and internet companies follow one at a time (see
@@ -111,7 +114,8 @@ email nudges.
   listing, and one paid listing per **60 days**. Stops one bill being
   posted from several accounts.
 - **Giver:** the account is at least **24 hours** old; one bill held at a
-  time; can't hold their own bill, or any bill whose account fingerprint
+  time, and at most **3 holds a day** whatever becomes of them (letting go is
+  free, so hold-read-release could otherwise collect account numbers); can't hold their own bill, or any bill whose account fingerprint
   matches one they've posted. **Two strikes in 90 days** (a hold that ran
   out, or a dispute decided against them) pause holding until a reviewer
   lifts it.
@@ -240,10 +244,12 @@ bills.
 
 ## Avatars and emojis
 
-- **Avatars:** a fixed catalog of about 24 cartoon animals, shipped with the
-  frontend as SVGs from an openly licensed set (Microsoft's Fluent Emoji is
-  MIT; keep its license notice), stored on the request as a key. Shown as
-  `<img>`, so an SVG can't run anything. No uploads, no colors picked freely.
+- **Avatars:** a fixed catalog of 24 cartoon animals, Microsoft's Fluent
+  Emoji (flat), MIT, copied unchanged into
+  `frontend/src/pages/localz/bills/avatars/` with its `LICENSE.txt`; stored
+  on the request as a key. Shown as `<img>`, so an SVG can't run anything.
+  No uploads, no colors picked freely. A frontend test checks the files
+  match `catalog.AVATARS` (and the emojis `catalog.EMOJIS`).
 - **Emojis:** a fixed set of six, stored as keys, shown to the giver on
   their paid list: ❤️ 🙏 😊 🎉 💡 🌻.
 

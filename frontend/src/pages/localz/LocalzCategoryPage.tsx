@@ -84,6 +84,11 @@ function CategoryView({ categoryKey }: { categoryKey: string | undefined }) {
       <div className="localz-fit-row">
         <FitButton />
       </div>
+      {category.key === "housing-bills" && (
+        <p className="bills-promo">
+          {t("Behind on a PSE&G bill? A neighbor may pay it for you.")} <Link to="/localz/bills">{t("Neighborz")}</Link>
+        </p>
+      )}
 
       <RadiusChips />
       <div className="localz-filters">

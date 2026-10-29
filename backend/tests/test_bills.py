@@ -14,6 +14,7 @@ import logging
 import re
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from cryptography.fernet import Fernet
@@ -35,6 +36,12 @@ pytestmark = pytest.mark.anyio
 ACCOUNT = "7319046628"
 ZIP = "08002"
 CONFIRMATION = "PSEG55K7Q2"
+
+
+def _nj_today() -> str:
+    """The server's "today" is New Jersey's, which differs from UTC's in the
+    evening."""
+    return datetime.now(ZoneInfo("America/New_York")).date().isoformat()
 
 
 def _raw(account="73 1904 6628", zip_code=ZIP, amount=212.47, **extra) -> dict:
@@ -154,7 +161,7 @@ async def test_the_whole_flow_and_who_sees_what(reads):
 
         paid = await client.post(
             f"/bills/holds/{hold['id']}/paid", headers=giver,
-            json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()},
+            json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()},
         )
         assert paid.status_code == 200, paid.text
         assert paid.json()["status"] == "reported" and paid.json()["account_number"] is None
@@ -270,7 +277,7 @@ async def test_one_open_listing_per_utility_account_and_one_paid_per_60_days(rea
 
         hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
-                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()})
+                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         await client.post(f"/bills/{bill_id}/answer", headers=a, json={"answer": "paid"})
         _, again = await _post(client, b, reads, seed=2)
         assert again.json()["code"] == "account_recently_paid"
@@ -404,6 +411,8 @@ async def test_letting_go_is_free_running_out_is_a_strike_and_two_pause(reads):
         async with database.SessionLocal() as db:
             await db.execute(update(BillHold).where(BillHold.giver_id == giver_id, BillHold.status == "expired")
                              .values(settled_at=datetime.now(UTC) - timedelta(hours=1)))
+            # Out of today's count too, so only the strikes are being tested.
+            await db.execute(update(BillHold).where(BillHold.giver_id == giver_id).values(held_at=datetime.now(UTC) - timedelta(days=2)))
             await db.commit()
             assert await flow.strikes(db, giver_id) == 2
         assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()["code"] == "paused"
@@ -415,6 +424,23 @@ async def test_letting_go_is_free_running_out_is_a_strike_and_two_pause(reads):
         assert (await client.post(f"/bills/{bill_id}/hold", headers=giver)).status_code == 200
 
 
+async def test_three_holds_a_day_however_they_end(reads):
+    """Letting go is free, so hold-read-release can't be a way to collect
+    account numbers."""
+    async with _client() as client:
+        asker, _ = await _person(client, "nb_daycap")
+        giver, _ = await _person(client, "nb_daycap_giver")
+        _, posted = await _post(client, asker, reads)
+        bill_id = posted.json()["id"]
+        for _ in range(catalog.HOLDS_PER_DAY):
+            hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
+            assert hold["account_number"] == ACCOUNT
+            await client.post(f"/bills/holds/{hold['id']}/release", headers=giver)
+        res = await client.post(f"/bills/{bill_id}/hold", headers=giver)
+        assert res.status_code == 409 and res.json()["code"] == "too_many_holds"
+        assert (await client.get("/bills/mine", headers=giver)).json()["hold_blocker"] == "too_many_holds"
+
+
 async def test_reporting_paid_checks_the_amount_and_date(reads):
     async with _client() as client:
         asker, _ = await _person(client, "nb_report")
@@ -422,7 +448,7 @@ async def test_reporting_paid_checks_the_amount_and_date(reads):
         _, posted = await _post(client, asker, reads)
         hold = (await client.post(f"/bills/{posted.json()['id']}/hold", headers=giver)).json()
         url = f"/bills/holds/{hold['id']}/paid"
-        good = {"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()}
+        good = {"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()}
         assert (await client.post(url, headers=giver, json={**good, "paid_cents": 20000})).json()["code"] == "amount_mismatch"
         tomorrow = (date.today() + timedelta(days=2)).isoformat()
         assert (await client.post(url, headers=giver, json={**good, "paid_on": tomorrow})).json()["code"] == "paid_on_invalid"
@@ -442,7 +468,7 @@ async def test_not_yet_goes_to_a_reviewer(reads):
         bill_id = posted.json()["id"]
         hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
-                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()})
+                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         assert (await client.post(f"/bills/{bill_id}/answer", headers=asker, json={"answer": "not_yet"})).json()["status"] == "disputed"
         assert (await client.post(f"/bills/{bill_id}/answer", headers=asker, json={"answer": "paid"})).status_code == 409
 
@@ -465,7 +491,7 @@ async def test_silence_means_paid_after_a_week_and_closed_bills_are_erased(reads
         bill_id = posted.json()["id"]
         hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
-                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()})
+                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         later = datetime.now(UTC) + catalog.ANSWER_WAIT + timedelta(hours=1)
         assert (await _settle(later))["auto_confirmed"] >= 1
         bill = await _bill(bill_id)
@@ -597,7 +623,7 @@ async def test_secrets_are_ciphertext_at_rest(reads):
         _, listed = await _post(client, giver, reads, seed=5)
         hold = (await client.post(f"/bills/{listed.json()['id']}/hold", headers=asker)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=asker,
-                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()})
+                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         async with database.SessionLocal() as db:
             stored = (await db.execute(text("SELECT confirmation_number FROM bill_holds WHERE id = :i"), {"i": hold["id"]})).scalar_one()
         assert crypto.is_encrypted(stored) and CONFIRMATION not in stored
@@ -617,7 +643,7 @@ async def test_no_account_number_zip_or_confirmation_reaches_a_log(reads, caplog
         hold = (await client.post(f"/bills/{bill_id}/hold", headers=giver)).json()
         await client.get(f"/bills/holds/{hold['id']}", headers=giver)
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
-                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()})
+                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         await client.get("/bills/mine", headers=giver)
         await client.post(f"/bills/{bill_id}/answer", headers=asker, json={"answer": "paid"})
     assert [r for r in caplog.records if r.getMessage() == "http_request" and getattr(r, "path", "").startswith("/bills")]
@@ -656,7 +682,7 @@ async def test_deleting_an_account(reads):
         paid_id = paid.json()["id"]
         hold = (await client.post(f"/bills/{paid_id}/hold", headers=giver)).json()
         await client.post(f"/bills/holds/{hold['id']}/paid", headers=giver,
-                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": date.today().isoformat()})
+                          json={"confirmation_number": CONFIRMATION, "paid_cents": 21247, "paid_on": _nj_today()})
         await client.post(f"/bills/{paid_id}/answer", headers=asker, json={"answer": "paid"})
         _, open_bill = await _post(client, asker, reads, seed=1, account="5550001115")
         open_id = open_bill.json()["id"]

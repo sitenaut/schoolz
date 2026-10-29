@@ -31,6 +31,17 @@ describe("scrubUrl", () => {
     expect(scrubUrl("/localz/food")).toBe("/localz/food");
   });
 
+  it("hides which Neighborz bill or hold, in pages and API calls", () => {
+    expect(scrubUrl("/localz/bills/hold/2f1c9a3e-1b2c-4d5e-8f90-123456789abc")).toBe("/localz/bills/hold/:id");
+    expect(scrubUrl("https://schoolz-api.sitenaut.com/bills/holds/2f1c9a3e-1b2c-4d5e-8f90-123456789abc/paid")).toBe(
+      "https://schoolz-api.sitenaut.com/bills/holds/:id/paid",
+    );
+    expect(scrubUrl("https://schoolz-api.sitenaut.com/bills/2f1c9a3e-1b2c-4d5e-8f90-123456789abc/hold")).toBe(
+      "https://schoolz-api.sitenaut.com/bills/:id/hold",
+    );
+    expect(scrubUrl("/localz/bills/mine")).toBe("/localz/bills/mine");
+  });
+
   it("leaves an ordinary url/path untouched", () => {
     expect(scrubUrl("https://schoolz.sitenaut.com/schools/bret-harte-elementary")).toBe(
       "https://schoolz.sitenaut.com/schools/bret-harte-elementary"

@@ -90,6 +90,9 @@ export function scrubUrl(url: string): string {
   // Which Localz resource someone opened (a shelter, a recovery program) is
   // nobody's business, monitoring included.
   result = result.replace(/\/localz\/r\/[^/?#]+/, "/localz/r/:id");
+  // Which Neighborz bill or hold, in a page or an API call.
+  result = result.replace(/\/localz\/bills\/hold\/[^/?#]+/, "/localz/bills/hold/:id");
+  result = result.replace(/\/bills\/(holds\/)?[0-9a-f]{8}-[0-9a-f-]{27}/, "/bills/$1:id");
   return result;
 }
 

@@ -67,6 +67,9 @@ PAID_SHOWN = timedelta(days=7)  # a paid bill stays on the public list this long
 ERASE_AFTER = timedelta(days=30)  # account number, ZIP and image of a closed bill
 ACCOUNT_REPEAT = timedelta(days=60)  # one paid listing per utility account
 GIVER_MIN_AGE = timedelta(hours=24)
+# Holds a giver can start in a day, whatever becomes of them: letting go is
+# free, so without this hold-read-release could collect account numbers.
+HOLDS_PER_DAY = 3
 STRIKE_WINDOW = timedelta(days=90)
 STRIKES_TO_PAUSE = 2
 DISPUTES_TO_HOLD = 2  # a requester with this many disputes in STRIKE_WINDOW is reviewed

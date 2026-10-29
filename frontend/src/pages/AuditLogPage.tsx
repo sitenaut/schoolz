@@ -60,6 +60,10 @@ export const ACTION_LABELS: Record<string, string> = {
   "email_scanner.update": "Changed email scanner",
   "email_scanner.delete": "Deleted email scanner",
   "chatbot.settings": "Changed chatbot settings",
+  "bills.account_revealed": "Neighborz: saw a bill's account number (holding it)",
+  "bills.image_viewed": "Neighborz: opened a bill image",
+  "bills.decision": "Neighborz: decided a bill",
+  "bills.giver_unpause": "Neighborz: lifted a giver's pause",
 };
 
 /** Filter chips: each is one action prefix the API filters on. */
@@ -76,6 +80,7 @@ const CATEGORIES: { label: string; prefix: string }[] = [
   { label: "Gmail", prefix: "connection." },
   { label: "Email scanners", prefix: "email_scanner." },
   { label: "Localz", prefix: "resources." },
+  { label: "Neighborz", prefix: "bills." },
   { label: "Chatbot", prefix: "chatbot." },
 ];
 

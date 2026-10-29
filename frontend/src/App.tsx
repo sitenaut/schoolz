@@ -35,6 +35,10 @@ const ProviderPortalPage = lazyPage(() => import("./pages/localz/providers/Provi
 const ProviderRequestPage = lazyPage(() => import("./pages/localz/providers/ProviderRequestPage").then((m) => m.ProviderRequestPage));
 const ProviderListingPage = lazyPage(() => import("./pages/localz/providers/ProviderListingPage").then((m) => m.ProviderListingPage));
 const LocalzReviewPage = lazyPage(() => import("./pages/LocalzReviewPage").then((m) => m.LocalzReviewPage));
+const BillsReviewPage = lazyPage(() => import("./pages/BillsReviewPage").then((m) => m.BillsReviewPage));
+const BillsPage = lazyPage(() => import("./pages/localz/bills/BillsPage").then((m) => m.BillsPage));
+const MyBillsPage = lazyPage(() => import("./pages/localz/bills/MyBillsPage").then((m) => m.MyBillsPage));
+const HoldPage = lazyPage(() => import("./pages/localz/bills/HoldPage").then((m) => m.HoldPage));
 const LocalzReviewDetailPage = lazyPage(() => import("./pages/LocalzReviewDetailPage").then((m) => m.LocalzReviewDetailPage));
 const LocalzListingAdminPage = lazyPage(() => import("./pages/LocalzListingAdminPage").then((m) => m.LocalzListingAdminPage));
 const SeasonalPage = lazyPage(() => import("./pages/SeasonalPage").then((m) => m.SeasonalPage));
@@ -233,6 +237,10 @@ function Routed() {
           <Route path="/localz/providers/portal" element={<ProviderPortalPage />} />
           <Route path="/localz/providers/requests/:requestId" element={<ProviderRequestPage />} />
           <Route path="/localz/providers/listings/:serviceId" element={<ProviderListingPage />} />
+          {/* Neighborz (docs/NEIGHBORZ_DESIGN.md): browsing is public, acting needs an account. */}
+          <Route path="/localz/bills" element={<BillsPage />} />
+          <Route path="/localz/bills/mine" element={<RequireAuth><MyBillsPage /></RequireAuth>} />
+          <Route path="/localz/bills/hold/:holdId" element={<RequireAuth><HoldPage /></RequireAuth>} />
           <Route path="/localz/:category" element={<LocalzCategoryPage />} />
         </Route>
         <Route path="/audit" element={<AuditShell pub />}>
@@ -271,6 +279,7 @@ function Routed() {
           <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
           <Route path="support" element={<RequireAdmin permission="support.view"><SupportPage /></RequireAdmin>} />
           <Route path="resources/onboarding" element={<RequireAdmin permission="resources.view"><LocalzReviewPage /></RequireAdmin>} />
+          <Route path="bills" element={<RequireAdmin permission="bills.manage"><BillsReviewPage /></RequireAdmin>} />
           <Route path="resources/onboarding/:requestId" element={<RequireAdmin permission="resources.view"><LocalzReviewDetailPage /></RequireAdmin>} />
           <Route path="resources/listings/:serviceId" element={<RequireAdmin permission="resources.view"><LocalzListingAdminPage /></RequireAdmin>} />
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />

@@ -18,6 +18,7 @@ export const ADMIN_TABS: { to: string; label: string; permission: string | null 
   { to: "/admin/support", label: "Support", permission: "support.view" },
   { to: "/admin/submissions", label: "Submissions", permission: "submissions.view" },
   { to: "/admin/resources/onboarding", label: "Localz", permission: "resources.view" },
+  { to: "/admin/bills", label: "Neighborz", permission: "bills.manage" },
   { to: "/admin/newsletters", label: "Newsletters", permission: "newsletters.manage" },
   { to: "/admin/scans", label: "Scans", permission: "scans.view" },
   { to: "/admin/audit", label: "Audit", permission: "audit.view" },

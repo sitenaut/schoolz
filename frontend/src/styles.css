@@ -4442,3 +4442,310 @@ select {
     gap: 0;
   }
 }
+
+/* Neighborz (pages/localz/bills/): neighbors paying each other's utility bills. */
+.bills-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+.bills-actions select {
+  width: auto;
+  margin: 0;
+}
+.bills-how {
+  margin: 8px 0 14px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.bills-how summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+.bills-how ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.bills-list {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+.bills-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.bills-card.paid {
+  opacity: 0.75;
+}
+.bills-card-body {
+  min-width: 0;
+}
+.bills-card-side {
+  align-self: center;
+}
+@media (max-width: 480px) {
+  .bills-card {
+    grid-template-columns: auto 1fr;
+  }
+  .bills-card-side {
+    grid-column: 1 / -1;
+  }
+}
+.bills-avatar {
+  display: block;
+  flex: none;
+}
+.bills-avatar-empty {
+  border-radius: 50%;
+  background: var(--primary-soft);
+}
+.bills-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.bills-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.bills-shutoff {
+  color: var(--bad);
+  font-weight: 600;
+}
+.bills-state {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.bills-state.paid {
+  color: var(--ok);
+  font-weight: 600;
+}
+.bills-status {
+  margin: 6px 0;
+}
+.bills-small {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.bills-error {
+  color: var(--bad);
+  font-size: 14px;
+}
+.bills-empty {
+  padding: 18px 0;
+  color: var(--ink-2);
+}
+.bills-section {
+  margin: 20px 0 6px;
+  font-size: 15px;
+}
+.bills-promo {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+}
+.bills-flow {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.bills-flow h3 {
+  margin: 0;
+}
+.bills-flow p {
+  margin: 0;
+}
+.bills-file {
+  position: relative;
+  justify-self: start;
+}
+.bills-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.bills-file.busy {
+  opacity: 0.7;
+}
+.bills-field {
+  display: grid;
+  gap: 4px;
+  max-width: 340px;
+}
+.bills-field span {
+  font-weight: 600;
+  font-size: 14px;
+}
+.bills-field small {
+  color: var(--ink-2);
+}
+.bills-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 0;
+}
+.bills-facts dt {
+  color: var(--ink-2);
+}
+.bills-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+.bills-avatars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.bills-avatars legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.bills-avatar-pick {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.bills-avatar-pick input {
+  position: absolute;
+  inset: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.bills-avatar-pick.picked,
+.bills-avatar-pick:focus-within {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.bills-understand {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+.bills-understand input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+  flex: none;
+}
+.bills-thanks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+.bills-emoji {
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--card);
+  padding: 4px 9px;
+  font-size: 20px;
+  cursor: pointer;
+}
+.bills-thanked {
+  font-size: 15px;
+}
+.bills-link {
+  border: 0;
+  padding: 4px 0;
+  background: none;
+  color: var(--ink-2);
+  text-decoration: underline;
+}
+.bills-hold-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0;
+}
+.bills-hold-head .localz-title {
+  margin: 0;
+}
+.bills-pay dd code,
+.bills-copy code {
+  font-size: 17px;
+  letter-spacing: 0.04em;
+}
+.bills-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.bills-steps {
+  margin: 0;
+  padding-left: 20px;
+}
+.bills-review-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.bills-review-card:first-child {
+  border-top: 0;
+}
+.bills-review-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.bills-review-table {
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.bills-review-table th,
+.bills-review-table td {
+  padding: 4px 10px 4px 0;
+  text-align: left;
+  vertical-align: top;
+}
+.bills-review-table tbody th {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.bills-review-image {
+  max-width: min(100%, 640px);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.bills-review-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
