@@ -1,0 +1,18 @@
+# Ships the Fly scraper's /metrics to Grafana Cloud (config.alloy). No
+# services and no public IP: it only reaches out, to schoolz-scraper over the
+# private network and to Grafana Cloud. Deploy with
+# scripts/deploy-scraper-telemetry.sh; secrets in scraper/telemetry/README.md.
+app = "schoolz-scraper-metrics"
+primary_region = "ewr"
+
+[build]
+  image = "grafana/alloy:v1.20.0"  # the droplet's version
+
+# The image's default command runs /etc/alloy/config.alloy.
+[[files]]
+  guest_path = "/etc/alloy/config.alloy"
+  local_path = "config.alloy"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

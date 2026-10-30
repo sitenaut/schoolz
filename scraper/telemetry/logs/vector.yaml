@@ -1,0 +1,66 @@
+# Vector for the Fly scraper's logs: Fly has no host agent to read container
+# output, only its NATS log stream (reachable from any app in the org at
+# [fdaa::3]:4223, with an org token). Lines go to Loki with the droplet's
+# labels, so the scraper repo's log panels cover Fly as host="scraper-fly":
+#   app output                     job="scraper/docker", service="playwright-scraper"
+#   Fly's own lines (runner, proxy:
+#   machine starts, OOM kills)     job="scraper/journal"
+# The scraper logs logfmt with level=; it is lifted to a label, as the
+# droplet's Alloy does.
+
+data_dir: /var/lib/vector
+
+sources:
+  fly:
+    type: nats
+    url: "nats://[fdaa::3]:4223"
+    subject: "logs.schoolz-scraper.>"
+    connection_name: schoolz-scraper-logs
+    auth:
+      strategy: user_password
+      user_password:
+        user: schoolz  # the Fly org slug
+        password: "${FLY_ACCESS_TOKEN}"
+
+transforms:
+  shape:
+    type: remap
+    inputs: [fly]
+    source: |
+      fly = parse_json!(string!(.message))
+      provider = string(fly.event.provider) ?? "app"
+      line = string(fly.message) ?? ""
+      labels = {
+        "service_namespace": "scraper",
+        "host": "scraper-fly",
+        "instance": string(fly.fly.app.instance) ?? "unknown",
+      }
+      if provider == "app" {
+        labels.job = "scraper/docker"
+        labels.service = "playwright-scraper"
+        fields = parse_logfmt(line) ?? {}
+        if is_string(fields.level) { labels.level = fields.level }
+      } else {
+        labels.job = "scraper/journal"
+        labels.unit = provider
+      }
+      . = {
+        "message": line,
+        "timestamp": parse_timestamp(fly.timestamp, "%+") ?? now(),
+        "labels": labels,
+      }
+
+sinks:
+  loki:
+    type: loki
+    inputs: [shape]
+    endpoint: "${GRAFANA_CLOUD_LOKI_URL}"
+    auth:
+      strategy: basic
+      user: "${GRAFANA_CLOUD_LOKI_USER_ID}"
+      password: "${GRAFANA_CLOUD_API_KEY}"
+    compression: gzip
+    encoding:
+      codec: text
+    labels:
+      "*": "{{ labels }}"

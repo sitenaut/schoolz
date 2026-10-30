@@ -1,0 +1,52 @@
+// Grafana Alloy for the Fly scraper (schoolz-scraper): the stand-in for the
+// droplet's host agent (playwright-scraper's deploy/alloy/config.alloy), which
+// Fly doesn't have. Only the app's own /metrics exist here - no node,
+// cAdvisor or blackbox - shipped with the droplet's labels so the scraper
+// repo's dashboard and per-host alerts cover Fly as host="scraper-fly".
+//
+// Every scraper machine answers on schoolz-scraper.internal (Fly's private
+// DNS, IPv6 only), which is why the scraper sets METRICS_ADDR=:: in
+// scraper/fly.toml. Each machine is its own target, instance=<its address>.
+
+logging {
+  level  = "warn"
+  format = "logfmt"
+}
+
+prometheus.remote_write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USER_ID")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+
+  external_labels = {
+    host              = "scraper-fly",
+    service_namespace = "scraper",
+  }
+}
+
+discovery.dns "scraper" {
+  names            = ["schoolz-scraper.internal"]
+  type             = "AAAA"
+  port             = 9464
+  refresh_interval = "30s"
+}
+
+discovery.relabel "scraper" {
+  targets = discovery.dns.scraper.targets
+
+  rule {
+    target_label = "job"
+    replacement  = "scraper/app"
+  }
+}
+
+prometheus.scrape "app" {
+  targets         = discovery.relabel.scraper.output
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.cloud.receiver]
+}

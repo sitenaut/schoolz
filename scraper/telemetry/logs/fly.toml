@@ -1,0 +1,23 @@
+# Ships the Fly scraper's log lines to Grafana Cloud's Loki (vector.yaml). No
+# services and no public IP: it only reaches out, to Fly's log stream and to
+# Grafana Cloud. Deploy with scripts/deploy-scraper-telemetry.sh; secrets in
+# scraper/telemetry/README.md.
+app = "schoolz-scraper-logs"
+primary_region = "ewr"
+
+[build]
+  image = "timberio/vector:0.59.0-debian"
+
+[env]
+  # This Vector only expands ${VAR} in its config when told to. The config is
+  # ours and the variables are this app's own Fly secrets.
+  VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION = "true"
+
+# The image's default config path.
+[[files]]
+  guest_path = "/etc/vector/vector.yaml"
+  local_path = "vector.yaml"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

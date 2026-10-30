@@ -21,6 +21,9 @@ kill_timeout = 180
   # backend treats as retryable and takes to the droplet.
   MAX_CONCURRENCY = "1"
   RENDER_MAX_RSS_MB = "700"
+  # The metrics server on :9464 listens dual-stack, so schoolz-scraper-metrics
+  # can scrape it over Fly's IPv6-only private network (scraper/telemetry/).
+  METRICS_ADDR = "::"
 
 [processes]
   # Listens dual-stack on "::": Fly's private network is IPv6-only, and its
