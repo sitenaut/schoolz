@@ -73,6 +73,15 @@ def _get_semaphore() -> asyncio.Semaphore:
 # the same: 9 renders, ~12 minutes, then the whole roster scan failed.
 _PERMANENT_ERRORS = ("ERR_NAME_NOT_RESOLVED", "Cannot navigate to invalid URL", "ERR_CERT_")
 
+# A render the scraper's watchdog killed ("Render exceeded the 700MB memory
+# budget and was killed") is killed again on the same machine, so it isn't
+# retried there; the next scraper may have a bigger budget (Fly 700 MB, the
+# droplet 900 MB), so it still falls through. Retried, each such page cost
+# 3 renders per scraper: three pages doing that (Berlin Township's food
+# services page, Runnemede Library's events API, a Yodel widget) set off the
+# droplet's watchdog alert, 2026-10-30.
+_EXHAUSTS_THIS_SCRAPER = ("memory budget and was killed",)
+
 
 def _is_retryable(exc: Exception) -> bool:
     """A 502 from the scraper means the *school's* site failed to load in
@@ -83,6 +92,10 @@ def _is_retryable(exc: Exception) -> bool:
             return False
         return exc.response.status_code in _RETRY_STATUSES
     return isinstance(exc, httpx.TransportError)
+
+
+def _exhausts_this_scraper(exc: Exception) -> bool:
+    return isinstance(exc, httpx.HTTPStatusError) and any(m in exc.response.text for m in _EXHAUSTS_THIS_SCRAPER)
 
 
 def scraper_hosts() -> set[str]:
@@ -137,6 +150,8 @@ async def _post_to(service_url: str, api_key: str, path: str, payload: dict, tim
                 raise
             _record_call(service_url, path, "unavailable", started)
             last = exc
+            if _exhausts_this_scraper(exc):
+                break
             if attempt < _ATTEMPTS - 1:
                 await asyncio.sleep(_BACKOFF_S * (attempt + 1))
     assert last is not None

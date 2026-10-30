@@ -188,6 +188,22 @@ async def test_each_attempt_is_counted_by_role_and_outcome(monkeypatch):
     assert {c["endpoint"] for c in calls} == {"/fetch-html"}
 
 
+async def test_a_memory_kill_moves_on_to_the_next_scraper_without_retrying(monkeypatch):
+    # The same page blows the same budget every time; the droplet's is bigger.
+    _set_services(monkeypatch, fallback=("https://droplet", "dkey"))
+    monkeypatch.setattr(scraper_client, "_BACKOFF_S", 0)
+    calls = _recorded_calls(monkeypatch)
+
+    def handler(request):
+        if request.url.host == "primary":
+            return httpx.Response(502, json={"detail": "Render exceeded the 700MB memory budget and was killed"})
+        return httpx.Response(200, json={"html": "<p>ok</p>"})
+
+    _mock_http(monkeypatch, handler)
+    assert (await scraper_client.fetch_html("https://school.example/"))["html"] == "<p>ok</p>"
+    assert [(c["scraper"], c["outcome"]) for c in calls] == [("primary", "unavailable"), ("fallback", "ok")]
+
+
 async def test_a_targets_own_refusal_is_counted_as_refused(monkeypatch):
     _set_services(monkeypatch)
     calls = _recorded_calls(monkeypatch)
