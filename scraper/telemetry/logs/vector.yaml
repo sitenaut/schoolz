@@ -54,7 +54,12 @@ sinks:
   loki:
     type: loki
     inputs: [shape]
+    # The base URL (https://logs-prod-NNN.grafana.net): the sink adds
+    # /loki/api/v1/push itself, and an empty `path` doesn't stop it.
     endpoint: "${GRAFANA_CLOUD_LOKI_URL}"
+    # Its check asks /ready, which Grafana Cloud doesn't serve.
+    healthcheck:
+      enabled: false
     auth:
       strategy: basic
       user: "${GRAFANA_CLOUD_LOKI_USER_ID}"

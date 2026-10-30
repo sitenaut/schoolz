@@ -33,7 +33,12 @@ Set once, through `scripts/prod-secrets.sh`, never typed or printed:
 |---|---|
 | both | `GRAFANA_CLOUD_API_KEY`: the bare `glc_` token behind `SCHOOLZ_OTLP_TOKEN` (the backend's OTLP write token) |
 | metrics | `GRAFANA_CLOUD_PROMETHEUS_URL` (`<the grafanacloud-*-prom datasource URL>/push`), `GRAFANA_CLOUD_PROMETHEUS_USER_ID` (its basic-auth user) |
-| logs | `GRAFANA_CLOUD_LOKI_URL` (`<the grafanacloud-*-logs datasource URL>/loki/api/v1/push`), `GRAFANA_CLOUD_LOKI_USER_ID`, `FLY_ACCESS_TOKEN` |
+| logs | `GRAFANA_CLOUD_LOKI_URL` (the Loki host alone, `https://logs-prod-NNN.grafana.net`: Vector adds the push path), `GRAFANA_CLOUD_LOKI_USER_ID`, `FLY_ACCESS_TOKEN` |
+
+Grafana Cloud's own datasources point at internal hosts
+(`prometheus-prod-56-prod-us-east-2-local-nlb.internal.grafana.net`) that only
+resolve inside Grafana's network; the public push host is the same name without
+`-local-nlb.internal`.
 
 Rotating `SCHOOLZ_OTLP_TOKEN` means re-staging it here too, or both apps go
 quiet.
