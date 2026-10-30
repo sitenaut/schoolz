@@ -1,21 +1,27 @@
 """DoStuff Media city guides (do215.com for Philadelphia; the same platform runs
 do512, do206, ...).
 
-Day pages (`/events/<category>/YYYY/MM/DD?page=N`) server-render each event
-as schema.org microdata, so plain httpx is enough - no scraper, no login. The
-listing carries title, venue, street address, start instant (with offset) and
-the ticket link, but no description, price or coordinates.
+Day pages (`/events/<category>/YYYY/MM/DD?page=N`) are a SvelteKit app, and
+the data each one renders is served on its own at the same path plus
+`/__data.json`, so plain httpx is enough - no scraper, no login. That JSON
+carries title, venue name, start instant (with offset) and permalink, but no
+description, price, ticket link, street address or coordinates (the venue's
+`location` is null), so events are placed by venue name (`locate.py`).
 
-  * One request per day, paged (25 cards a page). The category is a *path*
-    segment (`live-music-events-philadelphia`): a `?category=music` query is
-    silently ignored and returns the unfiltered day - walks, comedy, museum
-    shows - so a wrong slug has to fail loudly (404), never quietly widen.
-  * A multi-day run ("Through Oct 09") is repeated on every day it spans with
-    its *first* start date. A card whose start isn't on the requested day is
-    skipped, so each event is kept once, on its own day.
-  * Venues have no coordinates; the Philadelphia guide is the whole scope, so
-    there is no radius filter.
-  * Politeness: robots.txt allows /events but disallows search and map views.
+  * The payload is devalue-encoded (`_devalue`): one flat array, every object
+    and list holding indices into it. The rendered HTML is no substitute - its
+    cards print "Tomorrow | 9 pm", and the site dropped its schema.org
+    microdata in a redesign, which is what broke the old HTML adapter.
+  * One request per day, paged (20 events a page, `_meta.has_next`). The
+    category is a *path* segment (`live-music-events-philadelphia`): a
+    `?category=music` query is silently ignored and returns the unfiltered
+    day - walks, comedy, museum shows - so a wrong slug has to fail loudly
+    (404), never quietly widen.
+  * A show that started the night before is listed again on the next day
+    (Built To Spill, Fri 8 pm, on Saturday's page). An event whose start
+    isn't on the requested day is skipped, so each is kept once, on its own day.
+  * The Philadelphia guide is the whole scope, so there is no radius filter.
+  * Politeness: robots.txt allows /events but disallows map views.
     One pass per run, a pause between requests, a page cap per day.
 
 Example job-params entry:
@@ -31,85 +37,103 @@ Example job-params entry:
 from __future__ import annotations
 
 import asyncio
-import re
+import json
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
-from bs4 import BeautifulSoup
 
 from .base import RawEvent, Source
 
 _ET = ZoneInfo("America/New_York")
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
-_EVENT = '[itemtype="http://schema.org/Event"]'
-_BG_URL_RE = re.compile(r"url\(['\"]?([^'\")]+)")
 _PAUSE_SECONDS = 1.0
 DEFAULT_DAYS_AHEAD = 14
 DEFAULT_MAX_PAGES_PER_DAY = 4
 
 
-def _meta(node, prop: str) -> str | None:
-    el = node.select_one(f'meta[itemprop="{prop}"]')
-    return (el.get("content") or "").strip() or None if el else None
+def _devalue(values: list):
+    """The value devalue's flat array encodes. Containers hold indices into
+    the array; a negative index is one of its constants (undefined, NaN, ...),
+    all None here; a list starting with a string is a tagged type (Date, Map,
+    ...), kept as that list since nothing read here uses one."""
+    memo: dict[int, object] = {}
 
-
-def _start(card) -> datetime | None:
-    raw = _meta(card, "startDate")
-    if not raw:
-        return None
-    try:
-        # "2026-10-09T20:30-0400": the offset has no colon, which 3.10's
-        # fromisoformat rejects.
-        return datetime.strptime(raw, "%Y-%m-%dT%H:%M%z")
-    except ValueError:
-        try:
-            return datetime.fromisoformat(raw)
-        except ValueError:
+    def at(i: int):
+        if i < 0:
             return None
+        if i in memo:
+            return memo[i]
+        v = values[i]
+        if isinstance(v, dict):
+            out: dict = {}
+            memo[i] = out
+            out.update((k, at(x)) for k, x in v.items())
+            return out
+        if isinstance(v, list) and not (v and isinstance(v[0], str)):
+            items: list = []
+            memo[i] = items
+            items.extend(at(x) for x in v)
+            return items
+        return v
+
+    return at(0)
 
 
-def parse_day(page_html: str, source: str, base_url: str, day: date, default_categories: list[str] | None = None) -> list[RawEvent]:
-    """Events that start on `day`. Raises ValueError when the page has no
-    event-list markup at all (a redesign), which is not the same as an empty day."""
-    soup = BeautifulSoup(page_html, "html.parser")
-    if not soup.select_one(".ds-listing, .ds-events-group, #ds-content") and not soup.select(_EVENT):
-        raise ValueError("no DoStuff event markup on the page - redesigned?")
+def read_browse(text: str) -> dict:
+    """The page's `browse` data: `data` (events grouped by date) and `_meta`
+    (paging). Raises ValueError when there is none (a redesign or an error
+    page), which is not the same as an empty day."""
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        raise ValueError("DoStuff day data is not JSON - redesigned?") from None
+    for node in (doc.get("nodes") if isinstance(doc, dict) else None) or []:
+        if isinstance(node, dict) and node.get("type") == "data" and isinstance(node.get("data"), list):
+            data = _devalue(node["data"])
+            if isinstance(data, dict) and isinstance(data.get("browse"), dict):
+                return data["browse"]
+    raise ValueError("no DoStuff event data on the page - redesigned?")
+
+
+def has_next(browse: dict) -> bool:
+    return bool((browse.get("_meta") or {}).get("has_next"))
+
+
+def parse_day(browse: dict, source: str, base_url: str, day: date, default_categories: list[str] | None = None) -> list[RawEvent]:
+    """Events that start on `day`, from `read_browse`'s result."""
     out: list[RawEvent] = []
-    for card in soup.select(_EVENT):
-        permalink = card.get("data-permalink")
-        title_el = card.select_one('[itemprop="name"]')
-        start = _start(card)
-        if not permalink or not title_el or not start:
-            continue
-        if start.astimezone(_ET).date() != day:
-            continue
-        venue_el = card.select_one('[itemprop="location"] [itemprop="name"]')
-        street, city = _meta(card, "streetAddress"), _meta(card, "addressLocality")
-        region, zip_code = _meta(card, "addressRegion"), _meta(card, "postalCode")
-        locality = ", ".join(p for p in (city, " ".join(p for p in (region, zip_code) if p)) if p)
-        # Some venues type the whole address into streetAddress already.
-        full = street if street and ((zip_code and zip_code in street) or (city and city.lower() in street.lower())) else None
-        address = full or ", ".join(p for p in (street, locality) if p) or None
-        ticket_el = card.select_one('[itemprop="offers"] meta[itemprop="url"]')
-        cover = card.select_one(".ds-cover-image")
-        image = _BG_URL_RE.search(cover.get("style", "")) if cover else None
-        out.append(
-            RawEvent(
-                source=source,
-                source_event_id=permalink,
-                title=title_el.get_text(" ", strip=True),
-                start_time=start,
-                venue_name=venue_el.get_text(" ", strip=True) if venue_el else None,
-                venue_address=address,
-                # The page's own permalink is a stable landing page for the show;
-                # the ticket link is an affiliate-tagged third-party URL.
-                url=f"{base_url.rstrip('/')}{permalink}",
-                image_url=image.group(1) if image else None,
-                default_categories=list(default_categories or []),
-                raw={"ticket_url": ticket_el.get("content")} if ticket_el else {},
+    for group in browse.get("data") or []:
+        for ev in (group or {}).get("events") or []:
+            if not isinstance(ev, dict) or ev.get("type") != "event":
+                continue
+            permalink, title = ev.get("permalink"), (ev.get("title") or "").strip()
+            try:
+                start = datetime.fromisoformat(ev.get("tz_adjusted_begin_time") or "")
+            except ValueError:
+                continue
+            if not permalink or not title or start.tzinfo is None or start.astimezone(_ET).date() != day:
+                continue
+            try:
+                end = datetime.fromisoformat(ev["tz_adjusted_end_time"]) if ev.get("tz_adjusted_end_time") else None
+            except ValueError:
+                end = None
+            venue = ev.get("venue") or {}
+            out.append(
+                RawEvent(
+                    source=source,
+                    source_event_id=permalink,
+                    title=title,
+                    start_time=start,
+                    end_time=end,
+                    venue_name=(venue.get("title") or "").strip() or None,
+                    # The page's own permalink is a stable landing page for the show.
+                    url=f"{base_url.rstrip('/')}{permalink}",
+                    image_url=ev.get("image_url") or None,
+                    default_categories=list(default_categories or []),
+                    raw={"genres": ev["genres"]} if ev.get("genres") else {},
+                )
             )
-        )
     return out
 
 
@@ -136,7 +160,7 @@ class DoStuffSource(Source):
 
     def _url(self, day: date, page: int) -> str:
         query = f"?page={page}" if page > 1 else ""
-        return f"{self.base_url}/events/{self.category_path}/{day:%Y/%m/%d}{query}"
+        return f"{self.base_url}/events/{self.category_path}/{day:%Y/%m/%d}/__data.json{query}"
 
     async def fetch(self) -> list[RawEvent]:
         self.partial_failures = []
@@ -153,11 +177,10 @@ class DoStuffSource(Source):
                         first = False
                         resp = await client.get(self._url(day, page))
                         resp.raise_for_status()
-                        got = parse_day(resp.text, self.name, self.base_url, day, self.default_categories)
-                        for ev in got:
+                        browse = read_browse(resp.text)
+                        for ev in parse_day(browse, self.name, self.base_url, day, self.default_categories):
                             events.setdefault(ev.source_event_id, ev)
-                        # The page marks another one with rel="next".
-                        if 'rel="next"' not in resp.text:
+                        if not has_next(browse):
                             break
                 except (httpx.HTTPError, ValueError) as exc:
                     self.partial_failures.append(f"{day.isoformat()}: {exc}")
