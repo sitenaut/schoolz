@@ -35,6 +35,9 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     id's public iCal feed works with no code, so no JSON scanner was needed.
     A school's `calID` only answers on that school's own host, and its page
     mixes in the district calendar, so read the distinct `calIDref`s.
+    National Park moved here from Finalsite: its old `fs/calendar-manager`
+    `.ics` started returning 404 (the scan's only sign), and its `calID=150454`
+    turned out to be a single Google calendar.
   - **Nutrislice** (`cinnaminson.nutrislice.com`): school slugs come from
     `https://<district>.api.nutrislice.com/menu/api/schools/?format=json`.
     The preschool has no site of its own (New Albany carries a "Pre-K
