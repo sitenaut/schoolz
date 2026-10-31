@@ -126,6 +126,23 @@ def extract(message: dict, kinds: list[str] | tuple[str, ...]) -> list[dict]:
     return [{"kind": kind, "url": url} for url, kind in out.items()]
 
 
+def _is_tracking(url: str) -> bool:
+    """A click-tracking redirect or short link of the kinds `canonical`
+    refuses (module docstring): counted, so a scan that keeps nothing can say
+    the mail held only these, but never followed or kept."""
+    try:
+        parts = urlsplit(unwrap_redirect(url.strip()) or "")
+    except ValueError:
+        return False
+    host = (parts.hostname or "").lower()
+    return host in ("out.smore.com", "eepurl.com") or (host.endswith(".list-manage.com") and parts.path.startswith("/track/"))
+
+
+def tracking_link_count(message: dict) -> int:
+    """How many distinct click-tracking links a Gmail message held."""
+    return len({c for c in _candidates(message.get("payload") or {}) if _is_tracking(c)})
+
+
 def same_newsletter_urls(kind: str, url: str) -> list[str]:
     """Stored URLs that are the same newsletter as `url`: a Smore issue is
     one code on any of its three hosts (and older rows kept a `?ref=`)."""

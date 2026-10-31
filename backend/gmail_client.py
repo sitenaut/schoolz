@@ -54,10 +54,11 @@ async def get_gmail_service(db: AsyncSession, token: GmailToken):
     return await anyio.to_thread.run_sync(_refresh_and_build)
 
 
-def fetch_all_messages_sync(service, query: str, skip_ids: set[str], max_results: int = 500) -> list[dict]:
-    """Lists + fetches full message payloads matching `query`, skipping any
-    id already in `skip_ids`. Deliberately synchronous/single-threaded -
-    listing and fetching must share the same httplib2 connection."""
+def fetch_all_messages_sync(service, query: str, skip_ids: set[str], max_results: int = 500) -> tuple[int, list[dict]]:
+    """(how many messages matched `query`, the full payloads of those not in
+    `skip_ids`). Deliberately synchronous/single-threaded - listing and
+    fetching must share the same httplib2 connection."""
+    matched = 0
     messages = []
     page_token = None
     while True:
@@ -68,6 +69,7 @@ def fetch_all_messages_sync(service, query: str, skip_ids: set[str], max_results
             .execute()
         )
         for item in resp.get("messages", []):
+            matched += 1
             if item["id"] in skip_ids:
                 continue
             full = service.users().messages().get(userId="me", id=item["id"], format="full").execute()
@@ -75,4 +77,4 @@ def fetch_all_messages_sync(service, query: str, skip_ids: set[str], max_results
         page_token = resp.get("nextPageToken")
         if not page_token:
             break
-    return messages
+    return matched, messages

@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,8 @@ class ProcessorResult:
     artifact_kind: str | None = None
     artifact_id: str | None = None
     note: str | None = None
+    # Tallies summed into the scanner's last-run accounting (services/email_scanner.py).
+    counts: dict[str, int] = field(default_factory=dict)
 
 
 ProcessorFn = Callable[[AsyncSession, EmailScanner, EmailScannerMatch, dict], Awaitable[ProcessorResult]]

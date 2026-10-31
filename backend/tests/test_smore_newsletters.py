@@ -180,6 +180,69 @@ async def test_a_school_with_an_unknown_district_is_a_422_and_empty_clears():
 
 
 @pytest.mark.anyio
+async def test_run_once_on_an_unscheduled_newsletter_creates_its_scan_and_starts_it(monkeypatch):
+    # The edit form hides Enabled while Run once is on, so the save arrived
+    # as enabled=false, run_once=true and created no job at all.
+    from models import SmoreNewsletter
+    from scheduler import runner
+
+    started: list[str] = []
+
+    async def _run_job_now(job_id):
+        started.append(job_id)
+
+    monkeypatch.setattr(runner, "run_job_now", _run_job_now)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        school = (await client.post("/schools", json={"name": f"Test Elementary {uuid.uuid4().hex[:6]}"}, headers=admin)).json()
+        async with database.SessionLocal() as db:
+            # What an email scanner with no school leaves: no school, no job.
+            found = SmoreNewsletter(url=f"https://app.smore.com/n/{uuid.uuid4().hex[:8]}")
+            db.add(found)
+            await db.commit()
+
+        form = {"school_id": school["id"], "district_id": None, "cron_expr": "0 8 * * 1", "timezone": "America/New_York"}
+        saved = await client.patch(f"/smore-newsletters/{found.id}", json={**form, "enabled": False, "run_once": True}, headers=admin)
+        assert saved.status_code == 200, saved.text
+        job = saved.json()["scheduled_job"]
+        assert job["run_once"] and job["enabled"] and "stop_after" not in job["params"]
+        assert started == [job["id"]]
+
+        # Saving it again (a new label) is not a reason to scan again.
+        again = await client.patch(f"/smore-newsletters/{found.id}", json={**form, "label": "Weekly", "enabled": True, "run_once": True}, headers=admin)
+        assert again.status_code == 200 and started == [job["id"]]
+
+
+@pytest.mark.anyio
+async def test_switching_on_an_issue_an_email_brought_gives_its_scan_the_scanners_stop_date():
+    from datetime import UTC, datetime, timedelta
+
+    from models import EmailScanner, SchoolEmailMessage, SmoreNewsletter
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        admin = await _admin_headers(client)
+        me = (await client.get("/auth/me", headers=admin)).json()["id"]
+        code = uuid.uuid4().hex[:8]
+        async with database.SessionLocal() as db:
+            scanner = EmailScanner(owner_user_id=me, google_email="inbox@example.com", name="PTA", purpose="school_email")
+            found = SmoreNewsletter(url=f"https://app.smore.com/n/{code}")
+            # Added by hand once; its scan was later deleted.
+            by_hand = SmoreNewsletter(url=f"https://app.smore.com/n/hand{code}")
+            db.add_all([scanner, found, by_hand])
+            await db.flush()
+            # The email brought the issue on another of Smore's hosts.
+            db.add(SchoolEmailMessage(owner_user_id=me, scanner_id=scanner.id, gmail_message_id=code,
+                                      newsletter_links=[{"kind": "smore", "url": f"https://www.smore.com/n/{code}", "newsletter_id": found.id}]))
+            await db.commit()
+
+        on = {"enabled": True, "run_once": False}
+        found_job = (await client.patch(f"/smore-newsletters/{found.id}", json=on, headers=admin)).json()["scheduled_job"]
+        hand_job = (await client.patch(f"/smore-newsletters/{by_hand.id}", json=on, headers=admin)).json()["scheduled_job"]
+    assert found_job["params"]["stop_after"] == (datetime.now(UTC).date() + timedelta(days=28)).isoformat()
+    assert found_job["enabled"] and "stop_after" not in hand_job["params"]
+
+
+@pytest.mark.anyio
 async def test_public_reads_show_a_scan_jobs_status_but_not_its_error_text():
     from models import ScheduledJob
 

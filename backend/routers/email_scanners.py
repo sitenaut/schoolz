@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_permission
 from database import get_db
-from models import EmailScanner, GmailToken, ScheduledJob, User
+from models import EmailScanner, EmailScannerMatch, GmailToken, ScheduledJob, School, User
 from scheduler.cron import cron_problem
 from scheduler.registry import registry as job_registry
 from schemas import EmailScannerCreate, EmailScannerOut, EmailScannerUpdate, LinkKindOut, ScheduledJobOut
@@ -38,7 +38,25 @@ async def _require_own_scanner(db: AsyncSession, user: User, scanner_id: str) ->
     return scanner
 
 
-async def _to_out(db: AsyncSession, scanner: EmailScanner) -> EmailScannerOut:
+async def _totals(db: AsyncSession, scanner_ids: list[str]) -> dict[str, dict[str, int]]:
+    """Every email each scanner has read, by what came of it (its
+    EmailScannerMatch ledger): "ok" held newsletter links, "skipped" held
+    none, "error" failed."""
+    totals: dict[str, dict[str, int]] = {sid: {} for sid in scanner_ids}
+    if scanner_ids:
+        rows = await db.execute(
+            select(EmailScannerMatch.scanner_id, EmailScannerMatch.processor_status, func.count())
+            .where(EmailScannerMatch.scanner_id.in_(scanner_ids))
+            .group_by(EmailScannerMatch.scanner_id, EmailScannerMatch.processor_status)
+        )
+        for scanner_id, status_, count in rows.all():
+            totals[scanner_id][status_] = count
+    return totals
+
+
+async def _to_out(db: AsyncSession, scanner: EmailScanner, totals: dict[str, int] | None = None) -> EmailScannerOut:
+    if totals is None:
+        totals = (await _totals(db, [scanner.id]))[scanner.id]
     job = None
     if scanner.scheduled_job_id:
         result = await db.execute(select(ScheduledJob).where(ScheduledJob.id == scanner.scheduled_job_id))
@@ -60,6 +78,8 @@ async def _to_out(db: AsyncSession, scanner: EmailScanner) -> EmailScannerOut:
         enabled=scanner.enabled,
         created_at=scanner.created_at,
         scheduled_job=job,
+        last_run=scanner.last_run,
+        totals=totals,
     )
 
 
@@ -70,8 +90,9 @@ async def link_kinds(_: User = Depends(require_permission("email.view"))):
 
 @router.get("", response_model=list[EmailScannerOut])
 async def list_scanners(user: User = Depends(require_permission("email.view")), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(EmailScanner).where(EmailScanner.owner_user_id == user.id))
-    return [await _to_out(db, s) for s in result.scalars().all()]
+    scanners = (await db.execute(select(EmailScanner).where(EmailScanner.owner_user_id == user.id))).scalars().all()
+    totals = await _totals(db, [s.id for s in scanners])
+    return [await _to_out(db, s, totals[s.id]) for s in scanners]
 
 
 @router.post("", response_model=EmailScannerOut, status_code=status.HTTP_201_CREATED)
@@ -132,10 +153,25 @@ async def update_scanner(
 ):
     scanner = await _require_own_scanner(db, user, scanner_id)
 
-    for field in ("name", "from_contains", "subject_contains", "body_contains", "raw_query", "lookback_days", "school_id"):
+    if payload.google_email is not None and payload.google_email != scanner.google_email:
+        # The owner's inboxes, not the editor's: a scan reads with its
+        # owner's token (services/email_scanner.py:run_scanner).
+        token_result = await db.execute(
+            select(GmailToken).where(GmailToken.user_id == scanner.owner_user_id, GmailToken.google_email == payload.google_email)
+        )
+        if not token_result.scalar_one_or_none():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "That Gmail account isn't connected to the scanner owner's profile")
+        scanner.google_email = payload.google_email
+
+    for field in ("name", "from_contains", "subject_contains", "body_contains", "raw_query", "lookback_days"):
         value = getattr(payload, field)
         if value is not None:
             setattr(scanner, field, value)
+    if "school_id" in payload.model_fields_set:
+        # "" or null clears it: the scanner's links then wait for an admin.
+        if payload.school_id and await db.get(School, payload.school_id) is None:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No school with id {payload.school_id}")
+        scanner.school_id = payload.school_id or None
     if payload.link_kinds is not None:
         scanner.link_kinds = _link_kinds(payload.link_kinds)
 
@@ -171,14 +207,32 @@ async def delete_scanner(scanner_id: str, user: User = Depends(require_permissio
 
 
 @router.post("/{scanner_id}/run-now")
-async def run_scanner_now(scanner_id: str, user: User = Depends(require_permission("email.manage")), db: AsyncSession = Depends(get_db)):
+async def run_scanner_now(
+    scanner_id: str,
+    recheck: bool = False,
+    user: User = Depends(require_permission("email.manage")),
+    db: AsyncSession = Depends(get_db),
+):
+    """`recheck` first forgets the emails that gave nothing (no allowed link,
+    or failed), so this run reads them again: after a filter or link-kind
+    change, or to see the new accounting for mail an older run read. Emails
+    that gave links stay read - their newsletters already exist."""
     scanner = await _require_own_scanner(db, user, scanner_id)
     if not scanner.scheduled_job_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Scanner has no linked scheduled job")
     if "email.scan" not in job_registry:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "email.scan job kind not registered")
 
-    from scheduler.runner import run_job_now
+    from scheduler.runner import has_live_run, run_job_now
 
+    if await has_live_run(db, scanner.scheduled_job_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This scanner is already running")
+    if recheck:
+        await db.execute(
+            delete(EmailScannerMatch).where(
+                EmailScannerMatch.scanner_id == scanner.id, EmailScannerMatch.processor_status.in_(("skipped", "error"))
+            )
+        )
+        await db.commit()
     await run_job_now(scanner.scheduled_job_id)
     return {"status": "started"}

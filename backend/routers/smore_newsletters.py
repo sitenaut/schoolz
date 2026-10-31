@@ -8,6 +8,7 @@ from models import District, ScheduledJob, School, SmoreBlock, SmoreNewsletter, 
 from scheduler.cron import cron_problem, spread_default_smore_cron
 from scheduler.job_names import newsletter_job_name
 from schemas import ScheduledJobOut, SmoreBlockOut, SmoreNewsletterCreate, SmoreNewsletterOut, SmoreNewsletterUpdate
+from services.email_processors.school_email import hand_enabled_stop_after
 
 router = APIRouter(prefix="/smore-newsletters", tags=["smore-newsletters"])
 
@@ -194,45 +195,63 @@ async def update_newsletter(
     if payload.label is not None:
         newsletter.label = payload.label
 
-    if payload.enabled and not newsletter.scheduled_job_id:
+    # Run once promises a scan on save ("Saving with this on runs the scan
+    # immediately"): kept when the save creates the job or switches run once on.
+    run_now = False
+    if (payload.enabled or payload.run_once) and not newsletter.scheduled_job_id:
         # This newsletter was auto-registered (e.g. the school_email
         # processor found a Smore link in an email) but never scheduled -
         # scanning stays opt-in until someone actually asks for it here.
+        # Run once asks too: the form hides Enabled while it is on, so it
+        # arrives with enabled false and used to create nothing.
         cron_expr = payload.cron_expr or "0 8 * * 1"
         timezone = payload.timezone or "America/New_York"
         _validate_cron(cron_expr)
         kind = _JOB_KIND_BY_SOURCE_TYPE[newsletter.source_type]
+        params = {"newsletter_id": newsletter.id}
+        stop_after = None if payload.run_once else await hand_enabled_stop_after(db, newsletter)
+        if stop_after:
+            # An issue link an email brought ends like the scanner's own scans do.
+            params["stop_after"] = stop_after
         job = ScheduledJob(
             owner_user_id=user.id,
             kind=kind,
             name=await newsletter_job_name(db, _JOB_LABEL_BY_SOURCE_TYPE[newsletter.source_type], newsletter, user.id, kind),
             cron_expr=spread_default_smore_cron(cron_expr, newsletter.id),
             timezone=timezone,
-            params={"newsletter_id": newsletter.id},
+            params=params,
             enabled=True,
             run_once=payload.run_once or False,
         )
         db.add(job)
         await db.flush()
         newsletter.scheduled_job_id = job.id
-    elif payload.enabled is not None and newsletter.scheduled_job_id:
+        run_now = bool(payload.run_once)
+    elif newsletter.scheduled_job_id and (payload.enabled is not None or payload.run_once is not None):
         job = (await db.execute(select(ScheduledJob).where(ScheduledJob.id == newsletter.scheduled_job_id))).scalar_one_or_none()
         if job:
-            job.enabled = payload.enabled
-            if payload.cron_expr:
-                _validate_cron(payload.cron_expr)
-                job.cron_expr = payload.cron_expr
-            if payload.timezone:
-                job.timezone = payload.timezone
+            if payload.enabled is not None:
+                job.enabled = payload.enabled
+                if payload.cron_expr:
+                    _validate_cron(payload.cron_expr)
+                    job.cron_expr = payload.cron_expr
+                if payload.timezone:
+                    job.timezone = payload.timezone
             if payload.run_once is not None:
+                run_now = payload.run_once and not job.run_once
                 job.run_once = payload.run_once
-    elif payload.run_once is not None and newsletter.scheduled_job_id:
-        job = (await db.execute(select(ScheduledJob).where(ScheduledJob.id == newsletter.scheduled_job_id))).scalar_one_or_none()
-        if job:
-            job.run_once = payload.run_once
+                if run_now:
+                    job.enabled = True
 
     await db.commit()
     await db.refresh(newsletter)
+
+    if run_now:
+        from scheduler.runner import has_live_run, run_job_now
+
+        if not await has_live_run(db, newsletter.scheduled_job_id):
+            await run_job_now(newsletter.scheduled_job_id)
+
     return await _to_out(db, newsletter)
 
 

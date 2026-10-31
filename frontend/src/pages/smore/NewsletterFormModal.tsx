@@ -105,8 +105,16 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
         {error && <div className="form-error">{error}</div>}
 
         <div className="fgrid two">
-          <Field label="Smore URL" className="span2" hint="The newsletter's own page - not an author profile page (those list many issues; find the current one's own /n/ URL).">
-            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://app.smore.com/n/..." required />
+          <Field
+            label="Smore URL"
+            className="span2"
+            hint={
+              editing
+                ? "Can't be changed here - add a new issue's URL as its own newsletter."
+                : "The newsletter's own page - not an author profile page (those list many issues; find the current one's own /n/ URL)."
+            }
+          >
+            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://app.smore.com/n/..." required readOnly={editing} />
           </Field>
 
           <Field label="Label" hint="Optional - shown instead of the raw URL.">
@@ -171,7 +179,7 @@ export function NewsletterFormModal({ open, onClose, onSaved, targets, newslette
             <small>
               Scan this URL a single time, then turn scanning off - for a newsletter that publishes a brand new URL
               every issue (Beck, Cooper, Clara Barton, and most others turn out to work this way) rather than
-              updating one stable page. {editing ? "Saving" : "Adding"} with this on runs the scan immediately.
+              updating one stable page. {editing ? "Switching this on and saving" : "Adding with this on"} runs the scan immediately.
             </small>
           </div>
           <Switch checked={runOnce} onChange={setRunOnce} label="Run once" />

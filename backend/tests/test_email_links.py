@@ -139,7 +139,9 @@ def inbox(monkeypatch):
         return object()
 
     monkeypatch.setattr(email_scanner, "get_gmail_service", _service)
-    monkeypatch.setattr(email_scanner, "fetch_all_messages_sync", lambda service, query, skip: [m for m in box.messages if m["id"] not in skip])
+    monkeypatch.setattr(
+        email_scanner, "fetch_all_messages_sync", lambda service, query, skip: (len(box.messages), [m for m in box.messages if m["id"] not in skip])
+    )
     return box
 
 
@@ -154,7 +156,7 @@ async def test_a_scan_keeps_the_links_and_nothing_else_of_the_message(inbox):
     async with database.SessionLocal() as db:
         scanner = await db.get(EmailScanner, scanner.id)
         summary = await email_scanner.run_scanner(db, scanner)
-    assert "1 processed ok" in summary
+    assert "2 new - 1 with newsletter links, 1 without" in summary
 
     async with database.SessionLocal() as db:
         matches = (await db.execute(select(EmailScannerMatch).where(EmailScannerMatch.scanner_id == scanner.id))).scalars().all()
@@ -212,7 +214,7 @@ async def test_a_message_that_fails_on_a_db_error_does_not_stop_the_scan_there(i
 
     async with database.SessionLocal() as db:
         summary = await email_scanner.run_scanner(db, await db.get(EmailScanner, scanner.id))
-    assert "1 processed ok" in summary
+    assert "1 with newsletter links, 0 without, 1 failed" in summary
     async with database.SessionLocal() as db:
         matches = {m.message_id: m for m in (await db.execute(select(EmailScannerMatch).where(EmailScannerMatch.scanner_id == scanner.id))).scalars()}
         assert (matches[first["id"]].processor_status, matches[first["id"]].processor_error) == ("error", "IntegrityError")
@@ -221,7 +223,125 @@ async def test_a_message_that_fails_on_a_db_error_does_not_stop_the_scan_there(i
         assert f"https://app.smore.com/n/{fine}" in urls and f"https://app.smore.com/n/{taken}" not in urls
 
 
+# ---- what a run reports ---------------------------------------------------------------------
+
+
+def test_click_tracking_links_are_counted_but_never_kept():
+    msg = _message(
+        plain="https://out.smore.com/e/abc123/xyz http://eepurl.com/hXyZ1",
+        html='<a href="https://pta.us7.list-manage.com/track/click?u=1&amp;id=2&amp;e=3">a</a>'
+        '<a href="https://pta.us7.list-manage.com/track/click?u=1&amp;id=2&amp;e=3">the same one</a>'
+        '<a href="https://example.com/page">not a tracker</a>',
+    )
+    assert email_links.extract(msg, ["smore", "mailchimp"]) == []
+    assert email_links.tracking_link_count(msg) == 3
+
+
+async def test_a_run_records_what_it_found_by_count_and_nothing_of_the_mail(inbox):
+    # A first prod run said only "scanned 100 new message(s), 0 processed ok":
+    # no telling a filter that fits the wrong mail from links a scan refuses.
+    owner_id, _ = await _owner_and_school()
+    scanner = await _scanner(owner_id, None, ["smore"])
+    code = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        db.add(SmoreNewsletter(url=f"https://app.smore.com/n/old{code}"))
+        await db.commit()
+    inbox.messages = [
+        _message(plain=f"https://app.smore.com/n/{code} https://www.smore.com/n/old{code}"),
+        _message(plain=f"{PRIVATE} https://out.smore.com/e/abc/xyz"),
+        _message(plain=PRIVATE),
+    ]
+    async with database.SessionLocal() as db:
+        summary = await email_scanner.run_scanner(db, await db.get(EmailScanner, scanner.id))
+        run = (await db.get(EmailScanner, scanner.id)).last_run
+    assert run["query"].startswith("after:") and PRIVATE not in str(run)
+    assert {k: v for k, v in run.items() if k not in ("at", "query")} == {
+        "matched": 3,
+        "new": 3,
+        "with_links": 1,
+        "without_links": 2,
+        "errors": 0,
+        "links": 2,
+        "new_newsletters": 1,
+        "waiting": 1,
+        "already_tracked": 1,
+        "tracking_links": 1,
+    }
+    assert summary.endswith(
+        "3 email(s) matched, 3 new - 1 with newsletter links, 2 without; 2 link(s): 1 new newsletter(s) "
+        "(1 waiting for an admin to assign), 1 already tracked; 1 click-tracking link(s) skipped, never followed"
+    )
+
+    # The same mail again: matched, but nothing new to read.
+    async with database.SessionLocal() as db:
+        summary = await email_scanner.run_scanner(db, await db.get(EmailScanner, scanner.id))
+    assert summary.endswith(": 3 email(s) matched, 0 new")
+
+    # A search that matches nothing at all is a warning, not a success.
+    inbox.messages = []
+    async with database.SessionLocal() as db:
+        summary = await email_scanner.run_scanner(db, await db.get(EmailScanner, scanner.id))
+        assert (await db.get(EmailScanner, scanner.id)).last_run["matched"] == 0
+    assert summary.startswith("WARNING[email_no_matches]: no email matched the search 'after:")
+
+
 # ---- the API --------------------------------------------------------------------------------
+
+
+async def _registered_admin(client: AsyncClient) -> tuple[dict[str, str], str]:
+    tag = uuid.uuid4().hex[:8]
+    res = await client.post("/auth/register", json={"email": f"a_{tag}@example.com", "username": f"a_{tag}", "password": "password123"})
+    headers = {"Authorization": f"Bearer {res.json()['access_token']}"}
+    me = (await client.get("/auth/me", headers=headers)).json()
+    async with database.SessionLocal() as db:
+        await db.execute(update(User).where(User.id == me["id"]).values(is_admin=True))
+        await db.commit()
+    return headers, me["id"]
+
+
+async def test_a_scanner_moves_to_another_connected_inbox_and_rechecks_what_gave_nothing(monkeypatch):
+    from scheduler import runner
+
+    started: list[str] = []
+
+    async def _run_job_now(job_id):
+        started.append(job_id)
+
+    monkeypatch.setattr(runner, "run_job_now", _run_job_now)
+    _, school_id = await _owner_and_school()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers, me = await _registered_admin(client)
+        async with database.SessionLocal() as db:
+            for address in ("inbox@example.com", "second@example.com"):
+                db.add(GmailToken(user_id=me, google_email=address, access_token="a", refresh_token="r", token_expiry=datetime.now(UTC)))
+            await db.commit()
+        created = await client.post("/email-scanners", json={"google_email": "inbox@example.com", "name": "PTA", "school_id": school_id}, headers=headers)
+        assert created.status_code == 201, created.text
+        sid, job_id = created.json()["id"], created.json()["scheduled_job"]["id"]
+
+        moved = await client.patch(f"/email-scanners/{sid}", json={"google_email": "second@example.com"}, headers=headers)
+        assert moved.status_code == 200, moved.text
+        assert (moved.json()["google_email"], moved.json()["school_id"]) == ("second@example.com", school_id)
+        # Only an inbox the scanner's owner has connected.
+        assert (await client.patch(f"/email-scanners/{sid}", json={"google_email": "elsewhere@example.com"}, headers=headers)).status_code == 400
+        assert (await client.patch(f"/email-scanners/{sid}", json={"school_id": "no-such-school"}, headers=headers)).status_code == 422
+        # What the edit form sends for "No school": null clears it.
+        cleared = await client.patch(f"/email-scanners/{sid}", json={"school_id": None}, headers=headers)
+        assert (cleared.json()["school_id"], cleared.json()["google_email"]) == (None, "second@example.com")
+
+        async with database.SessionLocal() as db:
+            db.add_all(
+                [EmailScannerMatch(scanner_id=sid, message_id=f"m{n}", processor_status=s) for n, s in enumerate(["ok", "skipped", "skipped", "error"])]
+            )
+            await db.commit()
+        listed = next(s for s in (await client.get("/email-scanners", headers=headers)).json() if s["id"] == sid)
+        assert listed["totals"] == {"ok": 1, "skipped": 2, "error": 1} and listed["last_run"] is None
+
+        # Re-checking forgets only the mail that gave nothing; links already found stay read.
+        assert (await client.post(f"/email-scanners/{sid}/run-now?recheck=true", headers=headers)).status_code == 200
+        assert started == [job_id]
+        listed = next(s for s in (await client.get("/email-scanners", headers=headers)).json() if s["id"] == sid)
+        assert listed["totals"] == {"ok": 1}
 
 
 async def test_scanner_link_kinds_come_only_from_the_catalog_and_no_message_text_is_served():

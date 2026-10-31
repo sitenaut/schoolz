@@ -545,6 +545,9 @@ class EmailScanner(Base):
     # Which kinds of newsletter link it keeps (services/email_links.py
     # LINK_KINDS). Links are all a scan keeps from a message (migration 0117).
     link_kinds: Mapped[list[str]] = mapped_column(JSON, default=lambda: ["smore"], server_default='["smore"]', nullable=False)
+    # The latest run's accounting (services/email_scanner.py:run_scanner):
+    # the Gmail search it ran and counts. Never anything from a message.
+    last_run: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 

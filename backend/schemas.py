@@ -202,6 +202,8 @@ class EmailScannerCreate(BaseModel):
 
 
 class EmailScannerUpdate(BaseModel):
+    # Which of the owner's connected inboxes it reads.
+    google_email: str | None = None
     name: str | None = None
     from_contains: list[str] | None = None
     subject_contains: list[str] | None = None
@@ -310,6 +312,10 @@ class EmailScannerOut(BaseModel):
     enabled: bool
     created_at: datetime
     scheduled_job: ScheduledJobOut | None = None
+    # The latest run's search and counts (EmailScanner.last_run).
+    last_run: dict | None = None
+    # Every email it has read, by outcome: {"ok"|"skipped"|"error": count}.
+    totals: dict[str, int] = Field(default_factory=dict)
 
 
 class LinkKindOut(BaseModel):
