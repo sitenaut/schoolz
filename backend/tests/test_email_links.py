@@ -76,9 +76,12 @@ def _message(plain: str = "", html: str = "", msg_id: str | None = None) -> dict
             "https://nam12.safelinks.protection.outlook.com/?url=https%3A%2F%2Fmailchi.mp%2Fpta%2Fnews%3Fe%3Dabc&data=x",
             ("mailchimp", "https://mailchi.mp/pta/news"),
         ),
+        # Smore's "View in browser" names the issue in its path (a real BHES email); never followed.
+        ("https://out.smore.com/render/qf2pn/byOgAZ?__$u__", ("smore", "https://app.smore.com/n/qf2pn")),
         # Never: tracking redirects, short links, profiles, images, archive indexes, look-alikes.
         ("https://pta.us7.list-manage.com/track/click?u=a01075c7524a&id=3a64dffcca&e=5f3a9c0d21", None),
         ("https://out.smore.com/e/abc123/xyz", None),
+        ("https://out.smore.com/render/", None),
         ("http://eepurl.com/hXyZ1", None),
         ("https://www.smore.com/u/principal-jones", None),
         ("https://cdn.smore.com/u/ab/12345.jpg", None),
@@ -174,15 +177,20 @@ async def test_a_scan_keeps_the_links_and_nothing_else_of_the_message(inbox):
         assert (await db.get(ScheduledJob, smore.scheduled_job_id)).kind == "smore.scan"
         assert (await db.get(ScheduledJob, mc.scheduled_job_id)).kind == "mailchimp.scan"
 
-    # The same issue again - on another host, as an older ?ref= row - adds nothing.
+    # The same issue again - on another host, as an older ?ref= row, as a row
+    # with the issue's name after its code - adds nothing.
     async with database.SessionLocal() as db:
         db.add(SmoreNewsletter(url=f"https://www.smore.com/n/{code}2?ref=email"))
+        db.add(SmoreNewsletter(url=f"https://app.smore.com/n/{code}3-bret-harte-elementary-school"))
         await db.commit()
-    inbox.messages = [_message(plain=f"https://secure.smore.com/n/{code} https://app.smore.com/n/{code}2")]
+    inbox.messages = [
+        _message(plain=f"https://secure.smore.com/n/{code} https://app.smore.com/n/{code}2"),
+        _message(html=f'<a href="https://out.smore.com/render/{code}3/byOgAZ?__$u__">View in browser</a>'),
+    ]
     async with database.SessionLocal() as db:
         await email_scanner.run_scanner(db, await db.get(EmailScanner, scanner.id))
         rows = (await db.execute(select(SmoreNewsletter).where(SmoreNewsletter.url.like(f"%/n/{code}%")))).scalars().all()
-        assert len(rows) == 2
+        assert len(rows) == 3
 
 
 async def test_a_processor_error_never_quotes_the_message(inbox, monkeypatch):
@@ -235,6 +243,14 @@ def test_click_tracking_links_are_counted_but_never_kept():
     )
     assert email_links.extract(msg, ["smore", "mailchimp"]) == []
     assert email_links.tracking_link_count(msg) == 3
+
+
+def test_a_smore_email_whose_every_link_is_tracked_still_yields_its_issue():
+    # Real case: 101 Cherry Hill emails, 380 out.smore.com links, nothing kept.
+    msg = _message(html='<a href="https://out.smore.com/render/qf2pn/byOgAZ?__$u__">View in browser</a>'
+                        '<a href="https://out.smore.com/e/qf2pn/aB3dE">Sign up</a>')
+    assert email_links.extract(msg, ["smore"]) == [{"kind": "smore", "url": "https://app.smore.com/n/qf2pn"}]
+    assert email_links.tracking_link_count(msg) == 1
 
 
 async def test_a_run_records_what_it_found_by_count_and_nothing_of_the_mail(inbox):

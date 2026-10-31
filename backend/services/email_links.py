@@ -14,8 +14,12 @@ query strings go, because a newsletter's "view in browser" link carries the
 recipient's subscriber id (`?e=...`). Click-tracking redirects
 (`list-manage.com/track/click`, `out.smore.com`) and short links are never
 matched at all - their destination is unknown without following them, and
-following one tells the sender this recipient clicked. Images and
-attachments never match: only these page addresses do.
+following one tells the sender this recipient clicked. The one exception is
+Smore's "View in browser" link, `out.smore.com/render/<code>/<token>`: the
+issue's code is in the path itself, so it becomes `app.smore.com/n/<code>`
+without being followed (Smore now sends every link through out.smore.com,
+so this is the only form of an issue's address its emails carry). Images
+and attachments never match: only these page addresses do.
 """
 from __future__ import annotations
 
@@ -46,6 +50,11 @@ LINK_KINDS: dict[str, LinkKind] = {
 # scanned issues have used). Author profiles (/u/) and image hosts don't match.
 _SMORE_RE = re.compile(r"^(app|www|secure)\.smore\.com$", re.IGNORECASE)
 _SMORE_PATH_RE = re.compile(r"^/n/([A-Za-z0-9-]+)/?$")
+# "View in browser": out.smore.com/render/qf2pn/byOgAZ?__$u__ is issue qf2pn
+# (app.smore.com/n/qf2pn, checked against a real BHES email). The token
+# after the code and the query are dropped; the link is never followed.
+_SMORE_TRACKER_HOST = "out.smore.com"
+_SMORE_RENDER_PATH_RE = re.compile(r"^/render/([A-Za-z0-9]+)(?:/|$)")
 # Mailchimp's two public homes for a sent campaign:
 #   https://mailchi.mp/<account>/<campaign-slug>
 #   https://us7.campaign-archive.com/?u=<account>&id=<campaign>
@@ -72,6 +81,9 @@ def canonical(url: str) -> tuple[str, str] | None:
     if _SMORE_RE.match(host):
         m = _SMORE_PATH_RE.match(parts.path)
         return ("smore", f"https://{host}/n/{m.group(1)}") if m else None
+    if host == _SMORE_TRACKER_HOST:
+        m = _SMORE_RENDER_PATH_RE.match(parts.path)
+        return ("smore", f"https://app.smore.com/n/{m.group(1)}") if m else None
     if host == _MAILCHIMP_SHORT_HOST:
         if not _MAILCHIMP_SHORT_PATH_RE.match(parts.path):
             return None
@@ -139,14 +151,17 @@ def _is_tracking(url: str) -> bool:
 
 
 def tracking_link_count(message: dict) -> int:
-    """How many distinct click-tracking links a Gmail message held."""
-    return len({c for c in _candidates(message.get("payload") or {}) if _is_tracking(c)})
+    """How many distinct click-tracking links a Gmail message held (a Smore
+    "View in browser" link is kept, so it isn't one)."""
+    return len({c for c in _candidates(message.get("payload") or {}) if _is_tracking(c) and canonical(c) is None})
 
 
 def same_newsletter_urls(kind: str, url: str) -> list[str]:
     """Stored URLs that are the same newsletter as `url`: a Smore issue is
-    one code on any of its three hosts (and older rows kept a `?ref=`)."""
+    one code on any of its three hosts. Stored rows may also carry the
+    issue's name after the code (`/n/qf2pn-bret-harte-elementary-school`) or
+    an older `?ref=`, so match these as prefixes followed by "-" or "?"."""
     if kind == "smore":
-        code = url.rsplit("/n/", 1)[1]
+        code = url.rsplit("/n/", 1)[1].split("-", 1)[0]
         return [f"https://{host}.smore.com/n/{code}" for host in ("app", "www", "secure")]
     return [url]
