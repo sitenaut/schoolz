@@ -1,6 +1,7 @@
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import or_, select
+from sqlalchemy import cast, or_, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import EmailScanner, EmailScannerMatch, ScheduledJob, SchoolEmailMessage, SmoreNewsletter
@@ -29,9 +30,28 @@ async def _known(db: AsyncSession, kind: str, url: str) -> SmoreNewsletter | Non
     return (await db.execute(select(SmoreNewsletter).where(clause).limit(1))).scalar_one_or_none()
 
 
-def _stop_after(source_type: str, match: EmailScannerMatch) -> str:
-    seen = (match.received_at or datetime.now(UTC)).date()
+def _stop_after(source_type: str, seen_at: datetime | None) -> str:
+    seen = (seen_at or datetime.now(UTC)).date()
     return (seen + timedelta(days=_ISSUE_DAYS[source_type])).isoformat()
+
+
+async def hand_enabled_stop_after(db: AsyncSession, newsletter: SmoreNewsletter) -> str | None:
+    """The stop date for a scan an admin switches on by hand for an issue
+    link an email brought (one left unassigned): the window this processor
+    gives its own scans, counted from today, since a window counted from the
+    email may already be over and the scan would end before its first fetch.
+    None for anything else - a newsletter added by hand runs until someone
+    turns it off, even one whose scan was deleted and is now re-enabled."""
+    if newsletter.source_type not in _ISSUE_DAYS:
+        return None
+    hit = email_links.canonical(newsletter.url)
+    if hit is None:
+        return None
+    links = cast(SchoolEmailMessage.newsletter_links, JSONB)
+    brought = select(SchoolEmailMessage.id).where(or_(*(links.contains([{"url": u}]) for u in email_links.same_newsletter_urls(*hit))))
+    if (await db.execute(brought.limit(1))).first() is None:
+        return None
+    return _stop_after(newsletter.source_type, None)
 
 
 async def _renew(db: AsyncSession, newsletter: SmoreNewsletter, stop_after: str) -> None:
@@ -56,14 +76,17 @@ async def _process(
     subject) it is attributed to that school and its scan scheduled at
     once. An undedicated scanner's link waits, unlinked, for an admin."""
     links = email_links.extract(message, scanner.link_kinds or [])
+    counts = {"tracking_links": email_links.tracking_link_count(message)}
     if not links:
-        return ProcessorResult(status="skipped", note="no newsletter links")
+        return ProcessorResult(status="skipped", note="no newsletter links", counts=counts)
 
+    counts.update(links=len(links), already_tracked=0, new_newsletters=0, waiting=0)
     for link in links:
         source_type = email_links.LINK_KINDS[link["kind"]].source_type
         known = await _known(db, link["kind"], link["url"])
         if known is not None:
-            await _renew(db, known, _stop_after(known.source_type if known.source_type in _ISSUE_DAYS else source_type, match))
+            counts["already_tracked"] += 1
+            await _renew(db, known, _stop_after(known.source_type if known.source_type in _ISSUE_DAYS else source_type, match.received_at))
             continue
         newsletter = SmoreNewsletter(
             url=link["url"], source_type=source_type, created_by_user_id=scanner.owner_user_id, school_id=scanner.school_id
@@ -71,7 +94,10 @@ async def _process(
         db.add(newsletter)
         await db.flush()
         link["newsletter_id"] = newsletter.id
-        if scanner.school_id:
+        counts["new_newsletters"] += 1
+        if not scanner.school_id:
+            counts["waiting"] += 1
+        else:
             kind, label = _JOB[source_type]
             job = ScheduledJob(
                 owner_user_id=scanner.owner_user_id,
@@ -79,7 +105,7 @@ async def _process(
                 name=await newsletter_job_name(db, label, newsletter, scanner.owner_user_id, kind),
                 cron_expr=spread_default_smore_cron(_DEFAULT_SMORE_CRON, newsletter.id),
                 timezone=_DEFAULT_SMORE_TIMEZONE,
-                params={"newsletter_id": newsletter.id, "stop_after": _stop_after(source_type, match)},
+                params={"newsletter_id": newsletter.id, "stop_after": _stop_after(source_type, match.received_at)},
                 enabled=True,
             )
             db.add(job)
@@ -96,5 +122,5 @@ async def _process(
     db.add(record)
     await db.flush()
     return ProcessorResult(
-        status="ok", artifact_kind="school_email_message", artifact_id=record.id, note=f"{len(links)} newsletter link(s)"
+        status="ok", artifact_kind="school_email_message", artifact_id=record.id, note=f"{len(links)} newsletter link(s)", counts=counts
     )

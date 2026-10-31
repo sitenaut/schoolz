@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 import anyio
@@ -64,9 +65,9 @@ async def run_scanner(db: AsyncSession, scanner: EmailScanner) -> str:
     # Off the event loop, like every other Gmail call (gmail_client.py): a
     # year's lookback is hundreds of blocking requests, which froze every
     # other job in the scheduler. One thread, so httplib2 isn't shared.
-    messages = await anyio.to_thread.run_sync(fetch_all_messages_sync, service, query, skip_ids)
+    matched, messages = await anyio.to_thread.run_sync(fetch_all_messages_sync, service, query, skip_ids)
 
-    processed_ok = 0
+    tally: Counter[str] = Counter()
     for message in messages:
         # Only the id and when it arrived: never the sender, subject or
         # Gmail's snippet of the body (services/email_links.py says why).
@@ -88,20 +89,56 @@ async def run_scanner(db: AsyncSession, scanner: EmailScanner) -> str:
             match.processor_status = result.status
             match.artifact_kind = result.artifact_kind
             match.artifact_id = result.artifact_id
-            if result.status == "ok":
-                processed_ok += 1
+            tally[result.status] += 1
+            tally.update(result.counts)
         except Exception as exc:
             match.processor_status = "error"
             # The type only: an exception's message can quote the email.
             match.processor_error = type(exc).__name__
+            tally["error"] += 1
 
         await db.commit()
 
     token.last_synced_at = datetime.now(UTC)
+    scanner.last_run = {
+        "at": datetime.now(UTC).isoformat(),
+        "query": query,
+        "matched": matched,
+        "new": len(messages),
+        "with_links": tally["ok"],
+        "without_links": tally["skipped"],
+        "errors": tally["error"],
+        **{key: tally[key] for key in RUN_COUNTS},
+    }
     await db.commit()
 
-    if processor.finalize and processed_ok:
-        await processor.finalize(db, scanner, processed_ok)
+    if processor.finalize and tally["ok"]:
+        await processor.finalize(db, scanner, tally["ok"])
         await db.commit()
 
-    return f"scanned {len(messages)} new message(s), {processed_ok} processed ok"
+    return describe_run(scanner.last_run)
+
+
+# What a processor tallies per message (ProcessorResult.counts), summed per run.
+RUN_COUNTS = ("links", "new_newsletters", "waiting", "already_tracked", "tracking_links")
+
+
+def describe_run(run: dict) -> str:
+    """The run's accounting as its job-run summary. A search that matched no
+    email at all is a warning, not a success: it is almost always a filter
+    that doesn't fit the mail (scheduler/CLAUDE.md, three-state results)."""
+    if not run["matched"]:
+        return f"WARNING[email_no_matches]: no email matched the search {run['query']!r}"
+    text = f"searched {run['query']!r}: {run['matched']} email(s) matched, {run['new']} new"
+    if run["new"]:
+        text += f" - {run['with_links']} with newsletter links, {run['without_links']} without"
+        if run["errors"]:
+            text += f", {run['errors']} failed"
+    if run["links"]:
+        text += f"; {run['links']} link(s): {run['new_newsletters']} new newsletter(s)"
+        if run["waiting"]:
+            text += f" ({run['waiting']} waiting for an admin to assign)"
+        text += f", {run['already_tracked']} already tracked"
+    if run["tracking_links"]:
+        text += f"; {run['tracking_links']} click-tracking link(s) skipped, never followed"
+    return text
