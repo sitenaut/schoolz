@@ -24,9 +24,11 @@ _ISSUE_DAYS = {"smore": 28, "mailchimp": 14}
 
 
 async def _known(db: AsyncSession, kind: str, url: str) -> SmoreNewsletter | None:
-    # An older row may carry the `?ref=` a Smore email link had.
+    # An older row may carry the `?ref=` a Smore email link had, or the
+    # issue's name after its code (`/n/qf2pn-bret-harte-elementary-school`).
     urls = email_links.same_newsletter_urls(kind, url)
-    clause = or_(*(SmoreNewsletter.url == u for u in urls), *(SmoreNewsletter.url.like(f"{u}?%") for u in urls))
+    suffixes = ("?%", "-%") if kind == "smore" else ("?%",)
+    clause = or_(*(SmoreNewsletter.url == u for u in urls), *(SmoreNewsletter.url.like(f"{u}{s}") for u in urls for s in suffixes))
     return (await db.execute(select(SmoreNewsletter).where(clause).limit(1))).scalar_one_or_none()
 
 
@@ -48,7 +50,8 @@ async def hand_enabled_stop_after(db: AsyncSession, newsletter: SmoreNewsletter)
     if hit is None:
         return None
     links = cast(SchoolEmailMessage.newsletter_links, JSONB)
-    brought = select(SchoolEmailMessage.id).where(or_(*(links.contains([{"url": u}]) for u in email_links.same_newsletter_urls(*hit))))
+    urls = {hit[1], *email_links.same_newsletter_urls(*hit)}
+    brought = select(SchoolEmailMessage.id).where(or_(*(links.contains([{"url": u}]) for u in urls)))
     if (await db.execute(brought.limit(1))).first() is None:
         return None
     return _stop_after(newsletter.source_type, None)
