@@ -91,7 +91,7 @@ describe("BudgetDistrictPage", () => {
     expect(screen.getByText("2024-25").getAttribute("href")).toBe("https://www.nj.gov/a25.pdf#page=93");
     expect(screen.getByText("2021-22: 11.7 → 2024-25: 11.8")).toBeTruthy();
     expect(screen.getByText("Cherry Hill High School East").getAttribute("href")).toBe("/schools/cherry-hill-high-school-east");
-    expect(document.body.getAttribute("data-prerender-ready")).toBe("true");
+    await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
   });
 
   it("shows state aid by category with the limit that held it, preschool aid and the IDEA grant, each with its files", async () => {
@@ -155,7 +155,7 @@ describe("BudgetDistrictPage", () => {
     apiFetch.mockResolvedValue(res(404));
     at("/budgets/nope");
     await screen.findByText("District not found.");
-    expect(document.body.getAttribute("data-prerender-ready")).toBe("true");
+    await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
     cleanup();
     document.body.removeAttribute("data-prerender-ready");
 
