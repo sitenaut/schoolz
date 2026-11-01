@@ -1,5 +1,5 @@
 import { Badge, type Tone } from "./ui/Badge";
-import type { SeasonalAttraction } from "../lib/seasonal";
+import { groupByKind, type SeasonalAttraction } from "../lib/seasonal";
 import { trackEvent } from "../lib/track";
 
 const SCARE: Record<string, { label: string; tone: Tone }> = {
@@ -8,8 +8,13 @@ const SCARE: Record<string, { label: string; tone: Tone }> = {
   scary: { label: "Scary", tone: "bad" },
 };
 
-function shortDate(iso: string): string {
-  return new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+// Races take sign-ups, not tickets.
+const RACE_KINDS = new Set(["turkey_trot", "race"]);
+
+function shortDate(iso: string, withWeekday = false): string {
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  if (withWeekday) opts.weekday = "short";
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", opts);
 }
 
 const todayEt = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -22,17 +27,39 @@ function nextOpen(a: SeasonalAttraction, today: string): string {
 }
 
 function when(a: SeasonalAttraction): string {
-  if (a.open_on_day) return "Open today";
   const today = todayEt();
+  // A one-day event (a race, a parade, a tree lighting) is just its day.
+  if (a.starts_on === a.ends_on) return a.starts_on === today ? "Today" : shortDate(a.starts_on, true);
+  if (a.open_on_day) return "Open today";
   const next = a.open_dates?.find((d) => d > today);
   if (next) return `Next open ${shortDate(next)}`;
   return a.starts_on > today ? `Opens ${shortDate(a.starts_on)}` : `Select nights to ${shortDate(a.ends_on)}`;
 }
 
 /** The places-to-go half of /seasonal/<season>: our own list of haunts,
- * mazes, light shows and Santa visits, soonest open first, each with the
- * venue's own schedule, price and age advice and a link to its site. */
+ * turkey trots, light shows, Santa visits and the like, each with the
+ * venue's own schedule, price and age advice and a link to its site. Once a
+ * season has more than one kind, each kind gets a heading, with the id
+ * `kind-<kind>` the page's jump chips scroll to. */
 export function SeasonalAttractions({ attractions, season }: { attractions: SeasonalAttraction[]; season: string }) {
+  const groups = groupByKind(attractions);
+  if (groups.length < 2) return <AttractionCards attractions={attractions} season={season} />;
+  return (
+    <>
+      {groups.map((g) => (
+        <div key={g.kind}>
+          <h4 id={`kind-${g.kind}`} className="seasonal-kind">
+            {g.label}
+          </h4>
+          <AttractionCards attractions={g.attractions} season={season} />
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** One kind's cards, soonest open first. */
+function AttractionCards({ attractions, season }: { attractions: SeasonalAttraction[]; season: string }) {
   const today = todayEt();
   // Open today first, then by the next night it opens; a venue that only
   // says "select nights" sorts after the ones known to be open that day.
@@ -89,7 +116,7 @@ export function SeasonalAttractions({ attractions, season }: { attractions: Seas
                 rel="noopener"
                 onClick={() => trackEvent("seasonal_attraction_open", { season, attraction_id: a.id })}
               >
-                {a.ticket_url ? "Tickets & info ↗" : "Website ↗"}
+                {a.ticket_url ? (RACE_KINDS.has(a.kind) ? "Register & info ↗" : "Tickets & info ↗") : "Website ↗"}
               </a>
               <a className="btn sm" href={directions} target="_blank" rel="noopener">
                 Directions ↗

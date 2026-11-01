@@ -1881,6 +1881,12 @@ button.link-card:disabled {
   gap: 10px;
   margin-bottom: 22px;
 }
+/* A kind's heading ("Turkey trots") once a season has several; the jump
+   chips scroll here, clear of the sticky header like the sections. */
+.seasonal-kind {
+  margin: 0 0 10px;
+  scroll-margin-top: 72px;
+}
 .seasonal-attraction {
   padding: 14px;
 }
