@@ -89,8 +89,20 @@ async def test_finds_an_unlinked_menu_at_its_upload_path(monkeypatch):
     assert found == [(2026, 10, _OCT_MENU)]
 
 
+def _freeze(monkeypatch, today):
+    class _Frozen(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(today.year, today.month, today.day, 9, tzinfo=tz)
+
+    monkeypatch.setattr(special_events_scan, "datetime", _Frozen)
+
+
 @pytest.mark.anyio
 async def test_scan_stores_the_month_menu_once(monkeypatch):
+    # The scan warns when the current month has no menu, and the fixture is
+    # October's: unfrozen, this started failing on Nov 1.
+    _freeze(monkeypatch, date(2026, 10, 15))
     tag = uuid.uuid4().hex[:8]
     async with database.SessionLocal() as db:
         school = School(name=f"Preschool {tag}", slug=f"preschool-{tag}", special_events_calendar_url="https://x.test/calendars-menu/")

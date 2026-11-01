@@ -1077,10 +1077,12 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
 
     @mcp.tool()
     async def get_seasonal_guides(season: str | None = None) -> Any:
-        """Seasonal guides running right now - e.g. a Halloween house map or
-        a fall-festival roundup (season: "halloween", or omit for every
-        active season). Use for "where can we see Halloween houses /
-        decorations / lights" or "what fall things are there to do".
+        """Seasonal guides running right now - e.g. a Halloween house map, a
+        fall-festival or turkey-trot roundup, a Christmas lights map
+        (season: "halloween", "fall" for November and Thanksgiving,
+        "winter" for Christmas; or omit for every active season). Use for
+        "where can we see Halloween houses / decorations / lights", "what
+        fall things are there to do" or "where are the Christmas lights".
 
         These are links to guides other people publish (title, publisher,
         url, a one-line note) - schoolz doesn't hold their listings, so
@@ -1101,13 +1103,20 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
     ) -> Any:
         """Places open for a season - haunted hayrides and trails, flashlight
         corn mazes, drive-through light shows, Santa visits - that ordinary
-        event listings miss. Use for "any haunted hayrides near Voorhees",
-        "something not too scary for a 7-year-old", "what's open Friday night".
+        event listings miss, plus the season's big one-day events: turkey
+        trots, the Thanksgiving parade, town tree lightings and Christmas
+        parades. Use for "any haunted hayrides near Voorhees", "something not
+        too scary for a 7-year-old", "what's open Friday night", "is there a
+        turkey trot with a kids' run", "where can we see Santa".
 
-        season: "halloween", "fall" or "winter"; omit for any.
-        kind: haunt, hayride, corn_maze, trail, light_show, santa or festival.
+        season: "halloween", "fall" (November: Thanksgiving) or "winter"
+            (Christmas); omit for any.
+        kind: haunt, hayride, corn_maze, trail, turkey_trot, race, parade,
+            farm, light_show, santa, train, market, tree_lighting, ice_rink
+            or festival.
         scare_level: family (not scary), mild, or scary - the venue's own
             description; null in a result means unknown, so say so for kids.
+            Halloween only: other seasons leave it null.
         on_date: YYYY-MM-DD, default today. Results are attractions still
             running then; open_on_day is true/false, or null when the venue
             only says "select nights" - then send people to its site rather

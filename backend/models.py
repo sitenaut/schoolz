@@ -2134,7 +2134,10 @@ class SeasonalGuide(Base):
 class SeasonalAttraction(Base):
     """A place that's open for a season - a haunted hayride, a flashlight
     corn maze, a drive-through light show, Santa at a farm - rather than a
-    one-off event, which is why the local events feeds miss them.
+    one-off event, which is why the local events feeds miss them. Also the
+    season's few big one-day events (turkey trots, the Thanksgiving parade,
+    town tree lightings): the feeds may carry those, but among hundreds of
+    others, and the season's page is where people look for them.
 
     Our own list, built from each venue's official site (or, failing that,
     a dated news item, named in source_url), never copied from an
@@ -2147,7 +2150,10 @@ class SeasonalAttraction(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     # Same season keys as SeasonalGuide - the badge's page lists both.
     season: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
-    # haunt | hayride | corn_maze | trail | light_show | santa | festival
+    # haunt | hayride | corn_maze | trail | turkey_trot | race | parade | farm |
+    # light_show | santa | train | market | tree_lighting | ice_rink | festival.
+    # A one-day event (a turkey trot, a tree lighting) has starts_on = ends_on;
+    # frontend/src/lib/seasonal.ts gives each kind its heading.
     kind: Mapped[str] = mapped_column(String(40), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     venue: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { SeasonalAttractions } from "../components/SeasonalAttractions";
 import { SeoHead } from "../components/SeoHead";
 import { usePrerenderReady } from "../lib/prerenderReady";
-import { seasonLook, useAttractions, useSeasons } from "../lib/seasonal";
+import { groupByKind, seasonLook, useAttractions, useSeasons } from "../lib/seasonal";
 import { trackEvent } from "../lib/track";
 
 /** /seasonal/<season> - where the top-bar season badge lands. Places to go
@@ -17,6 +17,17 @@ export function SeasonalPage() {
   const publishers = [...new Set(guides.map((g) => g.publisher))];
 
   const { attractions, loaded: attractionsLoaded } = useAttractions(season);
+
+  // Jump chips: one per kind once there's more than one (turkey trots,
+  // parades...), else one for all the places; then one for the guides.
+  const groups = groupByKind(attractions);
+  const jumps: { id: string; label: string; count: number }[] =
+    groups.length > 1
+      ? groups.map((g) => ({ id: `kind-${g.kind}`, label: g.label, count: g.attractions.length }))
+      : attractions.length
+        ? [{ id: "places", label: "Places to go", count: attractions.length }]
+        : [];
+  if (guides.length) jumps.push({ id: "guides", label: "Guides", count: guides.length });
 
   usePrerenderReady(loaded && attractionsLoaded);
 
@@ -44,22 +55,19 @@ export function SeasonalPage() {
         </div>
       ) : (
         <>
-          {attractions.length > 0 && guides.length > 0 && (
+          {jumps.length > 1 && (
             <nav className="chips" aria-label="Jump to a section">
-              {[
-                ["places", "Places to go", attractions.length],
-                ["guides", "Guides", guides.length],
-              ].map(([id, label, n]) => (
+              {jumps.map(({ id, label, count }) => (
                 <a
                   key={id}
                   className="chip"
                   href={`#${id}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    document.getElementById(String(id))?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                 >
-                  {label} <span className="chip-count">{n}</span>
+                  {label} <span className="chip-count">{count}</span>
                 </a>
               ))}
             </nav>
