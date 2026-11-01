@@ -69,7 +69,7 @@ describe("LunchPage", () => {
     expect(link.getAttribute("href")).toBe("/start?next=/lunch");
     expect(screen.getByTestId("where").textContent).toBe("/lunch");
     expect(fetched()).toEqual([]);
-    expect(document.body.getAttribute("data-prerender-ready")).toBe("true");
+    await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
   });
 
   it("shows a linked school's menu with nothing picked, instead of sending the visitor to the picker", async () => {

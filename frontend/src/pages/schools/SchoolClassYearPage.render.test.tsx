@@ -50,14 +50,14 @@ describe("SchoolClassYearPage tells the prerender it's ready", () => {
     api([2027]);
     at("/schools/east/class-of-2031");
     expect(await screen.findByText("No Class of 2031 page for East.")).toBeTruthy();
-    expect(document.body.getAttribute("data-prerender-ready")).toBe("true");
+    await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
   });
 
   it("for a school that doesn't exist", async () => {
     api([], false);
     at("/schools/east/class-of-2027");
     expect(await screen.findByText("This school couldn't be found.")).toBeTruthy();
-    expect(document.body.getAttribute("data-prerender-ready")).toBe("true");
+    await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
   });
 });
 
