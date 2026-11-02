@@ -1105,15 +1105,20 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         corn mazes, drive-through light shows, Santa visits - that ordinary
         event listings miss, plus the season's big one-day events: turkey
         trots, the Thanksgiving parade, town tree lightings and Christmas
-        parades. Use for "any haunted hayrides near Voorhees", "something not
-        too scary for a 7-year-old", "what's open Friday night", "is there a
-        turkey trot with a kids' run", "where can we see Santa".
+        parades, and places to volunteer as a family over the holidays. Use
+        for "any haunted hayrides near Voorhees", "something not too scary
+        for a 7-year-old", "what's open Friday night", "is there a turkey trot
+        with a kids' run", "where can we see Santa", "where can we volunteer
+        with the kids on Thanksgiving".
 
         season: "halloween", "fall" (November: Thanksgiving) or "winter"
             (Christmas); omit for any.
         kind: haunt, hayride, corn_maze, trail, turkey_trot, race, parade,
-            farm, light_show, santa, train, market, tree_lighting, ice_rink
-            or festival.
+            farm, light_show, santa, train, market, tree_lighting, ice_rink,
+            festival or volunteer. A volunteer result's ages is the youngest
+            the organizer takes and ticket_url its sign-up; a place that takes
+            volunteers all season is listed under both fall and winter, so
+            name it once.
         scare_level: family (not scary), mild, or scary - the venue's own
             description; null in a result means unknown, so say so for kids.
             Halloween only: other seasons leave it null.

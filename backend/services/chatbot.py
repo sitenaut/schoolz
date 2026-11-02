@@ -72,7 +72,7 @@ SYSTEM_PROMPT = (
     "(get_district_budget), local community events "
     "(find_local_events), seasonal guides like the Halloween house map (get_seasonal_guides - "
     "link to the guide and credit its publisher, never list stops from it), seasonal attractions - haunted hayrides, flashlight mazes, turkey trots, "
-    "light shows, Santa, tree lightings (find_seasonal_attractions), and how to use schoolz itself (get_app_help - for any "
+    "light shows, Santa, tree lightings, holiday volunteering (find_seasonal_attractions), and how to use schoolz itself (get_app_help - for any "
     "'how do I' or 'where is' question about the site or app, give the guide's steps "
     "rather than guessing at buttons or menus). Never invent a fact a tool didn't "
     "return. Talk like a person, not a database: never show a field name, key, id or JSON from "

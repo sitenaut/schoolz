@@ -82,6 +82,14 @@ fresh by scheduled jobs, the same way `/local` events are
 - **Events** reuses `GET /local-events` with a new `help` category family
   (food distributions, mobile pantries, free tax prep days, Code Blue
   activations, coat drives). Phase 1 can simply link to `/local?category=help`.
+- **Want to help?** at the foot of the home page (`VolunteerLinks.tsx`)
+  links volunteer directories (Volunteer Center of South Jersey, Jersey
+  Cares, Idealist, JustServe) and, while a season badge is up and its page
+  lists volunteering, that page's "Volunteer & give back" heading. Links
+  only: Idealist's terms forbid scraping, and NJ 211 lists almost no
+  volunteer work (Inform USA `PX`), so there's no category to map. The
+  Volunteer Center of South Jersey's portal (Galaxy Digital) is the one
+  source worth asking for a feed.
 - **Quick exit** button on every page (Esc key too): `location.replace` to a
   neutral site so Back doesn't return. **Document titles stay generic**
   ("Localz", not "Domestic violence help").

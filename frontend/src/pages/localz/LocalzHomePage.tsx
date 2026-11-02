@@ -12,6 +12,7 @@ import { RadiusChips, RadiusNote } from "./RadiusChips";
 import { FitButton } from "./FitButton";
 import { ResourceList } from "./ResourceList";
 import { useResourceSearch } from "./useResourceSearch";
+import { VolunteerLinks } from "./VolunteerLinks";
 
 /** /localz - search, or pick a kind of help. Search runs on submit, not per
  * keystroke: a half-typed word is no use to anyone, and the text never goes
@@ -123,6 +124,8 @@ export function LocalzHomePage() {
           ))}
         </nav>
       )}
+
+      {!query && <VolunteerLinks />}
 
       <p className="localz-footnote">
         {t("Listings come from NJ 211 and the organizations themselves. Hours change - calling ahead is always a good idea.")}{" "}

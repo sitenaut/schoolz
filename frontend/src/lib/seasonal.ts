@@ -101,6 +101,7 @@ const KIND_LABELS: [string, string][] = [
   ["parade", "Parades"],
   ["ice_rink", "Ice skating"],
   ["farm", "Farms & hayrides"],
+  ["volunteer", "Volunteer & give back"],
   ["festival", "Festivals & more"],
 ];
 const KIND_ORDER = new Map(KIND_LABELS.map(([kind], i) => [kind, i]));

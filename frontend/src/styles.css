@@ -3664,6 +3664,34 @@ select {
   color: var(--ink-2);
   font-size: 14px;
 }
+.localz-give {
+  margin: 4px 0 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.localz-give h3 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+.localz-give p {
+  margin: 0;
+}
+.localz-give-seasons {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 600;
+}
+.localz-give-links {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+.localz-give-links li,
+.localz-give-seasons li {
+  margin: 4px 0;
+}
 
 /* ---- Localz theme: calm sage, orange for actions ----------------------
    AppShell sets data-section="localz" on <html> on Localz pages, so the

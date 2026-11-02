@@ -66,7 +66,7 @@ Status of every town in a tracked district, last checked 2026-10-18:
 
 ## Categories
 
-`normalizer.py` keyword categories: every alternation must be grouped, `\b(?:a|b)\b`. The billz-ported `\bsport|game|race|run\b` bound `\b` to only the first and last word, so "art" in "start"/"party" tagged most of the feed `arts`. **Classes & Lessons** (`classes-&-lessons`) trusts the title, but a description only with sign-up wording: bios say "began piano lessons at 3" and blurbs "over the course of". A same-source refresh recomputes categories; a cross-source merge only unions them.
+`normalizer.py` keyword categories: every alternation must be grouped, `\b(?:a|b)\b`. The billz-ported `\bsport|game|race|run\b` bound `\b` to only the first and last word, so "art" in "start"/"party" tagged most of the feed `arts`. **Classes & Lessons** (`classes-&-lessons`) trusts the title, but a description only with sign-up wording: bios say "began piano lessons at 3" and blurbs "over the course of". A same-source refresh recomputes categories; a cross-source merge only unions them. **Volunteer & Give Back** (`volunteer-&-give-back`: volunteering, days of service, food/toy/coat/blood drives) is matched on **titles only**: library and town blurbs say a club is "run by volunteers" (Tutor Time, chess afternoons), and "Volunteer Fire Company" is an organizer, not a call for help.
 
 ## Considered and not added
 
