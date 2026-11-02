@@ -313,6 +313,18 @@ async def test_gcal_bare_ids_get_group_suffix_and_one_dead_calendar_doesnt_sink_
         # The old ungrouped alternations: "brace"/"start"/"party"/"sparkle" matched sports/arts/outdoor.
         ("Brace yourself: start of the party season", "Sparkle and shine", set(), {"sports", "arts", "outdoor"}),
         ("Art in the Park", None, {"arts", "outdoor"}, set()),
+        # Volunteer & Give Back, from titles on the prod feeds.
+        ("(Y) A Call for Teen Volunteers: Holiday Card Making", None, {"volunteer-&-give-back"}, set()),
+        ("Cherry Hill Township Food Drive", None, {"volunteer-&-give-back"}, set()),
+        ("Bundle Up Coat Drive", None, {"volunteer-&-give-back"}, set()),
+        ("Cruise for Kids Toy Drive", None, {"volunteer-&-give-back"}, set()),
+        ("MLK Day of Service", None, {"volunteer-&-give-back"}, set()),
+        ("Fire Company Toy Drive at the Volunteer Fire Company", None, {"volunteer-&-give-back"}, set()),
+        # Not a call for help: run by volunteers, an organizer's name, a drive that isn't a collection.
+        ("(K) Tutor Time", "Free homework help from our trained teen volunteers.", set(), {"volunteer-&-give-back"}),
+        ("Pancake Breakfast at the Volunteer Fire Company", None, set(), {"volunteer-&-give-back"}),
+        ("Drive-In Movie Night", None, set(), {"volunteer-&-give-back"}),
+        ("Turkey Drive Through", None, set(), {"volunteer-&-give-back"}),
     ],
 )
 def test_keyword_categories(title, description, expect, reject):

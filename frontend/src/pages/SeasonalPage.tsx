@@ -1,4 +1,5 @@
-import { Link, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { SeasonalAttractions } from "../components/SeasonalAttractions";
 import { SeoHead } from "../components/SeoHead";
 import { usePrerenderReady } from "../lib/prerenderReady";
@@ -31,13 +32,23 @@ export function SeasonalPage() {
 
   usePrerenderReady(loaded && attractionsLoaded);
 
+  // A link to one heading (Localz's "volunteer this season" goes to
+  // #kind-volunteer) can't scroll on arrival: the headings render after the
+  // lists load, so scroll once they have.
+  const { hash } = useLocation();
+  const ready = loaded && attractionsLoaded;
+  useEffect(() => {
+    if (ready && hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: "start" });
+  }, [ready, hash]);
+
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
       <SeoHead
         title={`${look.heading} in South Jersey · schoolz`}
         description={
           attractions.length || guides.length
-            ? `${[...attractions.map((a) => `${a.name} (${a.town})`), ...guides.map((g) => g.title)].slice(0, 6).join(" · ")} - dates, ages and links for South Jersey families.`
+            ? // In the page's own order, so the season's headline kinds lead, not whatever starts soonest.
+              `${[...groups.flatMap((g) => g.attractions).map((a) => `${a.name} (${a.town})`), ...guides.map((g) => g.title)].slice(0, 6).join(" · ")} - dates, ages and links for South Jersey families.`
             : `${look.heading} in South Jersey: places to go and guides for families.`
         }
         path={`/seasonal/${season}`}

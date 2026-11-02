@@ -2151,9 +2151,10 @@ class SeasonalAttraction(Base):
     # Same season keys as SeasonalGuide - the badge's page lists both.
     season: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     # haunt | hayride | corn_maze | trail | turkey_trot | race | parade | farm |
-    # light_show | santa | train | market | tree_lighting | ice_rink | festival.
-    # A one-day event (a turkey trot, a tree lighting) has starts_on = ends_on;
-    # frontend/src/lib/seasonal.ts gives each kind its heading.
+    # light_show | santa | train | market | tree_lighting | ice_rink | festival |
+    # volunteer (a place or day to help out, ticket_url its sign-up, ages the
+    # youngest it takes). A one-day event (a turkey trot, a tree lighting) has
+    # starts_on = ends_on; frontend/src/lib/seasonal.ts gives each kind its heading.
     kind: Mapped[str] = mapped_column(String(40), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     venue: Mapped[str | None] = mapped_column(Text, nullable=True)

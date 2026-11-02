@@ -37,6 +37,15 @@ describe("groupByKind", () => {
     expect(groups[0].attractions.map((a) => a.name)).toEqual(["Moorestown", "Haddonfield"]);
   });
 
+  it("gives volunteering its heading, after the places to go and before the catch-all", () => {
+    const groups = groupByKind([
+      attraction("festival", "Native American Heritage Month"),
+      attraction("volunteer", "Operation Turkey"),
+      attraction("turkey_trot", "Moorestown"),
+    ]);
+    expect(groups.map((g) => g.label)).toEqual(["Turkey trots", "Volunteer & give back", "Festivals & more"]);
+  });
+
   it("still shows a kind it has no label for, last", () => {
     const groups = groupByKind([attraction("sleigh_ride", "Sleigh rides"), attraction("santa", "Mall Santa")]);
     expect(groups.map((g) => g.label)).toEqual(["Visit Santa", "Sleigh ride"]);

@@ -10,6 +10,8 @@ const SCARE: Record<string, { label: string; tone: Tone }> = {
 
 // Races take sign-ups, not tickets.
 const RACE_KINDS = new Set(["turkey_trot", "race"]);
+// A place to volunteer takes help on its own schedule, not on "nights".
+const VOLUNTEER = "volunteer";
 
 function shortDate(iso: string, withWeekday = false): string {
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
@@ -30,10 +32,22 @@ function when(a: SeasonalAttraction): string {
   const today = todayEt();
   // A one-day event (a race, a parade, a tree lighting) is just its day.
   if (a.starts_on === a.ends_on) return a.starts_on === today ? "Today" : shortDate(a.starts_on, true);
-  if (a.open_on_day) return "Open today";
   const next = a.open_dates?.find((d) => d > today);
+  // A volunteer day reads as its date; a place that takes help any week, as its window.
+  if (a.kind === VOLUNTEER) {
+    if (a.open_on_day) return "Today";
+    if (next) return shortDate(next, true);
+    return a.starts_on > today ? `From ${shortDate(a.starts_on)}` : `Through ${shortDate(a.ends_on)}`;
+  }
+  if (a.open_on_day) return "Open today";
   if (next) return `Next open ${shortDate(next)}`;
   return a.starts_on > today ? `Opens ${shortDate(a.starts_on)}` : `Select nights to ${shortDate(a.ends_on)}`;
+}
+
+function linkLabel(a: SeasonalAttraction): string {
+  if (!a.ticket_url) return "Website ↗";
+  if (RACE_KINDS.has(a.kind)) return "Register & info ↗";
+  return a.kind === VOLUNTEER ? "Sign up & info ↗" : "Tickets & info ↗";
 }
 
 /** The places-to-go half of /seasonal/<season>: our own list of haunts,
@@ -63,7 +77,10 @@ function AttractionCards({ attractions, season }: { attractions: SeasonalAttract
   const today = todayEt();
   // Open today first, then by the next night it opens; a venue that only
   // says "select nights" sorts after the ones known to be open that day.
-  const key = (a: SeasonalAttraction) => `${nextOpen(a, today)}${a.open_on_day === null ? "1" : "0"}${a.name}`;
+  // Volunteering lists its dated days (Thanksgiving morning) ahead of the
+  // places that take help any week, which would otherwise always lead.
+  const ongoing = (a: SeasonalAttraction) => (a.kind === VOLUNTEER && a.open_dates === null ? "1" : "0");
+  const key = (a: SeasonalAttraction) => `${ongoing(a)}${nextOpen(a, today)}${a.open_on_day === null ? "1" : "0"}${a.name}`;
   const ordered = [...attractions].sort((a, b) => key(a).localeCompare(key(b)));
   return (
     <div className="seasonal-attractions">
@@ -116,7 +133,7 @@ function AttractionCards({ attractions, season }: { attractions: SeasonalAttract
                 rel="noopener"
                 onClick={() => trackEvent("seasonal_attraction_open", { season, attraction_id: a.id })}
               >
-                {a.ticket_url ? (RACE_KINDS.has(a.kind) ? "Register & info ↗" : "Tickets & info ↗") : "Website ↗"}
+                {linkLabel(a)}
               </a>
               <a className="btn sm" href={directions} target="_blank" rel="noopener">
                 Directions ↗

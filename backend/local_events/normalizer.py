@@ -10,7 +10,7 @@ Responsibilities:
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from .sources.base import RawEvent
@@ -21,6 +21,7 @@ _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _WHITESPACE_RE = re.compile(r"\s+")
 
 CLASSES_CATEGORY = "classes-&-lessons"  # the Local page labels it "Classes & Lessons"
+VOLUNTEER_CATEGORY = "volunteer-&-give-back"  # "Volunteer & Give Back"
 
 KEYWORD_CATEGORIES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\b(kid|kids|children|child|family)\b", re.I), "family"),
@@ -39,8 +40,9 @@ KEYWORD_CATEGORIES: list[tuple[re.Pattern[str], str]] = [
 ]
 
 # The tags a reviewer can add by hand to an event they publish from a
-# community submission. The keyword tags above plus the classes umbrella.
-PICKABLE_CATEGORIES: list[str] = list(dict.fromkeys([tag for _, tag in KEYWORD_CATEGORIES] + [CLASSES_CATEGORY]))
+# community submission. The keyword tags above plus the classes and
+# volunteer umbrellas.
+PICKABLE_CATEGORIES: list[str] = list(dict.fromkeys([tag for _, tag in KEYWORD_CATEGORIES] + [CLASSES_CATEGORY, VOLUNTEER_CATEGORY]))
 
 # "Classes & Lessons": one umbrella for anything you sign up to learn, so a
 # filter doesn't mean picking "piano" and "cello" and "violin" separately.
@@ -64,6 +66,18 @@ _CLASS_DESCRIPTION_RE = re.compile(
 # Source-supplied categories that mean the same thing (Evvnt's, and the
 # Yodel source's mapping of its "Classes/Workshops").
 _CLASS_ALIASES = {"classes-/-courses", "class", "workshops"}
+
+# "Volunteer & Give Back": a chance to help out, or a drive to give to. Titles
+# only - library and town blurbs say a club is "run by volunteers" (Tutor
+# Time, chess afternoons) - and a "Volunteer Fire Company" is who runs the
+# pancake breakfast, not a call for help. A drive needs what it collects, so
+# a drive-in movie or a "Drive Through" giveaway isn't one.
+_VOLUNTEER_TITLE_RE = re.compile(
+    r"\bvolunteer(?:s|ing)?\b(?!\s+(?:fire|ambulance|rescue|emergency|first aid|appreciation|recognition)\b)"
+    r"|\bday of service\b"
+    r"|\b(?:food|toy|coat|clothing|clothes|book|blood|diaper|pajama|sock|supply|supplies|donation|canned food)\s+drives?\b",
+    re.I,
+)
 
 
 def _strip_html(text: str | None) -> str | None:
@@ -94,6 +108,8 @@ def _infer_categories(title: str, description: str | None, defaults: list[str]) 
         or _CLASS_ALIASES & set(found)
     ):
         found.append(CLASSES_CATEGORY)
+    if VOLUNTEER_CATEGORY not in found and _VOLUNTEER_TITLE_RE.search(title):
+        found.append(VOLUNTEER_CATEGORY)
     return found
 
 
@@ -113,9 +129,9 @@ def normalize(raw: RawEvent) -> dict:
     end = _ensure_tz(raw.end_time)
     # Normalize to UTC for storage.
     if start is not None:
-        start = start.astimezone(timezone.utc)
+        start = start.astimezone(UTC)
     if end is not None:
-        end = end.astimezone(timezone.utc)
+        end = end.astimezone(UTC)
     categories = _infer_categories(raw.title, description, raw.default_categories)
     is_free = raw.is_free if raw.is_free is not None else _infer_is_free(raw.price_min, raw.title, description)
     # A source that gave a price knows whether it's free; the word "free" in
