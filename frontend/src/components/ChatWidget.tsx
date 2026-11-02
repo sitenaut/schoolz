@@ -229,6 +229,7 @@ export function ChatWidget() {
               <IconSend />
             </button>
           </form>
+          <p className="chat-disclosure">{t("Chats go to our AI provider and aren't saved by us.")}</p>
         </div>
       </Modal>
     </>

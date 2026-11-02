@@ -295,7 +295,8 @@ export function PrivacyPage() {
               To answer your question. The conversation lives only in the open page and is gone when you reload.
               If you're signed in, the assistant can look up your own children's schedules and schoolwork to answer
               you, read-only. Our server logs record which lookups the assistant made — for public lookups, what it
-              searched for; for your children, only which kind of lookup — never your messages. To keep the
+              searched for; for community resources, only the category and county, never the words; for your
+              children, only which kind of lookup — never your messages. To keep the
               assistant from being flooded, we count messages per internet connection over 10 minutes using a
               code made from your IP address rather than the address itself; those counts are deleted after a
               day.{" "}

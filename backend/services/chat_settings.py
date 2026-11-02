@@ -50,6 +50,7 @@ class ChatbotSettings(BaseModel):
     prices: dict[str, ModelPrice] = Field(
         default_factory=lambda: {
             # Anthropic list prices, $/MTok. Cache writes are 1.25x input.
+            "claude-haiku-5-5": ModelPrice(input=0.10, output=0.50, cache_read=0.01),
             "claude-haiku-4-5-20251001": ModelPrice(input=1.0, output=5.0, cache_read=0.10),
             "claude-haiku-4-5": ModelPrice(input=1.0, output=5.0, cache_read=0.10),
             "claude-sonnet-5": ModelPrice(input=2.0, output=10.0, cache_read=0.20),

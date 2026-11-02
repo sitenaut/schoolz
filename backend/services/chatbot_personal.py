@@ -33,6 +33,7 @@ from zoneinfo import ZoneInfo
 import httpx
 from fastapi import FastAPI
 
+from services.chat_search_words import STOPWORDS, own_terms, search_terms
 from services.geocoding import geocode_name
 
 logger = logging.getLogger(__name__)
@@ -128,8 +129,10 @@ _TOOLS: dict[str, tuple[str, dict[str, Any], str]] = {
 # ~440 of them recurring YMCA classes), so the tool trims it first.
 LOCAL_EVENTS_TOOL_NAME = "find_local_events"
 _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
-    "Community events near Cherry Hill (township calendars, libraries, the Y, concerts, festivals) between two "
-    "dates. For 'what can I take the kids to', don't rely on categories alone - the family/kids tags are "
+    "Community events near Cherry Hill for every age, seniors and adults as well as families (township calendars, "
+    "libraries, senior centers, the Y, concerts, festivals). Leave the dates out for an open question ('any knitting "
+    "groups?'): it then searches the next 31 days, so never ask the visitor for dates. For 'what can I take the kids "
+    "to', don't rely on categories alone - the family/kids tags are "
     "keyword-inferred and miss plenty; search the whole range and judge from each title and description. "
     "Categories in use: {categories}. Classes (gym/pool/fitness, lessons, "
     "workshops, courses) are usually paid, so an open-ended search only includes them when the listing "
@@ -143,14 +146,13 @@ _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
     {
         "type": "object",
         "properties": {
-            "start_date": {"type": "string", "description": "First day, YYYY-MM-DD (local time)."},
-            "end_date": {"type": "string", "description": "Last day, inclusive, YYYY-MM-DD. Same as start_date for one day."},
+            "start_date": {"type": "string", "description": "First day, YYYY-MM-DD (local time). Optional: today."},
+            "end_date": {"type": "string", "description": "Last day, inclusive, YYYY-MM-DD. Same as start_date for one day. Optional: 31 days in all."},
             "categories": {"type": "string", "description": "Optional comma-separated categories; any match."},
             "query": {"type": "string", "description": "Optional text search over title, description and venue - e.g. 'pumpkin', or a place like 'YMCA' or 'library' to see what's on there."},
             "town": {"type": "string", "description": "Optional town the visitor named, now or earlier in the conversation (e.g. 'Collingswood'). Distances are measured from it - from Cherry Hill without one; farther events still come back."},
             "free_only": {"type": "boolean", "description": "Only events known to be free."},
         },
-        "required": ["start_date", "end_date"],
     },
     "/local-events",
 )
@@ -171,11 +173,11 @@ _FREE_TEXT_RE = re.compile(
 _KID_CATEGORIES = {"family", "kids"}
 _MAX_EVENTS = 40
 # A query is matched word by word (any word) and ranked, because people name
-# events loosely: "cherry hill fall festival" is listed as "Harvest Festival".
-# These words narrow nothing, so they're neither searched nor scored.
-_QUERY_STOPWORDS = {"the", "and", "for", "are", "any", "what", "whats", "when", "where", "near", "nearby", "around", "local", "events", "event", "this", "that", "with", "there", "going", "happening"}
-_QUERY_SYNONYMS = {"fall": ("autumn", "harvest"), "autumn": ("fall", "harvest"), "harvest": ("fall", "autumn")}
+# events loosely: "cherry hill fall festival" is listed as "Harvest Festival"
+# (services/chat_search_words.py).
 _MAX_QUERY_WORDS = 5
+# Each term is one search, one after another, within the visitor's wait.
+_MAX_QUERY_TERMS = 12
 _MAX_RANGE_DAYS = 31
 # Distances are measured from the town the visitor named, else from Cherry
 # Hill (the centre of what schoolz covers, same default as /local). A named
@@ -335,9 +337,12 @@ class LocalEventTools:
         return text
 
     async def _find_local_events(self, args: dict[str, Any]) -> Any:
+        # Optional, so an open question gets searched: when these were required,
+        # the model asked "what dates?" or gave up instead of looking.
+        start, end = args.get("start_date"), args.get("end_date")
         try:
-            first = date.fromisoformat(str(args.get("start_date", "")))
-            last = date.fromisoformat(str(args.get("end_date", "")))
+            first = date.fromisoformat(str(start)) if start else datetime.now(ET).date()
+            last = date.fromisoformat(str(end)) if end else first + timedelta(days=_MAX_RANGE_DAYS - 1)
         except ValueError:
             return {"error": "start_date and end_date must be YYYY-MM-DD"}
         if last < first:
@@ -363,7 +368,7 @@ class LocalEventTools:
         point = await _town_point(town) or _DEFAULT_POINT
         params["near_lat"], params["near_lng"] = point
         town_words = set(town.split())
-        words = [w for w in dict.fromkeys(str(args.get("query") or "").lower().split()) if len(w) >= 3 and w not in _QUERY_STOPWORDS]
+        words = [w for w in dict.fromkeys(str(args.get("query") or "").lower().split()) if len(w) >= 3 and w not in STOPWORDS]
         # A town typed into the query anyway still ranks (via `town`), it just doesn't search.
         words = [w for w in words if w not in town_words][:_MAX_QUERY_WORDS]
 
@@ -378,7 +383,9 @@ class LocalEventTools:
             # /local-events ANDs the words of `q`, so search each word (and its
             # synonyms) separately and rank the union.
             found: dict[str, dict] = {}
-            for term in dict.fromkeys(t for w in words for t in (w, *_QUERY_SYNONYMS.get(w, ()))):
+            # The visitor's own words before any synonym, if the cap has to cut.
+            terms = dict.fromkeys(t for find in (own_terms, search_terms) for w in words for t in find(w))
+            for term in list(terms)[:_MAX_QUERY_TERMS]:
                 response = await self._client.get("/local-events", params={**params, "q": term})
                 if response.status_code >= 400:
                     return {"error": f"{response.status_code} {response.reason_phrase}", "detail": response.text[:500]}
@@ -467,7 +474,7 @@ def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str,
         rest = f"{e['description'] or ''} {e['venue_name'] or ''} {e['venue_address'] or ''}".lower()
         points = covered = 0
         for w in words:
-            terms = (w, *_QUERY_SYNONYMS.get(w, ()))
+            terms = search_terms(w)
             if any(_word_in(t, title) for t in terms):
                 points, covered = points + 2, covered + 1
             elif any(_word_in(t, rest) for t in terms):
@@ -500,7 +507,9 @@ def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str,
         items.append(item)
 
     result: dict[str, Any] = {"matched": len(series), "returned": len(items), "items": items}
-    if top and score(top[0][0])[1] < len(words):
+    # Three or more words are usually a list of interests ("seniors computer
+    # knitting"), which no one event is meant to cover.
+    if top and len(words) <= 2 and score(top[0][0])[1] < len(words):
         result["note"] = (
             "No event matched every word of that search; these are the closest matches. Say there was no exact "
             "match, then offer the best of these as similar events."
