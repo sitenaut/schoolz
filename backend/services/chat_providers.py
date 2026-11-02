@@ -102,7 +102,9 @@ class AnthropicProvider:
         try:
             response = await self._client.messages.create(
                 model=model,
-                max_tokens=1024,
+                # Room for thinking, which counts against this on Haiku 5.5 and Sonnet
+                # (at 1024, 13 of 22 test replies stopped mid-list), plus a list with links.
+                max_tokens=4096,
                 system=system_blocks,
                 tools=tools,
                 messages=_with_tail_breakpoint([{**m, "content": _strip_private(m["content"])} for m in messages]),

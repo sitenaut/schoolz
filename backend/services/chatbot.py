@@ -65,17 +65,31 @@ _LANG_REPLY = {
 }
 
 SYSTEM_PROMPT = (
-    "You are schoolz's assistant for the South Jersey public schools schoolz covers. Answer using only the "
+    "You are schoolz's assistant. schoolz serves South Jersey's public schools and the whole community around "
+    "them: people of every age, including seniors and adults with no kids in school. Answer using only the "
     "tools available to you - school info, today's status, bell schedules, lunch menus, "
     "transportation, calendar items, tracked newsletters, high-school class-year "
     "pages (their content and payment schedules), any New Jersey school district's budget "
     "(get_district_budget), local community events "
-    "(find_local_events), seasonal guides like the Halloween house map (get_seasonal_guides - "
+    "(find_local_events), community resources and programs - senior centers, food, housing, health, legal help, "
+    "adult classes (search_resources), seasonal guides like the Halloween house map (get_seasonal_guides - "
     "link to the guide and credit its publisher, never list stops from it), seasonal attractions - haunted hayrides, flashlight mazes, turkey trots, "
     "light shows, Santa, tree lightings, holiday volunteering (find_seasonal_attractions), and how to use schoolz itself (get_app_help - for any "
     "'how do I' or 'where is' question about the site or app, give the guide's steps "
     "rather than guessing at buttons or menus). Never invent a fact a tool didn't "
-    "return. Talk like a person, not a database: never show a field name, key, id or JSON from "
+    "return. Search before you answer: never call a local question outside what you cover, and never fall back on "
+    "general knowledge or generic suggestions ('try your library', 'search online'). For activities, classes, clubs "
+    "or groups, for anyone of any age, call find_local_events with the visitor's key words ('senior computer "
+    "knitting', dates left out) and search_resources with one core term for what they need (for an older person, "
+    "'senior center') in the same step, "
+    "without first asking for dates or a town, then name the real listings. For help or a service (food, rent, rides, "
+    "care, legal), call search_resources. Only when the searches come back empty, say you didn't find any and offer "
+    "to look for something close. A question with nothing to do with local life: say in one sentence what you can "
+    "help with. If someone describes a crisis or danger - suicide, abuse, not being safe at home - start with these "
+    "before anything else, kindly and briefly: 911 for immediate danger, 988 for a crisis or suicide, New Jersey's "
+    "domestic violence hotline 1-800-572-7233 (or text BEGIN to 88788, the national hotline, if a call isn't safe), "
+    "1-877-652-2873 for child abuse, 211 for any kind of help. Never ask about anyone's immigration status. "
+    "Talk like a person, not a database: never show a field name, key, id or JSON from "
     "a tool result - say 'no early dismissal time is listed', not 'early_dismissal_time'. When "
     "answering about a school, name it with its town once ('Bret Harte Elementary in Cherry Hill') "
     "so a mix-up is obvious. Look a school up before asking about it: ask which one they mean only "
@@ -108,6 +122,12 @@ SYSTEM_PROMPT = (
     "(a 'fall festival' may be listed as 'Harvest Festival'), so search their key words with any town "
     "they name as `town`, and judge from the titles. If nothing matches exactly, say so and offer the "
     "closest events instead of pointing the visitor to another website."
+)
+
+
+NO_ANSWER_REPLY = (
+    "I couldn't answer that one - please try asking it another way. If anyone is in danger, call 911. For a crisis, "
+    "call or text 988, and 211 can connect you with any kind of help."
 )
 
 
@@ -150,21 +170,29 @@ async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
     try:
         content = await mcp.call_tool(name, arguments)
     except Exception as exc:  # noqa: BLE001 - a bad/unknown tool call shouldn't 500 the whole turn
-        logger.exception("chatbot_tool_call_failed", extra={"tool": name})
+        if name == RESOURCE_TOOL_NAME:  # an argument error's text can quote the search
+            logger.error("chatbot_tool_call_failed", extra={"tool": name, "error_type": type(exc).__name__})
+        else:
+            logger.exception("chatbot_tool_call_failed", extra={"tool": name})
         return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
     parts = [block.text for block in content if hasattr(block, "text")]
     return "\n".join(parts) if parts else "null"
 
 
 _NAMES_ONLY_TOOLS = PERSONAL_TOOL_NAMES | {"submit_community_content"}
+RESOURCE_TOOL_NAME = "search_resources"
 
 
 def _log_tool_call(name: str, tool_input: dict[str, Any]) -> None:
     # What the model actually asked each tool, so a bad answer can be traced to
     # a bad search (e.g. "fall festival" vs the listing's "Harvest Festival").
     # Personal tools take a child's id, and a community submission carries the
-    # sender's name and email: log only which arguments were passed.
-    logged = sorted(tool_input) if name in _NAMES_ONLY_TOOLS else tool_input
+    # sender's name and email: log only which arguments were passed. A Localz
+    # search's free text is where people write "my husband hits me": never logged.
+    if name == RESOURCE_TOOL_NAME:
+        logged: Any = {k: tool_input[k] for k in ("category", "county") if k in tool_input}
+    else:
+        logged = sorted(tool_input) if name in _NAMES_ONLY_TOOLS else tool_input
     logger.info("chatbot_tool_call", extra={"tool": name, "tool_input": json.dumps(logged, default=str)[:500]})
 
 
@@ -345,6 +373,12 @@ async def run_chat_turn(
         tool_uses = [b for b in completion.content if b.get("type") == "tool_use"]
         if not tool_uses:
             final_text = "".join(b.get("text", "") for b in completion.content if b.get("type") == "text")
+            if not final_text.strip():
+                # A safety decline (HTTP 200, no text, and Haiku 5.5 has no fallback
+                # model) or a response spent on thinking. Left alone, that's a blank
+                # bubble and an empty turn the provider refuses when it's replayed.
+                final_text = NO_ANSWER_REPLY
+                messages[-1] = {"role": "assistant", "content": [{"type": "text", "text": final_text}]}
             break
 
         tool_rounds += 1

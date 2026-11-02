@@ -885,15 +885,16 @@ or reconstruct one person's session.
 
 ## Chatbot
 
-- New public MCP tools: `search_resources(category, county, query)` and
+- `search_resources(query, category, county)` is live on the public MCP
+  server, so the chatbot uses it for every caller. Still to come:
   `get_resource(id)`, and an eligibility explainer that applies
   `program_rules` to numbers the user gives *in the conversation*. Nothing
   from chat writes to the profile.
-- `_log_tool_call` logs tool inputs to Loki verbatim today. For Localz
-  tools, **log only the category and county**, never the free text (it's
-  where people write "my husband hits me").
-- Chat goes to Anthropic. Say so in the chat panel ("Chats are processed
-  by our AI provider and not saved by us"). Check that the account's data
+- `_log_tool_call` logs only the category and county of a Localz search,
+  never the free text (it's where people write "my husband hits me").
+- A shelter-looking listing's address stays out of chat answers even when NJ
+  211 published it (`_HIDDEN_SHELTER_RE`, `mcp_server.py`).
+- Chat goes to Anthropic, and the chat panel says so. Check that the account's data
   retention terms are acceptable for this content before launch; signed-in
   Localz chats should use the same provider setting as signed-in schoolz
   chats (children's data), not the anonymous one.

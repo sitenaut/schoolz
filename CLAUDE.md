@@ -115,6 +115,7 @@ Skills (`.claude/skills/<name>/SKILL.md`):
 - **`chatbot`** — tools per tier, prompt caching, the four Anthropic keys, providers.
   - The anonymous prompt prefix is barely over Haiku 4.5's cache minimum — trimming it silently stops caching.
   - Anonymous and signed-in providers are switched separately on purpose (signed-in chats carry children's data).
+  - `search_resources`' free text is never logged, and a question about anything local gets searched, never declined as out of scope.
 - **`observability`** — OTel, Grafana rules/SLOs/IRM, Loki, Faro RUM, GA4, `page_visits`.
   - The Grafana notification policy tree is shared with billz and the scraper repo: never `PUT` a tree built from scratch.
   - If a panel goes blank, check which metric-name spelling prod emits first.

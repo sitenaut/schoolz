@@ -51,7 +51,10 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from request_context import caller_ip_var
+from resources.categories import CATEGORIES
+from routers.resources import NJ_COUNTIES
 from services.app_help import app_help
+from services.chat_search_words import STOPWORDS, search_terms
 from services.public_url import check_public_page
 from services.school_today import classify_day, local_date, other_grades_only
 
@@ -152,6 +155,48 @@ def _days_covered(item: dict) -> list[date]:
     if item.get("is_all_day") and item.get("end_date"):
         end -= timedelta(days=1)
     return [start + timedelta(days=n) for n in range(max((end - start).days, 0) + 1)]
+
+
+# How many listings one search_resources call answers with, and how many it
+# looks through to pick them: /resources/search sorts by name, not by how well
+# a listing fits, so the first ten for "senior" were an Adult Day Center and
+# Benefits Counseling, with every "Senior Center" further down.
+_RESOURCE_RESULTS = 10
+_RESOURCE_POOL = 50
+_RESOURCE_MAX_TERMS = 4
+# NJ 211 publishes some shelters with a street address, so address_kind doesn't
+# catch them. A chat answer is no place to volunteer where someone is hiding.
+_HIDDEN_SHELTER_RE = re.compile(r"\bsafe ?house\b|\b(domestic violence|battered)\b[^.]*\bshelter\b|\bshelter\b[^.]*\b(domestic violence|battered)\b", re.I)
+
+
+def _resource_item(r: dict, web: str) -> dict:
+    """A listing as the model sees it. A confidential one has no address to
+    pass on (routers/resources.py never sends it)."""
+    hidden = r.get("location_confidential") or _HIDDEN_SHELTER_RE.search(f"{r['name']}. {r.get('description') or ''}")
+    where = "Location shared after you call" if hidden else r.get("address")
+    city = None if hidden else r.get("city")
+    if where and city and city.lower() not in where.lower():
+        where = f"{where}, {city}"
+    item = {
+        "name": r["name"],
+        "organization": r.get("organization_name"),
+        "description": (r.get("description") or "")[:240] or None,
+        "phone": r.get("phone"),
+        "where": where,
+        "hours": r.get("hours_text"),
+        "statewide": r.get("statewide") or None,
+        "delivery": r.get("delivery"),
+        "temporarily_closed": r.get("closure"),
+        "url": f"{web}/localz/r/{r['id']}",
+    }
+    return {k: v for k, v in item.items() if v is not None}
+
+
+def _resource_fit(r: dict, terms: list[str]) -> int:
+    """How much a listing's own name is about the search: the name itself,
+    then its organization's, then only its description."""
+    name, org = r["name"].lower(), (r.get("organization_name") or "").lower()
+    return -sum(2 if t in name else 1 if t in org else 0 for t in terms)
 
 
 def _finalize(data: Any) -> Any:
@@ -1134,6 +1179,64 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         """
         params = {"season": season, "kind": kind, "scare_level": scare_level, "on": on_date, "open_only": open_only or None}
         return _finalize(await _get("/seasonal-attractions", params))
+
+    # -----------------------------------------------------------------
+    # Localz community resources
+    # -----------------------------------------------------------------
+
+    async def _search_listings(body: dict) -> tuple[list[dict], int]:
+        response = await app_client.post("/resources/search", json={**body, "page_size": _RESOURCE_POOL})
+        response.raise_for_status()
+        data = response.json()
+        return data["items"], data["total"]
+
+    @mcp.tool()
+    async def search_resources(query: str | None = None, category: str | None = None, county: str | None = None) -> Any:
+        """Community resources and programs in New Jersey from Localz, for
+        people of every age: senior centers and services for older adults,
+        food pantries, housing and bill help, health care, legal help, adult
+        classes, child care. Use for "is there a senior center", "where can I
+        get food", "who helps with rent". For dated things to go to, use
+        find_local_events as well.
+
+        query: one short term - "senior center", "food pantry", "ESL". What's
+            typed is private: it's never logged.
+        category: optional - food, english, housing-bills, health, kids-family,
+            money-work, legal-safety or everyday-needs.
+        county: a New Jersey county, listings serving it come first; Camden if
+            omitted. Burlington and Gloucester are next door to Camden.
+
+        Give each listing's name as a [name](url) link with its phone and
+        hours. "Location shared after you call" means the address is private
+        on purpose: say that, and never guess one.
+        """
+        wanted = (county or "Camden").strip().removesuffix(" County").removesuffix(" county")
+        body: dict[str, Any] = {
+            "county": next((c for c in NJ_COUNTIES if c.lower() == wanted.lower()), None),
+            "category": category if category in CATEGORIES else None,
+        }
+        phrase = (query or "").strip().lower()[:100]
+        words = [w for w in phrase.split() if len(w) >= 3 and w not in STOPWORDS]
+        terms = [phrase] if phrase else []
+        items, total = await _search_listings({**body, "query": phrase or None})
+        if phrase and len(items) < _RESOURCE_RESULTS:
+            # The route matches the whole phrase, and nothing is listed as
+            # "senior activities": fall back to its words, keeping exact hits first.
+            terms = list(dict.fromkeys(t for w in words for t in search_terms(w)))[:_RESOURCE_MAX_TERMS]
+            seen = {r["id"] for r in items}
+            for term in terms:
+                # No category here: models guess it (a senior center under "kids-family").
+                more, _ = await _search_listings({"county": body["county"], "query": term})
+                fresh = [r for r in more if r["id"] not in seen]
+                seen.update(r["id"] for r in fresh)
+                items += fresh
+            total = len(items)
+        web = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
+        ranked = sorted(items, key=lambda r: _resource_fit(r, terms))[:_RESOURCE_RESULTS]
+        result: dict[str, Any] = {"matched": total, "returned": len(ranked), "items": [_resource_item(r, web) for r in ranked]}
+        if total > len(ranked):
+            result["more"] = f"{web}/localz"
+        return result
 
     # -----------------------------------------------------------------
     # How to use schoolz itself
