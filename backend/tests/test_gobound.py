@@ -221,6 +221,48 @@ async def test_a_feed_shared_by_a_high_school_and_middle_school_is_split_by_team
 
 
 @pytest.mark.anyio
+async def test_a_conference_link_scans_only_its_schools_games(monkeypatch):
+    """Glassboro's high school and Bowe share the Tri-County Conference link
+    with "#Glassboro": each keeps Glassboro's games at its own level and nobody
+    else's. Run through the job, since the job once dropped the "#" part and
+    gave both schools the whole conference."""
+    when = (datetime.now(UTC) + timedelta(days=5)).strftime("%Y%m%dT150000")
+    feed = _conference_feed(
+        ("t1", "Girls Soccer: Clayton/Glassboro vs Penns Grove (Varsity)", when),
+        ("t2", "Boys Basketball: Glassboro (Middle School) vs Pitman (Middle School)", when),
+        ("t3", "Boys Soccer: Deptford vs Woodstown (Varsity)", when),
+    )
+    asked = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append(str(request.url))
+        return httpx.Response(200, content=feed, headers={"content-type": "text/calendar; charset=utf-8"})
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    tag = uuid.uuid4().hex[:8]
+    feed_url = f"https://gobound.com/nj/conferences/tcc{tag}/calendar/ical/abc123"
+
+    async with database.SessionLocal() as db:
+        district = District(name=f"GB Conference {tag}")
+        db.add(district)
+        await db.flush()
+        high = School(name=f"GB Conf High {tag}", slug=f"gb-conf-high-{tag}", school_type="high", district_id=district.id, athletics_url=f"{feed_url}#Glassboro")
+        middle = School(name=f"GB Conf Middle {tag}", slug=f"gb-conf-middle-{tag}", school_type="middle", district_id=district.id, athletics_url=f"{feed_url}#Glassboro")
+        db.add_all([high, middle])
+        await db.commit()
+
+        async def uids(school):
+            await athletics_calendar_scan.run(db, {"school_id": school.id})
+            await db.flush()
+            return {r.external_uid for r in (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == school.id))).scalars().all()}
+
+        assert await uids(high) == {"gb:t1"}
+        assert await uids(middle) == {"gb:t2"}
+    assert asked == [feed_url, feed_url]
+
+
+@pytest.mark.anyio
 async def test_a_school_whose_gobound_calendar_is_its_events_calendar_shows_them(monkeypatch):
     """Williamstown's non-game events are its dances and class trips: shown
     like any school event once the school is switched on, and moved (same row)
