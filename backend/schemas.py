@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, computed_field, field_validator
+
+from services import gobound
 
 
 class RegisterRequest(BaseModel):
@@ -667,6 +669,14 @@ class SchoolOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def athletics_link(self) -> str | None:
+        """The athletics link a parent follows. athletics_url stays what the
+        scan reads: for GoBound that is a calendar file, so the link is the
+        school's GoBound page instead."""
+        return gobound.page_url(self.athletics_url) or self.athletics_url
 
 
 class StaffMemberOut(BaseModel):

@@ -535,6 +535,21 @@ hidden by default like Arbiter games). It was first seen alongside a BigTeams/
 Arbiter link at Haddon Township HS, where the Arbiter link was enough; use
 DigitalSports only when that is the school's real schedule.
 
+**GoBound (`gobound.com/<state>/schools/<slug>`) is supported through its
+calendar subscription link only** (`services/gobound.py`). Its pages, its API
+and its beta site refuse anything that isn't a browser, so a crawler can't read
+or search it: don't try, and don't guess links. Ask the owner for the link,
+made on gobound.com: the school's **Calendar**, the subscription icon (top
+right, next to print), **Include Practices** off, every activity except
+**School Events** (no-school days and dances the district calendar already
+has), **Generate Calendar Link**, **Copy Calendar Link**. The link
+(`.../calendar/ical/<token>`) goes in `athletics_url`; parents are shown the
+school's GoBound page instead. A high school's page usually carries its middle
+school's teams too ("7th Grade", "8th Grade", "MS Red"): give the middle school
+the same link and the scan splits them. Compare against ArbiterLive before
+choosing: Kingsway's GoBound feed had 676 games in the scan window, its
+ArbiterLive entity 256.
+
 ---
 
 ## PTA / PTO sites

@@ -1,0 +1,276 @@
+BEGIN:VCALENDAR
+CALSCALE:GREGORIAN
+PRODID:-//github.com/rianjs/ical.net//NONSGML ical.net 4.0//EN
+REFRESH-INTERVAL;VALUE=DURATION:P1D
+VERSION:2.0
+X-PUBLISHED-TTL:P1D
+X-WR-CALNAME:Kingsway Regional Calendar
+X-WR-TIMEZONE:America/New_York
+BEGIN:VTIMEZONE
+TZID:America/New_York
+X-LIC-LOCATION:America/New_York
+BEGIN:STANDARD
+DTSTART:20241103T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:20250309T020000
+RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+DESCRIPTION:Girls Field Hockey: Jackson Township vs Kingsway Regional (Vars
+ ity)
+DTEND;TZID=America/New_York:20261102T170000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261102T150000
+GEO:39.760873;-75.290130
+LOCATION:Kingsway Regional High School Anthony "Tony" Barchuk Stadium
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Girls Field Hockey: Jackson Township vs Kingsway Regional (Varsity)
+UID:h20261020000000001aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000001aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:hockey
+X-BND-ACTIVITYLEVEL:Varsity
+X-BND-ACTIVITYNAME:Girls Field Hockey
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Boys Basketball: Kingsway Regional vs Clearview Regional Middle
+  School (8th Grade)
+DTEND;TZID=America/New_York:20261204T170000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261204T153000
+GEO:39.760873;-75.290130
+LOCATION:Clearview Regional Middle School
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Boys Basketball: Kingsway Regional vs Clearview Regional Middle Sch
+ ool (8th Grade)
+UID:h20261020000000002aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000002aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:basketball
+X-BND-ACTIVITYLEVEL:8th Grade
+X-BND-ACTIVITYNAME:Boys Basketball
+X-BND-ACTIVITYSEX:male
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Cross Country (coed) (MS ONLY): Gloucester County Middle School
+  Championship (Middle School)
+DTEND;TZID=America/New_York:20261028T170000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261028T153000
+GEO:39.760873;-75.290130
+LOCATION:Washington Lake Park
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Cross Country (coed) (MS ONLY): Gloucester County Middle School Cha
+ mpionship (Middle School)
+UID:h20261020000000003aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000003aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:only)
+X-BND-ACTIVITYLEVEL:Middle School
+X-BND-ACTIVITYNAME:Cross Country (coed) (MS ONLY)
+X-BND-ACTIVITYSEX:coed
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Girls Field Hockey: Kingsway Regional vs Delsea Regional (MS Re
+ d)
+DTEND;TZID=America/New_York:20261029T163000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261029T153000
+GEO:39.760873;-75.290130
+LOCATION:Delsea Regional Middle School
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Girls Field Hockey: Kingsway Regional vs Delsea Regional (MS Red)
+UID:h20261020000000004aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000004aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:hockey
+X-BND-ACTIVITYLEVEL:MS Red
+X-BND-ACTIVITYNAME:Girls Field Hockey
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Girls Soccer: Kingsway Regional vs Glassboro Intermediate Middl
+ e School (Varsity)
+DTEND;TZID=America/New_York:20261030T173000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261030T160000
+GEO:39.760873;-75.290130
+LOCATION:Glassboro High School
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Girls Soccer: Kingsway Regional vs Glassboro Intermediate Middle Sc
+ hool (Varsity)
+UID:h20261020000000005aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000005aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:soccer
+X-BND-ACTIVITYLEVEL:Varsity
+X-BND-ACTIVITYNAME:Girls Soccer
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Girls Field Hockey: TBD vs Kingsway Regional (Varsity) (Time TB
+ A)
+DTEND;TZID=America/New_York:Kingsway Regional High School Anthony "Tony" Ba
+ rchuk Stadium
+DTSTAMP:20261103T122501Z
+DTSTART;VALUE=DATE:20261104
+GEO:39.760873;-75.290130
+LOCATION:Kingsway Regional High School Field A- Turf Complex
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Girls Field Hockey: TBD vs Kingsway Regional (Varsity) (Time TBA)
+UID:h20261020000000006aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000006aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:hockey
+X-BND-ACTIVITYLEVEL:Varsity
+X-BND-ACTIVITYNAME:Girls Field Hockey
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:CANCELLED - Girls Basketball: Kingsway Regional vs Highland Reg
+ ional (Junior Varsity)
+DTEND;TZID=America/New_York:20261210T173000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261210T160000
+GEO:39.760873;-75.290130
+LOCATION:Highland Regional
+SEQUENCE:0
+STATUS:CANCELLED
+SUMMARY:CANCELLED - Girls Basketball: Kingsway Regional vs Highland Regiona
+ l (Junior Varsity)
+UID:h20261020000000007aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000007aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:basketball
+X-BND-ACTIVITYLEVEL:Junior Varsity
+X-BND-ACTIVITYNAME:Girls Basketball
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:POSTPONED - Girls Wrestling: Kingsway Regional vs Manchester To
+ wnship (Varsity)
+DTEND;TZID=America/New_York:20261211T190000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261211T173000
+GEO:39.760873;-75.290130
+LOCATION:Manchester Township High School
+SEQUENCE:0
+STATUS:CANCELLED
+SUMMARY:POSTPONED - Girls Wrestling: Kingsway Regional vs Manchester Townsh
+ ip (Varsity)
+UID:h20261020000000008aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000008aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:wrestling
+X-BND-ACTIVITYLEVEL:Varsity
+X-BND-ACTIVITYNAME:Girls Wrestling
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Softball: Kingsway Regional vs Williamstown (Freshman)
+DTEND;TZID=America/New_York:20261212T173000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261212T160000
+GEO:39.760873;-75.290130
+LOCATION:Williamstown High School #1 Varsity Softball Field
+SEQUENCE:0
+STATUS:CANCELLED
+SUMMARY:Softball: Kingsway Regional vs Williamstown (Freshman)
+UID:h20261020000000009aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000009aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:softball
+X-BND-ACTIVITYLEVEL:Freshman
+X-BND-ACTIVITYNAME:Softball
+X-BND-ACTIVITYSEX:female
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Boys Wrestling: NJSIAA State Final (Varsity) (Time TBA)
+DTSTAMP:20261103T122501Z
+DTSTART;VALUE=DATE:20270227
+GEO:39.760873;-75.290130
+LOCATION:TBA NJ
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Boys Wrestling: NJSIAA State Final (Varsity) (Time TBA)
+UID:h20261020000000010aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000010aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:wrestling
+X-BND-ACTIVITYLEVEL:Varsity
+X-BND-ACTIVITYNAME:Boys Wrestling
+X-BND-ACTIVITYSEX:male
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Boys Soccer: Washington Township vs Kingsway Regional (Varsity)
+DTEND;TZID=America/New_York:20250915T173000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20250915T160000
+GEO:39.760873;-75.290130
+LOCATION:Kingsway Regional High School Field A- Turf Complex
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Boys Soccer: Washington Township vs Kingsway Regional (Varsity)
+UID:h20261020000000011aaaaaaaaaaaaa
+URL:https://gobound.com/direct/comps/h20261020000000011aaaaaaaaaaaaa/show
+X-BND-ACTIVITYKEY:soccer
+X-BND-ACTIVITYLEVEL:Varsity
+X-BND-ACTIVITYNAME:Boys Soccer
+X-BND-ACTIVITYSEX:male
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Girls Basketball Practice
+DTEND;TZID=America/New_York:20261102T170000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261102T150000
+GEO:39.760873;-75.290130
+LOCATION:Kingsway Regional High School High School North Gym
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Girls Basketball Practice
+UID:h20261020000000012aaaaaaaaaaaaa
+URL:https://gobound.com/direct/noncomps/h20261020000000012aaaaaaaaaaaaa/h20
+ 250305043250939dc6
+X-BND-ACTIVITYKEY:
+X-BND-ACTIVITYLEVEL:
+X-BND-ACTIVITYNAME:
+X-BND-ACTIVITYSEX:
+X-BND-TAGS:
+END:VEVENT
+BEGIN:VEVENT
+DESCRIPTION:Indoor Percussion Rehearsal
+DTEND;TZID=America/New_York:20261103T210000
+DTSTAMP:20261103T122501Z
+DTSTART;TZID=America/New_York:20261103T180000
+GEO:39.760873;-75.290130
+LOCATION:Kingsway Regional Middle School West Gym- Middle School
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Indoor Percussion Rehearsal
+UID:h20261020000000013aaaaaaaaaaaaa
+URL:https://gobound.com/direct/noncomps/h20261020000000013aaaaaaaaaaaaa/h20
+ 250305043250939dc6
+X-BND-ACTIVITYKEY:
+X-BND-ACTIVITYLEVEL:
+X-BND-ACTIVITYNAME:
+X-BND-ACTIVITYSEX:
+X-BND-TAGS:
+END:VEVENT
+END:VCALENDAR

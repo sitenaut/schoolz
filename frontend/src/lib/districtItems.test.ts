@@ -51,7 +51,7 @@ function school(overrides: Partial<School>): School {
     end_time: null,
     early_dismissal_time: null,
     delayed_opening_time: null,
-    athletics_url: null,
+    athletics_link: null,
     logo_url: null,
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,
