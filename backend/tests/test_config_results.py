@@ -234,6 +234,54 @@ async def test_results_round_trip_leaves_the_first_scan_nothing_to_extract():
 
 
 @pytest.mark.anyio
+async def test_state_contacts_travel_and_a_roster_principal_still_wins():
+    run_id = uuid.uuid4().hex[:8]
+    config = _config(run_id)
+    slug = config["schools"][0]["slug"]
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = await _admin_client(client, run_id)
+        assert (await client.post("/admin/config/import", json=config, headers=headers)).status_code == 200
+        async with database.SessionLocal() as db:
+            school = (await db.execute(select(School).where(School.slug == slug))).scalar_one()
+            db.add_all([
+                StaffMember(school_id=school.id, source_constituent_id="njdoe:principal", full_name="Pat Lee",
+                            title="School Principal", email="plee@example.org", role="principal"),
+                StaffMember(school_id=school.id, source_constituent_id="njdoe:hib", full_name="Sam Ortiz", title="Anti-Bullying Specialist"),
+                StaffMember(school_id=school.id, source_constituent_id="12345", full_name="Kim Teacher", title="Teacher"),
+            ])
+            await db.commit()
+
+        results = (await client.get("/admin/config/results", params={"district": config["districts"][0]["name"]}, headers=headers)).json()
+        # Only the state's rows travel, never the directory's.
+        assert sorted(m["constituent_id"] for m in results["schools"][0]["state_contacts"]) == ["njdoe:hib", "njdoe:principal"]
+
+        # The target has scanned a roster that names the same principal, with no email.
+        await _wipe_results(config)
+        async with database.SessionLocal() as db:
+            db.add(StaffMember(school_id=school.id, source_constituent_id="777", full_name="Dr. Pat Lee", title="Principal", role="principal"))
+            await db.commit()
+        # Results alone, as seed-with-results.sh --results-only sends them for a seed the target already has.
+        bare = {"exported_at": config["exported_at"], "source": "test", "districts": [], "schools": [], "smore_newsletters": []}
+        imported = await client.post("/admin/config/import", json={**bare, "results": results}, headers=headers)
+        assert imported.status_code == 200, imported.text
+        assert imported.json()["results_applied"] == {"state_contacts": 1, "roster_emails": 1}
+        async with database.SessionLocal() as db:
+            staff = {m.source_constituent_id: m for m in (await db.execute(select(StaffMember).where(StaffMember.school_id == school.id))).scalars()}
+        assert set(staff) == {"777", "njdoe:hib"}
+        assert staff["777"].email == "plee@example.org"
+
+        # What the target already holds is never overwritten by a re-import.
+        async with database.SessionLocal() as db:
+            await db.execute(update(StaffMember).where(StaffMember.id == staff["njdoe:hib"].id).values(full_name="Newer Name"))
+            await db.commit()
+        again = await client.post("/admin/config/import", json={**config, "results": results}, headers=headers)
+        assert again.json()["results_applied"] == {}
+        async with database.SessionLocal() as db:
+            hib = (await db.execute(select(StaffMember).where(StaffMember.id == staff["njdoe:hib"].id))).scalar_one()
+        assert hib.full_name == "Newer Name"
+
+
+@pytest.mark.anyio
 async def test_results_export_needs_a_known_district():
     run_id = uuid.uuid4().hex[:8]
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

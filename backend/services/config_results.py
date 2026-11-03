@@ -12,6 +12,8 @@ state is what makes the target's first run find nothing new:
 - contact-page staff: School.contact_page_hash
 
 Scans with no model call are left to run in the target; they cost nothing.
+One exception: the NJ DOE directory contacts, which no scan writes (only the
+local script does), travel too, so prod needs no script run against its DB.
 
 Rows are keyed the way routers/admin_config.py keys config (district name,
 school slug, newsletter url), never by id. A source that already has results
@@ -52,7 +54,7 @@ from schemas import (
     ResultStaff,
     ResultTranslation,
 )
-from services import district_calendar_pdf
+from services import district_calendar_pdf, njdoe_directory
 from services.contact_page import CONSTITUENT_PREFIX
 from services.content_extractor import _title_dedup_key
 from services.school_status import same_status_fact
@@ -137,6 +139,13 @@ async def _menus_out(db: AsyncSession, menus: list[LunchMenu]) -> list[ResultLun
     return out
 
 
+def _staff_out(m: StaffMember) -> ResultStaff:
+    return ResultStaff(
+        constituent_id=m.source_constituent_id, full_name=m.full_name, title=m.title,
+        department=m.department, email=m.email, phone=m.phone,
+    )
+
+
 def _blocks_out(rows: list) -> list[ResultBlock]:
     return [
         ResultBlock(page_path=getattr(r, "page_path", None), **{f: getattr(r, f) for f in _BLOCK_FIELDS}) for r in rows
@@ -195,6 +204,13 @@ async def export_results(db: AsyncSession, district_names: list[str], state: str
                     )
                 )
             ).scalars().all()
+        state_rows = (
+            await db.execute(
+                select(StaffMember).where(
+                    StaffMember.school_id == s.id, StaffMember.source_constituent_id.startswith(njdoe_directory.PREFIX)
+                )
+            )
+        ).scalars().all()
         entry = ResultSchool(
             slug=s.slug,
             lunch_menus=await _menus_out(db, menus),
@@ -202,15 +218,10 @@ async def export_results(db: AsyncSession, district_names: list[str], state: str
             givebacks_items=await _items_out(db, items, schools, districts),
             givebacks_last_run=await _last_run(db, s.givebacks_job_id),
             contact_page_hash=s.contact_page_hash if staff else None,
-            contact_staff=[
-                ResultStaff(
-                    constituent_id=m.source_constituent_id, full_name=m.full_name, title=m.title,
-                    department=m.department, email=m.email, phone=m.phone,
-                )
-                for m in staff
-            ],
+            contact_staff=[_staff_out(m) for m in staff],
+            state_contacts=[_staff_out(m) for m in state_rows],
         )
-        if entry.lunch_menus or entry.givebacks_blocks or entry.contact_staff:
+        if entry.lunch_menus or entry.givebacks_blocks or entry.contact_staff or entry.state_contacts:
             out.schools.append(entry)
 
     newsletters = (
@@ -433,6 +444,18 @@ class _Importer:
             await self.db.flush()
             self._staff_by_name.pop(school.id, None)
             self._count("contact_pages")
+
+        found = {
+            m.constituent_id: {"full_name": m.full_name, "title": m.title, "email": m.email}
+            for m in s.state_contacts
+            if m.constituent_id.startswith(njdoe_directory.PREFIX)
+        }
+        if found:
+            added, patched = await njdoe_directory.apply_contacts(self.db, school.id, found, refresh=False)
+            await self.db.flush()
+            self._staff_by_name.pop(school.id, None)
+            self._count("state_contacts", added)
+            self._count("roster_emails", patched)
 
     async def newsletter(self, n: ResultNewsletter, by_url: dict[str, SmoreNewsletter]) -> None:
         newsletter = by_url.get(n.url)
