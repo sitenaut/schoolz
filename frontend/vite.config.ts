@@ -6,6 +6,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // Not Vite's index-*.js. Tabs still running the reverted
+        // lib/freshBuild.ts (#517) reload when index.html names an
+        // /assets/index-*.js other than their own, and on an iPhone that
+        // reload left a blank page. They don't look for any other name.
+        entryFileNames: "assets/app-[hash].js",
         // The libraries (React, the router, i18next, Supabase, Faro) in a
         // file of their own: it changes only when a dependency does, so a
         // returning visitor keeps it cached across our deploys and fetches
