@@ -67,7 +67,7 @@ RUN find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -
 
 # nginx-unprivileged runs as uid 101 with its pid file and caches in /tmp;
 # it listens on 3000 (nginx.conf.template), which needs no root either.
-FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:378d0c32f6562f7fd9629170797f57d2b953aa09be983b3daaf4809bb039ca00
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 COPY --from=build /app/dist /usr/share/nginx/html
 # Must land exactly where nginx.conf.template's `location /focus/` looks,
 # or that block's try_files fallback loops on a missing index.html and
