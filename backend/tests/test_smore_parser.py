@@ -1,5 +1,8 @@
+import httpx
+import pytest
 from bs4 import BeautifulSoup
 
+from services import smore_parser
 from services.smore_parser import _classify, _find_author_profile_link, _pick_current_issue_link
 
 
@@ -251,3 +254,37 @@ def test_finds_author_profile_link_ignoring_issue_links():
 
 def test_find_author_profile_link_returns_none_when_absent():
     assert _find_author_profile_link('<a href="https://app.smore.com/n/x">X</a>') is None
+
+
+def test_pick_current_issue_reads_a_newest_first_accordions_panel_titles():
+    """Lawrence Middle's archive: an embed per dated panel, newest first."""
+    panel = """<section class="fsElement fsPanel"><header><h2 class="fsElementTitle"><span></span>
+    <a role="button" href="#p">{title}</a></h2></header>
+    <div class="fsElementContent"><iframe src="https://{host}.smore.com/n/{code}"></iframe></div></section>"""
+    html = (
+        panel.format(title="Week of October 12, 2026", host="app", code="89jtd?embedded")
+        + panel.format(title="Week of October 5, 2026", host="app", code="newer1?embedded")
+        + panel.format(title="Week of August 25, 2025", host="secure", code="zngj34?embed=1")
+    )
+    assert _pick_current_issue_link(html) == "https://app.smore.com/n/89jtd?embedded"
+
+
+@pytest.mark.anyio
+async def test_discover_current_issue_reads_the_plain_page_before_rendering_it(monkeypatch):
+    """A page of 35 embeds took the scraper down; its HTML needs no rendering.
+    A page whose plain HTML has no issue link (a bot wall) still gets rendered."""
+    pages = {"https://x/plain": '<a href="https://app.smore.com/n/abc12">September 10, 2026</a>', "https://x/wall": "<p>Client Challenge</p>"}
+    rendered = []
+
+    async def fake_render(url, **_):
+        rendered.append(url)
+        return {"html": '<a href="https://app.smore.com/n/def34">September 10, 2026</a>'}
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(lambda r: httpx.Response(200, text=pages[str(r.url)])), **kw))
+    monkeypatch.setattr(smore_parser.scraper_client, "fetch_html", fake_render)
+
+    assert await smore_parser.discover_current_issue_url("https://x/plain") == "https://app.smore.com/n/abc12"
+    assert rendered == []
+    assert await smore_parser.discover_current_issue_url("https://x/wall") == "https://app.smore.com/n/def34"
+    assert rendered == ["https://x/wall"]

@@ -1,0 +1,391 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: Robbinsville Public School District (Mercer County)",
+  "districts": [
+    {
+      "name": "Robbinsville Public School District",
+      "state": "NJ",
+      "website_url": "https://www.robbinsvillek12.gov",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Robbinsville District Calendar",
+          "url": "https://www.robbinsvillek12.gov/sndreq/generateCalendarICS.php?calendar_id=135923"
+        },
+        {
+          "name": "RHS Calendar",
+          "url": "https://rhs.robbinsvillek12.gov/sndreq/generateCalendarICS.php?calendar_id=135924",
+          "school_slug": "robbinsville-high"
+        },
+        {
+          "name": "PRMS Calendar",
+          "url": "https://prms.robbinsvillek12.gov/sndreq/generateCalendarICS.php?calendar_id=135925",
+          "school_slug": "pond-road-middle"
+        },
+        {
+          "name": "Sharon Calendar",
+          "url": "https://ses.robbinsvillek12.gov/sndreq/generateCalendarICS.php?calendar_id=135926",
+          "school_slug": "sharon-elementary"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.robbinsvillek12.gov/transportation-3",
+      "towns": [
+        "Robbinsville"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "robbinsville-high",
+      "name": "Robbinsville High School",
+      "short_name": "Robbinsville High",
+      "district_name": "Robbinsville Public School District",
+      "school_type": "high",
+      "address": "155 Robbinsville-Edinburg Road, Robbinsville, NJ 08691",
+      "main_phone": "(609) 632-0950",
+      "website_url": "https://rhs.robbinsvillek12.gov",
+      "logo_url": "https://files.smartsites.parentsquare.com/7709/header_logo_img_vv3d01494stv9hilmpb.png",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": "(609) 632-0950",
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/robbinsville/sis/view?gohome=true",
+      "absence_instructions": "Put a note in the Genesis Parent Portal. To leave a confidential phone message, or without electronic access, call the school at 609-632-0950 and follow the prompts for reporting an absence.",
+      "start_time": "7:30 AM",
+      "end_time": "2:05 PM",
+      "early_dismissal_time": "11:45 AM",
+      "delayed_opening_time": "9:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:54"
+          },
+          {
+            "name": "2",
+            "start": "08:59",
+            "end": "10:23"
+          },
+          {
+            "name": "Raven Time",
+            "start": "10:23",
+            "end": "10:33"
+          },
+          {
+            "name": "3 L1 Lunch",
+            "start": "10:38",
+            "end": "11:08"
+          },
+          {
+            "name": "3 L1 Class",
+            "start": "11:13",
+            "end": "12:36"
+          },
+          {
+            "name": "3 L2 Lunch",
+            "start": "11:22",
+            "end": "11:52"
+          },
+          {
+            "name": "3 L2 Class",
+            "start": "10:38",
+            "end": "12:36"
+          },
+          {
+            "name": "3 L3 Lunch",
+            "start": "12:06",
+            "end": "12:36"
+          },
+          {
+            "name": "3 L3 Class",
+            "start": "10:38",
+            "end": "12:01"
+          },
+          {
+            "name": "4",
+            "start": "12:41",
+            "end": "14:05"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:00",
+            "end": "10:00"
+          },
+          {
+            "name": "2",
+            "start": "10:05",
+            "end": "11:09"
+          },
+          {
+            "name": "3 L1 Lunch",
+            "start": "11:14",
+            "end": "11:44"
+          },
+          {
+            "name": "3 L1 Class",
+            "start": "11:49",
+            "end": "13:00"
+          },
+          {
+            "name": "3 L2 Lunch",
+            "start": "11:54",
+            "end": "12:24"
+          },
+          {
+            "name": "3 L2 Class",
+            "start": "11:14",
+            "end": "13:00"
+          },
+          {
+            "name": "3 L3 Lunch",
+            "start": "12:30",
+            "end": "13:00"
+          },
+          {
+            "name": "3 L3 Class",
+            "start": "11:14",
+            "end": "12:25"
+          },
+          {
+            "name": "4",
+            "start": "13:05",
+            "end": "14:05"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "07:30",
+            "end": "08:30"
+          },
+          {
+            "name": "2",
+            "start": "08:35",
+            "end": "09:35"
+          },
+          {
+            "name": "3",
+            "start": "09:40",
+            "end": "10:40"
+          },
+          {
+            "name": "4",
+            "start": "10:45",
+            "end": "11:45"
+          }
+        ]
+      },
+      "athletics_url": "https://robbinsvilleravensathletics.digitalsports.com/pages/schedule/schedule.php",
+      "staff_directory_url": null,
+      "nutrislice_location": "robbinsvillek12nj/robbinsville-high-school",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "pond-road-middle",
+      "name": "Pond Road Middle School",
+      "short_name": "Pond Road Middle",
+      "district_name": "Robbinsville Public School District",
+      "school_type": "middle",
+      "address": "150 Pond Road, Robbinsville, NJ 08691",
+      "main_phone": "(609) 632-0940",
+      "website_url": "https://prms.robbinsvillek12.gov",
+      "logo_url": "https://files.smartsites.parentsquare.com/7710/header_logo_img_jg3vb129g2ui7iddogo.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 632-0940 option 1",
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/robbinsville/sis/view?gohome=true",
+      "absence_instructions": "Report absences by 8 am. Call the Health Line at 609-632-0940 option 1, or use the Genesis Parent Portal (Attendance, Daily Attendance, Notify Office). Doctor's notes for medical absences go to the Main Office or Health Office.",
+      "start_time": "8:00 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "9:30 AM",
+      "bell_periods": null,
+      "athletics_url": "https://robbinsvilleravensathletics.digitalsports.com/pages/schedule/schedule.php",
+      "staff_directory_url": null,
+      "nutrislice_location": "robbinsvillek12nj/pond-road-middle-school",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "sharon-elementary",
+      "name": "Sharon Elementary School",
+      "short_name": "Sharon",
+      "district_name": "Robbinsville Public School District",
+      "school_type": "elementary",
+      "address": "234 Sharon Road, Robbinsville, NJ 08691",
+      "main_phone": "(609) 632-0960",
+      "website_url": "https://ses.robbinsvillek12.gov",
+      "logo_url": "https://files.smartsites.parentsquare.com/7711/header_logo_img_g2bgjsunn9sn8nankcj.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 632-0960",
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/robbinsville/sis/view?gohome=true",
+      "absence_instructions": "Call the school at 609-632-0960 each day of an absence and follow the phone menu to leave a message for the nurse. The district also accepts a note in the Genesis Parent Portal.",
+      "start_time": "9:00 AM",
+      "end_time": "3:45 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Boomer's Nest",
+            "start": "09:00",
+            "end": "09:32"
+          },
+          {
+            "name": "1",
+            "start": "09:34",
+            "end": "10:18"
+          },
+          {
+            "name": "2",
+            "start": "10:20",
+            "end": "11:04"
+          },
+          {
+            "name": "3",
+            "start": "11:06",
+            "end": "11:50"
+          },
+          {
+            "name": "4",
+            "start": "11:52",
+            "end": "12:36"
+          },
+          {
+            "name": "5",
+            "start": "12:38",
+            "end": "13:22"
+          },
+          {
+            "name": "6",
+            "start": "13:24",
+            "end": "14:08"
+          },
+          {
+            "name": "7",
+            "start": "14:10",
+            "end": "14:54"
+          },
+          {
+            "name": "8",
+            "start": "14:56",
+            "end": "15:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Boomer's Nest",
+            "start": "09:00",
+            "end": "09:26"
+          },
+          {
+            "name": "1",
+            "start": "09:28",
+            "end": "09:54"
+          },
+          {
+            "name": "2",
+            "start": "09:56",
+            "end": "10:22"
+          },
+          {
+            "name": "3",
+            "start": "10:24",
+            "end": "10:50"
+          },
+          {
+            "name": "4",
+            "start": "10:52",
+            "end": "11:18"
+          },
+          {
+            "name": "5",
+            "start": "11:20",
+            "end": "11:46"
+          },
+          {
+            "name": "6",
+            "start": "11:48",
+            "end": "12:14"
+          },
+          {
+            "name": "7",
+            "start": "12:16",
+            "end": "12:42"
+          },
+          {
+            "name": "8",
+            "start": "12:44",
+            "end": "13:10"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Boomer's Nest",
+            "start": "10:30",
+            "end": "10:46"
+          },
+          {
+            "name": "1",
+            "start": "10:48",
+            "end": "11:18"
+          },
+          {
+            "name": "2",
+            "start": "11:20",
+            "end": "11:50"
+          },
+          {
+            "name": "3",
+            "start": "11:52",
+            "end": "12:36"
+          },
+          {
+            "name": "4",
+            "start": "12:38",
+            "end": "13:22"
+          },
+          {
+            "name": "5",
+            "start": "13:24",
+            "end": "14:08"
+          },
+          {
+            "name": "6",
+            "start": "14:10",
+            "end": "14:40"
+          },
+          {
+            "name": "7",
+            "start": "14:42",
+            "end": "15:12"
+          },
+          {
+            "name": "8",
+            "start": "15:14",
+            "end": "15:44"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "staff_directory_url": null,
+      "nutrislice_location": "robbinsvillek12nj/sharon-elementary-school",
+      "sacc": null,
+      "activities_calendar_ics_url": null
+    }
+  ],
+  "smore_newsletters": []
+}

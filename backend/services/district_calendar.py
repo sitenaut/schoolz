@@ -267,7 +267,7 @@ async def fetch_district_calendar(ics_url: str, timeout: float = 30.0, since: da
 
 
 _GRADE_SPAN_RE = re.compile(
-    r"(?:\(|\bgrades?\s+)\s*(pre-?k|pk|preschool|k|\d{1,2})\s*[-–]\s*(\d{1,2})\b",
+    r"(?:\(|\bgrades?\s+|(?=\b(?:kindergarten|pre-?k|pk|k)\s*[-–]))\s*(pre-?k|pk|preschool|kindergarten|k|\d{1,2})\s*[-–]\s*(?:grades?\s*)?(\d{1,2})\b",
     re.I,
 )
 # (lowest grade, highest grade, school type); preschool is grade -1.
@@ -279,13 +279,15 @@ def school_types_from_title(title: str, schools: list[tuple[str, str | None, str
     title names a grade span - confirmed real: "STUDENT EARLY DISMISSAL
     (PRESCHOOL-8): Pre-K, Elementary, and Middle Conferences" sits on the
     main district feed with no type filter, so both high schools showed an
-    early dismissal all conference week. Only a parenthesised span or one
-    after "Grade(s)" counts, so a stray number pair can't narrow a closure."""
+    early dismissal all conference week. Only a parenthesised span, one after
+    "Grade(s)" or one starting at kindergarten or pre-K (Ewing: "Kindergarten -
+    Grade 8"; East Windsor: "Early Dismissal, Pre-K-5 Parent Teacher Conferences")
+    counts, so a stray number pair can't narrow a closure."""
     m = _GRADE_SPAN_RE.search(title or "")
     if not m:
         return _types_named_only(title or "", schools)
     lo_raw, hi = m.group(1).lower(), int(m.group(2))
-    lo = -1 if lo_raw.startswith("p") else 0 if lo_raw == "k" else int(lo_raw)
+    lo = -1 if lo_raw.startswith("p") else 0 if lo_raw in ("k", "kindergarten") else int(lo_raw)
     if hi < lo or hi > 12:
         return None
     types = [t for g_lo, g_hi, t in _TYPE_GRADES if g_lo <= hi and lo <= g_hi]
@@ -295,8 +297,11 @@ def school_types_from_title(title: str, schools: list[tuple[str, str | None, str
 # "Early Dismissal- Jr. Sr. High Only", "Early Dismissal - Conferences- PES and
 # Memorial Only" (Pitman): a title that says "only" is for the schools it names,
 # by type word or by one of the district's own schools (its short name, its
-# name, or the initials Pitman writes, "PES").
+# name, or the initials Pitman writes, "PES"). A school's initials narrow without
+# the "only" (Robbinsville: "Early Dismissal SES & PRMS", "RHS Final Exams -
+# Early Dismissal"): capitals that spell one of its schools aren't an accident.
 _ONLY_RE = re.compile(r"\bonly\b", re.I)
+_ALL_STUDENTS_RE = re.compile(r"\ball\s+students\b", re.I)
 _ONLY_TYPE_WORDS = [
     (re.compile(r"\bjr\.?\s*/?\s*sr\.?\s*(?:high|hs)\b|\bhigh\s+schools?\b|\bhs\b", re.I), "high"),
     (re.compile(r"\bmiddle\s+schools?\b|\bms\b", re.I), "middle"),
@@ -313,12 +318,14 @@ def _school_tells(name: str, short_name: str | None) -> tuple[list[str], str | N
 
 
 def _types_named_only(title: str, schools: list[tuple[str, str | None, str | None]] | None) -> list[str] | None:
-    if not _ONLY_RE.search(title):
+    # Hamilton's "One-Session Day - All Students / HS Only Exam #2": everyone's.
+    if _ALL_STUDENTS_RE.search(title):
         return None
-    types = {t for rx, t in _ONLY_TYPE_WORDS if rx.search(title)}
+    says_only = bool(_ONLY_RE.search(title))
+    types = {t for rx, t in _ONLY_TYPE_WORDS if rx.search(title)} if says_only else set()
     for name, short_name, school_type in schools or []:
         names, initials = _school_tells(name, short_name)
-        named = any(re.search(rf"\b{re.escape(n)}\b", title, re.I) for n in names)
+        named = says_only and any(re.search(rf"\b{re.escape(n)}\b", title, re.I) for n in names)
         if school_type and (named or (initials and re.search(rf"\b{initials}\b", title))):
             types.add(school_type)
     # Naming every kind of school the district has narrows nothing.

@@ -9,6 +9,7 @@ import hashlib
 import re
 from datetime import datetime
 
+import httpx
 from bs4 import BeautifulSoup
 
 import scraper_client
@@ -198,6 +199,17 @@ def _leading_text_date(anchor) -> datetime | None:
     return _parse_archive_date(match.group(1)) if match else None
 
 
+def _panel_title_date(anchor) -> datetime | None:
+    """A Finalsite accordion of embedded issues (Lawrence Middle): each iframe
+    sits in an .fsPanel titled with its date, "Week of October 12, 2026", and
+    the panels run newest first, so the last-link fallback would be the oldest."""
+    panel = anchor.find_parent(class_="fsPanel")
+    title = panel.select_one(".fsElementTitle") if panel else None
+    if not title:
+        return None
+    return _parse_archive_date(re.sub(r"^week of\s+", "", title.get_text(" ", strip=True), flags=re.I))
+
+
 def _is_marked_current(anchor) -> bool:
     """An explicit, unambiguous label instead of a date (confirmed real:
     Audubon HS's "Counselor's Corner" link text literally reads "CURRENT
@@ -244,7 +256,8 @@ def _pick_current_issue_link(html: str) -> str | None:
     a parseable date in the link's own text (Cooper's style); a "Last
     edited <date>" string near the link (a Smore author profile's style);
     a date sitting as plain text immediately before the link (Audubon HS's
-    style); falling back to the *last* smore.com/n/ link in document order
+    style); the title of the accordion panel holding it (Lawrence Middle's);
+    falling back to the *last* smore.com/n/ link in document order
     (a real archive lists oldest-to-newest) when nothing else yields a
     signal, since a page that link-texts its issues some other way (an
     icon, "Read now") still reliably lists them chronologically.
@@ -279,6 +292,7 @@ def _pick_current_issue_link(html: str) -> str | None:
             _parse_archive_date(anchor.get_text(strip=True))
             or _nearby_last_edited_date(anchor)
             or _leading_text_date(anchor)
+            or _panel_title_date(anchor)
         )
         if found:
             dated.append((href, found))
@@ -311,7 +325,21 @@ async def discover_current_issue_url(archive_page_url: str) -> str | None:
     profile (confirmed real: Clara Barton Elementary) - a second,
     client-rendered Smore page listing every issue that person has ever
     published. When the first fetch finds no direct issue link, this
-    follows that one extra hop."""
+    follows that one extra hop.
+
+    A plain GET goes first: rendering Lawrence Middle's archive, a page of 35
+    embedded issues, took the scraper down with a 502 while its HTML is all
+    there unrendered. A bot wall or a client-rendered page holds no issue link,
+    so it still reaches the scraper."""
+    try:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}) as client:
+            plain = await client.get(archive_page_url)
+        link = _pick_current_issue_link(plain.text) if plain.status_code == 200 else None
+    except httpx.HTTPError:
+        link = None
+    if link:
+        return link
+
     result = await scraper_client.fetch_html(archive_page_url, wait_for_selector="a", block_assets=True)
     link = _pick_current_issue_link(result["html"])
     if link:

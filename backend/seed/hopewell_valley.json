@@ -1,0 +1,442 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: Hopewell Valley Regional School District (Mercer County)",
+  "districts": [
+    {
+      "name": "Hopewell Valley Regional School District",
+      "state": "NJ",
+      "website_url": "https://www.hvrsd.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Hopewell Valley District",
+          "platform": "apptegy",
+          "org_id": "3990",
+          "skip_sections": [
+            "HW Events",
+            "HS Events",
+            "TG Events",
+            "TL Events",
+            "BT Events"
+          ]
+        },
+        {
+          "name": "Hopewell Valley Central High",
+          "platform": "apptegy",
+          "org_id": "3991",
+          "school_slug": "hopewell-valley-central-high",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Timberlane Middle",
+          "platform": "apptegy",
+          "org_id": "3992",
+          "school_slug": "timberlane-middle",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Bear Tavern Elementary",
+          "platform": "apptegy",
+          "org_id": "3993",
+          "school_slug": "bear-tavern-elementary",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Hopewell Elementary",
+          "platform": "apptegy",
+          "org_id": "3996",
+          "school_slug": "hopewell-elementary",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Toll Gate Grammar",
+          "platform": "apptegy",
+          "org_id": "4000",
+          "school_slug": "toll-gate-grammar",
+          "skip_sections": [
+            "District Events"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.hvrsd.org/page/transportation",
+      "towns": [
+        "Hopewell Township",
+        "Hopewell Borough",
+        "Pennington"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "bear-tavern-elementary",
+      "name": "Bear Tavern Elementary School",
+      "short_name": "Bear Tavern",
+      "district_name": "Hopewell Valley Regional School District",
+      "school_type": "elementary",
+      "address": "1162 Bear Tavern Rd, Titusville, NJ 08560",
+      "main_phone": "(609) 737-4005",
+      "website_url": "https://btes.hvrsd.org/o/btes",
+      "apptegy_org_id": "3993",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 737-4005, option 2",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report your student's absence, call the school's attendance / Tel-Safe line.",
+      "start_time": "8:35 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:05 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3993/logo/3564/logo_hvrsd-btes.png",
+      "staff_directory_url": null,
+      "givebacks_shortname": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/34/133"
+    },
+    {
+      "slug": "hopewell-elementary",
+      "name": "Hopewell Elementary School",
+      "short_name": "Hopewell Elementary",
+      "district_name": "Hopewell Valley Regional School District",
+      "school_type": "elementary",
+      "address": "35 Princeton Ave, Hopewell, NJ 08525",
+      "main_phone": "(609) 737-4007",
+      "website_url": "https://hes.hvrsd.org/o/hes",
+      "apptegy_org_id": "3996",
+      "absence_method": "phone",
+      "absence_emails": [
+        "hwmainoffice@hvrsd.org"
+      ],
+      "absence_phone": "(609) 737-4007, option 2",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Report an absence or late arrival by 8:30 AM: call the TelSafe line and leave a message, or email the HES Main Office and your child's teacher. Leave your child's full name, grade, homeroom teacher and the reason. The line is available 24 hours a day.",
+      "start_time": "8:35 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:05 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3996/logo/3210/logo_hvrsd-hes.png",
+      "staff_directory_url": null,
+      "givebacks_shortname": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/34/134"
+    },
+    {
+      "slug": "stony-brook-elementary",
+      "name": "Stony Brook Elementary School",
+      "short_name": "Stony Brook",
+      "district_name": "Hopewell Valley Regional School District",
+      "school_type": "elementary",
+      "address": "20 Stephenson Rd, Pennington, NJ 08534",
+      "main_phone": "(609) 737-4006",
+      "website_url": "https://sbes.hvrsd.org/o/sbes",
+      "apptegy_org_id": "3998",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 737-4006, option 2",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report your student's absence, call the school's attendance / Tel-Safe line.",
+      "start_time": "8:35 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:05 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3998/logo/3565/logo_hvrsd-sbes.png",
+      "staff_directory_url": null,
+      "givebacks_shortname": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/34/135"
+    },
+    {
+      "slug": "toll-gate-grammar",
+      "name": "Toll Gate Grammar School",
+      "short_name": "Toll Gate",
+      "district_name": "Hopewell Valley Regional School District",
+      "school_type": "elementary",
+      "address": "275 S Main St, Pennington, NJ 08534",
+      "main_phone": "(609) 737-4008",
+      "website_url": "https://tgg.hvrsd.org/o/tgg",
+      "apptegy_org_id": "4000",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 737-4008, option 2",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report your student's absence, call the school's attendance / Tel-Safe line.",
+      "start_time": "8:35 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:05 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/4000/logo/3567/logo_hvrsd-tgg.png",
+      "staff_directory_url": null,
+      "givebacks_shortname": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/34/136"
+    },
+    {
+      "slug": "timberlane-middle",
+      "name": "Timberlane Middle School",
+      "short_name": "Timberlane",
+      "district_name": "Hopewell Valley Regional School District",
+      "school_type": "middle",
+      "address": "51 S Timberlane Dr, Pennington, NJ 08534",
+      "main_phone": "(609) 737-4004",
+      "website_url": "https://tms.hvrsd.org/o/tms",
+      "apptegy_org_id": "3992",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 737-4004, option 2",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report your student's absence, call the school's attendance / Tel-Safe line.",
+      "start_time": "7:45 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:15 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:45",
+            "end": "07:50"
+          },
+          {
+            "name": "Session 1",
+            "start": "07:53",
+            "end": "08:46"
+          },
+          {
+            "name": "Session 2",
+            "start": "08:49",
+            "end": "09:42"
+          },
+          {
+            "name": "Session 3",
+            "start": "09:45",
+            "end": "10:38"
+          },
+          {
+            "name": "Lunch",
+            "start": "10:40",
+            "end": "11:25"
+          },
+          {
+            "name": "PACK",
+            "start": "11:27",
+            "end": "11:57"
+          },
+          {
+            "name": "Session 4",
+            "start": "12:00",
+            "end": "12:53"
+          },
+          {
+            "name": "Session 5",
+            "start": "12:56",
+            "end": "13:49"
+          },
+          {
+            "name": "Session 6",
+            "start": "13:52",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "07:45",
+            "end": "07:50"
+          },
+          {
+            "name": "Session 1",
+            "start": "07:53",
+            "end": "08:31"
+          },
+          {
+            "name": "Session 2",
+            "start": "08:35",
+            "end": "09:13"
+          },
+          {
+            "name": "Session 3",
+            "start": "09:17",
+            "end": "09:55"
+          },
+          {
+            "name": "Session 4",
+            "start": "09:59",
+            "end": "10:37"
+          },
+          {
+            "name": "Session 5",
+            "start": "10:41",
+            "end": "11:19"
+          },
+          {
+            "name": "Session 6",
+            "start": "11:22",
+            "end": "12:00"
+          }
+        ]
+      },
+      "athletics_url": "https://58170.digitalsports.com/",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3992/logo/3559/Timberlane_Head_Logo.png",
+      "staff_directory_url": null,
+      "givebacks_shortname": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/34/132"
+    },
+    {
+      "slug": "hopewell-valley-central-high",
+      "name": "Hopewell Valley Central High School",
+      "short_name": "Central High",
+      "district_name": "Hopewell Valley Regional School District",
+      "school_type": "high",
+      "address": "259 Pennington Titusville Rd, Pennington, NJ 08534",
+      "main_phone": "(609) 737-4003",
+      "website_url": "https://hvchs.hvrsd.org/o/hvchs",
+      "apptegy_org_id": "3991",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 737-4003, option 1",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report your student's absence, call the school's attendance / Tel-Safe line.",
+      "start_time": "7:45 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:15 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Session 1",
+            "start": "07:45",
+            "end": "08:41"
+          },
+          {
+            "name": "Session 2",
+            "start": "08:45",
+            "end": "09:38"
+          },
+          {
+            "name": "Recitation",
+            "start": "09:42",
+            "end": "10:17"
+          },
+          {
+            "name": "Session 3",
+            "start": "10:21",
+            "end": "11:14"
+          },
+          {
+            "name": "Lunch",
+            "start": "11:14",
+            "end": "11:58"
+          },
+          {
+            "name": "Session 4",
+            "start": "11:58",
+            "end": "12:51"
+          },
+          {
+            "name": "Session 5",
+            "start": "12:55",
+            "end": "13:48"
+          },
+          {
+            "name": "Session 6",
+            "start": "13:52",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:45",
+            "end": "08:16"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:20",
+            "end": "08:48"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:52",
+            "end": "09:20"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:24",
+            "end": "09:52"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:56",
+            "end": "10:24"
+          },
+          {
+            "name": "Period 6",
+            "start": "10:28",
+            "end": "10:56"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:00",
+            "end": "11:28"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:32",
+            "end": "12:00"
+          }
+        ]
+      },
+      "athletics_url": "https://63567.digitalsports.com/",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3991/logo/3555/logo_hvrsd-hvchs.png",
+      "staff_directory_url": null,
+      "givebacks_shortname": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/34/131"
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://hes.hvrsd.org/o/hes",
+      "label": "Hopewell's Happenings",
+      "school_slug": "hopewell-elementary",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

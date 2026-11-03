@@ -321,3 +321,30 @@ async def test_rotation_only_keeps_the_high_schools_lettered_days_and_drops_the_
         rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == hs.id).order_by(SchoolContentItem.start_date))).scalars().all()
         assert [(r.title, r.scope) for r in rows] == [("Day A", "school"), ("Day B", "school")]
         assert (await db.execute(select(SchoolContentItem).where(SchoolContentItem.district_id == district.id))).scalars().all() == []
+
+
+@pytest.mark.anyio
+async def test_a_schools_own_feed_reads_a_prefixed_rotation_day(monkeypatch):
+    """Ewing's Parkway calendar writes "PES Day 4". Stored as "Day 4", or no
+    reader takes it for a rotation day; anything else on the feed keeps its title."""
+    feed = [_event("p-4", "PES Day 4", 8), _event("p-fair", "PES Book Fair", 9)]
+
+    async def fake_fetch(url: str, **_) -> list[dict]:
+        return [dict(e) for e in feed]
+
+    monkeypatch.setattr(district_calendar_scan, "fetch_district_calendar", fake_fetch)
+    tag = uuid.uuid4().hex[:8]
+    async with database.SessionLocal() as db:
+        district = District(name=f"Own Feed Prefix District {tag}")
+        db.add(district)
+        await db.flush()
+        school = School(name=f"Own Feed Elementary {tag}", slug=f"own-feed-{tag}", district_id=district.id, school_type="elementary")
+        db.add(school)
+        await db.flush()
+        district.ics_feeds = [{"name": "Parkway", "url": "https://x/p.ics", "school_slug": school.slug, "school_title_prefixes": {"PES ": school.slug}}]
+        await db.commit()
+
+        await district_calendar_scan.run(db, {"district_id": district.id})
+        await db.flush()
+        rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == school.id))).scalars().all()
+        assert {r.title for r in rows} == {"Day 4", "PES Book Fair"}

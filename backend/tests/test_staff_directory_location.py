@@ -98,3 +98,10 @@ async def test_a_narrowed_directory_drops_the_district_staff_it_no_longer_lists(
         ids = set((await db.execute(select(StaffMember.source_constituent_id).where(StaffMember.school_id == school.id))).scalars().all())
         # The other school's principal is gone; a row from another source stays.
         assert ids == {"1", "3", "njdoe:hib"}
+
+
+def test_the_fuller_name_wins_when_two_options_fit_a_school():
+    html = """<select name="const_search_location"><option value="63">Yardville Elementary School</option>
+    <option value="64">Yardville Heights Elementary School</option></select>"""
+    assert own_location_option(html, ["Yardville Heights", "Yardville Heights Elementary School"]) == ("64", "Yardville Heights Elementary School")
+    assert own_location_option(html, ["Yardville", "Yardville Elementary School"]) == ("63", "Yardville Elementary School")

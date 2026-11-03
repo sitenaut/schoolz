@@ -94,6 +94,7 @@ _FIND_US_TEMPLATE = """<html><body><footer>
       <span>Thomas Sharp Elementary </span>
       <span> 400 Comly Ave</span>
       <span>Collingswood , NJ 08107</span>
+      <span>office@collsk12.org</span>
       <span><a href="tel:(856) 962-5707" class="tel-link">(856) 962-5707</a></span>
     </p>
   </div>

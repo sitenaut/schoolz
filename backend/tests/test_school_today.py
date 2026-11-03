@@ -30,9 +30,14 @@ def test_classify_day_precedence_and_labels():
     assert classify_day(["District Closed for Students - FALL RECESS"]) == ("closed", "FALL RECESS")
     assert classify_day(["District is closed - Juneteenth"]) == ("closed", "Juneteenth")
     assert classify_day(["DIST: Schools Closed - Storm Damage"]) == ("closed", "Storm Damage")
+    assert classify_day(["Schools Closed, Labor Day"]) == ("closed", "Labor Day")
     assert classify_day(["DISTRICT CLOSED"]) == ("closed", None)
     # A bare closure first doesn't hide the reason another row gives.
     assert classify_day(["SCHOOL CLOSED", "SCHOOLS CLOSED - NJEA Convention"]) == ("closed", "NJEA Convention")
+    assert classify_day(["Early Dismissl - Last Day of School for Students"]) == ("early_dismissal", "Early dismissal")
+    assert classify_day(["Schools Closed for Students Only"]) == ("closed", None)
+    assert classify_day(["ECC Back to School Night/Reduced Day"]) == ("early_dismissal", "Early dismissal")
+    assert classify_day(["K-12 Early Dismissal (Half Day Preschool Closed)"]) == ("early_dismissal", "Early dismissal")
     assert classify_day(["EARLY DISMISSAL - Staff In-Service"]) == ("early_dismissal", "Early dismissal")
     # Closed wins over early dismissal on the same day.
     assert classify_day(["EARLY DISMISSAL", "SCHOOLS CLOSED - Snow"])[0] == "closed"
@@ -171,6 +176,10 @@ def test_school_types_from_title_grade_spans():
     assert school_types_from_title("STUDENT EARLY DISMISSAL (PRESCHOOL-8): Pre-K, Elementary, and Middle Conferences") == ["other", "elementary", "middle"]
     assert school_types_from_title("Early Dismissal (K-5)") == ["elementary"]
     assert school_types_from_title("Conferences for Grades 9-12") == ["high", "alternative"]
+    assert school_types_from_title("EARLY DISMISSAL Kindergarten - Grade 8: Parent Conferences") == ["elementary", "middle"]
+    assert school_types_from_title("Early Dismissal, Pre-K-5 Parent Teacher Conferences") == ["other", "elementary"]
+    assert school_types_from_title("K-8 Art Gala Reception") == ["elementary", "middle"]
+    assert school_types_from_title("Park-5 Fun Run") is None
     assert school_types_from_title("SCHOOLS CLOSED - Presidents' Day") is None
     assert school_types_from_title("IN-SERVICE (Eid al-Fitr)") is None
     assert school_types_from_title("Board meeting 7-9 PM") is None
@@ -329,6 +338,13 @@ def test_a_title_that_says_only_applies_to_the_schools_it_names():
     assert school_types_from_title("Early Dismissal Jr./Sr. HS only", pitman) == ["high"]
     assert school_types_from_title("Early Dismissal - Conferences- PES and Memorial Only", pitman) == ["elementary"]
     assert school_types_from_title("Early Dismissal/Memorial Only", pitman) == ["elementary"]
+    # Initials narrow with no "only"; a name or a type word needs it.
+    robbinsville = [("Sharon Elementary School", "Sharon", "elementary"), ("Pond Road Middle School", "Pond Road Middle", "middle"), ("Robbinsville High School", "Robbinsville High", "high")]
+    assert school_types_from_title("Early Dismissal Day SES & PRMS", robbinsville) == ["elementary", "middle"]
+    assert school_types_from_title("RHS Final Exams - Early Dismissal", robbinsville) == ["high"]
+    assert school_types_from_title("One-Session Day - All Students / HS Only Exam #2", robbinsville) is None
+    assert school_types_from_title("Sharon Road closed, buses delayed", robbinsville) is None
+    assert school_types_from_title("Early dismissal for middle school conferences", robbinsville) is None
     # no "only", or every kind of school named: the whole district
     assert school_types_from_title("Memorial Day Schools Closed", pitman) is None
     assert school_types_from_title("Early Dismissal - PES, Memorial and Jr./Sr. High only", pitman) is None

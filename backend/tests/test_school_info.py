@@ -13,6 +13,11 @@ def test_tel_link_drops_a_screen_reader_label():
     assert _parse_location(html, "https://x.org")["main_phone"] == "(856) 662-8464"
 
 
+def test_a_label_inside_the_area_code_parentheses_keeps_both():
+    html = f'{_ADDRESS}<div class="fsLocationPhone"><a href="tel:(Main 609) 631-4161"><span class="fsStyleSROnly">Phone: </span>(Main 609) 631-4161</a></div>'
+    assert _parse_location(html, "https://x.org")["main_phone"] == "(609) 631-4161"
+
+
 def test_phone_from_plain_text_footer():
     # Merchantville prints the number with a "P:" label and no tel: link.
     html = f'{_ADDRESS}<div class="fsLocationPhone">P: (856) 663-1091</div><div class="fsLocationFax">F: (856) 486-9755</div>'

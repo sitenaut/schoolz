@@ -69,6 +69,13 @@ def test_presence_footer_both_template_variants():
     out = _parse_presence_footer(delran, "https://dhs.example.org")
     assert out["address"] == "50 Hartford Rd., Delran, NJ 08075" and out["main_phone"] == "856.461.6100"
 
+    trenton = (
+        '<div id="footer"><div id="top-footer"><div class="inside-padding">200 William Street, Trenton, NJ  08610 | Phone '
+        '<span class="footer-phone"></span>609-656-4720<span class="fax-n"> | Fax <span class="footer-fax">609-421-6386</span></span></div></div></div>'
+    )
+    out = _parse_presence_footer(trenton, "https://bfes.trentonk12.org")
+    assert out["address"] == "200 William Street, Trenton, NJ 08610" and out["main_phone"] == "609-656-4720"
+
 
 def test_presence_system_groups_are_not_staff(monkeypatch):
     """Gateway's /district/staff_directory lists every login account under

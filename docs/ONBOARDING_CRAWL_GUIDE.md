@@ -597,6 +597,8 @@ town as added or skipped.
      a base64 `eid`) → `gcal_sources`, reusing the job's existing `api_key`.
      Towns often run separate events, meetings and pickup calendars; add
      only the events one.
+   - **EvoGov** (`/meetings/icalendar`) → `ical_sources` with
+     `/meetings/icalendar/calendar/<id>/` and `upcoming_only: true`.
    - **Apptegy / Thrillshare** (`thrillshare.com/api/v4/o/<org>/cms/events`
      in the page) → `thrillshare_sources` with that org id. It's not the
      school district's org.
