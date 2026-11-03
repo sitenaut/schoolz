@@ -1,0 +1,192 @@
+{
+  "exported_at": "2026-11-03T12:00:00Z",
+  "source": "onboarding: Burlington and Gloucester County town calendars for /local",
+  "districts": [],
+  "schools": [],
+  "smore_newsletters": [],
+  "local_events": {
+    "Local events refresh": {
+      "json_sources": [
+        {
+          "name": "palmyra_borough",
+          "url": "https://boroughofpalmyra.com/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=palmyraboroughnj&relative_revize_url=//cms3.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": ["palmyra", "municipal"],
+          "location": "Palmyra, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "^private\\b",
+            "celebration of life",
+            "birthday",
+            "basketball",
+            "tennis",
+            "serves u right",
+            "boro blasters",
+            "\\bPPYA\\b",
+            "\\bPRSC\\b",
+            "soccer",
+            "riverfront seniors$",
+            "\\bESM\\b",
+            "all 4 sports",
+            "^election day$",
+            "^christmas eve$",
+            "^new year'?s eve$"
+          ]
+        },
+        {
+          "name": "west_deptford_township",
+          "url": "https://www.westdeptford.com/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=westdeptfordnj&relative_revize_url=//cms9.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": ["west-deptford", "municipal"],
+          "location": "West Deptford, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\btrash\\b", "\\brecycl"]
+        },
+        {
+          "name": "elk_township",
+          "url": "https://www.elktownshipnj.gov/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=elktownshipnj&relative_revize_url=//webgen1.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": ["elk", "municipal"],
+          "location": "Elk Township, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\blorem\\b"]
+        }
+      ],
+      "tribe_sources": [
+        {
+          "name": "paulsboro_borough",
+          "base_url": "https://paulsboronj.org",
+          "days_ahead": 90,
+          "default_categories": ["paulsboro", "municipal"],
+          "location": "Paulsboro, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "woolwich_township",
+          "base_url": "https://woolwichtwp.org",
+          "days_ahead": 90,
+          "default_categories": ["woolwich", "municipal"],
+          "location": "Woolwich Township, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["^Township Committee\\b", "\\bcommittee$", "\\btaxes\\b", "^JLUB\\b", "\\b(?:full closure|road closed)\\b"]
+        },
+        {
+          "name": "harrison_township",
+          "base_url": "https://harrisontwp.us",
+          "days_ahead": 60,
+          "default_categories": ["harrison-township", "municipal"],
+          "location": "Harrison Township, NJ",
+          "skip_meetings": true
+        }
+      ],
+      "thrillshare_sources": [
+        {
+          "name": "bordentown_township",
+          "org_id": "20093",
+          "site_url": "https://www.bordentowntownship.com",
+          "default_categories": ["bordentown-township", "municipal"],
+          "location": "Bordentown Township, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["property taxes due"]
+        },
+        {
+          "name": "bordentown_city",
+          "org_id": "21837",
+          "site_url": "https://www.cityofbordentown.com",
+          "default_categories": ["bordentown-city", "municipal"],
+          "location": "Bordentown, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["street sweep", "\\b(?:trash|recycl|vegetative)", "water bills? due", "property taxes", "mayor'?s hours", "tax assessor"]
+        }
+      ],
+      "rss_sources": [
+        {
+          "name": "fieldsboro_borough",
+          "url": "https://www.fieldsboro.us/calendar/rss",
+          "treat_pubdate_as_start": true,
+          "via_scraper": true,
+          "prefer_residential": true,
+          "default_categories": ["fieldsboro", "municipal"],
+          "location": "Fieldsboro, NJ",
+          "skip_meetings": true
+        }
+      ],
+      "revize_calendar_app_sources": [
+        {
+          "name": "pitman_borough",
+          "base_url": "https://www.pitman.org",
+          "calendar_ids": [1],
+          "months_ahead": 3,
+          "default_categories": ["pitman", "municipal"],
+          "location": "Pitman, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\bcommittee\\b"]
+        }
+      ],
+      "ical_sources": [
+        {
+          "name": "pemberton_borough",
+          "url": "https://calendar.google.com/calendar/ical/pembertonborough%40gmail.com/public/basic.ics",
+          "upcoming_only": true,
+          "default_categories": ["pemberton-borough", "municipal"],
+          "location": "Pemberton Borough, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["^\\W*closed\\W*$", "\\bpick ?up\\b"]
+        },
+        {
+          "name": "riverside_township",
+          "url": "https://calendar.google.com/calendar/ical/riversidetwpnj%40gmail.com/public/basic.ics",
+          "upcoming_only": true,
+          "default_categories": ["riverside", "municipal"],
+          "location": "Riverside, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\b(?:taxes|tax|sewer)\\b.*\\bdue\\b", "\\bgarage open\\b"]
+        },
+        {
+          "name": "franklin_township_gloucester",
+          "url": "https://www.franklintownshipnj.org/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+          "default_categories": ["franklin-township", "municipal"],
+          "location": "Franklinville, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["^historical center open$"]
+        },
+        {
+          "name": "swedesboro_borough",
+          "url": "https://calendar.google.com/calendar/ical/d11c17d35ccadf64f39b18af0a58d7db62c2cfdd9b39cf5d2ea9a634f31b147e%40group.calendar.google.com/public/basic.ics",
+          "upcoming_only": true,
+          "default_categories": ["swedesboro", "municipal"],
+          "location": "Swedesboro, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "east_greenwich_township",
+          "url": "https://calendar.google.com/calendar/ical/egtwponline%40gmail.com/public/basic.ics",
+          "upcoming_only": true,
+          "default_categories": ["east-greenwich", "municipal"],
+          "location": "East Greenwich, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "south_harrison_township",
+          "url": "https://calendar.google.com/calendar/ical/s.harrisontwp%40gmail.com/public/basic.ics",
+          "upcoming_only": true,
+          "default_categories": ["south-harrison", "municipal"],
+          "location": "South Harrison, NJ",
+          "skip_meetings": true
+        }
+      ]
+    }
+  }
+}

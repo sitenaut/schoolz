@@ -618,7 +618,12 @@ town as added or skipped.
      answers) → `tribe_sources`.
    - **Google Calendar embed** (`calendar.google.com/calendar/embed?src=`, or
      the Simple Calendar plugin `simcal`, whose event links carry the id in
-     a base64 `eid`) → `gcal_sources`, reusing the job's existing `api_key`.
+     a base64 `eid`) → `ical_sources` with the calendar's public feed,
+     `https://calendar.google.com/calendar/ical/<id, @ as %40>/public/basic.ics`,
+     and `upcoming_only: true`. Not `gcal_sources`: the only API key the job
+     has is phila.gov's own, sent with phila.gov's referer. The iCal reader
+     doesn't expand repeating events, so a weekly series shows only its first
+     date; on a town calendar those are mostly meetings and pickups anyway.
      Towns often run separate events, meetings and pickup calendars; add
      only the events one.
    - **EvoGov** (`/meetings/icalendar`) → `ical_sources` with
@@ -634,10 +639,18 @@ town as added or skipped.
    trash/recycling pickups and tax due dates. That's most small towns:
    Laurel Springs, Bellmawr, Moonachie and Southampton were all skipped for
    it. Add the feed or the skip to `docs/LOCAL_EVENTS_SOURCES.md` either way.
-4. Prod params are one JSON document, and `PATCH` replaces all of it: read
-   the current params, add the entry, and write back once. Never write from
-   two places at the same time. Don't rename an existing entry, because
-   removing a name deletes its events.
+   Test-fetch shows five titles per source, too few to see what an
+   `exclude_title_patterns` drops; a local script over
+   `local_events.pipeline._build_sources` and `filters.apply_filters` prints
+   every kept and dropped title. Office closures stay (`filters.py`: parents
+   plan around them), but a bare "CLOSED" that doesn't say what is closed
+   can go.
+4. Write the entries into `backend/seed/<county>_local_events.json` (shape:
+   `mercer_local_events.json`) and import it to prod with the district
+   seeds (`POST /admin/config/import`). The import merges each entry into
+   the job by `name` and never removes one, where a hand-written `PATCH`
+   replaces the job's whole params document. Don't rename an existing
+   entry, because removing a name deletes its events.
 
 ---
 

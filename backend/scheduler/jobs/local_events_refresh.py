@@ -364,6 +364,8 @@ EVENTS_REFRESH_PARAM_SCHEMA = {
                         "description": "Use the article publish date as the event start when no explicit event date is present.",
                         "default": False,
                     },
+                    "via_scraper": {"type": "boolean", "default": False, "description": "Fetch the feed through the Playwright scraper, for sites whose Cloudflare challenges plain HTTP."},
+                    "prefer_residential": {"type": "boolean", "default": False, "description": "With via_scraper: try the home-IP scraper first."},
                 },
             },
         },

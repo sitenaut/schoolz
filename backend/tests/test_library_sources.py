@@ -1,14 +1,15 @@
 """Library calendar adapters: LibCal, BiblioCommons, Modern Events Calendar,
-Drupal FullCalendar, plus the venue/scraper options added to tribe and iCal."""
+Drupal FullCalendar, plus the venue/scraper options added to tribe, iCal and RSS."""
+import html
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from functools import partial
 from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
 
-from local_events.sources import bibliocommons, drupal_fullcalendar, ical, libcal, mec
+from local_events.sources import bibliocommons, drupal_fullcalendar, ical, libcal, mec, rss
 from local_events.sources.bibliocommons import BiblioCommonsSource
 from local_events.sources.drupal_fullcalendar import DrupalFullCalendarSource
 from local_events.sources.ical import ICalSource
@@ -153,6 +154,37 @@ async def test_ical_venue_override_and_upcoming_only(monkeypatch):
 
     assert [e.title for e in kept] == ["Upcoming"] and kept[0].venue_name == "Haddonfield Public Library"
     assert len(everything) == 2 and everything[0].venue_name == "US"
+
+
+@pytest.mark.anyio
+async def test_rss_via_scraper_reads_the_feed_out_of_chromiums_text_viewer(monkeypatch):
+    """Fieldsboro's Cloudflare answers plain HTTP with a challenge. Through a
+    scraper the feed comes back as the page Chromium shows for it: the XML
+    escaped inside a <pre>."""
+    feed = (
+        '<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>Upcoming Events Feed</title>'
+        "<item><title>Annual Christmas Tree Lighting</title><link>https://town.test/community/page/tree-lighting</link>"
+        # Its HTML escaped twice, as Fieldsboro's is.
+        '<description>&amp;lt;div dir="auto"&amp;gt;Join us&amp;amp;nbsp;at Town Hall&amp;lt;/div&amp;gt;</description>'
+        '<pubDate>Sun, 29 Nov 2026 17:30:00 -0500</pubDate><guid isPermaLink="false">abc.0</guid></item>'
+        "</channel></rss>"
+    )
+    viewer = f'<html><head><meta name="color-scheme" content="light dark"></head><body><pre style="word-wrap: break-word;">{html.escape(feed)}</pre></body></html>'
+    calls = []
+
+    async def fake_raw(url, timeout=90.0, prefer_residential=False):
+        calls.append((url, prefer_residential))
+        return viewer
+
+    monkeypatch.setattr(rss, "fetch_raw_via_scraper", fake_raw)
+    src = rss.RSSSource("town", "https://town.test/calendar/rss", treat_pubdate_as_start=True, via_scraper=True, prefer_residential=True)
+    events = await src.fetch()
+
+    assert calls == [("https://town.test/calendar/rss", True)]
+    assert [(e.title, e.start_time) for e in events] == [("Annual Christmas Tree Lighting", datetime(2026, 11, 29, 22, 30, tzinfo=UTC))]
+    assert " ".join(events[0].description.split()) == "Join us at Town Hall"
+    # A feed that arrives as itself (a download, or plain HTTP) is left alone.
+    assert rss._unwrap_text_viewer(feed) == feed
 
 
 @pytest.mark.anyio

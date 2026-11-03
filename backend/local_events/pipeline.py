@@ -91,6 +91,8 @@ def _build_sources(params: dict) -> list[Source]:
                 url=entry["url"],
                 default_categories=list(entry.get("default_categories") or []),
                 treat_pubdate_as_start=bool(entry.get("treat_pubdate_as_start", False)),
+                via_scraper=bool(entry.get("via_scraper", False)),
+                prefer_residential=bool(entry.get("prefer_residential", False)),
             )
         )
     for entry in params.get("scraper_sources") or []:
