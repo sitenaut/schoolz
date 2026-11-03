@@ -175,7 +175,8 @@ async def discover_school_info(website_url: str, timeout_ms: int = 20_000) -> di
             for i, s in enumerate(spans)
             if i > 0 and not s.select_one("a.tel-link")
             for text in [s.get_text(strip=True)]
-            if text
+            # Hightstown High's footer has its communications mailbox in a span too.
+            if text and "@" not in text
         ]
         result["address"] = ", ".join(dict.fromkeys(address_bits)) or None
 

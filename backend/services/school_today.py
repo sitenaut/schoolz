@@ -63,8 +63,9 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 # school_status.says_closed: a bare "closed" counts, as most feeds word a
 # closure, an office's or a gym's doesn't. "No Students" (a staff
 # development day) and "Single Session" (a half day) are how Delran and
-# Cinnaminson word it, "4 Hour Day for Students" Edgewater Park.
-_EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+# Cinnaminson word it, "4 Hour Day for Students" Edgewater Park, "Reduced
+# Day" Trenton.
+_EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 # A status title scoped to grades by its own wording: "PCPEP - K-8 Single
 # Session", "K-5 Single Session - Parent Conferences".
 _PRESCHOOL_ONLY_RE = re.compile(r"\bpre-?(?:school|k)\b.*\bonly\b|\bonly\b.*\bpre-?(?:school|k)\b", re.I)
@@ -115,9 +116,10 @@ def classify_day(titles: list[str]) -> tuple[str, str | None]:
     for t in titles:
         if says_closed(t) and not is_break_only(t):
             # "District Closed for Students - FALL RECESS" is labelled "FALL RECESS",
-            # Mantua's "DIST: Schools Closed - Storm Damage" "Storm Damage".
+            # Mantua's "DIST: Schools Closed - Storm Damage" "Storm Damage",
+            # East Windsor's "Schools Closed, Labor Day" "Labor Day".
             label = re.sub(
-                r"^\s*(?:[\w'./]+:\s*)?(schools?|district)(?:\s+(?:is|are))?\s+closed(?:\s+(?:for|to)\s+(?:all\s+)?students)?\s*[-:–]?\s*",
+                r"^\s*(?:[\w'./]+:\s*)?(schools?|district)(?:\s+(?:is|are))?\s+closed(?:\s+(?:for|to)\s+(?:all\s+)?students(?:\s+only)?)?\s*[-:–,]?\s*",
                 "",
                 t,
                 flags=re.I,

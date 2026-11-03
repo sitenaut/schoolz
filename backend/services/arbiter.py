@@ -167,8 +167,9 @@ async def fetch_statuses(entity_id: str, start: date, end: date, timeout: float 
     return out
 
 
-# Delsea's high-school entity also names them "Basketball - Boys 7/8th".
-_MIDDLE_SCHOOL_TEAM_RE = re.compile(r"\bmiddle school\s*$|\b7(?:th)?\s*/\s*8(?:th)?\s*$", re.I)
+# Delsea's high-school entity also names them "Basketball - Boys 7/8th", and
+# Lawrence's DigitalSports site "Soccer - Girls Middle School - Blue".
+_MIDDLE_SCHOOL_TEAM_RE = re.compile(r"\bmiddle school\s*(?:-.*)?$|\b7(?:th)?\s*/\s*8(?:th)?\s*$", re.I)
 
 
 def is_middle_school_team(event: dict) -> bool:

@@ -10,6 +10,7 @@ district id 4651): one "Lunch" meal type and one "Regular" line per school.
 
 import asyncio
 import re
+import unicodedata
 from datetime import date
 from difflib import SequenceMatcher
 
@@ -37,7 +38,10 @@ _CARDINALS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "s
 
 
 def _norm(name: str) -> str:
-    cleaned = re.sub(r"[^a-z0-9 ]", " ", name.lower())
+    # Trenton's "Luis Muñoz-Rivera" is "Munoz-Rivera" to the state; "Trenton's
+    # Ninth Grade Academy" is "Trenton Central High School-9th Grade Academy".
+    folded = unicodedata.normalize("NFKD", re.sub(r"['’]s\b", "", name)).encode("ascii", "ignore").decode()
+    cleaned = re.sub(r"[^a-z0-9 ]", " ", folded.lower())
     cleaned = re.sub(r"\bmt\b", "mount", cleaned)
     # Bellmawr's Bell Oaks is "Middle School" on its own site and "Upper
     # Elementary School" on SchoolCafé (and the state directory).

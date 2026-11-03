@@ -1,11 +1,16 @@
 """services/digitalsports.py against a real weekly page (Wood-Ridge, week of
 2026-10-19, saved from call-school-ajax.php?filter=bydate)."""
-from datetime import date
+import uuid
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
 import pytest
+from sqlalchemy import select
 
+import database
+from models import District, School, SchoolContentItem
+from scheduler.jobs import athletics_calendar_scan
 from services import digitalsports
 from services.digitalsports import fetch_events, host_from_athletics_url, parse_week
 
@@ -79,3 +84,40 @@ async def test_fetch_events_raises_when_every_week_fails(monkeypatch):
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(lambda r: httpx.Response(503)), **kw))
     with pytest.raises(httpx.HTTPError):
         await fetch_events("wood-ridgeathletics", date(2026, 10, 14), date(2026, 10, 21))
+
+
+@pytest.mark.anyio
+async def test_a_site_shared_by_a_high_school_and_middle_school_is_split_by_team(monkeypatch):
+    """Robbinsville's one site lists both schools, middle-school teams by name.
+    A site with no sibling on it keeps every team, whatever they are called."""
+    start = datetime(2026, 10, 14, 20, 0, tzinfo=UTC)
+
+    def game(uid, team):
+        return {"external_uid": uid, "kind": "game", "team": team, "title": f"{team} vs X", "description": None, "start_date": start, "end_date": None, "is_all_day": False}
+
+    async def fake_fetch(host, window_start, window_end):
+        return [game("1", "Soccer - Boys Varsity"), game("2", "Soccer - Boys Middle School")]
+
+    monkeypatch.setattr(athletics_calendar_scan.digitalsports, "fetch_events", fake_fetch)
+    tag = uuid.uuid4().hex[:8]
+    url = f"https://shared{tag}.digitalsports.com/pages/schedule/schedule.php"
+
+    async with database.SessionLocal() as db:
+        district = District(name=f"DS District {tag}")
+        db.add(district)
+        await db.flush()
+        high = School(name=f"DS High {tag}", slug=f"ds-high-{tag}", school_type="high", district_id=district.id, athletics_url=url)
+        middle = School(name=f"DS Middle {tag}", slug=f"ds-middle-{tag}", school_type="middle", district_id=district.id, athletics_url=url)
+        alone = School(name=f"DS Alone {tag}", slug=f"ds-alone-{tag}", school_type="high", athletics_url=f"https://alone{tag}.digitalsports.com/")
+        db.add_all([high, middle, alone])
+        await db.commit()
+
+        async def teams(school):
+            await athletics_calendar_scan.run(db, {"school_id": school.id})
+            await db.flush()
+            rows = (await db.execute(select(SchoolContentItem).where(SchoolContentItem.school_id == school.id))).scalars().all()
+            return {r.title for r in rows}
+
+        assert await teams(high) == {"Soccer - Boys Varsity vs X"}
+        assert await teams(middle) == {"Soccer - Boys Middle School vs X"}
+        assert await teams(alone) == {"Soccer - Boys Varsity vs X", "Soccer - Boys Middle School vs X"}

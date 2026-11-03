@@ -1,0 +1,820 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: Princeton Public School District (Mercer County)",
+  "districts": [
+    {
+      "name": "Princeton Public School District",
+      "state": "NJ",
+      "website_url": "https://www.princetonk12.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Princeton District Schedule",
+          "url": "https://www.princetonk12.org/fs/calendar-manager/events.ics?calendar_ids[]=3"
+        },
+        {
+          "name": "Princeton Board of Education Meetings",
+          "url": "https://www.princetonk12.org/fs/calendar-manager/events.ics?calendar_ids[]=9"
+        },
+        {
+          "name": "Princeton The Arts",
+          "url": "https://www.princetonk12.org/fs/calendar-manager/events.ics?calendar_ids[]=11",
+          "skip_title_prefixes": [
+            "PHS ",
+            "PMS "
+          ]
+        },
+        {
+          "name": "Princeton High School Calendar",
+          "url": "https://www.princetonk12.org/fs/calendar-manager/events.ics?calendar_ids[]=2",
+          "school_slug": "princeton-high"
+        },
+        {
+          "name": "Princeton Middle School Calendar",
+          "url": "https://www.princetonk12.org/fs/calendar-manager/events.ics?calendar_ids[]=7",
+          "school_slug": "princeton-middle"
+        },
+        {
+          "name": "Community Park PTO School Events",
+          "url": "https://calendar.google.com/calendar/ical/o00rj3h943d8ej9lqjtsrqj8p1j4pf10%40import.calendar.google.com/public/basic.ics",
+          "school_slug": "princeton-community-park"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.princetonk12.org/services/transportation",
+      "towns": [
+        "Princeton"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "princeton-community-park",
+      "name": "Community Park School",
+      "short_name": "Community Park",
+      "district_name": "Princeton Public School District",
+      "school_type": "elementary",
+      "address": "372 Witherspoon Street, Princeton, NJ 08540",
+      "main_phone": "(609) 806-4230",
+      "website_url": "https://cp.princetonk12.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 806-4266",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 806-4266 and press 1 for Community Park. Leave your child's first and last name, grade, home address, the date(s) of absence and the reason, including symptoms if your child is sick.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1784820353/princetonk12org/p9adoii7zsg9qptkwd98/cp_logo.png",
+      "staff_directory_url": "https://www.princetonk12.org/families/staff-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/106/560"
+    },
+    {
+      "slug": "princeton-johnson-park",
+      "name": "Johnson Park School",
+      "short_name": "Johnson Park",
+      "district_name": "Princeton Public School District",
+      "school_type": "elementary",
+      "address": "285 Rosedale Road, Princeton, NJ 08540",
+      "main_phone": "(609) 806-4240",
+      "website_url": "https://jp.princetonk12.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 806-4266",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 806-4266 and press 2 for Johnson Park. Leave your child's first and last name, grade, home address, the date(s) of absence and the reason, including symptoms if your child is sick.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1784820459/princetonk12org/l3ywkxsyww8gtg2fzmcq/jp_logo.png",
+      "staff_directory_url": "https://www.princetonk12.org/families/staff-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/106/559"
+    },
+    {
+      "slug": "princeton-littlebrook",
+      "name": "Littlebrook School",
+      "short_name": "Littlebrook",
+      "district_name": "Princeton Public School District",
+      "school_type": "elementary",
+      "address": "39 Magnolia Lane, Princeton, NJ 08540",
+      "main_phone": "(609) 806-4250",
+      "website_url": "https://lb.princetonk12.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 806-4266",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 806-4266 and press 3 for Littlebrook. Leave your child's first and last name, grade, home address, the date(s) of absence and the reason, including symptoms if your child is sick.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1784820489/princetonk12org/yatjb87g4xwyk4hkxqcp/lb_logo.png",
+      "staff_directory_url": "https://www.princetonk12.org/families/staff-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/106/561"
+    },
+    {
+      "slug": "princeton-riverside",
+      "name": "Riverside School",
+      "short_name": "Riverside",
+      "district_name": "Princeton Public School District",
+      "school_type": "elementary",
+      "address": "58 Riverside Drive, Princeton, NJ 08540",
+      "main_phone": "(609) 806-4260",
+      "website_url": "https://rs.princetonk12.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 806-4266",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 806-4266 and press 4 for Riverside. Leave your child's first and last name, grade, home address, the date(s) of absence and the reason, including symptoms if your child is sick.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1784820609/princetonk12org/z6i4xpdpngjfdxbjhv5m/rs_logo.png",
+      "staff_directory_url": "https://www.princetonk12.org/families/staff-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/106/562"
+    },
+    {
+      "slug": "princeton-middle",
+      "name": "Princeton Middle School",
+      "short_name": "Princeton Middle",
+      "district_name": "Princeton Public School District",
+      "school_type": "middle",
+      "address": "217 Walnut Lane, Princeton, NJ 08540",
+      "main_phone": "(609) 806-4270",
+      "website_url": "https://pms.princetonk12.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 806-4266",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 806-4266 and press 5 for Princeton Middle School. Leave your child's first and last name, grade, home address, the date(s) of absence and the reason, including symptoms if your child is sick.",
+      "start_time": "8:25 AM",
+      "end_time": "3:10 PM",
+      "early_dismissal_time": "1:00 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "09:11"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:57"
+          },
+          {
+            "name": "3",
+            "start": "09:59",
+            "end": "10:43"
+          },
+          {
+            "name": "4 (EP)",
+            "start": "10:45",
+            "end": "11:29"
+          },
+          {
+            "name": "5",
+            "start": "11:31",
+            "end": "12:15"
+          },
+          {
+            "name": "Lunch",
+            "start": "12:17",
+            "end": "12:52"
+          },
+          {
+            "name": "6",
+            "start": "12:54",
+            "end": "13:38"
+          },
+          {
+            "name": "7",
+            "start": "13:40",
+            "end": "14:24"
+          },
+          {
+            "name": "8 (EP)",
+            "start": "14:26",
+            "end": "15:10"
+          }
+        ],
+        "regular_grades_6": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "09:11"
+          },
+          {
+            "name": "2 (EP)",
+            "start": "09:13",
+            "end": "09:57"
+          },
+          {
+            "name": "3",
+            "start": "09:59",
+            "end": "10:43"
+          },
+          {
+            "name": "Lunch",
+            "start": "10:45",
+            "end": "11:20"
+          },
+          {
+            "name": "4",
+            "start": "11:22",
+            "end": "12:06"
+          },
+          {
+            "name": "5 (EP)",
+            "start": "12:08",
+            "end": "12:52"
+          },
+          {
+            "name": "6",
+            "start": "12:54",
+            "end": "13:38"
+          },
+          {
+            "name": "7",
+            "start": "13:40",
+            "end": "14:24"
+          },
+          {
+            "name": "8",
+            "start": "14:26",
+            "end": "15:10"
+          }
+        ],
+        "regular_grades_7": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "09:11"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:57"
+          },
+          {
+            "name": "3",
+            "start": "09:59",
+            "end": "10:43"
+          },
+          {
+            "name": "4 (EP)",
+            "start": "10:45",
+            "end": "11:29"
+          },
+          {
+            "name": "5",
+            "start": "11:31",
+            "end": "12:15"
+          },
+          {
+            "name": "Lunch",
+            "start": "12:17",
+            "end": "12:52"
+          },
+          {
+            "name": "6",
+            "start": "12:54",
+            "end": "13:38"
+          },
+          {
+            "name": "7",
+            "start": "13:40",
+            "end": "14:24"
+          },
+          {
+            "name": "8 (EP)",
+            "start": "14:26",
+            "end": "15:10"
+          }
+        ],
+        "regular_grades_8": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "09:11"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:57"
+          },
+          {
+            "name": "3 (EP)",
+            "start": "09:59",
+            "end": "10:43"
+          },
+          {
+            "name": "4",
+            "start": "10:45",
+            "end": "11:29"
+          },
+          {
+            "name": "Lunch",
+            "start": "11:31",
+            "end": "12:06"
+          },
+          {
+            "name": "5",
+            "start": "12:08",
+            "end": "12:52"
+          },
+          {
+            "name": "6",
+            "start": "12:54",
+            "end": "13:38"
+          },
+          {
+            "name": "7 (EP)",
+            "start": "13:40",
+            "end": "14:24"
+          },
+          {
+            "name": "8",
+            "start": "14:26",
+            "end": "15:10"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:55",
+            "end": "10:30"
+          },
+          {
+            "name": "2",
+            "start": "10:32",
+            "end": "11:05"
+          },
+          {
+            "name": "3",
+            "start": "11:07",
+            "end": "11:40"
+          },
+          {
+            "name": "4 (EP)",
+            "start": "11:42",
+            "end": "12:15"
+          },
+          {
+            "name": "5",
+            "start": "12:17",
+            "end": "12:50"
+          },
+          {
+            "name": "Lunch",
+            "start": "12:52",
+            "end": "13:25"
+          },
+          {
+            "name": "6",
+            "start": "13:27",
+            "end": "14:00"
+          },
+          {
+            "name": "7",
+            "start": "14:02",
+            "end": "14:35"
+          },
+          {
+            "name": "8 (EP)",
+            "start": "14:37",
+            "end": "15:10"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "08:57"
+          },
+          {
+            "name": "2",
+            "start": "08:59",
+            "end": "09:27"
+          },
+          {
+            "name": "3",
+            "start": "09:29",
+            "end": "09:57"
+          },
+          {
+            "name": "4 (EP)",
+            "start": "09:59",
+            "end": "10:27"
+          },
+          {
+            "name": "5",
+            "start": "10:29",
+            "end": "10:57"
+          },
+          {
+            "name": "Lunch",
+            "start": "10:59",
+            "end": "11:27"
+          },
+          {
+            "name": "6",
+            "start": "11:29",
+            "end": "11:57"
+          },
+          {
+            "name": "7",
+            "start": "11:59",
+            "end": "12:27"
+          },
+          {
+            "name": "8 (EP)",
+            "start": "12:29",
+            "end": "13:00"
+          }
+        ],
+        "early_dismissal_grades_6": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "08:57"
+          },
+          {
+            "name": "2 (EP)",
+            "start": "08:59",
+            "end": "09:27"
+          },
+          {
+            "name": "3",
+            "start": "09:29",
+            "end": "09:57"
+          },
+          {
+            "name": "Lunch",
+            "start": "09:59",
+            "end": "10:27"
+          },
+          {
+            "name": "4",
+            "start": "10:29",
+            "end": "10:57"
+          },
+          {
+            "name": "5 (EP)",
+            "start": "10:59",
+            "end": "11:27"
+          },
+          {
+            "name": "6",
+            "start": "11:29",
+            "end": "11:57"
+          },
+          {
+            "name": "7",
+            "start": "11:59",
+            "end": "12:27"
+          },
+          {
+            "name": "8",
+            "start": "12:29",
+            "end": "13:00"
+          }
+        ],
+        "early_dismissal_grades_7": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "08:57"
+          },
+          {
+            "name": "2",
+            "start": "08:59",
+            "end": "09:27"
+          },
+          {
+            "name": "3",
+            "start": "09:29",
+            "end": "09:57"
+          },
+          {
+            "name": "4 (EP)",
+            "start": "09:59",
+            "end": "10:27"
+          },
+          {
+            "name": "5",
+            "start": "10:29",
+            "end": "10:57"
+          },
+          {
+            "name": "Lunch",
+            "start": "10:59",
+            "end": "11:27"
+          },
+          {
+            "name": "6",
+            "start": "11:29",
+            "end": "11:57"
+          },
+          {
+            "name": "7",
+            "start": "11:59",
+            "end": "12:27"
+          },
+          {
+            "name": "8 (EP)",
+            "start": "12:29",
+            "end": "13:00"
+          }
+        ],
+        "early_dismissal_grades_8": [
+          {
+            "name": "1",
+            "start": "08:25",
+            "end": "08:57"
+          },
+          {
+            "name": "2",
+            "start": "08:59",
+            "end": "09:27"
+          },
+          {
+            "name": "3 (EP)",
+            "start": "09:29",
+            "end": "09:57"
+          },
+          {
+            "name": "4",
+            "start": "09:59",
+            "end": "10:27"
+          },
+          {
+            "name": "Lunch",
+            "start": "10:29",
+            "end": "10:57"
+          },
+          {
+            "name": "5",
+            "start": "10:59",
+            "end": "11:27"
+          },
+          {
+            "name": "6",
+            "start": "11:29",
+            "end": "11:57"
+          },
+          {
+            "name": "7 (EP)",
+            "start": "11:59",
+            "end": "12:27"
+          },
+          {
+            "name": "8",
+            "start": "12:29",
+            "end": "13:00"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/26821",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1784820547/princetonk12org/d1mqgiegzam7aufqheev/pms_logo.png",
+      "staff_directory_url": "https://www.princetonk12.org/families/staff-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/106/558"
+    },
+    {
+      "slug": "princeton-high",
+      "name": "Princeton High School",
+      "short_name": "Princeton High",
+      "district_name": "Princeton Public School District",
+      "school_type": "high",
+      "address": "151 Moore Street, Princeton, NJ 08540",
+      "main_phone": "(609) 806-4280",
+      "website_url": "https://phs.princetonk12.org",
+      "absence_method": "phone",
+      "absence_emails": [
+        "phsattendance@princetonk12.org"
+      ],
+      "absence_phone": "(609) 806-4280 ext. 3806",
+      "absence_portal_name": "PowerSchool",
+      "absence_portal_url": "https://princeton.powerschool.com/",
+      "absence_instructions": "Report the absence to the attendance office between 7:00 and 8:30 AM by phone, by email or in PowerSchool. On return, the student brings a note from a parent/guardian or physician to the attendance office (in guidance); a note received within 3 days lists the absence as verified.",
+      "start_time": "8:20 AM",
+      "end_time": "3:21 PM",
+      "early_dismissal_time": "12:33 PM",
+      "delayed_opening_time": "9:50 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "08:20",
+            "end": "09:04"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:09",
+            "end": "09:53"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:58",
+            "end": "10:44"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:49",
+            "end": "11:33"
+          },
+          {
+            "name": "Break",
+            "start": "11:33",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:10",
+            "end": "12:54"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:59",
+            "end": "13:43"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:48",
+            "end": "14:32"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:37",
+            "end": "15:21"
+          }
+        ],
+        "long_block": [
+          {
+            "name": "Period 2",
+            "start": "08:20",
+            "end": "09:42"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:50",
+            "end": "11:13"
+          },
+          {
+            "name": "Break",
+            "start": "11:13",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:54",
+            "end": "13:16"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:24",
+            "end": "14:46"
+          },
+          {
+            "name": "Clubs/Focused Learning Lab",
+            "start": "14:51",
+            "end": "15:21"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1/2/3/4",
+            "start": "09:50",
+            "end": "10:24"
+          },
+          {
+            "name": "Period 2/3/4/1",
+            "start": "10:28",
+            "end": "11:02"
+          },
+          {
+            "name": "Period 3/4/1/2",
+            "start": "11:06",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 4/1/2/3",
+            "start": "11:44",
+            "end": "12:18"
+          },
+          {
+            "name": "Break",
+            "start": "12:18",
+            "end": "12:49"
+          },
+          {
+            "name": "Period 5/6/7/8",
+            "start": "12:53",
+            "end": "13:27"
+          },
+          {
+            "name": "Period 6/7/8/5",
+            "start": "13:31",
+            "end": "14:05"
+          },
+          {
+            "name": "Period 7/8/5/6",
+            "start": "14:09",
+            "end": "14:43"
+          },
+          {
+            "name": "Period 8/5/6/7",
+            "start": "14:47",
+            "end": "15:21"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1/2/3/4",
+            "start": "08:20",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 2/3/4/1",
+            "start": "08:49",
+            "end": "09:14"
+          },
+          {
+            "name": "Period 3/4/1/2",
+            "start": "09:18",
+            "end": "09:43"
+          },
+          {
+            "name": "Period 4/1/2/3",
+            "start": "09:47",
+            "end": "10:12"
+          },
+          {
+            "name": "Break",
+            "start": "10:12",
+            "end": "10:37"
+          },
+          {
+            "name": "Period 5/6/7/8",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "Period 6/7/8/5",
+            "start": "11:10",
+            "end": "11:35"
+          },
+          {
+            "name": "Period 7/8/5/6",
+            "start": "11:39",
+            "end": "12:04"
+          },
+          {
+            "name": "Period 8/5/6/7",
+            "start": "12:08",
+            "end": "12:33"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=18612",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1784820516/princetonk12org/zyktggs1ekfyvj7g6bws/phs_logo.png",
+      "staff_directory_url": "https://www.princetonk12.org/families/staff-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "fdmealplanner_location": "9/106/557"
+    }
+  ],
+  "smore_newsletters": []
+}

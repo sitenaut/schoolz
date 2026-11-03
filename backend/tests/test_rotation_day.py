@@ -13,6 +13,7 @@ from services import i18n_strings, rotation_day
         ("DAY F", "F", 6, True),  # Mantua
         ("A Day", "A", 1, True),  # Swedesboro-Woolwich
         ("B  Day", "B", 2, True),  # ... with its doubled space
+        ("C-Day", "C", 3, True),  # Ewing's Fisher Middle
         ("  Day D  ", "D", 4, True),
         ("DAY E (Snow Day)", "E", 5, True),
         ("Day F (makeup snow day)", "F", 6, True),

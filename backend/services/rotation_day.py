@@ -8,7 +8,7 @@ are keyed on `StudentSpecial.rotation_day`, an int, so "Day C" and "Day 3"
 share a row and no migration was needed.
 
 Accepted: "Day 3", "Day C", "DAY C", "C Day" (Swedesboro-Woolwich words half
-its feed that way), each with an optional trailing parenthetical - Eastern's
+its feed that way), "C-Day" (Ewing's Fisher Middle), each with an optional trailing parenthetical - Eastern's
 class order "Day 3 ( 3, 4, 1, LL)", Mantua's "DAY E (Snow Day)", the make-up
 day that carries the letter it stands in for. The letter must be capital so
 "a day" in a sentence never reads as one; `canonical_title` is what the feed
@@ -22,7 +22,7 @@ from dataclasses import dataclass
 LETTERS = "ABCDEFGHIJKL"  # StudentSpecial.rotation_day is capped at 12
 
 _ROTATION_RE = re.compile(
-    r"^\s*(?:day\s+(?P<after>\d+|(?-i:[A-L]))|(?P<before>(?-i:[A-L]))\s+day)\s*(?P<extra>\([^)]*\))?\s*$",
+    r"^\s*(?:day\s+(?P<after>\d+|(?-i:[A-L]))|(?P<before>(?-i:[A-L]))(?:\s+|\s*-\s*)day)\s*(?P<extra>\([^)]*\))?\s*$",
     re.I,
 )
 
@@ -58,7 +58,7 @@ def key_for(number: int, lettered: bool) -> str:
 
 
 def canonical_title(title: str) -> str:
-    """"DAY C", "C Day" and "C  Day" as "Day C"; anything else as it came.
+    """"DAY C", "C Day", "C-Day" and "C  Day" as "Day C"; anything else as it came.
     Numbered titles are left alone so Eastern's class order keeps its spacing."""
     rd = parse(title)
     if not rd or not rd.lettered:

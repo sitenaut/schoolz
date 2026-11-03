@@ -1,0 +1,668 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: East Windsor Regional School District (Mercer County)",
+  "districts": [
+    {
+      "name": "East Windsor Regional School District",
+      "state": "NJ",
+      "website_url": "https://www.ewrsd.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "East Windsor Regional District",
+          "platform": "apptegy",
+          "org_id": "27230",
+          "school_title_prefixes": {
+            "EMK": "mcknight-elementary",
+            "WCB": "black-elementary",
+            "GNR": "rogers-elementary",
+            "PLD": "drew-elementary",
+            "MHK": "kreps-middle",
+            "HHS": "hightstown-high",
+            "6 - 8": "kreps-middle",
+            "9 -12": "hightstown-high",
+            "9-12": "hightstown-high"
+          }
+        },
+        {
+          "name": "Grace N. Rogers Elementary",
+          "platform": "apptegy",
+          "org_id": "27437",
+          "school_slug": "rogers-elementary",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Perry L. Drew Elementary",
+          "platform": "apptegy",
+          "org_id": "27440",
+          "school_slug": "drew-elementary",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Walter C. Black Elementary",
+          "platform": "apptegy",
+          "org_id": "27441",
+          "school_slug": "black-elementary",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Melvin H. Kreps Middle School",
+          "platform": "apptegy",
+          "org_id": "27439",
+          "school_slug": "kreps-middle",
+          "skip_sections": [
+            "District Events"
+          ]
+        },
+        {
+          "name": "Hightstown High School",
+          "platform": "apptegy",
+          "org_id": "27438",
+          "school_slug": "hightstown-high",
+          "skip_sections": [
+            "District Events"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.ewrsd.org/page/transportation",
+      "towns": [
+        "East Windsor",
+        "Hightstown"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "mcknight-elementary",
+      "name": "Ethel McKnight Elementary School",
+      "short_name": "McKnight",
+      "district_name": "East Windsor Regional School District",
+      "school_type": "elementary",
+      "address": "58 Twin Rivers Drive South, East Windsor, NJ 08520",
+      "main_phone": "(609) 443-7800",
+      "website_url": "https://www.ewrsd.org/o/emes",
+      "apptegy_org_id": "27436",
+      "nutrislice_location": "eastwindsorregional/ethel-mcknight-elementary-school",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/eastwindsor/sis/view?gohome=true",
+      "absence_instructions": "Log into the Genesis Parent Portal, open the Attendance tab and choose Notify Attendance Office to report an absence or tardy. For help, contact your child's school.",
+      "start_time": "8:45 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:25 PM",
+      "delayed_opening_time": "10:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27436/logo/30249/SDS_EWRSD_EMK_LightBg__2___2_.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "609-453-4699",
+        "absence_phone": "609-453-4699",
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "For immediate pickup changes, call the site phone.",
+        "closures_notes": "Kidcare closes when schools close. On a planned early closing the afternoon session is closed; on a delayed opening Kidcare opens at 8:00 a.m.",
+        "handbook_url": "https://www.ewrsd.org/page/before-after-school-kidcare"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "black-elementary",
+      "name": "Walter C. Black Elementary School",
+      "short_name": "Black",
+      "district_name": "East Windsor Regional School District",
+      "school_type": "elementary",
+      "address": "371 Stockton Street, Hightstown, NJ 08520",
+      "main_phone": "(609) 443-7816",
+      "website_url": "https://www.ewrsd.org/o/wbes",
+      "apptegy_org_id": "27441",
+      "nutrislice_location": "eastwindsorregional/walter-c-black-elementary-school",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/eastwindsor/sis/view?gohome=true",
+      "absence_instructions": "Log into the Genesis Parent Portal, open the Attendance tab and choose Notify Attendance Office to report an absence or tardy. For help, contact your child's school.",
+      "start_time": "8:45 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:25 PM",
+      "delayed_opening_time": "10:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27441/logo/30254/SDS_EWRSD_WCB_LightBg__1_.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "609-453-4706",
+        "absence_phone": "609-453-4706",
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "For immediate pickup changes, call the site phone.",
+        "closures_notes": "Kidcare closes when schools close. On a planned early closing the afternoon session is closed; on a delayed opening Kidcare opens at 8:00 a.m.",
+        "handbook_url": "https://www.ewrsd.org/page/before-after-school-kidcare"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "rogers-elementary",
+      "name": "Grace N. Rogers Elementary School",
+      "short_name": "Rogers",
+      "district_name": "East Windsor Regional School District",
+      "school_type": "elementary",
+      "address": "380 Stockton Street, Hightstown, NJ 08520",
+      "main_phone": "(609) 443-7833",
+      "website_url": "https://www.ewrsd.org/o/gnres",
+      "apptegy_org_id": "27437",
+      "nutrislice_location": "eastwindsorregional/grace-n-rodgers-elementary-school",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/eastwindsor/sis/view?gohome=true",
+      "absence_instructions": "Log into the Genesis Parent Portal, open the Attendance tab and choose Notify Attendance Office to report an absence or tardy. For help, contact your child's school.",
+      "start_time": "8:45 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:25 PM",
+      "delayed_opening_time": "10:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27437/logo/30250/SDS_EWRSD_GNR_LightBg__2_.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "609-453-4700",
+        "absence_phone": "609-453-4700",
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "For immediate pickup changes, call the site phone.",
+        "closures_notes": "Kidcare closes when schools close. On a planned early closing the afternoon session is closed; on a delayed opening Kidcare opens at 8:00 a.m.",
+        "handbook_url": "https://www.ewrsd.org/page/before-after-school-kidcare"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "drew-elementary",
+      "name": "Perry L. Drew Elementary School",
+      "short_name": "Drew",
+      "district_name": "East Windsor Regional School District",
+      "school_type": "elementary",
+      "address": "70 Twin Rivers Drive North, East Windsor, NJ 08520",
+      "main_phone": "(609) 443-7820",
+      "website_url": "https://www.ewrsd.org/o/pdes",
+      "apptegy_org_id": "27440",
+      "nutrislice_location": "eastwindsorregional/perry-l-drew-elementary-school",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/eastwindsor/sis/view?gohome=true",
+      "absence_instructions": "Log into the Genesis Parent Portal, open the Attendance tab and choose Notify Attendance Office to report an absence or tardy. For help, contact your child's school.",
+      "start_time": "8:45 AM",
+      "end_time": "3:30 PM",
+      "early_dismissal_time": "1:25 PM",
+      "delayed_opening_time": "10:15 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27440/logo/30253/SDS_EWRSD_PLD_LightBg__1_.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "609-453-4703",
+        "absence_phone": "609-453-4703",
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": "For immediate pickup changes, call the site phone.",
+        "closures_notes": "Kidcare closes when schools close. On a planned early closing the afternoon session is closed; on a delayed opening Kidcare opens at 8:00 a.m.",
+        "handbook_url": "https://www.ewrsd.org/page/before-after-school-kidcare"
+      },
+      "activities_calendar_ics_url": null
+    },
+    {
+      "slug": "kreps-middle",
+      "name": "Melvin H. Kreps Middle School",
+      "short_name": "Kreps",
+      "district_name": "East Windsor Regional School District",
+      "school_type": "middle",
+      "address": "5 Kent Lane, East Windsor, NJ 08520",
+      "main_phone": "(609) 443-7767",
+      "website_url": "https://www.ewrsd.org/o/mkms",
+      "apptegy_org_id": "27439",
+      "nutrislice_location": "eastwindsorregional/melvin-h-kreps-middle-school",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/eastwindsor/sis/view?gohome=true",
+      "absence_instructions": "Log into the Genesis Parent Portal, open the Attendance tab and choose Notify Attendance Office to report an absence or tardy. For help, contact your child's school or grade level office.",
+      "start_time": "7:55 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "9:25 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:00"
+          },
+          {
+            "name": "AS",
+            "start": "08:00",
+            "end": "08:28"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:25"
+          },
+          {
+            "name": "Period 2 - UA/PE/WL",
+            "start": "09:27",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 3 - Lunch",
+            "start": "10:24",
+            "end": "10:54"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:56",
+            "end": "11:51"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:53",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6 - UA/PE/WL",
+            "start": "12:50",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:42"
+          },
+          {
+            "name": "Announcements",
+            "start": "14:42",
+            "end": "14:45"
+          }
+        ],
+        "regular_grades_6": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:00"
+          },
+          {
+            "name": "AS",
+            "start": "08:00",
+            "end": "08:28"
+          },
+          {
+            "name": "Period 1 - UA/PE",
+            "start": "08:30",
+            "end": "09:25"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:27",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:24",
+            "end": "11:19"
+          },
+          {
+            "name": "Period 4 - UA/PE",
+            "start": "11:21",
+            "end": "12:16"
+          },
+          {
+            "name": "Period 5 - Lunch",
+            "start": "12:18",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:50",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:42"
+          },
+          {
+            "name": "Announcements",
+            "start": "14:42",
+            "end": "14:45"
+          }
+        ],
+        "regular_grades_7": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:00"
+          },
+          {
+            "name": "AS",
+            "start": "08:00",
+            "end": "08:28"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:25"
+          },
+          {
+            "name": "Period 2 - UA/PE/WL",
+            "start": "09:27",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 3 - Lunch",
+            "start": "10:24",
+            "end": "10:54"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:56",
+            "end": "11:51"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:53",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6 - UA/PE/WL",
+            "start": "12:50",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:42"
+          },
+          {
+            "name": "Announcements",
+            "start": "14:42",
+            "end": "14:45"
+          }
+        ],
+        "regular_grades_8": [
+          {
+            "name": "Homeroom",
+            "start": "07:55",
+            "end": "08:00"
+          },
+          {
+            "name": "AS",
+            "start": "08:00",
+            "end": "08:28"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:25"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:27",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 3 - UA/PE/WL",
+            "start": "10:24",
+            "end": "11:19"
+          },
+          {
+            "name": "Period 4 - Lunch",
+            "start": "11:21",
+            "end": "11:51"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:53",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:50",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7 - UA/PE/WL",
+            "start": "13:47",
+            "end": "14:42"
+          },
+          {
+            "name": "Announcements",
+            "start": "14:42",
+            "end": "14:45"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/14388",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27439/logo/30252/SDS_EWRSD_MHK_LightBg__2_.png",
+      "staff_directory_url": null,
+      "activities_calendar_ics_url": null,
+      "sacc": null
+    },
+    {
+      "slug": "hightstown-high",
+      "name": "Hightstown High School",
+      "short_name": "Hightstown",
+      "district_name": "East Windsor Regional School District",
+      "school_type": "high",
+      "address": "25 Leshin Lane, Hightstown, NJ 08520",
+      "main_phone": "(609) 443-7738",
+      "website_url": "https://www.ewrsd.org/o/hhs",
+      "apptegy_org_id": "27438",
+      "nutrislice_location": "eastwindsorregional/hightstown-high-school",
+      "absence_method": "portal",
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c3.genesisedu.net/eastwindsor/sis/view?gohome=true",
+      "absence_instructions": "Log into the Genesis Parent Portal, open the Attendance tab and choose Notify Attendance Office to report an absence or tardy. For help, contact your child's school or grade level office.",
+      "start_time": "7:30 AM",
+      "end_time": "2:10 PM",
+      "early_dismissal_time": "12:00 PM",
+      "delayed_opening_time": "9:00 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "BP1",
+            "start": "07:30",
+            "end": "08:30"
+          },
+          {
+            "name": "BP2",
+            "start": "08:35",
+            "end": "09:31"
+          },
+          {
+            "name": "BP3",
+            "start": "09:36",
+            "end": "10:32"
+          },
+          {
+            "name": "Lunch 1",
+            "start": "10:37",
+            "end": "11:07"
+          },
+          {
+            "name": "BP4 (Lunch 2)",
+            "start": "10:37",
+            "end": "11:33"
+          },
+          {
+            "name": "BP4 (Lunch 1)",
+            "start": "11:12",
+            "end": "12:08"
+          },
+          {
+            "name": "Lunch 2",
+            "start": "11:38",
+            "end": "12:08"
+          },
+          {
+            "name": "BP5",
+            "start": "12:13",
+            "end": "13:09"
+          },
+          {
+            "name": "BP6",
+            "start": "13:14",
+            "end": "14:10"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "BP1",
+            "start": "07:30",
+            "end": "08:10"
+          },
+          {
+            "name": "BP2",
+            "start": "08:15",
+            "end": "08:49"
+          },
+          {
+            "name": "BP3",
+            "start": "08:54",
+            "end": "09:28"
+          },
+          {
+            "name": "Lunch 1",
+            "start": "09:33",
+            "end": "10:03"
+          },
+          {
+            "name": "BP4 (Lunch 2)",
+            "start": "09:33",
+            "end": "10:07"
+          },
+          {
+            "name": "BP4 (Lunch 1)",
+            "start": "10:08",
+            "end": "10:42"
+          },
+          {
+            "name": "Lunch 2",
+            "start": "10:12",
+            "end": "10:42"
+          },
+          {
+            "name": "BP5",
+            "start": "10:47",
+            "end": "11:21"
+          },
+          {
+            "name": "BP6",
+            "start": "11:26",
+            "end": "12:00"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "BP1",
+            "start": "09:00",
+            "end": "09:45"
+          },
+          {
+            "name": "BP2",
+            "start": "09:50",
+            "end": "10:31"
+          },
+          {
+            "name": "BP3",
+            "start": "10:36",
+            "end": "11:17"
+          },
+          {
+            "name": "Lunch 1",
+            "start": "11:22",
+            "end": "11:52"
+          },
+          {
+            "name": "BP4 (Lunch 2)",
+            "start": "11:22",
+            "end": "12:03"
+          },
+          {
+            "name": "BP4 (Lunch 1)",
+            "start": "11:57",
+            "end": "12:38"
+          },
+          {
+            "name": "Lunch 2",
+            "start": "12:08",
+            "end": "12:38"
+          },
+          {
+            "name": "BP5",
+            "start": "12:43",
+            "end": "13:24"
+          },
+          {
+            "name": "BP6",
+            "start": "13:29",
+            "end": "14:10"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=10072",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/27438/logo/30251/SDS_EWRSD_HHS_LightBg__1_.png",
+      "staff_directory_url": null,
+      "activities_calendar_ics_url": null,
+      "sacc": null
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://app.smore.com/n/2fgtaw",
+      "label": "EWRSD Weekly Update",
+      "school_slug": null,
+      "district_name": "East Windsor Regional School District",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://secure.smore.com/n/jr29h",
+      "label": "MHK Community Newsletter",
+      "school_slug": "kreps-middle",
+      "source_type": "smore",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

@@ -35,6 +35,14 @@ def test_matches_person_named_school_and_refuses_ambiguity():
     assert nj.match_row(rows, d, "Jaggard Elementary School")["School Name"] == "Robert B Jaggard School"
     assert nj.match_row(rows, d, "Beeler Elementary School")["School Name"] == "Helen L Beeler"
     assert nj.match_row(rows, d, "Marlton Preschool Center") is None
+    trenton = [
+        {**ROW, "District Name": "Trenton Public School District", "School Name": n}
+        for n in ("Luis Munoz-Rivera Elementary School", "Trenton Central High School - Main Campus", "Trenton Central High School-9th Grade Academy")
+    ]
+    t = "Trenton Public School District"
+    assert nj.match_row(trenton, t, "Luis Muñoz-Rivera Elementary School")["School Name"].startswith("Luis")
+    assert nj.match_row(trenton, t, "Trenton's Ninth Grade Academy")["School Name"].endswith("9th Grade Academy")
+    assert nj.match_row(trenton, t, "Trenton Central High School") is None  # two campuses
 
 
 def test_same_person_ignores_honorifics_and_needs_the_surname():

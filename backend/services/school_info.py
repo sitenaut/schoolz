@@ -28,6 +28,11 @@ from services import smart_sites
 
 _PLAIN_PHONE_RE = re.compile(r"\(?\d{3}\)?[-. ]?\d{3}[-. ]\d{4}")
 
+
+def _balanced(phone: str) -> str:
+    """Hamilton North's footer prints "(Main 609) 631-4161", which matches as "609) 631-4161"."""
+    return f"({phone}" if ")" in phone and "(" not in phone else phone
+
 # Finalsite pages embed a Google Translate widget badge inside <header>
 # ahead of the real school logo on some sites (confirmed: Bret Harte,
 # Beck); the district's private-preschool sites (not Finalsite) embed
@@ -128,14 +133,14 @@ def _parse_location(html: str, base_url: str) -> dict:
         # Pennsauken's link carries a screen-reader "Phone: " label inside it.
         text = phone_link.get_text(strip=True)
         match = _PLAIN_PHONE_RE.search(text)
-        result["main_phone"] = match.group(0) if match else text
+        result["main_phone"] = _balanced(match.group(0)) if match else text
     else:
         # Some Finalsite footers (Merchantville) print "P: (856) 663-1091" as
         # plain text with no tel: link.
         phone_box = soup.select_one(".fsLocationPhone")
         match = _PLAIN_PHONE_RE.search(phone_box.get_text(" ", strip=True)) if phone_box else None
         if match:
-            result["main_phone"] = match.group(0)
+            result["main_phone"] = _balanced(match.group(0))
 
     return result
 
@@ -211,6 +216,7 @@ def _parse_wp_header_info(html: str, base_url: str) -> dict | None:
 
 
 _PRESENCE_PHONE_RE = re.compile(r"Phone[:\s]{0,20}(\(?\d{3}\)?[-. ]?\d{3}[-. ]\d{4})")
+_PRESENCE_LINE_ADDRESS_RE = re.compile(r"^(.+?\b[A-Z]{2}\s+\d{5})(?:-\d{4})?\s*\|")
 
 
 def _parse_presence_footer(html: str, base_url: str) -> dict | None:
@@ -219,8 +225,8 @@ def _parse_presence_footer(html: str, base_url: str) -> dict | None:
     phone a "Phone 856-..." run beside it (Somerdale nests it inside the
     address box). Sterling spells the state out ("New Jersey"). Delran's
     template has no footer box: the header carries a `ul.address` whose items
-    are told apart by their icon (map, phone, fax). None for any other
-    platform."""
+    are told apart by their icon (map, phone, fax), and Trenton's puts it all
+    on one `#top-footer` line. None for any other platform."""
     soup = BeautifulSoup(html, "lxml")
     listed = soup.select_one("ul.address")
     if listed and listed.select_one(".fa-map"):
@@ -229,6 +235,14 @@ def _parse_presence_footer(html: str, base_url: str) -> dict | None:
         if not address:
             return None
         return {"address": address, "main_phone": item("fa-phone"), "logo_url": _find_logo_url(html, base_url)}
+    # Trenton: one line, "200 William Street, Trenton, NJ  08610 | Phone 609-... | Fax ...".
+    line = soup.select_one("#footer #top-footer .inside-padding")
+    if line:
+        text = " ".join(line.get_text(" ", strip=True).split())
+        address = _PRESENCE_LINE_ADDRESS_RE.match(text)
+        if address:
+            phone = _PRESENCE_PHONE_RE.search(text)
+            return {"address": address.group(1), "main_phone": phone.group(1) if phone else None, "logo_url": _find_logo_url(html, base_url)}
     box = soup.select_one("#footer .address") or soup.select_one("#footer-address")
     if not box:
         return None
