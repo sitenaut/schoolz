@@ -19,8 +19,9 @@ from zoneinfo import ZoneInfo
 import httpx
 
 # Sources of game schedules (dozens a week), hidden from the general calendar
-# and day cards unless asked for. DigitalSports' is services/digitalsports.SOURCE.
-ATHLETICS_SOURCES = ("arbiter_athletics", "digitalsports")
+# and day cards unless asked for. DigitalSports' is services/digitalsports.SOURCE,
+# GoBound's services/gobound.SOURCE.
+ATHLETICS_SOURCES = ("arbiter_athletics", "digitalsports", "gobound")
 
 _BASE = "https://www.arbiterlive.com/m/calendarmonth"
 _ET = ZoneInfo("America/New_York")

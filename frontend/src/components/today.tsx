@@ -588,8 +588,8 @@ export function DayCard({ data, color }: { data: SchoolToday; color: string }) {
             {t("Late bus")}
           </a>
         )}
-        {s.athletics_url && (
-          <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
+        {s.athletics_link && (
+          <a className="action" href={s.athletics_link} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
             <span aria-hidden="true">🏀🎺</span> {t("Sports & band")}
           </a>
         )}

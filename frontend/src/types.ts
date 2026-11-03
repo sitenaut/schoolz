@@ -58,7 +58,8 @@ export type School = {
   end_time: string | null;
   early_dismissal_time: string | null;
   delayed_opening_time: string | null;
-  athletics_url: string | null;
+  // The link a parent follows (a GoBound school's page, not its calendar feed).
+  athletics_link: string | null;
   logo_url: string | null;
   logo_backing: "none" | "light" | "dark" | null;
   bell_periods: Partial<Record<string, BellPeriod[]>> | null;

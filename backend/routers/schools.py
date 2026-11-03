@@ -47,6 +47,7 @@ from schemas import (
     SmoreNewsletterOut,
     StaffMemberOut,
 )
+from services import gobound
 from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
 from services.content_translation import localize_outs
@@ -162,11 +163,12 @@ async def _ensure_activities_calendar_job(db: AsyncSession, school: School, user
 
 async def _ensure_athletics_calendar_job(db: AsyncSession, school: School, user: User) -> None:
     """Auto-creates the recurring games-calendar scan the first time
-    athletics_url is a real ArbiterLive /m/team/<id> page or a
-    <school>.digitalsports.com site - most schools' link is just a plain
-    outbound site link with nothing to scan, so this checks the URL shape
-    rather than firing on athletics_url alone."""
-    if school.athletics_calendar_job_id or not (entity_id_from_athletics_url(school.athletics_url) or host_from_athletics_url(school.athletics_url)):
+    athletics_url is a real ArbiterLive /m/team/<id> page, a
+    <school>.digitalsports.com site or a GoBound calendar subscription link -
+    most schools' link is just a plain outbound site link with nothing to
+    scan, so this checks the URL shape rather than firing on athletics_url alone."""
+    url = school.athletics_url
+    if school.athletics_calendar_job_id or not (entity_id_from_athletics_url(url) or host_from_athletics_url(url) or gobound.feed_url(url)):
         return
     job = ScheduledJob(
         owner_user_id=user.id,

@@ -253,8 +253,8 @@ export function SchoolDetailPage() {
               {t("Newsletter")}
             </a>
           )}
-          {s.athletics_url && (
-            <a href={s.athletics_url} target="_blank" rel="noreferrer">
+          {s.athletics_link && (
+            <a href={s.athletics_link} target="_blank" rel="noreferrer">
               <span aria-hidden="true">🏀🎺</span> {t("Sports & band schedule")}
             </a>
           )}
@@ -332,8 +332,8 @@ export function SchoolDetailPage() {
               {t("Bus office")}
             </a>
           )}
-          {s.athletics_url && (
-            <a className="action" href={s.athletics_url} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
+          {s.athletics_link && (
+            <a className="action" href={s.athletics_link} target="_blank" rel="noreferrer" onClick={() => track("sports", "link")}>
               <span aria-hidden="true">🏀🎺</span> {t("Sports & band")}
             </a>
           )}
