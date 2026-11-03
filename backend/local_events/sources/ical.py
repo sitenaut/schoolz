@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
@@ -47,8 +48,22 @@ def _as_datetime(value) -> datetime | None:
 def _stable_id(uid: str | None, title: str, dt: datetime) -> str:
     if uid:
         return uid
-    digest = hashlib.sha1(f"{title}|{dt.isoformat()}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha1(f"{title}|{dt.isoformat()}".encode()).hexdigest()
     return f"hash:{digest[:24]}"
+
+
+# Drupal 7's Location module writes a venue's whole address block into
+# LOCATION, country and map link included (Gloucester City: "Martin's Lake",
+# blank lines, "United States", "See map: Google Maps").
+_DRUPAL_ADDRESS_NOISE = re.compile(r"\bUnited States\b|See map:\s*Google Maps", re.I)
+
+
+def _location(value) -> str | None:
+    text = str(value or "").strip()
+    if "See map:" in text:
+        parts = (part.strip(" ,") for part in _DRUPAL_ADDRESS_NOISE.sub("\n", text).splitlines())
+        text = ", ".join(part for part in parts if part)
+    return text or None
 
 
 class ICalSource(Source):
@@ -115,7 +130,7 @@ class ICalSource(Source):
 
                 title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
                 description = str(component.get("DESCRIPTION") or "").strip() or None
-                location = str(component.get("LOCATION") or "").strip() or None
+                location = _location(component.get("LOCATION"))
                 url = component.get("URL")
                 url_str = str(url) if url else None
                 uid = str(component.get("UID")) if component.get("UID") else None
