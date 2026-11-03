@@ -31,6 +31,8 @@ def test_classify_day_precedence_and_labels():
     assert classify_day(["District is closed - Juneteenth"]) == ("closed", "Juneteenth")
     assert classify_day(["DIST: Schools Closed - Storm Damage"]) == ("closed", "Storm Damage")
     assert classify_day(["DISTRICT CLOSED"]) == ("closed", None)
+    # A bare closure first doesn't hide the reason another row gives.
+    assert classify_day(["SCHOOL CLOSED", "SCHOOLS CLOSED - NJEA Convention"]) == ("closed", "NJEA Convention")
     assert classify_day(["EARLY DISMISSAL - Staff In-Service"]) == ("early_dismissal", "Early dismissal")
     # Closed wins over early dismissal on the same day.
     assert classify_day(["EARLY DISMISSAL", "SCHOOLS CLOSED - Snow"])[0] == "closed"
@@ -270,6 +272,49 @@ async def test_a_closure_that_began_before_this_week_still_closes_today():
 
         back = await build_today(db, school, date(2027, 1, 4))
         assert back.status == "open"
+
+
+@pytest.mark.anyio
+async def test_a_districts_closure_that_says_why_beats_a_schools_bare_copy():
+    # Real Nov 2 data: the district's "SCHOOLS CLOSED - NJEA Convention" runs
+    # Nov 5-6, and High School East's own feed has a bare "SCHOOL CLOSED" on
+    # each day. East's alerts were its two bare rows, and its strip read
+    # "Closed" on the 5th but "NJEA Convention" on the 6th.
+    import database
+    from models import District, School
+    from services.school_today import build_today
+
+    async with database.SessionLocal() as db:
+        tag = uuid.uuid4().hex[:8]
+        district = District(name=f"Bare Copy District {tag}")
+        db.add(district)
+        await db.flush()
+        school = School(name=f"Bare Copy High {tag}", slug=f"bare-copy-{tag}", district_id=district.id, school_type="high")
+        db.add(school)
+        await db.flush()
+
+        def closed(title: str, day: int, end_day: int, **scope) -> SchoolContentItem:
+            return SchoolContentItem(
+                category="event",
+                title=title,
+                start_date=datetime(2026, 11, day, tzinfo=_ET),
+                end_date=datetime(2026, 11, end_day, tzinfo=_ET),
+                is_all_day=True,
+                **scope,
+            )
+
+        db.add_all([closed("SCHOOL CLOSED", 5, 6, scope="school", school_id=school.id), closed("SCHOOL CLOSED", 6, 7, scope="school", school_id=school.id)])
+        await db.flush()
+        db.add(closed("SCHOOLS CLOSED - NJEA Convention", 5, 7, scope="district", district_id=district.id))
+        await db.flush()
+
+        today = await build_today(db, school, date(2026, 11, 2))
+        assert [a.title for a in today.alerts] == ["SCHOOLS CLOSED - NJEA Convention"]
+        assert [(str(d.date), d.status, d.status_label) for d in today.week[3:]] == [
+            ("2026-11-05", "closed", "NJEA Convention"),
+            ("2026-11-06", "closed", "NJEA Convention"),
+        ]
+        assert today.status == "open"
 
 
 def test_a_title_that_says_only_applies_to_the_schools_it_names():

@@ -5,7 +5,7 @@ import { DayCard } from "../components/today";
 import { IconPin, IconUpload } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
-import { localDateKey, monthDay, todayKey } from "../lib/calendar";
+import { itemDateKeys, monthDay, todayKey } from "../lib/calendar";
 import { affectedSchools, mergeAlerts } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
 import { SITE_URL } from "../lib/site";
@@ -227,23 +227,29 @@ export function TodayPage() {
       </h1>
 
       {alerts.map((a) => {
-        const md = monthDay(localDateKey(a.start_date!));
+        // A multi-day closure is one banner, "Nov 5–6", as on the card's
+        // upcoming rows.
+        const days = itemDateKeys(a);
+        const md = monthDay(days[0]);
+        const end = days.length > 1 ? monthDay(days[days.length - 1]) : null;
+        const when = !end ? `${md.month} ${md.day}` : end.month === md.month ? `${md.month} ${md.day}–${end.day}` : `${md.month} ${md.day} – ${end.month} ${end.day}`;
         // Who it is for: a district item scoped to some school types (a high-school-only
         // early dismissal) names those schools, never "all <district> schools".
+        // A name that already ends in "Schools" isn't given another one.
         const audience = (item: SchoolContentItem) => {
           const named = item.applies_to_school_types?.length ? affectedSchools(item, activeSchools) : [];
-          return named.length
-            ? t("({{schools}} only)", { schools: named.map((s) => s.short_name || s.name).join(", ") })
-            : t("(all {{district}} schools)", { district: districtsById.get(item.district_id!)?.name ?? t("district") });
+          if (named.length) return t("({{schools}} only)", { schools: named.map((s) => s.short_name || s.name).join(", ") });
+          const district = districtsById.get(item.district_id!)?.name;
+          return district && /\bschools$/i.test(district)
+            ? t("(all {{district}})", { district })
+            : t("(all {{district}} schools)", { district: district ?? t("district") });
         };
         const closed = /closed/i.test(a.title);
         return (
           <div className={`banner ${closed ? "bad" : ""}`} key={a.id}>
             <span aria-hidden="true">⚠</span>
             <span>
-              <b>
-                {md.month} {md.day}
-              </b>{" "}
+              <b>{when}</b>{" "}
               · {a.title}
               {a.scope === "district" && a.district_id ? ` ${audience(a)}` : ""}
             </span>
