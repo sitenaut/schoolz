@@ -20,6 +20,8 @@ import { trackEvent } from "../lib/track";
 import { countVisit, visitSource } from "../lib/visits";
 import { invitePath, loadPendingInvite } from "../lib/pendingInvite";
 import { useKeyboardViewportReset } from "../lib/keyboardReset";
+import { useFreshBuild } from "../lib/freshBuild";
+import { IS_PRERENDER } from "../lib/prerenderReady";
 import { useSeasons } from "../lib/seasonal";
 import { LOCALZ_CATEGORIES, isLocalzPath } from "../lib/localz";
 import { CategoryIcon } from "../pages/localz/CategoryIcon";
@@ -78,6 +80,8 @@ export function AppShell() {
   const unreadInbox = useUnreadInbox(can(user, "inbox.view"));
   const { allSchools, mySchools, deviceSlugs, activeSchools, myTowns, districtsById, loading: schoolsLoading, colorFor, isActive, toggleActive, activateAll, isFiltered } = useMySchools();
   const { pathname, search } = useLocation();
+  // A tab left open for days ran the build it loaded (lib/freshBuild.ts).
+  useFreshBuild(pathname, IS_PRERENDER);
   const { seasons } = useSeasons();
   const navigate = useNavigate();
   const hideSchoolFilter = NO_SCHOOL_FILTER_PATH_PREFIXES.some((p) => pathname.startsWith(p));
