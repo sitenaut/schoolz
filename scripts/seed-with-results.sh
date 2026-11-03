@@ -11,10 +11,22 @@
 # /admin/config/import: one transaction, because a new job's first run starts
 # within ~30s of the import. Needs the local stack up and an API key for the
 # target (scripts/schoolz-api.sh login prod).
+#
+#   scripts/seed-with-results.sh --results-only prod backend/seed/<district>.json
+#
+# sends the results alone, for a seed the target already has: its config is
+# not re-sent, and every source the target already holds is skipped, so this
+# only adds what is missing there (the NJ DOE contacts, imported locally after
+# the seed went up, are the usual case).
 set -euo pipefail
 
+results_only=0
+if [ "${1:-}" = "--results-only" ]; then
+  results_only=1
+  shift
+fi
 if [ $# -ne 2 ]; then
-  echo "usage: $0 <prod|local> <seed.json>" >&2
+  echo "usage: $0 [--results-only] <prod|local> <seed.json>" >&2
   exit 2
 fi
 target=$1 seed=$2
@@ -51,12 +63,15 @@ async def main(req):
 asyncio.run(main(json.load(sys.stdin)))
 "' > "$tmp/results.json"
 
-python3 - "$seed" "$tmp/results.json" "$tmp/bundle.json" <<'PY'
+python3 - "$seed" "$tmp/results.json" "$tmp/bundle.json" "$results_only" <<'PY'
 import json, sys
 
-seed_path, results_path, out_path = sys.argv[1:4]
+seed_path, results_path, out_path, results_only = sys.argv[1:5]
 results = json.load(open(results_path))
 seed = json.load(open(seed_path))
+if results_only == "1":
+    # Schools are matched by slug against everything the target tracks, so no config is needed.
+    seed = {"exported_at": seed.get("exported_at", results["exported_at"]), "source": seed.get("source", "local"), "districts": [], "schools": [], "smore_newsletters": []}
 seed["results"] = results
 with open(out_path, "w") as f:
     json.dump(seed, f)
@@ -65,7 +80,8 @@ menus = sum(len(d["lunch_menus"]) for d in results["districts"]) + sum(len(s["lu
 print(
     f"Carrying {len(results['newsletters'])} newsletter(s), {blocks} block(s), {menus} lunch menu(s), "
     f"{sum(1 for d in results['districts'] if d['calendar_pdf_items'])} calendar PDF(s), "
-    f"{sum(1 for s in results['schools'] if s['contact_staff'])} contact page(s).",
+    f"{sum(1 for s in results['schools'] if s['contact_staff'])} contact page(s), "
+    f"{sum(len(s.get('state_contacts', [])) for s in results['schools'])} state contact(s).",
     file=sys.stderr,
 )
 PY

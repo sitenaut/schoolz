@@ -46,8 +46,8 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     row is titled "Teacher", so no contact resolves from it. Nurses come from
     each school's nurse page, where the name is the line carrying nursing
     credentials ("..., RN, BSN, CSN" — `role_pages._credentialed_nurse`);
-    principals from the NJ DOE CSV (`scripts/import_njdoe_contacts.py`, a
-    one-off per environment). The footer phone prints "+1", stripped.
+    principals from the NJ DOE CSV (`scripts/import_njdoe_contacts.py` locally,
+    carried to prod by `seed-with-results.sh`). The footer phone prints "+1", stripped.
   - **Presence calendars**: `https://<host>/ICalendarHandler?calendarId=<id>`,
     where the id is the `parentId.<n>=` value in the home page's event links
     (not `contextId` or `pageId`, which answer with zero events). Delran's

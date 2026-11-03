@@ -699,7 +699,7 @@ Shapes that are supported but easy to rediscover the hard way.
   school's ArbiterLive `/m/team/<id>` (Cherokee 4049, Lenape 12655, Marlton
   Middle 13916) - the existing `athletics_calendar.scan` job is auto-created and
   its calendar feed already includes band.
-- **NJ DOE directory CSV** (`services/njdoe_directory.py`, `scripts/import_njdoe_contacts.py`): principal + anti-bullying specialist + homeless liaison per public school, downloaded by hand (the site is Incapsula-walled). Fills the who-to-contact gap for schools with no parseable roster; its emails are often the previous principal's, so one is kept only if it contains the person's surname.
+- **NJ DOE directory CSV** (`services/njdoe_directory.py`, `scripts/import_njdoe_contacts.py`): principal + anti-bullying specialist + homeless liaison per public school, downloaded by hand (the site is Incapsula-walled). Fills the who-to-contact gap for schools with no parseable roster; its emails are often the previous principal's, so one is kept only if it contains the person's surname. Run the script locally; prod gets the rows through `scripts/seed-with-results.sh`.
 - **A district calendar that is only a PDF** (`District.calendar_pdf_url`,
   `district_calendar_pdf.scan`, `services/district_calendar_pdf.py`) — Evesham
   publishes no ICS feed, just a one-page "2026-27 District Calendar" PDF linked

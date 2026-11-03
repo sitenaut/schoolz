@@ -1529,6 +1529,9 @@ class ResultSchool(BaseModel):
     givebacks_last_run: ResultRun | None = None
     contact_page_hash: str | None = None
     contact_staff: list[ResultStaff] = []
+    # NJ DOE directory rows (scripts/import_njdoe_contacts.py), so prod gets
+    # them through the API instead of a script run against its database.
+    state_contacts: list[ResultStaff] = []
 
 
 class ConfigResults(BaseModel):

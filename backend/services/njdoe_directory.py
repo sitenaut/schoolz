@@ -12,7 +12,14 @@ import csv
 import io
 import re
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models import StaffMember
 from services.schoolcafe import _either_contains, _norm
+from services.staff_roles import classify_role
+
+PREFIX = "njdoe:"
 
 _DISTRICT_NOISE = {"district", "public", "schools", "school", "township", "twp", "regional", "board", "of", "education"}
 
@@ -93,6 +100,36 @@ def contacts(row: dict) -> dict[str, dict]:
     if homeless:
         out["njdoe:homeless"] = homeless
     return out
+
+
+async def apply_contacts(db: AsyncSession, school_id: str, found: dict[str, dict], *, refresh: bool = True) -> tuple[int, int]:
+    """Adds `found` (as `contacts` returns it) to a school's staff; returns
+    (rows added, roster emails filled). A school that already has a principal
+    from its own roster keeps that one and the state's is skipped, except
+    that the state's email goes onto the roster row when it is the same
+    person and the row has none. With refresh=False a state row already on
+    file is left as it is: an import carrying another environment's rows
+    never overwrites what this one holds."""
+    existing = (await db.execute(select(StaffMember).where(StaffMember.school_id == school_id))).scalars().all()
+    by_id = {s.source_constituent_id: s for s in existing}
+    own_principals = [s for s in existing if s.role == "principal" and not s.source_constituent_id.startswith(PREFIX)]
+    added = patched = 0
+    for cid, p in found.items():
+        if cid == "njdoe:principal" and own_principals:
+            for own in own_principals:
+                if p["email"] and not own.email and same_person(own.full_name, p["full_name"]):
+                    own.email = p["email"]
+                    patched += 1
+            continue
+        cur = by_id.get(cid)
+        if cur:
+            if refresh:
+                cur.full_name, cur.title, cur.email, cur.role = p["full_name"], p["title"], p["email"], classify_role(p["title"])
+        else:
+            db.add(StaffMember(school_id=school_id, source_constituent_id=cid, full_name=p["full_name"],
+                               title=p["title"], email=p["email"], role=classify_role(p["title"])))
+            added += 1
+    return added, patched
 
 
 def match_row(rows: list[dict], district_name: str, school_name: str) -> dict | None:
