@@ -111,6 +111,18 @@
           "exclude_title_patterns": ["street sweep", "\\b(?:trash|recycl|vegetative)", "water bills? due", "property taxes", "mayor'?s hours", "tax assessor"]
         }
       ],
+      "rss_sources": [
+        {
+          "name": "fieldsboro_borough",
+          "url": "https://www.fieldsboro.us/calendar/rss",
+          "treat_pubdate_as_start": true,
+          "via_scraper": true,
+          "prefer_residential": true,
+          "default_categories": ["fieldsboro", "municipal"],
+          "location": "Fieldsboro, NJ",
+          "skip_meetings": true
+        }
+      ],
       "revize_calendar_app_sources": [
         {
           "name": "pitman_borough",

@@ -261,6 +261,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             url=url,
             default_categories=list(entry.get("default_categories") or []),
             treat_pubdate_as_start=bool((entry or {}).get("treat_pubdate_as_start", False)),
+            via_scraper=bool((entry or {}).get("via_scraper", False)),
+            prefer_residential=bool((entry or {}).get("prefer_residential", False)),
         )))
 
     for entry in scraper_sources:
