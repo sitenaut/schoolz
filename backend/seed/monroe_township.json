@@ -138,7 +138,8 @@
           }
         ]
       },
-      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=25911",
+      "athletics_url": "https://gobound.com/nj/schools/williamstown/calendar/ical/062367d8466c4c2",
+      "arbiter_events_calendar": true,
       "logo_url": null,
       "sacc": null,
       "activities_calendar_ics_url": null,
@@ -164,7 +165,7 @@
       "early_dismissal_time": null,
       "delayed_opening_time": "10:10 AM",
       "bell_periods": null,
-      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=25914",
+      "athletics_url": "https://gobound.com/nj/schools/williamstownms/calendar/ical/5e8214cf328f4ed",
       "logo_url": "https://files.smartsites.parentsquare.com/5623/header_logo_img_tpujwg.png",
       "sacc": null,
       "activities_calendar_ics_url": null,

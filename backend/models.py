@@ -772,7 +772,9 @@ class School(Base):
     # its own events (Gateway: field trips, Financial Aid Night - /m/event/<id>
     # beside the /m/game/<id> games). Most schools' Arbiter events are team
     # business (open gyms, team dinners, tryouts), so events stay hidden with
-    # the games unless the school is switched on.
+    # the games unless the school is switched on. The same switch covers a
+    # GoBound calendar's non-game events (Williamstown: dances, class trips,
+    # ceremonies), which elsewhere are practices and facility bookings.
     arbiter_events_calendar: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     # ...and when those events are the whole district's, not this school's
     # (Audubon: one district calendar, kept on the high school's Arbiter account

@@ -21,7 +21,7 @@
   "Exclude district": "교육구 일정 제외",
   "A high school's own activities calendar and club/interest meetings - off by default, since it runs to dozens a week. Always visible on that school's own class pages.": "고등학교 자체 활동 캘린더와 동아리·관심 모임입니다. 일주일에 수십 건이라 기본적으로 꺼져 있으며, 해당 학교의 학급 페이지에는 항상 표시됩니다.",
   "Show club & interest meetings": "동아리·관심 모임 표시",
-  "A school's full ArbiterLive game schedule, every sport and level combined - off by default, since it runs to dozens of games a week.": "학교의 ArbiterLive 전체 경기 일정으로, 모든 종목과 수준이 포함됩니다. 일주일에 수십 경기라 기본적으로 꺼져 있습니다.",
+  "Games, practices and rehearsals from a school's ArbiterLive, DigitalSports or GoBound calendar, every sport and activity combined - off by default, since they run to dozens a week.": "학교의 ArbiterLive, DigitalSports 또는 GoBound 캘린더에 있는 경기, 연습, 리허설로, 모든 종목과 활동이 포함됩니다. 일주일에 수십 건이라 기본적으로 꺼져 있습니다.",
   "Show sports & band": "스포츠·밴드 표시",
   "Search all events…": "모든 일정 검색…",
   "Events, deadlines, grading & initiatives": "행사, 마감일, 성적 및 이니셔티브",

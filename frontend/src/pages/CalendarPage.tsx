@@ -536,7 +536,7 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
           <input type="checkbox" checked={includeClassSources} onChange={(e) => setIncludeClassSources(e.target.checked)} />
           {t("Show club & interest meetings")}
         </label>
-        <label className="filterCheck" title={t("A school's full ArbiterLive game schedule, every sport and level combined - off by default, since it runs to dozens of games a week.")}>
+        <label className="filterCheck" title={t("Games, practices and rehearsals from a school's ArbiterLive, DigitalSports or GoBound calendar, every sport and activity combined - off by default, since they run to dozens a week.")}>
           <input type="checkbox" checked={includeAthletics} onChange={(e) => setIncludeAthletics(e.target.checked)} />
           <span aria-hidden="true">🏀🎺</span> {t("Show sports & band")}
         </label>
