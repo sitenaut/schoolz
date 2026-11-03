@@ -185,6 +185,17 @@
           "default_categories": ["south-harrison", "municipal"],
           "location": "South Harrison, NJ",
           "skip_meetings": true
+        },
+        {
+          "name": "eastampton_township",
+          "url": "https://www.eastampton.com/calendar/ical/calendar.ics",
+          "via_scraper": true,
+          "prefer_residential": true,
+          "upcoming_only": true,
+          "default_categories": ["eastampton", "municipal"],
+          "location": "Eastampton, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\brecycl", "street sweep", "\\btax assessor", "\\bLUPB\\b"]
         }
       ]
     }

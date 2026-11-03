@@ -598,7 +598,8 @@ town as added or skipped.
 1. Fetch the town homepage and its calendar/events page (plain httpx first,
    then the droplet: several town sites 403 a plain GET but render fine
    through it, and some, like Gloucester City and Magnolia, only render from
-   the residential Pi). Grep for the platform, then use the matching source
+   the residential Pi, which an entry asks first with `via_scraper` and
+   `prefer_residential`). Grep for the platform, then use the matching source
    type. All of these are params entries, no code:
    - **CivicPlus** (`RSSFeed.aspx`, `iCalendar.aspx`, "Official Website" in
      the title) → `ical_sources` with
@@ -607,6 +608,12 @@ town as added or skipped.
      `/iCalendar.aspx` and pick its events category ("Main Events",
      "Community Events"), not its holidays or meetings. Don't use
      `RSSFeed.aspx`: it only lists the next ~2 weeks.
+   - **CivicPlus on Drupal** ("Government Websites by CivicPlus" in a Drupal
+     site's footer) → `ical_sources` with `upcoming_only: true`, on
+     `/calendar/ical/calendar.ics` (Drupal 11, "HCMS") or the `webcal://`
+     export linked from `/calendar/month` (Drupal 7). Not `/calendar/rss`: it
+     lists only the next 10 entries. All of them so far are behind a
+     Cloudflare challenge only the Pi gets past.
    - **Revize, new** (`_assets_/plugins/revizeCalendar`) → `json_sources`
      copying the `merchantville` entry, with the `webspace=` from the page,
      and `upcoming_only: true` (the handler returns years of history).

@@ -8,7 +8,9 @@ for tier-2 sources. RRULE expansion can be added later via `icalendar.recurrence
 from __future__ import annotations
 
 import hashlib
+import html
 import logging
+import re
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
@@ -47,8 +49,33 @@ def _as_datetime(value) -> datetime | None:
 def _stable_id(uid: str | None, title: str, dt: datetime) -> str:
     if uid:
         return uid
-    digest = hashlib.sha1(f"{title}|{dt.isoformat()}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha1(f"{title}|{dt.isoformat()}".encode()).hexdigest()
     return f"hash:{digest[:24]}"
+
+
+# Drupal 7's Location module writes a venue's whole address block into
+# LOCATION, country and map link included (Gloucester City: "Martin's Lake",
+# blank lines, "United States", "See map: Google Maps").
+_DRUPAL_ADDRESS_NOISE = re.compile(r"\bUnited States\b|See map:\s*Google Maps", re.I)
+
+
+def _location(value) -> str | None:
+    text = str(value or "").strip()
+    if "See map:" in text:
+        parts = (part.strip(" ,") for part in _DRUPAL_ADDRESS_NOISE.sub("\n", text).splitlines())
+        text = ", ".join(part for part in parts if part)
+    return text or None
+
+
+# CivicPlus HCMS escapes its titles' and descriptions' HTML ("Trunk-or-Treat
+# &amp; Bonfire") and starts each description with its field's label on a
+# line of its own ("Body", "Description").
+_ENTITY_RE = re.compile(r"&(?:[a-z]+|#\d+|#x[0-9a-f]+);", re.I)
+_FIELD_LABEL_RE = re.compile(r"^(?:Body|Description)[ \t]*(?:\n|$)")
+
+
+def _text(value) -> str:
+    return _ENTITY_RE.sub(lambda m: html.unescape(m.group()), str(value or "")).strip()
 
 
 class ICalSource(Source):
@@ -113,9 +140,9 @@ class ICalSource(Source):
                 if self.upcoming_only and (end or start) < today:
                     continue
 
-                title = str(component.get("SUMMARY") or "").strip() or "(untitled)"
-                description = str(component.get("DESCRIPTION") or "").strip() or None
-                location = str(component.get("LOCATION") or "").strip() or None
+                title = _text(component.get("SUMMARY")) or "(untitled)"
+                description = _FIELD_LABEL_RE.sub("", _text(component.get("DESCRIPTION"))).strip() or None
+                location = _location(component.get("LOCATION"))
                 url = component.get("URL")
                 url_str = str(url) if url else None
                 uid = str(component.get("UID")) if component.get("UID") else None

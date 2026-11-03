@@ -1,0 +1,35 @@
+{
+  "exported_at": "2026-11-03T12:00:00Z",
+  "source": "onboarding: Camden County town calendars for /local (Gloucester City, Magnolia)",
+  "districts": [],
+  "schools": [],
+  "smore_newsletters": [],
+  "local_events": {
+    "Local events refresh": {
+      "ical_sources": [
+        {
+          "name": "gloucester_city",
+          "url": "https://www.cityofgloucester.org/calendar/ical/export.ics",
+          "via_scraper": true,
+          "prefer_residential": true,
+          "upcoming_only": true,
+          "default_categories": ["gloucester-city", "municipal"],
+          "location": "Gloucester City, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\btax(?:es)?\\b", "\\bhydrant flushing\\b"]
+        },
+        {
+          "name": "magnolia_borough",
+          "url": "https://www.magnolia-nj.org/calendar/ical/calendar.ics",
+          "via_scraper": true,
+          "prefer_residential": true,
+          "upcoming_only": true,
+          "default_categories": ["magnolia", "municipal"],
+          "location": "Magnolia, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": ["\\btrash\\b", "\\brecycl", "street sweep"]
+        }
+      ]
+    }
+  }
+}

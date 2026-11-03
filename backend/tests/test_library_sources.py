@@ -157,6 +157,47 @@ async def test_ical_venue_override_and_upcoming_only(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_ical_location_drops_drupals_country_and_map_link(monkeypatch):
+    """Gloucester City's Drupal 7 export puts the whole rendered address block
+    in LOCATION, as escaped newlines."""
+    soon = _soon(2).strftime("%Y%m%dT%H%M%S")
+    feed = (
+        "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+        f"BEGIN:VEVENT\r\nUID:a\r\nSUMMARY:Fishing Derby\r\nDTSTART:{soon}\r\n"
+        "LOCATION:Martin's Lake\\n                              \\nUnited States\\n      \\n\\n      \\nSee map: Google Maps\r\nEND:VEVENT\r\n"
+        f"BEGIN:VEVENT\r\nUID:b\r\nSUMMARY:Shred Event\r\nDTSTART:{soon}\r\n"
+        "LOCATION:Courthouse\\n313 Monmouth Street\\nGloucester City\\, NJ 08030\\nUnited States\\nSee map: Google Maps\r\nEND:VEVENT\r\n"
+        "END:VCALENDAR\r\n"
+    )
+    monkeypatch.setattr(ical.httpx, "AsyncClient", _mock(ical, lambda r: httpx.Response(200, content=feed.encode())))
+    events = await ICalSource("town", "https://x.test/export.ics").fetch()
+
+    assert [e.venue_name for e in events] == ["Martin's Lake", "Courthouse, 313 Monmouth Street, Gloucester City, NJ 08030"]
+
+
+@pytest.mark.anyio
+async def test_ical_decodes_civicplus_hcms_entities_and_drops_its_field_label(monkeypatch):
+    """Eastampton's CivicPlus HCMS export escapes its HTML and opens each
+    description with the field's label on a line of its own."""
+    soon = _soon(2).strftime("%Y%m%dT%H%M%S")
+    feed = (
+        "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+        f"BEGIN:VEVENT\r\nUID:a\r\nSUMMARY:Trunk-or-Treat &amp; Bonfire 10/24\r\nDTSTART:{soon}\r\n"
+        "DESCRIPTION:Body \\n\\nCandy &amp; a bonfire at Smithville Park.\\n \r\nEND:VEVENT\r\n"
+        f"BEGIN:VEVENT\r\nUID:b\r\nSUMMARY:Q&A Night\r\nDTSTART:{soon}\r\n"
+        "DESCRIPTION:Description of the route and parking.\r\nEND:VEVENT\r\n"
+        "END:VCALENDAR\r\n"
+    )
+    monkeypatch.setattr(ical.httpx, "AsyncClient", _mock(ical, lambda r: httpx.Response(200, content=feed.encode())))
+    events = await ICalSource("town", "https://x.test/calendar.ics").fetch()
+
+    assert [(e.title, e.description) for e in events] == [
+        ("Trunk-or-Treat & Bonfire 10/24", "Candy & a bonfire at Smithville Park."),
+        ("Q&A Night", "Description of the route and parking."),
+    ]
+
+
+@pytest.mark.anyio
 async def test_rss_via_scraper_reads_the_feed_out_of_chromiums_text_viewer(monkeypatch):
     """Fieldsboro's Cloudflare answers plain HTTP with a challenge. Through a
     scraper the feed comes back as the page Chromium shows for it: the XML
