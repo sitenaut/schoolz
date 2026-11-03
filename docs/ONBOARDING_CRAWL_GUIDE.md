@@ -544,11 +544,20 @@ right, next to print), **Include Practices** off, every activity except
 **School Events** (no-school days and dances the district calendar already
 has), **Generate Calendar Link**, **Copy Calendar Link**. The link
 (`.../calendar/ical/<token>`) goes in `athletics_url`; parents are shown the
-school's GoBound page instead. A high school's page usually carries its middle
-school's teams too ("7th Grade", "8th Grade", "MS Red"): give the middle school
-the same link and the scan splits them. Compare against ArbiterLive before
-choosing: Kingsway's GoBound feed had 676 games in the scan window, its
-ArbiterLive entity 256.
+school's GoBound page instead. The feed's other events (practices, rehearsals,
+clubs, room bookings) are kept with the games, behind the sports toggle; set
+`arbiter_events_calendar` only when they are real school events (Williamstown's
+dances and class trips). A high school's page usually carries its middle
+school's teams and building too ("7th Grade", "8th Grade", "MS Red"): give the
+middle school the same link and the scan splits them. A school with no page of
+its own may still be in its **conference's** calendar (Tri-County Conference,
+Burlington County Scholastic League), which has league games only: use that
+link with the school's team names after `#`, every spelling the feed uses
+(`#Deptford|Deptford High School`). Compare against ArbiterLive before
+choosing, over the next 180 days: Kingsway's own feed had 676 games, its
+ArbiterLive entity 256; West Deptford's and Burlington City's GoBound pages had
+far fewer games than ArbiterLive, and a conference feed misses non-league games,
+so Pitman, Triton, Delsea and Northern Burlington stayed on ArbiterLive.
 
 ---
 

@@ -80,9 +80,13 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
     Activities (6 Timber Creek and 8 Triton Athletics, 11 counseling and 12 weekends
     were empty in October). Each is attached with `school_slug`. Lunch is one
     district PDF per month plus a breakfast PDF at `/our-district/food-services/monthly-menu`
-    (no SchoolCafé match under any Nutri-Serve shortname tried). **Athletics are
-    ArbiterLive** (`/m/team/<id>`: Highland 10054, Timber Creek 23438, Triton
-    23768; the owner supplied the ids, the schools' own pages link GoBound). The
+    (no SchoolCafé match under any Nutri-Serve shortname tried). **Athletics**: the
+    schools' own pages link GoBound. Timber Creek reads its GoBound calendar link
+    (274 games over the next 180 days against ArbiterLive 23438's 106); Highland,
+    with no GoBound page, the Tri-County Conference calendar filtered to
+    "Highland Regional"/"Highland" (148 league games against ArbiterLive 10054's
+    73); Triton stays on ArbiterLive 23768 (no GoBound page, and the conference
+    feed had fewer games through February). The
     schools' athletics ICS calendars repeat the same games under different titles,
     so they are left out of the seed; removing a feed does not delete its old rows.
     **Bell schedules** are Google Drive PDFs (Highland, Triton: regular, half-day,
@@ -122,7 +126,7 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
   subtraction. Elementary page slugs carry per-school `-clone` suffixes; copy errors carry over (Hurffville's admin page shows Birches'
   phone), so trust the footer. Bell times are one district PDF (rows per building group: BE-TJ-WH, BI-HU-WW, MS, HS) behind
   `/our-district/district-bell-schedule`. The calendar PDF is a resource-manager nav link; `calendar_pdf_url` points at that
-  wrapper directly (the directory page did not yield it). Athletics: WTHS is on GoBound but the owner supplied its ArbiterLive team id.
+  wrapper directly (the directory page did not yield it). Athletics: WTHS reads its GoBound calendar link (ArbiterLive 24866 had half the games).
   Lunch menus mix resource-manager PDFs (past months) and fixed-name PNGs (current month); the PNG links are classified by link text, since the filename says nothing.
 
 - **Burlington Township (older calendar module):** `/fs/calendar-manager/events.ics` returns an empty VCALENDAR for every id, and the "subscribe" button does nothing. The RSS button opens a popup at `/cf_calendar/cms_calendar_feeds.cfm?element_id=N&calendar_ids=<data-calendar-ids>` whose "Add to Default Calendar App" links are the real feeds, `webcal://<host>/calendar/calendar_<id>.ics` (plus one `cf_calendar/feed.cfm?type=ical&feedID=` for all). Find it by clicking the RSS button in Playwright and watching for a popup, not the clipboard. Plain curl to this host has also been served other districts' pages: check the page title.
