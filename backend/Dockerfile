@@ -1,7 +1,7 @@
 # Build stage: anything that compiles does it here, so the runtime image
 # carries no compiler. Base images are pinned by version and digest;
 # Dependabot proposes the bumps.
-FROM python:3.12.15-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258 AS build
+FROM python:3.12.16-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337 AS build
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc \
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --require-hashes -r requirements.txt \
     && if [ "$DEV" = 1 ]; then pip install --no-cache-dir --require-hashes -r requirements-dev.txt; fi
 
 
-FROM python:3.12.15-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+FROM python:3.12.16-slim-bookworm@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 ENV PATH=/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
