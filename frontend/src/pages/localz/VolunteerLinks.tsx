@@ -54,8 +54,9 @@ export function VolunteerLinks() {
         <ul className="localz-give-seasons">
           {seasons.map((s) => (
             <li key={s.season}>
-              <Link to={`/seasonal/${s.season}#kind-volunteer`}>
-                <span aria-hidden="true">{s.emoji}</span> {t(SEASON_LINK[s.season] ?? "Volunteering this season")}
+              <Link className="btn" to={`/seasonal/${s.season}#kind-volunteer`}>
+                <span aria-hidden="true">{s.emoji}</span>
+                {t(SEASON_LINK[s.season] ?? "Volunteering this season")}
               </Link>
             </li>
           ))}

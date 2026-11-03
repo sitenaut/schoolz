@@ -3686,17 +3686,23 @@ select {
   margin: 0;
 }
 .localz-give-seasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 10px 0 0;
   padding: 0;
   list-style: none;
-  font-weight: 600;
+}
+.localz-give-seasons .btn {
+  gap: 6px;
+  min-height: 40px;
+  font-size: 14px;
 }
 .localz-give-links {
   margin: 10px 0 0;
   padding-left: 18px;
 }
-.localz-give-links li,
-.localz-give-seasons li {
+.localz-give-links li {
   margin: 4px 0;
 }
 
