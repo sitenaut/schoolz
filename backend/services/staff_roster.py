@@ -1087,8 +1087,10 @@ def own_location_option(html: str, school_names: list[str | None]) -> tuple[str,
         label = option.get_text(" ", strip=True)
         words = _school_tokens(label)
         if option.get("value") and words and words <= own:
-            fits.append((option["value"], label))
-    return fits[0] if len(fits) == 1 else None
+            fits.append((len(words), option["value"], label))
+    # "Yardville Heights" fits "Yardville" too; the fuller name is the school.
+    fullest = [f for f in fits if f[0] == max(fits)[0]]
+    return fullest[0][1:] if len(fullest) == 1 else None
 
 
 async def _read_constituent_directory(url: str, school_names: list[str | None]) -> list[dict]:

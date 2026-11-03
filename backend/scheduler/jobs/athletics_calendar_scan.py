@@ -7,7 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import School, SchoolContentItem
 from scheduler.registry import register_job
 from services import digitalsports
-from services.arbiter import entity_id_from_athletics_url, fetch_events, fetch_statuses, games_for_school, is_middle_school_team
+from services.arbiter import (
+    entity_id_from_athletics_url,
+    fetch_events,
+    fetch_statuses,
+    games_for_school,
+    is_middle_school_team,
+)
 
 _ET = ZoneInfo("America/New_York")
 
@@ -43,6 +49,12 @@ def _placement(event: dict, school: School) -> dict:
 
 async def _run_digitalsports(db: AsyncSession, school: School, host: str, start: date, end: date) -> str | None:
     events = await digitalsports.fetch_events(host, start, end)
+    # One site can list a high school and its middle school together (Robbinsville,
+    # teams named "Soccer - Boys Middle School"). Only then is the team a split.
+    if school.district_id and school.school_type in ("middle", "high"):
+        siblings = (await db.execute(select(School).where(School.district_id == school.district_id, School.id != school.id))).scalars().all()
+        if any(s.school_type in ("middle", "high") and digitalsports.host_from_athletics_url(s.athletics_url) == host for s in siblings):
+            events = [e for e in events if e["kind"] != "game" or is_middle_school_team(e) == (school.school_type == "middle")]
     if not events:
         return f"WARNING[no_digitalsports_events]: no games found on {host}.digitalsports.com for this school"
     for event in events:

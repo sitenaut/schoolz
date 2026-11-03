@@ -1,0 +1,460 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: Ewing Township School District (Mercer County)",
+  "districts": [
+    {
+      "name": "Ewing Township School District",
+      "state": "NJ",
+      "website_url": "https://www.ewing.k12.nj.us",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Ewing District Calendar",
+          "url": "https://www.ewing.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=10",
+          "school_title_prefixes": {
+            "EHS ": "ewing-high",
+            "FMS ": "fisher-middle",
+            "Fisher ": "fisher-middle",
+            "Antheil ": "antheil-elementary",
+            "Anthiel ": "antheil-elementary",
+            "AES ": "antheil-elementary",
+            "Lore ": "lore-elementary",
+            "Parkway ": "ewing-parkway-elementary"
+          }
+        },
+        {
+          "name": "Ewing High Calendar",
+          "url": "https://www.ewing.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=4",
+          "school_slug": "ewing-high"
+        },
+        {
+          "name": "Fisher Middle Calendar",
+          "url": "https://www.ewing.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=6",
+          "school_slug": "fisher-middle"
+        },
+        {
+          "name": "Antheil Calendar",
+          "url": "https://www.ewing.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=5",
+          "school_slug": "antheil-elementary"
+        },
+        {
+          "name": "Lore Calendar",
+          "url": "https://www.ewing.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=7",
+          "school_slug": "lore-elementary"
+        },
+        {
+          "name": "Parkway Calendar",
+          "url": "https://www.ewing.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=8",
+          "school_slug": "ewing-parkway-elementary",
+          "school_title_prefixes": {
+            "PES ": "ewing-parkway-elementary"
+          }
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.ewing.k12.nj.us/district-information/transportation",
+      "towns": [
+        "Ewing"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "ewing-high",
+      "name": "Ewing High School",
+      "short_name": "Ewing High",
+      "district_name": "Ewing Township School District",
+      "school_type": "high",
+      "address": "900 Parkway Ave, Ewing, NJ 08618",
+      "main_phone": "(609) 538-9800",
+      "website_url": "https://ehs.ewing.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 538-9800 ext. 2141",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "To report an absence, call (609) 538-9800 ext. 2141.",
+      "start_time": "7:45 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:15 PM",
+      "delayed_opening_time": "9:15 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:45",
+            "end": "07:51"
+          },
+          {
+            "name": "Block 1",
+            "start": "07:55",
+            "end": "09:22"
+          },
+          {
+            "name": "Block 2",
+            "start": "09:27",
+            "end": "10:54"
+          },
+          {
+            "name": "Block 3A",
+            "start": "10:59",
+            "end": "11:25"
+          },
+          {
+            "name": "Block 3B",
+            "start": "11:30",
+            "end": "11:56"
+          },
+          {
+            "name": "Block 3C",
+            "start": "12:01",
+            "end": "12:27"
+          },
+          {
+            "name": "Block 3D",
+            "start": "12:32",
+            "end": "12:58"
+          },
+          {
+            "name": "Block 4",
+            "start": "13:03",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Block 1",
+            "start": "07:45",
+            "end": "08:49"
+          },
+          {
+            "name": "Block 2",
+            "start": "08:54",
+            "end": "09:58"
+          },
+          {
+            "name": "Block 3",
+            "start": "10:03",
+            "end": "11:07"
+          },
+          {
+            "name": "Block 4",
+            "start": "11:12",
+            "end": "12:15"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:15",
+            "end": "09:21"
+          },
+          {
+            "name": "Block 1",
+            "start": "09:25",
+            "end": "10:22"
+          },
+          {
+            "name": "Block 2",
+            "start": "10:26",
+            "end": "11:26"
+          },
+          {
+            "name": "Block 3A",
+            "start": "11:30",
+            "end": "11:56"
+          },
+          {
+            "name": "Block 3B",
+            "start": "12:00",
+            "end": "12:26"
+          },
+          {
+            "name": "Block 3C",
+            "start": "12:30",
+            "end": "12:56"
+          },
+          {
+            "name": "Block 3D",
+            "start": "13:00",
+            "end": "13:26"
+          },
+          {
+            "name": "Block 4",
+            "start": "13:30",
+            "end": "14:30"
+          }
+        ]
+      },
+      "athletics_url": "https://ewinghsathletics.digitalsports.com/pages/schedule/schedule.php",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1727335789/ewingk12njus/ervwruemcxxnpduw38rk/EwingHighSchool.png",
+      "staff_directory_url": null,
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "ewingps/ewing-high-school-high-school"
+    },
+    {
+      "slug": "fisher-middle",
+      "name": "Fisher Middle School",
+      "short_name": "Fisher Middle",
+      "district_name": "Ewing Township School District",
+      "school_type": "middle",
+      "address": "1325 Lower Ferry Rd, Ewing, NJ 08618",
+      "main_phone": "(609) 538-9800",
+      "website_url": "https://fms.ewing.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 538-9800 ext. 3106",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Attendance Office at (609) 538-9800 ext. 3106 no later than 8:30 AM. If the school is not notified, a school messenger call goes to the parent or guardian.",
+      "start_time": "8:25 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:55 PM",
+      "delayed_opening_time": "9:55 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:32"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:32",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:17",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:02",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 4A (8th grade lunch)",
+            "start": "10:47",
+            "end": "11:22"
+          },
+          {
+            "name": "Period 4B (6th grade lunch)",
+            "start": "11:24",
+            "end": "11:59"
+          },
+          {
+            "name": "Period 4C",
+            "start": "12:01",
+            "end": "12:13"
+          },
+          {
+            "name": "Period 4D (7th grade lunch)",
+            "start": "12:15",
+            "end": "12:50"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:52",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:37",
+            "end": "14:20"
+          },
+          {
+            "name": "Period 7",
+            "start": "14:22",
+            "end": "15:05"
+          }
+        ]
+      },
+      "athletics_url": "https://ewinghsathletics.digitalsports.com/pages/schedule/schedule.php",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1727335813/ewingk12njus/jrw3ot3acgjhq1qyru8i/fisher-middle-logo.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Middle School Extended Day Program run by Champions, afternoons only. Registration help: Champions Family Support, 1-800-246-2154.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "ewingps/fisher-middle-school-middle-school"
+    },
+    {
+      "slug": "antheil-elementary",
+      "name": "Antheil Elementary School",
+      "short_name": "Antheil",
+      "district_name": "Ewing Township School District",
+      "school_type": "elementary",
+      "address": "339 Ewingville Rd, Ewing, NJ 08638",
+      "main_phone": "(609) 538-9800",
+      "website_url": "https://aes.ewing.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 538-9800 ext. 4100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Tel-Safe number, (609) 538-9800 ext. 4100, any time to report a student absent or tardy. Give the student's name, teacher, reason for absence and length of absence. Send a note when your child returns.",
+      "start_time": "9:00 AM",
+      "end_time": "3:40 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1727335800/ewingk12njus/ae2e8zje07ghqiqlpruu/AntheilElementarySchool.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:30 AM - 8:40 AM",
+        "pm_hours": "3:40 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Elementary Extended Day Program run by Champions. No morning care on a delayed opening. Registration help: Champions Family Support, 1-800-246-2154.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "ewingps/antheil-elementary-school-elementary-school"
+    },
+    {
+      "slug": "lore-elementary",
+      "name": "Lore Elementary School",
+      "short_name": "Lore",
+      "district_name": "Ewing Township School District",
+      "school_type": "elementary",
+      "address": "13 Westwood Dr, Ewing, NJ 08628",
+      "main_phone": "(609) 538-9800",
+      "website_url": "https://les.ewing.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 538-9800 ext. 6100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 538-9800 ext. 6100 to report an absence by 9:15 AM. Send a note with your child on return stating the reason; a doctor's note will excuse the absence.",
+      "start_time": "9:00 AM",
+      "end_time": "3:40 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1727335776/ewingk12njus/igsqhw3ohstpaoemsao4/LoreElementarySchool.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:30 AM - 8:40 AM",
+        "pm_hours": "3:40 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Elementary Extended Day Program run by Champions. No morning care on a delayed opening. Registration help: Champions Family Support, 1-800-246-2154.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "ewingps/lore-elementary-school-elementary-school"
+    },
+    {
+      "slug": "ewing-parkway-elementary",
+      "name": "Parkway Elementary School",
+      "short_name": "Parkway",
+      "district_name": "Ewing Township School District",
+      "school_type": "elementary",
+      "address": "446 Parkway Ave, Ewing, NJ 08618",
+      "main_phone": "(609) 538-9800",
+      "website_url": "https://pes.ewing.k12.nj.us",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 538-9800 ext. 5100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 538-9800 ext. 5100 to report an absence by 9:15 AM. Send a note with your child on return stating the reason; a doctor's note will excuse the absence.",
+      "start_time": "9:00 AM",
+      "end_time": "3:40 PM",
+      "early_dismissal_time": "1:40 PM",
+      "delayed_opening_time": "10:30 AM",
+      "bell_periods": null,
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1699703645/ewingk12njus/cu22h1q74uudhzdbp6ku/Parkway.png",
+      "staff_directory_url": null,
+      "sacc": {
+        "am_hours": "6:30 AM - 8:40 AM",
+        "pm_hours": "3:40 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Elementary Extended Day Program run by Champions. No morning care on a delayed opening. Registration help: Champions Family Support, 1-800-246-2154.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "ewingps/parkway-elementary-school-elementary-school"
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://ehs.ewing.k12.nj.us/news/virtual-backpack",
+      "label": "Ewing High Virtual Backpack",
+      "school_slug": "ewing-high",
+      "district_name": null,
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://fms.ewing.k12.nj.us/news/virtual-backpack",
+      "label": "Fisher Middle Virtual Backpack",
+      "school_slug": "fisher-middle",
+      "district_name": null,
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://aes.ewing.k12.nj.us/news/virtual-backpack",
+      "label": "Antheil Virtual Backpack",
+      "school_slug": "antheil-elementary",
+      "district_name": null,
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://les.ewing.k12.nj.us/news/virtual-backpack",
+      "label": "Lore Virtual Backpack",
+      "school_slug": "lore-elementary",
+      "district_name": null,
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    },
+    {
+      "url": "https://pes.ewing.k12.nj.us/news/virtual-backpack",
+      "label": "Parkway Virtual Backpack",
+      "school_slug": "ewing-parkway-elementary",
+      "district_name": null,
+      "source_type": "virtual_backpack",
+      "cron_expr": "0 9 * * *",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

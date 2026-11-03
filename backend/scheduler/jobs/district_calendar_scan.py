@@ -165,8 +165,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 (school_id_by_slug.get(slug) for p, slug in by_prefix if event["title"].lower().startswith(p) and school_id_by_slug.get(slug)), None
             )
             # "HS C Day" is the high school's Day C: a rotation marker is read
-            # as one only without the building's prefix.
-            if own_school and not school_id:
+            # as one only without the building's prefix, on a school's own feed
+            # too ("PES Day 4" on Ewing's Parkway calendar).
+            if own_school:
                 event["title"] = _without_school_prefix(event["title"], feed)
             event["school_id"] = own_school
             event["applies_to_school_types"] = None if own_school else (school_types or school_types_from_title(event["title"], district_schools))

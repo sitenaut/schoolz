@@ -1,0 +1,158 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: Mercer County town calendars for /local",
+  "districts": [],
+  "schools": [],
+  "smore_newsletters": [],
+  "local_events": {
+    "Local events refresh": {
+      "json_sources": [
+        {
+          "name": "robbinsville_township",
+          "url": "https://www.robbinsville.net/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=robbinsvilletwpnj&relative_revize_url=//webgen1.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": [
+            "robbinsville",
+            "municipal"
+          ],
+          "location": "Robbinsville, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "\\bcommission$",
+            "\\bcollection\\b"
+          ]
+        },
+        {
+          "name": "west_windsor_township",
+          "url": "https://www.westwindsortwp.gov/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=townshipofwestwindsor&relative_revize_url=//webgen1.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": [
+            "west-windsor",
+            "municipal"
+          ],
+          "location": "West Windsor, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "\\blicense\\b",
+            "^rain date$"
+          ]
+        },
+        {
+          "name": "ewing_township",
+          "url": "https://www.ewingnj.org/index.php?option=com_dpcalendar&view=events&format=raw&limit=500",
+          "base_url": "https://www.ewingnj.org",
+          "parser": "dpcalendar",
+          "default_categories": [
+            "ewing",
+            "municipal"
+          ],
+          "location": "Ewing, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "\\b(?:commission|committee|board|condemnation)\\b",
+            "^zoning\\b",
+            "^site review$",
+            "^rent control$",
+            "\\bcurbside\\b",
+            "^tax due",
+            "^sewer payment"
+          ]
+        }
+      ],
+      "ical_sources": [
+        {
+          "name": "lawrence_township",
+          "url": "https://www.lawrencetwp.com/meetings/icalendar/calendar/282/",
+          "upcoming_only": true,
+          "default_categories": [
+            "lawrence-township",
+            "municipal"
+          ],
+          "location": "Lawrenceville, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "^leaf collection",
+            "^recycling$",
+            "\\btrash\\b",
+            "bulk waste"
+          ]
+        },
+        {
+          "name": "hopewell_township",
+          "url": "https://www.hopewelltwp.org/common/modules/iCalendar/iCalendar.aspx?catID=25&feed=calendar",
+          "default_categories": [
+            "hopewell-township",
+            "municipal"
+          ],
+          "location": "Hopewell Township, Mercer County, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "east_windsor_township",
+          "url": "https://www.east-windsor.nj.us/meetings/icalendar/calendar/864/",
+          "upcoming_only": true,
+          "default_categories": [
+            "east-windsor",
+            "municipal"
+          ],
+          "location": "East Windsor, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "hopewell_borough_recreation",
+          "url": "https://www.hopewellboroughnj.gov/common/modules/iCalendar/iCalendar.aspx?catID=26&feed=calendar",
+          "default_categories": [
+            "hopewell-borough",
+            "municipal"
+          ],
+          "location": "Hopewell, Mercer County, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "pennington_borough",
+          "url": "https://www.penningtonboro.org/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+          "default_categories": [
+            "pennington",
+            "municipal"
+          ],
+          "location": "Pennington, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "^court date$",
+            "\\b(?:commission|committee)\\b",
+            "\\breservation\\b",
+            "^(?:christmas|new year's) day$"
+          ]
+        },
+        {
+          "name": "hopewell_township_recreation",
+          "url": "https://www.hopewelltwp.org/common/modules/iCalendar/iCalendar.aspx?catID=24&feed=calendar",
+          "default_categories": [
+            "hopewell-township",
+            "municipal"
+          ],
+          "location": "Hopewell Township, Mercer County, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "hopewell_borough_events",
+          "url": "https://www.hopewellboroughnj.gov/common/modules/iCalendar/iCalendar.aspx?catID=31&feed=calendar",
+          "default_categories": [
+            "hopewell-borough",
+            "municipal"
+          ],
+          "location": "Hopewell, Mercer County, NJ",
+          "skip_meetings": true
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1685 @@
+{
+  "exported_at": "2026-11-02T12:00:00Z",
+  "source": "onboarding: Hamilton Township Public School District (Mercer County)",
+  "districts": [
+    {
+      "name": "Hamilton Township Public School District",
+      "state": "NJ",
+      "website_url": "https://www.htsdnj.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Hamilton Township District Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=1"
+        },
+        {
+          "name": "Steinert High School Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=23",
+          "school_slug": "hamilton-east-steinert"
+        },
+        {
+          "name": "Nottingham High School Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=14",
+          "school_slug": "hamilton-north-nottingham"
+        },
+        {
+          "name": "Hamilton West Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=24",
+          "school_slug": "hamilton-west-watson"
+        },
+        {
+          "name": "Crockett Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=13",
+          "school_slug": "hamilton-crockett"
+        },
+        {
+          "name": "Grice Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=21",
+          "school_slug": "hamilton-grice"
+        },
+        {
+          "name": "Reynolds Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=22",
+          "school_slug": "hamilton-reynolds"
+        },
+        {
+          "name": "Alexander Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=2",
+          "school_slug": "hamilton-alexander"
+        },
+        {
+          "name": "Kisthardt Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=4",
+          "school_slug": "hamilton-kisthardt"
+        },
+        {
+          "name": "Klockner Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=5",
+          "school_slug": "hamilton-klockner"
+        },
+        {
+          "name": "Wilson Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=6",
+          "school_slug": "hamilton-wilson"
+        },
+        {
+          "name": "Lalor Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=8",
+          "school_slug": "hamilton-lalor"
+        },
+        {
+          "name": "McGalliard Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=9",
+          "school_slug": "hamilton-mcgalliard"
+        },
+        {
+          "name": "Langtree Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=10",
+          "school_slug": "hamilton-langtree"
+        },
+        {
+          "name": "Mercerville Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=11",
+          "school_slug": "hamilton-mercerville"
+        },
+        {
+          "name": "Robinson Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=15",
+          "school_slug": "hamilton-robinson"
+        },
+        {
+          "name": "Sayen Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=16",
+          "school_slug": "hamilton-sayen"
+        },
+        {
+          "name": "Sunnybrae Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=17",
+          "school_slug": "hamilton-sunnybrae"
+        },
+        {
+          "name": "University Heights Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=18",
+          "school_slug": "hamilton-university-heights"
+        },
+        {
+          "name": "Yardville Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=19",
+          "school_slug": "hamilton-yardville"
+        },
+        {
+          "name": "Yardville Heights Calendar",
+          "url": "https://www.htsdnj.org/fs/calendar-manager/events.ics?calendar_ids[]=20",
+          "school_slug": "hamilton-yardville-heights"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.htsdnj.org/departments/transportation",
+      "towns": [
+        "Hamilton Township"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "hamilton-crockett",
+      "name": "Crockett Middle School",
+      "short_name": "Crockett",
+      "school_type": "middle",
+      "address": "2631 Kuser Road, Hamilton, NJ 08691",
+      "main_phone": "(609) 631-4149",
+      "website_url": "https://cms.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1730466717/htsdnjorg/q1tgeumuvhavbtk2uuvw/TempCROCKETT.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4149 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4149, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence.",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:32"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:18",
+            "end": "09:58"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:01",
+            "end": "10:41"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "10:44",
+            "end": "11:24"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "11:27",
+            "end": "12:07"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "12:10",
+            "end": "12:50"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:53",
+            "end": "13:33"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:36",
+            "end": "14:16"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:19",
+            "end": "15:00"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:33"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:01"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:03",
+            "end": "09:29"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:31",
+            "end": "09:57"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "09:59",
+            "end": "10:25"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "10:27",
+            "end": "10:53"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "10:55",
+            "end": "11:21"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:23",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:51",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:19",
+            "end": "12:45"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:55",
+            "end": "10:03"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:05",
+            "end": "10:36"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:38",
+            "end": "11:09"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:11",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "11:44",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "12:17",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "12:50",
+            "end": "13:21"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:23",
+            "end": "13:54"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:56",
+            "end": "14:27"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:29",
+            "end": "15:00"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "9:55 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/crocket-middle-school"
+    },
+    {
+      "slug": "hamilton-grice",
+      "name": "Grice Middle School",
+      "short_name": "Grice",
+      "school_type": "middle",
+      "address": "901 Whitehorse-Hamilton Square Road, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4152",
+      "website_url": "https://gms.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1787161578/htsdnjorg/dbojzof91yshrd4hwr41/GRICE.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4152 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4152, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence.",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:32"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:18",
+            "end": "09:58"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:01",
+            "end": "10:41"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "10:44",
+            "end": "11:24"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "11:27",
+            "end": "12:07"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "12:10",
+            "end": "12:50"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:53",
+            "end": "13:33"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:36",
+            "end": "14:16"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:19",
+            "end": "15:00"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:33"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:01"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:03",
+            "end": "09:29"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:31",
+            "end": "09:57"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "09:59",
+            "end": "10:25"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "10:27",
+            "end": "10:53"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "10:55",
+            "end": "11:21"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:23",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:51",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:19",
+            "end": "12:45"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:55",
+            "end": "10:03"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:05",
+            "end": "10:36"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:38",
+            "end": "11:09"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:11",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "11:44",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "12:17",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "12:50",
+            "end": "13:21"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:23",
+            "end": "13:54"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:56",
+            "end": "14:27"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:29",
+            "end": "15:00"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "9:55 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/grice-middle-school"
+    },
+    {
+      "slug": "hamilton-reynolds",
+      "name": "Reynolds Middle School",
+      "short_name": "Reynolds",
+      "school_type": "middle",
+      "address": "2145 Yardville-Hamilton Square Road, Hamilton, NJ 08690",
+      "main_phone": "(609) 631-4162",
+      "website_url": "https://rms.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710965343/htsdnjorg/rj0klxoexckpnfcqrsax/Reynolds.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4162 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Attendance Office at (609) 631-4162, press 4 at the prompt, then follow the instructions. When the student returns, give the homeroom teacher a note with the student's name, homeroom, dates and reason for absence.",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:32"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:18",
+            "end": "09:58"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:01",
+            "end": "10:41"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "10:44",
+            "end": "11:24"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "11:27",
+            "end": "12:07"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "12:10",
+            "end": "12:50"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:53",
+            "end": "13:33"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:36",
+            "end": "14:16"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:19",
+            "end": "15:00"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:33"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:01"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:03",
+            "end": "09:29"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:31",
+            "end": "09:57"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "09:59",
+            "end": "10:25"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "10:27",
+            "end": "10:53"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "10:55",
+            "end": "11:21"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:23",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:51",
+            "end": "12:17"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:19",
+            "end": "12:45"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:55",
+            "end": "10:03"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:05",
+            "end": "10:36"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:38",
+            "end": "11:09"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:11",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 4 (A Lunch)",
+            "start": "11:44",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 5 (B Lunch)",
+            "start": "12:17",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 6 (C Lunch)",
+            "start": "12:50",
+            "end": "13:21"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:23",
+            "end": "13:54"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:56",
+            "end": "14:27"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:29",
+            "end": "15:00"
+          }
+        ]
+      },
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "9:55 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/reynolds-middle-school"
+    },
+    {
+      "slug": "hamilton-alexander",
+      "name": "Alexander Elementary School",
+      "short_name": "Alexander",
+      "school_type": "elementary",
+      "address": "20 Robert Frost Drive, Hamilton, NJ 08690",
+      "main_phone": "(609) 631-4148",
+      "website_url": "https://alexander.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265440/htsdnjorg/rxwijjzqcncoaipvfce6/TempALEXANDER01.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4148 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4148, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence. A note giving the reason is also due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/alexander-es"
+    },
+    {
+      "slug": "hamilton-greenwood",
+      "name": "Greenwood Elementary School",
+      "short_name": "Greenwood",
+      "school_type": "elementary",
+      "address": "2069 Greenwood Avenue, Hamilton, NJ 08609",
+      "main_phone": "(609) 631-4151",
+      "website_url": "https://greenwood.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_6/v1710965271/htsdnjorg/zlxgwve5rtqqyboey39h/GreenwoodLogo.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4151 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4151, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence. A note giving the reason is also due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - 8:45 AM",
+        "pm_hours": "3:35 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by CYO of Mercer County.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/greenwood-es"
+    },
+    {
+      "slug": "hamilton-kisthardt",
+      "name": "Kisthardt Elementary School",
+      "short_name": "Kisthardt",
+      "school_type": "elementary",
+      "address": "215 Harcourt Drive, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4153",
+      "website_url": "https://kisthardt.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1736255116/htsdnjorg/fdc2j8b0gyhlbc3kjhwh/KISTHARDTJan2025.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4153 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line at (609) 631-4153, option 4 (or the nurse, option 3) when your child will be late or absent. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/kisthardt-es"
+    },
+    {
+      "slug": "hamilton-klockner",
+      "name": "Klockner Elementary School",
+      "short_name": "Klockner",
+      "school_type": "elementary",
+      "address": "830 Klockner Road, Hamilton, NJ 08619",
+      "main_phone": "(609) 631-4154",
+      "website_url": "https://klockner.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_6/v1710965330/htsdnjorg/tojqrxgyl9mefbkzlbso/KlocknerFINAL2022.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4154 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4154, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence. A note giving the reason is also due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": "klocknerpta",
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - 8:45 AM",
+        "pm_hours": "3:35 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by CYO of Mercer County.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/klockner-es"
+    },
+    {
+      "slug": "hamilton-kuser",
+      "name": "Kuser Elementary School",
+      "short_name": "Kuser",
+      "school_type": "elementary",
+      "address": "70 Newkirk Avenue, Hamilton, NJ 08629",
+      "main_phone": "(609) 631-4155",
+      "website_url": "https://kuser.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265441/htsdnjorg/mfe6wmio8hvixi6fnv93/Kuserlogo2020.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4155 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4155, press option 4, and leave a message in the attendance mailbox if your child will be late or out sick. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/kuser-es"
+    },
+    {
+      "slug": "hamilton-lalor",
+      "name": "Lalor Elementary School",
+      "short_name": "Lalor",
+      "school_type": "elementary",
+      "address": "25 Barnt DeKlyn Road, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4156",
+      "website_url": "https://lalor.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265441/htsdnjorg/eorgeissvp6hfxz0xpfy/LalorLOGO2020.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4156 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line, (609) 631-4156 option 4, every time your child will be absent, on the morning of the absence. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - 8:45 AM",
+        "pm_hours": "3:35 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by CYO of Mercer County.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/lalor-es"
+    },
+    {
+      "slug": "hamilton-langtree",
+      "name": "Langtree Elementary School",
+      "short_name": "Langtree",
+      "school_type": "elementary",
+      "address": "2080 Whatley Road, Hamilton, NJ 08690",
+      "main_phone": "(609) 631-4157",
+      "website_url": "https://langtree.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265440/htsdnjorg/l7tuuma9qdc4bzpw9rfn/TempLANGTREE.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4157 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4157, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence. A note giving the reason is also due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/langtree-es"
+    },
+    {
+      "slug": "hamilton-mcgalliard",
+      "name": "McGalliard Elementary School",
+      "short_name": "McGalliard",
+      "school_type": "elementary",
+      "address": "1600 Arena Drive, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4158",
+      "website_url": "https://mcgalliard.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265439/htsdnjorg/eu4b6hb7rgedvrqedmwz/TempMCGALLIARD.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4158 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4158, press option 4 (Attendance Office), on the morning of the absence. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/mcgalliard-es"
+    },
+    {
+      "slug": "hamilton-mercerville",
+      "name": "Mercerville Elementary School",
+      "short_name": "Mercerville",
+      "school_type": "elementary",
+      "address": "60 Regina Avenue, Hamilton, NJ 08619",
+      "main_phone": "(609) 631-4159",
+      "website_url": "https://mercerville.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265439/htsdnjorg/offohapgmco9jqjcfh1v/TempMERCERVILLE.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4159 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line at (609) 631-4159, option 4, and leave a message if your child will be late or absent. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/mercerville-es"
+    },
+    {
+      "slug": "hamilton-morgan",
+      "name": "Morgan Elementary School",
+      "short_name": "Morgan",
+      "school_type": "elementary",
+      "address": "38 Stamford Road, Hamilton, NJ 08619",
+      "main_phone": "(609) 631-4160",
+      "website_url": "https://morgan.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710265439/htsdnjorg/qic8nt35sqkk9j7lhgay/TempMORGAN.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4160 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line at (609) 631-4160 and press 4 if your child will be absent or late. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/morgan-es"
+    },
+    {
+      "slug": "hamilton-robinson",
+      "name": "Robinson Elementary School",
+      "short_name": "Robinson",
+      "school_type": "elementary",
+      "address": "495 Gropp Avenue, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4163",
+      "website_url": "https://robinson.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710416893/htsdnjorg/qjrdbcmdgbjlhbip2mq8/TempROBINSON.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4163 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4163, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence. A note giving the reason is also due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/robinson-es"
+    },
+    {
+      "slug": "hamilton-sayen",
+      "name": "Sayen Elementary School",
+      "short_name": "Sayen",
+      "school_type": "elementary",
+      "address": "3333 Nottingham Way, Hamilton, NJ 08690",
+      "main_phone": "(609) 631-4164",
+      "website_url": "https://sayen.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710416894/htsdnjorg/qhqfwmotiyqlkysdj7d3/TempSAYEN.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4164 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "If your child is ill, call the attendance line at (609) 631-4164 and press 4 to leave your child's name and the reason for the absence. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/sayen-es"
+    },
+    {
+      "slug": "hamilton-sunnybrae",
+      "name": "Sunnybrae Elementary School",
+      "short_name": "Sunnybrae",
+      "school_type": "elementary",
+      "address": "166 Elton Avenue, Hamilton, NJ 08620",
+      "main_phone": "(609) 631-4166",
+      "website_url": "https://sunnybrae.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1790861669/htsdnjorg/notc5xkcrldspltd3vuz/SUNNYBRAELogo04.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4166 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4166, press option 4 (Attendance Office), on the morning of the absence. If no call is made, send a note explaining the absence. A note giving the reason is also due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/sunnybrae-es"
+    },
+    {
+      "slug": "hamilton-university-heights",
+      "name": "University Heights Elementary School",
+      "short_name": "University Heights",
+      "school_type": "elementary",
+      "address": "645 Paxson Avenue, Hamilton, NJ 08619",
+      "main_phone": "(609) 631-4167",
+      "website_url": "https://uheights.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710780774/htsdnjorg/s6y9vad9iufz9n6howmd/TempUNIVERSITYHEIGHTS.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4167 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance line at (609) 631-4167, option 4, and leave a message if your child will be late or absent. Homework requests do not go on this line; call the main office for those. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/university-heights-es"
+    },
+    {
+      "slug": "hamilton-wilson",
+      "name": "Wilson Elementary School",
+      "short_name": "Wilson",
+      "school_type": "elementary",
+      "address": "600 E Park Avenue, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4169",
+      "website_url": "https://wilson.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1710965368/htsdnjorg/n2kujcuip7g4kdlceywe/WilsonLOGOFINALTransparent01.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4169 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4169, press option 4 (Attendance Office), on the morning of the absence, then follow up by sending in a doctor's note.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - 8:45 AM",
+        "pm_hours": "3:35 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by CYO of Mercer County.",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/wilson-es"
+    },
+    {
+      "slug": "hamilton-yardville",
+      "name": "Yardville Elementary School",
+      "short_name": "Yardville",
+      "school_type": "elementary",
+      "address": "450 Yardville-Allentown Road, Hamilton, NJ 08620",
+      "main_phone": "(609) 631-4170",
+      "website_url": "https://yardville.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1722967515/htsdnjorg/grzinaehcas5fbtsmcth/YARDVILLEA002.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4170 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Update Pick Up Patrol or call the attendance line at (609) 631-4170 and press 4 to leave your child's name and the reason for the absence. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": "yardville",
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/yardville-es"
+    },
+    {
+      "slug": "hamilton-yardville-heights",
+      "name": "Yardville Heights Elementary School",
+      "short_name": "Yardville Heights",
+      "school_type": "elementary",
+      "address": "3880 South Broad Street, Hamilton, NJ 08620",
+      "main_phone": "(609) 631-4171",
+      "website_url": "https://yardheights.htsdnj.org",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_6/v1710265438/htsdnjorg/t3onv9hs5yvtbnuti1ut/YHSLOGO2020.png",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4171 option 4",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (609) 631-4171, press option 4 (Attendance Office), by 10 AM with the reason for the absence. A note giving the reason is due on the child's first day back.",
+      "bell_periods": null,
+      "athletics_url": null,
+      "givebacks_shortname": null,
+      "district_name": "Hamilton Township Public School District",
+      "start_time": "8:55 AM",
+      "end_time": "3:35 PM",
+      "early_dismissal_time": "1:15 PM",
+      "delayed_opening_time": "10:25 AM",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory",
+      "sacc": {
+        "am_hours": "7:15 AM - school start",
+        "pm_hours": "Dismissal - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Hamilton YMCA (BASE program).",
+        "handbook_url": null
+      },
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/yardville-heights-es"
+    },
+    {
+      "slug": "hamilton-east-steinert",
+      "name": "Hamilton High School East - Steinert",
+      "short_name": "Steinert",
+      "district_name": "Hamilton Township Public School District",
+      "school_type": "high",
+      "address": "2900 Klockner Road, Hamilton, NJ 08690",
+      "main_phone": "(609) 631-4150",
+      "website_url": "https://hhe.htsdnj.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4150",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school and choose Option 2 (Attendance Office) on the morning of the absence. If no call is made, send a note explaining the absence. Doctors' notes go to the Nurse's Office. Attendance questions can also go to attendancehhe@htsdnj.org.",
+      "start_time": "7:50 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:04 PM",
+      "delayed_opening_time": "9:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "07:50",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:14",
+            "end": "10:34"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:38",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:12",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:46",
+            "end": "13:06"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:10",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:50",
+            "end": "08:51"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:55",
+            "end": "09:54"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:58",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:03",
+            "end": "12:04"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "09:20",
+            "end": "10:18"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:22",
+            "end": "11:20"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:24",
+            "end": "11:54"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:58",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:32",
+            "end": "13:29"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:33",
+            "end": "14:30"
+          }
+        ]
+      },
+      "athletics_url": "https://steinertathletics.digitalsports.com/",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1710265438/htsdnjorg/wnqivlpfzisffhyomysk/TempSTEINERT01.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/north-steinert-high-school-east",
+      "givebacks_shortname": null,
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory"
+    },
+    {
+      "slug": "hamilton-north-nottingham",
+      "name": "Hamilton High School North - Nottingham",
+      "short_name": "Nottingham",
+      "district_name": "Hamilton Township Public School District",
+      "school_type": "high",
+      "address": "1055 Klockner Road, Hamilton, NJ 08619",
+      "main_phone": "(609) 631-4161",
+      "website_url": "https://hhn.htsdnj.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4161",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school and choose Option 2 (Attendance Office) on the morning of the absence. If no call is made, send a note explaining the absence. Doctors' notes go to the Nurse's Office.",
+      "start_time": "7:50 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:04 PM",
+      "delayed_opening_time": "9:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "07:50",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:14",
+            "end": "10:34"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:38",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:12",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:46",
+            "end": "13:06"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:10",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:50",
+            "end": "08:51"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:55",
+            "end": "09:54"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:58",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:03",
+            "end": "12:04"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "09:20",
+            "end": "10:18"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:22",
+            "end": "11:20"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:24",
+            "end": "11:54"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:58",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:32",
+            "end": "13:29"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:33",
+            "end": "14:30"
+          }
+        ]
+      },
+      "athletics_url": "https://www.arbiterlive.com/m/team/16731",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1710265438/htsdnjorg/uzph431tpwkbhwdx3mho/TempNORTH01.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/west-nottingham-high-school",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory"
+    },
+    {
+      "slug": "hamilton-west-watson",
+      "name": "Hamilton High School West - Watson",
+      "short_name": "Hamilton West",
+      "district_name": "Hamilton Township Public School District",
+      "school_type": "high",
+      "address": "2720 South Clinton Avenue, Hamilton, NJ 08610",
+      "main_phone": "(609) 631-4168",
+      "website_url": "https://hhw.htsdnj.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(609) 631-4168",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school and choose Option 2 (Attendance Office) on the morning of the absence. If no call is made, send a note explaining the absence. Doctors' notes go to the Nurse's Office.",
+      "start_time": "7:50 AM",
+      "end_time": "2:30 PM",
+      "early_dismissal_time": "12:04 PM",
+      "delayed_opening_time": "9:20 AM",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "07:50",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:14",
+            "end": "10:34"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:38",
+            "end": "11:08"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:12",
+            "end": "11:42"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:46",
+            "end": "13:06"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:10",
+            "end": "14:30"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:50",
+            "end": "08:51"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:55",
+            "end": "09:54"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:58",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:03",
+            "end": "12:04"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "09:20",
+            "end": "10:18"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:22",
+            "end": "11:20"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:24",
+            "end": "11:54"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:58",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:32",
+            "end": "13:29"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:33",
+            "end": "14:30"
+          }
+        ]
+      },
+      "athletics_url": "https://65209.digitalsports.com/",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1710265439/htsdnjorg/qt7biyrd6n6wubcpxulj/TempWEST01.png",
+      "sacc": null,
+      "activities_calendar_ics_url": null,
+      "nutrislice_location": "htsdnj/hamilton-high-school",
+      "staff_directory_url": "https://www.htsdnj.org/our-district/district-directory"
+    }
+  ],
+  "smore_newsletters": [
+    {
+      "url": "https://sites.google.com/view/sayenschoolpta/home",
+      "label": "Sayen Lion's Lineup",
+      "school_slug": "hamilton-sayen",
+      "source_type": "smore_archive",
+      "cron_expr": "0 8 * * 1",
+      "timezone": "America/New_York",
+      "enabled": true
+    }
+  ]
+}

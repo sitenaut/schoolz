@@ -16,7 +16,7 @@ CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed
 # regular one ("2:30pm Dismissal") or a preschool-only one. "1/2 Day -
 # District" is Paulsboro's half day. Mirrored in
 # school_today._EARLY_RE and districtItems.ts HALF_DAY_RE.
-EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al)?\b|\bhalf[\s-]days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Staff days and conference days: status facts, but not closures of the day
 # (school_today's classify_day doesn't count them).
@@ -32,7 +32,9 @@ STAFF_DAY_RE = re.compile(r"\bin[\s-]?service\b|\bconference\b", re.I)
 NOT_THE_SCHOOL_CLOSED_RE = re.compile(
     r"\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool"
     r"|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b"
-    r"|\(?\bclosed\)?\s+session\b",
+    r"|\(?\bclosed\)?\s+session\b"
+    # West Windsor-Plainsboro: "K-12 Early Dismissal (Half Day Preschool Closed)".
+    r"|\bhalf[\s-]day\s+pre-?school\s+closed\b",
     re.I,
 )
 # A school word earlier in the same clause makes it the school after all:

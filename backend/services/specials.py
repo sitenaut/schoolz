@@ -26,7 +26,7 @@ async def rotation_days(db: AsyncSession, school: School) -> tuple[list[int], bo
     rows = (
         await db.execute(
             select(SchoolContentItem.title, SchoolContentItem.applies_to_school_types)
-            .where(scope, SchoolContentItem.is_current.is_(True), SchoolContentItem.title.op("~*")(r"^\s*(day\s+[0-9a-l]+|[a-l]\s+day)\s*(\([^)]*\))?\s*$"))
+            .where(scope, SchoolContentItem.is_current.is_(True), SchoolContentItem.title.op("~*")(r"^\s*(day\s+[0-9a-l]+|[a-l](\s+|\s*-\s*)day)\s*(\([^)]*\))?\s*$"))
         )
     ).all()
     numbers: set[int] = set()
