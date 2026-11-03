@@ -106,25 +106,30 @@ def local_date(dt: datetime) -> date:
     return dt.astimezone(LOCAL_TZ).date()
 
 
+def _closure_reason(title: str) -> str | None:
+    # "District Closed for Students - FALL RECESS" is labelled "FALL RECESS",
+    # Mantua's "DIST: Schools Closed - Storm Damage" "Storm Damage",
+    # East Windsor's "Schools Closed, Labor Day" "Labor Day".
+    return re.sub(
+        r"^\s*(?:[\w'./]+:\s*)?(schools?|district)(?:\s+(?:is|are))?\s+closed(?:\s+(?:for|to)\s+(?:all\s+)?students(?:\s+only)?)?\s*[-:–,]?\s*",
+        "",
+        title,
+        flags=re.I,
+    ).strip() or None
+
+
 def classify_day(titles: list[str]) -> tuple[str, str | None]:
     """Returns (status, label) from the titles of every item landing on a
     day. Closed beats early dismissal beats delay beats open, except that a
     closure known only from a break's name ("Winter Recess") loses to an
     early dismissal that day. The label is the closure's own reason ("Labor
     Day") with the boilerplate prefix stripped, since the status already
-    says "closed"."""
-    for t in titles:
-        if says_closed(t) and not is_break_only(t):
-            # "District Closed for Students - FALL RECESS" is labelled "FALL RECESS",
-            # Mantua's "DIST: Schools Closed - Storm Damage" "Storm Damage",
-            # East Windsor's "Schools Closed, Labor Day" "Labor Day".
-            label = re.sub(
-                r"^\s*(?:[\w'./]+:\s*)?(schools?|district)(?:\s+(?:is|are))?\s+closed(?:\s+(?:for|to)\s+(?:all\s+)?students(?:\s+only)?)?\s*[-:–,]?\s*",
-                "",
-                t,
-                flags=re.I,
-            ).strip() or None
-            return "closed", label
+    says "closed". A closure that gives a reason labels the day over a bare
+    "SCHOOL CLOSED" beside it, whichever row came back first: High School
+    East's strip read "Closed" on Nov 5 and "NJEA Convention" on Nov 6."""
+    closures = [t for t in titles if says_closed(t) and not is_break_only(t)]
+    if closures:
+        return "closed", next(filter(None, map(_closure_reason, closures)), None)
     for t in titles:
         if _EARLY_RE.search(t):
             return "early_dismissal", "Early dismissal"
@@ -445,22 +450,24 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         if _item_date_range(i)[-1] >= today and i.category in _UPCOMING_CATEGORIES and not _is_rotation_item(i)
     ][:5]
 
-    seen: set[tuple[date, str]] = set()
-    alert_items: list[SchoolContentItem] = []
-    for i in items:
-        if not _is_status_item(i) or other_grades_only(i.title, school.school_type):
-            continue
-        # Any day the item covers falling in the alert window is enough -
-        # a multi-day closure that started before today but is still
-        # ongoing (or one starting later in the window) should still surface.
-        window_day = next(
-            (d for d in _item_date_range(i) if today <= d <= today + timedelta(days=_ALERT_WINDOW_DAYS)), None
-        )
-        if window_day is not None:
-            key = (window_day, classify_day([i.title])[0])
-            if key not in seen:
-                seen.add(key)
-                alert_items.append(i)
+    # One alert per day and status. Any day the item covers falling in the
+    # alert window is enough - a multi-day closure that started before today
+    # but is still ongoing (or one starting later in the window) should still
+    # surface - and it claims all of those days. One that gives a reason goes
+    # first: High School East's own bare "SCHOOL CLOSED" rows for Nov 5 and 6
+    # took both days from the district's "SCHOOLS CLOSED - NJEA Convention"
+    # (Nov 5-6) whenever they came back first, so East's alerts never said why.
+    alert_end = today + timedelta(days=_ALERT_WINDOW_DAYS)
+    status_items = [i for i in items if _is_status_item(i) and not other_grades_only(i.title, school.school_type)]
+    claimed: set[tuple[date, str]] = set()
+    kept: set[str] = set()
+    for i in sorted(status_items, key=lambda i: classify_day([i.title])[1] is None):
+        kind = classify_day([i.title])[0]
+        days = {(d, kind) for d in _item_date_range(i) if today <= d <= alert_end}
+        if days - claimed:
+            claimed |= days
+            kept.add(i.id)
+    alert_items = [i for i in status_items if i.id in kept]
 
     # Single-day items first: a week-long item is on every day of the strip
     # already, and two of them once took the slots a day's own themed event
@@ -477,11 +484,13 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         """The item whose own title is the day's status label (a closure's
         reason, a delay's wording) - the only labels that aren't fixed text.
         Skips what day_status skips, or a K-8 delay's title could label a high
-        school's own in translation."""
-        says = {"closed": says_closed, "delayed": _DELAY_RE.search}.get(st)
-        if not says:
+        school's own in translation. The item that gave the English label,
+        not just the first that says closed, or a bare "SCHOOL CLOSED" would
+        blank the reason in translation."""
+        if st not in ("closed", "delayed"):
             return None
-        return next((i for i in by_day.get(d, []) if says(i.title) and not other_grades_only(i.title, school.school_type)), None)
+        label = day_status(d)
+        return next((i for i in by_day.get(d, []) if not other_grades_only(i.title, school.school_type) and classify_day([i.title]) == label), None)
 
     localized: dict[str, Localized] = {}
     if lang != "en":

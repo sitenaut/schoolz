@@ -305,6 +305,21 @@ describe("mergeAlerts", () => {
     expect(got.map((a) => a.id)).toEqual(["ed", "n"]);
   });
 
+  it("drops a school's own closures on every day of a multi-day district closure", () => {
+    // The real Nov 2 data: the district's NJEA row runs Nov 5-6 (end exclusive),
+    // and High School East has its own bare "SCHOOL CLOSED" on each day.
+    const allDay = { scope: "school" as const, title: "SCHOOL CLOSED", district_id: null, is_all_day: true };
+    const twoDays = { ...njea, end_date: "2026-11-07T05:00:00Z", is_all_day: true };
+    const nov5 = item({ ...allDay, id: "e5", start_date: "2026-11-05T05:00:00Z", end_date: "2026-11-06T05:00:00Z" });
+    const nov6 = item({ ...allDay, id: "e6", start_date: "2026-11-06T05:00:00Z", end_date: "2026-11-07T05:00:00Z" });
+    const nov9 = item({ ...allDay, id: "e9", start_date: "2026-11-09T05:00:00Z", end_date: "2026-11-10T05:00:00Z" });
+    const got = mergeAlerts([
+      { school: harte, alerts: [twoDays] },
+      { school: east, alerts: [nov5, nov6, nov9] },
+    ]);
+    expect(got.map((a) => a.id)).toEqual(["n", "e9"]);
+  });
+
   it("keeps a school's own closure when the district said nothing of the kind that day", () => {
     const got = mergeAlerts([{ school: east, alerts: [early, eastClosed] }]);
     expect(got.map((a) => a.id)).toEqual(["ed", "ec"]);

@@ -1,5 +1,5 @@
 import type { School, SchoolContentItem } from "../types";
-import { localDateKey } from "./calendar";
+import { itemDateKeys, localDateKey } from "./calendar";
 import { i18n } from "./i18n";
 
 // Same convention as the backend's own closure/half-day/delay detection
@@ -105,9 +105,11 @@ export function affectedSchools(item: SchoolContentItem, schools: School[]): Sch
 
 /** The alert banners for the schools shown, once each and in date order.
  * A district alert is on every card of the district, so it is kept once; a
- * school's own alert for a day the district already said the same thing about
- * (High School East's "SCHOOL CLOSED" on the day of the district's NJEA
- * closure) says nothing new for that school and is dropped. */
+ * school's own alert for days the district already said the same thing about
+ * (High School East's "SCHOOL CLOSED" on each day of the district's two-day
+ * NJEA closure) says nothing new for that school and is dropped. Every day a
+ * district alert covers counts, not only its first: East's Nov 6 copy was a
+ * banner of its own beside "Nov 5 · SCHOOLS CLOSED - NJEA Convention". */
 export function mergeAlerts(entries: { school: School; alerts: SchoolContentItem[] }[]): SchoolContentItem[] {
   const merged = new Map<string, SchoolContentItem>();
   const own: { alert: SchoolContentItem; school: School }[] = [];
@@ -120,9 +122,9 @@ export function mergeAlerts(entries: { school: School; alerts: SchoolContentItem
   const district = [...merged.values()];
   for (const { alert, school } of own) {
     const closed = /closed/i.test(alert.title);
-    const covered = district.some(
-      (d) => localDateKey(d.start_date!) === localDateKey(alert.start_date!) && /closed/i.test(d.title) === closed && schoolsOf(d, [school]).length > 0,
-    );
+    const districtDays = new Set(district.filter((d) => /closed/i.test(d.title) === closed && schoolsOf(d, [school]).length > 0).flatMap(itemDateKeys));
+    const days = itemDateKeys(alert);
+    const covered = days.length > 0 && days.every((k) => districtDays.has(k));
     const key = alertKey(alert, school.id);
     if (!covered && !merged.has(key)) merged.set(key, alert);
   }
