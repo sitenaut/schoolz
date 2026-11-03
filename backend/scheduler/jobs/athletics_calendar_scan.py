@@ -179,7 +179,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if ds_host:
         return await _run_digitalsports(db, school, ds_host, start, end)
     if gb_feed:
-        return await _run_gobound(db, school, gb_feed, start, end)
+        # The link as stored, not gb_feed: a conference link's team names after
+        # "#" pick the school's games (without them every school got the whole
+        # conference's) and tell a middle school its high school's link.
+        return await _run_gobound(db, school, school.athletics_url, start, end)
     events = await fetch_events(entity_id, start, end)
 
     # One district's teams can be split across Arbiter entities (Pennsauken's
