@@ -96,6 +96,7 @@ function Summary({ s, types }: { s: Submission; types: ProviderType[] }) {
         ? [
             s.ways_to_help.volunteer_roles.length ? `Volunteers: ${s.ways_to_help.volunteer_roles.join("; ")}` : "",
             s.ways_to_help.volunteer_how ?? "",
+            s.ways_to_help.volunteer_url ? `Volunteer sign-up: ${s.ways_to_help.volunteer_url}` : "",
             s.ways_to_help.donations.length ? `Donations: ${s.ways_to_help.donations.join("; ")}` : "",
             s.ways_to_help.wishlist_url ? `Wish list: ${s.ways_to_help.wishlist_url}` : "",
           ]

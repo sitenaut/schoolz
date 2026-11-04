@@ -475,10 +475,11 @@ export function HelpCard({ listing, busy, send }: CardProps) {
     ...w,
     volunteer_roles: w.volunteer_roles.map((x) => x.trim()).filter(Boolean),
     donations: w.donations.map((x) => x.trim()).filter(Boolean),
+    volunteer_url: (w.volunteer_url ?? "").trim() || null,
     wishlist_url: (w.wishlist_url ?? "").trim() || null,
   });
   return (
-    <Card title={t("How people can help you")} hint={t("Volunteers and things to donate show at once; a new wish-list link is checked first.")}>
+    <Card title={t("How people can help you")} hint={t("Volunteers and things to donate show at once; a new sign-up or wish-list link is checked first.")}>
       <WaysToHelpEditor value={ways} onChange={setWays} />
       <button className="btn btn-primary" disabled={busy} onClick={() => send({ ways_to_help: clean(ways) })}>
         {t("Save")}

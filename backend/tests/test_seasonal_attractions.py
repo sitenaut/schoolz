@@ -10,8 +10,10 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+import database
 from main import app
 from mcp_server import build_mcp_server
+from models import ResourceService
 from routers.seasonal_attractions import miles_between
 from tests.test_students import _make_admin, _register
 
@@ -88,7 +90,16 @@ async def test_open_on_a_day_nearest_first_and_unknown_nights_stay_unknown():
         r = await client.patch(f"/seasonal-attractions/{far}", json={"ends_on": d0.isoformat()}, headers=auth(admin))
         assert r.status_code == 422  # its Oct 8 night would fall outside the window
         r = await client.patch(f"/seasonal-attractions/{far}", json={"price": "$15"}, headers=auth(admin))
-        assert r.status_code == 200 and r.json()["price"] == "$15"
+        assert r.status_code == 200 and r.json()["price"] == "$15" and r.json()["resource_id"] is None
+        # A volunteer place points at a real Localz listing or nothing.
+        r = await client.patch(f"/seasonal-attractions/{far}", json={"resource_id": str(uuid.uuid4())}, headers=auth(admin))
+        assert r.status_code == 422
+        async with database.SessionLocal() as db:
+            listing = ResourceService(source="test", source_record_id=run, name="Free dinners")
+            db.add(listing)
+            await db.commit()
+        r = await client.patch(f"/seasonal-attractions/{far}", json={"resource_id": listing.id}, headers=auth(admin))
+        assert r.status_code == 200 and r.json()["resource_id"] == listing.id
         assert (await client.delete(f"/seasonal-attractions/{far}", headers=auth(admin))).status_code == 204
         assert (await client.get("/seasonal-attractions/all")).status_code == 401
 

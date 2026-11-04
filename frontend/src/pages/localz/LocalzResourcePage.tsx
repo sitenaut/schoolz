@@ -68,7 +68,7 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
   const confirmed = confirmedLabel(r.last_assured_on, LOCALE);
   const online = deliveryLabel(r.delivery);
   const ways = r.ways_to_help;
-  const helps = ways && (ways.volunteer_roles.length || ways.donations.length || ways.wishlist_url) ? ways : null;
+  const helps = ways && (ways.volunteer_roles.length || ways.volunteer_url || ways.donations.length || ways.wishlist_url) ? ways : null;
 
   return (
     <article className="localz-detail">
@@ -204,6 +204,14 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
               </ul>
               {helps.volunteer_how && <p className="localz-muted">{helps.volunteer_how}</p>}
             </>
+          )}
+          {helps.volunteer_url && (
+            <p>
+              <a href={helps.volunteer_url} target="_blank" rel="noopener noreferrer nofollow">
+                <IconLink className="localz-inline-icon" />
+                {t("Sign up to volunteer")}
+              </a>
+            </p>
           )}
           {helps.donations.length > 0 && (
             <>

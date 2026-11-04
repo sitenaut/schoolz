@@ -211,12 +211,14 @@ def _short_list(values: list[str], size: int) -> list[str]:
 
 
 class WaysToHelp(BaseModel):
-    """"How you can help": volunteer roles, items to donate, a wish-list
-    link. Deliberately no money link: Localz is for people looking for
-    help, and a donation link is the first thing a scam would add."""
+    """"How you can help": volunteer roles and where to sign up for them,
+    items to donate, a wish-list link. Deliberately no money link: Localz is
+    for people looking for help, and a donation link is the first thing a
+    scam would add."""
 
     volunteer_roles: list[str] = Field(default_factory=list, max_length=10)
     volunteer_how: str | None = Field(default=None, max_length=300)
+    volunteer_url: str | None = Field(default=None, max_length=300)
     donations: list[str] = Field(default_factory=list, max_length=20)
     wishlist_url: str | None = Field(default=None, max_length=300)
 
@@ -226,7 +228,22 @@ class WaysToHelp(BaseModel):
         return _short_list(values, 100)
 
     def is_empty(self) -> bool:
-        return not (self.volunteer_roles or (self.volunteer_how or "").strip() or self.donations or (self.wishlist_url or "").strip())
+        texts = (self.volunteer_how, self.volunteer_url, self.wishlist_url)
+        return not (self.volunteer_roles or self.donations or any((t or "").strip() for t in texts))
+
+
+# The links "How you can help" carries. A new one waits for a reviewer.
+HELP_LINKS = ("volunteer_url", "wishlist_url")
+
+
+def _help_link(url: str | None) -> str | None:
+    url = (url or "").strip() or None
+    reason = bad_link_reason(url)
+    if reason:
+        raise ValueError(reason)
+    if url and not url.lower().startswith(("http://", "https://")):
+        url = "https://" + url
+    return url
 
 
 def clean_ways_to_help(ways: WaysToHelp | None) -> dict | None:
@@ -234,17 +251,12 @@ def clean_ways_to_help(ways: WaysToHelp | None) -> dict | None:
     used (a short link or a payment page)."""
     if ways is None or ways.is_empty():
         return None
-    url = (ways.wishlist_url or "").strip() or None
-    reason = bad_link_reason(url)
-    if reason:
-        raise ValueError(reason)
-    if url and not url.lower().startswith(("http://", "https://")):
-        url = "https://" + url
     return {
         "volunteer_roles": ways.volunteer_roles,
         "volunteer_how": (ways.volunteer_how or "").strip() or None,
+        "volunteer_url": _help_link(ways.volunteer_url),
         "donations": ways.donations,
-        "wishlist_url": url,
+        "wishlist_url": _help_link(ways.wishlist_url),
     }
 
 
@@ -358,7 +370,8 @@ def bad_link_reason(url: str | None) -> str | None:
 
 
 def check_links(sub: Submission) -> None:
-    reason = bad_link_reason(sub.website) or bad_link_reason(sub.ways_to_help.wishlist_url if sub.ways_to_help else None)
+    links = [getattr(sub.ways_to_help, f) for f in HELP_LINKS] if sub.ways_to_help else []
+    reason = next((r for r in map(bad_link_reason, [sub.website, *links]) if r), None)
     if reason:
         raise ValueError(reason)
     if sub.website and not sub.website.lower().startswith(("http://", "https://")):
@@ -819,8 +832,11 @@ async def flags(db: AsyncSession, req: ResourceOnboardingRequest, sub: Submissio
     wishlist = sub.ways_to_help.wishlist_url if sub.ways_to_help else None
     if wishlist:
         out.append({"code": "wishlist", "level": "info", "message": f"Wish-list link: {wishlist} - check it's theirs."})
+    signup = sub.ways_to_help.volunteer_url if sub.ways_to_help else None
+    if signup:
+        out.append({"code": "volunteer_link", "level": "info", "message": f"Volunteer sign-up link: {signup} - check it's theirs."})
     texts = [sub.website or "", sub.how_to_apply or "", *[(s.description or "") for s in sub.services], sub.what_you_provide or "",
-             wishlist or ""]
+             wishlist or "", signup or ""]
     for url in {m.group(0) for t in texts for m in _URL_RE.finditer(t)} | ({sub.website} if sub.website else set()):
         reason = bad_link_reason(url)
         if reason:
@@ -989,10 +1005,10 @@ def split_changes(row: ResourceService, columns: dict, verified: bool) -> tuple[
             if field in columns:
                 target[field] = columns[field]
     if "ways_to_help" in now_cols:
-        # Volunteer roles and items publish now; a new wish-list link is
-        # looked at first, like a website.
-        new_url = (now_cols["ways_to_help"] or {}).get("wishlist_url")
-        if new_url and new_url != (row.ways_to_help or {}).get("wishlist_url"):
+        # Volunteer roles and items publish now; a new sign-up or wish-list
+        # link is looked at first, like a website.
+        new, old = now_cols["ways_to_help"] or {}, row.ways_to_help or {}
+        if any(new.get(f) and new.get(f) != old.get(f) for f in HELP_LINKS):
             held["ways_to_help"] = now_cols.pop("ways_to_help")
     if "taxonomy_codes" in columns:
         adds = set(columns["taxonomy_codes"]) - set(row.taxonomy_codes or [])

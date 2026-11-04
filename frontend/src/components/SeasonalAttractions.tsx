@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Badge, type Tone } from "./ui/Badge";
 import { groupByKind, type SeasonalAttraction } from "../lib/seasonal";
 import { trackEvent } from "../lib/track";
@@ -138,6 +139,11 @@ function AttractionCards({ attractions, season }: { attractions: SeasonalAttract
               <a className="btn sm" href={directions} target="_blank" rel="noopener">
                 Directions ↗
               </a>
+              {a.resource_id && (
+                <Link className="btn sm" to={`/localz/r/${a.resource_id}`}>
+                  What they provide
+                </Link>
+              )}
             </div>
           </article>
         );
