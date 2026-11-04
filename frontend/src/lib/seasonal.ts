@@ -80,6 +80,8 @@ export type SeasonalAttraction = {
   ages: string | null;
   note: string | null;
   verified_on: string | null;
+  /** A volunteer place's Localz listing: the help its volunteers give. */
+  resource_id?: string | null;
   /** Open today: true/false, or null when the venue only says "select nights". */
   open_on_day: boolean | null;
 };

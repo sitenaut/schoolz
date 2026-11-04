@@ -44,7 +44,7 @@ export type ServiceEntry = {
   signup?: Signup | null;
 };
 /** "How you can help": volunteers and things to donate, never a money link. */
-export type WaysToHelp = { volunteer_roles: string[]; volunteer_how: string | null; donations: string[]; wishlist_url: string | null };
+export type WaysToHelp = { volunteer_roles: string[]; volunteer_how: string | null; volunteer_url?: string | null; donations: string[]; wishlist_url: string | null };
 /** A date a provider posted ("Post a date"): it lists on /local and the listing. */
 export type ProviderDate = {
   id: string;
@@ -190,7 +190,7 @@ export const emptyWho = (): WhoCanCome => ({
 });
 export const emptyPlace = (): ProgramPlace => ({ place_name: null, address: null, city: null, postal_code: null });
 export const emptySignup = (): Signup => ({ status: null, opens_on: null, how: null });
-export const emptyWaysToHelp = (): WaysToHelp => ({ volunteer_roles: [], volunteer_how: null, donations: [], wishlist_url: null });
+export const emptyWaysToHelp = (): WaysToHelp => ({ volunteer_roles: [], volunteer_how: null, volunteer_url: null, donations: [], wishlist_url: null });
 
 export const emptySubmission = (): Submission => ({
   organization_name: "",

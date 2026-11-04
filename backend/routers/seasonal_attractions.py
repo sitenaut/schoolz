@@ -6,13 +6,13 @@ import math
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel, HttpUrl, model_validator
+from pydantic import BaseModel, Field, HttpUrl, model_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_permission
 from database import get_db
-from models import SeasonalAttraction, User
+from models import ResourceService, SeasonalAttraction, User
 from routers.seasonal_guides import today_et
 
 router = APIRouter(prefix="/seasonal-attractions", tags=["seasonal-attractions"])
@@ -42,6 +42,7 @@ class SeasonalAttractionOut(BaseModel):
     note: str | None
     source_url: str | None
     verified_on: date | None
+    resource_id: str | None = None
     # Filled per request: whether it's open on the day asked about (true,
     # false, or null = the venue hasn't said which nights), and how far it is
     # from the point given.
@@ -72,6 +73,7 @@ class SeasonalAttractionIn(BaseModel):
     note: str | None = None
     source_url: HttpUrl | None = None
     verified_on: date | None = None
+    resource_id: str | None = Field(default=None, max_length=36)
 
     @model_validator(mode="after")
     def _check(self):
@@ -101,6 +103,7 @@ class SeasonalAttractionPatch(BaseModel):
     note: str | None = None
     source_url: HttpUrl | None = None
     verified_on: date | None = None
+    resource_id: str | None = Field(default=None, max_length=36)
 
 
 def _validate(starts_on: date, ends_on: date, open_dates: list[date] | None, scare_level: str | None) -> None:
@@ -204,10 +207,16 @@ def _plain(data: dict) -> dict:
 @router.post("", response_model=SeasonalAttractionOut, status_code=status.HTTP_201_CREATED)
 async def create(body: SeasonalAttractionIn, _: User = Depends(require_permission("seasonal.manage")), db: AsyncSession = Depends(get_db)):
     row = SeasonalAttraction(**_plain(body.model_dump()))
+    await _check_resource(db, row.resource_id)
     db.add(row)
     await db.commit()
     await db.refresh(row)
     return row
+
+
+async def _check_resource(db: AsyncSession, resource_id: str | None) -> None:
+    if resource_id and not await db.get(ResourceService, resource_id):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No Localz listing has that id")
 
 
 async def _get(db: AsyncSession, attraction_id: str) -> SeasonalAttraction:
@@ -225,7 +234,11 @@ async def update(
     db: AsyncSession = Depends(get_db),
 ):
     row = await _get(db, attraction_id)
-    for field, value in _plain(body.model_dump(exclude_unset=True)).items():
+    changes = _plain(body.model_dump(exclude_unset=True))
+    # Before the row changes: the lookup would flush a bad id into the FK.
+    if "resource_id" in changes:
+        await _check_resource(db, changes["resource_id"])
+    for field, value in changes.items():
         setattr(row, field, value)
     try:
         _validate(row.starts_on, row.ends_on, row.open_dates, row.scare_level)

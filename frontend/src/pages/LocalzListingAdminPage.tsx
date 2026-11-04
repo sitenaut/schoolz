@@ -25,7 +25,12 @@ import { type ProviderType, fetchProviderTypes } from "../lib/providerPortal";
 import { LogList } from "./LocalzReviewDetailPage";
 import { AlertCard, ClosureCard, DetailsCard, HelpCard, JoiningCard, ReviewedCard, WeekHoursCard } from "./localz/providers/ProviderListingPage";
 
-const SOURCES: Record<string, string> = { provider: "Submitted by a provider", nj211: "NJ 211 (claimed)", childcarenj: "ChildCareNJ (claimed)" };
+const SOURCES: Record<string, string> = {
+  provider: "Submitted by a provider",
+  nj211: "NJ 211 (claimed)",
+  childcarenj: "ChildCareNJ (claimed)",
+  localz: "Localz's own list (from the organization's site)",
+};
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "-");
 

@@ -858,6 +858,26 @@ async def test_ways_to_help_publish_but_a_new_wish_list_link_waits():
         assert r.status_code == 422
 
 
+async def test_a_volunteer_sign_up_link_is_checked_like_a_wish_list():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        sub = _submission(ways_to_help={"volunteer_roles": ["Serve dinner"], "volunteer_url": "example.org/volunteer"})
+        rid = (await client.post("/provider-portal/requests", json={"submission": sub}, headers=provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        flags = {f["code"] for f in (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()["flags"]}
+        assert "volunteer_link" in flags
+        sid = (await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)).json()["service_ids"][0]
+        ways = (await client.get(f"/resources/{sid}")).json()["ways_to_help"]
+        assert ways["volunteer_url"] == "https://example.org/volunteer" and ways["wishlist_url"] is None
+
+        r = await client.patch(f"/provider-portal/listings/{sid}", headers=provider,
+                               json={"ways_to_help": {**ways, "volunteer_url": "https://other.example.org/signup"}})
+        assert r.json()["held"] == ["ways_to_help"], r.text
+        assert (await client.get(f"/resources/{sid}")).json()["ways_to_help"]["volunteer_url"] == "https://example.org/volunteer"
+        r = await client.patch(f"/provider-portal/listings/{sid}", headers=provider, json={"ways_to_help": {"volunteer_url": "https://bit.ly/x"}})
+        assert r.status_code == 422
+
+
 def test_a_phone_extension_is_not_part_of_the_number():
     for phone in ("(856) 555-0101, 12", "856-555-0101 x12", "1 856 555 0101 ext. 4", "(856) 555-0101"):
         assert portal.phone_digits(phone) == "8565550101" and portal.valid_phone(phone)

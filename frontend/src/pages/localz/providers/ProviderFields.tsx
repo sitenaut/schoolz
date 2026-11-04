@@ -412,6 +412,11 @@ export function WaysToHelpEditor({ value, onChange }: { value: WaysToHelp; onCha
           <input value={value.volunteer_how ?? ""} maxLength={300} onChange={(e) => onChange({ ...value, volunteer_how: e.target.value || null })} />
         </Field>
       )}
+      {value.volunteer_roles.length > 0 && (
+        <Field label={t("Volunteer sign-up link")} hint={t("Optional - the page where volunteers sign up. We check every new link before it goes up.")}>
+          <input type="url" value={value.volunteer_url ?? ""} maxLength={300} onChange={(e) => onChange({ ...value, volunteer_url: e.target.value || null })} />
+        </Field>
+      )}
       <Field label={t("Things people can donate")} hint={t("One per line, for example \"Canned beans\".")}>
         <textarea rows={2} value={listText(value.donations)} onChange={(e) => onChange({ ...value, donations: lines(e.target.value) })} />
       </Field>
@@ -819,6 +824,7 @@ export function cleanSubmission(s: Submission): Submission {
       ? {
           volunteer_roles: s.ways_to_help.volunteer_roles.map((x) => x.trim()).filter(Boolean),
           volunteer_how: blank(s.ways_to_help.volunteer_how),
+          volunteer_url: blank(s.ways_to_help.volunteer_url),
           donations: s.ways_to_help.donations.map((x) => x.trim()).filter(Boolean),
           wishlist_url: blank(s.ways_to_help.wishlist_url),
         }

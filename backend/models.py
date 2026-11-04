@@ -2180,6 +2180,12 @@ class SeasonalAttraction(Base):
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True)  # where the facts were checked, if not `url`
     verified_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # A volunteer place's Localz listing: the help its volunteers give
+    # (meals, food, gifts), which the card links to. Null for a day with no
+    # one to help on the other side (a park cleanup, a wreath-laying).
+    resource_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("resource_services.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

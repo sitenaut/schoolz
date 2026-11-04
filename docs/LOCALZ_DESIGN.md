@@ -90,6 +90,18 @@ fresh by scheduled jobs, the same way `/local` events are
   volunteer work (Inform USA `PX`), so there's no category to map. The
   Volunteer Center of South Jersey's portal (Galaxy Digital) is the one
   source worth asking for a feed.
+- **Every volunteer place is also a listing.** Volunteers are what provide a
+  soup kitchen's meals or a gift drive's presents, so each season-page
+  volunteer place (`seasonal_attractions`, kind `volunteer`) points at the
+  Localz listing for that help (`resource_id`, "What they provide" on its
+  card), and the listing's "How you can help" says what volunteers do and
+  where they sign up (`volunteer_url`). Where NJ 211 already lists the help,
+  only "How you can help" is added; otherwise the listing is our own
+  (source `localz`, below). A place nobody comes to for help (a park
+  cleanup, a wreath-laying, a drive whose partner agencies pick the
+  families) gets none. The migration that seeds a volunteer place records
+  the choice in `_CARD_LISTINGS` or `_NO_LISTING`, and
+  `tests/test_migration_0145.py` fails for a place with neither.
 - **Quick exit** button on every page (Esc key too): `location.replace` to a
   neutral site so Back doesn't return. **Document titles stay generic**
   ("Localz", not "Domestic violence help").
@@ -185,6 +197,7 @@ worth a human look); zero results is a WARNING, not success.
 | **Food pantry locators** | Food Bank of South Jersey's zip locator, Plentiful directory | `listing_page_sources` / per-platform adapter | Hours change weekly; refresh daily. Check each platform's terms; prefer asking FBSJ for an export. foodbanksj.org's robots.txt refuses AI crawlers by name and AI training but allows the rest, and its firewall turns AI tools away: read it with plain code and schoolz's own User-Agent (`schoolz-localz/1.0`), never a model, and a few requests apart (the third page in a row got a 403). Its Events Calendar REST API answers that client; the Tribe adapter would need that User-Agent, since it sends a browser's. |
 | **Static government pages** | DCF Family Success Centers list, county Boards of Social Services, county Code Blue pages, DCA program pages | `page_extract_sources` (render → Claude extraction to HSDS) | Low volume, high value. Store the page hash; only re-extract on change. |
 | **Program rules** | SNAP/WIC/NJ FamilyCare income charts, LIHEAP/USF season dates, HHS poverty guidelines | `program_rule_watch` | **Never auto-applied.** The job hashes each source page; a change opens an admin review item ("NJ FamilyCare chart changed") and the admin enters the new table. Wrong thresholds tell people they don't qualify. |
+| **Our own list** | The help behind each season-page volunteer place (soup kitchens, gift projects, Philadelphia meal programs) that NJ 211 doesn't list | migrations, source `localz` (0145) | Facts from each organization's own pages, read by plain code with `schoolz-localz/1.0` where robots.txt allows; general contacts only. No refresh job: edit through the reviewer's listing page. One-day services (Operation Turkey's Thanksgiving meals) need a look once the day has passed. |
 | **Time-bound help** | Mobile pantries, food distributions, VITA tax days, Code Blue activations, toy/coat drives | existing `local_events` pipeline | Events, not resources; tagged `help`, optionally linked to a `resource_service_id`. |
 
 ### NJ 211 adapter
@@ -425,10 +438,11 @@ Migration 0107; rules in `backend/resources/portal.py` and
   30); "Yes, it's all still right" or any published quick update moves
   `last_assured_on`. Provider-facing and English; people looking for help
   are never emailed (alerts are still deferred).
-- **How you can help** (`ways_to_help`): volunteer roles, things to donate
-  and a wish-list link, shown last on the listing. No money link on
-  purpose. Roles and items publish at once; a new wish-list link is held for
-  review and gets a reviewer flag; short and payment links are refused.
+- **How you can help** (`ways_to_help`): volunteer roles, a volunteer
+  sign-up link, things to donate and a wish-list link, shown last on the
+  listing. No money link on purpose. Roles and items publish at once; a new
+  sign-up or wish-list link is held for review and gets a reviewer flag;
+  short and payment links are refused.
 
 ### Deferred, and why
 
