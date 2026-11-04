@@ -1,6 +1,14 @@
 import { useEffect } from "react";
 
-type PrerenderSignals = { search: string; userAgent: string; brands: string[]; webdriver: boolean };
+type PrerenderSignals = {
+  search: string;
+  userAgent: string;
+  brands: string[];
+  webdriver: boolean;
+  /** navigator.userAgentData.platform, "" where the browser has none. */
+  platform: string;
+  now: number;
+};
 
 /** True when this page load is backend/services/prerender.py rendering a
  * page for a crawler, not a person. Such a load must never count as a
@@ -17,6 +25,32 @@ type PrerenderSignals = { search: string; userAgent: string; brands: string[]; w
  * contact link no real browser carries. */
 const CRAWLER_UA = /\+https?:\/\/|bot\/|crawler|spider|meta-externalagent|meta-webindexer|facebookexternalhit/i;
 
+/** A desktop Linux Chrome six or more major versions out of date. On
+ * 2026-11-03/04 one crawler opened page after page this way: Chrome 145 and
+ * 147 on "X11; Linux x86_64" while stable was 156, a fresh browser session
+ * for every page, one every 4-15 seconds overnight, with no webdriver flag,
+ * no HeadlessChrome brand and nothing in its UA naming it. Desktop Chrome
+ * updates itself, so that far behind is a bundled automation Chromium.
+ * The platform must say Linux too: an old Android tablet sends this same
+ * UA in desktop mode, from a Chrome its Android version can no longer
+ * update, but reports "Android". Chromebooks say "CrOS" and old Windows and
+ * macOS machines their own OS, so none of them match. */
+const LINUX_DESKTOP_CHROME = /\(X11; Linux x86_64\) AppleWebKit\/[\d.]+ \(KHTML, like Gecko\) Chrome\/(\d+)\./;
+// Stable Chrome was 156 on 2026-11-04 and ships a major version about every
+// four weeks. Counting one per five keeps the estimate behind the real
+// stable, so the rule only gets more lenient as time passes.
+const CHROME_STABLE = { major: 156, at: Date.UTC(2026, 10, 4) };
+const CHROME_WEEKS_PER_MAJOR = 5;
+const STALE_MAJORS = 6;
+
+export function isStaleLinuxChrome(userAgent: string, platform: string, now: number): boolean {
+  const match = LINUX_DESKTOP_CHROME.exec(userAgent);
+  if (!match || platform !== "Linux") return false;
+  const weeks = (now - CHROME_STABLE.at) / (7 * 24 * 60 * 60 * 1000);
+  const stable = CHROME_STABLE.major + Math.max(0, Math.floor(weeks / CHROME_WEEKS_PER_MAJOR));
+  return Number(match[1]) <= stable - STALE_MAJORS;
+}
+
 export function isPrerenderLoad(signals: PrerenderSignals): boolean {
   return isOwnRender(signals.search) || isCrawlerLoad(signals);
 }
@@ -30,17 +64,25 @@ export function isOwnRender(search: string): boolean {
  * counter labels these "crawler" rather than dropping them, so the visit
  * report can say how many there were instead of leaving them to be guessed
  * at inside "direct". */
-export function isCrawlerLoad({ userAgent, brands, webdriver }: PrerenderSignals): boolean {
-  return webdriver || /HeadlessChrome/.test(userAgent) || CRAWLER_UA.test(userAgent) || brands.includes("HeadlessChrome");
+export function isCrawlerLoad({ userAgent, brands, webdriver, platform, now }: PrerenderSignals): boolean {
+  return (
+    webdriver ||
+    /HeadlessChrome/.test(userAgent) ||
+    CRAWLER_UA.test(userAgent) ||
+    brands.includes("HeadlessChrome") ||
+    isStaleLinuxChrome(userAgent, platform, now)
+  );
 }
 
 function currentSignals(): PrerenderSignals {
-  const nav = navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } };
+  const nav = navigator as Navigator & { userAgentData?: { brands?: { brand: string }[]; platform?: string } };
   return {
     search: window.location.search,
     userAgent: nav.userAgent,
     brands: (nav.userAgentData?.brands ?? []).map((b) => b.brand),
     webdriver: !!nav.webdriver,
+    platform: nav.userAgentData?.platform ?? "",
+    now: Date.now(),
   };
 }
 
