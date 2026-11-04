@@ -1,5 +1,5 @@
-"""The Haiku model every scan, extraction and translation call uses, and the
-request settings that go with it.
+"""The Haiku model every scan, extraction, translation and Kids view call uses,
+and the request settings that go with it.
 
 Haiku 5.5 is a tenth of Haiku 4.5's per-token price. In side-by-sides on real
 newsletters, flyer images and calendar items it matched or beat 4.5. It
