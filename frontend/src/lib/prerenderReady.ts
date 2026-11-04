@@ -17,14 +17,21 @@ type PrerenderSignals = { search: string; userAgent: string; brands: string[]; w
  * contact link no real browser carries. */
 const CRAWLER_UA = /\+https?:\/\/|bot\/|crawler|spider|meta-externalagent|meta-webindexer|facebookexternalhit/i;
 
-export function isPrerenderLoad({ search, userAgent, brands, webdriver }: PrerenderSignals): boolean {
-  return (
-    new URLSearchParams(search).get("prerender") === "1" ||
-    webdriver ||
-    /HeadlessChrome/.test(userAgent) ||
-    CRAWLER_UA.test(userAgent) ||
-    brands.includes("HeadlessChrome")
-  );
+export function isPrerenderLoad(signals: PrerenderSignals): boolean {
+  return isOwnRender(signals.search) || isCrawlerLoad(signals);
+}
+
+/** prerender.py's own render, a cache fill on a crawler's behalf. */
+export function isOwnRender(search: string): boolean {
+  return new URLSearchParams(search).get("prerender") === "1";
+}
+
+/** A crawler or other automated browser loading the page itself. The visit
+ * counter labels these "crawler" rather than dropping them, so the visit
+ * report can say how many there were instead of leaving them to be guessed
+ * at inside "direct". */
+export function isCrawlerLoad({ userAgent, brands, webdriver }: PrerenderSignals): boolean {
+  return webdriver || /HeadlessChrome/.test(userAgent) || CRAWLER_UA.test(userAgent) || brands.includes("HeadlessChrome");
 }
 
 function currentSignals(): PrerenderSignals {
@@ -39,6 +46,8 @@ function currentSignals(): PrerenderSignals {
 
 /** Decided once at startup, while the landing URL still carries ?prerender=1. */
 export const IS_PRERENDER = typeof window !== "undefined" && isPrerenderLoad(currentSignals());
+export const IS_OWN_RENDER = typeof window !== "undefined" && isOwnRender(window.location.search);
+export const IS_CRAWLER = IS_PRERENDER && !IS_OWN_RENDER;
 
 /** Flags <body> once a page's own initial data fetch has resolved.
  * backend/services/prerender.py waits on this exact attribute before

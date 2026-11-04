@@ -44,10 +44,21 @@ for r in rows:
 # which only ever meant a session that started from one of our own pages
 # (now "self") - real visitors, so it counts as outside.
 TEAM = "team"
+# "crawler" is a load the browser identified as a crawler or automated
+# browser (frontend/src/lib/prerenderReady.ts). Before that label existed
+# such loads were dropped, not counted, so days before its first row show
+# "-" rather than a 0 that would read as "no crawlers".
+CRAWLER = "crawler"
+NOT_OUTSIDE = {TEAM, CRAWLER}
+crawler_since = min((r["day"] for r in rows if r["source"] == CRAWLER), default=None)
 
 
 def outside(c: collections.Counter) -> int:
-    return sum(c.values()) - c.get(TEAM, 0)
+    return sum(n for s, n in c.items() if s not in NOT_OUTSIDE)
+
+
+def crawlers(day: str, c: collections.Counter) -> str:
+    return str(c.get(CRAWLER, 0)) if crawler_since and day >= crawler_since else "-"
 
 
 def group(path: str) -> int:
@@ -58,16 +69,20 @@ def group(path: str) -> int:
 
 
 print(f"As of {now:%a %b %-d, %-I:%M %p} Eastern\n")
-print("## Daily (outside = everything but 'team', the team's flagged browsers)")
-print(f"{'day':<16}{'outside':>8}{'team':>6}  sources (outside)")
+print("## Daily (outside = people: everything but 'team', the team's flagged browsers, and 'crawler')")
+print(f"{'day':<16}{'outside':>8}{'team':>6}{'crawler':>9}  sources (outside)")
 for day in sorted(by_day):
     c = by_day[day]
     label = datetime.strptime(day, "%Y-%m-%d").strftime("%a %b %-d")
     if day == today:
         label += " *"
-    srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != TEAM)
-    print(f"{label:<16}{outside(c):>8}{c.get(TEAM, 0):>6}  {srcs}")
-print("(* today, partial)\n")
+    srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s not in NOT_OUTSIDE)
+    print(f"{label:<16}{outside(c):>8}{c.get(TEAM, 0):>6}{crawlers(day, c):>9}  {srcs}")
+print("(* today, partial)")
+if crawler_since:
+    print(f"(crawler: counted from {crawler_since}; earlier days show - because they were dropped, not counted)\n")
+else:
+    print("(crawler: no crawler rows in this window - before the label shipped, crawlers were dropped, not counted)\n")
 
 for day, name in ((yesterday, "Yesterday"), (today, "Today so far")):
     paths = by_path.get(day)
@@ -79,9 +94,10 @@ for day, name in ((yesterday, "Yesterday"), (today, "Today so far")):
     for path, c in ordered:
         if outside(c) == 0:
             continue
-        srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s != TEAM)
+        srcs = ", ".join(f"{s} {n}" for s, n in c.most_common() if s not in NOT_OUTSIDE)
         print(f"  {path:<45}{outside(c):>4}  {srcs}")
     budgets = sum(outside(c) for p, c in paths.items() if group(p) == 1)
     schools = sum(outside(c) for p, c in paths.items() if group(p) == 2)
     print(f"  {'(all budget pages)':<45}{budgets:>4}")
-    print(f"  {'(all school pages)':<45}{schools:>4}\n")
+    print(f"  {'(all school pages)':<45}{schools:>4}")
+    print(f"  {'(crawler loads, not in the counts above)':<45}{crawlers(day, by_day[day]):>4}\n")

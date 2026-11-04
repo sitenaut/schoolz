@@ -67,6 +67,21 @@ async def test_sources_are_counted_separately():
 
 
 @pytest.mark.anyio
+async def test_crawler_loads_are_counted_apart_from_visits():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        headers = await _admin_headers(client)
+        before = (await client.get("/page-views", headers=headers)).json()
+        for _ in range(2):
+            await client.post("/page-views", json={"path": "/lunch", "source": "crawler"})
+        after = (await client.get("/page-views", headers=headers)).json()
+
+    assert after["totals_by_source"]["crawler"] == before["totals_by_source"].get("crawler", 0) + 2
+    # Not a visit by a person, so the per-page visit total doesn't count it.
+    assert after["totals_by_path"].get("/lunch", 0) == before["totals_by_path"].get("/lunch", 0)
+
+
+@pytest.mark.anyio
 async def test_untracked_path_is_ignored_not_stored():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
