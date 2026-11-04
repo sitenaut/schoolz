@@ -37,7 +37,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -187,6 +187,11 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_resident
     as a string. Raises RuntimeError if all services fail. A bot-challenge page
     counts as a failure, so the next service (`prefer_residential` puts the
     home-IP one first) gets its turn.
+
+    playwright-stealth stays off: these are public feeds their sites'
+    robots.txt allows, so the least evasive fetch that works is the one to
+    make. The Pi gets past their Cloudflare without it, and the datacenter
+    scrapers don't get past it either way.
     """
     errors: list[str] = []
     for service_url, key in _services(prefer_residential):
@@ -194,7 +199,7 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_resident
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0)) as client:
                 resp = await client.post(
                     f"{service_url}/fetch-raw",
-                    json={"url": url},
+                    json={"url": url, "stealth": False},
                     headers={"X-API-Key": key},
                 )
                 resp.raise_for_status()
@@ -231,7 +236,7 @@ def _parse_iso(value: str | None) -> datetime | None:
     try:
         dt = datetime.fromisoformat(s)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt
     except ValueError:
         return None
@@ -351,7 +356,7 @@ def _jsonld_to_raw(node: dict, source_name: str, default_categories: list[str], 
         description = None
     sid = node.get("@id") or node.get("identifier") or url
     if not sid:
-        sid = "hash:" + hashlib.sha1(f"{title}|{start.isoformat()}".encode("utf-8")).hexdigest()[:24]
+        sid = "hash:" + hashlib.sha1(f"{title}|{start.isoformat()}".encode()).hexdigest()[:24]
 
     return RawEvent(
         source=source_name,
@@ -388,7 +393,7 @@ def _selector_to_raws(
     raws: list[RawEvent] = []
     for el in soup.select(item_sel):
         try:
-            def pick(key: str) -> str | None:
+            def pick(key: str, el=el) -> str | None:
                 sel = selectors.get(key)
                 if not sel:
                     return None
@@ -398,7 +403,7 @@ def _selector_to_raws(
                 txt = node.get_text(" ", strip=True)
                 return txt or None
 
-            def pick_attr(key: str, attr: str) -> str | None:
+            def pick_attr(key: str, attr: str, el=el) -> str | None:
                 sel = selectors.get(key)
                 if not sel:
                     return None
