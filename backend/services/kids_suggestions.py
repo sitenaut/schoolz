@@ -28,8 +28,9 @@ import time
 from anthropic import AsyncAnthropic
 
 import observability
+from services import haiku
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = haiku.MODEL
 MAX_PLAN_ITEMS = 25
 # A syllabus late-work paragraph is a few sentences; this is a generous cap
 # that still stops someone pasting an entire handbook into a model call.
@@ -84,8 +85,8 @@ async def assignment_suggestion(title: str, course_name: str | None) -> tuple[st
     started = time.perf_counter()
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=400,
-        extra_body={"temperature": 0},
+        max_tokens=550,
+        **haiku.CALL_KWARGS,
         system=_ASSIGNMENT_SYSTEM,
         tools=[_ASSIGNMENT_TOOL],
         tool_choice={"type": "tool", "name": "record_suggestion"},
@@ -176,8 +177,8 @@ async def parse_late_policy(text: str) -> dict:
     started = time.perf_counter()
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=700,
-        extra_body={"temperature": 0},
+        max_tokens=950,
+        **haiku.CALL_KWARGS,
         system=_LATE_POLICY_SYSTEM,
         tools=[_LATE_POLICY_TOOL],
         tool_choice={"type": "tool", "name": "record_late_policy"},
@@ -201,10 +202,14 @@ async def plan(items: list[dict], today_iso: str) -> str:
     started = time.perf_counter()
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=500,
-        extra_body={"temperature": 0.2},
+        max_tokens=700,
+        **haiku.CALL_KWARGS,
         system=_PLAN_SYSTEM,
         messages=[{"role": "user", "content": f"Today is {today_iso}.\n\n" + "\n".join(lines)}],
     )
     observability.record_llm_call("kids_plan", MODEL, response, time.perf_counter() - started)
-    return "".join(b.text for b in response.content if b.type == "text").strip()
+    text = "".join(b.text for b in response.content if b.type == "text").strip()
+    if not text:
+        # A refusal is a 200 with no text on Haiku 5.5; a blank plan looks like a bug.
+        raise RuntimeError(f"plan came back empty (stop_reason={response.stop_reason})")
+    return text

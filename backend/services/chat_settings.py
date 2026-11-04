@@ -29,10 +29,10 @@ _cache: dict[str, Any] = {"value": None, "at": 0.0}
 
 class AudienceConfig(BaseModel):
     provider: str = "anthropic"
-    model: str = "claude-haiku-4-5-20251001"
+    model: str = "claude-haiku-5-5"
     # Used for the rest of a conversation once a turn looks compound (see
     # chatbot._should_escalate). None = never escalate.
-    escalation_model: str | None = "claude-sonnet-5"
+    escalation_model: str | None = "claude-sonnet-5-5"
     # OpenAI-compatible providers only (Gemini): its thinking tokens count
     # against the output budget, so it defaults low. Ignored for Anthropic.
     reasoning_effort: str | None = "low"
@@ -53,6 +53,7 @@ class ChatbotSettings(BaseModel):
             "claude-haiku-5-5": ModelPrice(input=0.10, output=0.50, cache_read=0.01),
             "claude-haiku-4-5-20251001": ModelPrice(input=1.0, output=5.0, cache_read=0.10),
             "claude-haiku-4-5": ModelPrice(input=1.0, output=5.0, cache_read=0.10),
+            "claude-sonnet-5-5": ModelPrice(input=2.0, output=10.0, cache_read=0.20),
             "claude-sonnet-5": ModelPrice(input=2.0, output=10.0, cache_read=0.20),
         }
     )

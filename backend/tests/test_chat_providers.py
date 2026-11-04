@@ -112,7 +112,7 @@ class _FakeProvider:
 @pytest.mark.anyio
 async def test_admin_settings_and_compare(monkeypatch):
     fakes = {
-        "anthropic": _FakeProvider("anthropic", "claude says", ["claude-haiku-4-5-20251001", "claude-sonnet-5"]),
+        "anthropic": _FakeProvider("anthropic", "claude says", ["claude-haiku-5-5", "claude-sonnet-5-5"]),
         "gemini": _FakeProvider("gemini", "gemini says", ["gemini-x", "gemini-y"]),
     }
     monkeypatch.setattr(admin_chatbot, "configured_providers", lambda: fakes)

@@ -113,7 +113,7 @@ Skills (`.claude/skills/<name>/SKILL.md`):
   - Zero results is usually a silent source change, not "nothing new". Read the source's entry before debugging.
 - **`onboard-district`** — agent-based crawl workflow (`.claude/agents/district-crawler.md`) and seed import mechanics. Read `docs/ONBOARDING_CRAWL_GUIDE.md` first, then only the matching `docs/platforms/` file; record gaps in `docs/DATA_GAPS.md`.
 - **`chatbot`** — tools per tier, prompt caching, the four Anthropic keys, providers.
-  - The anonymous prompt prefix is barely over Haiku 4.5's cache minimum — trimming it silently stops caching.
+  - A prompt prefix under the model's cache minimum (512 tokens on Haiku 5.5 and Sonnet 5.5) silently stops caching.
   - Anonymous and signed-in providers are switched separately on purpose (signed-in chats carry children's data).
   - `search_resources`' free text is never logged, and a question about anything local gets searched, never declined as out of scope.
 - **`observability`** — OTel, Grafana rules/SLOs/IRM, Loki, Faro RUM, GA4, `page_visits`.
