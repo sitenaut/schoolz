@@ -575,7 +575,8 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
             nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
             # First page only for a fast dry-run.
             max_pages=1,
-            via_scraper=bool(entry.get("via_scraper", False)),
+            via_scraper=entry.get("via_scraper", False),
+            prefer_residential=bool(entry.get("prefer_residential", False)),
             venue_name=entry.get("venue_name"),
             venue_address=entry.get("venue_address"),
         )))

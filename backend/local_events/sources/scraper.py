@@ -37,6 +37,7 @@ import json
 import logging
 import os
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -178,7 +179,13 @@ async def fetch_rendered_html(
     raise RuntimeError("all scraper services failed:\n  " + "\n  ".join(errors))
 
 
-async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_residential: bool = False) -> str:
+async def fetch_raw_via_scraper(
+    url: str,
+    timeout: float = 90.0,
+    prefer_residential: bool = False,
+    via: str = "page",
+    accept: Callable[[str], bool] | None = None,
+) -> str:
     """Fetch a raw response body (e.g. an ICS file download) via the scraper service.
 
     Uses /fetch-raw instead of /fetch-html so Playwright captures the download
@@ -192,6 +199,13 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_resident
     robots.txt allows, so the least evasive fetch that works is the one to
     make. The Pi gets past their Cloudflare without it, and the datacenter
     scrapers don't get past it either way.
+
+    `via="request"` asks the scrapers' plain HTTP client instead of a page:
+    for a host that needs no JavaScript but refuses some addresses, or that
+    no Chromium can load (woolwichtwp.org's SiteGround). It sends
+    playwright-scraper's own User-Agent, not a browser's. With `accept`, an
+    answer counts only when `accept(body)` says it's the one wanted, in place
+    of the bot-challenge check; otherwise the next service gets its turn.
     """
     errors: list[str] = []
     for service_url, key in _services(prefer_residential):
@@ -199,7 +213,7 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_resident
             async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0)) as client:
                 resp = await client.post(
                     f"{service_url}/fetch-raw",
-                    json={"url": url, "stealth": False},
+                    json={"url": url, "stealth": False, "via": via},
                     headers={"X-API-Key": key},
                 )
                 resp.raise_for_status()
@@ -210,7 +224,11 @@ async def fetch_raw_via_scraper(url: str, timeout: float = 90.0, prefer_resident
             if not body:
                 errors.append(f"{service_url}: empty body")
                 continue
-            if _looks_like_challenge(body):
+            if accept is not None:
+                if not accept(body):
+                    errors.append(f"{service_url}: not the response wanted: {body[:80]!r}")
+                    continue
+            elif _looks_like_challenge(body):
                 errors.append(f"{service_url}: bot challenge")
                 continue
             return body
