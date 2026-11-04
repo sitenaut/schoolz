@@ -46,7 +46,7 @@ import httpx
 from .base import RawEvent, Source
 
 _ET = ZoneInfo("America/New_York")
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 _PAUSE_SECONDS = 1.0
 DEFAULT_DAYS_AHEAD = 14
 DEFAULT_MAX_PAGES_PER_DAY = 4

@@ -38,7 +38,7 @@ ET = ZoneInfo("America/New_York")
 PER_PAGE = 50
 DEFAULT_DAYS_AHEAD = 90
 DEFAULT_MAX_PAGES = 20
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"[ \t\r\f\v]+")
 

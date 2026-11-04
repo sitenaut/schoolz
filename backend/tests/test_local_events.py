@@ -5,7 +5,9 @@ os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
 import json
+import re
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -467,3 +469,19 @@ async def test_scraper_failure_records_the_scrapers_own_reason(monkeypatch):
     assert "https://droplet.test: HTTP 502: <html>Bad Gateway</html>" in failure
     assert "http://scraper.test: HTTP 502: Failed to fetch https://y.test/?day=1: Page.wait_for_selector: Timeout 40000ms exceeded." in failure
     assert "Call log" not in failure and "developer.mozilla.org" not in failure
+
+
+def test_no_local_events_source_claims_to_be_a_browser():
+    # A browser's User-Agent ("... AppleWebKit/537.36 (KHTML, like Gecko)
+    # Chrome/126 Safari/537.36"). A request that isn't from a browser names
+    # schoolz instead; a site that refuses that goes through the scrapers,
+    # whose browser is a real one.
+    browser = re.compile(r"AppleWebKit/|like Gecko|Chrome/\d|Safari/\d|Firefox/\d")
+    package = Path(__file__).parent.parent / "local_events"
+    claims = [
+        f"{path.relative_to(package)}:{n}"
+        for path in sorted(package.rglob("*.py"))
+        for n, line in enumerate(path.read_text().splitlines(), 1)
+        if browser.search(line)
+    ]
+    assert claims == []

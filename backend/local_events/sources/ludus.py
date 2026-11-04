@@ -44,7 +44,7 @@ from .scraper import fetch_rendered_html
 logger = logging.getLogger(__name__)
 
 _ET = ZoneInfo("America/New_York")
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 _DATE_RE = re.compile(r"([A-Z][a-z]+ \d{1,2}, \d{4})")
 _TIME_RE = re.compile(r"(\d{1,2}:\d{2}\s*[AP]M)", re.I)
 
@@ -93,10 +93,10 @@ class LudusSource(Source):
                 resp.raise_for_status()
                 html = resp.text
         except httpx.HTTPError as direct_exc:
-            # Confirmed real: a plain request from a dev machine gets 200,
-            # the same request from a datacenter IP (this backend's own, or
-            # Fly's in prod) gets a bot-blocked 403. Stealth + a residential
-            # IP (the scraper service's droplet/Pi split) gets through.
+            # Its Cloudflare turns this request away from a datacenter address
+            # (Fly's, in prod) and, since it names schoolz rather than a
+            # browser, from a home one too. The scrapers' browser gets
+            # through: in prod, the droplet's.
             try:
                 html, _ = await fetch_rendered_html(self.url, wait_for_selector="div.show_item")
             except Exception as scraper_exc:  # noqa: BLE001

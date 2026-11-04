@@ -44,7 +44,7 @@ import httpx
 from .base import RawEvent, Source
 
 API_URL = "https://runsignup.com/Rest/races"
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 _PAGE_SIZE = 250
 _MAX_PAGES = 10
 _NOT_IN_PERSON = {"virtual_race", "other"}

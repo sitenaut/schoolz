@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 ET = ZoneInfo("America/New_York")
 DEFAULT_MONTHS_AHEAD = 3
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 _SKIN_RE = re.compile(r'id="mec_skin_(\d+)"')
 _AJAX_RE = re.compile(r'ajaxurl\s*=\s*"([^"]+)"')
 _SECTION_RE = re.compile(r'<div class="mec-calendar-events-sec"\s+data-mec-cell="(\d{8})"\s*>')

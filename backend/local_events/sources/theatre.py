@@ -49,7 +49,7 @@ MODEL = haiku.MODEL
 _ET = ZoneInfo("America/New_York")
 _MAX_CHARS = 14_000
 _MIN_TEXT_CHARS = 400
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 
 # page-text hash -> productions extracted from it. In front of the
 # page_extractions table, which is what survives a deploy.
