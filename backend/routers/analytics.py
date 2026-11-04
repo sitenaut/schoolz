@@ -64,6 +64,12 @@ async def _tracked_path(path: str, db: AsyncSession) -> str | None:
 
 _SOURCE_RE = re.compile(r"^[a-z0-9][a-z0-9.\-]{0,39}$")
 
+# A crawler or automated browser is counted under its own label rather than
+# dropped, so the visit report can say how many there were instead of
+# leaving them to be guessed at inside "direct". It is not a visit by a
+# person, so every visit total below leaves it out.
+CRAWLER_SOURCE = "crawler"
+
 
 def _today() -> str:
     return datetime.now(_SCHOOL_TZ).strftime("%Y-%m-%d")
@@ -135,8 +141,9 @@ async def read_page_views(
     totals_by_path: dict[str, int] = {}
     totals_by_source: dict[str, int] = {}
     for row in rows:
-        totals_by_path[row.path] = totals_by_path.get(row.path, 0) + row.count
         totals_by_source[row.source] = totals_by_source.get(row.source, 0) + row.count
+        if row.source != CRAWLER_SOURCE:
+            totals_by_path[row.path] = totals_by_path.get(row.path, 0) + row.count
 
     return PageVisitReport(
         rows=[PageVisitRow(day=r.day, path=r.path, source=r.source, count=r.count) for r in rows],
@@ -170,8 +177,13 @@ class CampaignReport(BaseModel):
     by_day: list[DayVisits]
 
 
+_VISITS = PageVisit.source != CRAWLER_SOURCE
+
+
 async def _path_total(db: AsyncSession, path: str) -> int:
-    result = await db.execute(select(func.coalesce(func.sum(PageVisit.count), 0)).where(PageVisit.path == path))
+    result = await db.execute(
+        select(func.coalesce(func.sum(PageVisit.count), 0)).where(PageVisit.path == path, _VISITS)
+    )
     return result.scalar_one()
 
 
@@ -180,17 +192,24 @@ async def campaign_report(_: User = Depends(require_permission("analytics.view")
     today = _today()
     yesterday = (datetime.now(_SCHOOL_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    total_visits = (await db.execute(select(func.coalesce(func.sum(PageVisit.count), 0)))).scalar_one()
+    total_visits = (
+        await db.execute(select(func.coalesce(func.sum(PageVisit.count), 0)).where(_VISITS))
+    ).scalar_one()
 
     by_day_rows = (
         await db.execute(
-            select(PageVisit.day, func.sum(PageVisit.count)).group_by(PageVisit.day).order_by(PageVisit.day)
+            select(PageVisit.day, func.sum(PageVisit.count))
+            .where(_VISITS)
+            .group_by(PageVisit.day)
+            .order_by(PageVisit.day)
         )
     ).all()
     by_day = {day: int(visits) for day, visits in by_day_rows}
 
     by_source_rows = (
-        await db.execute(select(PageVisit.source, func.sum(PageVisit.count)).group_by(PageVisit.source))
+        await db.execute(
+            select(PageVisit.source, func.sum(PageVisit.count)).where(_VISITS).group_by(PageVisit.source)
+        )
     ).all()
     by_source = dict(sorted(((source, int(visits)) for source, visits in by_source_rows), key=lambda kv: -kv[1]))
 

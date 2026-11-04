@@ -1,6 +1,6 @@
 import { API_URL } from "../authConfig";
 import { isInternalTraffic } from "./analytics";
-import { IS_PRERENDER } from "./prerenderReady";
+import { IS_CRAWLER, IS_OWN_RENDER } from "./prerenderReady";
 
 const SOURCE_KEY = "schoolz_visit_source";
 const SEEN_KEY = "schoolz_visit_seen";
@@ -73,7 +73,7 @@ function sanitize(value: string): string {
  * stores only an aggregate (day, path, source) counter - see the PageVisit
  * model for why there's deliberately nothing per-visitor in it. */
 export function countVisit(path: string): void {
-  if (IS_PRERENDER) return;
+  if (IS_OWN_RENDER) return;
   try {
     const seen: string[] = JSON.parse(sessionStorage.getItem(SEEN_KEY) || "[]");
     if (seen.includes(path)) return;
@@ -82,9 +82,10 @@ export function countVisit(path: string): void {
     /* storage unavailable: count it, at the cost of possible duplicates */
   }
 
-  // The team's own browsing (the same flag GA's internal-traffic filter
-  // reads) is counted under its own label so the report can leave it out.
-  const source = isInternalTraffic() ? "team" : visitSource();
+  // A crawler or automated browser (lib/prerenderReady.ts), and the team's
+  // own browsing (the same flag GA's internal-traffic filter reads), are
+  // each counted under their own label so the report can leave them out.
+  const source = IS_CRAWLER ? "crawler" : isInternalTraffic() ? "team" : visitSource();
   const body = JSON.stringify({ path, source });
   try {
     // sendBeacon survives the page being closed mid-request, which a plain

@@ -39,4 +39,23 @@ describe("visit source", () => {
     countVisit("/calendar");
     expect(sentSource(fetchMock)).toBe("direct");
   });
+
+  it("counts a crawler under crawler, even in a browser flagged as the team's", async () => {
+    vi.resetModules();
+    vi.doMock("./prerenderReady", () => ({ IS_CRAWLER: true, IS_OWN_RENDER: false }));
+    localStorage.setItem("schoolz_internal", "1");
+    const visits = await import("./visits");
+    visits.countVisit("/calendar");
+    expect(sentSource(fetchMock)).toBe("crawler");
+    vi.doUnmock("./prerenderReady");
+  });
+
+  it("doesn't count prerender.py's own render at all", async () => {
+    vi.resetModules();
+    vi.doMock("./prerenderReady", () => ({ IS_CRAWLER: false, IS_OWN_RENDER: true }));
+    const visits = await import("./visits");
+    visits.countVisit("/calendar");
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.doUnmock("./prerenderReady");
+  });
 });

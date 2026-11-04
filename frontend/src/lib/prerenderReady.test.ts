@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPrerenderLoad } from "./prerenderReady";
+import { isCrawlerLoad, isOwnRender, isPrerenderLoad } from "./prerenderReady";
 
 const person = {
   search: "",
@@ -16,6 +16,13 @@ describe("isPrerenderLoad", () => {
 
   it("is true for prerender.py's own ?prerender=1", () => {
     expect(isPrerenderLoad({ ...person, search: "?internal=1&prerender=1" })).toBe(true);
+  });
+
+  it("tells our own render apart from a crawler loading the page itself", () => {
+    expect(isOwnRender("?internal=1&prerender=1")).toBe(true);
+    expect(isCrawlerLoad({ ...person, search: "?internal=1&prerender=1" })).toBe(false);
+    expect(isOwnRender("")).toBe(false);
+    expect(isCrawlerLoad({ ...person, webdriver: true })).toBe(true);
   });
 
   it("catches the droplet's stealth Chromium, which hides webdriver and fakes a desktop UA", () => {

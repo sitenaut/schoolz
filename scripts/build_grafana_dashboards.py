@@ -309,7 +309,7 @@ def ux() -> dict:
               [sql_target(
                   "SELECT day AS \"Day\", path AS \"Page\", sum(count) AS \"Visits\"\n"
                   "FROM page_visits\n"
-                  "WHERE day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')\n"
+                  "WHERE day >= to_char(now() - interval '30 days', 'YYYY-MM-DD') AND source <> 'crawler'\n"
                   "GROUP BY 1, 2 ORDER BY 1 DESC, 3 DESC;")],
               {"h": 9, "w": 12, "x": 0, "y": 0}, ptype="table",
               desc="The reliable number: counted server-side, so ad blockers don't hide it. Aggregate only - "
@@ -322,14 +322,17 @@ def ux() -> dict:
                   "GROUP BY 1 ORDER BY 2 DESC;")],
               {"h": 9, "w": 12, "x": 12, "y": 0}, ptype="table",
               desc="'facebook' is the campaign cohort. First-touch per browser session, so a reader who "
-                   "lands from Facebook and clicks through stays attributed to Facebook."),
+                   "lands from Facebook and clicks through stays attributed to Facebook. 'crawler' is crawlers "
+                   "and automated browsers, not visitors; the other panels leave it out."),
         panel(3, "Survey funnel (last 30d)",
               [sql_target(
                   "SELECT\n"
                   "  (SELECT COALESCE(sum(count), 0) FROM page_visits\n"
-                  "     WHERE path = '/chcomms' AND day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')) AS \"Read /chcomms\",\n"
+                  "     WHERE path = '/chcomms' AND source <> 'crawler'\n"
+                  "       AND day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')) AS \"Read /chcomms\",\n"
                   "  (SELECT COALESCE(sum(count), 0) FROM page_visits\n"
-                  "     WHERE path = '/survey' AND day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')) AS \"Opened /survey\",\n"
+                  "     WHERE path = '/survey' AND source <> 'crawler'\n"
+                  "       AND day >= to_char(now() - interval '30 days', 'YYYY-MM-DD')) AS \"Opened /survey\",\n"
                   "  (SELECT count(*) FROM survey_responses\n"
                   "     WHERE created_at > now() - interval '30 days') AS \"Completed survey\";")],
               {"h": 6, "w": 12, "x": 0, "y": 9}, ptype="stat",

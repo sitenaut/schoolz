@@ -2235,7 +2235,11 @@ class PageVisit(Base):
     # "that evening" to a Cherry Hill parent, not the next morning.
     day: Mapped[str] = mapped_column(String(10), nullable=False)
     path: Mapped[str] = mapped_column(String(100), nullable=False)
-    # "facebook" | "direct" | "google" | a referring hostname | "other"
+    # "facebook" | "direct" | "google" | a referring hostname | "other", plus
+    # two that aren't outside visitors: "team" (the team's flagged browsers)
+    # and "crawler" (a crawler or automated browser, frontend/src/lib/
+    # prerenderReady.ts). A crawler row is not a visit by a person: every
+    # visit total leaves it out (routers/analytics.py:CRAWLER_SOURCE).
     source: Mapped[str] = mapped_column(String(40), nullable=False)
     count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)

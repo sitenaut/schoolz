@@ -63,3 +63,19 @@ async def test_campaign_report_reflects_the_funnel():
     # bucket should account for it.
     assert body["visits_today"] >= 3
     assert isinstance(body["by_day"], list) and len(body["by_day"]) >= 1
+
+
+@pytest.mark.anyio
+async def test_campaign_report_leaves_crawlers_out():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        headers = await _admin_headers(client)
+        before = (await client.get("/page-views/campaign-report", headers=headers)).json()
+        await client.post("/page-views", json={"path": "/chcomms", "source": "crawler"})
+        await client.post("/page-views", json={"path": "/chcomms", "source": "facebook"})
+        after = (await client.get("/page-views/campaign-report", headers=headers)).json()
+
+    # Only the Facebook read is a visit; the crawler load is in none of the totals.
+    for key in ("total_visits", "visits_today", "chcomms_reads"):
+        assert after[key] == before[key] + 1, key
+    assert "crawler" not in after["by_source"]
