@@ -72,6 +72,14 @@ fresh by scheduled jobs, the same way `/local` events are
 - **Unlike `/focus/`, `/localz/` is public and should be indexable**: people
   search "food pantry near me". The prerender/crawler branch must cover it,
   with per-category landing pages ("Food help in Cherry Hill").
+  `services/prerender.py` was missing it at first, so every crawl of Localz
+  was a 404. It now renders the home, provider and category pages and any
+  active listing. The sitemap (`routers/seo.py`) lists the home, provider and
+  category pages but no listings: every sitemap path is a render for the
+  nightly warm job, and there are thousands of listings. Until they're listed,
+  crawlers find only what a category page shows before "Show more" (a button,
+  not a link). **A family child care listing is someone's home**,
+  so its page carries `noindex` (`ResourceDetailOut.indexable`).
 - **Schoolz nav:** the "Local" item becomes **Localz** and links to
   `/localz/` with a plain `<a>` (same reason as Gradez).
 - **Localz nav:** Schoolz (→ `/`, Today) · Events · Food · Housing & Bills ·

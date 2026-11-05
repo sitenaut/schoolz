@@ -217,6 +217,9 @@ class ResourceDetailOut(ResourceSummaryOut):
     source: str
     source_url: str | None
     updated_at: datetime
+    # False for a family child care home: someone's house, so its page asks
+    # search engines to leave it out (and it's never in the sitemap).
+    indexable: bool = True
 
 
 def _escape_like(text: str) -> str:
@@ -509,4 +512,5 @@ async def get_resource(resource_id: str, db: AsyncSession = Depends(get_db)) -> 
         source=row.source,
         source_url=_source_url(row),
         updated_at=row.updated_at,
+        indexable=not childcarenj.is_home_listing(row.source, list(row.taxonomy_codes or [])),
     )

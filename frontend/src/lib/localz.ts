@@ -73,6 +73,8 @@ export type ResourceDetail = ResourceSummary & {
   source: string;
   source_url: string | null;
   updated_at: string;
+  /** False for a family child care home: its page asks search engines to leave it out. */
+  indexable?: boolean;
 };
 
 export type ResourceCategoryCount = { key: string; label: string; count: number };

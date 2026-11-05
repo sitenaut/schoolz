@@ -25,7 +25,8 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 import database
 import scraper_client
-from models import PrerenderedPage, School, SeasonalAttraction, SeasonalGuide, StateDistrict
+from models import PrerenderedPage, ResourceService, School, SeasonalAttraction, SeasonalGuide, StateDistrict
+from resources.categories import CATEGORIES
 from services import class_years
 
 logger = logging.getLogger(__name__)
@@ -82,8 +83,12 @@ _ALLOWED_PATHS = {
     "/upload",
     "/chcomms",
     "/survey",
+    "/localz",
+    "/localz/providers",
 }
-_ALLOWED_PREFIXES = ("/schools/", "/seasonal/", "/budgets/")
+# Localz was left off at first, so every crawl of it was a 404, though
+# docs/LOCALZ_DESIGN.md wants it found ("food pantry near me").
+_ALLOWED_PREFIXES = ("/schools/", "/seasonal/", "/budgets/", "/localz/")
 
 
 class PathNotAllowed(ValueError):
@@ -105,7 +110,8 @@ _CLASS_SLUG = re.compile(r"^class-of-(\d{4})$")
 async def _names_something(path: str) -> bool:
     """Whether a path under an allowed prefix is a real page: a school (by
     slug or id), its calendar, one of its class pages, a season that has
-    guides or attractions, or a district's budget page. The prefix alone let anyone have a render made and
+    guides or attractions, a district's budget page, or a Localz category or
+    active listing. The prefix alone let anyone have a render made and
     stored for every made-up /schools/<anything>, each holding one of the
     three scraper slots the scans share."""
     path = _LANG_PREFIX.sub("", path) or "/"
@@ -113,8 +119,17 @@ async def _names_something(path: str) -> bool:
         return True
     section, _, rest = path.strip("/").partition("/")
     parts = rest.split("/") if rest else []
+    if section == "localz" and len(parts) <= 1:
+        # "/localz/" is where localz.sitenaut.com redirects. The provider
+        # portal's pages, deeper down, are behind sign-in.
+        return not parts or parts[0] in CATEGORIES
     try:
         async with database.SessionLocal() as db:
+            if section == "localz":
+                if len(parts) != 2 or parts[0] != "r":
+                    return False
+                listing = select(ResourceService.id).where(ResourceService.id == parts[1], ResourceService.status == "active")
+                return (await db.execute(listing)).first() is not None
             if section == "seasonal":
                 if len(parts) != 1:
                     return False
