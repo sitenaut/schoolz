@@ -40,9 +40,6 @@ logger = logging.getLogger(__name__)
 # the day on the scraper the scans and visitors share.
 _TTL_SECONDS = 7 * 24 * 3600
 
-# The Fly scraper holds a request in its queue up to 90s when it's busy
-# (one render at a time per machine); the nightly job waits that out.
-_PATIENT_QUEUE_S = 90
 # path -> (expires at, as time.time(); html). Wall clock, not monotonic,
 # since entries also come from the DB with a rendered_at timestamp. Only the
 # most recently used pages: the table holds all of them, and ~1,000 pages in
@@ -285,7 +282,9 @@ async def _render(path: str, patient: bool = False) -> str:
         # waited out its whole budget and came back an empty shell. Our own
         # site has no bot wall to get past.
         stealth=False,
-        **({"queue_s": _PATIENT_QUEUE_S} if patient else {}),
+        # The nightly job waits out a busy scraper's queue; a crawler's
+        # render takes this process's default (the API's: no wait).
+        **({"queue_s": scraper_client.PATIENT_QUEUE_S} if patient else {}),
     )
 
     html = result["html"]

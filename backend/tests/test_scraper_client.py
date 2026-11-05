@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 import pytest
 
@@ -388,3 +390,79 @@ async def test_a_dead_nurse_link_does_not_fail_the_roster(monkeypatch):
     monkeypatch.setattr(role_pages.scraper_client, "fetch_html", fake_fetch_html)
     people = await role_pages.fetch_role_staff_scraped("https://school.example.org")
     assert [p["full_name"] for p in people] == ["Jane Doe"]
+
+
+async def test_requests_to_an_internal_name_spread_over_its_machines(monkeypatch):
+    # 2026-11-05: getaddrinfo's fixed order sent every request from the
+    # scheduler to one of the Fly scraper's two machines; the other idled.
+    _set_services(monkeypatch, primary=("http://scraper.internal:8765", "pkey"))
+
+    async def two_machines(host, port):
+        return ["fdaa::1", "fdaa::2"]
+
+    monkeypatch.setattr(scraper_client, "_machine_addresses", two_machines)
+    hosts, both_in = [], asyncio.Event()
+
+    async def handler(request):
+        hosts.append(request.url.host)
+        if len(hosts) == 2:
+            both_in.set()
+        await both_in.wait()
+        return httpx.Response(200, json={"html": "<p>ok</p>"})
+
+    _mock_http(monkeypatch, handler)
+    calls = _recorded_calls(monkeypatch)
+    await asyncio.gather(scraper_client.fetch_html("https://a.example/"), scraper_client.fetch_html("https://b.example/"))
+    assert sorted(hosts) == ["fdaa::1", "fdaa::2"]
+    # Still counted as the primary, whichever machine answered.
+    assert [c["scraper"] for c in calls] == ["primary", "primary"]
+
+
+async def test_a_name_with_one_machine_or_none_is_used_as_is(monkeypatch):
+    async def one_machine(host, port):
+        return ["fdaa::1"]
+
+    monkeypatch.setattr(scraper_client, "_machine_addresses", one_machine)
+    async with scraper_client._on_a_machine("http://scraper.internal:8765") as target:
+        assert target == "http://scraper.internal:8765"
+    async with scraper_client._on_a_machine("https://scraper-droplet.example.com") as target:
+        assert target == "https://scraper-droplet.example.com"
+
+
+async def test_the_scheduler_waits_out_a_busy_scrapers_queue(monkeypatch):
+    _set_services(monkeypatch)
+    budgets = []
+
+    async def fake_post_to(service_url, api_key, path, payload, timeout_s):
+        budgets.append(timeout_s)
+        return {"html": "<p>ok</p>", "pages": ["<p>1</p>"]}
+
+    monkeypatch.setattr(scraper_client, "_post_to", fake_post_to)
+    await scraper_client.fetch_html("https://school.example/")
+    await scraper_client.fetch_paginated("https://school.example/roster", ".next")
+    monkeypatch.setattr(scraper_client, "_default_queue_s", 0)  # put back after the test
+    scraper_client.wait_for_busy_scrapers()
+    await scraper_client.fetch_html("https://school.example/")
+    await scraper_client.fetch_paginated("https://school.example/roster", ".next")
+    await scraper_client.fetch_html("https://school.example/", queue_s=0)  # a caller's own choice stands
+    assert [later - before for before, later in zip(budgets[:2], budgets[2:4], strict=True)] == [scraper_client.PATIENT_QUEUE_S] * 2
+    assert budgets[4] == budgets[0]
+
+
+async def test_a_paginated_read_outlasts_the_scrapers_own_deadline(monkeypatch):
+    # The scraper keeps clicking until its own deadline (page, challenge
+    # wait, then click + wait per page); a shorter budget abandoned long
+    # directories mid-read.
+    _set_services(monkeypatch)
+    budgets = []
+
+    async def fake_post_to(service_url, api_key, path, payload, timeout_s):
+        budgets.append(timeout_s)
+        return {"pages": ["<p>1</p>"]}
+
+    monkeypatch.setattr(scraper_client, "_post_to", fake_post_to)
+    await scraper_client.fetch_paginated("https://school.example/roster", ".next")
+    await scraper_client.fetch_paginated("https://school.example/roster", ".next", max_pages=40, wait_after_click_ms=3000)
+    assert budgets[0] > 15 + 20 + 20 * (1.2 + 3) + 30
+    assert budgets[1] > scraper_client._SCRAPER_HARD_DEADLINE_S
+

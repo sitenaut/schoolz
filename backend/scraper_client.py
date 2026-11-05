@@ -1,8 +1,11 @@
 import asyncio
 import base64
+import contextlib
 import html
 import os
+import random
 import re
+import socket
 import time
 
 import httpx
@@ -47,6 +50,76 @@ _semaphore: asyncio.Semaphore | None = None
 _RETRY_STATUSES = {502, 503, 504}
 _ATTEMPTS = 3
 _BACKOFF_S = 2.0
+
+# playwright-scraper's HARD_DEADLINE_S: no render runs longer.
+_SCRAPER_HARD_DEADLINE_S = 180
+
+# A busy scraper holds a request in its queue (playwright-scraper's
+# QUEUE_TIMEOUT_S, 90 s) before rendering it or answering 503. A caller
+# that gives up sooner throws away the render the scraper then starts for
+# it, and asks again: between 3 and 6 AM ET on 2026-11-05, 280 of the 337
+# scan renders on Fly were abandoned that way and the scans fell back to
+# the droplet, where Highland Regional's roster read 80 of its 207 people.
+PATIENT_QUEUE_S = 90
+# Added to every request's budget unless its caller passes queue_s: 0 in
+# the API, where a visitor or a crawler is waiting; the scheduler process
+# calls wait_for_busy_scrapers(), since nobody waits on a scan.
+_default_queue_s: float = 0
+
+
+def wait_for_busy_scrapers() -> None:
+    """Has every request from this process wait out a busy scraper's queue."""
+    global _default_queue_s
+    _default_queue_s = PATIENT_QUEUE_S
+
+
+def _queue_s(queue_s: float | None = None) -> float:
+    return _default_queue_s if queue_s is None else queue_s
+
+
+# Fly's <app>.internal name resolves to every started machine, but
+# getaddrinfo sorts the addresses the same way every time (RFC 6724 prefers
+# the longest prefix shared with our own address), so each process always
+# reached the same one: on 2026-11-05 one of schoolz-scraper's two machines
+# rendered 1,376 pages overnight and the other 12, while scans timed out in
+# the busy one's queue. A request to an .internal host goes to the machine
+# this process has the fewest requests on.
+_MACHINES_TTL_S = 30
+_machines: dict[str, tuple[float, list[str]]] = {}
+_on_machine: dict[str, int] = {}
+
+
+async def _machine_addresses(host: str, port: int) -> list[str]:
+    cached = _machines.get(host)
+    if cached and time.monotonic() - cached[0] < _MACHINES_TTL_S:
+        return cached[1]
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    except OSError:
+        return []
+    addresses = sorted({info[4][0] for info in infos})
+    _machines[host] = (time.monotonic(), addresses)
+    return addresses
+
+
+@contextlib.asynccontextmanager
+async def _on_a_machine(service_url: str):
+    """`service_url`, its .internal host swapped for the address of the
+    machine this process has the fewest requests on."""
+    url = httpx.URL(service_url)
+    addresses = await _machine_addresses(url.host, url.port or 80) if url.host.endswith(".internal") else []
+    if len(addresses) < 2:
+        yield service_url
+        return
+    address = min(addresses, key=lambda a: (_on_machine.get(a, 0), random.random()))
+    _on_machine[address] = _on_machine.get(address, 0) + 1
+    try:
+        yield str(url.copy_with(host=address))
+    except httpx.ConnectError:
+        _machines.pop(url.host, None)  # a machine a deploy replaced: look the name up again
+        raise
+    finally:
+        _on_machine[address] -= 1
 
 
 class ScraperNotConfigured(RuntimeError):
@@ -138,8 +211,8 @@ async def _post_to(service_url: str, api_key: str, path: str, payload: dict, tim
     for attempt in range(_ATTEMPTS):
         started = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=timeout_s) as client:
-                response = await client.post(f"{service_url}{path}", headers={"X-API-Key": api_key}, json=payload)
+            async with _on_a_machine(service_url) as target, httpx.AsyncClient(timeout=timeout_s) as client:
+                response = await client.post(f"{target}{path}", headers={"X-API-Key": api_key}, json=payload)
                 response.raise_for_status()
                 data = response.json()
             _record_call(service_url, path, "ok", started)
@@ -201,16 +274,17 @@ async def fetch_html(
     timeout_ms: int = 15_000,
     block_assets: bool = False,
     stealth: bool | None = None,
-    queue_s: float = 0,
+    queue_s: float | None = None,
 ) -> dict:
     """`stealth`: see _with_stealth. None (the default) is off on the
     primary and the fallbacks' own default; True or False goes to all.
 
     `queue_s`: extra time to wait for a busy scraper, which holds a request
-    in its queue (up to 90s on Fly) before rendering it. A caller that can
-    wait - a nightly job - passes it, so a queued request is answered rather
-    than abandoned at the budget and retried: the prerender warm gave up on
-    538 of 1,344 calls one night, each a render the scraper did anyway."""
+    in its queue (up to 90s) before rendering it, so a queued request is
+    answered rather than abandoned at the budget and retried: the prerender
+    warm gave up on 538 of 1,344 calls one night, each a render the scraper
+    did anyway. None is this process's default (see PATIENT_QUEUE_S): the
+    scheduler's requests wait, the API's don't."""
     # The scraper applies timeout_ms to page.goto AND again to
     # wait_for_selector, so it can legitimately take ~2x that before it
     # answers - a client budget of timeout_ms + 5s (the old value) gave up
@@ -224,7 +298,7 @@ async def fetch_html(
             "block_assets": block_assets,
             "stealth": stealth,
         },
-        timeout_s=timeout_ms / 1000 * 2 + 10 + queue_s,
+        timeout_s=timeout_ms / 1000 * 2 + 10 + _queue_s(queue_s),
     )
 
 
@@ -236,6 +310,7 @@ async def fetch_paginated(
     timeout_ms: int = 15_000,
     block_assets: bool = False,
     stealth: bool | None = None,
+    queue_s: float | None = None,
 ) -> list[str]:
     """Returns one HTML string per page, clicked through in one live
     browser session - for pagination controls that don't respond to a URL
@@ -243,9 +318,13 @@ async def fetch_paginated(
 
     Falls back like fetch_html: staff_roster.scan used to have no fallback
     and was the only kind failing when schoolz's own scraper was overloaded,
-    while the droplet and the Pi sat idle. The extra 30s over the old budget
-    covers playwright-scraper's wait for a Cloudflare challenge to clear."""
-    timeout_budget = (timeout_ms / 1000 * 2 + wait_after_click_ms / 1000 * max_pages) + 40
+    while the droplet and the Pi sat idle. `stealth` and `queue_s` as in
+    fetch_html."""
+    # playwright-scraper's own deadline for the read (the page, its wait for
+    # a Cloudflare challenge to clear, each click and wait, time to answer),
+    # so a long directory isn't abandoned while it's still clicking.
+    deadline_s = min(timeout_ms / 1000 + 20 + max_pages * (wait_after_click_ms / 1000 + 3) + 30, _SCRAPER_HARD_DEADLINE_S)
+    timeout_budget = deadline_s + 10 + _queue_s(queue_s)
     result = await _post_with_fallback(
         "/fetch-paginated",
         {
@@ -279,7 +358,7 @@ async def fetch_raw_bytes(url: str, timeout_ms: int = 45_000) -> bytes:
             try:
                 result = await _post_to(
                     service_url, api_key, "/fetch-raw", {"url": url, "timeout_ms": timeout_ms, "via": "request"},
-                    timeout_s=timeout_ms / 1000 * 2 + 10,
+                    timeout_s=timeout_ms / 1000 * 2 + 10 + _queue_s(),
                 )
             except Exception as exc:
                 if not _is_retryable(exc):
@@ -329,7 +408,7 @@ async def fetch_html_from_any(url: str, accept, timeout_ms: int = 20_000) -> str
                 result = await _post_to(
                     service_url, api_key, "/fetch-html",
                     _with_stealth(service_url, {"url": url, "timeout_ms": timeout_ms, "stealth": None}),
-                    timeout_s=timeout_ms / 1000 * 2 + 30,
+                    timeout_s=timeout_ms / 1000 * 2 + 30 + _queue_s(),
                 )
             except Exception as exc:
                 if not _is_retryable(exc):
@@ -387,7 +466,7 @@ async def fetch_raw_text_from_any(
         for service_url, api_key in services:
             host = httpx.URL(service_url).host
             try:
-                result = await _post_to(service_url, api_key, "/fetch-raw", {"url": url, "timeout_ms": timeout_ms}, timeout_s=timeout_ms / 1000 * 2 + 10)
+                result = await _post_to(service_url, api_key, "/fetch-raw", {"url": url, "timeout_ms": timeout_ms}, timeout_s=timeout_ms / 1000 * 2 + 10 + _queue_s())
             except Exception as exc:  # noqa: BLE001 - try the next service
                 seen.append(f"{host}: {type(exc).__name__}")
                 continue

@@ -1093,13 +1093,69 @@ def own_location_option(html: str, school_names: list[str | None]) -> tuple[str,
     return fullest[0][1:] if len(fullest) == 1 else None
 
 
+# A read with fewer cards than the directory's label promises ("showing
+# 1 - 40 of 207 constituents") is read once more, waiting longer on each
+# page: the droplet, whose Chromium ran playwright-stealth, once read 2 of
+# Highland Regional's 6 pages. Not one that used every page it may - a
+# longer directory can't be read whole. That limit is playwright-scraper's
+# (25); at 20, Eastern Regional's 24 pages were read as 20 for months
+# (240 of its 277 people).
+_MAX_PAGES = 25
+_SLOW_CLICK_MS = 3000  # playwright-scraper's longest wait_after_click_ms
+
+
+async def _click_through(url: str, wait_after_click_ms: int = 1200) -> list[str]:
+    # playwright-stealth off on every scraper, not only the primary: its
+    # patches cut Finalsite directories short (Kresson: 9 of 24 people).
+    return await scraper_client.fetch_paginated(
+        url, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=_MAX_PAGES,
+        wait_after_click_ms=wait_after_click_ms, block_assets=True, stealth=False,
+    )
+
+
+def _card_ids(pages_html: list[str]) -> set[str]:
+    """Every card's constituent id, placeholder cards too: the label counts them."""
+    return {
+        el["data-constituent-id"]
+        for html in pages_html
+        for el in BeautifulSoup(html, "lxml").select(".fsConstituentItem[data-constituent-id]")
+    }
+
+
+async def _read_every_page(url: str, pages_html: list[str]) -> tuple[list[str], tuple[int, int] | None]:
+    """`pages_html` (a read of `url`), or a slower second read of `url` when
+    that one stopped with fewer cards than the directory's label promises.
+    Then (cards read, cards listed) when the read it keeps is still short."""
+    label = _DIRECTORY_TOTAL_RE.search(pages_html[0]) if pages_html else None
+    if not label:
+        return pages_html, None
+    listed, read = int(label.group(1)), len(_card_ids(pages_html))
+    if read < listed and len(pages_html) < _MAX_PAGES:
+        try:
+            again = await _click_through(url, wait_after_click_ms=_SLOW_CLICK_MS)
+        except Exception:  # noqa: BLE001 - the first read stands
+            again = []
+        if len(_card_ids(again)) > read:
+            pages_html, read = again, len(_card_ids(again))
+    return pages_html, None if read >= listed else (read, listed)
+
+
+def _mark_short(people: list[dict], short: tuple[int, int] | None) -> list[dict]:
+    """Tags each person from a read that missed some of the directory, so
+    the scan says so rather than passing part of a roster off as all of it."""
+    if short:
+        for item in people:
+            item["directory_short"] = short
+    return people
+
+
 async def _read_constituent_directory(url: str, school_names: list[str | None]) -> list[dict]:
-    """Every card in a Finalsite directory, clicked through page by page.
-    A directory that lists the whole district (a school subsite's directory
-    redirecting to the district's) is re-read narrowed to this school's
-    Location; the redirect drops a query string, so the filter goes on the
-    final URL."""
-    pages_html = await scraper_client.fetch_paginated(url, next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True)
+    """Every card in a Finalsite directory, clicked through page by page
+    (and read again when that missed some: _read_every_page). A directory
+    that lists the whole district (a school subsite's directory redirecting
+    to the district's) is re-read narrowed to this school's Location; the
+    redirect drops a query string, so the filter goes on the final URL."""
+    pages_html = await _click_through(url)
     location = own_location_option(pages_html[0], school_names) if pages_html else None
     if location:
         try:
@@ -1107,9 +1163,8 @@ async def _read_constituent_directory(url: str, school_names: list[str | None]) 
                 final = str((await client.get(url)).url).split("?")[0]
         except httpx.HTTPError:
             final = url
-        narrowed = await scraper_client.fetch_paginated(
-            f"{final}?const_search_location={location[0]}", next_page_selector=_NEXT_PAGE_SELECTOR, max_pages=20, block_assets=True
-        )
+        narrowed_url = f"{final}?const_search_location={location[0]}"
+        narrowed, short = await _read_every_page(narrowed_url, await _click_through(narrowed_url))
         people = {item["constituent_id"]: item for html in narrowed for item in _parse_page(html)}
         if people:
             if len(people) >= directory_total(narrowed):
@@ -1117,9 +1172,13 @@ async def _read_constituent_directory(url: str, school_names: list[str | None]) 
                 # drop rows the unfiltered district list left behind.
                 for item in people.values():
                     item["location_filter"] = location[1]
-            return list(people.values())
+            return _mark_short(list(people.values()), short)
+        # The district-wide read below is only ever part of the district.
+        short = None
+    else:
+        pages_html, short = await _read_every_page(url, pages_html)
     people = list({item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}.values())
-    return _keep_own_location(people, school_names, complete=len(people) >= directory_total(pages_html))
+    return _mark_short(_keep_own_location(people, school_names, complete=len(people) >= directory_total(pages_html)), short)
 
 
 def _keep_own_location(people: list[dict], school_names: list[str | None], complete: bool) -> list[dict]:
