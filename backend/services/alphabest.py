@@ -91,7 +91,7 @@ def _hours_range(line: str | None) -> str | None:
 
 
 async def fetch_location(url: str) -> dict:
-    async with httpx.AsyncClient(follow_redirects=True, timeout=30, headers={"User-Agent": "Mozilla/5.0"}) as client:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30, headers={"User-Agent": "Mozilla/5.0 (schoolz SACC sync)"}) as client:
         r = await client.get(url)
         r.raise_for_status()
     return parse_location_page(r.text, url)

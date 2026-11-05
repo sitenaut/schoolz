@@ -332,7 +332,7 @@ async def discover_current_issue_url(archive_page_url: str) -> str | None:
     there unrendered. A bot wall or a client-rendered page holds no issue link,
     so it still reaches the scraper."""
     try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}) as client:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (schoolz newsletter sync)"}) as client:
             plain = await client.get(archive_page_url)
         link = _pick_current_issue_link(plain.text) if plain.status_code == 200 else None
     except httpx.HTTPError:
