@@ -166,7 +166,7 @@ async def run_test_fetch(body: TestFetchIn) -> TestFetchOut:
                 # All three expose a custom diagnose() that uses the scraper service.
                 return await source.diagnose()
             async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-                resp = await client.get(url, headers={"User-Agent": "billz-events/1.0"})
+                resp = await client.get(url, headers={"User-Agent": "schoolz-local-events/1.0"})
                 resp.raise_for_status()
                 content = resp.content
             if source_type == "rss":

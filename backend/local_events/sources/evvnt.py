@@ -27,10 +27,7 @@ _API_URL = "https://discovery.evvnt.com/api/events"
 _UTC = ZoneInfo("UTC")
 _ET = ZoneInfo("America/New_York")
 
-_USER_AGENT = (
-    "Mozilla/5.0 (compatible; BillzCalendarBot/1.0; "
-    "+personal family events aggregator)"
-)
+_USER_AGENT = "Mozilla/5.0 (compatible; schoolz-local-events/1.0)"
 
 
 def _to_utc(s: str | None) -> datetime | None:

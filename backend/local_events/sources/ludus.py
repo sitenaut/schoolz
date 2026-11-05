@@ -95,8 +95,11 @@ class LudusSource(Source):
         except httpx.HTTPError as direct_exc:
             # Its Cloudflare turns this request away from a datacenter address
             # (Fly's, in prod) and, since it names schoolz rather than a
-            # browser, from a home one too. The scrapers' browser gets
-            # through: in prod, the droplet's.
+            # browser, from a home one too, so the scrapers' browser is the
+            # only way in. That works only while the site shows it the page:
+            # when it challenges every visitor, no scraper passes and this
+            # fails each run, keeping the events already stored
+            # (docs/LOCAL_EVENTS_SOURCES.md).
             try:
                 html, _ = await fetch_rendered_html(self.url, wait_for_selector="div.show_item")
             except Exception as scraper_exc:  # noqa: BLE001

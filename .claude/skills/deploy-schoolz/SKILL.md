@@ -29,9 +29,10 @@ pull requests whose `backend` and `frontend` checks pass (ruleset `main`).
 
 A run that was cancelled or failed is caught up by the next push, since the
 comparison is against what is running, not the previous push. By hand:
-`gh workflow run deploy.yml -f target=<both|backend|frontend|scraper>` (main
-only; `scraper` is hand-only). `migrate.yml` is by hand only and offers
-`upgrade head`, `current` and `history`.
+`gh workflow run deploy.yml -f target=<both|backend|frontend>` (main only).
+The Fly scraper isn't in it: `scripts/deploy-scraper.sh` (Prod facts below).
+`migrate.yml` is by hand only and offers `upgrade head`, `current` and
+`history`.
 
 **The rollback is proven by a drill**: `gh workflow run deploy.yml -f
 target=backend -f drill=true` (then again with `target=frontend`) deploys,
@@ -128,7 +129,7 @@ Live at `https://schoolz.sitenaut.com` and `https://schoolz-api.sitenaut.com`.
 
 - **The prod DB is the Supabase project misleadingly named `billz-prod`** (billz's real data is in the equally misnamed `clockin`). `DATABASE_URL` must be the **Session Pooler** on `aws-1-us-east-1` — the direct host is IPv6-only on the free tier (unreachable from GitHub runners); `aws-0` answers "tenant not found". RLS on with no policies is correct: nothing uses the Data API.
 - **Custom domains must be Cloudflare DNS-only (grey cloud)**, or Fly certs never verify.
-- **The scraper is on Fly's private network** (`http://schoolz-scraper.internal:8765`): 6PN is IPv6-only, so bind `::`; and it must **never auto-stop** — private traffic bypasses fly-proxy, so nothing wakes it and `.internal` resolves only started machines. It runs the shared playwright-scraper image (`scraper/SOURCE_REF`), not code in this repo, and isn't in `deploy.yml`: ship with `scripts/deploy-scraper.sh` (`--rollback` puts the previous image back). The process command binds a dual-stack socket by hand because uvicorn's `--host ::` is IPv6-only and Fly's checks come over IPv4; 1 GB machines run one render each (`MAX_CONCURRENCY=1`).
+- **The scraper is on Fly's private network** (`http://schoolz-scraper.internal:8765`): 6PN is IPv6-only, so bind `::`; and it must **never auto-stop** — private traffic bypasses fly-proxy, so nothing wakes it and `.internal` resolves only started machines. It runs the shared playwright-scraper image (`scraper/SOURCE_REF`), not code in this repo, and isn't in `deploy.yml`: ship with `scripts/deploy-scraper.sh` (`--rollback` puts the previous image back). It runs `fly deploy` on your machine, so it needs that machine's Fly CLI login; when `fly auth whoami` says the session has expired, ask the owner to run `fly auth login` there. The process command binds a dual-stack socket by hand because uvicorn's `--host ::` is IPv6-only and Fly's checks come over IPv4; 1 GB machines run one render each (`MAX_CONCURRENCY=1`).
 - **`schoolz-api` needs `--proxy-headers --forwarded-allow-ips='*'`** — Fly forwards plain HTTP, so `Location` headers came out `http://` and clients dropped POST bodies on the downgrade. `*` is safe; only fly-proxy reaches the port.
 - **One-off prod scripts** run on the `scheduler` machine (always on), file under `/app`; the filesystem resets on deploy. Never run long scripts on an `app` machine over SSH — SSH doesn't count as traffic and it auto-stops mid-run. `fly ssh console` is intermittently unavailable; retry, don't diagnose.
 - **Private preschools' documents/school-info/staff-roster scans are disabled** — chain websites, never one success, just burst load.

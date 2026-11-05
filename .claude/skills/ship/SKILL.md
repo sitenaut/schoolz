@@ -69,7 +69,7 @@ changed since each app's running commit (a backend deploy migrates first, in
 Fly's release step), with a smoke check and automatic rollback (see
 `deploy-schoolz`).
 Find it with `gh run list --workflow deploy.yml --branch main --limit 3`. The
-scraper deploys by hand only (`-f target=scraper`).
+Fly scraper isn't in it: it ships by hand with `scripts/deploy-scraper.sh`.
 
 Wait quietly, one background command per run (never `gh run watch` under
 Monitor, and no chained `sleep`):
