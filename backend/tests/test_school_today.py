@@ -326,6 +326,47 @@ async def test_a_districts_closure_that_says_why_beats_a_schools_bare_copy():
         assert today.status == "open"
 
 
+@pytest.mark.anyio
+async def test_days_off_reach_past_the_week_strip_and_say_why():
+    # On Friday Oct 30 the strip is that week, Oct 26-30; the NJEA closure
+    # (Nov 5-6) is inside the 7-day alert window, so the day-off card can
+    # say so ahead of time.
+    import database
+    from models import District, School
+    from services.school_today import build_today
+
+    async with database.SessionLocal() as db:
+        tag = uuid.uuid4().hex[:8]
+        district = District(name=f"Day Off District {tag}")
+        db.add(district)
+        await db.flush()
+        school = School(name=f"Day Off School {tag}", slug=f"day-off-{tag}", district_id=district.id, school_type="elementary", latitude=39.93, longitude=-75.02)
+        db.add(school)
+        await db.flush()
+        db.add(
+            SchoolContentItem(
+                scope="district",
+                district_id=district.id,
+                category="event",
+                title="SCHOOLS CLOSED - NJEA Convention",
+                start_date=datetime(2026, 11, 5, tzinfo=_ET),
+                end_date=datetime(2026, 11, 7, tzinfo=_ET),
+                is_all_day=True,
+            )
+        )
+        await db.flush()
+
+        friday = await build_today(db, school, date(2026, 10, 30))
+        assert [str(d.date) for d in friday.week][-1] == "2026-10-30"
+        assert [(d.date, d.label) for d in friday.days_off] == [("2026-11-05", "NJEA Convention"), ("2026-11-06", "NJEA Convention")]
+        assert (friday.school.latitude, friday.school.longitude) == (39.93, -75.02)
+
+        on_the_day = await build_today(db, school, date(2026, 11, 5))
+        assert [d.date for d in on_the_day.days_off] == ["2026-11-05", "2026-11-06"]
+        # Weekends aren't days off school, and the window ends a week out.
+        assert (await build_today(db, school, date(2026, 10, 28))).days_off == []
+
+
 def test_a_title_that_says_only_applies_to_the_schools_it_names():
     from services.district_calendar import school_types_from_title
 

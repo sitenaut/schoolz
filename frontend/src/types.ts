@@ -64,6 +64,9 @@ export type School = {
   logo_backing: "none" | "light" | "dark" | null;
   bell_periods: Partial<Record<string, BellPeriod[]>> | null;
   created_at: string;
+  // Geocoded for its weather; where the day-off card looks for things to do.
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type BellPeriod = { name: string; start: string; end: string };
@@ -380,6 +383,8 @@ export type SchoolToday = {
   upcoming: SchoolContentItem[];
   alerts: SchoolContentItem[];
   week: TodayDay[];
+  // Closed weekdays from today through the next week, each with its reason.
+  days_off?: { date: string; label: string | null }[];
 };
 
 export type ScheduledJob = {

@@ -35,6 +35,7 @@ from fastapi import FastAPI
 
 from services.chat_search_words import STOPWORDS, own_terms, search_terms
 from services.geocoding import geocode_name
+from services.local_event_picks import CLASS_CATEGORIES, is_class, is_explicitly_free
 
 logger = logging.getLogger(__name__)
 
@@ -157,19 +158,9 @@ _LOCAL_EVENTS_TOOL: tuple[str, dict[str, Any], str] = (
     "/local-events",
 )
 
-# Classes are usually paid (the Y's are member classes), and a weekend would
-# otherwise be mostly "Open Gym" and "Aqua Fit". Product rule: a class is
-# only shown with explicit evidence it costs nothing - never on "no price
-# listed", which for a class almost always means "ask at the desk".
+# Classes only with evidence they're free: the rule and its reasons are in
+# services/local_event_picks.py, shared with the Today page's day-off picks.
 _ROUTINE_CLASS_TAGS = {"group-exercise", "open-gym", "gym", "pool", "swim", "fitness", "ymca", "child-care", "class"}
-_CLASS_CATEGORIES = {"group-exercise", "open-gym", "gym", "pool", "swim", "fitness", "ymca", "child-care", "class", "classes-&-lessons", "exercise"}
-_CLASS_TITLE_RE = re.compile(r"\b(class(es)?|lessons?|courses?|workshops?|clinics?|bootcamp)\b", re.I)
-# "gluten-free", "sugar-free", "feel free", "free-throw" aren't about price.
-_FREE_TEXT_RE = re.compile(
-    r"(?<![-\w])(?<!feel )free\b(?!-)|\bno (cost|charge|fee)s?\b|\bcomplimentary\b|\bfree of charge\b"
-    r"|\bwithout charge\b|\bat no cost\b|\$0(\.00)?\b",
-    re.I,
-)
 _KID_CATEGORIES = {"family", "kids"}
 _MAX_EVENTS = 40
 # A query is matched word by word (any word) and ranked, because people name
@@ -400,7 +391,7 @@ class LocalEventTools:
         # almost entirely classes, and hiding them made the assistant claim
         # it couldn't look the Y up at all.
         asked = {c.strip() for c in categories.split(",") if c.strip()}
-        explicit = bool(words) or bool(asked & _CLASS_CATEGORIES)
+        explicit = bool(words) or bool(asked & CLASS_CATEGORIES)
         if not explicit:
             events = [e for e in events if not _is_class(e) or _is_explicitly_free(e)]
 
@@ -520,13 +511,11 @@ def _ranked_result(events: list[dict], words: list[str], town: str) -> dict[str,
 
 
 def _is_class(e: dict) -> bool:
-    return bool(set(e["categories"]) & _CLASS_CATEGORIES) or bool(_CLASS_TITLE_RE.search(e["title"]))
+    return is_class(e["title"], e["categories"])
 
 
 def _is_explicitly_free(e: dict) -> bool:
-    if e["is_free"] or (e["price_max"] is not None and float(e["price_max"]) == 0):
-        return True
-    return bool(_FREE_TEXT_RE.search(f"{e['title']} {e['description'] or ''}"))
+    return is_explicitly_free(e["is_free"], e["price_max"], e["title"], e["description"])
 
 
 def _compact_event(e: dict) -> dict:

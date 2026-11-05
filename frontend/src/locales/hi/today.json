@@ -162,5 +162,20 @@
   "Upload a newsletter or flyer": "न्यूज़लेटर या फ़्लायर अपलोड करें",
   "Got one we're missing? Send a photo or PDF": "कोई ऐसा है जो हमारे पास नहीं? फ़ोटो या PDF भेजें",
   "Continue ({{n}})": "जारी रखें ({{n}})",
-  "to see their lunch menus here.": "ताकि यहाँ उनके लंच मेनू देख सकें।"
+  "to see their lunch menus here.": "ताकि यहाँ उनके लंच मेनू देख सकें।",
+  "No school today": "आज स्कूल नहीं है",
+  "No school tomorrow": "कल स्कूल नहीं है",
+  "No school {{day}}": "{{day}} को स्कूल नहीं है",
+  "No school today. What can we do with the kids near {{place}}?": "आज स्कूल नहीं है। {{place}} के पास बच्चों के साथ क्या कर सकते हैं?",
+  "No school today. What can a teenager do near {{place}}?": "आज स्कूल नहीं है। {{place}} के पास एक किशोर क्या कर सकता है?",
+  "No school on {{day}}. What can we do with the kids near {{place}}?": "{{day}} को स्कूल नहीं है। {{place}} के पास बच्चों के साथ क्या कर सकते हैं?",
+  "No school on {{day}}. What can a teenager do near {{place}}?": "{{day}} को स्कूल नहीं है। {{place}} के पास एक किशोर क्या कर सकता है?",
+  "Things to do near {{place}}": "{{place}} के पास करने लायक चीज़ें",
+  "Things to do nearby": "आस-पास करने लायक चीज़ें",
+  "Nothing on the calendar for kids nearby yet - ask schoolz for ideas.": "आस-पास बच्चों के लिए अभी कैलेंडर पर कुछ नहीं है - सुझावों के लिए schoolz से पूछें।",
+  "All day": "पूरे दिन",
+  "{{n}} mi": "{{n}} मील",
+  "All local events today": "आज के सभी स्थानीय कार्यक्रम",
+  "All local events on {{day}}": "{{day}} के सभी स्थानीय कार्यक्रम",
+  "Ask schoolz what to do": "schoolz से पूछें क्या करें"
 }

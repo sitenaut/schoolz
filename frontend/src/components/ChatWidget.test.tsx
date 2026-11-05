@@ -16,6 +16,7 @@ vi.mock("../api", () => ({
 }));
 
 import { ChatWidget } from "./ChatWidget";
+import { openChat } from "../lib/chatLauncher";
 
 // jsdom has no layout, so no scrolling.
 Element.prototype.scrollTo = () => {};
@@ -55,5 +56,14 @@ describe("ChatWidget", () => {
     await ask("Bell times?");
     await act(async () => replyTo({ reply: "School starts at 8:15.", history: [], escalated: false }));
     expect(screen.getByText("School starts at 8:15.")).toBeTruthy();
+  });
+
+  it("opens from a page's button with its question typed in, not sent", async () => {
+    auth = { user: null, loading: false };
+    render(<ChatWidget />);
+    expect(screen.queryByRole("textbox")).toBeNull();
+    act(() => openChat("No school on Friday. What can we do with the kids near Haddonfield?", "day_off"));
+    expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("No school on Friday. What can we do with the kids near Haddonfield?");
+    expect(screen.queryByText("No school on Friday. What can we do with the kids near Haddonfield?")).toBeNull();
   });
 });

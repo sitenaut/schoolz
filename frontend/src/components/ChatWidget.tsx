@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Modal } from "./ui/Modal";
 import { ChatAvatar } from "./ChatAvatar";
 import { ChatText, toPlainText } from "../lib/chatFormat";
+import { onOpenChat } from "../lib/chatLauncher";
 import { IconCheck, IconCopy, IconRefresh, IconSend, IconShare } from "./icons";
 import { useTranslation } from "react-i18next";
 
@@ -85,6 +86,18 @@ export function ChatWidget() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, sending]);
+
+  // A page's "ask about this" button (lib/chatLauncher.ts): open with its
+  // question in the box, not sent.
+  useEffect(
+    () =>
+      onOpenChat(({ draft, from }) => {
+        setInput(draft);
+        setOpen(true);
+        trackEvent("chat_opened", { from });
+      }),
+    [],
+  );
 
   async function send() {
     const text = input.trim();

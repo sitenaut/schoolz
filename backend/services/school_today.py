@@ -35,6 +35,7 @@ from schemas import (
     SchoolTodayOut,
     TodayContactOut,
     TodayCurrentClassOut,
+    TodayDayOffOut,
     TodayDayOut,
     TodayKidSpecialOut,
     TodayLunchOut,
@@ -492,10 +493,14 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         label = day_status(d)
         return next((i for i in by_day.get(d, []) if not other_grades_only(i.title, school.school_type) and classify_day([i.title]) == label), None)
 
+    # Closed weekdays from today through the alert window, past the week strip
+    # (on a Friday, Monday's closure), for the Today page's day-off card.
+    days_off = [d for d in (today + timedelta(days=n) for n in range(_ALERT_WINDOW_DAYS + 1)) if day_status(d)[0] == "closed"]
+
     localized: dict[str, Localized] = {}
     if lang != "en":
         shown = {i.id: i for i in [*upcoming_items, *alert_items, *(i for v in week_items.values() for i in v)]}
-        for d in {today, *week}:
+        for d in {today, *week, *days_off}:
             src = status_source(d, day_status(d)[0])
             if src:
                 shown[src.id] = src
@@ -605,4 +610,5 @@ async def build_today(db: AsyncSession, school: School, today: date | None = Non
         upcoming=upcoming,
         alerts=alerts,
         week=week_out,
+        days_off=[TodayDayOffOut(date=d.isoformat(), label=status_of(d)[1]) for d in days_off],
     )

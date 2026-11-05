@@ -162,5 +162,20 @@
   "Upload a newsletter or flyer": "Sube un boletín o volante",
   "Got one we're missing? Send a photo or PDF": "¿Tienes uno que nos falta? Envía una foto o un PDF",
   "Continue ({{n}})": "Continuar ({{n}})",
-  "to see their lunch menus here.": "para ver aquí sus menús del almuerzo."
+  "to see their lunch menus here.": "para ver aquí sus menús del almuerzo.",
+  "No school today": "Hoy no hay clases",
+  "No school tomorrow": "Mañana no hay clases",
+  "No school {{day}}": "No hay clases el {{day}}",
+  "No school today. What can we do with the kids near {{place}}?": "Hoy no hay clases. ¿Qué podemos hacer con los niños cerca de {{place}}?",
+  "No school today. What can a teenager do near {{place}}?": "Hoy no hay clases. ¿Qué puede hacer un adolescente cerca de {{place}}?",
+  "No school on {{day}}. What can we do with the kids near {{place}}?": "No hay clases el {{day}}. ¿Qué podemos hacer con los niños cerca de {{place}}?",
+  "No school on {{day}}. What can a teenager do near {{place}}?": "No hay clases el {{day}}. ¿Qué puede hacer un adolescente cerca de {{place}}?",
+  "Things to do near {{place}}": "Qué hacer cerca de {{place}}",
+  "Things to do nearby": "Qué hacer cerca",
+  "Nothing on the calendar for kids nearby yet - ask schoolz for ideas.": "Todavía no hay nada en el calendario para niños cerca; pida ideas a schoolz.",
+  "All day": "Todo el día",
+  "{{n}} mi": "{{n}} mi",
+  "All local events today": "Todos los eventos locales de hoy",
+  "All local events on {{day}}": "Todos los eventos locales del {{day}}",
+  "Ask schoolz what to do": "Pregunte a schoolz qué hacer"
 }

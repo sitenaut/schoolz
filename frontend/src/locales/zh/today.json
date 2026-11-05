@@ -162,5 +162,20 @@
   "Upload a newsletter or flyer": "上传通讯或传单",
   "Got one we're missing? Send a photo or PDF": "有我们遗漏的吗？发送照片或 PDF",
   "Continue ({{n}})": "继续（{{n}}）",
-  "to see their lunch menus here.": "即可在此查看午餐菜单。"
+  "to see their lunch menus here.": "即可在此查看午餐菜单。",
+  "No school today": "今天不上课",
+  "No school tomorrow": "明天不上课",
+  "No school {{day}}": "{{day}}不上课",
+  "No school today. What can we do with the kids near {{place}}?": "今天不上课。{{place}}附近有什么适合带孩子去做的事？",
+  "No school today. What can a teenager do near {{place}}?": "今天不上课。{{place}}附近有什么适合青少年做的事？",
+  "No school on {{day}}. What can we do with the kids near {{place}}?": "{{day}}不上课。{{place}}附近有什么适合带孩子去做的事？",
+  "No school on {{day}}. What can a teenager do near {{place}}?": "{{day}}不上课。{{place}}附近有什么适合青少年做的事？",
+  "Things to do near {{place}}": "{{place}}附近的活动",
+  "Things to do nearby": "附近的活动",
+  "Nothing on the calendar for kids nearby yet - ask schoolz for ideas.": "附近暂时还没有适合孩子的活动——可以问问 schoolz 有什么好主意。",
+  "All day": "全天",
+  "{{n}} mi": "{{n}} 英里",
+  "All local events today": "今天的全部本地活动",
+  "All local events on {{day}}": "{{day}}的全部本地活动",
+  "Ask schoolz what to do": "问问 schoolz 可以做什么"
 }
