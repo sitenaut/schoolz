@@ -229,6 +229,34 @@ async def test_rss_via_scraper_reads_the_feed_out_of_chromiums_text_viewer(monke
 
 
 @pytest.mark.anyio
+async def test_raw_fetch_asks_every_scraper_for_stealth_off(monkeypatch):
+    """The least evasive fetch first: the Pi gets past these feeds' Cloudflare
+    without playwright-stealth, so no scraper is asked to run it."""
+    from local_events.sources import scraper
+
+    sent = []
+
+    def handler(request):
+        sent.append((request.url.host, json.loads(request.content)))
+        if request.url.host == "pi.test":
+            return httpx.Response(200, json={"body": "<html><title>Just a moment...</title></html>"})
+        return httpx.Response(200, json={"body": "BEGIN:VCALENDAR"})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(scraper.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler)))
+    monkeypatch.setenv("RESIDENTIAL_SCRAPER_URL", "https://pi.test")
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_URL", "https://droplet.test")
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_KEY", "k")
+    monkeypatch.delenv("SCRAPER_URL", raising=False)
+
+    body = await scraper.fetch_raw_via_scraper("https://town.test/calendar.ics", prefer_residential=True)
+
+    assert body == "BEGIN:VCALENDAR"
+    asked = {"url": "https://town.test/calendar.ics", "stealth": False}
+    assert sent == [("pi.test", asked), ("droplet.test", asked)]
+
+
+@pytest.mark.anyio
 async def test_tribe_via_scraper_reads_json_and_falls_back_to_library_venue(monkeypatch):
     soon = _soon(2).strftime("%Y-%m-%d %H:%M:%S")
     body = json.dumps({"events": [{"id": 9, "title": "Story Time", "status": "publish", "start_date": soon, "end_date": soon,
