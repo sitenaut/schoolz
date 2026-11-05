@@ -1,6 +1,6 @@
 {
   "exported_at": "2026-09-30T12:00:00Z",
-  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County, The Promenade at Sagemore, WXPN, Do215)",
+  "source": "onboarding: local events sources (Merchantville, Haddon Heights, Camden County, The Promenade at Sagemore, WXPN, Do215); Indian Acres Tree Farm (2026-11-05)",
   "districts": [],
   "schools": [],
   "smore_newsletters": [],
@@ -259,6 +259,22 @@
           "days_ahead": 90,
           "default_categories": [
             "library"
+          ]
+        }
+      ],
+      "event_page_sources": [
+        {
+          "name": "indian_acres_tree_farm",
+          "urls": [
+            "https://indianacrestreefarm.com/winter-wonderland-trail"
+          ],
+          "venue_name": "Indian Acres Tree Farm",
+          "venue_address": "111 Tuckerton Rd, Medford, NJ 08055",
+          "location": "Medford, NJ",
+          "default_categories": [
+            "medford",
+            "family",
+            "outdoor"
           ]
         }
       ]

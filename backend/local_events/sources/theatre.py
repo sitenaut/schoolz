@@ -321,7 +321,10 @@ class TheatreSiteSource(Source):
         started = time.perf_counter()
         response = await client.messages.create(
             model=MODEL,
-            max_tokens=4000,
+            # A page that writes out every night of a season (Indian Acres'
+            # light trail: 37 dates, one entry each) can run past 4,000, and
+            # an answer cut off there is never stored, so it's bought every run.
+            max_tokens=16000,
             **haiku.CALL_KWARGS,
             system=self.SYSTEM.format(today=date.today().isoformat()),
             tools=[self.TOOL],

@@ -23,6 +23,11 @@ USER_AGENT = f"schoolz/1.0 ({os.getenv('NWS_CONTACT') or 'https://schoolz.sitena
 _ZIP_RE = re.compile(r"\b(\d{5})(?:-\d{4})?\b")
 _ZIP_ONLY_RE = re.compile(r"^\s*(\d{5})(?:-\d{4})?\s*$")
 _CENSUS_URL = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+# Census answers a longer address with a 400, which locate.py takes for an
+# outage: the event is asked about again every run and never placed. A page
+# reader's venue plus its town can run that long ("Winter Wonderland
+# Illuminated Walking Trail, Indian Acres Tree Farm, 111 Tuckerton Rd, ...").
+_CENSUS_MAX_CHARS = 100
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 
@@ -69,9 +74,11 @@ async def geocode(client: httpx.AsyncClient, address: str) -> tuple[float, float
     miles - but some real addresses aren't in Census's street ranges at all
     (confirmed: "300 Old Orchard Road, Cherry Hill") and some scans only
     captured the town ("Westmont, NJ")."""
-    resp = await client.get(_CENSUS_URL, params={"address": address, "benchmark": "Public_AR_Current", "format": "json"})
-    resp.raise_for_status()
-    matches = resp.json().get("result", {}).get("addressMatches") or []
+    matches = []
+    if len(address) <= _CENSUS_MAX_CHARS:
+        resp = await client.get(_CENSUS_URL, params={"address": address, "benchmark": "Public_AR_Current", "format": "json"})
+        resp.raise_for_status()
+        matches = resp.json().get("result", {}).get("addressMatches") or []
     if matches:
         coords = matches[0]["coordinates"]
         return round(coords["y"], 4), round(coords["x"], 4)
