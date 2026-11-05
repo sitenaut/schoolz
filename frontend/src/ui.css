@@ -1849,11 +1849,31 @@ button.link-card:disabled {
   flex: none;
 }
 .seasonal-banner small,
-.seasonal-guide small {
+.seasonal-guide small,
+.survey-cta small {
   display: block;
   color: var(--ink-2);
   font-size: 12.5px;
   margin-top: 2px;
+}
+/* The NJ funding survey banner (FundingSurveyBanner.tsx): outlined like
+   Today's upload card, since it asks the visitor for something, with room on
+   the right for its close button. */
+.survey-banner {
+  position: relative;
+  margin: 0 0 14px;
+}
+.link-card.survey-cta {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  padding-right: 44px;
+}
+.btn.icon.survey-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border-color: transparent;
+  background: transparent;
 }
 .seasonal-guides {
   display: grid;
