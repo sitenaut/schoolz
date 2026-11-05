@@ -1,15 +1,19 @@
 import os
+import re
 from datetime import datetime
 from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import database
 import services.prerender as prerender
 from database import get_db
-from models import DistrictBudget, School, SchoolContentItem, StateDistrict
+from models import DistrictBudget, School, SchoolContentItem, SeasonalAttraction, SeasonalGuide, StateDistrict
+from resources.categories import CATEGORIES
+from routers.seasonal_guides import today_et
+from services.class_years import CLASS_PAGE_SOURCES, current_grad_years
 from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(tags=["seo"])
@@ -23,7 +27,18 @@ _SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "36
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)
 # isn't indexable content and is kept out of the sitemap and out of
 # robots.txt (frontend/public/robots.txt).
-_STATIC_PATHS = ["/", "/schools", "/budgets", "/directory", "/calendar", "/lunch", "/local", "/privacy", "/contact", "/upload", "/chcomms", "/survey"]
+#
+# Localz lists its home, provider and category pages, not yet each listing
+# (/localz/r/<id>): every path here is a render for the nightly warm job, and
+# there are thousands of listings. Crawlers find the ones a category page
+# shows before "Show more". A registered family child care listing is
+# someone's home, so its page tells crawlers not to index it
+# (ResourceDetailOut.indexable).
+_STATIC_PATHS = [
+    "/", "/schools", "/budgets", "/directory", "/calendar", "/lunch", "/local", "/localz", "/localz/providers",
+    *(f"/localz/{key}" for key in CATEGORIES),
+    "/privacy", "/backpack-capture/privacy", "/contact", "/upload", "/chcomms", "/survey",
+]
 
 # Only pages with a real translation get a /<lang> entry (and hreflang
 # pairing) - listing an English page under /es would invite duplicate-content
@@ -32,7 +47,8 @@ _TRANSLATED_STATIC = {"/", "/schools", "/budgets", "/directory", "/lunch", "/cal
 # A district's budget page is translated too, but listed in English only:
 # ~585 pages times five languages would be most of the sitemap, and every
 # one a render for the nightly warm job, for searches that come in English.
-_TRANSLATED_PREFIX = "/schools/"
+# A class page (/schools/<slug>/class-of-2027) isn't translated.
+_TRANSLATED_SCHOOL_PATH = re.compile(r"^/schools/[^/]+(?:/calendar)?$")
 _ALT_LANGS = ("es", "zh", "ko", "hi")
 
 
@@ -41,7 +57,7 @@ def _lang_path(path: str, lang: str) -> str:
 
 
 def _is_translated(path: str) -> bool:
-    return path in _TRANSLATED_STATIC or path.startswith(_TRANSLATED_PREFIX)
+    return path in _TRANSLATED_STATIC or bool(_TRANSLATED_SCHOOL_PATH.match(path))
 
 
 def _variants(path: str) -> list[str]:
@@ -93,6 +109,44 @@ async def budget_lastmods(db: AsyncSession) -> dict[str, datetime]:
     return dict(rows)
 
 
+async def season_paths(db: AsyncSession) -> list[str]:
+    """A page for each season with something on it today: an attraction not
+    over yet or a guide in its window, as the season's own page reads them."""
+    today = today_et()
+    seasons = union(
+        select(SeasonalAttraction.season).where(SeasonalAttraction.ends_on >= today),
+        select(SeasonalGuide.season).where(SeasonalGuide.starts_on <= today, SeasonalGuide.ends_on >= today),
+    )
+    return [f"/seasonal/{season}" for season in sorted((await db.execute(seasons)).scalars().all())]
+
+
+async def class_page_lastmods(db: AsyncSession) -> dict[str, datetime]:
+    """path -> newest item on it, for each enrolled class's page with
+    anything on it. Every high school has four, but most show nothing (no
+    class-page source is read there), and an empty page is no search result.
+    Same items as routers/class_years.py:list_class_year_content."""
+    years = current_grad_years()
+    rows = (
+        await db.execute(
+            select(School.slug, SchoolContentItem.applies_to_grad_years, SchoolContentItem.extracted_at)
+            .join(School, School.id == SchoolContentItem.school_id)
+            .where(
+                School.school_type == "high",
+                School.slug.is_not(None),
+                SchoolContentItem.is_current.is_(True),
+                SchoolContentItem.source.in_(CLASS_PAGE_SOURCES),
+            )
+        )
+    ).all()
+    lastmods: dict[str, datetime] = {}
+    for slug, applies_to, extracted_at in rows:
+        for year in years:
+            if not applies_to or year in applies_to:
+                path = f"/schools/{slug}/class-of-{year}"
+                lastmods[path] = max(extracted_at, lastmods.get(path, extracted_at))
+    return dict(sorted(lastmods.items()))
+
+
 def _school_paths(slug: str) -> tuple[str, str]:
     """A school's page and its own calendar page (/calendar?school= used to be
     the only way in, and every one of those canonicalized to /calendar)."""
@@ -106,15 +160,18 @@ async def sitemap_paths(db: AsyncSession) -> list[str]:
     slugs = [s for s in (await db.execute(select(School.slug).order_by(School.name))).scalars().all() if s]
     pages = [f"/schools/{slug}" for slug in slugs]
     calendars = [_school_paths(slug)[1] for slug in slugs]
+    classes = list(await class_page_lastmods(db))
     budgets = [f"/budgets/{slug}" for slug in await budget_lastmods(db)]
-    return [v for path in _STATIC_PATHS + pages + calendars for v in _variants(path)] + budgets
+    undated = _STATIC_PATHS + await season_paths(db)
+    return [v for path in undated + pages + calendars for v in _variants(path)] + classes + budgets
 
 
 async def _sitemap_xml(db: AsyncSession) -> bytes:
     base_url = os.getenv("PUBLIC_WEB_URL", "http://localhost:5173").rstrip("/")
     lastmods = await school_lastmods(db)
-    entries = "".join(_entry(base_url, path, None) for path in _STATIC_PATHS)
+    entries = "".join(_entry(base_url, path, None) for path in _STATIC_PATHS + await season_paths(db))
     entries += "".join(_entry(base_url, path, mod) for slug, mod in lastmods.items() for path in _school_paths(slug))
+    entries += "".join(_entry(base_url, path, mod) for path, mod in (await class_page_lastmods(db)).items())
     entries += "".join(_entry(base_url, f"/budgets/{slug}", mod) for slug, mod in (await budget_lastmods(db)).items())
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>'

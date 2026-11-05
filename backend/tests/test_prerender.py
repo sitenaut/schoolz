@@ -290,6 +290,27 @@ def test_local_events_page_is_prerendered():
 
 
 @pytest.mark.anyio
+async def test_localz_pages_and_its_active_listings_are_rendered(monkeypatch):
+    import database
+    from models import ResourceService
+
+    calls = await _fake_render(monkeypatch)
+    async with database.SessionLocal() as db:
+        active = ResourceService(source="nj211", source_record_id="prerender-active", name="A pantry")
+        hidden = ResourceService(source="nj211", source_record_id="prerender-hidden", name="Taken down", status="hidden")
+        db.add_all([active, hidden])
+        await db.commit()
+    # "/localz/" is where localz.sitenaut.com redirects.
+    for path in ("/localz", "/localz/", "/es/localz/food", "/localz/providers", f"/localz/r/{active.id}"):
+        assert await prerender.get_prerendered_html(path) == "<html>rendered</html>"
+    assert len(calls) == 5
+    for path in (f"/localz/r/{hidden.id}", "/localz/r/no-such-listing", "/localz/r/", "/localz/no-such-category", "/localz/providers/portal"):
+        with pytest.raises(prerender.PathNotAllowed):
+            await prerender.get_prerendered_html(path)
+    assert len(calls) == 5
+
+
+@pytest.mark.anyio
 async def test_rendered_at_reads_each_stored_snapshots_time():
     await _store_old("/lunch", hours=1)
     got = await prerender.rendered_at(["/", "/lunch"])

@@ -72,7 +72,12 @@ function ResourceView({ resourceId }: { resourceId: string | undefined }) {
 
   return (
     <article className="localz-detail">
-      <SeoHead title={`${r.name}${org ? ` · ${org}` : ""} · Localz`} description={r.description ?? t("Hours, phone number and how to get help.")} path={`/localz/r/${r.id}`} />
+      <SeoHead
+        title={`${r.name}${org ? ` · ${org}` : ""} · Localz`}
+        description={r.description ?? t("Hours, phone number and how to get help.")}
+        path={`/localz/r/${r.id}`}
+        noindex={r.indexable === false}
+      />
       <Link className="localz-back-link" to={category ? `/localz/${category.key}` : "/localz"}>
         <IconChevronLeft />
         {category ? t(category.label) : t("All kinds of help")}

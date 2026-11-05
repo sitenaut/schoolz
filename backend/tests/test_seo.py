@@ -147,3 +147,73 @@ async def test_sitemap_lists_each_district_budget_page_in_english_only():
 
         assert await prerender._names_something("/budgets/seo-test-district")
         assert not await prerender._names_something("/budgets/no-such-district")
+
+
+@pytest.mark.anyio
+async def test_sitemap_lists_localz_in_english_but_no_listing():
+    from models import ResourceService
+
+    async with database.SessionLocal() as db:
+        listing = ResourceService(source="nj211", source_record_id="seo-test-1", name="Seo Test Pantry", categories=["food"])
+        db.add(listing)
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+    for path in ("/localz", "/localz/providers", "/localz/food", "/localz/everyday-needs", "/backpack-capture/privacy"):
+        assert f"<loc>{_WEB_URL}{path}</loc></url>" in res.text
+    assert f"{_WEB_URL}/es/localz" not in res.text
+    assert "/localz/r/" not in res.text
+
+
+@pytest.mark.anyio
+async def test_sitemap_lists_a_season_until_it_is_over():
+    from datetime import date, timedelta
+
+    from models import SeasonalAttraction, SeasonalGuide
+    from routers.seasonal_guides import today_et
+
+    today = today_et()
+    async with database.SessionLocal() as db:
+        place = {"kind": "lights", "name": "A light show", "address": "1 Main St", "town": "Medford", "url": "https://example.org"}
+        db.add(SeasonalAttraction(season="seotestrunning", starts_on=today + timedelta(days=10), ends_on=today + timedelta(days=40), **place))
+        db.add(SeasonalAttraction(season="seotestover", starts_on=date(2020, 10, 1), ends_on=today - timedelta(days=1), **place))
+        db.add(SeasonalGuide(season="seotestguide", title="Guide", publisher="A publisher", url="https://example.org/guide",
+                             starts_on=today - timedelta(days=1), ends_on=today + timedelta(days=1)))
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+    assert f"<loc>{_WEB_URL}/seasonal/seotestrunning</loc></url>" in res.text
+    assert f"<loc>{_WEB_URL}/seasonal/seotestguide</loc></url>" in res.text
+    assert "/seasonal/seotestover" not in res.text
+
+
+@pytest.mark.anyio
+async def test_sitemap_lists_only_class_pages_with_something_on_them():
+    from datetime import UTC, datetime
+
+    from services.class_years import current_grad_years
+
+    seniors, juniors, *_ = current_grad_years()
+    async with database.SessionLocal() as db:
+        busy = School(name="Seo Busy High", slug="seo-busy-high", school_type="high")
+        quiet = School(name="Seo Quiet High", slug="seo-quiet-high", school_type="high")
+        db.add_all([busy, quiet])
+        await db.flush()
+        db.add(SchoolContentItem(scope="school", school_id=busy.id, source="hs_announcements", category="event", title="Senior trip",
+                                 applies_to_grad_years=[seniors], extracted_at=datetime(2031, 5, 6, tzinfo=UTC)))
+        # A newsletter item lives on the school page, not a class page.
+        db.add(SchoolContentItem(scope="school", school_id=quiet.id, source="newsletter", category="event", title="Bake sale"))
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.get("/sitemap.xml")
+    assert f"<loc>{_WEB_URL}/schools/seo-busy-high/class-of-{seniors}</loc><lastmod>2031-05-06</lastmod></url>" in res.text
+    assert f"/schools/seo-busy-high/class-of-{juniors}" not in res.text
+    assert "/schools/seo-quiet-high/class-of-" not in res.text
+    # Class pages aren't translated.
+    assert f"/es/schools/seo-busy-high/class-of-{seniors}" not in res.text

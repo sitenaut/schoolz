@@ -84,6 +84,13 @@ TYPE_TAXONOMY = {
     "home": ("PH-1250", "Family Child Care"),
     "camp": ("PL-6400.1500-820", "Summer Camps"),
 }
+
+
+def is_home_listing(source: str, taxonomy_codes: list[str]) -> bool:
+    """A stored listing for a registered family child care home."""
+    return source == SOURCE and TYPE_TAXONOMY["home"][0] in taxonomy_codes
+
+
 _KEEP_UPPER = {"LLC", "INC", "YMCA", "YWCA", "JCC", "ABC", "NJ", "II", "III", "IV", "USA", "KC", "CC", "DBA"}
 
 DAYS = [("Monday", "Mon"), ("Tuesday", "Tue"), ("Wednesday", "Wed"), ("Thursday", "Thu"), ("Friday", "Fri"), ("Saturday", "Sat"), ("Sunday", "Sun")]

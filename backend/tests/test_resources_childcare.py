@@ -219,6 +219,15 @@ async def test_detail_links_back_to_the_providers_childcarenj_page(only_test_rec
         assert home["address"] is None and home["email"] is None
 
 
+@pytest.mark.anyio
+async def test_a_home_daycares_page_asks_search_engines_to_leave_it_out(only_test_records):
+    await _run({"counties": ["Camden"]}, client=FakeChildCareNJ({"Camden": [CENTER, HOME, CAMP]}))
+    rows = await _rows()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        indexable = {rid: (await client.get(f"/resources/{rows[rid].id}")).json()["indexable"] for rid in rows}
+    assert indexable == {"900001": True, "900002": False, "900003": True}
+
+
 # ---- routes: direct, then the scrapers --------------------------------------
 
 

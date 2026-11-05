@@ -12,6 +12,8 @@ type Props = {
   /** Arbitrary JSON-LD object(s) (schema.org) describing the page's
    * content - e.g. an EducationalOrganization for a school page. */
   jsonLd?: object | object[];
+  /** Asks search engines not to index the page (it's still public). */
+  noindex?: boolean;
 };
 
 /** Per-route <title>/meta/canonical/Open Graph tags, since index.html only
@@ -20,7 +22,7 @@ type Props = {
  * frontend/nginx.conf.template for that) - it's what makes a shared link
  * preview correctly and gives Googlebot's own render pass real per-page
  * titles/descriptions instead of one generic one for every route. */
-export function SeoHead({ title, description, path, image, jsonLd }: Props) {
+export function SeoHead({ title, description, path, image, jsonLd, noindex }: Props) {
   // `path` is router-relative, so each language gets its own canonical and
   // the set is cross-linked with hreflang - without it Google treats /es/...
   // as a duplicate of the English page instead of its translation.
@@ -32,6 +34,7 @@ export function SeoHead({ title, description, path, image, jsonLd }: Props) {
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
+      {noindex && <meta name="robots" content="noindex" />}
       <link rel="canonical" href={url} />
       {translated &&
         LANGUAGES.map((l) => <link key={l.code} rel="alternate" hrefLang={l.code} href={`${SITE_URL}${localizedPath(path, l.code)}`} />)}
