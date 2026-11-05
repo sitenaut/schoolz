@@ -6,8 +6,9 @@ import uuid
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
@@ -19,7 +20,7 @@ from main import app
 from models import GeocodedPlace, LocalEvent, ScheduledJob
 from routers import local_events as local_events_router
 from scheduler.jobs import local_events_refresh
-from services.geocoding import Place
+from services.geocoding import Place, geocode
 
 pytestmark = pytest.mark.anyio
 
@@ -29,7 +30,7 @@ LITITZ = (40.1573, -76.3069)  # ~70 miles
 
 
 def _soon(days: int = 3) -> datetime:
-    return datetime.now(timezone.utc) + timedelta(days=days)
+    return datetime.now(UTC) + timedelta(days=days)
 
 
 async def test_radius_keeps_near_and_unplaced_events_and_reports_miles():
@@ -130,6 +131,21 @@ async def test_locate_events_tries_address_then_name_then_source_location(monkey
     assert first["located"] >= 4 and first["lookups"] >= 4
     # Every answer is cached, the miss included: nothing is asked twice.
     assert asked == asked_first and again["lookups"] == 0
+
+
+async def test_an_address_too_long_for_census_goes_to_nominatim():
+    asked: list[str] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        asked.append(request.url.host)
+        if request.url.host == "geocoding.geo.census.gov":
+            return httpx.Response(400)
+        return httpx.Response(200, json=[{"lat": "39.8795", "lon": "-74.8626"}])
+
+    address = "Winter Wonderland Illuminated Walking Trail, Indian Acres Tree Farm, 111 Tuckerton Rd, Medford, NJ 08055"
+    async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as client:
+        assert await geocode(client, address) == (39.8795, -74.8626)
+    assert asked == ["nominatim.openstreetmap.org"]
 
 
 async def test_refresh_keeps_a_located_events_position(monkeypatch):
