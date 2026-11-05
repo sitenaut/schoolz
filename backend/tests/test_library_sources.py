@@ -252,8 +252,45 @@ async def test_raw_fetch_asks_every_scraper_for_stealth_off(monkeypatch):
     body = await scraper.fetch_raw_via_scraper("https://town.test/calendar.ics", prefer_residential=True)
 
     assert body == "BEGIN:VCALENDAR"
-    asked = {"url": "https://town.test/calendar.ics", "stealth": False}
+    asked = {"url": "https://town.test/calendar.ics", "stealth": False, "via": "page"}
     assert sent == [("pi.test", asked), ("droplet.test", asked)]
+
+
+@pytest.mark.anyio
+async def test_tribe_via_scraper_request_asks_their_http_client_and_passes_over_a_page(monkeypatch):
+    """Woolwich's SiteGround: no Chromium can load it, and an address it refuses
+    gets a page instead of the JSON. So the scrapers' plain HTTP client is
+    asked, and a scraper whose answer isn't JSON hands over to the next."""
+    from local_events.pipeline import _build_sources
+    from local_events.sources import scraper
+
+    soon = _soon(2).strftime("%Y-%m-%d %H:%M:%S")
+    api = json.dumps({"events": [{"id": 7, "title": "Gingerbread House Decorating Party", "status": "publish",
+                                  "start_date": soon, "end_date": soon, "venue": [], "categories": []}], "next_rest_url": None})
+    refused = '<html><head><meta http-equiv="refresh" content="0;/.well-known/sgcaptcha/?r=%2F"></head></html>'
+    sent = []
+
+    def handler(request):
+        sent.append((request.url.host, json.loads(request.content)))
+        if request.url.host == "droplet.test":
+            return httpx.Response(200, json={"body": refused, "status": 202})
+        return httpx.Response(200, json={"body": api, "status": 200})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(scraper.httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(handler)))
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_URL", "https://droplet.test")
+    monkeypatch.setenv("LOCAL_EVENTS_SCRAPER_KEY", "k")
+    monkeypatch.setenv("SCRAPER_URL", "https://fly.test")
+    monkeypatch.setenv("SCRAPER_API_KEY", "k")
+
+    (src,) = _build_sources({"tribe_sources": [{"name": "woolwich", "base_url": "https://town.test", "via_scraper": "request"}]})
+    events = await src.fetch()
+
+    assert [e.title for e in events] == ["Gingerbread House Decorating Party"]
+    assert [host for host, _ in sent] == ["droplet.test", "fly.test"]  # the Pi only when asked for
+    for _, payload in sent:
+        assert payload["via"] == "request" and payload["stealth"] is False
+        assert payload["url"].startswith("https://town.test/wp-json/tribe/events/v1/events?per_page=50")
 
 
 @pytest.mark.anyio

@@ -79,6 +79,7 @@
           "days_ahead": 90,
           "default_categories": ["woolwich", "municipal"],
           "location": "Woolwich Township, NJ",
+          "via_scraper": "request",
           "skip_meetings": true,
           "exclude_title_patterns": ["^Township Committee\\b", "\\bcommittee$", "\\btaxes\\b", "^JLUB\\b", "\\b(?:full closure|road closed)\\b"]
         },

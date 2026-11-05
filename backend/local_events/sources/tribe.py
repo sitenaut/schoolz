@@ -122,6 +122,22 @@ def _price(event: dict) -> tuple[float | None, float | None, bool | None]:
     return min(values), max(values), min(values) == 0
 
 
+def _is_json_object(body: str) -> bool:
+    try:
+        return isinstance(json.loads(body), dict)
+    except ValueError:
+        return False
+
+
+def _api_answer(data: Any) -> tuple[int, Any]:
+    """(status, data) of a body fetched through a scraper. The REST API's 404
+    (past the last page, or no API at all) is JSON too, so it's read from the
+    body."""
+    if isinstance(data, dict) and str(data.get("code", "")).startswith("rest_") and "events" not in data:
+        return 404, None
+    return 200, data
+
+
 class TribeEventsSource(Source):
     def __init__(
         self,
@@ -135,7 +151,8 @@ class TribeEventsSource(Source):
         nearby_zip_prefixes: list[str] | tuple[str, ...] | None = None,
         max_pages: int = DEFAULT_MAX_PAGES,
         timeout: float = 30.0,
-        via_scraper: bool = False,
+        via_scraper: bool | str = False,
+        prefer_residential: bool = False,
         venue_name: str | None = None,
         venue_address: str | None = None,
     ):
@@ -150,10 +167,15 @@ class TribeEventsSource(Source):
         self.max_pages = max(1, int(max_pages))
         self.timeout = timeout
         self.skipped_far = 0
-        # Cloudflare-fronted sites 403 plain HTTP (runnemedepubliclibrary.org); the
-        # scraper's browser gets the JSON. The home-IP scraper is blocked there too,
-        # so it isn't preferred.
+        # For a site that refuses schoolz's own requests, the scrapers fetch the
+        # API. True renders it in their browser: runnemedepubliclibrary.org's
+        # Cloudflare 403s plain HTTP, and the scraper's browser gets the JSON (the
+        # home-IP scraper is blocked there too, so it isn't preferred). "request"
+        # asks their plain HTTP client: woolwichtwp.org's SiteGround answers the
+        # scheduler machine with something else and no Chromium can load it, while
+        # a plain request from the droplet gets the JSON.
         self.via_scraper = via_scraper
+        self.prefer_residential = prefer_residential
         # Fallback for events that carry no venue of their own - a library's
         # events are at the library (haddonheightslibrary.com sets none).
         self.venue_name = venue_name
@@ -166,20 +188,25 @@ class TribeEventsSource(Source):
                 return 404, None
             resp.raise_for_status()
             return resp.status_code, resp.json()
-        from .scraper import fetch_rendered_html
+        from .scraper import fetch_raw_via_scraper, fetch_rendered_html
 
         full = str(httpx.URL(url).copy_merge_params(params or {}))
+        if self.via_scraper == "request":
+            # A scraper whose answer isn't JSON (a bot check's page) hands over to the next.
+            body = await fetch_raw_via_scraper(
+                full, prefer_residential=self.prefer_residential, via="request", accept=_is_json_object,
+            )
+            return _api_answer(json.loads(body))
         # Cloudflare lets some of the scraper's requests through and 403s others
         # (an HTML "403 - Forbidden" page, not a challenge page), so try a few times.
         for _attempt in range(SCRAPER_ATTEMPTS):
-            page, _ = await fetch_rendered_html(full, timeout_ms=int(self.timeout * 1000))
-            # Chromium shows a JSON response inside <pre>; the REST API's 404 is JSON too.
+            page, _ = await fetch_rendered_html(
+                full, timeout_ms=int(self.timeout * 1000), prefer_residential=self.prefer_residential,
+            )
+            # Chromium shows a JSON response inside <pre>.
             body = html.unescape(_TAG_RE.sub("", page)).strip()
             if body.startswith("{"):
-                data = json.loads(body)
-                if isinstance(data, dict) and str(data.get("code", "")).startswith("rest_") and "events" not in data:
-                    return 404, None
-                return 200, data
+                return _api_answer(json.loads(body))
         raise RuntimeError(f"{full} was blocked {SCRAPER_ATTEMPTS} times through the scraper")
 
     def _params(self, today: date) -> dict[str, Any]:

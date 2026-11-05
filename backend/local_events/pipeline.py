@@ -257,7 +257,9 @@ def _build_sources(params: dict) -> list[Source]:
                 center=entry.get("center"),
                 nearby_zip_prefixes=entry.get("nearby_zip_prefixes"),
                 max_pages=int(entry.get("max_pages", 40)),
-                via_scraper=bool(entry.get("via_scraper", False)),
+                # true (the scrapers' browser) or "request" (their HTTP client).
+                via_scraper=entry.get("via_scraper", False),
+                prefer_residential=bool(entry.get("prefer_residential", False)),
                 venue_name=entry.get("venue_name"),
                 venue_address=entry.get("venue_address"),
             )
