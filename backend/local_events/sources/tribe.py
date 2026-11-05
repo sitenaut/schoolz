@@ -45,7 +45,7 @@ import httpx
 from .base import RawEvent, Source
 
 ET = ZoneInfo("America/New_York")
-_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+_UA = "schoolz-local-events/1.0"
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
 _MONEY_RE = re.compile(r"\d+(?:\.\d+)?")
