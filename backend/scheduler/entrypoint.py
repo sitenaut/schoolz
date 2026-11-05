@@ -220,6 +220,9 @@ def _handle_stop_signal(*_args) -> None:
 
 async def main() -> None:
     check_settings("scheduler")
+    # Nobody waits on a scan, so its scraper requests wait out a busy
+    # scraper's queue instead of giving up and redoing the work elsewhere.
+    scraper_client.wait_for_busy_scrapers()
     aps_scheduler = AsyncIOScheduler(timezone="UTC")
     aps_scheduler.start()
     logger.info("scheduler_started")

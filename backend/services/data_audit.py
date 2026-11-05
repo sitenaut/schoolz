@@ -361,6 +361,7 @@ _CODE_HINTS = {
     "llm_rate_limited": "Re-run later; extraction was rate limited.",
     "no_documents_found": "Check whether the school site has moved its documents page.",
     "no_staff_found": "Check whether the directory page has moved or changed layout.",
+    "roster_incomplete": "Re-run the scan; the directory didn't load every page. Nothing it missed was deleted.",
 }
 
 

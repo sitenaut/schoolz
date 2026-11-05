@@ -208,4 +208,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             "structure this parser doesn't recognize (or genuinely has no public directory)"
         )
     note = f" ({contacts_added} from the contact page)" if contacts_added else ""
+    short = next((e["directory_short"] for e in roster if e.get("directory_short")), None)
+    if short:
+        # Nothing it missed was deleted (only a read that got every card
+        # deletes), but part of a roster mustn't pass for all of it.
+        return (
+            f"WARNING[roster_incomplete]: read {short[0]} of the {short[1]} people the directory lists, "
+            f"even on a second read; {created} new, {updated} updated, {len(roster)} total{note}"
+        )
     return f"roster: {created} new, {updated} updated, {len(roster)} total{note}"

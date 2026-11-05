@@ -15,7 +15,9 @@ kill_timeout = 180
 [env]
   APP_ENV = "prod"
   # 1 GB machines: one render at a time on each (two machines, so two at
-  # once), each held under 700 MB by the scraper's watchdog. The image's
+  # once; scraper_client spreads requests over them, since .internal alone
+  # sent every request from a process to the same one), each held under
+  # 700 MB by the scraper's watchdog. The image's
   # defaults (2 renders x 900 MB) are sized for the droplet's 1.5 GB box.
   # Extra requests queue (MAX_QUEUE, 90 s) and then get a 503, which the
   # backend treats as retryable and takes to the droplet.
