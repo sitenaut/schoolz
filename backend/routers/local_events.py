@@ -7,6 +7,7 @@ import time
 from collections import defaultdict, deque
 from datetime import UTC, date, datetime, timedelta
 from datetime import time as dtime
+from typing import Literal
 from urllib.parse import parse_qsl
 from zoneinfo import ZoneInfo
 
@@ -19,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import database
 from database import get_db
 from models import LocalEvent, ResourceService
+from services import local_event_picks
 from services.client_ip import client_ip
 from services.geocoding import find_place
 from services.i18n import fold, folded
@@ -343,6 +345,40 @@ async def local_event_days(
         return LocalEventDaysOut(days=dict(sorted(days.items())), total=len(rows))
 
     return await _cached(request, q, compute, _DAYS_ADAPTER, db)
+
+
+@router.get("/day-off", response_model=LocalEventRowsOut)
+async def day_off_picks(
+    request: Request,
+    day: date,
+    audience: Literal["kids", "teens"] = "kids",
+    db: AsyncSession = Depends(get_db),
+    near: Near = Depends(),
+):
+    """A few things to do on a day off school, for the Today page's day-off
+    card: events that day tagged for kids (or teens), nearest first, paid
+    classes left out (services/local_event_picks.py). Only events we could
+    place - an unplaced one passes every radius, and "nearest" means nothing
+    for it. On today's date, nothing already over. `total` is how many
+    qualified before the cut."""
+    if near.point is None:
+        raise HTTPException(422, "near_lat and near_lng are required")
+    start, end = _day_bounds(day)
+    now = datetime.now(_LOCAL_TZ)
+    still_on_at = now if day == now.date() else None
+
+    async def compute(session: AsyncSession) -> LocalEventRowsOut:
+        tags = ",".join(local_event_picks.DAY_OFF_TAGS[audience])
+        conds = _filters(start, end, None, tags, None, None) + near.conds()
+        conds += [LocalEvent.latitude.is_not(None), LocalEvent.longitude.is_not(None)]
+        cols = [getattr(LocalEvent, f) for f in LocalEventRowOut.model_fields if f != "miles"]
+        stmt = select(*cols, LocalEvent.description, near.miles().label("miles")).where(and_(*conds))
+        rows = [r for r in (await session.execute(stmt)).all() if day in date_keys(r.start_time, r.end_time, r.all_day)]
+        picked, total = local_event_picks.day_off(rows, audience, still_on_at)
+        items = [LocalEventRowOut.model_validate({**r._mapping, "miles": round(r.miles, 1)}) for r in picked]
+        return LocalEventRowsOut(items=items, total=total)
+
+    return await _cached(request, None, compute, _ROWS_ADAPTER, db)
 
 
 @router.post("/place", response_model=PlaceOut)

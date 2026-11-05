@@ -134,6 +134,7 @@ GET    /health  public
 GET    /invites/{token}  public
 POST   /invites/{token}/accept  login
 GET    /local-events  public
+GET    /local-events/day-off  public
 GET    /local-events/days  public
 GET    /local-events/facets  public
 POST   /local-events/place  public

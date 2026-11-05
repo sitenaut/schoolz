@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { DayCard } from "../components/today";
+import { DayOffCard } from "../components/DayOffCard";
 import { IconPin, IconUpload } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
 import { SeoHead } from "../components/SeoHead";
 import { itemDateKeys, monthDay, todayKey } from "../lib/calendar";
+import { planDayOff } from "../lib/dayOff";
 import { affectedSchools, mergeAlerts } from "../lib/districtItems";
 import { useMySchools } from "../lib/mySchools";
 import { SITE_URL } from "../lib/site";
@@ -26,6 +28,11 @@ function HomeSeo() {
       image={`${SITE_URL}/icon-512.png`}
     />
   );
+}
+
+/** The hour in Cherry Hill, whatever timezone the browser is in. */
+function schoolHour(): number {
+  return Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).format(new Date()));
 }
 
 /** A card-sized stand-in while a school's day is loading. Real cards are
@@ -218,6 +225,10 @@ export function TodayPage() {
   // the schools currently active in the ribbon filter.
   const alerts = mergeAlerts(activeSchools.map((s) => ({ school: s, alerts: cards[s.slug]?.alerts ?? [] })));
 
+  // Only once every card shown is in, so it can say which schools are out.
+  const shownCards = activeSchools.map((s) => cards[s.slug]);
+  const dayOff = shownCards.every(Boolean) ? planDayOff(shownCards, todayKey(), schoolHour()) : null;
+
   return (
     <>
       <HomeSeo />
@@ -264,6 +275,8 @@ export function TodayPage() {
           <PendingCard name={s.short_name || s.name} color={colorFor(s.id)} key={s.id} />
         ),
       )}
+
+      {dayOff && <DayOffCard plan={dayOff} key={dayOff.date} />}
 
       <Link className="link-card upload-cta" to="/upload">
         <span className="ico">

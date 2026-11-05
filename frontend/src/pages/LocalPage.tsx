@@ -1,6 +1,6 @@
 import { can } from "../lib/permissions";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { IconChevronLeft, IconChevronRight } from "../components/icons";
 import { SeasonalBanner } from "../components/SeasonalBanner";
@@ -44,9 +44,14 @@ function price(e: LocalEventRow): string | null {
 export function LocalPage() {
   const { user } = useAuth();
   const isAdmin = can(user, "scans.view");
+  // ?day=YYYY-MM-DD opens on that day and ?event=<id> on that event's
+  // details - the Today page's day-off card links here with both.
+  const [params] = useSearchParams();
+  const linkedDay = /^\d{4}-\d{2}-\d{2}$/.test(params.get("day") ?? "") ? params.get("day") : null;
+  const linkedEvent = params.get("event");
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
-  const [selectedDay, setSelectedDay] = useState<string | null>(TODAY_KEY);
+  const [viewDate, setViewDate] = useState(() => startOfMonth(linkedDay ? new Date(linkedDay + "T12:00:00") : new Date()));
+  const [selectedDay, setSelectedDay] = useState<string | null>(linkedDay ?? TODAY_KEY);
   const [items, setItems] = useState<LocalEventRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -152,6 +157,19 @@ export function LocalPage() {
       .then(setFacets);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range, nearKey]);
+
+  useEffect(() => {
+    if (!linkedEvent) return;
+    let cancelled = false;
+    apiFetch(`/local-events/${encodeURIComponent(linkedEvent)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((e: LocalEvent | null) => {
+        if (e && !cancelled) setOpen(e);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [linkedEvent]);
 
   const eventsByDay = useMemo(() => new Map(Object.entries(days)), [days]);
 

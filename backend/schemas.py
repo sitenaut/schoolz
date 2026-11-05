@@ -667,6 +667,10 @@ class SchoolOut(BaseModel):
     staff_directory_url: str | None = None
     bell_periods: dict[str, list[BellPeriodEntry]] | None
     created_at: datetime
+    # Where the school is (geocoded for its weather): what the Today page's
+    # day-off card measures "things to do nearby" from.
+    latitude: float | None = None
+    longitude: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -949,6 +953,13 @@ class TodayDayOut(BaseModel):
     long_blocks: bool = False
     lunch: str | None
     items: list[SchoolContentItemOut]
+
+
+class TodayDayOffOut(BaseModel):
+    """A weekday the school is closed, today or in the week ahead."""
+
+    date: str  # YYYY-MM-DD, school-local
+    label: str | None  # the closure's reason, e.g. "NJEA Convention"
 
 
 class TodayLunchOut(BaseModel):
@@ -1301,6 +1312,7 @@ class SchoolTodayOut(BaseModel):
     upcoming: list[SchoolContentItemOut]
     alerts: list[SchoolContentItemOut]
     week: list[TodayDayOut]
+    days_off: list[TodayDayOffOut] = []
 
 
 class SmoreBlockOut(BaseModel):

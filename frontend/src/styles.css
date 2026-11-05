@@ -1052,6 +1052,28 @@ h3 {
   text-decoration: none;
 }
 
+/* Today's day-off card (components/DayOffCard.tsx), built from a day card's
+   parts. Its rows lead with a clock time, wider than a day card's "Thu 6"
+   ("10:30 a. m." in Spanish). */
+.dayOff-k {
+  margin: 0;
+  padding: 2px 14px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dayOff .next-row {
+  grid-template-columns: 76px 1fr auto;
+  color: var(--ink);
+}
+.next li.dayOff-note {
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
 /* Calendar school picker */
 .schoolPicker {
   position: relative;
