@@ -7,6 +7,7 @@ import { UserMenu } from "./UserMenu";
 import { LanguageOffer, LanguageSwitcher, useAccountLanguageSync } from "./LanguageSwitcher";
 import { BackToTop } from "./BackToTop";
 import { ChatWidget } from "./ChatWidget";
+import { FundingSurveyBanner } from "./FundingSurveyBanner";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { logoClass } from "../lib/logos";
@@ -58,6 +59,9 @@ function routeTemplate(pathname: string): string {
 const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/upload", "/survey", "/chcomms", "/family", "/kids", "/directory", "/local"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
+// The NJ funding survey banner is for families: not on admin or account
+// pages, nor beside our own survey. Localz is left out separately.
+const NO_SURVEY_BANNER_PATH_PREFIXES = ["/admin", "/account", "/survey"];
 
 /** Top bar + school-switcher ribbon + bottom tab bar (mobile) / left rail
  * (desktop). Wraps every public page; the personal/admin pages render
@@ -437,6 +441,7 @@ export function AppShell() {
         </nav>
       )}
       <main className={`shell-main ${isWide ? "wide" : ""}`}>
+        {!inLocalz && !NO_SURVEY_BANNER_PATH_PREFIXES.some((p) => pathname.startsWith(p)) && <FundingSurveyBanner />}
         <Outlet />
         <footer className="shell-footer">
           <Link to="/chcomms">{t("About")}</Link>
