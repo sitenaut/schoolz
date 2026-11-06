@@ -27,6 +27,9 @@ SCHOOLS = [
     _s("cooper", "James F. Cooper Elementary", "James F. Cooper", "elementary", "Cherry Hill"),
     _s("coles", "The Coles High School Program", "Coles Program", "high", "Camden"),
     _s("lightbridge", "Lightbridge Academy", "Lightbridge Academy", "other", "Voorhees"),
+    _s("pine-acres", "Pine Acres Early Childhood Center", "Pine Acres", "other", "Wenonah"),
+    _s("trenton-hill", "Patton J. Hill Elementary School", "Hill", "elementary", "Trenton"),
+    _s("red-bank", "Red Bank Elementary School", "Red Bank", "elementary", "West Deptford"),
 ]
 
 
@@ -47,6 +50,10 @@ def test_a_town_alone_names_no_school():
     assert _slugs("Is there school tomorrow in Cherry Hill?") == []
     assert _slugs("When is the next day off for Haddonfield schools?") == []
     assert _slugs("What time does Haddonfield Middle School get out?") == ["haddonfield-middle"]
+    # Nor a school named like part of the town: Trenton's "Hill" isn't in Cherry Hill.
+    assert _slugs("What's happening in Cherry Hill this weekend?") == []
+    assert _slugs("Is Cherry Hill East closed?") == ["cherry-hill-high-school-east"]
+    assert _slugs("Is Hill Elementary closed?") == ["trenton-hill"]
 
 
 def test_a_last_name_alone_lists_every_school_it_fits():
@@ -69,6 +76,16 @@ def test_a_last_name_written_as_a_name():
     assert _slugs("Can I volunteer at the Academy?") == []
     # Followed by another name, it is that place, not the school.
     assert _slugs("Is there a fall festival at Cooper River?") == []
+    assert _slugs("Any events at Red Bank Battlefield?") == []
+    assert _slugs("Is Red Bank Elementary open Monday?") == ["red-bank"]
+    assert _slugs("Breakfast with Santa at Johnson's Corner Farm?") == []
+    # After one, too: Indian Acres is a tree farm, not Pine Acres.
+    assert _slugs("What's going on at Indian Acres?") == []
+    assert _slugs("Is Indian Acres School open?") == []
+    assert _slugs("What's going on at Pine Acres?") == ["pine-acres"]
+    # The first word of a sentence is capitalised anyway.
+    assert sorted(_slugs("Johnson Elementary picture day?")) == ["james-johnson", "johnson-es"]
+    assert sorted(_slugs("Picture day. Johnson Elementary?")) == ["james-johnson", "johnson-es"]
 
 
 def test_the_hint_says_look_it_up_or_ask():

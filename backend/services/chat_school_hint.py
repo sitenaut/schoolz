@@ -44,21 +44,32 @@ def match_schools(message: str, schools: list[dict[str, Any]]) -> list[dict[str,
 
     A school fits when every distinctive word of its name or short name is
     in the message ("cherry hill east", "beck", "kingston"). A name that is
-    only its town ("Haddonfield" HS) also needs a type word, so "Haddonfield
-    schools" names the district, not the high school. Failing that, the last
-    word of a name alone ("Johnson Elementary" for James Johnson, "at
-    Harte"), used as a name and not part of some town's name ("Hill", "East").
+    only a town the message names ("Haddonfield" HS, Trenton's "Hill" in
+    "Cherry Hill") also needs a type word, so "Haddonfield schools" names the
+    district, not the high school. Failing that, the last word of a name
+    alone ("Johnson Elementary" for James Johnson, "at Harte"), used as a
+    name and not part of some town's name ("Hill", "East"). Either way, not
+    when the words are part of another place's name ("Red Bank Battlefield").
     """
     said = set(_words(message))
-    town_words = {w for s in schools for w in _words(town(s.get("address")))}
+    spoken = " ".join(_words(message))
+    towns = {" ".join(_words(town(s.get("address")))) for s in schools} - {""}
+    town_words = {w for t in towns for w in t.split()}
+    named_towns = {w for t in towns if set(t.split()) <= said and re.search(rf"\b{t}\b", spoken) for w in t.split()}
     full: list[tuple[int, dict]] = []
     for s in schools:
         own_town = set(_words(town(s.get("address"))))
+        own = set(_words(s.get("name"))) | set(_words(s.get("short_name")))
         typed = bool(said & _TYPE_WORDS.get(s.get("school_type") or "", set()))
         best = 0
         for name in (s.get("name"), s.get("short_name")):
             key = _key(name)
-            if key and key <= said and (typed or not key <= own_town):
+            if (
+                key
+                and key <= said
+                and (typed or not (key <= own_town or key <= named_towns))
+                and not _named_as_another_place(message, name, key, own)
+            ):
                 best = max(best, len(key))
         if best:
             full.append((best, s))
@@ -68,28 +79,57 @@ def match_schools(message: str, schools: list[dict[str, Any]]) -> list[dict[str,
     loose = []
     for s in schools:
         last = [w for w in _words(s.get("short_name") or s.get("name")) if w not in _GENERIC and len(w) > 1]
-        if not last or len(last[-1]) <= 3 or last[-1] in town_words:
+        # Not said at all, the regexes below needn't run: there are over a
+        # thousand of them, more than re's cache holds.
+        if not last or len(last[-1]) <= 3 or last[-1] in town_words or last[-1] not in said:
             continue
         # Used as a school's name: before a type word ("johnson elementary"),
-        # or written as a name - capitalised, not after "the", not followed by
-        # another name ("Cooper River") - ending the question or after
-        # at/to/for/from ("school at Harte today"). Without this, "picture
-        # day" named Big Picture Learning Academy, "winter break start" a Head
-        # Start centre, and "at five?" Lindenwold School Five.
+        # or written as a name - capitalised, not after "the" - ending the
+        # question or after at/to/for/from ("school at Harte today"). Without
+        # this, "picture day" named Big Picture Learning Academy, "winter
+        # break start" a Head Start centre, and "at five?" Lindenwold School Five.
         word = re.escape(last[-1])
         name = word.capitalize()
-        if (
-            re.search(rf"\b{word}\s+(?:{_TYPE_WORD_RE})\b", message.lower())
-            or re.search(rf"(?<!\bthe )(?<!\bThe )\b{name}\W*$", message)
-            or re.search(rf"\b(?i:at|to|for|from)\s+{name}\b(?!\s+[A-Z])", message)
-        ):
+        own = set(_words(s.get("name"))) | set(_words(s.get("short_name")))
+        spots = [
+            *re.finditer(rf"\b({word})\s+(?:{_TYPE_WORD_RE})\b", message, re.I),
+            *re.finditer(rf"(?<!\bthe )(?<!\bThe )\b({name})\W*$", message),
+            *re.finditer(rf"\b(?i:at|to|for|from)\s+({name})\b", message),
+        ]
+        if any(not _inside_another_name(message, m.start(1), m.end(1), own) for m in spots):
             loose.append(s)
     return loose
 
 
-def school_hint(message: str, schools: list[dict[str, Any]]) -> str | None:
-    """A line for the turn's context naming the school(s) the message means, or None."""
-    found = match_schools(message, schools)
+def _named_as_another_place(message: str, name: str | None, key: set[str], own: set[str]) -> bool:
+    """Whether the name's words, written together, are only ever part of
+    another place's name in the message (see _inside_another_name)."""
+    run = r"\W+".join(w for w in _words(name) if w in key)
+    spots = list(re.finditer(rf"\b{run}\b", message, re.I))
+    return bool(spots) and all(_inside_another_name(message, m.start(), m.end(), own) for m in spots)
+
+
+def _inside_another_name(message: str, start: int, end: int, own: set[str]) -> bool:
+    """Whether message[start:end] is part of some other place's name: a
+    possessive or a capitalised word that isn't the school's own right after
+    it ("Johnson's Corner Farm", "Cooper River", "Red Bank Battlefield"), or
+    such a word right before it - "What's going on at Indian Acres?" asks
+    about a tree farm, and was answered with Pine Acres Early Childhood Center."""
+    after = re.match(r"['’]s\b|\s+([A-Z][A-Za-z'’]*)", message[end:])
+    if after and (not after.group(1) or after.group(1).lower() not in own | _GENERIC):
+        return True
+    head = message[:start].rstrip()
+    before = re.search(r"(?:^|(?<=\s))[A-Z][A-Za-z'’]*$", head)
+    if not before or before.group().lower() in own | {"at", "to", "for", "from"}:
+        return False
+    # The first word of a sentence is capitalised anyway.
+    return not re.search(r"(?:^|[.!?])\s*$", head[: before.start()])
+
+
+def school_hint(message: str, schools: list[dict[str, Any]], found: list[dict[str, Any]] | None = None) -> str | None:
+    """A line for the turn's context naming the school(s) the message means,
+    or None. `found`: match_schools' answer, when the caller has it already."""
+    found = match_schools(message, schools) if found is None else found
     if not found or len(found) > _MAX_LISTED:
         return None
 
@@ -108,9 +148,9 @@ def school_hint(message: str, schools: list[dict[str, Any]]) -> str | None:
     )
 
 
-class SchoolDirectory:
-    """The tracked schools, re-read at most every few minutes (a school added
-    by an admin shows up without a restart)."""
+class Directory:
+    """The tracked schools (or chat_place_hint's places), re-read at most
+    every few minutes (a school added by an admin shows up without a restart)."""
 
     def __init__(self, ttl_s: float = 600):
         self._ttl_s = ttl_s
