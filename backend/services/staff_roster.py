@@ -746,21 +746,33 @@ async def fetch_directory_document(url: str, school_names: list[str | None] | No
     if not urlparse(url).path.lower().endswith((".pdf", ".xlsx")):
         # A page's own JSON feed answers a plain GET; anything else falls
         # through to the scraper, which a bot-walled site needs.
+        page = None
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
                 resp = await client.get(url, headers={"User-Agent": "schoolz-staff-roster/1.0"})
             if resp.status_code == 200 and "json" in resp.headers.get("content-type", "").lower():
                 return parse_json_directory(resp.json())
-            # A district-wide Finalsite directory a school's own site never
-            # links (Southampton: /district/staff-directory, on www, not the
-            # schoolN subsites) is a page, not a document.
-            if resp.status_code == 200 and "fsConstituentItem" in resp.text:
-                return await _read_constituent_directory(url, school_names or [])
+            if resp.status_code == 200:
+                page = resp.text
         except (httpx.HTTPError, ValueError):
             pass
+        # A district-wide Finalsite directory a school's own site never
+        # links (Southampton: /district/staff-directory, on www, not the
+        # schoolN subsites) is a page, not a document. Read outside the try:
+        # inside it, Hamilton Township's read failing on every scraper
+        # (2026-11-06) fell through to the PDF reader, which crashed on the page.
+        if page and "fsConstituentItem" in page:
+            return await _read_constituent_directory(url, school_names or [], first_page=page)
     data = await scraper_client.fetch_raw_bytes(url)
     if urlparse(url).path.lower().endswith(".xlsx"):
         return parse_xlsx_directory(data)
+    if b"%PDF" not in data[:1024]:
+        # A page, not a file: one the plain GET above couldn't get (a bot
+        # wall), or a document that has moved.
+        text = data.decode("utf-8", "replace")
+        if "fsConstituentItem" in text:
+            return await _read_constituent_directory(url, school_names or [], first_page=text)
+        return []
     return parse_pdf_directory(data)
 
 
@@ -1149,14 +1161,20 @@ def _mark_short(people: list[dict], short: tuple[int, int] | None) -> list[dict]
     return people
 
 
-async def _read_constituent_directory(url: str, school_names: list[str | None]) -> list[dict]:
+async def _read_constituent_directory(url: str, school_names: list[str | None], first_page: str | None = None) -> list[dict]:
     """Every card in a Finalsite directory, clicked through page by page
     (and read again when that missed some: _read_every_page). A directory
     that lists the whole district (a school subsite's directory redirecting
     to the district's) is re-read narrowed to this school's Location; the
-    redirect drops a query string, so the filter goes on the final URL."""
-    pages_html = await _click_through(url)
-    location = own_location_option(pages_html[0], school_names) if pages_html else None
+    redirect drops a query string, so the filter goes on the final URL.
+    `first_page` is the page's own HTML, when the caller has it: its
+    Location filter is served with the page, so the whole district needn't
+    be clicked through first only to read it (Hamilton Township: 25 pages)."""
+    location = own_location_option(first_page, school_names) if first_page else None
+    pages_html = None
+    if not location:
+        pages_html = await _click_through(url)
+        location = own_location_option(pages_html[0], school_names) if pages_html else None
     if location:
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
@@ -1175,6 +1193,8 @@ async def _read_constituent_directory(url: str, school_names: list[str | None]) 
             return _mark_short(list(people.values()), short)
         # The district-wide read below is only ever part of the district.
         short = None
+        if pages_html is None:
+            pages_html = await _click_through(url)
     else:
         pages_html, short = await _read_every_page(url, pages_html)
     people = list({item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}.values())
@@ -1212,7 +1232,7 @@ async def _fetch_discovered_roster(base: str, school_names: list[str | None]) ->
                 if page.status_code != 200:
                     continue
                 if "fsConstituentItem" in page.text:
-                    people = await _read_constituent_directory(url, school_names)
+                    people = await _read_constituent_directory(url, school_names, first_page=page.text)
                     if people:
                         return people
                     continue

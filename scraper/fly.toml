@@ -16,13 +16,18 @@ kill_timeout = 180
   APP_ENV = "prod"
   # 1 GB machines: one render at a time on each (two machines, so two at
   # once; scraper_client spreads requests over them, since .internal alone
-  # sent every request from a process to the same one), each held under
-  # 700 MB by the scraper's watchdog. The image's
+  # sent every request from a process to the same one). The image's
   # defaults (2 renders x 900 MB) are sized for the droplet's 1.5 GB box.
   # Extra requests queue (MAX_QUEUE, 90 s) and then get a 503, which the
   # backend treats as retryable and takes to the droplet.
   MAX_CONCURRENCY = "1"
-  RENDER_MAX_RSS_MB = "700"
+  # The watchdog adds up the resident memory of every process in a render's
+  # Chromium, and the memory those processes share counts once per process:
+  # a blank page counts about 470 MB while really using about 280. At 700,
+  # Finalsite pages counting 700-750 MB (470-510 real) were killed: 57 scan
+  # renders between 2026-11-05 and 11-06, Cherry Hill directories and
+  # Hamilton Township's among them. 900 counted is about 600-650 MB real.
+  RENDER_MAX_RSS_MB = "900"
   # The metrics server on :9464 listens dual-stack, so schoolz-scraper-metrics
   # can scrape it over Fly's IPv6-only private network (scraper/telemetry/).
   METRICS_ADDR = "::"
