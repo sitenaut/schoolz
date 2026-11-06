@@ -136,9 +136,11 @@ function AttractionCards({ attractions, season }: { attractions: SeasonalAttract
               >
                 {linkLabel(a)}
               </a>
-              <a className="btn sm" href={directions} target="_blank" rel="noopener">
-                Directions ↗
-              </a>
+              {a.latitude != null && (
+                <a className="btn sm" href={directions} target="_blank" rel="noopener">
+                  Directions ↗
+                </a>
+              )}
               {a.resource_id && (
                 <Link className="btn sm" to={`/localz/r/${a.resource_id}`}>
                   What they provide

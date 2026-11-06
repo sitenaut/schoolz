@@ -46,6 +46,22 @@ def test_a_named_venue_is_placed_in_the_town():
     assert ev.source_event_id.startswith("page:") and not ev.all_day
 
 
+def test_the_sources_own_venue_keeps_its_street_address():
+    """Indian Acres' page names the farm, and "Indian Acres Tree Farm,
+    Medford, NJ" was placed at the middle of Medford."""
+    text = "Winter Wonderland Illuminated Walking Trail at Indian Acres Tree Farm opens November 20, 2026."
+    events = [
+        {"title": "Winter Wonderland Illuminated Walking Trail", "start_date": "2026-11-20", "venue": venue, "year_written": True}
+        for venue in ("Indian Acres tree farm", "Knight Park")
+    ]
+    farm, park = to_raw_events(
+        events, text, source="farm", venue_name="Indian Acres Tree Farm", venue_address="111 Tuckerton Rd, Medford, NJ 08055",
+        default_categories=["family"], page_url="https://farm.example", today=TODAY, id_prefix="page", town="Medford, NJ",
+    )
+    assert (farm.venue_name, farm.venue_address) == ("Indian Acres tree farm", "111 Tuckerton Rd, Medford, NJ 08055")
+    assert park.venue_address == "Knight Park, Medford, NJ"
+
+
 def test_theatre_entries_without_the_new_fields_are_unaffected():
     (ev,) = to_raw_events(
         [{"title": "Holiday Parade", "start_date": "2027-11-28"}], TEXT, source="t", venue_name="Home", venue_address="1 Main",

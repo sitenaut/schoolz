@@ -18,6 +18,12 @@ order:
 An event none of these can place keeps null coordinates, and the API shows
 it at every radius rather than hiding it: unknown is not "far away".
 
+A place more than MAX_MILES from Cherry Hill counts as no answer, since
+/local covers 50 miles: it is the geocoder's guess at a same-named street
+elsewhere ("Main Street, Medford" came back in Massachusetts, "247 Oakland
+Ave" in Iowa, a venue called "US" in the middle of the country), and it hid
+the event at every radius. An event already put that far is placed again.
+
 Every answer, including "no match", is cached in geocoded_places, so a run
 only asks about venues it hasn't seen. Lookups are capped per run and
 paced; a backlog (the first run after this
@@ -27,11 +33,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import GeocodedPlace, LocalEvent, ScheduledJob
@@ -43,6 +50,11 @@ logger = logging.getLogger(__name__)
 
 # Cherry Hill, NJ: the middle of the box venue-name searches are kept to.
 REGION_CENTER = (39.9268, -75.0246)
+MAX_MILES = 100
+# Degrees that stay inside MAX_MILES in every direction from REGION_CENTER,
+# so the query can pass over what is plainly near without measuring it.
+_NEAR_LAT = 1.0
+_NEAR_LNG = 1.3
 MAX_LOOKUPS = 250
 PAUSE_SECONDS = 1.0
 RETRY_MISS_AFTER = timedelta(days=30)
@@ -54,6 +66,18 @@ _TIMEOUT = 5.0
 
 def _key(kind: str, text: str) -> str:
     return f"{kind}:{' '.join(text.split()).lower()[:300]}"
+
+
+def far(lat: float, lng: float) -> bool:
+    """More than MAX_MILES from REGION_CENTER, as the crow flies."""
+    lat0, lng0 = map(math.radians, REGION_CENTER)
+    lat1, lng1 = math.radians(lat), math.radians(lng)
+    a = math.sin((lat1 - lat0) / 2) ** 2 + math.cos(lat0) * math.cos(lat1) * math.sin((lng1 - lng0) / 2) ** 2
+    return 2 * 3958.8 * math.asin(math.sqrt(a)) > MAX_MILES
+
+
+def _near(coords: tuple[float, float] | None) -> tuple[float, float] | None:
+    return coords if coords and not far(*coords) else None
 
 
 def source_locations(params_list: list[dict | None]) -> dict[str, str]:
@@ -85,18 +109,31 @@ async def _lookup(client: httpx.AsyncClient, kind: str, text: str) -> tuple[floa
 
 
 async def locate_events(db: AsyncSession) -> dict:
-    """Fills coordinates on upcoming events without them. Commits."""
-    now = datetime.now(timezone.utc)
-    events = (
-        await db.execute(
-            select(LocalEvent).where(
-                LocalEvent.latitude.is_(None),
-                func.coalesce(LocalEvent.end_time, LocalEvent.start_time) >= now - timedelta(days=1),
+    """Fills coordinates on upcoming events without them, or with a far-off
+    guess. Commits."""
+    now = datetime.now(UTC)
+    lat0, lng0 = REGION_CENTER
+    events = [
+        event
+        for event in (
+            await db.execute(
+                select(LocalEvent).where(
+                    or_(
+                        LocalEvent.latitude.is_(None),
+                        LocalEvent.longitude.is_(None),
+                        func.abs(LocalEvent.latitude - lat0) > _NEAR_LAT,
+                        func.abs(LocalEvent.longitude - lng0) > _NEAR_LNG,
+                    ),
+                    func.coalesce(LocalEvent.end_time, LocalEvent.start_time) >= now - timedelta(days=1),
+                )
             )
-        )
-    ).scalars().all()
+        ).scalars()
+        if event.latitude is None or event.longitude is None or far(event.latitude, event.longitude)
+    ]
     if not events:
         return {"located": 0, "lookups": 0, "unplaced": 0}
+    for event in events:
+        event.latitude = event.longitude = None
 
     jobs = (await db.execute(select(ScheduledJob.params).where(ScheduledJob.kind == KIND))).scalars().all()
     hints = source_locations(jobs)
@@ -108,7 +145,7 @@ async def locate_events(db: AsyncSession) -> dict:
         chunk = list(wanted)[start : start + 500]
         for place in (await db.execute(select(GeocodedPlace).where(GeocodedPlace.query.in_(chunk)))).scalars():
             if place.latitude is not None and place.longitude is not None:
-                known[place.query] = (place.latitude, place.longitude)
+                known[place.query] = _near((place.latitude, place.longitude))
             elif place.looked_up_at > now - RETRY_MISS_AFTER:
                 known[place.query] = None
 
@@ -135,7 +172,9 @@ async def locate_events(db: AsyncSession) -> dict:
                         waiting.add(event.id)
                         break
                     errors = 0
-                    known[key] = coords
+                    # The cache keeps what the geocoder said; a far answer is
+                    # only set aside here.
+                    known[key] = _near(coords)
                     await db.merge(
                         GeocodedPlace(query=key, latitude=coords[0] if coords else None, longitude=coords[1] if coords else None, looked_up_at=now)
                     )
@@ -156,7 +195,8 @@ async def locate_events(db: AsyncSession) -> dict:
             .group_by(LocalEvent.source, LocalEvent.latitude, LocalEvent.longitude)
         )
         for source, lat, lng, n in rows:
-            spots[source][(lat, lng)] += n
+            if not far(lat, lng):
+                spots[source][(lat, lng)] += n
         for event in bare:
             if not spots[event.source]:
                 continue
