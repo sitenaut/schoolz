@@ -10,6 +10,8 @@ function attraction(kind: string, name: string): SeasonalAttraction {
     venue: null,
     address: "1 Main St, Haddonfield, NJ 08033",
     town: "Haddonfield",
+    latitude: 39.89,
+    longitude: -75.04,
     url: "https://example.com/",
     ticket_url: null,
     starts_on: "2026-11-26",

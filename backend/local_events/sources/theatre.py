@@ -229,7 +229,12 @@ def to_raw_events(
         if url and url not in text:
             url = ""
         venue = (p.get("venue") or "").strip()
-        if venue:
+        if venue and venue_name and venue_address and _norm(venue) == _norm(venue_name):
+            # The page names the source's own venue, whose street address the
+            # source gives: "Indian Acres Tree Farm, Medford, NJ" was placed
+            # at the middle of Medford, 111 Tuckerton Rd at the farm.
+            address = venue_address
+        elif venue:
             address = f"{venue}, {town}" if town and _norm(town) not in _norm(venue) else (venue if town else None)
         else:
             address = venue_address

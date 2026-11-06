@@ -69,6 +69,9 @@ export type SeasonalAttraction = {
   venue: string | null;
   address: string;
   town: string;
+  /** Null for a drive you give to by mail or online: nowhere to go. */
+  latitude: number | null;
+  longitude: number | null;
   url: string;
   ticket_url: string | null;
   starts_on: string;

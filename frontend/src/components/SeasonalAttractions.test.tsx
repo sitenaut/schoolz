@@ -7,7 +7,7 @@ import { SeasonalAttractions } from "./SeasonalAttractions";
 
 afterEach(cleanup);
 
-function volunteer(name: string, resource_id: string | null): SeasonalAttraction {
+function volunteer(name: string, resource_id: string | null, latitude: number | null = 39.94): SeasonalAttraction {
   return {
     id: name,
     season: "winter",
@@ -16,6 +16,8 @@ function volunteer(name: string, resource_id: string | null): SeasonalAttraction
     venue: null,
     address: "1 Main St, Camden, NJ 08102",
     town: "Camden",
+    latitude,
+    longitude: latitude === null ? null : -75.12,
     url: "https://example.org/volunteer",
     ticket_url: null,
     starts_on: "2026-11-13",
@@ -41,5 +43,14 @@ describe("SeasonalAttractions", () => {
     );
     expect(getByText("What they provide").getAttribute("href")).toBe("/localz/r/abc-123");
     expect(queryAllByText("What they provide")).toHaveLength(1);
+  });
+
+  it("gives no directions to a drive you give to by mail or online", () => {
+    const { queryAllByText } = render(
+      <MemoryRouter>
+        <SeasonalAttractions season="winter" attractions={[volunteer("Toy drive", null, null), volunteer("Soup kitchen", null)]} />
+      </MemoryRouter>,
+    );
+    expect(queryAllByText("Directions ↗")).toHaveLength(1);
   });
 });

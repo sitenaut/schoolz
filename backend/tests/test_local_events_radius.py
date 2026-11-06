@@ -94,7 +94,8 @@ async def test_locate_events_tries_address_then_name_then_source_location(monkey
         return answers.get((kind, text))
 
     monkeypatch.setattr(locate, "_lookup", fake_lookup)
-    monkeypatch.setattr(locate, "MAX_LOOKUPS", 50)
+    # The shared local database's own unplaced events must not use up the budget.
+    monkeypatch.setattr(locate, "MAX_LOOKUPS", 100_000)
     monkeypatch.setattr(locate, "PAUSE_SECONDS", 0)
 
     def event(source, key, **kw):
@@ -133,6 +134,44 @@ async def test_locate_events_tries_address_then_name_then_source_location(monkey
     assert asked == asked_first and again["lookups"] == 0
 
 
+async def test_a_far_off_answer_is_no_answer_and_a_far_event_is_placed_again(monkeypatch):
+    """"Main Street, Medford" came back in Massachusetts, which hid the
+    township's events at every radius on /local."""
+    run = uuid.uuid4().hex[:8]
+    source = f"medford_{run}"
+    medford_ma, medford_nj = (42.4184, -71.1062), (39.9009, -74.8235)
+    street, town = f"Main Street, Medford {run}", f"Medford, NJ {run}"
+    answers = {("address", street): medford_ma, ("address", town): medford_nj}
+
+    async def fake_lookup(_client, kind, text):
+        return answers.get((kind, text))
+
+    monkeypatch.setattr(locate, "_lookup", fake_lookup)
+    # The shared local database's own unplaced events must not use up the budget.
+    monkeypatch.setattr(locate, "MAX_LOOKUPS", 100_000)
+    monkeypatch.setattr(locate, "PAUSE_SECONDS", 0)
+    async with database.SessionLocal() as db:
+        db.add(ScheduledJob(kind="local_events.refresh", name=f"far {run}", cron_expr="0 5 * * *", params={"json_sources": [{"name": source, "url": "https://example.com", "location": town}]}))
+        db.add_all(
+            [
+                LocalEvent(source=source, source_event_id="new", title=f"Parade {run}", start_time=_soon(), venue_address=street),
+                # Put in Massachusetts by an earlier run.
+                LocalEvent(source=source, source_event_id="old", title=f"Market {run}", start_time=_soon(), venue_address=street, latitude=medford_ma[0], longitude=medford_ma[1]),
+                LocalEvent(source=source, source_event_id="near", title=f"Fair {run}", start_time=_soon(), latitude=HADDONFIELD[0], longitude=HADDONFIELD[1]),
+            ]
+        )
+        await db.commit()
+        await locate.locate_events(db)
+        rows = (await db.execute(select(LocalEvent).where(LocalEvent.source == source))).scalars().all()
+        where = {r.source_event_id: (r.latitude, r.longitude) for r in rows}
+        cached = await db.get(GeocodedPlace, f"address:{street.lower()}")
+
+    assert where == {"new": medford_nj, "old": medford_nj, "near": HADDONFIELD}
+    # The cache keeps what the geocoder said; only its use is refused.
+    assert (cached.latitude, cached.longitude) == medford_ma
+    assert locate.far(*medford_ma) and not locate.far(*LITITZ)
+
+
 async def test_an_address_too_long_for_census_goes_to_nominatim():
     asked: list[str] = []
 
@@ -161,7 +200,8 @@ async def test_refresh_keeps_a_located_events_position(monkeypatch):
         return HADDONFIELD
 
     monkeypatch.setattr(locate, "_lookup", fake_lookup)
-    monkeypatch.setattr(locate, "MAX_LOOKUPS", 50)
+    # The shared local database's own unplaced events must not use up the budget.
+    monkeypatch.setattr(locate, "MAX_LOOKUPS", 100_000)
     monkeypatch.setattr(locate, "PAUSE_SECONDS", 0)
     monkeypatch.setattr("local_events.pipeline._build_sources", lambda _params: [Feed()])
     async with database.SessionLocal() as db:
