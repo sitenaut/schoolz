@@ -29,8 +29,9 @@ from zoneinfo import ZoneInfo
 from mcp.server.fastmcp import FastMCP
 
 import observability
+from services.chat_place_hint import load_places, place_hint
 from services.chat_providers import Usage, configured_providers
-from services.chat_school_hint import SchoolDirectory, school_hint
+from services.chat_school_hint import Directory, match_schools, school_hint
 from services.chat_settings import AudienceConfig
 from services.chatbot_personal import (
     LOCAL_EVENTS_TOOL_NAME,
@@ -153,7 +154,9 @@ async def _anthropic_tools(mcp: FastMCP) -> list[dict[str, Any]]:
     return [{"name": t.name, "description": t.description, "input_schema": t.inputSchema} for t in tools]
 
 
-_SCHOOLS = SchoolDirectory()
+_SCHOOLS = Directory()
+# Event venues change with each refresh (every few hours), so hourly is plenty.
+_PLACES = Directory(ttl_s=3600)
 
 
 async def _school_rows(mcp: FastMCP) -> list[dict[str, Any]]:
@@ -326,11 +329,16 @@ async def run_chat_turn(
             "names (schoolz, Gradez, Genesis, Google Classroom) exactly as given."
         )
 
-    # Which school the message names, matched here rather than left to the
-    # model (services/chat_school_hint.py). After the cache breakpoint too.
-    hint = school_hint(message, await _SCHOOLS.rows(lambda: _school_rows(mcp)))
-    if hint:
-        dynamic_system += " " + hint
+    # Which school or local place the message names, matched here rather
+    # than left to the model (services/chat_school_hint.py,
+    # chat_place_hint.py). After the cache breakpoint too.
+    schools = await _SCHOOLS.rows(lambda: _school_rows(mcp))
+    named = match_schools(message, schools)
+    hint = school_hint(message, schools, named)
+    place = place_hint(message, await _PLACES.rows(load_places), schools, named)
+    for line in (hint, place):
+        if line:
+            dynamic_system += " " + line
 
     escalated = already_escalated and bool(config.escalation_model)
     model = config.escalation_model if escalated else config.model

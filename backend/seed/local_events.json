@@ -210,15 +210,6 @@
           ]
         },
         {
-          "name": "barrington_library",
-          "base_url": "https://barringtonlibrary.libcal.com",
-          "venue_name": "Barrington Public Library",
-          "default_categories": [
-            "barrington",
-            "library"
-          ]
-        },
-        {
           "name": "stratford_library",
           "base_url": "https://stratfordlibrary.libcal.com",
           "venue_name": "Stratford Public Library",
