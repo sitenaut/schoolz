@@ -146,10 +146,10 @@ def _get_semaphore() -> asyncio.Semaphore:
 # the same: 9 renders, ~12 minutes, then the whole roster scan failed.
 _PERMANENT_ERRORS = ("ERR_NAME_NOT_RESOLVED", "Cannot navigate to invalid URL", "ERR_CERT_")
 
-# A render the scraper's watchdog killed ("Render exceeded the 700MB memory
+# A render the scraper's watchdog killed ("Render exceeded the 900MB memory
 # budget and was killed") is killed again on the same machine, so it isn't
-# retried there; the next scraper may have a bigger budget (Fly 700 MB, the
-# droplet 900 MB), so it still falls through. Retried, each such page cost
+# retried there; each scraper has its own budget (Fly's is in
+# scraper/fly.toml), so it still falls through. Retried, each such page cost
 # 3 renders per scraper: three pages doing that (Berlin Township's food
 # services page, Runnemede Library's events API, a Yodel widget) set off the
 # droplet's watchdog alert, 2026-10-30.
