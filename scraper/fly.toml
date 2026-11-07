@@ -40,7 +40,16 @@ kill_timeout = 180
   app = "python -c 'import socket, uvicorn; s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0); s.bind((\"::\", 8765)); uvicorn.Server(uvicorn.Config(\"app.main:app\", timeout_graceful_shutdown=170, server_header=False)).run(sockets=[s])'"
 
 [[vm]]
-  size = "shared-cpu-1x"
+  # Four shared vCPUs for the CPU, not the memory: 1 GB is what shared-cpu-4x
+  # includes. Fly holds a shared machine to its baseline once its burst
+  # balance (500 s at most) runs out, and each shared vCPU adds 1/16 of a
+  # core to that baseline, so 4x keeps a quarter of a core. On shared-cpu-1x
+  # the overnight prerender and scans spent the balance by about 05:00 UTC;
+  # renders then ran ten times slower, and every page that needs more than
+  # about one CPU-second to load timed out at 15 s (288 scan renders on
+  # 2026-11-06). A school homepage takes about 5 CPU-seconds, a prerender
+  # page about 3.
+  size = "shared-cpu-4x"
   memory = "1024mb"
   processes = ["app"]
 
