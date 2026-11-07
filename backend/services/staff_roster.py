@@ -1102,6 +1102,12 @@ def own_location_option(html: str, school_names: list[str | None]) -> tuple[str,
             fits.append((len(words), option["value"], label))
     # "Yardville Heights" fits "Yardville" too; the fuller name is the school.
     fullest = [f for f in fits if f[0] == max(fits)[0]]
+    if len(fullest) > 1:
+        # "Princeton High School", "Princeton Middle School" and "Princeton
+        # Public Schools" all come down to "princeton"; the words that
+        # comparison leaves out tell them apart.
+        named = _name_words(*school_names)
+        fullest = [f for f in fullest if _name_words(f[2]) <= named]
     return fullest[0][1:] if len(fullest) == 1 else None
 
 
@@ -1290,11 +1296,15 @@ async def fetch_roster(school_website_url: str, school_names: list[str | None] |
 _SCHOOL_NAME_NOISE = {"the", "school", "schools", "elementary", "middle", "high", "junior", "senior", "jr", "sr", "memorial", "township", "public", "center", "primary", "intermediate"}
 
 
-def _school_tokens(*names: str | None) -> set[str]:
+def _name_words(*names: str | None) -> set[str]:
     words: set[str] = set()
     for n in names:
         words |= set(re.findall(r"[a-z]+", (n or "").lower()))
-    return words - _SCHOOL_NAME_NOISE
+    return words
+
+
+def _school_tokens(*names: str | None) -> set[str]:
+    return _name_words(*names) - _SCHOOL_NAME_NOISE
 
 
 def drop_sibling_school_staff(roster: list[dict], own_names: list[str | None], sibling_names: list[list[str | None]]) -> tuple[list[dict], list[dict]]:
