@@ -39,6 +39,7 @@ admin to review, the same as a submission through the website's own
 *external* URL, so it uses a real network client, not the in-process one.
 """
 
+import json
 import os
 import re
 from datetime import UTC, date, datetime, timedelta
@@ -53,6 +54,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from request_context import caller_ip_var
 from resources.categories import CATEGORIES
 from routers.resources import NJ_COUNTIES
+from routers.seasonal_guides import today_et
 from services.app_help import app_help
 from services.chat_search_words import STOPWORDS, search_terms
 from services.public_url import check_public_page
@@ -167,6 +169,29 @@ _RESOURCE_MAX_TERMS = 4
 # NJ 211 publishes some shelters with a street address, so address_kind doesn't
 # catch them. A chat answer is no place to volunteer where someone is hiding.
 _HIDDEN_SHELTER_RE = re.compile(r"\bsafe ?house\b|\b(domestic violence|battered)\b[^.]*\bshelter\b|\bshelter\b[^.]*\b(domestic violence|battered)\b", re.I)
+
+# A seasonal attraction row runs about 1 KB (every open night, coordinates,
+# ids), and an unfiltered call in November matched 142 of them: 184k
+# characters, which the chat re-sends to the model on every later round and
+# turn. find_seasonal_attractions returns what an answer uses, with only the
+# next few open nights, up to a budget, and says how to narrow the rest.
+_ATTRACTION_BUDGET_CHARS = 18_000
+_ATTRACTION_NEXT_NIGHTS = 6
+_ATTRACTION_NOTE_CHARS = 240
+_ATTRACTION_FIELDS = ("season", "kind", "name", "venue", "town", "address", "url", "ticket_url",
+                      "starts_on", "ends_on", "schedule", "price", "ages", "note")
+
+
+def _compact_attraction(row: dict, day: str) -> dict:
+    out = {k: row[k] for k in _ATTRACTION_FIELDS if row.get(k) is not None}
+    if "note" in out:
+        out["note"] = out["note"][:_ATTRACTION_NOTE_CHARS]
+    # Null is an answer for these two (scare level unknown, "select nights").
+    out["scare_level"] = row.get("scare_level")
+    out["open_on_day"] = row.get("open_on_day")
+    if row.get("open_dates") is not None:
+        out["open_dates"] = [d for d in row["open_dates"] if d >= day][:_ATTRACTION_NEXT_NIGHTS]
+    return out
 
 
 def _resource_item(r: dict, web: str) -> dict:
@@ -533,9 +558,9 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         if response.status_code == 404 and (m := _SCHOOL_PATH_RE.match(path)):
             # Models guess slugs from names ("bret-harte-elementary" for
             # "bret-harte"). One school fits the guess: answer for it in this
-            # same call - a retry would be a second tool round, and two rounds
-            # escalate the chat to the expensive model. Several fit: say so,
-            # and the model asks the visitor which one.
+            # same call - a retry would be a second tool round, re-sending the
+            # whole conversation to the model. Several fit: say so, and the
+            # model asks the visitor which one.
             matches = await _school_matches(m.group(1))
             if len(matches) == 1:
                 response = await app_client.get(f"/schools/{matches[0]['slug']}{path[m.end():]}", params=params)
@@ -702,6 +727,11 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         """
         school = await _resolve_school(school_id_or_slug)
         data = await _get(f"/schools/{school_id_or_slug}/staff")
+        if isinstance(data, list):
+            # Role holders (principal, nurse, counselor...) first, everyone else
+            # after, each by name: they're who people ask about, and the chat
+            # keeps only the start of a long result (chatbot.fit_tool_result).
+            data = sorted(data, key=lambda s: not s.get("role"))
         if not school:
             return _finalize(data)
         return _finalize(_with_gap_note(data, "a staff directory", school["short_name"] or school["name"]))
@@ -1170,15 +1200,33 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         on_date: YYYY-MM-DD, default today. Results are attractions still
             running then; open_on_day is true/false, or null when the venue
             only says "select nights" - then send people to its site rather
-            than promising it's open.
+            than promising it's open. open_dates is its next few open nights.
         open_only: only those open (or possibly open) on on_date.
 
         Each result has a town and address but distance isn't computed here:
         judge "near X" from the towns. Give the schedule, price and ages as
-        listed, and link the venue's url.
+        listed, and link the venue's url. Results come soonest first, as many
+        as fit (`returned` of `matched`); when `more` is set there are others,
+        so narrow the call rather than saying that's all.
         """
         params = {"season": season, "kind": kind, "scare_level": scare_level, "on": on_date, "open_only": open_only or None}
-        return _finalize(await _get("/seasonal-attractions", params))
+        rows = await _get("/seasonal-attractions", params)
+        if not isinstance(rows, list):  # an error, passed on as it came
+            return _finalize(rows)
+        day = on_date or today_et().isoformat()
+        items: list[dict] = []
+        size = 0
+        for row in rows:
+            item = _compact_attraction(row, day)
+            size += len(json.dumps(item, default=str)) + 2
+            if size > _ATTRACTION_BUDGET_CHARS:
+                break
+            items.append(item)
+        result: dict[str, Any] = {"matched": len(rows), "returned": len(items), "items": items}
+        if len(items) < len(rows):
+            result["more"] = (f"{len(rows) - len(items)} more not shown - narrow by kind, season or on_date "
+                              "(with open_only for one night) to see them.")
+        return result
 
     # -----------------------------------------------------------------
     # Localz community resources
