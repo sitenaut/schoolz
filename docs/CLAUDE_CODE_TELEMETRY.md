@@ -26,6 +26,7 @@ changes. It says nothing about usage limits, which are what cap a subscription.
        "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
        "OTEL_METRICS_EXPORTER": "otlp",
        "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+       "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": "cumulative",
        "OTEL_EXPORTER_OTLP_ENDPOINT": "<the stack's OTLP gateway URL, no trailing path>",
        "CLAUDE_CODE_OTLP_INSTANCE_ID": "<OTLP instance id>",
        "CLAUDE_CODE_OTLP_TOKEN_REF": "op://<vault>/<item>/<field>"
@@ -37,6 +38,11 @@ changes. It says nothing about usage limits, which are what cap a subscription.
    The gateway URL and instance id are on the stack's OpenTelemetry tile
    (`docs/OBSERVABILITY_PLAN.md`). `otelHeadersHelper` builds the Basic auth
    header from the token at export time.
+
+   **Don't drop the temporality line.** Claude Code sends deltas by default,
+   and Grafana Cloud's metrics store takes only cumulative counters. It
+   discards every sample as `otlp_parse_error` ("invalid temporality and type
+   combination"), so the panels stay empty while the machine is exporting.
 3. Tag each project in its **untracked** project settings:
    `"env": {"OTEL_RESOURCE_ATTRIBUTES": "service.namespace=schoolz"}`.
    `service_namespace` is the same label every other app on the stack uses, and
@@ -54,6 +60,11 @@ Metric names come from Claude Code's `claude_code.cost.usage`,
 `claude_code.token.usage` and `claude_code.session.count` after Prometheus
 renaming; if a panel stays empty with data flowing, check the spelling in
 Explore first (same advice as the `observability` skill).
+
+If no `claude_code_*` metric exists at all, look at the stack's discards
+(`grafanacloud_instance_samples_discarded_per_second` by `reason`, on the
+usage datasource). `otlp_parse_error` while you are working means the
+temporality line is missing on some machine.
 
 ## What is still not metered
 
