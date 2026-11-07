@@ -225,7 +225,7 @@ function ConfigFields({
       <Field label="Model">
         <ModelSelect provider={value.provider} value={value.model} options={options} onChange={(m) => onChange({ ...value, model: m ?? "" })} />
       </Field>
-      <Field label="Escalation model" hint="Used once a question needs several lookups.">
+      <Field label="Escalation model" hint="Answers a question that looks compound (several parts, long, or about all your schools) from the start, and the rest of that conversation.">
         <ModelSelect
           provider={value.provider}
           value={value.escalation_model}

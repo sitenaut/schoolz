@@ -178,8 +178,8 @@ async def test_admin_settings_and_compare(monkeypatch):
 
 
 class _BrokenEscalation:
-    """Tool call on the base model, then a 404 for the escalation model -
-    what Gemini returned on prod for claude-sonnet-5."""
+    """A 404 for the escalation model - what Gemini returned on prod for
+    claude-sonnet-5 - and a base model that looks something up, then answers."""
 
     name = "gemini"
 
@@ -190,7 +190,7 @@ class _BrokenEscalation:
         self.models.append(model)
         if model == "claude-sonnet-5":
             raise RuntimeError("gemini returned 404: model not found")
-        if len(self.models) == 1:
+        if self.models.count(model) == 1:
             return Completion(content=[{"type": "tool_use", "id": "t1", "name": "list_schools", "input": {}}], usage=Usage())
         return Completion(content=[{"type": "text", "text": "Here you go."}], usage=Usage())
 
@@ -199,23 +199,23 @@ class _BrokenEscalation:
 async def test_a_failing_escalation_model_falls_back_to_the_base_model():
     provider = _BrokenEscalation()
     config = AudienceConfig(provider="gemini", model="gemini-x", escalation_model="claude-sonnet-5")
-    # "compare ... and ... or" trips the escalation heuristic on the first tool round.
+    # "compare ... and ... or" sends the question to the escalation model from its first call.
     result = await run_chat_turn(
         app.state.mcp, history=[], message="compare East and West or Rosa lunch", already_escalated=False,
         config=config, providers={"gemini": provider},
     )
     assert result["reply"] == "Here you go."
-    assert provider.models == ["gemini-x", "claude-sonnet-5", "gemini-x"]
+    assert provider.models == ["claude-sonnet-5", "gemini-x", "gemini-x"]
     assert result["escalated"] is False and result["model"] == "gemini-x"
     assert "404" in result["escalation_error"]
 
     # A client echoing escalated=true from an earlier turn falls back too.
     provider = _BrokenEscalation()
-    provider.models = ["already-past-round-one"]
     result = await run_chat_turn(
         app.state.mcp, history=[], message="hi", already_escalated=True, config=config, providers={"gemini": provider},
     )
     assert result["reply"] == "Here you go." and result["escalated"] is False
+    assert provider.models == ["claude-sonnet-5", "gemini-x", "gemini-x"]
 
 
 def test_gemini_list_keeps_only_chat_models():
@@ -358,7 +358,7 @@ async def test_list_schools_is_a_compact_directory_with_a_town_filter():
 async def test_guessed_slugs_resolve_or_ask_and_half_day_finds_early_dismissal():
     # The chatbot guessed "bret-harte-elementary" for "bret-harte": an empty
     # calendar read as "no half day", and the retry cost a second tool round
-    # (which escalates to the expensive model).
+    # (which re-sends the whole conversation).
     from datetime import datetime
 
     import database

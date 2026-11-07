@@ -3,8 +3,8 @@ no-auth tools registered on the MCP server at /mcp (see mcp_server.py) -
 this endpoint is effectively just another MCP client, sharing that
 server's tool definitions and execution rather than duplicating them.
 
-Runs on Haiku by default and escalates to Sonnet for compound or
-multi-tool questions - see _should_escalate. The provider and both models
+Runs on Haiku by default; a question that looks compound goes to Sonnet
+from its first call - see _should_escalate. The provider and both models
 are switchable per audience in /admin -> Chatbot (services/chat_settings.py,
 services/chat_providers.py), e.g. to compare Gemini against Claude. Uses ITS OWN Anthropic API
 key/spend pool (CHATBOT_ANTHROPIC_API_KEY), separate from the one
@@ -132,15 +132,17 @@ NO_ANSWER_REPLY = (
 )
 
 
-def _should_escalate(message: str, tool_rounds_so_far: int, already_escalated: bool) -> bool:
-    """A cheap heuristic, deliberately not a model call - classifying the
+def _should_escalate(message: str) -> bool:
+    """Whether a question goes to the escalation model, decided before its
+    first call and never partway through. Caches are per model, so a switch
+    after a tool round had Sonnet write the whole conversation, tool results
+    and all, into its own cache at twenty times Haiku's price - nearly all of
+    what the chat cost, mostly for answers Haiku had already looked up.
+
+    A cheap heuristic, deliberately not a model call - classifying the
     question with an LLM would cost about as much as just answering it on
     Haiku, which defeats the entire point of a cheap default model.
     """
-    if already_escalated:
-        return True
-    if tool_rounds_so_far >= 2:
-        return True
     signals = [
         len(re.findall(r"\b(and|or|compare|versus|vs\.?)\b", message, re.I)) >= 2,
         len(message) > 240,
@@ -180,6 +182,60 @@ async def _run_tool(mcp: FastMCP, name: str, arguments: dict[str, Any]) -> str:
         return json.dumps({"error": f"{type(exc).__name__}: {exc}"})
     parts = [block.text for block in content if hasattr(block, "text")]
     return "\n".join(parts) if parts else "null"
+
+
+# Every tool result the model sees is capped, as find_local_events' and the
+# personal tools' already were (chatbot_personal._MAX_RESULT_CHARS): it is
+# re-sent on every later round of the turn and replayed on every later turn.
+# Uncapped on prod, one school's calendar ran 62-77k characters, its content
+# 266k and the seasonal attractions 184k (a fifth of that the MCP server's
+# indenting, which _dumps drops).
+MAX_TOOL_RESULT_CHARS = 20_000
+
+
+def _dumps(data: Any) -> str:
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"), default=str)
+
+
+def _optional_args(tool: dict[str, Any]) -> list[str]:
+    schema = tool.get("input_schema") or {}
+    required = set(schema.get("required") or [])
+    return [name for name in schema.get("properties") or {} if name not in required]
+
+
+def fit_tool_result(text: str, narrow_with: list[str]) -> str:
+    """`text` as compact JSON within MAX_TOOL_RESULT_CHARS. Past it, whole
+    items are dropped from the end of the result's longest list (tools list
+    the best or soonest first) and a `truncated` note says how many are
+    shown and which arguments narrow the call. Anything else is cut, as the
+    personal tools' results are."""
+    try:
+        data = json.loads(text)
+    except ValueError:
+        data = None
+    if data is not None:
+        text = _dumps(data)
+    if len(text) <= MAX_TOOL_RESULT_CHARS:
+        return text
+    lists = [k for k, v in data.items() if isinstance(v, list) and v] if isinstance(data, dict) else []
+    if lists:
+        key = max(lists, key=lambda k: len(_dumps(data[k])))
+        items = data[key]
+        how = f"call again with {' or '.join(narrow_with)} to narrow it" if narrow_with else "say there are more rather than that this is all"
+        # What fits beside everything else in the result, and the note.
+        room = MAX_TOOL_RESULT_CHARS - (len(text) - len(_dumps(items))) - len(how) - 100
+        keep = 0
+        for item in items:
+            room -= len(_dumps(item)) + 1
+            if room < 0:
+                break
+            keep += 1
+        data[key] = items[:keep]
+        data["truncated"] = f"Only the first {keep} of {len(items)} {key} are shown: {how}."
+        text = _dumps(data)
+    if len(text) > MAX_TOOL_RESULT_CHARS:
+        text = text[:MAX_TOOL_RESULT_CHARS] + '..."[truncated - ask a narrower question]"'
+    return text
 
 
 _NAMES_ONLY_TOOLS = PERSONAL_TOOL_NAMES | {"submit_community_content"}
@@ -340,8 +396,11 @@ async def run_chat_turn(
         if line:
             dynamic_system += " " + line
 
-    escalated = already_escalated and bool(config.escalation_model)
+    # Decided here, before the first call, and kept for the rest of the
+    # conversation (the client echoes `escalated` back) - see _should_escalate.
+    escalated = bool(config.escalation_model) and (already_escalated or _should_escalate(message))
     model = config.escalation_model if escalated else config.model
+    narrow_with = {t["name"]: _optional_args(t) for t in tools}
 
     messages: list[dict[str, Any]] = trim_history(history)
     messages.append({"role": "user", "content": message})
@@ -390,13 +449,6 @@ async def run_chat_turn(
             break
 
         tool_rounds += 1
-        if not escalated and not escalation_error and config.escalation_model and _should_escalate(message, tool_rounds, escalated):
-            # Escalate mid-turn, not just on the next call - a cheap model
-            # already spinning through 2+ tool calls is exactly the case
-            # worth upgrading before it produces a shaky answer.
-            escalated = True
-            model = config.escalation_model
-
         if tool_rounds > MAX_TOOL_ROUNDS:
             final_text = "That's a more involved question than I can chase down right now - try narrowing it to one school or one topic."
             # In place of the tool_use nobody will answer, which would make
@@ -417,7 +469,9 @@ async def run_chat_turn(
                     else json.dumps({"error": "Sign in to schoolz to ask about your own children."})
                 )
             else:
-                result_text = await _run_tool(mcp, use["name"], use.get("input") or {})
+                result_text = fit_tool_result(
+                    await _run_tool(mcp, use["name"], use.get("input") or {}), narrow_with.get(use["name"], [])
+                )
             results.append({"type": "tool_result", "tool_use_id": use["id"], "content": result_text})
         messages.append({"role": "user", "content": results})
 
