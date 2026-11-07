@@ -21,6 +21,7 @@ add/remove feeds from the UI without code changes. Example params:
 """
 from __future__ import annotations
 
+import json
 import logging
 from datetime import UTC, datetime
 
@@ -596,5 +597,9 @@ async def run_pipeline(db: AsyncSession, params: dict) -> dict:
         logger.warning("local_events_locate_failed", extra={"error": str(exc)})
         summary["locations"] = {"error": f"{type(exc).__name__}: {exc}"[:300]}
 
-    logger.info("events_pipeline_complete", extra=summary)
+    # Each mapping goes to the log as one JSON string. Loki makes every key of
+    # a nested dict its own structured-metadata field and refuses a line with
+    # more than 128: at ~100 sources, per_source and excluded alone passed
+    # that, and this line was dropped on every run.
+    logger.info("events_pipeline_complete", extra={k: json.dumps(v) if isinstance(v, dict) else v for k, v in summary.items()})
     return summary

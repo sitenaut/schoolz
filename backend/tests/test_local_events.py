@@ -5,6 +5,7 @@ os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("AUTH_MODE", "local")
 
 import json
+import logging
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 import database
+from local_events import pipeline
 from local_events.billz_import import plan_import
 from local_events.sources.base import RawEvent, Source
 from main import app
@@ -109,6 +111,26 @@ async def test_refresh_upserts_dedupes_across_sources_and_warns_on_failure():
     [row] = rows
     assert row.source == a and row.description == "a much longer description"
     assert "library" in row.categories and "kids" not in row.categories
+
+
+async def test_run_summary_logs_each_mapping_as_one_field(caplog):
+    # Loki makes every key of a nested dict its own structured-metadata field
+    # and refuses a line with more than 128; with ~100 sources the summary
+    # line was dropped on every run.
+    caplog.set_level(logging.INFO, logger="local_events.pipeline")
+    run = uuid.uuid4().hex[:8]
+    sources = [
+        _FakeSource(f"ok_{run}", [_raw(f"ok_{run}", "1", f"Craft Fair {run}", _utc(2031, 5, 3, 15))]),
+        _FakeSource(f"dead_{run}", fail=True),
+    ]
+    async with database.SessionLocal() as db:
+        with patch("local_events.pipeline._build_sources", return_value=sources):
+            summary = await pipeline.run_pipeline(db, {})
+    [record] = [r for r in caplog.records if r.getMessage() == "events_pipeline_complete"]
+    logged = {k: getattr(record, k) for k in summary}
+    assert not any(isinstance(v, dict) for v in logged.values())
+    assert {k: json.loads(v) if isinstance(summary[k], dict) else v for k, v in logged.items()} == summary
+    assert summary["per_source"] == {f"ok_{run}": 1, f"dead_{run}": -1}
 
 
 async def test_seeded_refresh_job_exists():
