@@ -105,3 +105,17 @@ def test_the_fuller_name_wins_when_two_options_fit_a_school():
     <option value="64">Yardville Heights Elementary School</option></select>"""
     assert own_location_option(html, ["Yardville Heights", "Yardville Heights Elementary School"]) == ("64", "Yardville Heights Elementary School")
     assert own_location_option(html, ["Yardville", "Yardville Elementary School"]) == ("63", "Yardville Elementary School")
+
+
+def test_type_words_tell_apart_options_that_share_a_name():
+    # Princeton: three options come down to "princeton" alone.
+    html = """<select name="const_search_location"><option value="">All Locations</option>
+    <option value="70">Community Park School</option>
+    <option value="54">Princeton High School</option>
+    <option value="61">Princeton Middle School</option>
+    <option value="91">Princeton Public Schools</option></select>"""
+    assert own_location_option(html, ["Princeton High", "Princeton High School"]) == ("54", "Princeton High School")
+    assert own_location_option(html, ["Princeton Middle", "Princeton Middle School"]) == ("61", "Princeton Middle School")
+    assert own_location_option(html, ["Community Park", "Community Park School"]) == ("70", "Community Park School")
+    # A name that doesn't say which still gets none.
+    assert own_location_option(html, ["Princeton", None]) is None
