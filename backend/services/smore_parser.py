@@ -52,10 +52,25 @@ _CURRENT_ISSUE_RE = re.compile(r"current\s+issue", re.IGNORECASE)
 # links as plain auto-detected text (confirmed: a handbook link on a real
 # newsletter was plain text inside an image block, no anchor at all).
 _BARE_URL_RE = re.compile(r"https?://[^\s\"'<>)\]]+")
+# Smore's own decoration: a divider is an inline SVG line, and a signature
+# whose author filled nothing in renders empty. Neither has text, an image or
+# a link, so _classify skips them, but they are not parse issues. Confirmed
+# real: they were every unclassified block on Woodcrest's, The Wave's,
+# Edison's, Stoy's, MHK's and Avon's issues (45 dividers on The Wave's alone).
+# Counted, they rose with every newsletter onboarded until the parse-issues
+# alert fired on an ordinary Monday, burying the real drops it is there for.
+_DECORATIVE_BLOCK_TYPES = {"misc.separator", "signature"}
 
 
 def _content_hash(block_type: str, key: str) -> str:
     return hashlib.sha256(f"{block_type}:{key}".encode()).hexdigest()
+
+
+def _block_type(wrapper) -> str | None:
+    """Smore's name for a block ("text.title", "image.single",
+    "misc.separator"), carried on the .block-content inside the wrapper."""
+    content = wrapper.select_one("[data-block-type]")
+    return content.get("data-block-type") if content else None
 
 
 def _find_link(block, text: str) -> str | None:
@@ -153,7 +168,7 @@ async def fetch_and_parse(url: str) -> list[dict]:
             classified["link_url"] = unwrap_redirect(classified["link_url"])
             classified["position"] = position
             blocks.append(classified)
-        else:
+        elif _block_type(wrapper) not in _DECORATIVE_BLOCK_TYPES:
             record_parse_issue("smore.scan", "unclassified_block", url=url, position=position)
     return blocks
 

@@ -247,6 +247,10 @@ the rule rather than learning to ignore the email.
 ### schoolz-parse-issues
 A parser is dropping an unusual amount of content from scans that succeed. The
 `code` and `job_kind` labels say where; the `parse_issue` log lines carry a sample.
+For `smore.scan` `unclassified_block` (Mondays, after the weekly Smore scans),
+render a sampled `url` and read the `data-block-type` at that `position`: a
+type that is only ever decoration belongs in `smore_parser._DECORATIVE_BLOCK_TYPES`,
+anything else is content the parser can't read.
 
 ### schoolz-queue-wait
 Scans are waiting over five minutes for a concurrency slot. Either too many jobs
