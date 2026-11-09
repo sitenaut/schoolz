@@ -30,6 +30,34 @@ def test_empty_decorative_block_is_skipped():
     assert _classify(block) is None
 
 
+@pytest.mark.anyio
+async def test_dividers_and_empty_signatures_are_not_parse_issues(monkeypatch):
+    """Smore's dividers and empty signatures were every unclassified block on
+    real issues, and counting them fired the parse-issues alert on an ordinary
+    Monday. An empty block of any other type is still a parse issue."""
+    html = "".join(
+        f'<div class="block-wrapper"><div class="block-content" data-block-type="{kind}">{inner}</div></div>'
+        for kind, inner in (
+            ("text.title", "<p>Picture day is Thursday</p>"),
+            ("misc.separator", '<div class="ada-bg-black"><svg height="2"><line x1="0" x2="100"></line></svg></div>'),
+            ("signature", ""),
+            ("embed.file", ""),
+        )
+    )
+    issues = []
+
+    async def fake_render(url, **_):
+        return {"html": html}
+
+    monkeypatch.setattr(smore_parser.scraper_client, "fetch_html", fake_render)
+    monkeypatch.setattr(smore_parser, "record_parse_issue", lambda job_kind, code, **ctx: issues.append((code, ctx["position"])))
+
+    blocks = await smore_parser.fetch_and_parse("https://app.smore.com/n/abc12")
+
+    assert [block["text_content"] for block in blocks] == ["Picture day is Thursday"]
+    assert issues == [("unclassified_block", 3)]
+
+
 def test_same_content_hashes_identically_for_dedup():
     a = _classify(_block('<div class="block-wrapper"><p>Same text</p></div>'))
     b = _classify(_block('<div class="block-wrapper"><p>Same text</p></div>'))
