@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { apiFetch } from "../api";
 import { StudentLoginInvite } from "../components/StudentLoginInvite";
 import { IconCheck, IconChevronLeft, IconMail, IconRefresh, IconUpload } from "../components/icons";
@@ -178,7 +178,14 @@ type CourseProgress = {
 type SuggestionState = { loading: boolean; text: string | null; declined: boolean; error: string | null; open: boolean };
 
 type ViewMode = "focused" | "full";
-type Tab = "todo" | "schedule" | "classes" | "grades" | "announcements" | "audit";
+const TABS = ["todo", "schedule", "classes", "grades", "announcements", "audit"] as const;
+type Tab = (typeof TABS)[number];
+
+/** The tab a link asks for (`?tab=grades`, My family's Grades button), if it's one of ours. */
+function linkedTab(params: URLSearchParams): Tab | null {
+  const asked = params.get("tab");
+  return TABS.find((t) => t === asked) ?? null;
+}
 
 const MODE_KEY = "schoolz_kids_view_mode";
 
@@ -257,8 +264,10 @@ export function KidsDetailPage() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [grades, setGrades] = useState<Grades | null>(null);
   const [audit, setAudit] = useState<Audit | null>(null);
+  const [params] = useSearchParams();
+  const askedTab = linkedTab(params);
   const [mode, setMode] = useState<ViewMode | null>(null);
-  const [tab, setTab] = useState<Tab>("todo");
+  const [tab, setTab] = useState<Tab>(askedTab ?? "todo");
   const [suggestions, setSuggestions] = useState<Record<string, SuggestionState>>({});
 
   const loadTodo = useCallback(async () => {
@@ -314,8 +323,10 @@ export function KidsDetailPage() {
   }, [loadNow]);
 
   useEffect(() => {
-    if (student && mode === null) setMode(loadMode(student.viewer_role));
-  }, [student, mode]);
+    // A link to a tab opens Everything, where the tabs are, for this visit
+    // only: the saved choice stays.
+    if (student && mode === null) setMode(askedTab ? "full" : loadMode(student.viewer_role));
+  }, [student, mode, askedTab]);
 
   const changeMode = (next: ViewMode) => {
     setMode(next);

@@ -452,10 +452,18 @@ function ChildCard({
           {c.school_name && <div className="sub">{c.school_name}</div>}
         </div>
         {hasSchoolwork(c) && (
-          // Gradez is its own app at /focus/, not a route here - a plain link.
-          <a className="btn sm btn-primary" href={`/focus/?student=${encodeURIComponent(c.id)}`} title={`Open ${c.first_name} in Gradez`}>
-            Open
-          </a>
+          <div className="fam-kid-actions">
+            {/* The child's full page, on its Grades tab: no menu reaches /kids/<id>. */}
+            {c.genesis_seen_at && (
+              <Link className="btn sm" to={`/kids/${encodeURIComponent(c.id)}?tab=grades`} title={`${c.first_name}'s grades, by marking period`}>
+                Grades
+              </Link>
+            )}
+            {/* Gradez is its own app at /focus/, not a route here - a plain link. */}
+            <a className="btn sm btn-primary" href={`/focus/?student=${encodeURIComponent(c.id)}`} title={`Open ${c.first_name} in Gradez`}>
+              Open
+            </a>
+          </div>
         )}
       </div>
 
