@@ -4341,6 +4341,11 @@ select {
   color: var(--ink-3);
   font-size: 13px;
 }
+.fam-kid-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
 .fam-group {
   margin: 14px 0 0;
 }
