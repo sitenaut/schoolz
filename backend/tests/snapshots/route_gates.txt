@@ -25,6 +25,11 @@ GET    /admin/chatbot/models  perm:chatbot.view
 GET    /admin/config/export  perm:config.view
 POST   /admin/config/import  perm:config.manage
 GET    /admin/config/results  perm:config.view
+GET    /admin/family-connections  super_admin
+GET    /admin/family-connections/requests/{user_code}  super_admin
+POST   /admin/family-connections/requests/{user_code}/approve  super_admin
+POST   /admin/family-connections/requests/{user_code}/deny  super_admin
+DELETE /admin/family-connections/{connection_id}  super_admin
 GET    /admin/permissions  super_admin
 GET    /admin/resources/changes  perm:resources.view
 POST   /admin/resources/changes/{change_id}/approve  perm:resources.manage
@@ -126,6 +131,10 @@ DELETE /email-scanners/{scanner_id}  perm:email.manage
 PATCH  /email-scanners/{scanner_id}  perm:email.manage
 POST   /email-scanners/{scanner_id}/run-now  perm:email.manage
 GET    /family  login
+POST   /family-connections/self/revoke  login
+POST   /family-connections/start  public
+POST   /family-connections/token  public
+GET    /family/feed  login
 GET    /gmail/auth-url  perm:email.manage
 GET    /gmail/callback  public
 GET    /gmail/connections  perm:email.view

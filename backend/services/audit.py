@@ -42,6 +42,10 @@ AUDITED: dict[tuple[str, str], str] = {
     ("POST", "/capture-devices/requests/{user_code}/deny"): "capture_device.deny",
     ("DELETE", "/capture-devices/{device_id}"): "capture_device.revoke",
     ("POST", "/capture-devices/self/revoke"): "capture_device.revoke_self",
+    ("POST", "/admin/family-connections/requests/{user_code}/approve"): "family_connection.approve",
+    ("POST", "/admin/family-connections/requests/{user_code}/deny"): "family_connection.deny",
+    ("DELETE", "/admin/family-connections/{connection_id}"): "family_connection.revoke",
+    ("POST", "/family-connections/self/revoke"): "family_connection.revoke_self",
     ("POST", "/admin/api-keys"): "api_key.create",
     ("PATCH", "/admin/api-keys/{key_id}"): "api_key.update",
     ("DELETE", "/admin/api-keys/{key_id}"): "api_key.revoke",
@@ -215,7 +219,15 @@ class AuditMiddleware:
 
         api_key_id = state.get("api_key_id")
         user_id = state.get("user_id")
-        credential = "api_key" if api_key_id else "capture_key" if state.get("capture_device_id") else "session"
+        credential = (
+            "api_key"
+            if api_key_id
+            else "capture_key"
+            if state.get("capture_device_id")
+            else "family_key"
+            if state.get("family_connection_id")
+            else "session"
+        )
         base = {
             "status": status,
             "actor_user_id": user_id,

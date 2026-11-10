@@ -206,6 +206,48 @@ class CaptureDeviceRequest(Base):
     )
 
 
+class FamilyConnection(Base):
+    """An app connected to one person's family (routers/family_connections.py):
+    billz, the owner's household app, reading that person's children, their
+    schools, school days, schoolwork and grades through GET /family/feed and
+    nothing else (auth.FAMILY_KEY_ROUTES). Experimental, so only a super
+    admin can approve one, and the feed refuses a key whose person is no
+    longer one. Only the SHA-256 is stored; removing the row disconnects it."""
+
+    __tablename__ = "family_connections"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class FamilyConnectionRequest(Base):
+    """A pending connect from an app: it holds `device_code` and polls; a
+    super admin approves `user_code` in the browser. The key is minted only
+    when the app collects it, so its plaintext is never stored."""
+
+    __tablename__ = "family_connection_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_code: Mapped[str] = mapped_column(String(16), unique=True, index=True, nullable=False)
+    device_code_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    client_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # routers/family_connections.requester_ip_hash: the per-connection cap on open requests.
+    requester_ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # pending | approved | denied | issued
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    approved_by_user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    family_connection_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("family_connections.id", ondelete="SET NULL"), nullable=True
+    )
+
+
 class CaptureDiagnostic(Base):
     """An update's own step-by-step log, sent by Backpack Capture after each
     update (routers/capture_devices.py), for working out why one went wrong:

@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import observability
 from database import SessionLocal, get_db
-from models import ApiKey, CaptureDevice, RolePermission, User, UserRole
+from models import ApiKey, CaptureDevice, FamilyConnection, RolePermission, User, UserRole
 from permissions import PERMISSION_KEYS, expand
 from request_context import CodedHTTPException
 from services import audit
@@ -55,6 +55,18 @@ CAPTURE_KEY_ROUTES = frozenset(
         ("POST", "/students/{student_id}/bucket3/capture-status"),
         ("POST", "/capture-devices/self/revoke"),
         ("POST", "/capture-devices/diagnostics"),
+    }
+)
+
+# An app connected to a person's family (models.FamilyConnection, connected
+# in routers/family_connections.py): read-only, and only the feed. Like a
+# capture key it acts as the person who approved it and is refused before
+# it is even looked up on every other route.
+FAMILY_KEY_PREFIX = "szf_"
+FAMILY_KEY_ROUTES = frozenset(
+    {
+        ("GET", "/family/feed"),
+        ("POST", "/family-connections/self/revoke"),
     }
 )
 
@@ -361,6 +373,32 @@ async def _authenticate_capture_key(request: Request, db: AsyncSession, token: s
     return user
 
 
+def generate_family_key() -> tuple[str, str, str]:
+    """(plaintext, display prefix, sha256 hex), like generate_api_key."""
+    plaintext = FAMILY_KEY_PREFIX + secrets.token_urlsafe(32)
+    return plaintext, plaintext[:12], hash_api_key(plaintext)
+
+
+async def _authenticate_family_key(request: Request, db: AsyncSession, token: str) -> User:
+    route = getattr(request.scope.get("route"), "path", None)
+    if (request.method, route) not in FAMILY_KEY_ROUTES:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "A family connection key can only read the family feed")
+    connection = (
+        await db.execute(select(FamilyConnection).where(FamilyConnection.key_hash == hash_api_key(token)))
+    ).scalar_one_or_none()
+    user = await db.get(User, connection.user_id) if connection else None
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "This app isn't connected to schoolz any more")
+    now = datetime.now(UTC)
+    if connection.last_used_at is None or now - connection.last_used_at > _API_KEY_TOUCH_INTERVAL:
+        connection.last_used_at = now
+        await db.commit()
+    request.state.family_connection_id = connection.id
+    # A key, like a capture key: never a super admin, no admin permissions.
+    request.state.api_key_scope = frozenset()
+    return user
+
+
 def key_gate(dependency):
     """Mark an admin gate an API key may reach. The gate still decides;
     a route with none of these refuses keys outright (API_KEY_ROUTES)."""
@@ -403,6 +441,8 @@ async def get_current_user(
         user = await _authenticate_api_key(request, db, token)
     elif token.startswith(CAPTURE_KEY_PREFIX):
         user = await _authenticate_capture_key(request, db, token)
+    elif token.startswith(FAMILY_KEY_PREFIX):
+        user = await _authenticate_family_key(request, db, token)
     elif AUTH_MODE == "supabase":
         claims = await _verify_supabase_token(token)
         user = await _get_or_create_supabase_user(db, claims)
