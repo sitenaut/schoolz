@@ -568,6 +568,9 @@ async def _apply_capture(
         if page_kind == "genesis:gradebook-course":
             await _apply_course_grades(db, student, source_url, reduced_text, captured_at, course_map, counters)
             return
+        if page_kind == "genesis:gradebook-list":
+            await _apply_assignment_list(db, student, source_url, reduced_text, captured_at, course_map, counters)
+            return
         if page_kind == "genesis:gradebook-weekly":
             for mp in ex.extract_genesis_marking_periods(reduced_text, captured_at):
                 await db.execute(
@@ -688,46 +691,126 @@ async def _apply_course_grades(
             )
         )
     for entry in sheet.entries:
-        uid_source = f"{course_code}-{course_section}:{ex.normalize_title(entry.title)}:{entry.weekday_date}"
-        external_uid = hashlib.sha256(uid_source.encode("utf-8")).hexdigest()[:32]
-        await db.execute(
-            pg_insert(ChildGradeEntry)
-            .values(
-                student_id=student.id,
-                external_uid=external_uid,
-                course_code=course_code,
-                course_section=course_section,
-                course_name=course_name,
-                marking_period=sheet.marking_period,
-                weekday_date=entry.weekday_date,
-                title=entry.title,
-                description=entry.description,
-                category=entry.category,
-                score_earned=entry.score_earned,
-                score_possible=entry.score_possible,
-                percent=entry.percent,
-                status=entry.status,
-                is_updated=entry.updated,
-                first_seen_at=captured_at,
-                last_seen_at=captured_at,
-            )
-            .on_conflict_do_update(
-                index_elements=["student_id", "external_uid"],
-                set_={
-                    "course_name": func.coalesce(course_name, ChildGradeEntry.course_name),
-                    "marking_period": sheet.marking_period,
-                    "description": entry.description,
-                    "category": entry.category,
-                    "score_earned": entry.score_earned,
-                    "score_possible": entry.score_possible,
-                    "percent": entry.percent,
-                    "status": entry.status,
-                    "is_updated": entry.updated,
-                    "last_seen_at": captured_at,
-                },
+        await _upsert_grade_entry(db, student, code, course_name, sheet.marking_period, entry, captured_at)
+        counters.grades += 1
+
+
+# What a gradebook page says about an entry's grade. The newest reading wins,
+# even when it's empty: a mark the teacher took back is gone.
+_GRADE_ENTRY_LATEST_COLUMNS = ("title", "score_earned", "percent", "status", "is_updated")
+# What a reading can lack without the entry having lost it: Course Summary
+# prints "Assignment Pts: 0" on a Missing entry where List Assignments prints
+# nothing (confirmed real), and only List Assignments says which range listed it.
+_GRADE_ENTRY_FILLED_COLUMNS = ("score_possible", "marking_period", "description", "category", "listed_in")
+
+
+async def _upsert_grade_entry(
+    db: AsyncSession,
+    student: Student,
+    code: tuple[str, str],
+    course_name: str | None,
+    marking_period: str | None,
+    entry: ex.GenesisGradeEntry,
+    captured_at: datetime,
+    *,
+    listed_in: str | None = None,
+) -> str:
+    """Stores one Genesis assignment as Course Summary or List Assignments read
+    it; both name it alike, so it's one row. Two pages captured at different
+    times can disagree (a grade posted in between), and a page can arrive after
+    a newer one (another computer publishing late; List Assignments' address
+    changes daily, so import can't tell it's an old copy), so the newer reading
+    wins row by row. `graded_at` is the earliest reading that had a grade or a
+    mark: the family feed's news. Returns the row's external_uid."""
+    course_code, course_section = code
+    uid_source = f"{course_code}-{course_section}:{ex.normalize_title(entry.title)}:{entry.weekday_date}"
+    external_uid = hashlib.sha256(uid_source.encode("utf-8")).hexdigest()[:32]
+    ins = pg_insert(ChildGradeEntry).values(
+        student_id=student.id,
+        external_uid=external_uid,
+        course_code=course_code,
+        course_section=course_section,
+        course_name=course_name,
+        marking_period=marking_period,
+        weekday_date=entry.weekday_date,
+        title=entry.title[:500],
+        description=entry.description[:1000] if entry.description else None,
+        category=entry.category[:100] if entry.category else None,
+        score_earned=entry.score_earned,
+        score_possible=entry.score_possible,
+        percent=entry.percent,
+        status=entry.status,
+        is_updated=entry.updated,
+        graded_at=captured_at if ex.is_graded(entry) else None,
+        listed_in=listed_in,
+        first_seen_at=captured_at,
+        last_seen_at=captured_at,
+    )
+    newer = ins.excluded.last_seen_at >= ChildGradeEntry.last_seen_at
+    set_ = {
+        col: case((newer, getattr(ins.excluded, col)), else_=getattr(ChildGradeEntry, col))
+        for col in _GRADE_ENTRY_LATEST_COLUMNS
+    }
+    for col in _GRADE_ENTRY_FILLED_COLUMNS:
+        new, old = getattr(ins.excluded, col), getattr(ChildGradeEntry, col)
+        set_[col] = case((newer, func.coalesce(new, old)), else_=func.coalesce(old, new))
+    # As for the class grade: a name no Classroom capture on file resolves
+    # now is kept, not blanked.
+    set_["course_name"] = func.coalesce(ins.excluded.course_name, ChildGradeEntry.course_name)
+    # LEAST skips a NULL, so an ungraded reading never clears graded_at. A
+    # late copy can be the earliest sighting; first_seen_at moves back with
+    # it, so graded_at never precedes it.
+    set_["graded_at"] = func.least(ChildGradeEntry.graded_at, ins.excluded.graded_at)
+    set_["first_seen_at"] = func.least(ChildGradeEntry.first_seen_at, ins.excluded.first_seen_at)
+    set_["last_seen_at"] = func.greatest(ChildGradeEntry.last_seen_at, ins.excluded.last_seen_at)
+    await db.execute(ins.on_conflict_do_update(index_elements=["student_id", "external_uid"], set_=set_))
+    return external_uid
+
+
+async def _apply_assignment_list(
+    db: AsyncSession,
+    student: Student,
+    source_url: str,
+    reduced_text: str,
+    captured_at: datetime,
+    course_map: ex.CourseMap,
+    counters: _Counters,
+) -> None:
+    """A List Assignments page: every assignment in its range, graded or not,
+    each filed under the marking period Genesis itself names on it."""
+    page = ex.extract_genesis_list_assignments(reduced_text)
+    if not page:
+        return
+    listed_in = ex.genesis_list_range(source_url)
+    seen: set[str] = set()
+    unmapped = False
+    for a in page.assignments:
+        code = page.courses.get(a.course)
+        if not code:
+            # A capture from before Backpack Capture 0.10.0 has no class codes
+            # in its text, and an entry is keyed by its class's code.
+            unmapped = True
+            continue
+        seen.add(
+            await _upsert_grade_entry(
+                db, student, code, course_map.by_code.get(code), a.marking_period, a.entry, captured_at, listed_in=listed_in
             )
         )
         counters.grades += 1
+    if listed_in and page.complete and not unmapped:
+        # The whole range was read, so an entry it listed before and no longer
+        # does is gone: deleted, renamed or moved to another day (both of
+        # which make a new entry). Only one never graded goes; a grade, once
+        # posted, stays on record.
+        await db.execute(
+            delete(ChildGradeEntry).where(
+                ChildGradeEntry.student_id == student.id,
+                ChildGradeEntry.listed_in == listed_in,
+                ChildGradeEntry.graded_at.is_(None),
+                ChildGradeEntry.last_seen_at < captured_at,
+                ChildGradeEntry.external_uid.not_in(seen),
+            )
+        )
 
 
 async def _apply_schedule(db: AsyncSession, student: Student, reduced_text: str, counters: _Counters) -> None:
@@ -1488,7 +1571,8 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
         else {}
     )
 
-    # Keyed by class and title together (kids_view.genesis_grade_for).
+    # Keyed by class and title together (kids_view.genesis_grade_for). An
+    # entry with nothing graded says nothing about the work either way.
     grades_by_class_title: dict[tuple[str, str, str], list[ChildGradeEntry]] = {}
     for entry in (
         await db.execute(
@@ -1497,6 +1581,8 @@ async def _todo_items(db: AsyncSession, student: Student) -> tuple[list[dict], C
             .order_by(ChildGradeEntry.last_seen_at.desc())
         )
     ).scalars().all():
+        if not ex.is_graded(entry):
+            continue
         key = (entry.course_code, entry.course_section, ex.normalize_title(entry.title))
         grades_by_class_title.setdefault(key, []).append(entry)
 

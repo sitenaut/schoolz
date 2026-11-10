@@ -994,11 +994,22 @@ function ScheduleTab({ schedule }: { schedule: Schedule | null }) {
   );
 }
 
+// A score or a mark (Missing, Exempt); Genesis lists the rest as "No Grade".
+function isGraded(e: GradeEntry): boolean {
+  return e.score_earned != null || e.percent != null || e.status != null;
+}
+
 function scoreLabel(e: GradeEntry): string {
   if (e.status) return e.status;
   if (e.score_earned != null && e.score_possible != null) return `${e.score_earned}/${e.score_possible} (${e.percent ?? "?"}%)`;
-  if (e.score_possible != null) return `— / ${e.score_possible}`;
+  if (!isGraded(e)) return e.score_possible != null ? `Not graded yet · ${e.score_possible} pts` : "Not graded yet";
   return "—";
+}
+
+// Genesis prints no year ("Mon 11/9"); a school year runs July to June.
+function dueOrder(e: GradeEntry): number {
+  const [month, day] = (e.weekday_date.split(" ").pop() ?? "").split("/").map(Number);
+  return ((month < 7 ? month + 12 : month) || 0) * 100 + (day || 0);
 }
 
 function scoreTagClass(e: GradeEntry): string {
@@ -1008,15 +1019,17 @@ function scoreTagClass(e: GradeEntry): string {
   return "tag";
 }
 
-function GradesTab({ grades }: { grades: Grades | null }) {
-  if (!grades || grades.course_grades.length === 0) {
-    return <div className="empty">No grades imported yet — capture a Genesis "Course Summary" gradebook page for each class.</div>;
+export function GradesTab({ grades }: { grades: Grades | null }) {
+  if (!grades || (grades.course_grades.length === 0 && grades.entries.length === 0)) {
+    return <div className="empty">No grades yet. Update now in Backpack Capture reads them from the Genesis gradebook.</div>;
   }
+  const dates = new Map(grades.marking_periods.map((mp) => [mp.label, mp]));
+  // Newest marking period first; anything Genesis filed under none comes last.
+  const periods = [...new Set([...grades.course_grades.map((g) => g.marking_period), ...grades.entries.map((e) => e.marking_period ?? "")])].sort(
+    (a, b) => (a === "" ? 1 : b === "" ? -1 : b.localeCompare(a)),
+  );
   return (
     <div>
-      {grades.marking_periods.length > 0 && (
-        <p className="note">Marking periods: {grades.marking_periods.map((mp) => `${mp.label} (${mp.start_date} – ${mp.end_date})`).join(" · ")}</p>
-      )}
       {grades.marking_period_discrepancies.length > 0 && (
         <div className="banner bad">
           <span>
@@ -1026,56 +1039,66 @@ function GradesTab({ grades }: { grades: Grades | null }) {
           </span>
         </div>
       )}
-      <div className="card">
-        <div className="section-title" style={{ margin: 0 }}>
-          Current grade by course
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table className="kids-table">
-            <thead>
-              <tr>
-                <th>Course</th>
-                <th>MP</th>
-                <th>Grade</th>
-                <th>Last graded</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grades.course_grades.map((g) => (
-                <tr key={`${g.course_code}-${g.course_section}-${g.marking_period}`}>
-                  <td>{g.course_name ?? `Course ${g.course_code}-${g.course_section}`}</td>
-                  <td>{g.marking_period}</td>
-                  <td>
-                    {g.grade_percent != null ? <span className={g.grade_percent < 50 ? "tag deadline" : "tag done"}>{g.grade_percent}%</span> : "—"}
-                  </td>
-                  <td>{g.last_grade_posted ?? "—"}</td>
-                </tr>
+      {periods.map((label) => {
+        const mp = dates.get(label);
+        const courseGrades = grades.course_grades.filter((g) => g.marking_period === label);
+        const entries = grades.entries.filter((e) => (e.marking_period ?? "") === label).sort((a, b) => dueOrder(b) - dueOrder(a));
+        return (
+          <section key={label || "none"}>
+            <div className="section-title">{label ? `${label}${mp ? ` · ${mp.start_date} – ${mp.end_date}` : ""}` : "No marking period"}</div>
+            {courseGrades.length > 0 && (
+              <div className="card">
+                <div style={{ overflowX: "auto" }}>
+                  <table className="kids-table">
+                    <thead>
+                      <tr>
+                        <th>Course</th>
+                        <th>Grade</th>
+                        <th>Last graded</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {courseGrades.map((g) => (
+                        <tr key={`${g.course_code}-${g.course_section}-${g.marking_period}`}>
+                          <td>{g.course_name ?? `Course ${g.course_code}-${g.course_section}`}</td>
+                          <td>
+                            {g.grade_percent != null ? (
+                              <span className={g.grade_percent < 50 ? "tag deadline" : "tag done"}>{g.grade_percent}%</span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td>{g.last_grade_posted ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            <ul className="item-list">
+              {entries.map((e) => (
+                <li key={e.external_uid} className="item-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                    <span className="item-title">
+                      {e.title}
+                      {e.is_updated && (
+                        <span className="tag new" style={{ marginLeft: 6 }}>
+                          Updated
+                        </span>
+                      )}
+                    </span>
+                    <span className={scoreTagClass(e)}>{scoreLabel(e)}</span>
+                  </div>
+                  <p className="item-desc" style={{ marginBottom: 0 }}>
+                    {[e.course_name ?? `${e.course_code}-${e.course_section}`, e.category, e.weekday_date].filter(Boolean).join(" · ")}
+                  </p>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="section-title">Graded assignments</div>
-      <ul className="item-list">
-        {grades.entries.map((e) => (
-          <li key={e.external_uid} className="item-card">
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-              <span className="item-title">
-                {e.title}
-                {e.is_updated && (
-                  <span className="tag new" style={{ marginLeft: 6 }}>
-                    Updated
-                  </span>
-                )}
-              </span>
-              <span className={scoreTagClass(e)}>{scoreLabel(e)}</span>
-            </div>
-            <p className="item-desc" style={{ marginBottom: 0 }}>
-              {[e.course_name ?? `${e.course_code}-${e.course_section}`, e.category, e.weekday_date].filter(Boolean).join(" · ")}
-            </p>
-          </li>
-        ))}
-      </ul>
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

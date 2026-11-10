@@ -184,10 +184,12 @@ def test_course_progress_flags_low_grades_without_calculating_makeup():
         {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "due", "due_date": "2026-09-16"},
         {"course_key_tuple": ("331", "10"), "course_name": "F: CHEM-1A 331-10", "category": "no_due_date", "due_date": None},
     ]
-    entries = [
-        SimpleNamespace(course_code="331", course_section="10", course_name=None, title="Density Activity", percent=0.0),
-        SimpleNamespace(course_code="331", course_section="10", course_name=None, title="Welcome", percent=100.0),
-    ]
+    def entry(title, earned, percent):
+        return SimpleNamespace(
+            course_code="331", course_section="10", course_name=None, title=title, score_earned=earned, percent=percent, status=None
+        )
+
+    entries = [entry("Density Activity", 0.0, 0.0), entry("Welcome", 5.0, 100.0)]
     grades = [SimpleNamespace(course_code="331", course_section="10", course_name=None, grade_percent=27.27, marking_period="MP1")]
     [chem] = kv.course_progress(items, entries, grades, "2026-09-14")
     assert chem["course_name"] == "F: CHEM-1A 331-10"
@@ -196,6 +198,10 @@ def test_course_progress_flags_low_grades_without_calculating_makeup():
     assert chem["grade_percent"] == 27.27
     assert chem["low_grade_entries"] == [{"title": "Density Activity", "percent": 0.0}]
     assert chem["teacher_emails"] == ["dquinn@example.org"]
+
+    # Only listed, nothing graded: Genesis's "0.00%" is no grade yet.
+    [chem] = kv.course_progress(items, [entry("Density Activity", None, None)], [SimpleNamespace(**{**vars(grades[0]), "grade_percent": 0.0})], "2026-09-14")
+    assert chem["grade_percent"] is None and chem["low_grade_entries"] == []
 
 
 def _policy(shape, **kw):

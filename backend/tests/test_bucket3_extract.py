@@ -238,6 +238,57 @@ def test_extract_genesis_course_grades_handles_no_assignments():
     assert sheet.marking_period_grade_pct == 0.0
 
 
+LIST_URL = (
+    "https://parents.example.org/genesis/parents?tab1=studentdata&tab2=gradebook&tab3=listassignments"
+    "&studentid=1&action=form&date=11/10/2026"
+)
+
+
+def test_extract_genesis_list_assignments_reads_every_card_graded_or_not():
+    assert ex.classify_page("genesis", LIST_URL + "&dateRange=MP1").pattern == "genesis:gradebook-list"
+    page = ex.extract_genesis_list_assignments(_load("genesis_list_assignments.txt"))
+    assert page.complete
+    assert page.courses == {"ENGLISH 10": ("121", "1"), "CHEMISTRY 1A": ("331", "10"), "PHYS ED 10": ("3002", "5")}
+    by_title = {a.entry.title: a for a in page.assignments}
+    assert list(by_title) == ["Essay Revisions", "Periodic Table Quiz", "Exit Ticket", "Density Lab", "Reading Check"]
+    assert {(a.course, a.marking_period) for a in page.assignments} == {("ENGLISH 10", "MP1"), ("CHEMISTRY 1A", "MP1")}
+
+    # "No Grade": listed, nothing graded yet. The teacher's comment isn't kept.
+    essay = by_title["Essay Revisions"].entry
+    assert (essay.weekday_date, essay.category, essay.description) == ("Mon 11/9", "Minor Assessments", None)
+    assert essay.score_possible == 5.0 and not ex.is_graded(essay)
+
+    quiz = by_title["Periodic Table Quiz"].entry
+    assert quiz.description == "Sign in sheet for the review session is on the board."
+    assert quiz.category == "Major Assessments"
+    assert (quiz.score_earned, quiz.score_possible, quiz.percent) == (13.0, 45.0, 28.9)
+
+    ticket = by_title["Exit Ticket"].entry
+    assert ticket.updated and ticket.status is None and ticket.percent == 80.0
+
+    lab = by_title["Density Lab"].entry
+    assert (lab.status, lab.score_possible) == ("Missing", 25.0) and ex.is_graded(lab)
+    assert by_title["Reading Check"].entry.status == "Absent"
+
+
+def test_a_list_read_short_of_its_table_is_incomplete():
+    text = _load("genesis_list_assignments.txt")
+    page = ex.extract_genesis_list_assignments(text[: text.rindex("Reading Check\nClose")])
+    assert len(page.assignments) == 4 and not page.complete
+    # Before Backpack Capture 0.10.0 the class dropdown's codes weren't in the text.
+    page = ex.extract_genesis_list_assignments(text.replace(" (value: 331:10)", ""))
+    assert "CHEMISTRY 1A" not in page.courses and len(page.assignments) == 5
+    assert ex.extract_genesis_list_assignments(_load("genesis_course_grades.txt")) is None
+
+
+def test_genesis_list_range_is_only_a_whole_range():
+    assert ex.genesis_list_range(LIST_URL + "&dateRange=MP1&courseAndSection=&status=") == "MP1"
+    assert ex.genesis_list_range(LIST_URL + "&dateRange=MP2") == "MP2"
+    assert ex.genesis_list_range(LIST_URL + "&dateRange=MP1&courseAndSection=121:1&status=") is None
+    assert ex.genesis_list_range(LIST_URL + "&dateRange=MP1&courseAndSection=&status=GRADED") is None
+    assert ex.genesis_list_range(LIST_URL) is None
+
+
 def test_extract_genesis_marking_periods_resolves_school_year_and_dedups_repeats():
     anchor = datetime(2026, 9, 14, 12, 0, tzinfo=UTC)
     mps = ex.extract_genesis_marking_periods(_load("genesis_weekly_summary.txt"), anchor)

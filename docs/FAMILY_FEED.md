@@ -121,7 +121,8 @@ A super admin's own browser session reads it too, for a look.
      "title": "Quiz 3", "status": null, "category": "Quizzes", "source": "genesis",
      "data": {"course_name": "Science 7", "course_code": "SCI7", "course_section": "02",
               "marking_period": "MP2", "weekday_date": "Thu 11/06", "score_earned": 18.0,
-              "score_possible": 20.0, "percent": 90.0, "first_seen_at": "2026-11-07T01:10:00Z"},
+              "score_possible": 20.0, "percent": 90.0, "first_seen_at": "2026-11-03T21:40:00Z",
+              "graded_at": "2026-11-07T01:10:00Z"},
      "hash": "..."}
   ]
 }
@@ -138,7 +139,7 @@ Every item has every top-level field (shortened above). Only `uid`, `kind`,
 | `news` | `item:{id}` | undated newsletter item | `extracted_at` is on or after `start` | null | as `event` |
 | `assignment` | `assignment:{id}` | Classroom work in the current marking period (Gradez's to-do) | always | `missing`, `due`, `done`, `no_due_date` | `course_name`, `due_raw`, `done`, `done_source`, `classroom_status`, `points_possible`, `grade`, `teacher_name` |
 | `course_grade` | `course_grade:{child_id}:{code}-{section}:{marking_period}` | class, current marking period | always | null | `course_code`, `course_section`, `marking_period`, `grade_percent`, `last_grade_posted` |
-| `grade` | `grade:{child_id}:{external_uid}` | Genesis graded entry | schoolz first saw it on or after `start` | `Missing`, `Late`, `Exempt` or null | `course_name`, `course_code`, `course_section`, `marking_period`, `weekday_date` (as Genesis prints it), `score_earned`, `score_possible`, `percent`, `first_seen_at` |
+| `grade` | `grade:{child_id}:{external_uid}` | Genesis assignment with a score or a mark | schoolz first saw it graded (`graded_at`) on or after `start` | `Missing`, `Late`, `Exempt` or null | `course_name`, `course_code`, `course_section`, `marking_period`, `weekday_date` (as Genesis prints it), `score_earned`, `score_possible`, `percent`, `first_seen_at`, `graded_at` |
 
 - `title`, `detail`: a `day`'s title says the status ("No school: Thanksgiving
   Recess") and `detail` its hours; a `schedule`'s title is the rotation day
@@ -164,7 +165,7 @@ item when a snapshot whose window still covers it no longer has it: it was
 withdrawn, corrected or deleted at its source (a newsletter correction is a
 new `uid` with the old one gone; a revised district calendar PDF replaces
 every row). "Covers" is per kind, as in the table: the date for `day` and
-`event`, `extracted_at` for `news`, `first_seen_at` for `grade`, always for
+`event`, `extracted_at` for `news`, `graded_at` for `grade`, always for
 `assignment` and `course_grade`. For `schedule` it is today through the
 latest date that snapshot lists for the same child, not the window's end:
 the list is a count of school days, so a closure taken back pushes its last

@@ -21,6 +21,7 @@ import base64
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
 # ---- page classification --------------------------------------------------
@@ -59,6 +60,8 @@ def classify_page(adapter: str, source_url: str) -> PageKind:
             return PageKind("genesis:gradebook-course", "Genesis: Course grade detail")
         if "tab3=weeklysummary" in source_url:
             return PageKind("genesis:gradebook-weekly", "Genesis: Grade summary (all courses)")
+        if "tab3=listassignments" in source_url:
+            return PageKind("genesis:gradebook-list", "Genesis: List assignments")
         if "tab2=studentsummary" in source_url:
             return PageKind("genesis:studentsummary", "Genesis: Student summary")
         return PageKind("genesis:other", "Genesis: unrecognized page")
@@ -811,6 +814,151 @@ def extract_genesis_course_grades(text: str) -> GenesisCourseGradeSheet | None:
         last_grade_posted=posted_m.group(1) if posted_m else None,
         entries=entries,
     )
+
+
+def is_graded(entry) -> bool:
+    """Whether the teacher has put anything in the gradebook for this entry: a
+    score, or a mark such as Missing or Exempt. List Assignments prints "No
+    Grade" for the rest, and Course Summary lists a few with an empty grade
+    cell (confirmed real). Takes a GenesisGradeEntry or a ChildGradeEntry row."""
+    return entry.score_earned is not None or entry.percent is not None or entry.status is not None
+
+
+@dataclass
+class GenesisListedAssignment:
+    course: str  # the class as Genesis prints it: "CHEMISTRY 1A"
+    marking_period: str
+    entry: GenesisGradeEntry
+
+
+@dataclass
+class GenesisAssignmentList:
+    courses: dict[str, tuple[str, str]]  # class name -> (course code, section)
+    assignments: list[GenesisListedAssignment]
+    # Every row of the page's table was read as a card. Only a complete read
+    # may stand for "everything in this range".
+    complete: bool
+
+
+_LIST_CARD_DUE_RE = re.compile(r"^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2}/\d{1,2}$")
+_LIST_CARD_MP_RE = re.compile(r"^MP\d$")
+# Backpack Capture 0.10.0+ puts each class option's value in the text.
+_LIST_COURSE_OPTION_RE = re.compile(r"^(.+) \(value: (\d+):(\d+)\)$")
+_LIST_COMMENT_LINES = {"(title: Teacher Comment)", "Comment from Teacher"}
+
+
+def extract_genesis_list_assignments(text: str) -> GenesisAssignmentList | None:
+    """Parses a Genesis "List Assignments" gradebook page: every assignment in
+    its date range, graded or not, for every class. Course Summary leaves out
+    work with nothing graded yet (confirmed real: 17 of one student's 143 MP1
+    assignments), so this is the only page with all of it.
+
+    The page lists each assignment twice, a table and then a card; only the
+    card names the marking period Genesis files it under, so the cards are
+    read. Confirmed real shape:
+
+        Density Lab                 <- title
+        Close
+        Density Lab                 <- title again (the details popup)
+        Bring goggles               <- description, any number of lines (optional)
+        Minor Assessments           <- category
+        Grade
+        (title: Missing)
+        Missing                     <- or "8 / 10" + "80.00%", or "No Grade"
+        Assignment Pts: 25
+        (title: Teacher Comment)
+        Comment from Teacher        <- the comment is never kept
+        Please hand this in.
+        Due
+        Fri 10/2
+        MP1
+        For
+        CHEMISTRY 1A
+        By
+        Scientist, Robin
+
+    Each card is anchored on its Due...By tail and read back to the nearest
+    "Close". A "(title: ...)" line is a tooltip, never read as a status: the
+    mark itself follows on its own line, and the table's "(title: This
+    assignment was previously marked as Missing.)" sits on work since graded.
+    The page never prints a class's code; the class dropdown does
+    ("CHEMISTRY 1A (value: 331:10)"), under exactly the name the cards' "For"
+    line uses."""
+    if "Search for assignments" not in text:
+        return None
+    lines = [l for l in text.split("\n") if l.strip() != ""]
+    courses = {m.group(1): (m.group(2), m.group(3)) for l in lines if (m := _LIST_COURSE_OPTION_RE.match(l))}
+    # The table's rows start "Mon" / "11/9" on two lines; a card's date is one.
+    table_rows = sum(
+        1 for i in range(len(lines) - 1) if _ENTRY_START_RE.match(lines[i]) and _ENTRY_DATE_RE.match(lines[i + 1])
+    )
+
+    assignments: list[GenesisListedAssignment] = []
+    previous_end = 0
+    for i in range(len(lines) - 6):
+        if not (
+            lines[i] == "Due"
+            and _LIST_CARD_DUE_RE.match(lines[i + 1])
+            and _LIST_CARD_MP_RE.match(lines[i + 2])
+            and lines[i + 3] == "For"
+            and lines[i + 5] == "By"
+        ):
+            continue
+        close = next((j for j in range(i - 1, previous_end - 1, -1) if lines[j] == "Close"), None)
+        previous_end = i + 7
+        if close is None or "Grade" not in lines[close + 2 : i]:
+            continue
+        title, rest = lines[close + 1], lines[close + 2 : i]
+        grade_at = rest.index("Grade")
+        head, tail = rest[:grade_at], rest[grade_at + 1 :]
+
+        score_earned = score_possible = percent = status = None
+        updated = False
+        for l in tail:
+            if l in _LIST_COMMENT_LINES:
+                break
+            if l in ("Updated", "Recently Updated"):
+                updated = True
+            elif l in _GRADE_STATUS_WORDS:
+                status = l
+            elif m := _GRADE_SCORE_RE.match(l):
+                score_earned, score_possible = float(m.group(1)), float(m.group(2))
+            elif (m := _GRADE_PERCENT_RE.match(l)) and score_earned is not None:
+                percent = float(m.group(1))
+            elif m := _GRADE_PTS_ONLY_RE.match(l):
+                score_possible = float(m.group(1))
+
+        assignments.append(
+            GenesisListedAssignment(
+                course=lines[i + 4],
+                marking_period=lines[i + 2],
+                entry=GenesisGradeEntry(
+                    weekday_date=lines[i + 1],
+                    title=title,
+                    description="\n".join(head[:-1]) or None,
+                    category=head[-1] if head else None,
+                    score_earned=score_earned,
+                    score_possible=score_possible,
+                    percent=percent,
+                    status=status,
+                    updated=updated,
+                ),
+            )
+        )
+    return GenesisAssignmentList(courses=courses, assignments=assignments, complete=len(assignments) == table_rows)
+
+
+def genesis_list_range(url: str) -> str | None:
+    """The date range ("MP1") whose every assignment a List Assignments
+    address shows - all classes, all statuses - or None when it shows only
+    some (one class, only graded work) or names no range."""
+    query = parse_qs(urlsplit(url).query, keep_blank_values=True)
+    date_range = (query.get("dateRange") or [""])[0]
+    if not re.fullmatch(r"[A-Za-z0-9]{1,10}", date_range):
+        return None
+    if any((query.get(key) or [""])[0] for key in ("courseAndSection", "status")):
+        return None
+    return date_range
 
 
 @dataclass
