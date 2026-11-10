@@ -27,7 +27,7 @@ export function BackpackCapturePrivacyPage() {
         path="/backpack-capture/privacy"
       />
       <h2>Backpack Capture Privacy Policy</h2>
-      <p className="note">Effective October 23, 2026 · Applies to versions 0.7.x and later</p>
+      <p className="note">Effective November 10, 2026 · Applies to versions 0.7.x and later</p>
 
       <p>
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
@@ -169,7 +169,12 @@ export function BackpackCapturePrivacyPage() {
           <strong>Update now</strong> - opens Classroom in its own window, finds your children's Google
           accounts (see above), walks their classes the same way a capture session does, and sends what's
           new to your own schoolz family account. Only runs when you press it, after you've signed in to
-          schoolz in the extension.
+          schoolz in the extension. From version 0.10.0, once you've opened your school district&apos;s
+          Genesis parent portal in that Chrome (the extension remembers its address, on your device only), it
+          first reads the gradebook there: Grade Summary, List Assignments and each class&apos;s Course
+          Summary, for each child on your schoolz account whose name Genesis lists. A child in your Genesis
+          account who isn&apos;t on schoolz is never opened. If Genesis has signed you out, it asks you to
+          sign in on Genesis&apos;s own page or skip Genesis this time.
         </li>
         <li>
           <strong>Publish captures</strong> - sends pages you captured by hand to your own schoolz family
@@ -177,7 +182,8 @@ export function BackpackCapturePrivacyPage() {
         </li>
         <li>
           <strong>Automatic updates</strong> - off by default. If you turn them on, the same thing Update
-          now does runs every four hours (never between 10pm and 6am). It never signs in to Google: when a
+          now does runs every four hours (never between 10pm and 6am). It never signs in to Genesis: when
+          Genesis has signed you out, it skips Genesis and goes on to Classroom. Nor to Google: when a
           child's sign-in expires it stops and tells schoolz, which notifies you. Turning it off stops it
           completely.
         </li>
@@ -189,7 +195,10 @@ export function BackpackCapturePrivacyPage() {
           numbers it opened and whether each was one of your children's (by your child's schoolz record,
           never another account's name or email); the web addresses of Google sign-in pages it passed
           through, without the part that can name an account; the Classroom addresses (class and assignment
-          numbers, no titles) of pages that were slow or had to be reloaded; how many classes and pages it
+          numbers, no titles) of pages that were slow or had to be reloaded; which kinds of Genesis gradebook
+          page it read for each child and for which marking period (never a student ID), and the address of
+          Genesis&apos;s sign-in page if it was shown, without the part after the &quot;?&quot;; how many
+          classes and pages it
           read for each child and how many didn't load; where it stopped; and how many pages it sent. No page
           content and no names. With it goes a short summary of the update that schoolz shows you on My
           family: when it finished, how many pages it sent and when pages were last sent, which of your
