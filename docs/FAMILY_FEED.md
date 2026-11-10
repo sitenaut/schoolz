@@ -164,9 +164,12 @@ item when a snapshot whose window still covers it no longer has it: it was
 withdrawn, corrected or deleted at its source (a newsletter correction is a
 new `uid` with the old one gone; a revised district calendar PDF replaces
 every row). "Covers" is per kind, as in the table: the date for `day` and
-`event`, `extracted_at` for `news`, `first_seen_at` for `grade`, today on for
-`schedule`, always for `assignment` and `course_grade`. An item outside the
-window has just aged out.
+`event`, `extracted_at` for `news`, `first_seen_at` for `grade`, always for
+`assignment` and `course_grade`. For `schedule` it is today through the
+latest date that snapshot lists for the same child, not the window's end:
+the list is a count of school days, so a closure taken back pushes its last
+day out without withdrawing anything. An item outside the window has just
+aged out.
 
 There is no "changed since" parameter on purpose: most of what feeds this
 has no updated_at to ask about.
