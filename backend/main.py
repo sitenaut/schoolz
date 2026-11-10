@@ -53,6 +53,8 @@ from routers import directory as directory_router  # noqa: E402
 from routers import districts as districts_router  # noqa: E402
 from routers import email_scanners as email_scanners_router  # noqa: E402
 from routers import family as family_router  # noqa: E402
+from routers import family_connections as family_connections_router  # noqa: E402
+from routers import family_feed as family_feed_router  # noqa: E402
 from routers import gmail as gmail_router  # noqa: E402
 from routers import health as health_router  # noqa: E402
 from routers import invites as invites_router  # noqa: E402
@@ -264,6 +266,8 @@ app.include_router(admin_audit_router.router)
 app.include_router(admin_api_keys_router.router)
 app.include_router(admin_api_keys_router.device_router)
 app.include_router(capture_devices_router.router)
+app.include_router(family_connections_router.router)
+app.include_router(family_connections_router.device_router)
 app.include_router(admin_secret_requests_router.router)
 app.include_router(auth_router.router)
 app.include_router(scraper_router.router)
@@ -271,6 +275,7 @@ app.include_router(students_router.router)
 app.include_router(specials_router.router)
 app.include_router(bucket3_router.router)
 app.include_router(family_router.router)
+app.include_router(family_feed_router.router)
 app.include_router(student_accounts_router.router)
 app.include_router(invites_router.router)
 app.include_router(notifications_router.router)

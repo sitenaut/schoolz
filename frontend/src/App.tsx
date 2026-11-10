@@ -64,6 +64,8 @@ const AdminOverviewPage = lazyPage(() => import("./pages/AdminOverviewPage").the
 const UsersRolesPage = lazyPage(() => import("./pages/UsersRolesPage").then((m) => m.UsersRolesPage));
 const ApiKeysPage = lazyPage(() => import("./pages/ApiKeysPage").then((m) => m.ApiKeysPage));
 const ApproveApiKeyPage = lazyPage(() => import("./pages/ApproveApiKeyPage").then((m) => m.ApproveApiKeyPage));
+const ConnectedAppsPage = lazyPage(() => import("./pages/ConnectedAppsPage").then((m) => m.ConnectedAppsPage));
+const ApproveConnectedAppPage = lazyPage(() => import("./pages/ApproveConnectedAppPage").then((m) => m.ApproveConnectedAppPage));
 const SecretRequestsPage = lazyPage(() => import("./pages/SecretRequestsPage").then((m) => m.SecretRequestsPage));
 const AuditLogPage = lazyPage(() => import("./pages/AuditLogPage").then((m) => m.AuditLogPage));
 const ApproveSecretRequestPage = lazyPage(() => import("./pages/ApproveSecretRequestPage").then((m) => m.ApproveSecretRequestPage));
@@ -276,6 +278,8 @@ function Routed() {
           <Route path="users" element={<RequireAdmin superOnly><UsersRolesPage /></RequireAdmin>} />
           <Route path="api-keys" element={<RequireAdmin superOnly><ApiKeysPage /></RequireAdmin>} />
           <Route path="api-keys/approve" element={<RequireAdmin superOnly><ApproveApiKeyPage /></RequireAdmin>} />
+          <Route path="connected-apps" element={<RequireAdmin superOnly><ConnectedAppsPage /></RequireAdmin>} />
+          <Route path="connected-apps/approve" element={<RequireAdmin superOnly><ApproveConnectedAppPage /></RequireAdmin>} />
           <Route path="secret-requests" element={<RequireAdmin superOnly><SecretRequestsPage /></RequireAdmin>} />
           <Route path="audit-log" element={<RequireAdmin superOnly><AuditLogPage /></RequireAdmin>} />
           <Route path="secret-requests/approve" element={<RequireAdmin superOnly><ApproveSecretRequestPage /></RequireAdmin>} />

@@ -65,6 +65,7 @@ describe("token-bearing paths", () => {
     expect(scrubUrl("https://api.example/invites/abc123/accept")).toBe("https://api.example/invites/:token/accept");
     expect(scrubUrl("/capture-devices/requests/WXYZ-1234/approve")).toBe("/capture-devices/requests/:code/approve");
     expect(scrubUrl("/admin/api-keys/requests/WXYZ-1234")).toBe("/admin/api-keys/requests/:code");
+    expect(scrubUrl("/admin/family-connections/requests/WXYZ-1234/approve")).toBe("/admin/family-connections/requests/:code/approve");
     expect(scrubUrl("/admin/secret-requests/WXYZ-1234/deny")).toBe("/admin/secret-requests/:code/deny");
     expect(scrubUrl("/admin/secret-requests/poll")).toBe("/admin/secret-requests/poll");
   });

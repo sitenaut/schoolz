@@ -90,6 +90,20 @@ GET /admin/config/results
   query district: list[string]
   query state?: string
   -> 200: ConfigResults
+GET /admin/family-connections
+  -> 200: list[FamilyConnectionOut]
+GET /admin/family-connections/requests/{user_code}
+  path user_code: string
+  -> 200: ConnectRequestOut
+POST /admin/family-connections/requests/{user_code}/approve
+  path user_code: string
+  -> 200: ConnectRequestOut
+POST /admin/family-connections/requests/{user_code}/deny
+  path user_code: string
+  -> 200: ConnectRequestOut
+DELETE /admin/family-connections/{connection_id}
+  path connection_id: string
+  -> 204: -
 GET /admin/permissions
   -> 200: list[PermissionOut]
 GET /admin/resources/changes
@@ -418,6 +432,18 @@ POST /email-scanners/{scanner_id}/run-now
   -> 200: any
 GET /family
   -> 200: list[FamilyChildOut]
+POST /family-connections/self/revoke
+  -> 204: -
+POST /family-connections/start
+  body: ConnectStartIn
+  -> 200: ConnectStartOut
+POST /family-connections/token
+  body: ConnectTokenIn
+  -> 200: ConnectTokenOut
+GET /family/feed
+  query end?: string(date) | null
+  query start?: string(date) | null
+  -> 200: FamilyFeedOut
 GET /gmail/auth-url
   -> 200: any
 GET /gmail/callback
@@ -1092,6 +1118,11 @@ CompletenessOut { missing_core: list[string], missing_optional: list[string], pe
 ConfigExport { districts: list[ExportDistrictOut], exported_at: string(date-time), local_events?: dict[dict[list[object]]], results?: ConfigResults | null, schools: list[ExportSchoolOut], smore_newsletters: list[ExportSmoreOut], source: string }
 ConfigImportResult { districts_created: integer, districts_updated: integer, local_event_jobs_missing?: list[string], local_event_sources_added?: integer, local_event_sources_updated?: integer, results_applied?: dict[integer], results_skipped?: list[string], sacc_created: integer, sacc_updated: integer, schools_created: integer, schools_updated: integer, smore_created: integer, smore_skipped: list[string], smore_updated: integer }
 ConfigResults { districts?: list[ResultDistrict], exported_at: string(date-time), newsletters?: list[ResultNewsletter], schools?: list[ResultSchool] }
+ConnectRequestOut { client_name: string, created_at: string(date-time), expires_at: string(date-time), status: string, user_code: string }
+ConnectStartIn { client_name: string }
+ConnectStartOut { approve_path: string, device_code: string, expires_in: integer, interval: integer, user_code: string }
+ConnectTokenIn { device_code: string }
+ConnectTokenOut { connection_id?: string | null, key?: string | null, status: string }
 ConsentIn { policy_version: integer, purpose: enum(services_profile,services_alerts,services_alerts_named) }
 ConsentOut { current: boolean, granted_at: string(date-time), policy_version: integer }
 ContactMessageCreate { email?: string | null, message: string, name?: string | null, website?: string | null }
@@ -1134,7 +1165,13 @@ ExportSchoolOut { absence_emails: list[string], absence_instructions: string | n
 ExportSmoreOut { cron_expr: string, district_name?: string | null, district_state?: string | null, enabled: boolean, label: string | null, school_slug: string | null, source_type?: string, timezone: string, url: string }
 FacetOut { count: integer, value: string }
 FamilyChildOut { classes?: integer | null, classroom_seen_at?: string(date-time) | null, district_name?: string | null, due_this_week?: integer | null, first_name: string, genesis_seen_at?: string(date-time) | null, grad_year?: integer | null, guardian_count: integer, has_classroom: boolean, has_genesis: boolean, id: string, last_name: string, linked_via: string, matched_existing?: boolean, missing?: integer | null, needs_login?: boolean, school_id?: string | null, school_name: string | null, school_type?: string | null, specials_count?: integer, student_id: string, student_invite_email?: string | null, student_login_email?: string | null, today?: FamilyTodayOut | null }
+FamilyConnectionOut { created_at: string(date-time), id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string }
+FamilyFeedOut { children: list[FeedChildOut], end: string, generated_at: string(date-time), items: list[FeedItemOut], schools: list[FeedSchoolOut], start: string, version: integer }
 FamilyTodayOut { course_name?: string | null, room?: string | null, state: string, time_end?: string | null, time_start?: string | null }
+FeedChildOut { classroom_seen_at: string(date-time) | null, first_name: string, genesis_seen_at: string(date-time) | null, grad_year: integer | null, id: string, needs_login: boolean, school_id: string | null, specials: list[FeedSpecialOut] }
+FeedItemOut { all_day?: boolean, category?: string | null, child_id?: string | null, data?: object, date?: string | null, detail?: string | null, end_at?: string(date-time) | null, end_date?: string | null, hash?: string, kind: enum(day,schedule,event,news,assignment,course_grade,grade), link_url?: string | null, school_id?: string | null, source?: string | null, start_at?: string(date-time) | null, status?: string | null, title: string, uid: string }
+FeedSchoolOut { delayed_opening_time: string | null, district_name: string | null, early_dismissal_time: string | null, end_time: string | null, id: string, name: string, school_type: string | null, short_name: string | null, slug: string, start_time: string | null }
+FeedSpecialOut { rotation_day: integer, subject: string, teacher: string | null }
 FetchHtmlRequest { block_assets?: boolean, url: string, wait_for_selector?: string | null }
 FlagOut { code: string, level: string, message: string }
 ForgotPasswordRequest { email: string(email) }

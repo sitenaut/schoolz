@@ -83,9 +83,9 @@ export function scrubUrl(url: string): string {
 
   // Path segments that are a credential. A guardian-invite token lets
   // whoever accepts it see a child's schoolwork; the approval codes are the
-  // device-flow keys' (Backpack Capture, API keys, prod secrets).
+  // device-flow keys' (Backpack Capture, API keys, connected apps, prod secrets).
   result = result.replace(/\/(student-account-|student-)?invites\/[^/?#]+/, "/$1invites/:token");
-  result = result.replace(/\/(capture-devices|admin\/api-keys)\/requests\/[^/?#]+/, "/$1/requests/:code");
+  result = result.replace(/\/(capture-devices|admin\/api-keys|admin\/family-connections)\/requests\/[^/?#]+/, "/$1/requests/:code");
   result = result.replace(/\/admin\/secret-requests\/(?!approve\b|poll\b)[^/?#]+/, "/admin/secret-requests/:code");
   // Which Localz resource someone opened (a shelter, a recovery program) is
   // nobody's business, monitoring included.
