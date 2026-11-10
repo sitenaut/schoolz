@@ -1,7 +1,7 @@
 """End-to-end API tests for the Kids view v2 endpoints (routers/bucket3.py)."""
 import os
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 os.environ.setdefault("JWT_SECRET", "test-secret")
@@ -1003,6 +1003,127 @@ async def test_a_genesis_grade_marks_done_only_its_own_class_and_day(monkeypatch
         assert missing == [(chem, "Exit Ticket", "2026-10-12"), (chem, "Unit 3 Quiz", "2026-10-01")]
         done = {(i["course_name"], i["title"], i["due_date"]): i["done_source"] for i in todo["done"]}
         assert done == {(english, "Unit 3 Quiz", "2026-10-01"): "genesis", (chem, "Exit Ticket", "2026-10-05"): "genesis"}
+
+
+def _list_url(day: str, course: str = "") -> str:
+    return (
+        "https://parents.example.org/genesis/parents?tab1=studentdata&tab2=gradebook&tab3=listassignments"
+        f"&studentid={FEED_SID}&action=form&date={day}&dateRange=MP1&courseAndSection={course}&status="
+    )
+
+
+# Course Summary's reading of a quiz the List Assignments fixture also lists.
+CHEM_SUMMARY = "\n".join(
+    [
+        "Course Summary for", "CHEMISTRY 1A", "Marking Period 1 Grade:", "62.00%", "Last grade posted on 10/23/26",
+        "Due", "Assignment", "Grade", "Thu", "10/22", "Close", "Periodic Table Quiz", "Major Assessments",
+        "Periodic Table Quiz", "13 / 45", "28.90%",
+    ]
+)
+
+
+async def _grade_rows(sid: str) -> dict[tuple[str, str], ChildGradeEntry]:
+    async with database.SessionLocal() as db:
+        rows = (await db.execute(select(ChildGradeEntry).where(ChildGradeEntry.student_id == sid))).scalars().all()
+    return {(r.title, r.weekday_date): r for r in rows}
+
+
+@pytest.mark.anyio
+async def test_list_assignments_files_all_work_by_class_and_marking_period(monkeypatch):
+    _freeze(monkeypatch, 2026, 11, 12, 16, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        page = _load("genesis_list_assignments.txt")
+        await _import(client, guardian, sid, [_env("genesis", _list_url("11/10/2026"), page, "2026-11-10T14:00:00Z")])
+        rows = await _grade_rows(sid)
+        assert {(title, r.course_code, r.course_section, r.marking_period, r.listed_in) for (title, _), r in rows.items()} == {
+            ("Essay Revisions", "121", "1", "MP1", "MP1"),
+            ("Periodic Table Quiz", "331", "10", "MP1", "MP1"),
+            ("Exit Ticket", "331", "10", "MP1", "MP1"),
+            ("Density Lab", "331", "10", "MP1", "MP1"),
+            ("Reading Check", "121", "1", "MP1", "MP1"),
+        }
+        assert rows[("Essay Revisions", "Mon 11/9")].graded_at is None
+        # A mark is news like a score is.
+        assert rows[("Density Lab", "Fri 10/2")].graded_at == datetime(2026, 11, 10, 14, tzinfo=UTC)
+
+        # Course Summary's copy of the quiz is the same entry.
+        summary = (
+            "https://parents.example.org/genesis/parents?tab1=studentdata&tab2=gradebook&tab3=coursesummary"
+            f"&studentid={FEED_SID}&mp=MP1&action=form&courseCode=331&courseSection=10"
+        )
+        await _import(client, guardian, sid, [_env("genesis", summary, CHEM_SUMMARY, "2026-11-10T14:05:00Z")])
+        assert len(await _grade_rows(sid)) == 5
+
+        # A day later the essay is due Wednesday instead, and the graded exit
+        # ticket moved a day too. The essay's old date goes, never graded; a
+        # posted grade stays.
+        moved = (
+            page.replace("Mon\n11/9", "Wed\n11/11").replace("Mon 11/9", "Wed 11/11")
+            .replace("Wed\n10/14", "Thu\n10/15").replace("Wed 10/14", "Thu 10/15")
+        )
+        await _import(client, guardian, sid, [_env("genesis", _list_url("11/11/2026"), moved, "2026-11-11T14:00:00Z")])
+        rows = await _grade_rows(sid)
+        assert ("Essay Revisions", "Mon 11/9") not in rows
+        assert ("Exit Ticket", "Wed 10/14") in rows and ("Exit Ticket", "Thu 10/15") in rows
+
+        # Graded the next day: news then, not when first listed.
+        graded = moved.replace("No Grade\nAssignment Pts: 5", "18 / 20\n90.00%")
+        await _import(client, guardian, sid, [_env("genesis", _list_url("11/12/2026"), graded, "2026-11-12T14:00:00Z")])
+        essay = (await _grade_rows(sid))[("Essay Revisions", "Wed 11/11")]
+        assert (essay.percent, essay.graded_at) == (90.0, datetime(2026, 11, 12, 14, tzinfo=UTC))
+        assert essay.first_seen_at == datetime(2026, 11, 11, 14, tzinfo=UTC)
+
+        # Another computer's older copy, published late, puts nothing back.
+        late = moved.replace("4 / 5\n80.00%", "5 / 5\n100.00%")
+        await _import(client, guardian, sid, [_env("genesis", _list_url("11/11/2026"), late, "2026-11-11T18:00:00Z")])
+        rows = await _grade_rows(sid)
+        essay = rows[("Essay Revisions", "Wed 11/11")]
+        assert (essay.percent, essay.graded_at) == (90.0, datetime(2026, 11, 12, 14, tzinfo=UTC))
+        assert rows[("Exit Ticket", "Thu 10/15")].percent == 80.0
+
+        # Only a complete read of the whole range drops anything: not one
+        # class's list, nor a page whose classes have no codes (before 0.10.0).
+        def essay_due(day: str) -> str:
+            weekday, month_day = day.split()
+            return moved.replace("Wed\n11/11", f"{weekday}\n{month_day}").replace("Wed 11/11", day)
+
+        await _import(client, guardian, sid, [_env("genesis", _list_url("11/12/2026"), essay_due("Fri 11/13"), "2026-11-12T15:00:00Z")])
+        one_class = _list_url("11/12/2026", "121:1")
+        await _import(client, guardian, sid, [_env("genesis", one_class, essay_due("Mon 11/16"), "2026-11-12T16:00:00Z")])
+        no_codes = essay_due("Tue 11/17").replace(" (value: 121:1)", "").replace(" (value: 331:10)", "")
+        await _import(client, guardian, sid, [_env("genesis", _list_url("11/12/2026"), no_codes, "2026-11-12T17:00:00Z")])
+        rows = await _grade_rows(sid)
+        assert ("Essay Revisions", "Fri 11/13") in rows and ("Essay Revisions", "Mon 11/16") in rows
+        assert ("Essay Revisions", "Tue 11/17") not in rows
+
+
+@pytest.mark.anyio
+async def test_work_genesis_lists_ungraded_is_neither_done_nor_a_class_grade(monkeypatch):
+    _freeze(monkeypatch, 2026, 10, 23, 16, 0)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _run, guardian, sid = await _family(client)
+        async with database.SessionLocal() as db:
+            db.add_all(
+                [
+                    ChildWorkItem(
+                        student_id=sid, external_uid="safety", course_name="F: CHEM-1A 331-10", title="Lab Safety Contract",
+                        item_type="assignment", due_date="2026-10-01",
+                    ),
+                    ChildGradeEntry(
+                        student_id=sid, external_uid="g-safety", course_code="331", course_section="10",
+                        weekday_date="Thu 10/1", title="Lab Safety Contract", score_possible=5.0,
+                    ),
+                    # Genesis's "0.00%" for a class with nothing graded yet.
+                    ChildCourseGrade(student_id=sid, course_code="331", course_section="10", marking_period="MP1", grade_percent=0.0),
+                ]
+            )
+            await db.commit()
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        [item] = todo["missing"]
+        assert item["title"] == "Lab Safety Contract" and item["grade"] is None
+        courses = (await client.get(f"/students/{sid}/bucket3/progress", headers=_auth(guardian))).json()
+        assert next(c for c in courses if c["course_key"] == "331-10")["grade_percent"] is None
 
 
 @pytest.mark.anyio

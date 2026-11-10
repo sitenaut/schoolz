@@ -1,0 +1,189 @@
+(role=button)
+Gradebook
+(role=button)
+Sample
+Select Student
+Sample Student
+Example High School
+Other Student
+Example Elementary School
+[aria-label] Sub pages for tabs.gradebook under tabs.studentData (role=navigation)
+(href: /genesis/parents?tab1=studentdata&tab2=gradebook&tab3=weeklysummary&action=form&studentid=1234567)
+Grade Summary
+(href: /genesis/parents?tab1=studentdata&tab2=gradebook&tab3=listassignments&action=form&studentid=1234567)
+List Assignments
+(href: /genesis/parents?tab1=studentdata&tab2=gradebook&tab3=coursesummary&action=form&studentid=1234567)
+Course Summary
+(role=main)
+Student, Sample
+Assignments:
+[aria-label] Search for assignments in the selected date range
+Week of 11/10
+All assignments in MP1
+All assignments in MP2
+All assignments in MP3
+All assignments in MP4
+All assignments
+Course:
+[aria-label] Search for assignments with the selected course
+Show All Courses
+ENGLISH 10 (value: 121:1)
+CHEMISTRY 1A (value: 331:10)
+PHYS ED 10 (value: 3002:5)
+Status:
+[aria-label] Search for assignments with the selected status
+All Assignments
+Only Graded Assignments
+Only Ungraded Assignments
+Recently Updated Grades
+Only Missing Assignments
+Only Incomplete Assignments
+(role=main)
+Print Assignments
+Due
+Course
+Assignment
+Grade
+Mon
+11/9
+ENGLISH 10
+Teacher, Pat
+Minor Assessments
+Essay Revisions
+Close
+Essay Revisions
+No Grade
+Assignment Pts: 5
+(title: Teacher Comment)
+Comment from Teacher
+Bring both drafts.
+Thu
+10/22
+CHEMISTRY 1A
+Scientist, Robin
+Major Assessments
+Periodic Table Quiz
+Close
+Periodic Table Quiz
+Sign in sheet for the review session is on the board.
+(title: Assignment Weight: 0.5)
+x0.5
+13 / 45
+28.90%
+Wed
+10/14
+CHEMISTRY 1A
+Scientist, Robin
+Homework/Classwork
+(title: This assignment was previously marked as Missing.)
+Exit Ticket
+Close
+Exit Ticket
+Recently Updated
+4 / 5
+80.00%
+Fri
+10/2
+CHEMISTRY 1A
+Scientist, Robin
+Minor Assessments
+Density Lab
+Close
+Density Lab
+(title: Missing)
+Missing
+Assignment Pts: 25
+(title: Teacher Comment)
+Comment from Teacher
+Please hand this in this week.
+Thu
+10/1
+ENGLISH 10
+Teacher, Pat
+Classwork
+Reading Check
+Close
+Reading Check
+(title: Absent)
+Absent
+Essay Revisions
+Close
+Essay Revisions
+Minor Assessments
+Grade
+No Grade
+Assignment Pts: 5
+(title: Teacher Comment)
+Comment from Teacher
+Bring both drafts.
+Due
+Mon 11/9
+MP1
+For
+ENGLISH 10
+By
+Teacher, Pat
+Periodic Table Quiz
+Close
+Periodic Table Quiz
+Sign in sheet for the review session is on the board.
+Major Assessments
+Grade
+(title: Assignment Weight: 0.5)
+x0.5
+13 / 45
+28.90%
+Due
+Thu 10/22
+MP1
+For
+CHEMISTRY 1A
+By
+Scientist, Robin
+Exit Ticket
+Close
+Exit Ticket
+Homework/Classwork
+Grade
+Recently Updated
+4 / 5
+80.00%
+Due
+Wed 10/14
+MP1
+For
+CHEMISTRY 1A
+By
+Scientist, Robin
+Density Lab
+Close
+Density Lab
+Minor Assessments
+Grade
+(title: Missing)
+Missing
+Assignment Pts: 25
+(title: Teacher Comment)
+Comment from Teacher
+Please hand this in this week.
+Due
+Fri 10/2
+MP1
+For
+CHEMISTRY 1A
+By
+Scientist, Robin
+Reading Check
+Close
+Reading Check
+Classwork
+Grade
+(title: Absent)
+Absent
+Due
+Thu 10/1
+MP1
+For
+ENGLISH 10
+By
+Teacher, Pat

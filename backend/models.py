@@ -2599,8 +2599,10 @@ class ChildCourseGrade(Base):
 
 
 class ChildGradeEntry(Base):
-    """One graded (or exempt/missing) assignment from a Genesis "Course
-    Summary" capture - this is Genesis's own record of what was assigned
+    """One assignment from a Genesis gradebook capture: "Course Summary" (one
+    class, its graded work) or "List Assignments" (every class, graded or
+    not, each under the marking period Genesis files it in) - this is
+    Genesis's own record of what was assigned
     and graded, kept separate from ChildWorkItem (Classroom's record of
     the same kind of thing) specifically so the two can be reconciled
     rather than merged - see the audit endpoint, built because teachers
@@ -2631,6 +2633,13 @@ class ChildGradeEntry(Base):
     percent: Mapped[float | None] = mapped_column(nullable=True)
     status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     is_updated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # When a capture first showed a score or a mark (Missing, Exempt, ...) on
+    # it (bucket3_extract.is_graded): the family feed's news. Null while it's
+    # listed with nothing graded.
+    graded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # The List Assignments range ("MP1") that last listed it. A later complete
+    # read of that range without it removes it, if it was never graded.
+    listed_in: Mapped[str | None] = mapped_column(String(10), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

@@ -13,7 +13,7 @@ from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from services.bell_schedule import current_period, period_name_by_start_time
-from services.bucket3_extract import course_codes_from_name, normalize_title
+from services.bucket3_extract import course_codes_from_name, is_graded, normalize_title
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
@@ -612,11 +612,12 @@ def course_progress(items: list[dict], grade_entries: list, course_grades: list,
             c["teacher_name"] = i["teacher_name"]
             c["teacher_emails"] = i.get("teacher_emails") or []
 
-    graded_courses = {(e.course_code, e.course_section) for e in grade_entries}
+    graded_courses = {(e.course_code, e.course_section) for e in grade_entries if is_graded(e)}
     for g in course_grades:
         c = bucket((g.course_code, g.course_section), g.course_name)
         # Genesis shows "0.00%" for a class with nothing graded yet - that's
-        # "no grade", not a failing one.
+        # "no grade", not a failing one. Its assignments may all be listed,
+        # ungraded.
         c["grade_percent"] = g.grade_percent if (g.course_code, g.course_section) in graded_courses else None
         c["marking_period"] = g.marking_period
 

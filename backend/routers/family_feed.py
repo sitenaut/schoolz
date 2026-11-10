@@ -344,11 +344,13 @@ async def _child_items(
                 )
             )
         # Grades schoolz first saw inside the window: the ones that are news.
+        # List Assignments shows work before it's graded; that's news once a
+        # score or a mark (Missing, Exempt) is on it.
         entries = select(ChildGradeEntry).where(
             ChildGradeEntry.student_id == student.id,
-            ChildGradeEntry.first_seen_at >= datetime.combine(start, datetime.min.time(), LOCAL_TZ),
+            ChildGradeEntry.graded_at >= datetime.combine(start, datetime.min.time(), LOCAL_TZ),
         )
-        for e in (await db.execute(entries.order_by(ChildGradeEntry.first_seen_at))).scalars():
+        for e in (await db.execute(entries.order_by(ChildGradeEntry.graded_at))).scalars():
             items.append(
                 _item(
                     uid=f"grade:{student.id}:{e.external_uid}",
@@ -369,6 +371,7 @@ async def _child_items(
                         "score_possible": e.score_possible,
                         "percent": e.percent,
                         "first_seen_at": e.first_seen_at.isoformat(),
+                        "graded_at": e.graded_at.isoformat(),
                     },
                 )
             )

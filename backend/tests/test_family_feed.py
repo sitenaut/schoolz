@@ -15,7 +15,16 @@ from sqlalchemy import select, update
 
 import database
 from main import app
-from models import AuditEvent, Bucket3SyncState, ChildWorkItem, SchoolContentItem, SmoreNewsletter, StudentSpecial, User
+from models import (
+    AuditEvent,
+    Bucket3SyncState,
+    ChildGradeEntry,
+    ChildWorkItem,
+    SchoolContentItem,
+    SmoreNewsletter,
+    StudentSpecial,
+    User,
+)
 
 ET = ZoneInfo("America/New_York")
 
@@ -274,3 +283,36 @@ async def test_feed_carries_the_family_and_nothing_that_must_stay():
         edited = {i["uid"]: i["hash"] for i in (await client.get("/family/feed", headers=_auth(admin))).json()["items"]}
         changed = {uid for uid in edited if edited[uid] != again.get(uid)}
         assert changed == {titles["Picture Day"]["uid"]}
+
+
+@pytest.mark.anyio
+async def test_a_grade_is_news_from_when_it_was_graded():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _email, admin = await _register(client, admin=True)
+        district = (await client.post("/districts", json={"name": f"Feed District {uuid.uuid4().hex[:8]}"}, headers=_auth(admin))).json()
+        school = await _school(client, admin, district["id"], "high")
+        child = await _child(client, admin, "Sample", school["id"])
+        now = datetime.now(UTC)
+        graded_at = now - timedelta(days=1)
+        async with database.SessionLocal() as db:
+            db.add_all(
+                [
+                    Bucket3SyncState(student_id=child, genesis_seen_at=now),
+                    # Listed by List Assignments two days ago, nothing graded yet.
+                    ChildGradeEntry(
+                        student_id=child, external_uid="listed", course_code="121", course_section="1",
+                        weekday_date="Mon 11/9", title="Essay Revisions", score_possible=5.0, first_seen_at=now - timedelta(days=2),
+                    ),
+                    # Listed a month ago, graded yesterday.
+                    ChildGradeEntry(
+                        student_id=child, external_uid="graded", course_code="331", course_section="10",
+                        weekday_date="Thu 10/22", title="Periodic Table Quiz", score_earned=13.0, score_possible=45.0,
+                        percent=28.9, first_seen_at=now - timedelta(days=30), graded_at=graded_at,
+                    ),
+                ]
+            )
+            await db.commit()
+        feed = (await client.get("/family/feed", headers=_auth(admin))).json()
+        [grade] = [i for i in feed["items"] if i["kind"] == "grade"]
+        assert grade["title"] == "Periodic Table Quiz"
+        assert datetime.fromisoformat(grade["data"]["graded_at"]) == graded_at
