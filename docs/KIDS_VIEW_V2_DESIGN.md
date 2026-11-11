@@ -1,12 +1,19 @@
 # Kids view v2 — parent + student coursework dashboard (design)
 
-Design only. Nothing here is built yet. Written for Sonnet to implement in
+The design as written before it was built, for Sonnet to implement in
 phases (see "Build order" at the end). Builds on top of the bucket 3
 import pipeline that already exists (`backend/services/bucket3_extract.py`,
 `backend/routers/bucket3.py`, `frontend/src/pages/KidsPage.tsx` +
 `KidsDetailPage.tsx`) — this document does not replace that pipeline, it
 adds student accounts, actionable state, teacher-email links, and two
 tiers of AI-assisted suggestions on top of the data it already produces.
+
+**What it became:** one page, **Gradez** (`/gradez`, `frontend/src/gradez/`),
+over the same `/students/{id}/bucket3/*` API. It replaced both the Kidz page
+(`KidsDetailPage.tsx`) and the separate Focus app (`frontend/focus/`, served
+at `/focus/`), which had grown into two UIs for one child's schoolwork. Two
+parts of this design are gone, each marked where it is described: the Tier B
+plan (§7) and Focused mode (§8). The rest stands as the rationale.
 
 ## Scope
 
@@ -160,9 +167,9 @@ no way to filter to just them, and with no "posted" timestamp (only
   to capture it the same bounded-lookahead way as `Due`.
 - `GET /students/{id}/bucket3/announcements` — `item_type == "announcement"`,
   ordered by `posted_date` descending (falls back to `last_seen_at` when
-  no posted date parsed). Collapsed by default in the UI (see Focused
-  View) — informational, not actionable, shouldn't compete for attention
-  with the to-do list.
+  no posted date parsed). Kept apart from the to-do list (Gradez's
+  Teachers tab) — informational, not actionable, shouldn't compete for
+  attention with it.
 
 ## 4. Per-course progress (student's own framing)
 
@@ -225,7 +232,7 @@ Already built (`GET /students/{id}/bucket3/audit`). No new backend work —
 just needs to be reachable from both the parent's and the student's view
 of the same student, which the new `get_current_student_or_guardian`
 dependency (§0) makes automatic once every bucket3 route is switched over
-to it.
+to it. In Gradez it is the "About this data" sheet.
 
 ## 7. AI-assisted suggestions — two tiers, deliberately different caching
 
@@ -264,25 +271,34 @@ UNIQUE(course_code, course_section, normalized_title)
   approach. Store the decline too (so it's not re-attempted every time),
   distinguishable from a real suggestion.
 
-**Tier B — "how should I tackle my list," personal, never cached.** This
-is about one student's own specific mix of due/missing items at a given
-moment — inherently not shareable, not deterministic input the way a
+**Tier B — "how should I tackle my list," personal, never cached.
+Removed.** It was about one student's own mix of due/missing items at a
+given moment — inherently not shareable, not deterministic input the way a
 single assignment's title is.
 
-- `POST /students/{id}/bucket3/suggestions/plan` — takes the student's
-  current due+missing list (titles, course names, due dates only — same
-  minimal-data-sent rule as Tier A), returns a short prioritized plan.
-  Never stored, never reused for a different request even for the same
-  student later — the input changes every time the list does, caching it
-  would just as often show stale advice as good advice.
-- Both tiers are explicitly user-triggered ("Suggest an approach" /
-  "Suggest a plan" buttons) — never automatic, never on a schedule, same
-  restraint as the rest of this app's Anthropic API usage.
+- `POST /students/{id}/bucket3/suggestions/plan` (the Kidz page's "Suggest
+  a plan") took the student's current due+missing list (titles, course
+  names, due dates only) and returned a short prioritized plan, never
+  stored: the input changed every time the list did. So every press was a
+  paid model call whose answer was thrown away. It went with the Kidz page,
+  `kids_suggestions.plan` too.
+- Tier A stays explicitly user-triggered (Gradez's "How do I start?" on one
+  assignment) — never automatic, never on a schedule, same restraint as the
+  rest of this app's Anthropic API usage.
 
 ## 8. Focused View
 
 Both a parent and a student can have ADHD; the default view should not
 require reading a dense dashboard to find "what do I do next."
+
+**Removed with the Kidz page, as a duplicate:** the mode toggle, Focused
+mode's single next-action card and its marking-period "X of Y done" bar.
+Gradez's To do tab does this job with the Focus app's rules instead: a
+capped Up next list, and a progress bar scoped to today's set, because a
+marking-period bar at "10 of 31" barely moves when tonight's four things
+are done. Its "What's next" / "Whole week" choice is per account
+(`User.todo_view`), not per browser. The goal above and the visual
+guidelines below still hold.
 
 - A view-mode toggle, persisted in `localStorage` (same pattern as the
   existing theme toggle — no backend, no account setting).
@@ -339,7 +355,7 @@ GET    /students/{id}/bucket3/progress
 GET    /students/{id}/bucket3/teacher-emails
 POST   /students/{id}/bucket3/workitems/{work_item_id}/complete
 POST   /students/{id}/bucket3/suggestions/assignment/{work_item_id}
-POST   /students/{id}/bucket3/suggestions/plan
+POST   /students/{id}/bucket3/suggestions/plan        (removed, §7)
 ```
 
 Every existing and new `/students/{id}/bucket3/*` route switches its
@@ -350,8 +366,8 @@ benefits.
 ## Explicitly out of scope for this pass
 
 - Elementary/preschool coursework views (no verified data shape yet).
-- Any automatic/scheduled AI generation — both suggestion tiers are
-  strictly user-triggered.
+- Any automatic/scheduled AI generation — suggestions are strictly
+  user-triggered.
 - Enforcing or calculating district-specific makeup-grade math.
 - Real-time notifications/push of any kind.
 - A parent "logging in as" a student — student accounts are real,
@@ -374,6 +390,6 @@ benefits.
 6. **Teacher-email resolution** + `mailto:` links, including the
    per-assignment "email about this" variant.
 7. **Assignment suggestions** (Tier A, shared/cached) and **plan
-   suggestions** (Tier B, personal/uncached).
+   suggestions** (Tier B, personal/uncached; since removed).
 8. **Focused View** toggle — applied last since it's a display wrapper
-   over everything built in 1–7, not new data.
+   over everything built in 1–7, not new data. Since removed (§8).

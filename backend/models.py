@@ -86,6 +86,10 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # "es", "zh", "ko", "hi" etc., or null if never chosen. See services/i18n.py.
     preferred_language: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    # Gradez's To do list for this person: "next" (today and the next school
+    # day) or "week" (everything open). Null until they pick; the page then
+    # opens on "next" for a student and "week" for a guardian.
+    todo_view: Mapped[str | None] = mapped_column(String(8), nullable=True)
     # Local auth mode only (prod's Supabase handles its own reset emails):
     # a one-shot token from POST /auth/forgot-password, cleared on use.
     password_reset_token: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
@@ -2765,7 +2769,7 @@ class WorkItemLateException(Base):
 
 
 class CourseDisplayPreference(Base):
-    """One person's own rename/recolor of one class - Focus's "give the
+    """One person's own rename/recolor of one class - Gradez's "give the
     class a display name/color that's editable" feature.
 
     Keyed by (user_id, course_key), deliberately NOT student_id. This is a

@@ -3,12 +3,15 @@ import {
   awaitingSetup,
   bringsIn,
   districtSentences,
+  gradeLevel,
   gradesLine,
   guardiansLine,
-  homeworkLine,
   joinNames,
   latestSync,
   scheduleLine,
+  studentLoginLine,
+  teachersLine,
+  todoLine,
   updateLine,
   type FamilyChild,
   type LastUpdate,
@@ -30,8 +33,11 @@ const child = (over: Partial<FamilyChild> = {}): FamilyChild => ({
   genesis_seen_at: null,
   needs_login: false,
   due_this_week: null,
+  due_today: null,
   missing: null,
   classes: null,
+  low_class: null,
+  recent_posts: null,
   today: null,
   student_login_email: null,
   student_invite_email: null,
@@ -62,21 +68,38 @@ describe("family", () => {
     expect(joinNames(["Maya", "Ben", "Leo"])).toBe("Maya, Ben and Leo");
   });
 
-  it("describes what a row would show until data arrives, then what it shows", () => {
-    expect(homeworkLine(child())).toBe("Every assignment, when it's due, and what's missing");
-    expect(homeworkLine(child({ due_this_week: 0, missing: 0 }))).toBe("Nothing due this week");
-    expect(homeworkLine(child({ due_this_week: 4, missing: 1 }))).toBe("4 due this week · 1 missing");
-    expect(gradesLine(child())).toBe("Each class's grade and every graded assignment");
-    expect(gradesLine(child({ classes: 1 }))).toBe("Grades for 1 class");
-    expect(gradesLine(child({ classes: 0 }))).toBe("No grades yet");
+  it("says nothing on a row until its data arrives", () => {
+    const empty = child();
+    expect(todoLine(empty)).toBeNull();
+    expect(gradesLine(empty)).toBeNull();
+    expect(scheduleLine(empty)).toBeNull();
+    expect(teachersLine(empty)).toBeNull();
+    // An API older than these fields leaves them out altogether.
+    const older = { ...empty, missing: 0, due_today: undefined, recent_posts: undefined } as unknown as FamilyChild;
+    expect(todoLine(older)).toBeNull();
+    expect(teachersLine(older)).toBeNull();
+  });
+
+  it("counts what is due today and missing", () => {
+    expect(todoLine(child({ due_today: 2, missing: 3 }))).toBe("2 due today · 3 missing");
+    expect(todoLine(child({ due_today: 0, missing: 0 }))).toBe("Nothing due today");
+    expect(todoLine(child({ due_today: 1, missing: 0 }))).toBe("1 due today");
+  });
+
+  it("names a class below 50% by the caller's own name for it", () => {
+    expect(gradesLine(child({ classes: 6 }))).toEqual({ text: "6 classes", low: false });
+    expect(gradesLine(child({ classes: 1 }))).toEqual({ text: "1 class", low: false });
+    expect(gradesLine(child({ classes: 0 }))).toEqual({ text: "No grades yet", low: false });
+    const low = { course_key: "210-1", course_name: "Geometry", custom_name: null };
+    expect(gradesLine(child({ classes: 6, low_class: low }))).toEqual({ text: "6 classes · Geometry is below 50%", low: true });
+    expect(gradesLine(child({ classes: 6, low_class: { ...low, custom_name: "Geo" } }))?.text).toBe("6 classes · Geo is below 50%");
   });
 
   it("only ever shows today's schedule", () => {
     const seen = { genesis_seen_at: "2026-10-21T10:00:00Z" };
-    expect(scheduleLine(child())).toBe("Which class Maya is in right now, and what's next");
-    expect(scheduleLine(child(seen))).toBe("Today's schedule isn't in yet");
-    expect(scheduleLine(child({ ...seen, today: { state: "now", course_name: "Chemistry", room: "214", time_start: "9:52", time_end: "10:42" } }))).toBe(
-      "Now: Chemistry, Room 214 · until 10:42",
+    expect(scheduleLine(child(seen))).toBeNull();
+    expect(scheduleLine(child({ ...seen, today: { state: "now", course_name: "Biology", room: "214", time_start: "9:52", time_end: "10:42" } }))).toBe(
+      "Now: Biology, Room 214",
     );
     expect(scheduleLine(child({ ...seen, today: { state: "next", course_name: "Lunch", room: null, time_start: "11:30", time_end: null } }))).toBe(
       "Next: Lunch at 11:30",
@@ -86,10 +109,32 @@ describe("family", () => {
     );
   });
 
+  it("counts this week's teacher posts", () => {
+    expect(teachersLine(child({ recent_posts: 0 }))).toBe("No posts this week");
+    expect(teachersLine(child({ recent_posts: 1 }))).toBe("1 post this week");
+    expect(teachersLine(child({ recent_posts: 3 }))).toBe("3 posts this week");
+  });
+
   it("counts the other guardians, not the caller", () => {
     expect(guardiansLine(child())).toBe("Just you so far");
-    expect(guardiansLine(child({ guardian_count: 2 }))).toBe("You and 1 other guardian see the same thing");
-    expect(guardiansLine(child({ guardian_count: 3 }))).toBe("You and 2 other guardians see the same thing");
+    expect(guardiansLine(child({ guardian_count: 2 }))).toBe("You and 1 other");
+    expect(guardiansLine(child({ guardian_count: 3 }))).toBe("You and 2 others");
+  });
+
+  it("says whether the child has their own login", () => {
+    expect(studentLoginLine(child())).toBe("Not invited yet. Maya would see this same page.");
+    expect(studentLoginLine(child({ student_invite_email: "maya@example.com" }))).toBe("Invite sent to maya@example.com");
+    expect(studentLoginLine(child({ student_login_email: "maya@example.com" }))).toBe("Signs in as maya@example.com");
+  });
+
+  it("works out a high schooler's grade from the graduating class", () => {
+    const november = new Date(2026, 10, 10);
+    expect(gradeLevel(child({ grad_year: 2029 }), november)).toBe(10);
+    expect(gradeLevel(child({ grad_year: 2027 }), november)).toBe(12);
+    expect(gradeLevel(child({ grad_year: 2029 }), new Date(2027, 6, 1))).toBe(11);
+    expect(gradeLevel(child({ grad_year: null }), november)).toBeNull();
+    expect(gradeLevel(child({ grad_year: 2035 }), november)).toBeNull();
+    expect(gradeLevel(child({ grad_year: 2029, school_type: "middle" }), november)).toBeNull();
   });
 
   it("finds the newest update across children and sources", () => {

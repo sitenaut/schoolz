@@ -40,7 +40,7 @@ export function PrivacyPage() {
       <p>
         Schools, districts, the calendar, newsletters, lunch menus, the staff directory, local events and Localz
         are public, with no login. Registering is only needed for the optional personal layer: linking your own
-        kids, narrowing the calendar to their schools, and the Kids View of their assignments and grades.
+        kids, narrowing the calendar to their schools, and Gradez, the page with their assignments and grades.
       </p>
 
       <h3>What we store, and why</h3>
@@ -137,7 +137,7 @@ export function PrivacyPage() {
               We collect anonymous performance and error data to make the site faster. It's tied to a random
               per-visit session, never to your name, email, or children, and isn't shared with advertisers. Login
               tokens, invite links, which Localz listing you opened, and other sensitive URL content are stripped
-              before anything is sent.
+              before anything is sent. Gradez, the page with your child's schoolwork, sends none.
             </td>
           </tr>
           <tr>
@@ -163,7 +163,7 @@ export function PrivacyPage() {
               So we can see which towns and districts actually use schoolz and which pages help, and so this project
               can be shown to the districts it serves. Advertising features and Google signals are turned off, we
               send Google no name, email, account or child information, and personal pages are reported only as
-              "account" or "children", never with anything on them. Localz pages and the kids' Focus app send
+              "account" or "children", never with anything on them. Localz pages and Gradez send
               Google nothing. You can{" "}
               <button
                 type="button"
@@ -202,7 +202,7 @@ export function PrivacyPage() {
           </tr>
           <tr>
             <td>
-              Your child's schoolwork in the Kids View: the school-portal pages you publish from Backpack Capture
+              Your child's schoolwork in Gradez: the school-portal pages you publish from Backpack Capture
               (assignments, due dates, grades, class schedule), and what's read from them
             </td>
             <td>Our database</td>
@@ -219,7 +219,7 @@ export function PrivacyPage() {
           <tr>
             <td>
               Things you add about your child's classes: specials days, late-work policies, teacher exceptions, and
-              help requests your child sends from Focus
+              help requests your child sends from Gradez
             </td>
             <td>Our database</td>
             <td>
@@ -254,8 +254,8 @@ export function PrivacyPage() {
             <td>A child's own login (email, and which child it belongs to)</td>
             <td>Our database, and Supabase for the sign-in</td>
             <td>
-              Only if a guardian invites the child to sign in to Focus. The child sees the same schoolwork their
-              guardians do. Focus loads no analytics.
+              Only if a guardian invites the child to sign in to Gradez. The child sees the same schoolwork their
+              guardians do. Gradez loads no analytics.
             </td>
           </tr>
           <tr>
@@ -392,7 +392,7 @@ export function PrivacyPage() {
       <p>
         We use Anthropic's Claude for the assistant (above), to read public school newsletters, calendars and
         flyers, to translate public school content into Spanish, Chinese, Korean and Hindi, to read who a Localz
-        listing serves, and for three Kids View helpers. Those three send the least they can: a "how to approach
+        listing serves, and for three Gradez helpers. Those three send the least they can: a "how to approach
         this" tip gets only an assignment's title and class name, shared by everyone in that class; "help me plan"
         gets only your child's open assignment titles, class names and due dates, with no name or student ID; and
         reading a late-work policy gets only the syllabus paragraph you paste. Your Localz answers (on your device

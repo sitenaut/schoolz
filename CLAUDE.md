@@ -19,7 +19,7 @@ React (Vite/TS) → FastAPI → Postgres. Two environments only: **local** and *
 - `backend/` — FastAPI + SQLAlchemy async + Alembic (**Alembic is the schema source of truth**). Dual auth via `AUTH_MODE` (`backend/auth.py`):
   - `local` — email/username/password, self-serve `/auth/register`, bcrypt, HS256 JWTs. No Google SSO.
   - `supabase` (prod) — Supabase Auth handles Google SSO + password; backend verifies the Supabase JWT against JWKS (slow-path fallback to `/auth/v1/user`) and auto-provisions a `users` row on first sight. No MFA. On Fly the API refuses to start unless `AUTH_MODE=supabase` (unset means `local`), and serves no `/docs` or `/openapi.json`.
-- `frontend/` — Vite/React/TS. `src/authConfig.ts` reads `VITE_*` at build time; `src/context/AuthContext.tsx` switches between local-JWT and Supabase auth. `frontend/focus/` is the kids' Focus app, served same-origin at `/focus/`.
+- `frontend/` — Vite/React/TS. `src/authConfig.ts` reads `VITE_*` at build time; `src/context/AuthContext.tsx` switches between local-JWT and Supabase auth. `src/gradez/` is Gradez, one child's schoolwork at `/gradez`, outside `AppShell`; it replaced the separate Focus app (`/focus/`) and the Kidz page (`/kids/<id>`), whose addresses redirect to it.
 - **Scrapers** are the shared `playwright-scraper` service (its own repo, `Profitnaut/playwright-scraper`, shared with billz), deliberately generic (`/fetch-html`, `/fetch-paginated`, `/fetch-raw`, `/health/deep`). Three instances, tried in order by `backend/scraper_client.py`: the Fly app `schoolz-scraper` (primary), the droplet, the Pi. **No site-specific parsing lives there** — parse in the backend. Change its API there, additively; schoolz keeps only `scraper/fly.toml`, the pinned commit `scraper/SOURCE_REF` (deploy: `scripts/deploy-scraper.sh`) and the Fly scraper's telemetry apps (`scraper/telemetry/`).
 - Five Fly apps: `schoolz-api` (process groups `app` + `scheduler`), `schoolz-web`, `schoolz-scraper`, and `schoolz-scraper-metrics` + `schoolz-scraper-logs`, which stand in for the droplet's host agent so the Fly scraper reports to Grafana as `host="scraper-fly"` (`scraper/telemetry/README.md`).
 
@@ -77,7 +77,7 @@ The chatbot (`POST /chat`) straddles the tiers: public tools for anonymous calle
 - **Guardian invites** (`routers/invites.py`) — per-child, token-based, 7-day expiry. The unauthenticated preview shows only first name + last initial, so an invite link can't be used to fish for a child's identity. The frontend preserves the target across register/login via `?next=`.
 - **Student accounts** (`routers/student_accounts.py`) — `Student.user_id` points at the student's own `User`; the account *is* that pointer. Stricter than guardian invites: the logged-in email must match the invited one, one account per student, and a guardian of that student can't claim it. `bucket3._get_own_student` allows guardian **or** student, so both see identical data; `viewer_role` tells the UI which guardian-only controls to hide. Deleting a student's login nulls `Student.user_id`, never the student.
 - **`Student.school_id` is required** and chosen from tracked schools, never free text.
-- **Per-account vs per-student keying is a privacy decision.** A `Student` row is visible to every linked guardian, so anything that is one person's own preference is keyed on **`user_id`**, never `student_id`: `CourseDisplayPreference` (rename/recolor a class; follows the person across devices, invisible to other guardians), `ClassPaymentTick` (each guardian tracks their own "have I paid this"). Facts about the child are keyed per student so every guardian sees the same thing: `StudentSpecial` (which special — Art, PE, … — falls on each rotation day; typed in on My Children, since specials appear nowhere in captured Genesis pages). Late policies are per *(student, course)* — see below.
+- **Per-account vs per-student keying is a privacy decision.** A `Student` row is visible to every linked guardian, so anything that is one person's own preference is keyed on **`user_id`**, never `student_id`: `CourseDisplayPreference` (rename/recolor a class; follows the person across devices, invisible to other guardians), `User.todo_view` (how much of Gradez's To do list they see), `ClassPaymentTick` (each guardian tracks their own "have I paid this"). Facts about the child are keyed per student so every guardian sees the same thing: `StudentSpecial` (which special — Art, PE, … — falls on each rotation day; typed in on My Children, since specials appear nowhere in captured Genesis pages). Late policies are per *(student, course)* — see below.
 
 ### Schools, districts, content
 
@@ -104,7 +104,7 @@ Loaded automatically when you read files in that directory:
 
 Skills (`.claude/skills/<name>/SKILL.md`):
 
-- **`kids-view`** — Kids View, Focus prioritisation, late-work policies, teacher exceptions, points, help requests.
+- **`kids-view`** — Kids View and Gradez, To do prioritisation, late-work policies, teacher exceptions, points, help requests.
   - After any parser change, run **Re-read imported pages** (`POST .../bucket3/reprocess`); import dedups by content hash.
   - `late_credit()` returns `None` for "no policy on file" — never collapse it into zero; only a known zero may hide work.
 - **`content-extraction`** — `content_extractor.py`, status titles, supersede/dedup, content scoping, class pages.
@@ -120,7 +120,7 @@ Skills (`.claude/skills/<name>/SKILL.md`):
 - **`observability`** — OTel, Grafana rules/SLOs/IRM, Loki, Faro RUM, GA4, `page_visits`.
   - The Grafana notification policy tree is shared with billz and the scraper repo: never `PUT` a tree built from scratch.
   - If a panel goes blank, check which metric-name spelling prod emits first.
-  - Analytics never blocks rendering, never loads in Focus, and never carries child data.
+  - Analytics never blocks rendering, never starts in a Gradez document (so Gradez is only ever entered by a page load), and never carries child data.
 - **`visits`** — the prod visit report (`page_visits` by day, source and page). Visits, never people.
 - **`deploy-schoolz`** — the deploy procedure plus prod facts (which Supabase project, pooler host, Fly networking, one-off scripts).
 

@@ -19,7 +19,7 @@ pull requests whose `backend` and `frontend` checks pass (ruleset `main`).
    is correct. An image without a `sha-` label counts as changed.
 3. **backend**, then **frontend**: each remembers the running image, deploys,
    smoke-checks it (API: `/health`, `/schools`, MCP `initialize` with the real
-   Host; web: `/` and `/focus/`), and **redeploys the previous image** if the
+   Host; web: `/` and `/gradez`), and **redeploys the previous image** if the
    deploy or smoke check fails. The backend's `flyctl deploy` migrates first:
    `release_command` in `backend/fly.toml` runs `scripts/release.py` in a
    temporary machine with the app's secrets, before any machine is replaced.

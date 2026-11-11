@@ -29,12 +29,7 @@ function useLocalzPending(enabled: boolean): number {
  * keeps its own full page (header, stat tiles, table) - this just swaps
  * which one is mounted. A scoped admin only sees the tabs their roles
  * grant (the server enforces the same rule); "Users & roles" is super
- * admin only.
- *
- * Kids reuses the old guardian-facing /kids page verbatim rather than a
- * separate admin view of it - it dropped off the main nav (renamed/
- * repointed to the Focus app) but stays reachable here since it's still
- * a real page with real ideas worth revisiting later. */
+ * admin only. */
 export function AdminLayout() {
   const { user } = useAuth();
   const tabs = visibleAdminTabs(user);

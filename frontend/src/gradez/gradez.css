@@ -1,0 +1,2034 @@
+/* Gradez: a child's schoolwork on one page (To do, Grades, Schedule,
+ * Teachers). It renders outside the app shell but in the same document as
+ * the rest of schoolz, so it uses the app's own tokens (styles.css :root)
+ * and has to undo the app's bare element rules inside .gz-app. Every class
+ * is prefixed gz- so nothing here reaches another page. */
+
+.gz-app {
+  /* Class colors, in courses.ts PALETTE order. */
+  --tile-blue: #5b9bd5;
+  --tile-green: #57c78a;
+  --tile-red: #ef5f5f;
+  --tile-orange: #f2a145;
+  --tile-yellow: #f5d34e;
+  --tile-sky: #63bde8;
+  --tile-violet: #b08ce0;
+  --tile-slate: #93a2b3;
+  --tile-purple: #7d5bc6;
+  --tile-emerald: #3faa6d;
+  /* Needs attention is the only red thing on the page. */
+  --danger-bg: #fbdcc9;
+  --danger-ink: #8a3d10;
+  --danger-soft: #fdeee4;
+  --now-line: #b9dbe6;
+  --warn-line: #ecd9ae;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 560px;
+  margin: 0 auto;
+  color: var(--ink);
+  font-family: var(--font-b);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gz-app {
+    /* The app declares no page-level color-scheme, so native checkboxes,
+     * selects and date fields would stay light on the dark theme. */
+    color-scheme: dark;
+    --danger-bg: #5a2f18;
+    --danger-ink: #ffd3ba;
+    --danger-soft: #2a1d15;
+    --now-line: #2b5163;
+    --warn-line: #5a4a25;
+  }
+}
+
+:root[data-theme="dark"] .gz-app {
+  color-scheme: dark;
+  --danger-bg: #5a2f18;
+  --danger-ink: #ffd3ba;
+  --danger-soft: #2a1d15;
+  --now-line: #2b5163;
+  --warn-line: #5a4a25;
+}
+
+.gz-tile-blue {
+  --tile: var(--tile-blue);
+}
+.gz-tile-green {
+  --tile: var(--tile-green);
+}
+.gz-tile-red {
+  --tile: var(--tile-red);
+}
+.gz-tile-orange {
+  --tile: var(--tile-orange);
+}
+.gz-tile-yellow {
+  --tile: var(--tile-yellow);
+}
+.gz-tile-sky {
+  --tile: var(--tile-sky);
+}
+.gz-tile-violet {
+  --tile: var(--tile-violet);
+}
+.gz-tile-slate {
+  --tile: var(--tile-slate);
+}
+.gz-tile-purple {
+  --tile: var(--tile-purple);
+}
+.gz-tile-emerald {
+  --tile: var(--tile-emerald);
+}
+
+/* ---- undoing the app's element rules --------------------------------- */
+
+/* :where() keeps these at one class of specificity: enough to beat the
+ * app's bare `label`, `input`, `a` and heading rules whichever stylesheet
+ * loads first, and low enough that any gz- class below still wins. */
+
+.gz-app :where(h1, h2, h3, h4, p, ul, ol, dl, dd) {
+  margin: 0;
+}
+
+.gz-app :where(h3, h4) {
+  font-family: var(--font-b);
+}
+
+.gz-app :where(ul, ol) {
+  padding: 0;
+}
+
+.gz-app :where(a) {
+  color: inherit;
+}
+
+.gz-app :where(button) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.gz-app :where(button:disabled) {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.gz-app :where(label) {
+  display: inline;
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.gz-app :where(input, select, textarea) {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  font: inherit;
+}
+
+/* ---- frame ----------------------------------------------------------- */
+
+.gz-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.gz-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.gz-switcher {
+  padding: 0 12px 0 6px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 22px;
+}
+
+.gz-switcher svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gz-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.gz-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.gz-updated svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.gz-updated.gz-is-ok {
+  color: var(--ok);
+}
+
+.gz-updated.gz-is-stale {
+  color: var(--warn);
+}
+
+.gz-updated.gz-is-plain {
+  color: var(--ink-2);
+}
+
+.gz-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gz-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gz-app > .gz-banner-error,
+.gz-app > .gz-banner-warn {
+  margin: 0 16px 12px;
+}
+
+.gz-banner-error,
+.gz-banner-warn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-banner-error {
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.gz-banner-warn {
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
+}
+
+.gz-main {
+  padding-bottom: 24px;
+}
+
+.gz-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 16px 16px;
+}
+
+.gz-title h1,
+.gz-class-title h1 {
+  font-family: var(--font-d);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+}
+
+.gz-title p {
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.gz-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.gz-tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+
+.gz-tabbar a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 64px;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.gz-tabbar a[aria-current="page"] {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.gz-tabbar svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---- shared pieces --------------------------------------------------- */
+
+.gz-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.gz-list {
+  list-style: none;
+  overflow: hidden;
+}
+
+.gz-list > * + * {
+  border-top: 1px solid var(--line);
+}
+
+.gz-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gz-row-title {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.gz-row-title.gz-is-light {
+  font-weight: 600;
+}
+
+.gz-row-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gz-note {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gz-pill-missed {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.gz-pill-now {
+  padding: 1px 8px;
+  background: var(--primary);
+  color: var(--primary-ink);
+}
+
+.gz-tile {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--tile, var(--tile-slate));
+  /* The tiles are light in both themes, so their ink never flips. */
+  color: #17202a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.gz-tile.gz-tile-lg {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.gz-tile.gz-tile-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.gz-dot {
+  flex: none;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tile, var(--tile-slate));
+}
+
+.gz-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.gz-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+
+.gz-bar.gz-bar-now {
+  background: var(--now-line);
+}
+
+.gz-bar.gz-bar-now > span {
+  background: var(--primary);
+}
+
+.gz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gz-btn.gz-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
+
+.gz-btn.gz-btn-wide {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.gz-text-btn,
+.gz-link-btn,
+.gz-show-more,
+.gz-ask-restart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gz-link-btn {
+  align-self: flex-start;
+}
+
+.gz-link-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gz-icon-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+}
+
+.gz-icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.gz-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gz-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gz-section-head h2,
+.gz-sheet-section {
+  font-family: var(--font-d);
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.gz-section-head p {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-section-head a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.gz-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gz-group-heading {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+/* The edge of a capped list: "Show 2 more", and "Show fewer" once open. */
+
+.gz-barrier {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gz-show-more.gz-fewer {
+  color: var(--ink-2);
+}
+
+.gz-empty-state {
+  padding: 26px 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.gz-main > .gz-empty-state {
+  margin: 0 16px;
+}
+
+.gz-empty-state h2 {
+  margin-bottom: 6px;
+  font-family: var(--font-d);
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.gz-empty-state p {
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.gz-empty-state .gz-btn {
+  margin-top: 14px;
+}
+
+/* The one full-width action of a sheet or an empty page. */
+
+.gz-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 16px;
+  padding: 0 16px;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  color: var(--primary-ink);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gz-primary.gz-undo {
+  background: var(--card);
+  border-color: var(--line-2);
+  color: var(--ink);
+}
+
+/* ---- To do ----------------------------------------------------------- */
+
+.gz-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  background: var(--line);
+  border-radius: 12px;
+}
+
+.gz-segmented button {
+  min-height: 44px;
+  border-radius: 9px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.gz-segmented button[aria-pressed="true"] {
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(23, 32, 42, 0.12);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.gz-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+}
+
+.gz-progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+}
+
+.gz-progress-count {
+  color: var(--ok);
+}
+
+.gz-task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gz-task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+/* The box is 24px; the label around it is the 44px a thumb needs, pulled
+ * back out with a negative margin so the row keeps its own spacing. */
+
+.gz-task-check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px;
+  cursor: pointer;
+}
+
+.gz-task-check input,
+.gz-policy-check input {
+  flex: none;
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.gz-task-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+
+.gz-task-subject {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.gz-task-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.gz-task.gz-is-done .gz-task-title {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+
+.gz-attention {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-bg);
+  border-radius: 12px;
+}
+
+.gz-attention .gz-section-head h2,
+.gz-attention .gz-section-head p,
+.gz-attention .gz-show-more {
+  color: var(--danger-ink);
+}
+
+.gz-attention .gz-task {
+  border-color: var(--danger-bg);
+}
+
+.gz-inbox-zero {
+  padding: 22px 18px 26px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.gz-inbox-zero-art {
+  display: block;
+  width: min(240px, 80%);
+  height: auto;
+  margin: 0 auto 6px;
+}
+
+.gz-inbox-zero-art .gz-shadow {
+  fill: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.gz-inbox-zero-art .gz-body,
+.gz-inbox-zero-art .gz-ear {
+  fill: var(--tile-slate);
+}
+
+.gz-inbox-zero-art .gz-face,
+.gz-inbox-zero-art .gz-tail {
+  stroke: var(--card);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.gz-inbox-zero-art .gz-tail {
+  stroke: var(--tile-slate);
+  stroke-width: 6;
+}
+
+.gz-inbox-zero-art .gz-zzz {
+  fill: var(--tile-blue);
+  font: 700 14px/1 var(--font-b);
+}
+
+.gz-inbox-zero-art .gz-zzz.gz-mid {
+  font-size: 18px;
+}
+
+.gz-inbox-zero-art .gz-zzz.gz-big {
+  font-size: 24px;
+}
+
+.gz-inbox-zero h2 {
+  margin-bottom: 6px;
+  font-family: var(--font-d);
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.gz-inbox-zero p {
+  color: var(--ink-2);
+}
+
+.gz-get-started {
+  text-align: left;
+}
+
+.gz-get-started h2 {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.gz-get-started .gz-starter-steps {
+  color: var(--ink);
+}
+
+/* ---- Grades ---------------------------------------------------------- */
+
+.gz-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gz-chips button,
+.gz-day-picker button {
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 22px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.gz-chips button[aria-pressed="true"],
+.gz-day-picker button[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+  font-weight: 700;
+}
+
+.gz-warn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px;
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
+  border-radius: 12px;
+}
+
+.gz-warn strong {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.gz-warn p {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-class-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
+.gz-class-row .gz-row-title {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.gz-class-row > svg,
+.gz-link-row > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+}
+
+.gz-grade {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gz-grade.gz-is-low,
+.gz-grade-big.gz-is-low {
+  color: var(--bad);
+}
+
+.gz-no-grade {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gz-graded-row,
+.gz-work-row,
+.gz-late-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 14px;
+}
+
+/* Too late for credit: the item, and under it the one thing to do about it. */
+.gz-late-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+
+.gz-late-row .gz-task-body {
+  justify-content: center;
+  min-height: 56px;
+  padding: 8px 14px;
+}
+
+.gz-late-row .gz-text-btn {
+  padding: 0 14px;
+  border-top: 1px solid var(--line);
+}
+
+.gz-score {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---- one class ------------------------------------------------------- */
+
+.gz-class-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.gz-class-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.gz-class-title h1 {
+  overflow-wrap: anywhere;
+}
+
+.gz-class-title p {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-grade-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.gz-grade-big {
+  font-family: var(--font-d);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+.gz-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 14px 14px;
+}
+
+.gz-rule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gz-rule-head h2 {
+  font-family: var(--font-b);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.gz-rule-text {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+.gz-work-row .gz-task-check {
+  margin: -8px -10px;
+}
+
+.gz-group.gz-is-late .gz-group-heading,
+.gz-group.gz-is-late .gz-row-sub,
+.gz-group.gz-is-late .gz-show-more {
+  color: var(--danger-ink);
+}
+
+.gz-group.gz-is-late .gz-card,
+.gz-group.gz-is-late .gz-list > * + * {
+  border-color: var(--danger-bg);
+}
+
+.gz-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ---- Schedule -------------------------------------------------------- */
+
+.gz-now {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--primary-soft);
+  border: 1px solid var(--now-line);
+  border-radius: 12px;
+}
+
+.gz-now-label {
+  color: var(--primary-strong);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.gz-now-class {
+  font-family: var(--font-d);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.gz-now-where {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-now-left {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.gz-btn.gz-btn-now {
+  align-self: flex-start;
+  margin-top: 4px;
+  border-color: var(--now-line);
+}
+
+.gz-day-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.gz-day-picker button {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 14px;
+}
+
+.gz-sched-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 4px 14px;
+}
+
+.gz-sched-row.gz-is-tall {
+  align-items: flex-start;
+  padding: 10px 14px;
+}
+
+.gz-sched-time {
+  flex: none;
+  width: 92px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 21px;
+}
+
+.gz-sched-class {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.gz-sched-room {
+  color: var(--ink-2);
+  font-size: 13px;
+  text-align: right;
+}
+
+.gz-sched-row.gz-is-free .gz-sched-class {
+  color: var(--ink-2);
+}
+
+.gz-sched-row.gz-is-now {
+  background: var(--primary-soft);
+}
+
+.gz-list > .gz-sched-row.gz-is-now,
+.gz-list > .gz-sched-row.gz-is-now + * {
+  border-top-color: var(--now-line);
+}
+
+.gz-sched-row.gz-is-now .gz-sched-time {
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.gz-sched-row.gz-is-now .gz-sched-class {
+  font-weight: 700;
+}
+
+/* ---- Teachers -------------------------------------------------------- */
+
+.gz-post {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.gz-post > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gz-post-who {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.gz-post-body {
+  font-size: 15px;
+  line-height: 21px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.gz-post .gz-text-btn,
+.gz-section > .gz-text-btn {
+  align-self: flex-start;
+}
+
+.gz-teacher-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 14px;
+}
+
+@media (hover: hover) {
+  .gz-class-row:hover,
+  .gz-link-row:hover,
+  .gz-action-row:hover:not(:disabled),
+  .gz-child-row:hover {
+    background: var(--bg);
+  }
+}
+
+/* ---- sheets ---------------------------------------------------------- */
+
+.gz-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(8 14 22 / 45%);
+}
+
+.gz-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 86dvh;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-radius: 18px 18px 0 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: gz-sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* A drag sets this to "none" inline while the finger moves, so the sheet
+   * tracks it with no lag; this is what applies once the finger lifts, for
+   * the spring back or the slide away (Sheet.tsx CLOSE_ANIMATION_MS). */
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.gz-sheet-closing {
+  transition-duration: 200ms;
+  transition-timing-function: ease-in;
+}
+
+@keyframes gz-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Much taller than the line it holds: the line alone is too thin to grab
+ * with a thumb. It sits above the content, so a drag that starts here
+ * never fights the content's own scrolling. */
+
+.gz-sheet-grab-zone {
+  margin: 0 -16px;
+  padding: 14px 0;
+  touch-action: none;
+  cursor: grab;
+}
+
+.gz-sheet-grab-zone:active {
+  cursor: grabbing;
+}
+
+.gz-sheet-grab {
+  width: 46px;
+  height: 5px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: var(--line-2);
+  pointer-events: none;
+}
+
+@media (min-width: 900px) {
+  .gz-sheet-backdrop {
+    align-items: center;
+  }
+  .gz-sheet {
+    width: 90%;
+    max-height: 80vh;
+    padding-top: 20px;
+    border-radius: 18px;
+    animation: gz-sheet-in-desktop 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .gz-sheet-grab-zone {
+    display: none;
+  }
+}
+
+@keyframes gz-sheet-in-desktop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gz-sheet {
+    animation: none;
+  }
+}
+
+.gz-sheet-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gz-sheet-heading {
+  font-family: var(--font-d);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+.gz-sheet-title,
+.gz-policy-heading {
+  font-family: var(--font-d);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.gz-sheet-course {
+  margin: 2px 0 14px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.gz-sheet-intro {
+  margin: 4px 0 16px;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.gz-sheet-section {
+  margin: 20px 0 10px;
+}
+
+.gz-sheet-note {
+  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.gz-sheet-row {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.gz-sheet-row h3,
+.gz-starter h3,
+.gz-ask h3 {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.gz-sheet-row p {
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.gz-sheet-row a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ---- whose page? ----------------------------------------------------- */
+
+.gz-children {
+  margin-top: 12px;
+}
+
+.gz-child-row,
+.gz-action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 14px;
+  text-align: left;
+}
+
+.gz-child-row > svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
+}
+
+/* ---- About this data ------------------------------------------------- */
+
+.gz-data-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+}
+
+.gz-data-headline {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gz-data-headline svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--ok);
+}
+
+.gz-data-status.gz-is-warn .gz-data-headline svg {
+  color: var(--warn);
+}
+
+.gz-data-headline h3 {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.gz-data-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-data-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gz-data-rows dt {
+  color: var(--ink-2);
+}
+
+.gz-data-rows dd {
+  font-weight: 600;
+  text-align: right;
+}
+
+.gz-data-problems {
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-agree {
+  margin-top: 16px;
+}
+
+.gz-agree > h3 {
+  padding: 12px 14px 6px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.gz-agree > .gz-note {
+  padding: 0 14px 12px;
+}
+
+/* The heading and its rows read as one block: the lines start between rows. */
+
+.gz-agree > h3 + *,
+.gz-agree > .gz-note {
+  border-top: 0;
+}
+
+.gz-agree-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+}
+
+.gz-agree-count {
+  flex: none;
+  width: 36px;
+  font-family: var(--font-d);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+.gz-agree-count.gz-is-ok {
+  color: var(--ok);
+}
+
+.gz-agree-count.gz-is-warn {
+  color: var(--warn);
+}
+
+.gz-link-btn.gz-agree-more {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.gz-differ {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+}
+
+.gz-differ h4 {
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.gz-differ ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gz-differ li {
+  display: flex;
+  flex-direction: column;
+}
+
+.gz-action-icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--primary);
+}
+
+.gz-action-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.gz-data-result,
+.gz-sheet > .gz-banner-error {
+  margin-top: 12px;
+}
+
+.gz-data-result {
+  padding: 10px 12px;
+  background: var(--ok-soft);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-report {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.gz-report label {
+  display: block;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+}
+
+.gz-report-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---- fields ---------------------------------------------------------- */
+
+/* 16px on every field: iOS Safari zooms the page in when a smaller one is
+ * focused and does not reliably zoom back out. */
+
+.gz-textarea,
+.gz-policy-paste,
+.gz-policy-select,
+.gz-policy-number input,
+.gz-exception-date,
+.gz-exception-note,
+.gz-name-input {
+  min-height: 44px;
+  padding: 9px 12px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.gz-textarea,
+.gz-policy-paste,
+.gz-policy-select,
+.gz-exception-note {
+  display: block;
+  width: 100%;
+}
+
+.gz-textarea,
+.gz-policy-paste {
+  min-height: 96px;
+  resize: vertical;
+}
+
+/* ---- one assignment -------------------------------------------------- */
+
+.gz-starter,
+.gz-ask {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.gz-starter-head,
+.gz-ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.gz-starter-toggle,
+.gz-ask-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -10px -12px -8px 0;
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gz-chevron {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Closed, the whole block is its own button. */
+
+.gz-starter.gz-starter-collapsed,
+.gz-ask.gz-ask-collapsed {
+  padding: 0;
+}
+
+.gz-starter-collapsed .gz-starter-toggle,
+.gz-ask-collapsed .gz-ask-toggle {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 14px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.gz-starter-ask {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  background: var(--primary-soft);
+  border-radius: 10px;
+  color: var(--primary-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gz-starter-status {
+  margin-bottom: 8px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gz-starter-status:last-child {
+  margin-bottom: 0;
+}
+
+.gz-starter-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 22px;
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.gz-starter-steps li::marker {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Deliberately the calmest block in the sheet: no red, no warning icon.
+ * Asking for help should feel ordinary. */
+
+.gz-ask-kinds {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gz-ask-kind {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 21px;
+  text-align: left;
+}
+
+.gz-ask-preview {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.gz-ask-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--primary);
+  border-radius: 10px;
+  color: var(--primary-ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gz-ask-note {
+  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gz-ask-collapsed .gz-ask-note {
+  margin: 0;
+  padding: 0 14px 12px;
+}
+
+.gz-exception-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+/* ---- late-work rule -------------------------------------------------- */
+
+.gz-policy-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.gz-policy-label {
+  display: block;
+  margin: 12px 0 4px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.gz-policy-read {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 16px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* The proposal and the teacher's own sentence sit together on purpose:
+ * confirming a parsed rule means checking it against the handout. */
+
+.gz-policy-proposal {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--primary-soft);
+  border-radius: 10px;
+}
+
+.gz-policy-proposal-summary {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.gz-policy-source,
+.gz-policy-confirm,
+.gz-policy-hint {
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gz-policy-source {
+  font-style: italic;
+}
+
+.gz-policy-number {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.gz-policy-number input {
+  width: 90px;
+}
+
+.gz-policy-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 4px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.gz-policy-note {
+  margin-top: 10px;
+  color: var(--warn);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.gz-policy-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.gz-policy-save {
+  min-height: 44px;
+  padding: 0 18px;
+  background: var(--primary);
+  border-radius: 10px;
+  color: var(--primary-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gz-policy-remove,
+.gz-policy-cancel {
+  min-height: 44px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gz-policy-remove {
+  color: var(--bad);
+}
+
+/* ---- class name and color -------------------------------------------- */
+
+.gz-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.gz-name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.gz-name-commit,
+.gz-name-cancel {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.gz-name-commit {
+  background: var(--primary);
+  color: var(--primary-ink);
+}
+
+.gz-name-cancel {
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+}
+
+.gz-name-commit svg,
+.gz-name-cancel svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gz-name-hint {
+  margin-top: 6px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gz-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.gz-swatch {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  cursor: pointer;
+}
+
+.gz-swatch.gz-swatch-selected {
+  border-color: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.gz-swatch.gz-swatch-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 2px dashed var(--line-2);
+  box-shadow: none;
+  color: var(--ink-2);
+  font-size: 18px;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.gz-swatch.gz-swatch-custom.gz-swatch-selected {
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.gz-swatch-custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}

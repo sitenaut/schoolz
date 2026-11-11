@@ -24,7 +24,6 @@ export const ADMIN_TABS: { to: string; label: string; permission: string | null 
   { to: "/admin/email", label: "Email scanner", permission: "email.view" },
   { to: "/admin/chatbot", label: "Chatbot", permission: "chatbot.view" },
   { to: "/admin/config", label: "Import/export", permission: "config.view" },
-  { to: "/admin/kids", label: "Kids", permission: "kids.view" },
   { to: "/admin/users", label: "Users & roles", permission: null },
   { to: "/admin/api-keys", label: "API keys", permission: null },
   { to: "/admin/connected-apps", label: "Connected apps", permission: null },

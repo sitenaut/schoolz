@@ -32,6 +32,8 @@ class UserOut(BaseModel):
     permissions: list[str] = []
     auth_mode: str
     preferred_language: str | None = None
+    # Gradez's To do list: "next" | "week", null until the person picks.
+    todo_view: str | None = None
     # "password" (local, or Supabase email+password) | "google" (Supabase
     # OAuth, no password to change) - the settings page uses this to decide
     # whether to show a change-password form at all.
@@ -44,7 +46,7 @@ class UserOut(BaseModel):
     mfa_enforced: bool = False
     created_at: datetime | None = None
     # Set when this user is a student (Student.user_id points here) - the
-    # frontend uses it to send a student straight to their own Kids view
+    # frontend uses it to send a student straight to their own Gradez page
     # instead of a guardian's list of children.
     student_profile_id: str | None = None
 
@@ -54,6 +56,7 @@ class UserOut(BaseModel):
 class UserUpdate(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=64)
     preferred_language: str | None = Field(default=None, pattern="^(en|es|zh|ko|hi)$")
+    todo_view: str | None = Field(default=None, pattern="^(next|week)$")
 
 
 class ChangePasswordRequest(BaseModel):
@@ -118,6 +121,15 @@ class FamilyTodayOut(BaseModel):
     time_end: str | None = None
 
 
+class FamilyLowClassOut(BaseModel):
+    """A class whose grade this marking period is under 50%. `custom_name`
+    is the caller's own rename of it (CourseDisplayPreference), if any."""
+
+    course_key: str
+    course_name: str | None = None
+    custom_name: str | None = None
+
+
 class FamilyChildOut(StudentOut):
     """A child on My family: which of their school's systems schoolz can
     bring in (the district's settings, or data that already arrived) and how
@@ -131,8 +143,12 @@ class FamilyChildOut(StudentOut):
     genesis_seen_at: datetime | None = None
     needs_login: bool = False
     due_this_week: int | None = None
+    due_today: int | None = None
     missing: int | None = None
     classes: int | None = None
+    low_class: FamilyLowClassOut | None = None
+    # Teachers' Classroom posts dated in the last seven days.
+    recent_posts: int | None = None
     today: FamilyTodayOut | None = None
     student_login_email: str | None = None
     student_invite_email: str | None = None
@@ -1959,6 +1975,9 @@ class ChildGradeEntryOut(BaseModel):
     percent: float | None
     status: str | None
     is_updated: bool
+    # When schoolz first read this entry with a grade or a mark on it; null
+    # while the teacher hasn't graded it.
+    graded_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

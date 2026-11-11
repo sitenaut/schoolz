@@ -43,37 +43,10 @@ RUN npm run build
 # (nginx.conf.template, the assets/ location).
 RUN find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -k {} +
 
-# The Focus app (focus/) - a separate Vite build served from the SAME
-# ORIGIN at /focus/, which is what lets it share the auth session (see
-# focus/README.md). It lives inside this directory rather than beside it
-# because fly deploys with this directory as the Docker build context; a
-# sibling would be invisible here. Shares the API/auth build args above so
-# both apps point at the same backend in the same auth mode.
-FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS build-focus
-WORKDIR /app
-ARG VITE_AUTH_MODE=local
-ARG VITE_API_URL=http://localhost:8000
-ARG VITE_SUPABASE_URL=
-ARG VITE_SUPABASE_PUBLISHABLE_KEY=
-ENV VITE_AUTH_MODE=$VITE_AUTH_MODE \
-    VITE_API_URL=$VITE_API_URL \
-    VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
-    VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
-COPY focus/package.json focus/package-lock.json ./
-RUN npm ci
-COPY focus/ .
-RUN npm run build
-RUN find dist/assets -type f \( -name '*.js' -o -name '*.css' \) -exec gzip -9 -k {} +
-
 # nginx-unprivileged runs as uid 101 with its pid file and caches in /tmp;
 # it listens on 3000 (nginx.conf.template), which needs no root either.
 FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 COPY --from=build /app/dist /usr/share/nginx/html
-# Must land exactly where nginx.conf.template's `location /focus/` looks,
-# or that block's try_files fallback loops on a missing index.html and
-# nginx answers 500 - which is what prod did between the block shipping
-# and this stage existing.
-COPY --from=build-focus /app/dist /usr/share/nginx/html/focus
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY security-headers.inc.template /etc/nginx/templates/security-headers.inc.template
 # What the Content-Security-Policy lets the page connect to besides itself,

@@ -274,7 +274,6 @@ GET    /students/{student_id}/bucket3/schedule  login
 GET    /students/{student_id}/bucket3/status  login
 GET    /students/{student_id}/bucket3/student  login
 POST   /students/{student_id}/bucket3/suggestions/assignment/{work_item_id}  login
-POST   /students/{student_id}/bucket3/suggestions/plan  login
 GET    /students/{student_id}/bucket3/teacher-emails  login
 GET    /students/{student_id}/bucket3/todo  login
 GET    /students/{student_id}/bucket3/workitems  login

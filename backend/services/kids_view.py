@@ -385,7 +385,7 @@ def late_credit(
     that is still worth full credit is the only work where acting *now*
     changes the outcome, so it wins the dashboard's limited slots; work
     already past its cutoff has nothing left to protect and is kept off the
-    dashboard entirely (it lives in the Details tab instead) rather than
+    dashboard entirely (it lives on its class's page instead) rather than
     sitting there generating guilt it can't do anything with.
 
     `credit_pct` is the maximum percentage of full credit still earnable if

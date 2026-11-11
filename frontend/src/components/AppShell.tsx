@@ -14,7 +14,7 @@ import { logoClass } from "../lib/logos";
 import { RIBBON_CHANGE_EVENT, useMySchools } from "../lib/mySchools";
 import { IconBell, IconCalendar, IconDirectory, IconHome, IconInbox, IconLunch, IconPin, IconSchool, IconSearch, IconUsers, IconWrench } from "./icons";
 import { useUnreadInbox, useUnreadNotifications } from "../lib/notifications";
-import { CURRENT_LANG } from "../lib/i18n";
+import { CURRENT_LANG, ROUTER_BASENAME } from "../lib/i18n";
 import { gaEvent, gaPageView, gaSetUserProperties, schoolViews, setInternalTraffic } from "../lib/analytics";
 import { getFaro } from "../lib/telemetry";
 import { trackEvent } from "../lib/track";
@@ -56,7 +56,7 @@ function routeTemplate(pathname: string): string {
 // /directory is school-scoped, but through its own in-page school picker
 // (it searches the whole district by default, which the ribbon filter
 // would silently contradict).
-const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/upload", "/survey", "/chcomms", "/family", "/kids", "/directory", "/local"];
+const NO_SCHOOL_FILTER_PATH_PREFIXES = ["/admin", "/account", "/contact", "/upload", "/survey", "/chcomms", "/family", "/directory", "/local"];
 // Table-heavy / settings pages get a wider content column than the feed.
 const WIDE_PATH_PREFIXES = ["/admin", "/account"];
 // The NJ funding survey banner is for families: not on admin or account
@@ -424,12 +424,9 @@ export function AppShell() {
             {t("Directory")}
           </NavLink>
           {user && (
-            // /focus is a separate app (its own Vite build, served from
-            // /focus/ - see nginx.conf.template) sharing only this origin's
-            // session, not a route in this router - a plain <a> forces the
-            // real browser navigation it needs; a <Link>/<NavLink> would try
-            // to client-route to a path this SPA has no match for.
-            <a href="/focus/">
+            // A plain <a>, not a NavLink: Gradez's document starts no analytics
+            // (lib/gradezPath.ts), so the only way in is a page load.
+            <a href={`${ROUTER_BASENAME}/gradez`}>
               <IconUsers />
               Gradez
             </a>

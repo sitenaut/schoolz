@@ -21,6 +21,7 @@ describe("analyticsPath", () => {
     expect(analyticsPath("/account/security", "?code=1")).toBe("/account");
     expect(analyticsPath("/admin/scans", "")).toBe("/admin");
     expect(analyticsPath("/kids/123/work", "")).toBe("/kids");
+    expect(analyticsPath("/gradez", "?student=abc&tab=grades")).toBe("/gradez");
     expect(analyticsPath("/children", "")).toBe("/children");
   });
 });

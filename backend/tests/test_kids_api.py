@@ -152,6 +152,10 @@ async def test_announcements(monkeypatch):
         assert a["teacher_emails"] == ["pjones@example.org"]
         assert a["posted_date"] == "2026-09-03"
         assert "Bring your Chromebook" in a["body"]
+        # The class's key, as /todo gives it, so the post takes that class's color.
+        todo = (await client.get(f"/students/{sid}/bucket3/todo", headers=_auth(guardian))).json()
+        keys = {i["course_key"] for bucket in ("missing", "due", "done", "no_due_date") for i in todo[bucket]}
+        assert a["course_key"] and (not keys or a["course_key"] in keys)
 
 
 @pytest.mark.anyio
@@ -277,34 +281,6 @@ async def test_an_answer_stored_while_waiting_is_read_not_bought_again(monkeypat
         res = await client.post(f"/students/{sid}/bucket3/suggestions/assignment/{lab['id']}", headers=_auth(guardian))
         assert res.json() == {"text": "- theirs", "declined": False, "cached": True}
         assert calls == []
-
-
-@pytest.mark.anyio
-async def test_plan_sends_only_open_items_and_503_without_key(monkeypatch):
-    _freeze(monkeypatch, 2026, 9, 14, 9, 0)
-    seen = {}
-
-    async def fake_plan(items, today):
-        seen["titles"] = [i["title"] for i in items]
-        seen["today"] = today
-        return "1. **Lab Safety Contract** - due Friday"
-
-    monkeypatch.setattr(kids_suggestions, "plan", fake_plan)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        _run, guardian, sid = await _family(client)
-        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
-        res = await client.post(f"/students/{sid}/bucket3/suggestions/plan", headers=_auth(guardian))
-        assert res.status_code == 200, res.text
-        assert res.json()["text"].startswith("1.")
-        assert len(seen["titles"]) == 1 and seen["titles"][0].startswith("Lab Safety Contract")
-        assert seen["today"] == "2026-09-14"
-
-        async def unavailable(*_args):
-            raise kids_suggestions.SuggestionsUnavailable("no key")
-
-        monkeypatch.setattr(kids_suggestions, "plan", unavailable)
-        res = await client.post(f"/students/{sid}/bucket3/suggestions/plan", headers=_auth(guardian))
-        assert res.status_code == 503
 
 
 @pytest.mark.anyio
@@ -543,36 +519,31 @@ async def test_kids_model_calls_are_limited_per_account_and_stored_answers_are_f
     monkeypatch.setattr(bucket3_router, "MODEL_CALLS_PER_ACCOUNT_PER_HOUR", 2)
     calls = []
 
-    async def fake_plan(items, today):
-        calls.append("plan")
-        return "1. Lab Safety Contract"
-
     async def fake_parse(text):
-        calls.append("parse")
+        calls.append(text)
         return {"understood": False}
 
-    monkeypatch.setattr(kids_suggestions, "plan", fake_plan)
     monkeypatch.setattr(kids_suggestions, "parse_late_policy", fake_parse)
-    paragraph = f"See the handbook. ({uuid.uuid4().hex[:8]})"
+    tag = uuid.uuid4().hex[:8]
+    first, second, third = (f"See the handbook, page {n}. ({tag})" for n in (1, 2, 3))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         _run, guardian, sid = await _family(client)
-        await _import(client, guardian, sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
         parse = f"/students/{sid}/bucket3/late-policies/parse"
-        assert (await client.post(parse, json={"text": paragraph}, headers=_auth(guardian))).status_code == 200
-        assert (await client.post(f"/students/{sid}/bucket3/suggestions/plan", headers=_auth(guardian))).status_code == 200
-        refused = await client.post(f"/students/{sid}/bucket3/suggestions/plan", headers=_auth(guardian))
+        assert (await client.post(parse, json={"text": first}, headers=_auth(guardian))).status_code == 200
+        assert (await client.post(parse, json={"text": second}, headers=_auth(guardian))).status_code == 200
+        refused = await client.post(parse, json={"text": third}, headers=_auth(guardian))
         assert refused.status_code == 429
         assert "Try again a bit later" in refused.json()["detail"]
         # A paragraph already read is answered from the store, over the limit or not.
-        stored = await client.post(parse, json={"text": paragraph}, headers=_auth(guardian))
+        stored = await client.post(parse, json={"text": first}, headers=_auth(guardian))
         assert stored.status_code == 200 and stored.json()["understood"] is False
-        assert calls == ["parse", "plan"]
+        assert calls == [first, second]
 
-        # The limit is the account's: another family's first plan still runs.
+        # The limit is the account's: another family's first paragraph still runs.
         _run, other, other_sid = await _family(client, first_name="Other")
-        await _import(client, other, other_sid, [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt"))])
-        assert (await client.post(f"/students/{other_sid}/bucket3/suggestions/plan", headers=_auth(other))).status_code == 200
-        assert calls == ["parse", "plan", "plan"]
+        other_parse = f"/students/{other_sid}/bucket3/late-policies/parse"
+        assert (await client.post(other_parse, json={"text": third}, headers=_auth(other))).status_code == 200
+        assert calls == [first, second, third]
 
 
 @pytest.mark.anyio

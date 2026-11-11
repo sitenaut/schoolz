@@ -26,16 +26,23 @@ describe("safeNext", () => {
   });
 });
 
-describe("a next outside the app (Focus)", () => {
+describe("a next that takes a page load (Gradez)", () => {
   it("is told apart from app paths", () => {
+    expect(isOutsideApp("/gradez")).toBe(true);
+    expect(isOutsideApp("/gradez?student=abc&tab=grades")).toBe(true);
+    expect(isOutsideApp("/gradezilla")).toBe(false);
+    expect(isOutsideApp("/family")).toBe(false);
+  });
+
+  it("covers Gradez's old address, which the web server redirects", () => {
     expect(isOutsideApp("/focus/")).toBe(true);
     expect(isOutsideApp("/focus/?student=abc")).toBe(true);
     expect(isOutsideApp("/focus")).toBe(true);
     expect(isOutsideApp("/focused-reading")).toBe(false);
-    expect(isOutsideApp("/family")).toBe(false);
   });
 
   it("comes back from Google through /login, which does the page load", () => {
+    expect(returnToFor("/gradez?student=abc")).toBe("/login?next=%2Fgradez%3Fstudent%3Dabc");
     expect(returnToFor("/focus/")).toBe("/login?next=%2Ffocus%2F");
     expect(returnToFor("/family")).toBe("/family");
     expect(returnToFor("/")).toBeUndefined();

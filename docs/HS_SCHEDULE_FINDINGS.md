@@ -107,7 +107,7 @@ Everything here is school-wide. The letters and times are identical for every st
 
 How it works: `hs_rotation_scan` already writes each day's letters into its `Day N` item (`Blocks A, B, E, F · Cycle 2`). `hs_rotation.blocks_from_description` reads them back, and `bell_schedule.lettered_day` zips them onto whichever bell variant has the same number of slots. That's `regular`, `long_block`, `early_dismissal`, or `delayed_opening`, chosen by day status. L1/L2 keep their own names. When no table fits (a long-block early dismissal), there's no timeline and no period chip. The long-block flag comes from the rotation (fewer letters than regular slots), not from whether the times are on file.
 
-Still not built: **"next meets" per course** (item 2 below). It would need the student's own letter → course mapping, so it belongs in Kids view / Focus, not the public card.
+Still not built: **"next meets" per course** (item 2 below). It would need the student's own letter → course mapping, so it belongs in Gradez, not the public card.
 
 ## What a high schooler and their parents actually need to track
 
@@ -119,7 +119,7 @@ Most of what these documents contain is scheduling machinery the school needs an
 2. **Today's blocks, in order, with times.** Not the six-column grid. Just the four or six letters that actually meet today. A student maps letters to their own classes without help.
 3. **When each class next meets.** This is the most useful derived fact, and **no document gives it.** Teachers set work "due next class", and with a 4-of-6 drop rotation plus weekends and holidays, "next class" can be anywhere from 1 to 5+ calendar days away. Once you have the legend and the rotation calendar, it's pure arithmetic: *"Chemistry: next meets Thursday (Day 5, long block)"*. It's also what makes a Classroom due date meaningful: something due Thursday for a class that doesn't meet Wednesday effectively has to be done Tuesday night.
 4. **Bus time**, and only on days when it changes: early dismissal, delayed opening.
-5. What's due and what's missing (already covered by Kids view / Focus).
+5. What's due and what's missing (already covered by Gradez).
 
 The student doesn't need cycle numbers, term codes, or `Days 123456`. Room numbers matter for about the first two weeks, and after that only for a substitute or a room change.
 

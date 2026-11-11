@@ -1,8 +1,8 @@
 # "Explain it differently": videos from approved channels (design)
 
 Design only. Nothing here is built yet. It adds to the Kids view v2 /
-Focus task sheet (`docs/KIDS_VIEW_V2_DESIGN.md` §7,
-`frontend/focus/src/components/TaskModal.tsx`) and uses the same
+Gradez task sheet (`docs/KIDS_VIEW_V2_DESIGN.md` §7,
+`frontend/src/gradez/components/TaskModal.tsx`) and uses the same
 title-and-course-only privacy rule as the tier-A suggestion.
 
 ## The problem
@@ -47,7 +47,7 @@ picked for this assignment's topic, played inside the sheet.**
    `HelpRequest`, which doesn't store the email body. A parent seeing
    "watched 4 videos about the unit circle" is surveillance. Knowing
    that three videos were offered is not useful to anyone.
-5. **It follows the Focus view rules.** At most 3 videos. Nothing plays
+5. **It follows Gradez's To do rules.** At most 3 videos. Nothing plays
    automatically. The section is collapsed until tapped. Nothing is
    added to the dashboard card; this lives only in the sheet.
 
@@ -242,7 +242,7 @@ DELETE /video-picks?subject=                   -- clear cached picks after re-ta
 new channel can type "Chemistry H / Lab 4: Stoichiometry" and see what
 students would get, before and after.
 
-## 6. The sheet (Focus `TaskModal`)
+## 6. The sheet (Gradez `TaskModal`)
 
 A new section, **"Explain it differently"**, placed right under **How
 to start** and above **Ask the teacher**. That's the order a stuck kid
@@ -271,8 +271,8 @@ teacher still hears about it, since the email is the first thing shown.
 The video is something to do while waiting for the reply, not
 something that replaces asking.
 
-The main frontend's `KidsDetailPage` gets the same section, because a
-guardian sitting next to the kid is the other half of the use case.
+Gradez shows a guardian the same sheet, which matters: a guardian
+sitting next to the kid is the other half of the use case.
 
 ## 7. Admin tab: Videos
 
@@ -342,8 +342,7 @@ the reason.
 5. The student endpoint + read-time filter. Unit-test rule 1
    specifically: a pick that mentions a now-disabled channel or a
    blocked video must return without it.
-6. Focus `TaskModal` section + the Ask-the-teacher tie-in, then
-   `KidsDetailPage`.
+6. Gradez `TaskModal` section + the Ask-the-teacher tie-in.
 7. A CLAUDE.md entry under *Domain model*, covering the privacy rule,
    the section-free key, and why search.list is never used.
 

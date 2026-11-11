@@ -52,7 +52,7 @@
   --nav-h: 58px;
   /* The bottom nav's inactive icon color, kept separate from --ink-3
      (used in ~30 other places for ordinary muted text) so brightening
-     just the nav doesn't shift unrelated UI. Matches the Focus app's own
+     just the nav doesn't shift unrelated UI. Matches the old Focus app's
      --ink-soft exactly - a real complaint was that schoolz's nav icons
      read noticeably darker/more washed-out than Focus's, especially in
      dark mode, and got lost against the nav bar. */
@@ -2382,173 +2382,6 @@ select {
   padding: 2px;
 }
 
-/* ---------- Kids page tables (schedule/grades) ---------- */
-.kids-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.kids-table th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-}
-.kids-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-}
-.kids-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* ---------- Kids view v2 (docs/KIDS_VIEW_V2_DESIGN.md §8) ----------
-   One accent for "needs attention" (--bad, Missing only), calm neutrals
-   everywhere else, big tap targets. */
-.kids-hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.kids-hd .tabs {
-  margin-bottom: 0;
-}
-.kids-tabs {
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.kids-now {
-  border-left: 4px solid var(--primary);
-}
-.kids-now .course,
-.kids-next .title {
-  font-family: var(--font-d);
-  font-size: 21px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 4px 0 2px;
-}
-.kids-now .sub {
-  color: var(--ink-2);
-  font-size: 13px;
-}
-.kids-next {
-  border: 2px solid var(--primary);
-}
-.kids-bar {
-  height: 10px;
-  border-radius: 999px;
-  background: var(--line);
-  overflow: hidden;
-}
-.kids-bar > span {
-  display: block;
-  height: 100%;
-  background: var(--primary);
-  border-radius: inherit;
-}
-.kids-bar.ok > span {
-  background: var(--ok);
-}
-.kids-counts {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.kids-group {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-2);
-  margin: 16px 0 6px;
-}
-.kids-group.missing {
-  color: var(--bad);
-}
-.kids-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-.kids-row.missing {
-  border-left: 4px solid var(--bad);
-}
-.kids-row.done .item-title {
-  color: var(--ink-3);
-  text-decoration: line-through;
-}
-.kids-row .body {
-  flex: 1;
-  min-width: 0;
-}
-.kids-check {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 2px solid var(--line-2);
-  background: var(--card);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-}
-.kids-check.on {
-  background: var(--ok);
-  border-color: var(--ok);
-}
-.kids-check svg {
-  width: 16px;
-  height: 16px;
-}
-.kids-links {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-.kids-links a,
-.kids-links button {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary);
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.kids-links svg {
-  width: 14px;
-  height: 14px;
-}
-.kids-suggest {
-  background: var(--primary-soft);
-  color: var(--ink);
-  border-radius: 10px;
-  padding: 8px 10px;
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.kids-body {
-  white-space: pre-wrap;
-  font-size: 14px;
-  margin-top: 6px;
-}
-
 /* ---------- staff directory (/directory) ---------- */
 /* One row per person across the whole district. Structure follows the
    Katalyst contacts master-list (avatar, name, subtitle, affiliation, then
@@ -4168,7 +4001,10 @@ select {
 
 /* ---------- My family (pages/FamilyPage.tsx) ---------- */
 .fam-intro {
-  margin: 4px 0 18px;
+  margin: 4px 0 16px;
+  font-size: 15px;
+  line-height: 21px;
+  color: var(--ink-2);
 }
 .fam-h2 {
   font-size: 18px;
@@ -4287,6 +4123,7 @@ select {
 }
 .fam-report {
   margin-top: 8px;
+  min-height: 44px;
 }
 .fam-report-form {
   margin-top: 10px;
@@ -4312,136 +4149,196 @@ select {
   margin: 0;
   color: var(--bad);
 }
+/* One card per child (the "My family card" design): a header with the
+   way into Gradez, a row per Gradez tab, then who else sees it. Rows run
+   edge to edge, so the card itself has no padding. */
+.fam-child {
+  margin-bottom: var(--space-4);
+}
+.fam-kid {
+  padding: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 .fam-kid-hd {
   display: flex;
   gap: 12px;
   align-items: center;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--line);
 }
 .fam-avatar {
   flex: none;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--primary-soft);
   color: var(--primary-strong);
   display: grid;
   place-items: center;
-  font-family: var(--font-d);
   font-weight: 700;
   font-size: 18px;
 }
 .fam-kid-hd .who {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .fam-kid-hd h2 {
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 26px;
+  overflow-wrap: anywhere;
 }
 .fam-kid-hd .sub {
-  color: var(--ink-3);
-  font-size: 13px;
-}
-.fam-kid-actions {
-  flex: none;
-  display: flex;
-  gap: 6px;
-}
-.fam-group {
-  margin: 14px 0 0;
-}
-.fam-group > .eyebrow {
-  margin-bottom: 2px;
-}
-.fam-rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.fam-row {
-  display: grid;
-  grid-template-columns: 30px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-}
-.fam-row:last-child {
-  border-bottom: 0;
-}
-.fam-ico {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: var(--bg);
-  color: var(--ink-3);
-}
-.fam-ico svg {
-  width: 17px;
-  height: 17px;
-}
-.fam-row.on .fam-ico {
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-.fam-row.warn .fam-ico {
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-.fam-row b {
-  display: block;
-  font-size: 14.5px;
-}
-.fam-row small {
-  display: block;
   color: var(--ink-2);
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 18px;
 }
-.fam-row .src {
-  color: var(--ink-3);
-  font-size: 12px;
+/* --primary-ink, not white: dark mode's --primary is a light teal. */
+.fam-open {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
 }
-.fam-state {
-  font-size: 12.5px;
-  color: var(--ink-3);
-  text-align: right;
-  white-space: nowrap;
+.fam-open:hover {
+  color: var(--primary-ink);
+  background: color-mix(in srgb, var(--primary) 88%, var(--ink));
 }
-.fam-row.on .fam-state {
-  color: var(--ok);
-  font-weight: 600;
+.fam-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
 }
-.fam-row.warn .fam-state {
+/* A whole row that is a button (Guardians) looks like the link rows. */
+button.fam-row {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+a.fam-row:hover,
+button.fam-row:hover {
+  background: color-mix(in srgb, var(--primary-soft) 45%, transparent);
+}
+.fam-row > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-2);
+}
+.fam-row-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.fam-row-ico {
+  flex: none;
+  display: flex;
+  color: var(--ink-2);
+}
+.fam-tab-row .fam-row-ico {
+  color: var(--primary);
+}
+.fam-row-ico svg {
+  width: 22px;
+  height: 22px;
+}
+.fam-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fam-row-title {
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 700;
+}
+.fam-row-status {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+}
+.fam-row-status.warn {
   color: var(--warn);
-  font-weight: 600;
+}
+.fam-row-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fam-row-btn[aria-expanded="true"] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 .fam-row select {
+  flex: none;
   width: auto;
+  min-height: 44px;
   margin: 0;
+  font-size: 16px;
+  padding: 0 10px;
+}
+.fam-h3 {
+  padding: 10px 14px 4px;
+  font-family: var(--font-b);
   font-size: 13px;
-  padding: 4px 8px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--ink-2);
 }
 .fam-panel {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
 }
 .fam-none {
-  margin: 12px 0 0;
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
   font-size: 13px;
-  color: var(--ink-3);
+  color: var(--ink-2);
+}
+.fam-card-error {
+  padding: 0 14px 10px;
 }
 .fam-foot {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin-top: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  padding: 0 14px;
   font-size: 12.5px;
   color: var(--ink-3);
 }
 .fam-foot button {
+  min-height: 44px;
   background: none;
   border: 0;
   padding: 0;
@@ -4449,6 +4346,30 @@ select {
   text-decoration: underline;
   cursor: pointer;
   font-size: 12.5px;
+}
+/* How current the child's schoolwork is: green only while Gradez's own
+   header would say so (gradez/lib/freshness.ts). */
+.fam-data {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--ink-2);
+}
+.fam-data svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.fam-data-ok {
+  color: var(--ok);
+}
+.fam-data-warn {
+  color: var(--warn);
 }
 .fam-add {
   width: 100%;

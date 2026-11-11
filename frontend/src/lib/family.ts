@@ -1,3 +1,5 @@
+import { shortCourseName } from "../gradez/courses";
+
 /** My family (pages/FamilyPage.tsx): what the page says for each child,
  * from GET /family. Homework and grades are only ever offered for a child
  * whose school has Google Classroom or a Genesis Backpack Capture can read
@@ -9,6 +11,13 @@ export type FamilyToday = {
   room: string | null;
   time_start: string | null;
   time_end: string | null;
+};
+
+export type FamilyLowClass = {
+  course_key: string;
+  course_name: string | null;
+  /** The caller's own rename of the class in Gradez, if any. */
+  custom_name: string | null;
 };
 
 export type FamilyChild = {
@@ -28,9 +37,17 @@ export type FamilyChild = {
   needs_login: boolean;
   /** null until Classroom has sent anything - never 0 for "not connected". */
   due_this_week: number | null;
+  /** Work due today and not done yet. Null until Classroom has sent anything. */
+  due_today: number | null;
   missing: number | null;
   /** null until Genesis has sent anything. */
   classes: number | null;
+  /** The class with the lowest grade under 50% this marking period, or null
+   * when none is (or Genesis hasn't sent anything). */
+  low_class: FamilyLowClass | null;
+  /** Teachers' Classroom posts dated in the last seven days. Null until
+   * Classroom has sent anything. */
+  recent_posts: number | null;
   today: FamilyToday | null;
   student_login_email: string | null;
   student_invite_email: string | null;
@@ -79,33 +96,69 @@ export function bringsIn(children: FamilyChild[]): string {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export function homeworkLine(c: FamilyChild): string {
-  if (c.due_this_week === null) return "Every assignment, when it's due, and what's missing";
-  const due = c.due_this_week === 0 ? "Nothing due this week" : `${c.due_this_week} due this week`;
-  return c.missing ? `${due} · ${c.missing} missing` : due;
+// One line under each of a child's rows on My family, each the tab of
+// Gradez the row opens. Null means there is nothing to say: the data isn't
+// there yet, and a row never shows a number that wasn't captured. The API
+// may also predate a field (undefined), hence `== null` throughout.
+
+/** "2 due today · 3 missing". */
+export function todoLine(c: FamilyChild): string | null {
+  const parts: string[] = [];
+  if (c.due_today != null) parts.push(c.due_today === 0 ? "Nothing due today" : `${c.due_today} due today`);
+  if (c.missing) parts.push(`${c.missing} missing`);
+  return parts.length ? parts.join(" · ") : null;
 }
 
-export function gradesLine(c: FamilyChild): string {
-  if (c.classes === null) return "Each class's grade and every graded assignment";
-  return c.classes === 0 ? "No grades yet" : `Grades for ${plural(c.classes, "class", "classes")}`;
+/** "6 classes · Geometry is below 50%", flagged when a class is that low. */
+export function gradesLine(c: FamilyChild): { text: string; low: boolean } | null {
+  if (c.classes == null) return null;
+  const count = c.classes === 0 ? "No grades yet" : plural(c.classes, "class", "classes");
+  const low = c.low_class;
+  if (!low) return { text: count, low: false };
+  const name = low.custom_name?.trim() || (low.course_name ? shortCourseName(low.course_name) : "");
+  return { text: `${count} · ${name || "A class"} is below 50%`, low: true };
 }
 
-export function scheduleLine(c: FamilyChild): string {
-  if (!c.genesis_seen_at) return `Which class ${c.first_name} is in right now, and what's next`;
-  const t = c.today;
-  if (!t) return "Today's schedule isn't in yet";
+/** "Now: Biology, Room 214". Only ever today's schedule. */
+export function scheduleLine(c: FamilyChild): string | null {
+  const t = c.genesis_seen_at ? c.today : null;
+  if (!t) return null;
   if (t.state === "over") return "School's out for today";
   const where = t.room ? `, Room ${t.room}` : "";
-  if (t.state === "now") return `Now: ${t.course_name}${where}${t.time_end ? ` · until ${t.time_end}` : ""}`;
+  if (t.state === "now") return `Now: ${t.course_name}${where}`;
   return `Next: ${t.course_name}${where}${t.time_start ? ` at ${t.time_start}` : ""}`;
 }
 
-export function guardiansLine(c: FamilyChild): string {
-  if (c.guardian_count <= 1) return "Just you so far";
-  return `You and ${plural(c.guardian_count - 1, "other guardian", "other guardians")} see the same thing`;
+/** "3 posts this week". */
+export function teachersLine(c: FamilyChild): string | null {
+  if (c.recent_posts == null) return null;
+  return c.recent_posts === 0 ? "No posts this week" : `${plural(c.recent_posts, "post", "posts")} this week`;
 }
 
-/** Same wording as Gradez's header (focus/src/lib/freshness.ts). */
+/** "You and 1 other": the other guardians, not the caller. */
+export function guardiansLine(c: FamilyChild): string {
+  if (c.guardian_count <= 1) return "Just you so far";
+  return `You and ${plural(c.guardian_count - 1, "other", "others")}`;
+}
+
+/** Whether the child has their own login, or an invite out for one. */
+export function studentLoginLine(c: FamilyChild): string {
+  if (c.student_login_email) return `Signs in as ${c.student_login_email}`;
+  if (c.student_invite_email) return `Invite sent to ${c.student_invite_email}`;
+  return `Not invited yet. ${c.first_name} would see this same page.`;
+}
+
+/** "Grade 10" for a high schooler whose graduating class is set: a class
+ * graduates in June, and the school year turns over in July (the same
+ * rule as My family's graduating-class picker). */
+export function gradeLevel(c: FamilyChild, now: Date = new Date()): number | null {
+  if (c.school_type !== "high" || c.grad_year == null) return null;
+  const yearEnds = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+  const grade = 12 - (c.grad_year - yearEnds);
+  return grade >= 9 && grade <= 12 ? grade : null;
+}
+
+/** Same wording as Gradez's header (gradez/lib/freshness.ts). */
 export function timeAgo(iso: string, now: number): string {
   const minutes = Math.round((now - Date.parse(iso)) / 60000);
   if (minutes < 2) return "just now";

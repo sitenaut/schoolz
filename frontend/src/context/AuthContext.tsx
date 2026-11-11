@@ -38,6 +38,8 @@ type CurrentUser = {
   // Set when this login belongs to a student (not a guardian) - see
   // backend routers/student_accounts.py.
   student_profile_id: string | null;
+  // Gradez's To do length, kept per account. Null until the person picks one.
+  todo_view?: "next" | "week" | null;
 };
 
 type AuthContextValue = {

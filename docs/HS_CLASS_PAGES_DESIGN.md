@@ -173,10 +173,10 @@ Notes on specific choices:
 
 - **Closed items are struck through, not hidden.** "Did I already miss it"
   is the actual question a parent has; an item that silently vanishes
-  answers it wrong. Same reasoning as Focus dropping past-cutoff work only
-  because Details still has it.
+  answers it wrong. Same reasoning as Gradez's To do dropping past-cutoff
+  work only because its class page still has it.
 - **One "next" card.** The dashboard's limited slots go to the thing where
-  acting now still protects something — directly the Focus-view rationale.
+  acting now still protects something — directly Gradez's To do rationale.
 - **The payment ladder replaces ~200 lines of prose.** The live 2027 page
   enumerates seven scenarios ("IF YOU MADE 2 OPTIONAL PAYMENTS of $300.00…")
   because it can't know what you paid. We don't have to reproduce that:
@@ -336,8 +336,8 @@ information.
   rather than being hidden — the same degrade-don't-demand-login posture as
   `GET /calendar`, and the same per-row labeling as
   `districtItems.ts:expandItemRows`.
-- **Focus / kids view**: a class deadline with money attached is precisely
-  the "acting now still protects something" shape Focus is built around.
+- **Gradez / kids view**: a class deadline with money attached is precisely
+  the "acting now still protects something" shape To do is built around.
 
 ## 8. Open questions
 

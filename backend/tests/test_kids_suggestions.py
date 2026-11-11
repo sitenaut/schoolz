@@ -49,23 +49,6 @@ async def test_late_policy_request(monkeypatch):
     _sent_like_every_other_haiku_call(client.calls[0])
 
 
-@pytest.mark.anyio
-async def test_plan_request(monkeypatch):
-    client = _FakeClient([SimpleNamespace(type="text", text="1. Math")])
-    _use(monkeypatch, client)
-    items = [{"title": "Worksheet", "course_name": "Math", "due_date": "2026-11-03", "category": "due"}]
-    assert await kids_suggestions.plan(items, "2026-11-02") == "1. Math"
-    _sent_like_every_other_haiku_call(client.calls[0])
-
-
-@pytest.mark.anyio
-async def test_refused_plan_is_an_error_not_a_blank_plan(monkeypatch):
-    _use(monkeypatch, _FakeClient([], stop_reason="refusal"))
-    items = [{"title": "Worksheet", "course_name": "Math", "due_date": "2026-11-03", "category": "due"}]
-    with pytest.raises(RuntimeError, match="refusal"):
-        await kids_suggestions.plan(items, "2026-11-02")
-
-
 def test_chat_defaults_are_the_current_models_and_priced():
     settings = chat_settings.ChatbotSettings()
     for audience in (settings.anonymous, settings.signed_in):
