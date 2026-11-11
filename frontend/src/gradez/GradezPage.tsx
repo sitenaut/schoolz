@@ -282,7 +282,7 @@ export function GradezPage() {
     }
   };
 
-  const view: TodoView = pickedView ?? user?.todo_view ?? (isStudent ? "next" : "week");
+  const view: TodoView = pickedView ?? user?.todo_view ?? "next";
   // Kept on the account, so it is the same on the next device. A save that
   // fails still holds for this visit.
   const saveView = (next: TodoView) => {
