@@ -320,6 +320,75 @@
   height: 22px;
 }
 
+/* Desktop: a 560px strip floating in a wide window reads as a phone app, so
+ * the bottom bar becomes a side menu and the column widens beside it. Same
+ * markup, grid placement only (the sheets are position: fixed, so they take
+ * no cell). Phones and narrow windows keep the bottom bar. */
+@media (min-width: 900px) {
+  .gz-app {
+    display: grid;
+    grid-template-columns: 208px minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: 8px;
+    max-width: 1080px;
+    padding: 0 24px;
+  }
+
+  .gz-top {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .gz-app > .gz-banner-error {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .gz-app > .gz-banner-warn {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .gz-main {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+  .gz-tabbar {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: start;
+    top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 12px 0 0;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .gz-tabbar a {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+
+  .gz-tabbar a[aria-current="page"] {
+    background: var(--primary-soft);
+  }
+}
+
+@media (min-width: 900px) and (hover: hover) {
+  .gz-tabbar a:hover:not([aria-current="page"]) {
+    background: var(--bg);
+  }
+}
+
 /* ---- shared pieces --------------------------------------------------- */
 
 .gz-card {
