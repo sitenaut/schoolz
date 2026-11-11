@@ -33,7 +33,7 @@ vi.mock("../components/today", () => ({
 
 import { SchoolDetailPage } from "./SchoolDetailPage";
 import { FamilyPage } from "./FamilyPage";
-import { KidsDetailPage } from "./KidsDetailPage";
+import { GradezPage } from "../gradez/GradezPage";
 import { SchoolClassYearPage } from "./schools/SchoolClassYearPage";
 
 const res = (status: number, body: unknown = null) => ({ ok: status < 400, status, json: async () => body });
@@ -133,8 +133,11 @@ const highSchooler: FamilyChild = {
   genesis_seen_at: null,
   needs_login: false,
   due_this_week: null,
+  due_today: null,
   missing: null,
   classes: null,
+  low_class: null,
+  recent_posts: null,
   today: null,
   student_login_email: null,
   student_invite_email: null,
@@ -192,38 +195,39 @@ describe("FamilyPage", () => {
   });
 });
 
-describe("KidsDetailPage", () => {
+describe("GradezPage", () => {
   const open = () => {
     auth.user = { id: "u1", student_profile_id: null };
-    return at("/kids/kid-1", "/kids/:studentId", <KidsDetailPage />);
+    vi.stubGlobal("scrollTo", () => {});
+    return at("/gradez?student=kid-1", "/gradez", <GradezPage />);
   };
+  const kid = { id: "kid-1", first_name: "Sam", last_name: "Example", student_id: "000000", school_name: null };
 
-  it("offers Try again on a server error instead of 'isn't on your profile'", async () => {
+  it("offers Try again when the children can't be loaded, never 'No students on this account'", async () => {
     apiFetch.mockResolvedValue(res(502));
     open();
-    expect(await screen.findByText("Couldn't load this page just now.")).toBeTruthy();
-    expect(screen.queryByText(/isn't on your profile/)).toBeNull();
+    expect(await screen.findByText("Couldn't load this page")).toBeTruthy();
+    expect(screen.queryByText(/No students on this account/)).toBeNull();
 
-    apiFetch.mockResolvedValue(res(404));
+    apiFetch.mockImplementation(async (url: string) => (url === "/students" ? res(200, [kid]) : res(502)));
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText(/This student isn't on your profile/)).toBeTruthy();
+    expect(await screen.findByText("Couldn't load assignments")).toBeTruthy();
   });
 
   it("shows the error, not Loading, when the connection drops", async () => {
     apiFetch.mockRejectedValue(new TypeError("Failed to fetch"));
     open();
-    expect(await screen.findByText("Couldn't load this page just now.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't load this page")).toBeTruthy();
   });
 
-  it("still shows the child when the other sections fail on the network", async () => {
-    // Announcements, schedule and grades used to reject unhandled.
-    const kid = { id: "kid-1", first_name: "Sam", last_name: "Example", student_id: "000000", school_name: null, viewer_role: "guardian" };
+  it("still shows the child when every section fails on the network", async () => {
     apiFetch.mockImplementation(async (url: string) => {
-      if (url.endsWith("/bucket3/student")) return res(200, kid);
+      if (url === "/students") return res(200, [kid]);
       throw new TypeError("Failed to fetch");
     });
     open();
-    expect(await screen.findByRole("heading", { name: "Sam Example" })).toBeTruthy();
+    expect(await screen.findByText("Couldn't load assignments")).toBeTruthy();
+    expect(screen.getByText("Sam")).toBeTruthy();
   });
 });
 

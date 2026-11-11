@@ -924,9 +924,6 @@ POST /students/{student_id}/bucket3/suggestions/assignment/{work_item_id}
   path student_id: string
   path work_item_id: string
   -> 200: SuggestionOut
-POST /students/{student_id}/bucket3/suggestions/plan
-  path student_id: string
-  -> 200: PlanOut
 GET /students/{student_id}/bucket3/teacher-emails
   path student_id: string
   -> 200: dict[list[string]]
@@ -1030,7 +1027,7 @@ GET /survey/summary
 AddressIn { address?: string | null, city?: string | null, counties?: list[string], kind: string, place_name?: string | null, postal_code?: string | null, private_address?: string | null }
 AdminListingOut { address: string | null, address_kind: string | null, alert: string | null, can_delete: boolean, city: string | null, closure: ClosureOut | null, cost_kind: string | null, delivery: string | null, description: string | null, eligibility_text: string | null, email: string | null, fees: string | null, hidden_at: string(date-time) | null, hidden_note: string | null, hours: object | null, hours_text: string | null, id: string, languages: list[string], last_assured_on: string(date) | null, location_name: string | null, name: string, organization_name: string | null, pending_changes: list[PendingChangeOut], phone: string | null, postal_code: string | null, required_documents: list[string], role: string, service_areas: list[string], signup: object | null, source: string, status: string, types: list[string], verified: boolean, verify_by_email: string | null, ways_to_help: object | null, website: string | null, week_hours: object | null }
 AdminUserOut { created_at: string | null, email: string, id: string, is_admin: boolean, role_ids: list[string], username: string }
-AnnouncementOut { body: string | null, course_name: string | null, id: string, link: string | null, posted_date: string | null, posted_raw: string | null, teacher_emails: list[string], teacher_name: string | null, title: string }
+AnnouncementOut { body: string | null, course_key: string, course_name: string | null, id: string, link: string | null, posted_date: string | null, posted_raw: string | null, teacher_emails: list[string], teacher_name: string | null, title: string }
 ApiKeyCreated { created_at: string(date-time), created_by_email: string | null, expires_at: string(date-time) | null, id: string, key: string, key_prefix: string, last_used_at: string(date-time) | null, name: string, permissions: list[string] }
 ApiKeyIn { expires_in_days?: integer | null, name: string, permissions: list[string] }
 ApiKeyOut { created_at: string(date-time), created_by_email: string | null, expires_at: string(date-time) | null, id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string, permissions: list[string] }
@@ -1097,7 +1094,7 @@ ChatbotAdminOut { providers: list[ProviderStatus], settings: ChatbotSettings }
 ChatbotSettings { anonymous?: AudienceConfig, prices?: dict[ModelPrice], signed_in?: AudienceConfig }
 ChecklistIn { checklist: dict[boolean] }
 ChildCourseGradeOut { course_code: string, course_name: string | null, course_section: string, grade_percent: number | null, last_grade_posted: string | null, marking_period: string }
-ChildGradeEntryOut { category: string | null, course_code: string, course_name: string | null, course_section: string, description: string | null, external_uid: string, is_updated: boolean, marking_period: string | null, percent: number | null, score_earned: number | null, score_possible: number | null, status: string | null, title: string, weekday_date: string }
+ChildGradeEntryOut { category: string | null, course_code: string, course_name: string | null, course_section: string, description: string | null, external_uid: string, graded_at?: string(date-time) | null, is_updated: boolean, marking_period: string | null, percent: number | null, score_earned: number | null, score_possible: number | null, status: string | null, title: string, weekday_date: string }
 ChildMarkingPeriodOut { end_date: string, label: string, start_date: string }
 ChildScheduleBlockOut { course_name: string, days: string | null, period: string, room: string | null, schedule_date: string | null, source: string, teacher: string | null, term: string | null, time_end: string | null, time_start: string | null }
 ChildScheduleOut { cycle_date: string | null, cycle_label: string | null, daily: list[ChildScheduleBlockOut], days?: list[ScheduleDayOut], list_view: list[ChildScheduleBlockOut] }
@@ -1164,9 +1161,10 @@ ExportSaccOut { absence_form_url: string | null, absence_phone: string | null, a
 ExportSchoolOut { absence_emails: list[string], absence_instructions: string | null, absence_method: string | null, absence_phone: string | null, absence_portal_name: string | null, absence_portal_url: string | null, activities_calendar_ics_url?: string | null, address: string | null, apptegy_org_id?: string | null, arbiter_events_calendar?: boolean, arbiter_events_district_wide?: boolean, athletics_url: string | null, bell_periods: dict[list[BellPeriodEntry]] | null, bulletin_doc_url?: string | null, delayed_opening_time: string | null, district_name: string | null, district_state?: string | null, early_dismissal_time: string | null, end_time: string | null, fdmealplanner_location?: string | null, givebacks_shortname?: string | null, healthepro_location?: string | null, logo_url: string | null, main_phone: string | null, myschoolplate_location?: string | null, name: string, nutrislice_location?: string | null, presence_menu_page_url?: string | null, sacc: ExportSaccOut | null, school_type: string | null, short_name: string | null, slug: string, staff_directory_url?: string | null, start_time: string | null, website_url: string | null }
 ExportSmoreOut { cron_expr: string, district_name?: string | null, district_state?: string | null, enabled: boolean, label: string | null, school_slug: string | null, source_type?: string, timezone: string, url: string }
 FacetOut { count: integer, value: string }
-FamilyChildOut { classes?: integer | null, classroom_seen_at?: string(date-time) | null, district_name?: string | null, due_this_week?: integer | null, first_name: string, genesis_seen_at?: string(date-time) | null, grad_year?: integer | null, guardian_count: integer, has_classroom: boolean, has_genesis: boolean, id: string, last_name: string, linked_via: string, matched_existing?: boolean, missing?: integer | null, needs_login?: boolean, school_id?: string | null, school_name: string | null, school_type?: string | null, specials_count?: integer, student_id: string, student_invite_email?: string | null, student_login_email?: string | null, today?: FamilyTodayOut | null }
+FamilyChildOut { classes?: integer | null, classroom_seen_at?: string(date-time) | null, district_name?: string | null, due_this_week?: integer | null, due_today?: integer | null, first_name: string, genesis_seen_at?: string(date-time) | null, grad_year?: integer | null, guardian_count: integer, has_classroom: boolean, has_genesis: boolean, id: string, last_name: string, linked_via: string, low_class?: FamilyLowClassOut | null, matched_existing?: boolean, missing?: integer | null, needs_login?: boolean, recent_posts?: integer | null, school_id?: string | null, school_name: string | null, school_type?: string | null, specials_count?: integer, student_id: string, student_invite_email?: string | null, student_login_email?: string | null, today?: FamilyTodayOut | null }
 FamilyConnectionOut { created_at: string(date-time), id: string, key_prefix: string, last_used_at: string(date-time) | null, name: string }
 FamilyFeedOut { children: list[FeedChildOut], end: string, generated_at: string(date-time), items: list[FeedItemOut], schools: list[FeedSchoolOut], start: string, version: integer }
+FamilyLowClassOut { course_key: string, course_name?: string | null, custom_name?: string | null }
 FamilyTodayOut { course_name?: string | null, room?: string | null, state: string, time_end?: string | null, time_start?: string | null }
 FeedChildOut { classroom_seen_at: string(date-time) | null, first_name: string, genesis_seen_at: string(date-time) | null, grad_year: integer | null, id: string, needs_login: boolean, school_id: string | null, specials: list[FeedSpecialOut] }
 FeedItemOut { all_day?: boolean, category?: string | null, child_id?: string | null, data?: object, date?: string | null, detail?: string | null, end_at?: string(date-time) | null, end_date?: string | null, hash?: string, kind: enum(day,schedule,event,news,assignment,course_grade,grade), link_url?: string | null, school_id?: string | null, source?: string | null, start_at?: string(date-time) | null, status?: string | null, title: string, uid: string }
@@ -1238,7 +1236,6 @@ PendingChangeOut { created_at: string(date-time), fields: list[string], id: stri
 PermissionOut { access: string, description: string, key: string, label: string, sensitive: boolean }
 PlaceIn { q: string }
 PlaceOut { label: string, latitude: number, longitude: number }
-PlanOut { text: string }
 ProblemReportIn { diagnostic_id?: string | null, note?: string | null }
 ProblemReportOut { reference: string | null }
 ProgramPlace { address?: string | null, city?: string | null, place_name?: string | null, postal_code?: string | null }
@@ -1355,9 +1352,9 @@ UnroutedAccountOut { account_index: integer | null, captures: integer, email: st
 UpcomingDateOut { end_time: string(date-time) | null, id: string, note: string | null, start_time: string(date-time), title: string, venue_address: string | null, venue_name: string | null }
 UpdateProblemIn { student_id?: string | null, text: string }
 UpdateSummaryIn { finished_at: string(date-time), last_sent_at?: string(date-time) | null, last_sent_pages?: integer | null, manual?: boolean, not_set_up?: list[string], outcome: enum(ok,trouble), pages_sent: integer, problems?: list[UpdateProblemIn] }
-UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, mfa_enforced?: boolean, mfa_passed?: boolean, mfa_required?: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, username: string }
+UserOut { auth_mode: string, created_at?: string(date-time) | null, email: string, id: string, is_admin: boolean, mfa_enforced?: boolean, mfa_passed?: boolean, mfa_required?: boolean, permissions?: list[string], preferred_language?: string | null, sign_in_method?: string, student_profile_id?: string | null, todo_view?: string | null, username: string }
 UserRolesIn { role_ids: list[string] }
-UserUpdate { preferred_language?: string | null, username?: string | null }
+UserUpdate { preferred_language?: string | null, todo_view?: string | null, username?: string | null }
 UsersPageOut { items: list[AdminUserOut], total: integer }
 ValidationError { ctx?: object, input?: any, loc: list[string | integer], msg: string, type: string }
 WaysToHelp { donations?: list[string], volunteer_how?: string | null, volunteer_roles?: list[string], volunteer_url?: string | null, wishlist_url?: string | null }

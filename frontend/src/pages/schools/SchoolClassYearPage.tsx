@@ -161,8 +161,8 @@ export function SchoolClassYearPage() {
 
   // "Next up": the earliest thing that still protects something by acting
   // now - an un-ticked payment whose window hasn't closed, before any
-  // ordinary dated item. Same rationale as the Focus tab's own
-  // prioritization (see CLAUDE.md's late-work-policies notes).
+  // ordinary dated item. Same rationale as Gradez's To do prioritisation
+  // (see the kids-view skill's late-work-policies notes).
   const nextPayment = useMemo(
     () => payments.find((p) => !p.ticked && (!p.window_closes_at || new Date(p.window_closes_at).getTime() >= Date.now())),
     [payments],

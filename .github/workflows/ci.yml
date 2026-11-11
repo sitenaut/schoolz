@@ -96,9 +96,7 @@ jobs:
           # image builds on the same line (frontend/Dockerfile).
           node-version: "22"
           cache: npm
-          cache-dependency-path: |
-            frontend/package-lock.json
-            frontend/focus/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Lint (no errors; warnings held under the cap in package.json)
@@ -106,12 +104,6 @@ jobs:
       - name: Tests
         run: npm run test
       - name: Type-check and build
-        run: npm run build
-      - name: Focus app - install
-        working-directory: frontend/focus
-        run: npm ci
-      - name: Focus app - type-check and build
-        working-directory: frontend/focus
         run: npm run build
 
   images:

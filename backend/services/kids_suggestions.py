@@ -1,14 +1,12 @@
 """On-demand AI calls for the Kids view (docs/KIDS_VIEW_V2_DESIGN.md §7).
 
-Three, deliberately different:
+Two, deliberately different:
 
 - assignment_suggestion(): sees ONLY an assignment's title and course name.
   routers/bucket3.py caches the result in AssignmentSuggestion, shared by every
   student in that course section - so nothing personal (the student's name,
   grade, due status, or the assignment's description text) may ever be sent:
   another family's child reads the same row.
-- plan(): one student's own current list (titles, course names, due dates,
-  overdue or not), never cached - the input changes whenever the list does.
 - parse_late_policy(): a syllabus paragraph the parent pasted in, turned into a
   structured CourseLatePolicy proposal. Sees only that paragraph. The result is
   never saved directly - it comes back as a proposal the parent confirms, since
@@ -31,7 +29,6 @@ import observability
 from services import haiku
 
 MODEL = haiku.MODEL
-MAX_PLAN_ITEMS = 25
 # A syllabus late-work paragraph is a few sentences; this is a generous cap
 # that still stops someone pasting an entire handbook into a model call.
 MAX_POLICY_CHARS = 4000
@@ -65,11 +62,6 @@ _ASSIGNMENT_TOOL = {
         "required": ["clear_enough", "suggestion"],
     },
 }
-
-_PLAN_SYSTEM = """You help a student decide what order to tackle their schoolwork in. You see only assignment titles, course names, due dates, and whether each is overdue. Many readers have ADHD: be brief and decisive.
-
-Write at most 5 numbered steps ("1. "). Overdue work goes first, then whatever is due soonest; group tiny tasks from the same class into one step. Each step is one line: the assignment title in bold (**Title**), then a few words on why it's next or roughly how long it takes. After the steps, one short line suggesting a short break after step 2 or 3. No preamble, no lecture, no mention of grades, no invented details beyond the titles."""
-
 
 def _client() -> AsyncAnthropic:
     key = os.getenv("ANTHROPIC_API_KEY", "")
@@ -190,26 +182,3 @@ async def parse_late_policy(text: str) -> dict:
         return {"understood": False}
     return dict(tool_use.input)
 
-
-async def plan(items: list[dict], today_iso: str) -> str:
-    """`items`: current Missing + Due to-do dicts (title, course_name,
-    due_date, category) - already the minimal fields; nothing else is sent."""
-    client = _client()
-    lines = []
-    for i in items[:MAX_PLAN_ITEMS]:
-        when = f"OVERDUE (was due {i['due_date']})" if i["category"] == "missing" else f"due {i['due_date']}"
-        lines.append(f"- {i['title']} [{i.get('course_name') or 'unknown course'}] {when}")
-    started = time.perf_counter()
-    response = await client.messages.create(
-        model=MODEL,
-        max_tokens=700,
-        **haiku.CALL_KWARGS,
-        system=_PLAN_SYSTEM,
-        messages=[{"role": "user", "content": f"Today is {today_iso}.\n\n" + "\n".join(lines)}],
-    )
-    observability.record_llm_call("kids_plan", MODEL, response, time.perf_counter() - started)
-    text = "".join(b.text for b in response.content if b.type == "text").strip()
-    if not text:
-        # A refusal is a 200 with no text on Haiku 5.5; a blank plan looks like a bug.
-        raise RuntimeError(f"plan came back empty (stop_reason={response.stop_reason})")
-    return text

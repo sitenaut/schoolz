@@ -165,9 +165,10 @@ TOPICS: dict[str, dict[str, str]] = {
             "account one is, it asks once. Connected computers are listed (and can be disconnected) under "
             "**Account > Security**.\n"
             "3. Open **Gradez** in the menu (signed in). It shows when it was last updated, and has tabs for "
-            "**Focus** (what to do next), **Schedule** and **Details**. You can mark work done yourself, record "
-            "a class's late-work policy (or paste it from the syllabus), and note a teacher's extension for "
-            "one assignment.\n"
+            "**To do** (what's next, or the whole week), **Grades**, **Schedule** and **Teachers** (what "
+            "teachers posted and how to reach them). Tap a class on Grades for its own page. You can mark work "
+            "done yourself, record a class's late-work policy (or paste it from the syllabus), and note a "
+            "teacher's extension for one assignment.\n"
             "Optional: tick **Keep updating every 4 hours** in the extension, on a computer left on. Genesis "
             "grades and schedule still come in by opening Genesis with **More > Start capture**."
         ),

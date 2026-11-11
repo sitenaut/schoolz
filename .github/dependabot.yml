@@ -30,16 +30,6 @@ updates:
       frontend-minor:
         update-types: [minor, patch]
 
-  - package-ecosystem: npm
-    directory: /frontend/focus
-    schedule: { interval: weekly, day: monday }
-    ignore:
-      - dependency-name: "*"
-        update-types: [version-update:semver-major]
-    groups:
-      focus-minor:
-        update-types: [minor, patch]
-
   - package-ecosystem: docker
     directories: [/backend, /frontend]
     schedule: { interval: weekly, day: monday }

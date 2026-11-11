@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { BrowserRouter, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { FaroRoutes } from "./lib/telemetry";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppShell } from "./components/AppShell";
 import { ToastProvider } from "./components/ui/Toast";
+import { GRADEZ_DOCUMENT, gradezHref } from "./lib/gradezPath";
 import { ROUTER_BASENAME } from "./lib/i18n";
 import { lazyPage, preloadWhenIdle } from "./lib/lazyPage";
 import { MySchoolsProvider } from "./lib/mySchools";
@@ -43,8 +44,7 @@ const RegisterPage = lazyPage(() => import("./pages/RegisterPage").then((m) => m
 const ForgotPasswordPage = lazyPage(() => import("./pages/ForgotPasswordPage").then((m) => m.ForgotPasswordPage));
 const ResetPasswordPage = lazyPage(() => import("./pages/ResetPasswordPage").then((m) => m.ResetPasswordPage));
 const FamilyPage = lazyPage(() => import("./pages/FamilyPage").then((m) => m.FamilyPage));
-const KidsPage = lazyPage(() => import("./pages/KidsPage").then((m) => m.KidsPage));
-const KidsDetailPage = lazyPage(() => import("./pages/KidsDetailPage").then((m) => m.KidsDetailPage));
+const GradezPage = lazyPage(() => import("./gradez/GradezPage").then((m) => m.GradezPage));
 const InvitePage = lazyPage(() => import("./pages/InvitePage").then((m) => m.InvitePage));
 const GmailPage = lazyPage(() => import("./pages/GmailPage").then((m) => m.GmailPage));
 const SmoreNewslettersPage = lazyPage(() => import("./pages/SmoreNewslettersPage").then((m) => m.SmoreNewslettersPage));
@@ -144,13 +144,75 @@ function RequireAdmin({
   return <MfaGate>{children}</MfaGate>;
 }
 
-function Routed() {
+/** Sends the browser to a router path with a page load, not a navigation. */
+function PageLoad({ to }: { to: string }) {
+  useEffect(() => {
+    window.location.replace(ROUTER_BASENAME + to);
+  }, [to]);
+  return <AuthGateFallback timedOut={false} />;
+}
+
+// Gradez shows a child's schoolwork, so its document starts neither analytics
+// nor RUM (lib/gradezPath.ts). Both start once per document, so the only way
+// in is a page load: reached by a router navigation, in a document that has
+// them running, this loads the address again instead of rendering. Signing in
+// is the same in reverse, so the sign-in page gets a document that has them.
+function GradezDocument() {
+  const { user, loading, authTimedOut } = useAuth();
+  const location = useLocation();
+  const here = location.pathname + location.search;
+  const leave = !GRADEZ_DOCUMENT ? here : !loading && !user ? `/login?next=${encodeURIComponent(here)}` : null;
+  useEffect(() => {
+    if (leave) window.location.replace(ROUTER_BASENAME + leave);
+  }, [leave]);
+  if (leave || loading) return <AuthGateFallback timedOut={authTimedOut} />;
+  return <GradezPage />;
+}
+
+// Where the old Kidz page's tabs live in Gradez.
+const KIDZ_TABS: Record<string, "grades" | "schedule" | "teachers"> = {
+  classes: "grades",
+  grades: "grades",
+  schedule: "schedule",
+  announcements: "teachers",
+};
+
+// /kids/<id> was the Kidz page and /kids a guardian's list of children.
+// Gradez replaced the first and My family the second; old links and
+// bookmarks still land on the matching place.
+function KidzRedirect() {
+  const { studentId } = useParams();
+  const { search } = useLocation();
+  const { user, loading, authTimedOut } = useAuth();
+  if (!studentId) {
+    if (loading) return <AuthGateFallback timedOut={authTimedOut} />;
+    if (user && !user.student_profile_id) return <Navigate to="/family" replace />;
+    return <PageLoad to={gradezHref()} />;
+  }
+  const tab = new URLSearchParams(search).get("tab") ?? "";
+  return <PageLoad to={gradezHref(studentId, KIDZ_TABS[tab], tab === "audit" ? { sheet: "data" } : undefined)} />;
+}
+
+// /focus/ was Gradez's address while it was a separate app. The web server
+// redirects it; this covers the dev server and a language-prefixed link.
+function FocusRedirect() {
+  const { search } = useLocation();
+  return <PageLoad to={`/gradez${search}`} />;
+}
+
+// Exported for tests, which render it in a MemoryRouter.
+export function Routed() {
   return (
     <FaroRoutes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      {/* Outside the shell: its own layout, with nothing on it but schoolwork. */}
+      <Route path="/gradez" element={<GradezDocument />} />
+      <Route path="/kids" element={<KidzRedirect />} />
+      <Route path="/kids/:studentId" element={<KidzRedirect />} />
+      <Route path="/focus/*" element={<FocusRedirect />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<TodayPage />} />
         <Route path="/start" element={<PickSchoolsPage />} />
@@ -183,22 +245,6 @@ function Routed() {
         <Route path="/children" element={<Navigate to="/family" replace />} />
         <Route path="/invites/:token" element={<InvitePage kind="guardian" />} />
         <Route path="/student-invites/:token" element={<InvitePage kind="student" />} />
-        <Route
-          path="/kids"
-          element={
-            <RequireAuth>
-              <KidsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/kids/:studentId"
-          element={
-            <RequireAuth>
-              <KidsDetailPage />
-            </RequireAuth>
-          }
-        />
         {/* Old bookmarked/linked paths - keep working, just land on the
             consolidated tab now. */}
         <Route path="/account/admin" element={<Navigate to="/admin/overview" replace />} />
@@ -270,7 +316,8 @@ function Routed() {
           <Route path="email" element={<RequireAdmin permission="email.view"><GmailPage /></RequireAdmin>} />
           <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />
-          <Route path="kids" element={<RequireAdmin permission="kids.view"><KidsPage /></RequireAdmin>} />
+          {/* The Kids tab only ever opened the Kidz page, which Gradez replaced. */}
+          <Route path="kids" element={<Navigate to="/family" replace />} />
           <Route path="support" element={<RequireAdmin permission="support.view"><SupportPage /></RequireAdmin>} />
           <Route path="resources/onboarding" element={<RequireAdmin permission="resources.view"><LocalzReviewPage /></RequireAdmin>} />
           <Route path="resources/onboarding/:requestId" element={<RequireAdmin permission="resources.view"><LocalzReviewDetailPage /></RequireAdmin>} />

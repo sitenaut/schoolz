@@ -8,6 +8,7 @@ Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /children
 Disallow: /family
+Disallow: /gradez
 Disallow: /gmail
 Disallow: /start
 Disallow: /invites/
@@ -19,6 +20,7 @@ Disallow: /es/forgot-password
 Disallow: /es/reset-password
 Disallow: /es/children
 Disallow: /es/family
+Disallow: /es/gradez
 Disallow: /es/gmail
 Disallow: /es/start
 Disallow: /es/invites/
@@ -30,6 +32,7 @@ Disallow: /zh/forgot-password
 Disallow: /zh/reset-password
 Disallow: /zh/children
 Disallow: /zh/family
+Disallow: /zh/gradez
 Disallow: /zh/gmail
 Disallow: /zh/start
 Disallow: /zh/invites/
@@ -41,6 +44,7 @@ Disallow: /ko/forgot-password
 Disallow: /ko/reset-password
 Disallow: /ko/children
 Disallow: /ko/family
+Disallow: /ko/gradez
 Disallow: /ko/gmail
 Disallow: /ko/start
 Disallow: /ko/invites/
@@ -52,6 +56,7 @@ Disallow: /hi/forgot-password
 Disallow: /hi/reset-password
 Disallow: /hi/children
 Disallow: /hi/family
+Disallow: /hi/gradez
 Disallow: /hi/gmail
 Disallow: /hi/start
 Disallow: /hi/invites/

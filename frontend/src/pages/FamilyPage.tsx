@@ -1,26 +1,34 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 import { AddChildForm, GuardianInvite, SpecialsEditor } from "../components/FamilyPanels";
-import { IconBook, IconChart, IconChevronLeft, IconClock, IconDevice, IconGradCap, IconPalette, IconUsers } from "../components/icons";
+import { IconChevronLeft, IconGradCap, IconPalette } from "../components/icons";
 import { StudentLoginInvite } from "../components/StudentLoginInvite";
 import { useAuth } from "../context/AuthContext";
+import { IconChevronRight, IconCircleCheck, IconPeople, IconUser, TabIcon } from "../gradez/components/icons";
+import { agoWords } from "../gradez/format";
+import { freshness } from "../gradez/lib/freshness";
+import type { GradezTab } from "../gradez/types";
 import { fmtDateTime } from "../lib/format";
+import { gradezHref } from "../lib/gradezPath";
+import { ROUTER_BASENAME } from "../lib/i18n";
 import {
   BACKPACK_CAPTURE_STORE_URL,
   awaitingSetup,
   bringsIn,
   districtSentences,
+  gradeLevel,
   gradesLine,
   guardiansLine,
   hasSchoolwork,
-  homeworkLine,
   joinNames,
   latestSync,
   offersSchoolwork,
   scheduleLine,
-  systemsLabel,
+  studentLoginLine,
+  teachersLine,
   timeAgo,
+  todoLine,
   updateLine,
   type FamilyChild,
   type LastUpdate,
@@ -39,14 +47,15 @@ function gradYearOptions(): number[] {
   return Array.from({ length: 7 }, (_, i) => start + 1 + i);
 }
 
-/** My family: every child on this account, what schoolz can do for each,
- * what's switched on, and the one button that switches the rest on. Replaced
- * /children (a form and four unexplained buttons) and the /kids list.
- * Homework and grades appear only for a child whose school has Google
- * Classroom or Genesis (GET /family decides, per district). */
+/** My family: every child on this account, a way into each tab of their
+ * Gradez page, and who else sees it. Replaced /children (a form and four
+ * unexplained buttons) and the guardian's list of children that Gradez's
+ * predecessor had. Schoolwork appears only for a child whose school has
+ * Google Classroom or Genesis (GET /family decides, per district). */
 export function FamilyPage() {
   const { user } = useAuth();
-  const isStudent = Boolean(user?.student_profile_id);
+  const studentProfileId = user?.student_profile_id ?? null;
+  const isStudent = Boolean(studentProfileId);
   const [data, setData] = useState<Loaded | null>(null);
   // Kept apart from an empty family: a guardian with children must never be
   // shown "Add your first child" because a deploy was under way.
@@ -86,7 +95,13 @@ export function FamilyPage() {
     };
   }, [isStudent, reload]);
 
-  if (isStudent) return <Navigate to={`/kids/${user!.student_profile_id}`} replace />;
+  // A child's own login has one page, their own Gradez. A page load, not a
+  // navigation: Gradez's document starts no analytics (lib/gradezPath.ts).
+  useEffect(() => {
+    if (studentProfileId) window.location.replace(ROUTER_BASENAME + gradezHref(studentProfileId));
+  }, [studentProfileId]);
+
+  if (isStudent) return null;
 
   const refresh = () => setReload((n) => n + 1);
   const retry = () => {
@@ -135,8 +150,10 @@ export function FamilyPage() {
         <IconChevronLeft /> Home
       </Link>
       <h1>My family</h1>
-      <p className="note fam-intro">
-        What schoolz does for each of your kids. Only you and the guardians you share a child with see this page.
+      <p className="fam-intro">
+        {children.some(hasSchoolwork)
+          ? "Each row opens the matching tab of your child's page."
+          : "What schoolz does for each of your kids. Only you and the guardians you share a child with see this page."}
       </p>
 
       {notice && <div className="banner">{notice}</div>}
@@ -264,20 +281,24 @@ function SchoolworkCard({ kids, now, update }: { kids: FamilyChild[]; now: numbe
 
   // Backpack Capture already runs for someone in the family: a waiting child
   // needs their own school account in that Chrome, not a second install.
+  // How current each child's schoolwork is sits under their card, and the
+  // full account (with Report a problem) is Gradez's About this data, so a
+  // card here is only for an update that ran into trouble a parent must fix.
   const classroomWaiting = waiting.filter((c) => c.has_classroom);
   return (
     <>
-      <div className="card fam-sync">
-        <div className="fam-sync-hd">
-          <span>
-            <span className={`dot${update?.summary?.outcome === "trouble" ? " warn" : ""}`} aria-hidden="true" />
-            <b>Backpack Capture</b> last sent schoolwork {timeAgo(last, now)} <span className="when">({fmtDateTime(last)})</span>
-          </span>
-          <Link to="/account/security">Connected computers</Link>
+      {update?.summary?.outcome === "trouble" && (
+        <div className="card fam-sync">
+          <div className="fam-sync-hd">
+            <span>
+              <span className="dot warn" aria-hidden="true" />
+              <b>Backpack Capture</b> last sent schoolwork {timeAgo(last, now)} <span className="when">({fmtDateTime(last)})</span>
+            </span>
+            <Link to="/account/security">Connected computers</Link>
+          </div>
+          <UpdateStatus update={update} />
         </div>
-        {update && <UpdateStatus update={update} />}
-        {!update && <ReportProblem update={null} />}
-      </div>
+      )}
       {waiting.length > 0 && (
         <div className="card fam-setup">
           <div className="eyebrow">Homework and grades</div>
@@ -380,35 +401,27 @@ function ReportProblem({ update }: { update: LastUpdate | null }) {
   );
 }
 
-function Row({
-  icon,
-  title,
-  desc,
-  src,
-  on,
-  warn,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: React.ReactNode;
-  src?: string;
-  on?: boolean;
-  warn?: boolean;
-  children?: React.ReactNode;
-}) {
+/** One row of a child's card: an icon, a title, a line of status under
+ * it, and what the row does at the end. */
+function RowBody({ icon, title, status, warn, end }: { icon: ReactNode; title: string; status?: string | null; warn?: boolean; end?: ReactNode }) {
   return (
-    <li className={`fam-row${on ? " on" : ""}${warn ? " warn" : ""}`}>
-      <span className="fam-ico">{icon}</span>
-      <span>
-        <b>{title}</b>
-        <small>{desc}</small>
-        {src && <span className="src">{src}</span>}
+    <>
+      <span className="fam-row-ico">{icon}</span>
+      <span className="fam-row-text">
+        <span className="fam-row-title">{title}</span>
+        {status && <span className={`fam-row-status${warn ? " warn" : ""}`}>{status}</span>}
       </span>
-      <span className="fam-state">{children}</span>
-    </li>
+      {end}
+    </>
   );
 }
+
+const TAB_ROWS: { tab: GradezTab; title: string }[] = [
+  { tab: "todo", title: "To do" },
+  { tab: "grades", title: "Grades" },
+  { tab: "schedule", title: "Schedule" },
+  { tab: "teachers", title: "Teachers" },
+];
 
 function ChildCard({
   child: c,
@@ -428,153 +441,163 @@ function ChildCard({
   onGradYear: (year: number | null) => Promise<boolean>;
 }) {
   const offers = offersSchoolwork(c);
-  const seen = (iso: string | null) => (iso ? timeAgo(iso, now) : "Not yet");
-  const panelBtn = (kind: PanelKind, label: string) => (
-    <button type="button" className={`btn sm${open === kind ? " btn-primary" : ""}`} onClick={() => onToggle(kind)} aria-expanded={open === kind}>
-      {label}
-    </button>
-  );
-  const login = c.student_login_email ?? c.student_invite_email;
+  const captured = hasSchoolwork(c);
   const [gradYearFailed, setGradYearFailed] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [removeFailed, setRemoveFailed] = useState(false);
 
+  const name = `${c.first_name} ${c.last_name}`.trim();
+  const grade = gradeLevel(c, new Date(now));
+  const sub = [grade != null ? `Grade ${grade}` : null, c.school_name].filter(Boolean).join(" · ");
+  // Gradez is reached by a page load, never a router navigation: its
+  // document starts no analytics (lib/gradezPath.ts).
+  const href = (tab: GradezTab, extra?: Record<string, string>) => ROUTER_BASENAME + gradezHref(c.id, tab, extra);
+  const grades = gradesLine(c);
+  const status: Record<GradezTab, string | null> = {
+    todo: todoLine(c),
+    grades: grades?.text ?? null,
+    schedule: scheduleLine(c),
+    teachers: teachersLine(c),
+  };
+  const panelButton = (kind: PanelKind, label: string, ariaLabel: string) => (
+    <button type="button" className="fam-row-btn" onClick={() => onToggle(kind)} aria-expanded={open === kind} aria-label={ariaLabel}>
+      {label}
+    </button>
+  );
+  const panel = (kind: PanelKind, body: ReactNode) => open === kind && <div className="fam-panel">{body}</div>;
+
   return (
-    <div className="card fam-kid">
-      <div className="fam-kid-hd">
-        <span className="fam-avatar" aria-hidden="true">
-          {c.first_name.slice(0, 1)}
-        </span>
-        <div className="who">
-          <h2>
-            {c.first_name} {c.last_name}
-          </h2>
-          {c.school_name && <div className="sub">{c.school_name}</div>}
+    <div className="fam-child">
+      <section className="card fam-kid" aria-label={name}>
+        <div className="fam-kid-hd">
+          <span className="fam-avatar" aria-hidden="true">
+            {c.first_name.slice(0, 1)}
+          </span>
+          <div className="who">
+            <h2>{name}</h2>
+            {sub && <div className="sub">{sub}</div>}
+          </div>
+          <a className="fam-open" href={href("todo")}>
+            Open
+          </a>
         </div>
-        {hasSchoolwork(c) && (
-          <div className="fam-kid-actions">
-            {/* The child's full page, on its Grades tab: no menu reaches /kids/<id>. */}
-            {c.genesis_seen_at && (
-              <Link className="btn sm" to={`/kids/${encodeURIComponent(c.id)}?tab=grades`} title={`${c.first_name}'s grades, by marking period`}>
-                Grades
-              </Link>
-            )}
-            {/* Gradez is its own app at /focus/, not a route here - a plain link. */}
-            <a className="btn sm btn-primary" href={`/focus/?student=${encodeURIComponent(c.id)}`} title={`Open ${c.first_name} in Gradez`}>
-              Open
+
+        {captured &&
+          TAB_ROWS.map((r) => (
+            <a key={r.tab} className="fam-row fam-tab-row" href={href(r.tab)}>
+              <RowBody
+                icon={<TabIcon tab={r.tab} />}
+                title={r.title}
+                status={status[r.tab]}
+                warn={r.tab === "grades" && Boolean(grades?.low)}
+                end={<IconChevronRight />}
+              />
             </a>
+          ))}
+        {offers && !captured && <p className="fam-none">{c.first_name}'s schoolwork shows up here once Backpack Capture has sent it.</p>}
+        {!offers && <p className="fam-none">Homework and grades aren't available{c.school_name ? ` at ${c.school_name}` : ""} yet.</p>}
+
+        <h3 className="fam-h3">People</h3>
+        {offers && (
+          <>
+            <div className="fam-row">
+              <RowBody
+                icon={<IconUser />}
+                title={`${c.first_name}'s own login`}
+                status={studentLoginLine(c)}
+                end={panelButton(
+                  "student",
+                  c.student_login_email || c.student_invite_email ? "Manage" : "Invite",
+                  c.student_login_email || c.student_invite_email ? `Manage ${c.first_name}'s own login` : `Invite ${c.first_name} to their own login`,
+                )}
+              />
+            </div>
+            {panel("student", <StudentLoginInvite studentId={c.id} firstName={c.first_name} />)}
+          </>
+        )}
+        <button type="button" className="fam-row fam-row-toggle" onClick={() => onToggle("guardian")} aria-expanded={open === "guardian"}>
+          <RowBody icon={<IconPeople />} title="Guardians" status={guardiansLine(c)} end={<IconChevronRight />} />
+        </button>
+        {panel("guardian", <GuardianInvite student={c} onClose={onClosePanel} />)}
+
+        {(c.school_type === "elementary" || c.school_type === "high") && <h3 className="fam-h3">Settings</h3>}
+        {c.school_type === "elementary" && (
+          <>
+            <div className="fam-row">
+              <RowBody
+                icon={<IconPalette />}
+                title="Specials"
+                status={
+                  c.specials_count
+                    ? `${c.specials_count} day${c.specials_count === 1 ? "" : "s"} filled in, shown on your Today page`
+                    : "Art, PE or Music on the right day, on your Today page"
+                }
+                end={panelButton("specials", c.specials_count ? "Edit" : "Add", c.specials_count ? `Edit ${c.first_name}'s specials` : `Add ${c.first_name}'s specials`)}
+              />
+            </div>
+            {panel("specials", <SpecialsEditor student={c} onClose={onClosePanel} />)}
+          </>
+        )}
+        {c.school_type === "high" && (
+          <div className="fam-row">
+            <RowBody
+              icon={<IconGradCap />}
+              title="Graduating class"
+              status={`Class events for ${c.first_name}'s year on the school page`}
+              end={
+                <select
+                  value={c.grad_year ?? ""}
+                  onChange={(e) => {
+                    setGradYearFailed(false);
+                    void onGradYear(e.target.value ? Number(e.target.value) : null).then((ok) => setGradYearFailed(!ok));
+                  }}
+                  aria-label={`${c.first_name}'s graduating class`}
+                >
+                  <option value="">Not set</option>
+                  {gradYearOptions().map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              }
+            />
           </div>
         )}
-      </div>
+        {gradYearFailed && <p className="fam-report-error fam-card-error">Couldn't save the graduating class. Try again in a minute.</p>}
 
-      {offers && (
-        <div className="fam-group">
-          <div className="eyebrow">From {systemsLabel(c.has_classroom, c.has_genesis)}</div>
-          <ul className="fam-rows">
-            {c.has_classroom && (
-              <Row
-                icon={<IconBook />}
-                title="Homework"
-                desc={c.needs_login ? "Google asked to sign in again. Sign in, then press Update now in Backpack Capture." : homeworkLine(c)}
-                src="Google Classroom"
-                on={Boolean(c.classroom_seen_at) && !c.needs_login}
-                warn={c.needs_login}
-              >
-                {c.needs_login ? "Sign in again" : seen(c.classroom_seen_at)}
-              </Row>
-            )}
-            {c.has_genesis && (
-              <Row icon={<IconChart />} title="Grades" desc={gradesLine(c)} src="Genesis" on={Boolean(c.genesis_seen_at)}>
-                {seen(c.genesis_seen_at)}
-              </Row>
-            )}
-            {c.has_genesis && (
-              <Row icon={<IconClock />} title="Schedule" desc={scheduleLine(c)} src="Genesis" on={Boolean(c.today)}>
-                {c.today ? "Today" : c.genesis_seen_at ? "" : "Not yet"}
-              </Row>
-            )}
-            <Row
-              icon={<IconDevice />}
-              title="Gradez"
-              desc={
-                c.student_login_email
-                  ? `${c.first_name} signs in as ${c.student_login_email}`
-                  : c.student_invite_email
-                    ? `Invite sent to ${c.student_invite_email}`
-                    : `${c.first_name}'s own homework app: just what's due next, one tap to tick it off`
-              }
-              on={Boolean(c.student_login_email)}
-            >
-              {panelBtn("student", login ? "Manage" : `Give ${c.first_name} a login`)}
-            </Row>
-          </ul>
+        <div className="fam-foot">
+          <span>Student ID {c.student_id}</span>
+          <button
+            type="button"
+            disabled={removing}
+            onClick={async () => {
+              setRemoving(true);
+              const ok = await onRemove();
+              setRemoving(false);
+              setRemoveFailed(ok === false);
+            }}
+          >
+            Remove from my family
+          </button>
         </div>
-      )}
-
-      <div className="fam-group">
-        <div className="eyebrow">Family</div>
-        <ul className="fam-rows">
-          <Row icon={<IconUsers />} title="Guardians" desc={guardiansLine(c)} on={c.guardian_count > 1}>
-            {panelBtn("guardian", "Invite")}
-          </Row>
-          {c.school_type === "elementary" && (
-            <Row
-              icon={<IconPalette />}
-              title="Specials"
-              desc={c.specials_count ? `${c.specials_count} day${c.specials_count === 1 ? "" : "s"} filled in, shown on your Today page` : "Art, PE or Music on the right day, on your Today page"}
-              on={c.specials_count > 0}
-            >
-              {panelBtn("specials", c.specials_count ? "Edit" : "Add")}
-            </Row>
-          )}
-          {c.school_type === "high" && (
-            <Row icon={<IconGradCap />} title="Graduating class" desc={`Class events for ${c.first_name}'s year on the school page`} on={c.grad_year !== null}>
-              <select
-                value={c.grad_year ?? ""}
-                onChange={(e) => {
-                  setGradYearFailed(false);
-                  void onGradYear(e.target.value ? Number(e.target.value) : null).then((ok) => setGradYearFailed(!ok));
-                }}
-                aria-label={`${c.first_name}'s graduating class`}
-              >
-                <option value="">Not set</option>
-                {gradYearOptions().map((y) => (
-                  <option key={y} value={y}>
-                    Class of {y}
-                  </option>
-                ))}
-              </select>
-            </Row>
-          )}
-        </ul>
-        {gradYearFailed && <p className="fam-report-error">Couldn't save the graduating class. Try again in a minute.</p>}
-      </div>
-
-      {open && (
-        <div className="fam-panel">
-          {open === "specials" && <SpecialsEditor student={c} onClose={onClosePanel} />}
-          {open === "guardian" && <GuardianInvite student={c} onClose={onClosePanel} />}
-          {open === "student" && <StudentLoginInvite studentId={c.id} firstName={c.first_name} />}
-        </div>
-      )}
-
-      {!offers && <p className="fam-none">Homework and grades aren't available{c.school_name ? ` at ${c.school_name}` : ""} yet.</p>}
-      <div className="fam-foot">
-        <span>Student ID {c.student_id}</span>
-        <button
-          type="button"
-          disabled={removing}
-          onClick={async () => {
-            setRemoving(true);
-            const ok = await onRemove();
-            setRemoving(false);
-            setRemoveFailed(ok === false);
-          }}
-        >
-          Remove from my family
-        </button>
-      </div>
-      {removeFailed && <p className="fam-report-error">Couldn't remove {c.first_name} just now. Try again in a minute.</p>}
+        {removeFailed && <p className="fam-report-error fam-card-error">Couldn't remove {c.first_name} just now. Try again in a minute.</p>}
+      </section>
+      {captured && <DataLink child={c} now={now} href={href("todo", { sheet: "data" })} />}
     </div>
+  );
+}
+
+/** How current the child's schoolwork is, opening Gradez's About this data.
+ * Green only when Gradez's own header would say so too. */
+function DataLink({ child: c, now, href }: { child: FamilyChild; now: number; href: string }) {
+  const fresh = freshness({ classroom_seen_at: c.classroom_seen_at, genesis_seen_at: c.genesis_seen_at, walk_status: null, walk_finished_at: null, needs_login: c.needs_login }, now);
+  if (!fresh || fresh.kind === "never") return null;
+  const tone = c.needs_login ? "warn" : fresh.kind === "stale" ? "stale" : "ok";
+  return (
+    <a className={`fam-data fam-data-${tone}`} href={href}>
+      {tone === "ok" && <IconCircleCheck />}
+      {c.needs_login ? "Google Classroom asked to sign in again" : `Schoolwork updated ${agoWords(fresh.ago)}`}
+    </a>
   );
 }

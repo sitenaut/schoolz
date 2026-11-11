@@ -2,7 +2,7 @@
 
 Partly built: NJ 211 and ChildCareNJ sources, public search, the
 on-device eligibility check and the provider portal (v1); the rest is design. Localz is a second "view" alongside
-Gradez (`frontend/focus/`): a lightweight app that helps people in South
+Gradez (`/gradez`): a lightweight app that helps people in South
 Jersey find food, housing, utility, health and family help without asking in
 public and without fighting state websites. Resources are ingested and kept
 fresh by scheduled jobs, the same way `/local` events are
@@ -57,7 +57,7 @@ fresh by scheduled jobs, the same way `/local` events are
 
 - **Built as routes in the main app** (`frontend/src/pages/localz/`,
   `/localz`, `/localz/:category`, `/localz/r/:id`, plus `/local` as its
-  Events tab), not a separate Vite app like Focus as first planned: Localz
+  Events tab), not a separate Vite app as first planned: Localz
   needs the main app's translations and `/es/` routing, chatbot, auth,
   theme and crawler prerendering, which a second app would have to
   rebuild. `LocalzLayout` adds the Help Now strip and Quick exit (button or
@@ -69,7 +69,7 @@ fresh by scheduled jobs, the same way `/local` events are
 - **`localz.sitenaut.com` is a 301 to `schoolz.sitenaut.com/localz/`**, a
   memorable door, not a second origin. Revisit only if Localz needs its own
   brand/domain, and then plan the auth hand-off deliberately.
-- **Unlike `/focus/`, `/localz/` is public and should be indexable**: people
+- **Unlike `/gradez`, `/localz/` is public and should be indexable**: people
   search "food pantry near me". The prerender/crawler branch must cover it,
   with per-category landing pages ("Food help in Cherry Hill").
   `services/prerender.py` was missing it at first, so every crawl of Localz
@@ -81,7 +81,7 @@ fresh by scheduled jobs, the same way `/local` events are
   not a link). **A family child care listing is someone's home**,
   so its page carries `noindex` (`ResourceDetailOut.indexable`).
 - **Schoolz nav:** the "Local" item becomes **Localz** and links to
-  `/localz/` with a plain `<a>` (same reason as Gradez).
+  `/localz/`.
 - **Localz nav:** Schoolz (→ `/`, Today) · Events · Food · Housing & Bills ·
   Health · Kids & Family · Money & Work. **Help Now** (211, 988, NJ domestic
   violence hotline, child abuse hotline) is a persistent strip, not a tab.

@@ -1,6 +1,7 @@
 import { GA_MEASUREMENT_ID } from "../authConfig";
 import { SITE_URL } from "./site";
 import { CURRENT_LANG, ROUTER_BASENAME, stripLangPrefix } from "./i18n";
+import { GRADEZ_DOCUMENT } from "./gradezPath";
 import { isLocalzPath } from "./localzPath";
 
 const INTERNAL_KEY = "schoolz_internal";
@@ -18,7 +19,7 @@ declare global {
 // real path, so an invite token or anything about a child can't reach Google.
 // Everything else is a public page whose real path (a school's slug) is
 // exactly what landing-page reporting needs.
-const PRIVATE_PREFIXES = ["/account", "/admin", "/children", "/family", "/kids", "/gmail", "/login", "/register", "/forgot-password", "/reset-password", "/start"];
+const PRIVATE_PREFIXES = ["/account", "/admin", "/children", "/family", "/gradez", "/kids", "/gmail", "/login", "/register", "/forgot-password", "/reset-password", "/start"];
 const TOKEN_ROUTES: [RegExp, string][] = [
   [/^\/invites\/[^/]+$/, "/invites/:token"],
   [/^\/student-invites\/[^/]+$/, "/student-invites/:token"],
@@ -176,6 +177,9 @@ export function initAnalytics(): void {
   // there gets no third-party script at all. Pages reached later skip their
   // hits in AppShell.
   if (isLocalzPath(stripLangPrefix(window.location.pathname))) return;
+  // Gradez shows a child's schoolwork: same rule, and nothing is sent later
+  // either, because leaving Gradez is a page load.
+  if (GRADEZ_DOCUMENT) return;
 
   applyInternalQueryFlag();
   window.dataLayer = window.dataLayer || [];

@@ -41,6 +41,22 @@ async def test_me_reports_sign_in_method_and_username_update():
 
 
 @pytest.mark.anyio
+async def test_the_gradez_to_do_view_is_saved_on_the_account():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _, username, headers = await _register(client)
+        assert (await client.get("/auth/me", headers=headers)).json()["todo_view"] is None
+
+        res = await client.patch("/auth/me", json={"todo_view": "week"}, headers=headers)
+        assert res.status_code == 200 and res.json()["todo_view"] == "week"
+        # Another change to the account leaves the pick alone.
+        res = await client.patch("/auth/me", json={"username": f"{username}_x"}, headers=headers)
+        assert res.json()["todo_view"] == "week"
+        assert (await client.get("/auth/me", headers=headers)).json()["todo_view"] == "week"
+
+        assert (await client.patch("/auth/me", json={"todo_view": "everything"}, headers=headers)).status_code == 422
+
+
+@pytest.mark.anyio
 async def test_change_password_requires_current_and_takes_effect():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         email, _, headers = await _register(client)

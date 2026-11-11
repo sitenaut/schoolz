@@ -214,10 +214,11 @@ jobs:
       - name: Smoke
         env:
           DRILL: ${{ inputs.drill }}
-        # /focus/ is a separate build in the same image; it once answered 500
-        # while / was fine.
+        # / is answered by the index directive and /gradez by the SPA
+        # fallback (try_files ... /index.html). A broken fallback leaves /
+        # fine: the old /focus/ block once looped to a 500 while / answered.
         run: |
-          for path in / /focus/; do
+          for path in / /gradez; do
             ok=
             for _ in $(seq 1 20); do
               if curl -fsS --max-time 10 -o /dev/null "$URL$path"; then ok=1; echo "ok: $path"; break; fi

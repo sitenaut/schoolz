@@ -4,6 +4,7 @@ import { apiFetch } from "../api";
 import { AuthPanel } from "../components/AuthPanel";
 import { useAuth } from "../context/AuthContext";
 import { errorDetail } from "../lib/errorDetail";
+import { ROUTER_BASENAME } from "../lib/i18n";
 import { clearPendingInvite, invitePath, markPendingInviteRefused, savePendingInvite, type InviteKind } from "../lib/pendingInvite";
 
 type Preview = {
@@ -235,12 +236,16 @@ export function InvitePage({ kind }: { kind: InviteKind }) {
               ? "Nothing else to fill in - the record is shared with the person who invited you."
               : "Your family can see the same things you can. Nothing here is hidden from them."}
           </p>
-          <button
-            className="btn btn-primary"
-            onClick={() => navigate(kind === "guardian" ? "/family" : "/kids", { replace: true })}
-          >
-            {kind === "guardian" ? "Open My family" : "Open my schoolz"}
-          </button>
+          {kind === "guardian" ? (
+            <button className="btn btn-primary" onClick={() => navigate("/family", { replace: true })}>
+              Open My family
+            </button>
+          ) : (
+            // A page load, not a navigation: Gradez's document carries no analytics.
+            <a className="btn btn-primary" href={`${ROUTER_BASENAME}/gradez`}>
+              Open Gradez
+            </a>
+          )}
         </div>
       )}
     </div>

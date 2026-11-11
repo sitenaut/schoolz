@@ -10,6 +10,7 @@ import {
 import { TracingInstrumentation } from "@grafana/faro-web-tracing";
 import { createRoutesFromChildren, matchRoutes, Routes, useLocation, useNavigationType } from "react-router-dom";
 import { API_URL, APP_VERSION, FARO_URL } from "../authConfig";
+import { GRADEZ_DOCUMENT } from "./gradezPath";
 import { IS_PRERENDER } from "./prerenderReady";
 
 let faroInstance: Faro | null = null;
@@ -129,7 +130,8 @@ function scrubItem<P>(item: TransportItem<P>): TransportItem<P> {
 
 export function initTelemetry(): void {
   // A prerender render isn't a person; each one counted as a new RUM session.
-  if (!FARO_URL || faroInstance || IS_PRERENDER) return;
+  // A Gradez document shows a child's schoolwork and reports nothing.
+  if (!FARO_URL || faroInstance || IS_PRERENDER || GRADEZ_DOCUMENT) return;
 
   faroInstance = initializeFaro({
     url: FARO_URL,
@@ -185,5 +187,6 @@ export function getFaro(): Faro | null {
 // off (no VITE_FARO_URL - every local build) that reference is undefined
 // and React throws #130 on every route, blanking the whole app. Prod never
 // saw it because RUM is on there. Fall back to the plain router Routes -
-// also in a prerender render, where initTelemetry deliberately skips Faro.
-export const FaroRoutes: typeof Routes = FARO_URL && !IS_PRERENDER ? (FaroRoutesImpl as typeof Routes) : Routes;
+// also in a prerender render and a Gradez document, where initTelemetry
+// deliberately skips Faro.
+export const FaroRoutes: typeof Routes = FARO_URL && !IS_PRERENDER && !GRADEZ_DOCUMENT ? (FaroRoutesImpl as typeof Routes) : Routes;

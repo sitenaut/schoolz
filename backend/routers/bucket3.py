@@ -191,8 +191,8 @@ class TodoItemOut(BaseModel):
     course_name: str | None
     # Same identity CourseProgressOut.course_key uses - lets the client key
     # a color (default or customized) by the class itself rather than by
-    # display name, so Focus and Subjects can never disagree about which
-    # color a class is.
+    # display name, so Gradez's To do and Grades tabs can never disagree
+    # about which color a class is.
     course_key: str
     due_raw: str | None
     due_date: str | None
@@ -239,6 +239,9 @@ class AnnouncementOut(BaseModel):
     id: str
     title: str
     course_name: str | None
+    # The same key /todo and /progress give the class, so a post can be shown
+    # under the name and color the reader gave it.
+    course_key: str
     teacher_name: str | None
     teacher_emails: list[str]
     posted_raw: str | None
@@ -275,10 +278,6 @@ class CompleteOut(BaseModel):
     id: str
     done: bool
     marked_by: str | None
-
-
-class PlanOut(BaseModel):
-    text: str
 
 
 class LatePolicyIn(BaseModel):
@@ -1496,7 +1495,7 @@ async def get_bucket3_audit(
 async def get_bucket3_student(
     student_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    """The header for the Kids detail view, readable by a guardian *or* the
+    """The header for Gradez, readable by a guardian *or* the
     student themselves - GET /students is guardian-only (it's the "my
     children" list), so a student account needs this to see their own record
     at all."""
@@ -1804,6 +1803,7 @@ async def get_announcements(
             id=a.id,
             title=a.title,
             course_name=a.course_name,
+            course_key=kids_view.course_key_str(kids_view.course_key(a.course_name, a.course_external_id)),
             teacher_name=a.teacher_name,
             teacher_emails=kids_view.match_teacher_emails(a.teacher_name, staff),
             posted_raw=a.posted_raw,
@@ -1904,7 +1904,7 @@ async def suggest_for_assignment(
         return SuggestionOut(text=existing.suggestion_text, declined=existing.declined, cached=True)
 
     await _limit_model_calls(db, user)
-    # Two first asks at once (a Focus double tap, two families in one section)
+    # Two first asks at once (a Gradez double tap, two families in one section)
     # would each pay the model. The second waits here until the first has
     # committed its answer, then reads it. The lock is the transaction's, so
     # the commit below or the rollback of any failure releases it; it keeps
@@ -1940,29 +1940,6 @@ def _suggestion_lock_key(code: str, section: str, norm: str) -> int:
     """The tier-A cache key folded into the bigint an advisory lock takes."""
     digest = hashlib.sha256(f"assignment_suggestion:{code}:{section}:{norm}".encode()).digest()
     return int.from_bytes(digest[:8], "big", signed=True)
-
-
-@router.post("/students/{student_id}/bucket3/suggestions/plan", response_model=PlanOut)
-async def suggest_plan(student_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """A short, personal "what order should I do this in" for the student's
-    current Missing + Due list (tier B). Never cached or stored."""
-    student = await _get_own_student(db, user.id, student_id)
-    items, _current_mp, today = await _todo_items(db, student)
-    open_items = sorted(
-        (i for i in items if i["category"] in ("missing", "due")),
-        key=lambda i: (i["category"] != "missing", i["due_date"] or ""),
-    )
-    if not open_items:
-        return PlanOut(text="Nothing due or missing right now - nothing to plan.")
-    await _limit_model_calls(db, user)
-    try:
-        text = await kids_suggestions.plan(open_items, today)
-    except kids_suggestions.SuggestionsUnavailable:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Suggestions aren't configured on this server") from None
-    except Exception:
-        logger.exception("plan_suggestion_failed", extra={"student_id": student.id})
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Couldn't reach the suggestion service - try again in a bit") from None
-    return PlanOut(text=text)
 
 
 def _policy_out(p: CourseLatePolicy) -> LatePolicyOut:

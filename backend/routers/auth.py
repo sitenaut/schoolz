@@ -69,6 +69,7 @@ def _user_out(
         is_admin=user.is_admin and not via_api_key,
         auth_mode=auth_module.AUTH_MODE,
         preferred_language=user.preferred_language,
+        todo_view=user.todo_view,
         sign_in_method=method,
         created_at=user.created_at,
         student_profile_id=student_profile_id,
@@ -163,6 +164,8 @@ async def update_me(
         user.username = payload.username
     if payload.preferred_language is not None:
         user.preferred_language = payload.preferred_language
+    if payload.todo_view is not None:
+        user.todo_view = payload.todo_view
     await db.commit()
     await db.refresh(user)
     out = _user_out(user, await _student_profile_id(db, user), await auth_module.get_user_permissions(db, user))

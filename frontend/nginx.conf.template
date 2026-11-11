@@ -19,19 +19,20 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Send RELATIVE redirects ("Location: /focus/"), so the browser resolves
+    # Send RELATIVE redirects ("Location: /gradez"), so the browser resolves
     # them against the origin it actually used. With nginx's default
-    # absolute_redirect, a directory redirect is built from this server's own
+    # absolute_redirect, a redirect is built from this server's own
     # listen port - 3000 - which is never the port the client reached us on:
     # local compose publishes 5173->3000, and in prod fly-proxy terminates
     # TLS on 443 and forwards plain HTTP here. So "GET /focus" (no trailing
-    # slash) answered "Location: http://localhost:3000/focus/" locally, and
-    # would have sent prod visitors to http://schoolz.sitenaut.com:3000/ -
-    # wrong scheme and wrong port. Same class of bug as schoolz-api needing
-    # --proxy-headers to stop emitting http:// Location headers.
+    # slash, when /focus/ was a directory) answered
+    # "Location: http://localhost:3000/focus/" locally, and would have sent
+    # prod visitors to http://schoolz.sitenaut.com:3000/ - wrong scheme and
+    # wrong port. Same class of bug as schoolz-api needing --proxy-headers to
+    # stop emitting http:// Location headers.
     #
-    # Only reachable now that a real subdirectory exists: every path in the
-    # SPA above falls through try_files to /index.html and never redirects.
+    # The /focus redirect below is the only one this config sends: every
+    # path in the SPA falls through try_files to /index.html.
     absolute_redirect off;
 
     # A proxy_pass target that's fully static text (after envsubst) isn't
@@ -93,15 +94,15 @@ server {
         client_max_body_size 16k;
     }
 
-    # Vite names every file under assets/ (this app's and Focus's) after a
-    # hash of its content, so one URL always serves the same bytes: browsers
-    # keep them a year and never ask again. What moves a visitor to a new
+    # Vite names every file under assets/ after a hash of its content, so
+    # one URL always serves the same bytes: browsers keep them a year and
+    # never ask again. What moves a visitor to a new
     # build is index.html, which is never cached without asking (below).
     # Each file is gzipped at -9 at build time (Dockerfile), smaller than
     # what Fly's proxy compresses on the fly, and gzip_static serves that
     # copy to every browser that takes gzip. Listed before the regex below,
     # so it wins for these paths.
-    location ~ ^/(?:focus/)?assets/ {
+    location ~ ^/assets/ {
         include /etc/nginx/conf.d/security-headers.inc;
         add_header Cache-Control "public, max-age=31536000, immutable";
         gzip_static on;
@@ -119,21 +120,15 @@ server {
         try_files $uri =404;
     }
 
-    # The Focus app (focus/) is a separate Vite build served from
-    # the SAME ORIGIN as this one, which is the entire mechanism behind its
-    # shared session: localStorage is scoped to the origin, not the path,
-    # so a token written by a login here is already readable there with
-    # nothing passed between them. A subdomain would not share it.
-    #
-    # Placed before `location /` so the crawler branch below never grabs
-    # it: everything under /focus/ is behind auth, so there's nothing for
-    # a bot to index, and a prerender pass would spend one of the
-    # scraper's three concurrency slots rendering a login wall.
-    location /focus/ {
+    # /focus/ was Gradez's address while it was a separate Vite build; it is
+    # a page of this app at /gradez now. Old links and home-screen bookmarks
+    # land there with their query string (?student=). A 302, not a 301, so
+    # no browser keeps it for good. Gradez itself takes `location /` like
+    # any private page: the prerender endpoint refuses its path before
+    # rendering anything, and robots.txt disallows it.
+    location ~ ^/focus(/|$) {
         include /etc/nginx/conf.d/security-headers.inc;
-        # Focus's index.html: always checked, so a deploy reaches the next load.
-        add_header Cache-Control "no-cache";
-        try_files $uri $uri/ /focus/index.html;
+        return 302 /gradez$is_args$args;
     }
 
     location / {

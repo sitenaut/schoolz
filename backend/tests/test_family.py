@@ -14,7 +14,7 @@ from sqlalchemy import update
 
 import database
 from main import app
-from models import User
+from models import ChildCourseGrade, ChildGradeEntry, ChildMarkingPeriod, ChildWorkItem, User
 from routers import bucket3 as bucket3_router
 
 ET = ZoneInfo("America/New_York")
@@ -127,8 +127,11 @@ async def test_counts_and_today_once_data_arrives(monkeypatch):
         assert kid["classroom_seen_at"] and kid["genesis_seen_at"]
         # The lab contract is due 9/18, inside this week; the pre-test is done.
         assert kid["due_this_week"] == 1
+        assert kid["due_today"] == 0
         assert kid["missing"] == 0
         assert kid["classes"] == 1
+        # 80% in the one class: nothing to flag.
+        assert kid["low_class"] is None
         assert kid["today"] == {"state": "now", "course_name": "GEOMETRY A", "room": kid["today"]["room"], "time_start": kid["today"]["time_start"], "time_end": kid["today"]["time_end"]}
 
         # A day with no schedule captured shows no schedule line at all.
@@ -145,6 +148,58 @@ async def test_counts_and_today_once_data_arrives(monkeypatch):
         await client.post(f"/student-account-invites/{invite.json()['token']}/accept", headers=_auth(child_token))
         [kid] = (await client.get("/family", headers=_auth(parent))).json()
         assert kid["student_login_email"] == kid_email and kid["student_invite_email"] is None
+
+
+@pytest.mark.anyio
+async def test_the_card_names_the_lowest_class_under_50_and_counts_the_weeks_posts(monkeypatch):
+    monkeypatch.setattr(bucket3_router, "_local_now", lambda: datetime(2026, 9, 14, 8, 0, tzinfo=ET))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        parent = await _register(client, f"fam_{uuid.uuid4().hex[:8]}@example.com", admin=True)
+        sid = await _child(client, parent, "Casey", SID, None)
+        grades = f"{GENESIS}?tab1=studentdata&tab2=gradebook&tab3=coursesummary&studentid={SID}&courseCode=101&courseSection=1"
+        res = await client.post(
+            f"/students/{sid}/bucket3/import",
+            json={"captures": [_env("classroom", FEED_URL, _load("classroom_stream_feed.txt")), _env("genesis", grades, _load("genesis_course_grades.txt"))]},
+            headers=_auth(parent),
+        )
+        assert res.status_code == 200, res.text
+        [kid] = (await client.get("/family", headers=_auth(parent))).json()
+        assert kid["low_class"] is None
+        posts = kid["recent_posts"]
+
+        def uid() -> str:
+            return f"t-{uuid.uuid4().hex[:10]}"
+
+        async with database.SessionLocal() as db:
+            db.add_all(
+                [
+                    # The Grade Summary page is what says which marking period is on now.
+                    ChildMarkingPeriod(student_id=sid, label="MP1", start_date="2026-09-02", end_date="2026-11-10"),
+                    ChildCourseGrade(student_id=sid, course_code="202", course_section="3", course_name="GEOMETRY CP", marking_period="MP1", grade_percent=48.0),
+                    ChildGradeEntry(
+                        student_id=sid, external_uid=uid(), course_code="202", course_section="3", marking_period="MP1",
+                        weekday_date="Thu 9/10", title="Quiz 1", score_earned=4, score_possible=10, percent=40.0,
+                    ),
+                    # Genesis prints 0.00% for a class with nothing graded yet: no grade, not a failing one.
+                    ChildCourseGrade(student_id=sid, course_code="303", course_section="1", course_name="ART", marking_period="MP1", grade_percent=0.0),
+                    ChildGradeEntry(student_id=sid, external_uid=uid(), course_code="303", course_section="1", marking_period="MP1", weekday_date="Fri 9/18", title="Sketch"),
+                    # Another marking period's grade is not this one's.
+                    ChildCourseGrade(student_id=sid, course_code="404", course_section="1", course_name="HEALTH", marking_period="MP4", grade_percent=10.0),
+                    ChildWorkItem(student_id=sid, external_uid=uid(), title="Test on Friday", item_type="announcement", posted_date="2026-09-10"),
+                    ChildWorkItem(student_id=sid, external_uid=uid(), title="Welcome back", item_type="announcement", posted_date="2026-09-01"),
+                ]
+            )
+            await db.commit()
+
+        [kid] = (await client.get("/family", headers=_auth(parent))).json()
+        assert kid["low_class"] == {"course_key": "202-3", "course_name": "GEOMETRY CP", "custom_name": None}
+        assert kid["recent_posts"] == posts + 1
+
+        # A rename is the caller's own, so the card uses it.
+        res = await client.put("/course-preferences/202-3", json={"custom_name": "Geometry"}, headers=_auth(parent))
+        assert res.status_code == 200, res.text
+        [kid] = (await client.get("/family", headers=_auth(parent))).json()
+        assert kid["low_class"]["custom_name"] == "Geometry"
 
 
 @pytest.mark.anyio
