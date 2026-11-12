@@ -357,6 +357,9 @@ function CalendarView({ school: deepSchool }: { school: string | null }) {
       title={t("School calendar · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
       description={t("District-wide and per-school calendar for {{towns}} public schools - closures, early dismissals, deadlines, and events, searchable and filterable by school.", { towns: townsLabel(myTowns) })}
       path="/calendar"
+      // A crawler never has schools picked, so it only ever sees the
+      // one-line prompt; each school's own calendar page is the indexable one.
+      noindex={noSchools}
     />
   );
 

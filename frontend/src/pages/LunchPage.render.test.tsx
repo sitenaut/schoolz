@@ -14,7 +14,7 @@ let loading: boolean;
 vi.mock("../lib/mySchools", () => ({
   useMySchools: () => ({ mySchools: mine, activeSchools: mine, loading, colorFor: () => "red", myTowns: [] }),
 }));
-vi.mock("../components/SeoHead", () => ({ SeoHead: () => null }));
+vi.mock("../components/SeoHead", () => ({ SeoHead: ({ noindex }: { noindex?: boolean }) => (noindex ? <i data-testid="noindex" /> : null) }));
 
 import { LunchPage } from "./LunchPage";
 
@@ -70,6 +70,8 @@ describe("LunchPage", () => {
     expect(screen.getByTestId("where").textContent).toBe("/lunch");
     expect(fetched()).toEqual([]);
     await waitFor(() => expect(document.body.getAttribute("data-prerender-ready")).toBe("true"));
+    // All a crawler ever gets here, so it's kept out of the index.
+    expect(screen.getByTestId("noindex")).toBeTruthy();
   });
 
   it("shows a linked school's menu with nothing picked, instead of sending the visitor to the picker", async () => {
@@ -101,6 +103,7 @@ describe("LunchPage", () => {
     at("/lunch");
     expect(await screen.findByText("east pizza")).toBeTruthy();
     await waitFor(() => expect(fetched()).toEqual(["/schools/east/lunch-menu"]));
+    expect(screen.queryByTestId("noindex")).toBeNull();
   });
 
   it("says the next menu isn't posted instead of listing one that's over", async () => {

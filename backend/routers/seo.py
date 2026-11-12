@@ -34,8 +34,13 @@ _SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "36
 # shows before "Show more". A registered family child care listing is
 # someone's home, so its page tells crawlers not to index it
 # (ResourceDetailOut.indexable).
+#
+# /calendar and /lunch aren't listed: with no schools picked (a crawler
+# never has any) each is a one-line "Pick your kids' schools" prompt, and
+# Search Console filed all five languages of both under "Crawled - currently
+# not indexed". Each school's own page and calendar page carry that content.
 _STATIC_PATHS = [
-    "/", "/schools", "/budgets", "/directory", "/calendar", "/lunch", "/local", "/localz", "/localz/providers",
+    "/", "/schools", "/budgets", "/directory", "/local", "/localz", "/localz/providers",
     *(f"/localz/{key}" for key in CATEGORIES),
     "/privacy", "/backpack-capture/privacy", "/contact", "/upload", "/chcomms", "/survey",
 ]
