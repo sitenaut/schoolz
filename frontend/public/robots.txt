@@ -1,5 +1,11 @@
 User-agent: *
 Allow: /
+# Any URL with a query string: a calendar day or event, a lunch tab, an old
+# /calendar?school= link. Each one's canonical is the plain path, and every
+# page worth indexing is a plain path in the sitemap, so crawling them spends
+# Google's visits on copies while real pages wait in "Discovered - currently
+# not indexed".
+Disallow: /*?
 Disallow: /account
 Disallow: /admin
 Disallow: /login

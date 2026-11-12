@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>schoolz · What's happening at your kids' school today?</title>
-    <meta name="description" content="Snow day? Early dismissal? What's for lunch? See your kids' school day at a glance: status, bell times, lunch, buses and who to call. Free, no account." />
+    <!-- data-rh hands this tag to react-helmet-async, so a page's SeoHead
+         replaces it. Without it every crawler snapshot carried two
+         descriptions: this generic one first, then the page's own. -->
+    <meta name="description" content="Snow day? Early dismissal? What's for lunch? See your kids' school day at a glance: status, bell times, lunch, buses and who to call. Free, no account." data-rh="true" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

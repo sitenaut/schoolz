@@ -123,6 +123,39 @@ async def test_render_is_flagged_as_internal_traffic_and_a_prerender(monkeypatch
     assert seen["url"].endswith("/directory?internal=1&prerender=1")
 
 
+_SWITCHER = (
+    '<a href="/schools/bells?internal=1&amp;prerender=1" hreflang="en">English</a>'
+    '<a href="/es/schools/bells?internal=1&amp;prerender=1" hreflang="es">Español</a>'
+    '<a href="/schools/bells/calendar?date=2026-11-12&amp;internal=1&amp;prerender=1#today">Thu</a>'
+    '<a href="/schools/bells/calendar?date=2026-11-12&amp;event=e1">Event</a>'
+)
+
+
+@pytest.mark.anyio
+async def test_a_snapshot_never_links_to_the_renders_own_query(monkeypatch):
+    # The language switcher keeps the current query, so every snapshot linked
+    # five ?internal=1&prerender=1 URLs that Google crawled as pages of their own.
+    await _fake_render(monkeypatch, html=_SWITCHER)
+
+    page = await prerender.get_prerendered_html("/schools/bells")
+
+    assert "internal=" not in page and "prerender=" not in page
+    assert 'href="/schools/bells"' in page
+    assert 'href="/es/schools/bells"' in page
+    assert 'href="/schools/bells/calendar?date=2026-11-12#today"' in page
+    assert 'href="/schools/bells/calendar?date=2026-11-12&amp;event=e1"' in page
+
+
+@pytest.mark.anyio
+async def test_a_snapshot_stored_before_the_fix_is_served_clean():
+    prerender._CACHE["/schools/bells"] = (time.time() + 3600, _SWITCHER)
+
+    page = await prerender.get_prerendered_html("/schools/bells")
+
+    assert "prerender=" not in page
+    assert 'href="/es/schools/bells"' in page
+
+
 async def _fake_render(monkeypatch, html="<html>rendered</html>"):
     calls = []
 
@@ -147,7 +180,7 @@ async def test_a_render_survives_a_process_restart(monkeypatch):
     assert len(calls) == 1
 
 
-async def _school() -> str:
+async def _school(school_type: str = "high") -> str:
     import uuid
 
     import database
@@ -155,7 +188,7 @@ async def _school() -> str:
 
     slug = f"prerender-{uuid.uuid4().hex[:8]}"
     async with database.SessionLocal() as db:
-        db.add(School(name=f"Prerender Elementary {slug}", slug=slug, school_type="high"))
+        db.add(School(name=f"Prerender Elementary {slug}", slug=slug, school_type=school_type))
         await db.commit()
     return slug
 
@@ -210,6 +243,20 @@ async def test_real_schools_their_pages_and_seasons_are_rendered(monkeypatch):
     for path in (f"/schools/{slug}", f"/zh/schools/{slug}/calendar", f"/schools/{slug}/class-of-{year}", f"/schools/{school_id}", f"/seasonal/{season}"):
         assert await prerender.get_prerendered_html(path) == "<html>rendered</html>"
     assert len(calls) == 5
+
+
+@pytest.mark.anyio
+async def test_a_class_page_of_a_school_that_has_none_is_not_found(monkeypatch):
+    # It rendered "No Class of N page" with a 200: a soft 404 in Search Console.
+    from services import class_years
+
+    calls = await _fake_render(monkeypatch)
+    slug = await _school("elementary")
+    year = class_years.current_grad_years()[0]
+    with pytest.raises(prerender.PathNotAllowed):
+        await prerender.get_prerendered_html(f"/schools/{slug}/class-of-{year}")
+    assert await prerender.get_prerendered_html(f"/schools/{slug}/calendar") == "<html>rendered</html>"
+    assert len(calls) == 1
 
 
 @pytest.mark.anyio

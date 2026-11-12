@@ -19,6 +19,7 @@ import os
 import re
 import time
 from datetime import UTC, datetime
+from html import unescape
 
 from sqlalchemy import delete, or_, select, union_all
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -95,6 +96,28 @@ class PathNotAllowed(ValueError):
     pass
 
 
+# _render's own query, as the page echoes it in links: the language switcher
+# keeps the current query string, so every snapshot linked its five language
+# versions as /<lang>/<page>?internal=1&prerender=1 - about 38,000 extra URLs
+# for Google to crawl, each one canonicalized back to the plain page, while
+# most real pages sat in Search Console's "Discovered - currently not
+# indexed". Removed on the way out, so snapshots stored before this are
+# served clean too.
+_RENDER_PARAMS = ("internal", "prerender")
+_HREF_WITH_RENDER_PARAMS = re.compile(r'href="([^"?]*\?[^"]*\b(?:internal|prerender)=[^"]*)"')
+
+
+def _without_render_params(page: str) -> str:
+    def clean(match: re.Match[str]) -> str:
+        path, _, rest = unescape(match[1]).partition("?")
+        query, hash_mark, fragment = rest.partition("#")
+        kept = "&".join(p for p in query.split("&") if p and p.partition("=")[0] not in _RENDER_PARAMS)
+        url = path + (f"?{kept}" if kept else "") + hash_mark + fragment
+        return 'href="' + url.replace("&", "&amp;").replace('"', "&quot;") + '"'
+
+    return _HREF_WITH_RENDER_PARAMS.sub(clean, page)
+
+
 _LANG_PREFIX = re.compile(r"^/(?:es|zh|ko|hi)(?=/|$)")
 
 
@@ -149,6 +172,11 @@ async def _names_something(path: str) -> bool:
                 if not match or int(match[1]) not in class_years.page_years():
                     return False
             school = select(School.id).where(or_(School.id == parts[0], School.slug == parts[0]))
+            if len(parts) == 2 and parts[1] != "calendar":
+                # Only a high school has class pages (routers/class_years.py).
+                # Anywhere else the page says "No Class of N page" with a 200,
+                # which Search Console counts as a soft 404.
+                school = school.where(School.school_type == "high")
             return (await db.execute(school)).first() is not None
     except Exception:
         # The DB is never a dependency here (see _load_stored): a crawler
@@ -220,11 +248,11 @@ async def get_prerendered_html(path: str) -> str:
         # expired snapshot is served instantly and refreshed behind it.
         if cached[0] <= time.time() and path not in _INFLIGHT:
             _start_render(path).add_done_callback(_log_background_failure)
-        return cached[1]
+        return _without_render_params(cached[1])
 
     # Shielded so one caller giving up doesn't cancel the render every
     # other caller is waiting on.
-    return await asyncio.shield(_start_render(path))
+    return _without_render_params(await asyncio.shield(_start_render(path)))
 
 
 def _start_render(path: str, patient: bool = False) -> "asyncio.Task[str]":
