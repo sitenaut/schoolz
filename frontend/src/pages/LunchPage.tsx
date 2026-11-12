@@ -135,6 +135,9 @@ export function LunchPage() {
       title={t("Lunch menus · {{towns}} · schoolz", { towns: townsLabel(myTowns) })}
       description={t("Daily lunch menus for {{towns}} public schools, by school - synced from district and school-published menus.", { towns: townsLabel(myTowns) })}
       path="/lunch"
+      // A crawler never has schools picked, so it only ever sees the
+      // one-line prompt below; Google filed it as "crawled, not indexed".
+      noindex={noSchools}
     />
   );
 

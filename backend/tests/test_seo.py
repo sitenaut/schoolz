@@ -20,8 +20,12 @@ async def test_sitemap_lists_static_routes():
         res = await client.get("/sitemap.xml")
     assert res.status_code == 200
     assert res.headers["content-type"].startswith("application/xml")
-    for path in ("/", "/schools", "/calendar", "/lunch", "/privacy", "/contact"):
+    for path in ("/", "/schools", "/privacy", "/contact"):
         assert f"<loc>{_WEB_URL}{path}</loc>" in res.text
+    # Only a "pick your schools" prompt without schools picked, so in no language.
+    for path in ("/calendar", "/lunch"):
+        for lang in ("", "/es", "/zh", "/ko", "/hi"):
+            assert f"<loc>{_WEB_URL}{lang}{path}</loc>" not in res.text
 
 
 @pytest.mark.anyio
@@ -53,14 +57,14 @@ async def test_sitemap_pairs_translated_pages_with_hreflang():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         res = await client.get("/sitemap.xml")
     assert f"<loc>{_WEB_URL}/es</loc>" in res.text
-    assert f"<loc>{_WEB_URL}/es/lunch</loc>" in res.text
-    assert f'hreflang="es" href="{_WEB_URL}/es/lunch"' in res.text
-    assert f'hreflang="x-default" href="{_WEB_URL}/lunch"' in res.text
-    # No Spanish version exists for these yet, so they must not be listed.
-    assert f"<loc>{_WEB_URL}/zh/lunch</loc>" in res.text
-    assert f'hreflang="zh" href="{_WEB_URL}/zh/lunch"' in res.text
-    assert f'hreflang="ko" href="{_WEB_URL}/ko/lunch"' in res.text
-    assert f'hreflang="hi" href="{_WEB_URL}/hi/lunch"' in res.text
+    assert f"<loc>{_WEB_URL}/es/schools</loc>" in res.text
+    assert f'hreflang="es" href="{_WEB_URL}/es/schools"' in res.text
+    assert f'hreflang="x-default" href="{_WEB_URL}/schools"' in res.text
+    assert f"<loc>{_WEB_URL}/zh/schools</loc>" in res.text
+    assert f'hreflang="zh" href="{_WEB_URL}/zh/schools"' in res.text
+    assert f'hreflang="ko" href="{_WEB_URL}/ko/schools"' in res.text
+    assert f'hreflang="hi" href="{_WEB_URL}/hi/schools"' in res.text
+    # No translation exists for these, so they must not be listed.
     assert f"{_WEB_URL}/zh/privacy" not in res.text
     assert f"{_WEB_URL}/es/privacy" not in res.text
     assert f"{_WEB_URL}/es/contact" not in res.text

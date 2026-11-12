@@ -26,7 +26,7 @@ vi.mock("../lib/mySchools", () => ({
   }),
 }));
 vi.mock("../context/AuthContext", () => ({ useAuth: () => ({ user: null }) }));
-vi.mock("../components/SeoHead", () => ({ SeoHead: () => null }));
+vi.mock("../components/SeoHead", () => ({ SeoHead: ({ noindex }: { noindex?: boolean }) => (noindex ? <i data-testid="noindex" /> : null) }));
 
 import { CalendarPage, SchoolCalendarPage } from "./CalendarPage";
 import { PickSchoolsPage } from "./PickSchoolsPage";
@@ -68,6 +68,8 @@ describe("CalendarPage with no schools picked", () => {
     expect(link.getAttribute("href")).toBe("/start?next=/calendar");
     expect(screen.queryByText("Show day rotation")).toBeNull();
     expect(calendarCalls()).toEqual([]);
+    // All a crawler ever gets here, so it's kept out of the index.
+    expect(screen.getByTestId("noindex")).toBeTruthy();
   });
 
   it("shows a placeholder, not the prompt, while it can't tell yet", () => {
@@ -99,6 +101,7 @@ describe("CalendarPage with schools picked", () => {
     at("/calendar");
     await waitFor(() => expect(calendarCalls()).toHaveLength(1));
     expect(calendarCalls()[0]).toContain("school_ids=east%2Cbeck");
+    expect(screen.queryByTestId("noindex")).toBeNull();
   });
 });
 
@@ -131,6 +134,7 @@ describe("A school's own calendar page", () => {
     // "<school> calendar" (no i18n in tests, so the key itself), not "Calendar".
     expect(await screen.findByRole("heading", { name: /calendar$/ })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Pick your schools" })).toBeNull();
+    expect(screen.queryByTestId("noindex")).toBeNull();
   });
 
   it("goes to the whole calendar for all my schools", async () => {
