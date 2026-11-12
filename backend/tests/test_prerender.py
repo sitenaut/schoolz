@@ -137,7 +137,7 @@ async def test_a_snapshot_never_links_to_the_renders_own_query(monkeypatch):
     # five ?internal=1&prerender=1 URLs that Google crawled as pages of their own.
     await _fake_render(monkeypatch, html=_SWITCHER)
 
-    page = await prerender.get_prerendered_html("/schools/bells")
+    page = await prerender.get_prerendered_html(f"/schools/{await _school()}")
 
     assert "internal=" not in page and "prerender=" not in page
     assert 'href="/schools/bells"' in page
