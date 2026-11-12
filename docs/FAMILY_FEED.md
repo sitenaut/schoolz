@@ -153,7 +153,10 @@ Every item has every top-level field (shortened above). Only `uid`, `kind`,
 - A district item reaching more than one child's school appears once, with
   `school_id` null and every school in `data.school_ids`.
 - Left out: athletics, high-school class-page activity, staff introductions,
-  lunch menus, merchandise ads. Assignments come only once Backpack Capture
+  lunch menus, merchandise ads, and a high-school item for other classes
+  (`applies_to_grad_years` set and holding none of the `grad_year`s on file
+  for the family's children at that school; null is the whole school).
+  Assignments come only once Backpack Capture
   has brought Classroom data for the child (`classroom_seen_at`), grades
   Genesis data (`genesis_seen_at`). `needs_login` is true when a child's
   Google sign-in ran out and Backpack Capture is waiting for it.

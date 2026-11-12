@@ -9,7 +9,9 @@ interesting per-class facts come out of extraction, not hand entry (see
 docs/HS_CLASS_PAGES_DESIGN.md), so there's nothing for a form to do.
 """
 
-from datetime import date
+import re
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -65,6 +67,69 @@ def page_years(reference: date | None = None) -> range:
     leave thousands of rows behind."""
     years = current_grad_years(reference)
     return range(years[0] - PAGE_YEARS_EITHER_SIDE, years[-1] + PAGE_YEARS_EITHER_SIDE + 1)
+
+
+# Which class an item is for. Only the class pages' own sources used to say
+# (a class-of-2027 sub-page's URL, an announcement's stated audience), so
+# every newsletter's and calendar's "Class of 2028 Senior Trip" reached every
+# family's calendar and family feed as whole-school news.
+
+# The words a school's text uses for a class, as an index into
+# current_grad_years (seniors first).
+GRADE_WORD_TO_INDEX = {
+    "freshman": 3, "freshmen": 3, "9th": 3, "9th grade": 3, "9th graders": 3,
+    "sophomore": 2, "sophomores": 2, "10th": 2, "10th grade": 2, "10th graders": 2,
+    "junior": 1, "juniors": 1, "11th": 1, "11th grade": 1, "11th graders": 1,
+    "senior": 0, "seniors": 0, "12th": 0, "12th grade": 0, "12th graders": 0,
+}
+
+_ET = ZoneInfo("America/New_York")
+# A two-digit year needs its apostrophe ("Class of '28"): "a class of 30" is
+# a head count.
+_YEAR = r"(?:20\d\d|['‘’]\d\d)"
+# "Class of 2028", "Classes of 2027 and 2028", "Class of 2028 & 2029",
+# "Classes of 2027, 2028, and 2029", "Class of 2027/2028".
+_CLASS_OF_RE = re.compile(rf"\bclass(?:es)?\s+of\s+({_YEAR}(?:\s*(?:,?\s*(?:and|&)|,|/|\+)\s*{_YEAR})*)", re.IGNORECASE)
+# A senior trip is the class graduating that year: "2027 Senior Trip", "Senior Trip 2028".
+_SENIOR_TRIP_RE = re.compile(r"\b(20\d\d)\s+senior\s+trip\b|\bsenior\s+trip\s+(20\d\d)\b", re.IGNORECASE)
+
+
+def local_day(value: date | None) -> date | None:
+    """An item's date in the school's own time zone (a 7pm event is stored
+    as midnight UTC the next day)."""
+    if isinstance(value, datetime):
+        return (value.astimezone(_ET) if value.tzinfo else value).date()
+    return value
+
+
+def _enrolled(years: set[int], reference: date | None) -> list[int] | None:
+    return sorted(years & set(current_grad_years(local_day(reference)))) or None
+
+
+def grad_years_in_title(title: str | None, reference: date | None = None) -> list[int] | None:
+    """The enrolled classes a title names outright, or None for the whole
+    school. `reference` is the item's date: the four classes are the ones
+    enrolled then. Any other year is dropped, so an alumni reunion, an
+    incoming class's information night, or a feed's stale "Class of 2026"
+    row stays whole-school."""
+    if not title:
+        return None
+    found: set[int] = set()
+    for m in _CLASS_OF_RE.finditer(title):
+        found.update(int(y[-2:]) + 2000 if len(y) < 4 else int(y) for y in re.findall(_YEAR, m.group(1)))
+    for m in _SENIOR_TRIP_RE.finditer(title):
+        found.add(int(m.group(1) or m.group(2)))
+    return _enrolled(found, reference)
+
+
+def grades_to_grad_years(grades: object, reference: date | None = None) -> list[int] | None:
+    """A model's stated audience (["juniors"], ["10th graders", "11th
+    graders"]) as the enrolled classes it means; None when it names none."""
+    if not isinstance(grades, list):
+        return None
+    years = current_grad_years(local_day(reference))
+    words = {g.strip().lower() for g in grades if isinstance(g, str)}
+    return _enrolled({years[GRADE_WORD_TO_INDEX[w]] for w in words if w in GRADE_WORD_TO_INDEX}, reference)
 
 
 async def _insert_if_missing(db: AsyncSession, school_id: str, grad_year: int) -> None:

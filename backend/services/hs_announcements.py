@@ -39,7 +39,7 @@ import observability
 from models import School, SchoolContentItem
 from scheduler.errors import record_parse_issue
 from services import haiku
-from services.class_years import current_grad_years
+from services.class_years import grades_to_grad_years
 from services.content_extractor import ANTHROPIC_API_KEY, MODEL
 from services.tool_output import object_list, recover_spilled_input
 
@@ -59,17 +59,6 @@ _HEADER_RE = re.compile(
     r"(" + "|".join(_MONTHS) + r")\s+(\d{1,2})(?:st|nd|rd|th)?,\s*(\d{4})\s*$",
     re.MULTILINE,
 )
-
-# 0=senior..3=freshman, matching current_grad_years()' own [senior, junior,
-# sophomore, freshman] order - lets a grade word the model transcribes
-# ("10th", "sophomores") map straight to an index into that list rather
-# than trusting the model to compute an actual graduating year itself.
-_GRADE_WORD_TO_INDEX = {
-    "freshman": 3, "freshmen": 3, "9th": 3, "9th grade": 3, "9th graders": 3,
-    "sophomore": 2, "sophomores": 2, "10th": 2, "10th grade": 2, "10th graders": 2,
-    "junior": 1, "juniors": 1, "11th": 1, "11th grade": 1, "11th graders": 1,
-    "senior": 0, "seniors": 0, "12th": 0, "12th grade": 0, "12th graders": 0,
-}
 
 
 def doc_export_url(doc_url: str) -> str:
@@ -155,14 +144,6 @@ original announcement of it. Skip pure ceremony/tribute text with no actionable 
 (e.g. a moment-of-silence announcement) and skip vague school-spirit filler with no meeting/date/room. \
 Never guess an audience - only set audience_grades when the text explicitly names a grade level or \
 class descriptor (freshmen/sophomores/juniors/seniors, or 'Nth grade(rs)')."""
-
-
-def _grades_to_grad_years(audience_grades: list[str] | None) -> list[int] | None:
-    if not audience_grades:
-        return None
-    years = current_grad_years()
-    indices = {_GRADE_WORD_TO_INDEX[g.lower()] for g in audience_grades if g.lower() in _GRADE_WORD_TO_INDEX}
-    return sorted({years[i] for i in indices}) or None
 
 
 def _stable_uid(title: str, start_date: date | None) -> str:
@@ -281,7 +262,7 @@ async def scan_announcements(db: AsyncSession, school: School) -> str:
             # Announcements carry a day and a lunch block but never a clock time; a midnight
             # timestamp that isn't flagged all-day renders as "12:00 AM".
             row.is_all_day = True
-            row.applies_to_grad_years = _grades_to_grad_years(item.get("audience_grades"))
+            row.applies_to_grad_years = grades_to_grad_years(item.get("audience_grades"))
 
     read = [d for d, _ in new_blocks if not incomplete or d < min(incomplete)]
     if read:

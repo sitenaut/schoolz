@@ -17,6 +17,8 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
+    select,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -1229,9 +1231,11 @@ class SchoolContentItem(Base):
     # and collapsing that to "all" would throw away the one thing that
     # makes the item worth showing. Set by services/hs_activities_site.py
     # from the source page's own URL (a class-of-2027 sub-page sets [2027]
-    # deterministically, before any model sees the text) or by
-    # services/hs_announcements.py from a bullet's stated audience
-    # ("ALL FRESHMEN", "10th through 12th graders"). See
+    # deterministically, before any model sees the text), by
+    # services/hs_announcements.py and services/content_extractor.py (a
+    # newsletter) from an item's stated audience ("ALL FRESHMEN", "Senior
+    # Portraits"), and, for any source that left it null, at save from a
+    # title naming the class (_grad_years_from_title below). See
     # docs/HS_CLASS_PAGES_DESIGN.md.
     applies_to_grad_years: Mapped[list[int] | None] = mapped_column(JSON, nullable=True)
     # "event" | "deadline" | "initiative" | "reminder" | "policy_change" |
@@ -1268,6 +1272,36 @@ class SchoolContentItem(Base):
     # (not deleted) but excluded from default calendar/summary views.
     is_current: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     superseded_by_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("school_content_items.id"), nullable=True)
+
+
+@event.listens_for(SchoolContentItem, "before_insert")
+@event.listens_for(SchoolContentItem, "before_update")
+def _grad_years_from_title(mapper, connection, target: SchoolContentItem) -> None:
+    """A high-school item whose title names its class ("Class of 2028 Movie
+    Night", "2027 Senior Trip") is that class's, whichever source wrote it:
+    newsletters, school and district calendar feeds and the rest never said,
+    so every class's trips and meetings reached every family as whole-school
+    news. Here, at save, rather than in each source, so a new source can't
+    forget. Fills only a null: a source that set years itself (a class page's
+    URL, an announcement's stated audience) knows better.
+
+    High schools only: a "Class of 2027" at an elementary school is not a
+    high-school class. A district item counts unless it is limited to other
+    school types."""
+    if target.applies_to_grad_years is not None:
+        return
+    # services imports this module, so this one can't be imported at load time.
+    from services.class_years import grad_years_in_title
+
+    years = grad_years_in_title(target.title, target.start_date)
+    if not years:
+        return
+    if target.school_id:
+        if connection.execute(select(School.school_type).where(School.id == target.school_id)).scalar() != "high":
+            return
+    elif target.applies_to_school_types and "high" not in target.applies_to_school_types:
+        return
+    target.applies_to_grad_years = years
 
 
 class ContentTranslation(Base):

@@ -40,6 +40,7 @@ from models import (
 )
 from scheduler.errors import record_parse_issue
 from services import haiku
+from services.class_years import grad_years_in_title, grades_to_grad_years
 from services.links import unwrap_redirect
 from services.public_url import PUBLIC_ONLY
 from services.school_status import is_status_title, same_status_fact
@@ -113,6 +114,15 @@ _EXTRACTION_TOOL = {
                         "supersedes_item_id": {
                             "type": "string",
                             "description": "Set ONLY if this item corrects/updates one of the CURRENT ITEMS given in context (same event, corrected date, typo fix, etc) - the id of that existing item.",
+                        },
+                        "audience_grades": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Only when the text explicitly says the item is for particular high-school grades, "
+                            "each as its own entry: 'Senior Portraits' -> ['seniors']; 'College Night for Juniors' -> ['juniors']; "
+                            "'Junior vs Senior Powder Puff' -> ['juniors','seniors']; 'open to 10th through 12th graders' -> "
+                            "['10th graders','11th graders','12th graders']. Omit it when the item is for the whole school or names "
+                            "no grade - never guess one. 'Senior citizens' are not seniors.",
                         },
                     },
                     "required": ["category", "title"],
@@ -1043,6 +1053,15 @@ async def extract_from_newsletter(
                     skipped_dupes += 1
                     continue
 
+            # Which high-school class it's for: a title that says ("Class of
+            # 2028 Movie Night") beats the model's reading of the audience
+            # ("Senior Portraits"). Elementary and middle newsletters name
+            # grades too, but no graduating class.
+            grad_years = None
+            if school is None or school.school_type == "high":
+                grad_years = grad_years_in_title(item["title"], item_start_date) or grades_to_grad_years(
+                    item.get("audience_grades"), item_start_date
+                )
             new_item = SchoolContentItem(
                 scope=scope,
                 school_id=item_school_id,
@@ -1060,6 +1079,7 @@ async def extract_from_newsletter(
                 person_title=item.get("person_title"),
                 staff_member_id=staff_member_id,
                 source_excerpt=item.get("source_excerpt"),
+                applies_to_grad_years=grad_years,
             )
             db.add(new_item)
             await db.flush()
