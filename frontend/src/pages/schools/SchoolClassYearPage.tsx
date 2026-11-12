@@ -235,8 +235,15 @@ export function SchoolClassYearPage() {
   }
   if (loaded && school && !thisClassYear) {
     // A class this school has no page for used to sit on "Loading…" forever.
+    // noindex: a 200 that says "no page" is a soft 404 to Search Console.
     return (
       <div>
+        <SeoHead
+          title={`Class of ${gradYear} · ${school.short_name || school.name} · schoolz`}
+          description={`No Class of ${gradYear} page for ${school.short_name || school.name}.`}
+          path={`/schools/${school.slug}/class-of-${gradYear}`}
+          noindex
+        />
         <Link to={`/schools/${schoolId}`} className="back-link">
           <IconChevronLeft /> {school.short_name || school.name}
         </Link>
@@ -263,6 +270,11 @@ export function SchoolClassYearPage() {
   // the total regardless of which window it went through.
   const totalCents = payments.filter((p) => p.kind === "official").reduce((sum, p) => (p.amount_cents ? sum + p.amount_cents : sum), 0);
   const paidCents = payments.reduce((sum, p) => (p.ticked && p.amount_cents ? sum + p.amount_cents : sum), 0);
+  // Every high school has four class pages, most with nothing on them yet
+  // ("Nothing dated yet", "No contacts on file yet"): a soft 404 if indexed,
+  // and the sitemap leaves them out for the same reason (seo.py).
+  const nothingOnIt =
+    items.length === 0 && payments.length === 0 && thisClassYear.grade_level_principals.length === 0 && thisClassYear.advisors.length === 0;
 
   return (
     <div>
@@ -270,6 +282,7 @@ export function SchoolClassYearPage() {
         title={`Class of ${gradYear} · ${school.short_name || school.name} · schoolz`}
         description={`Deadlines, dates, and payment info for the Class of ${gradYear} at ${school.short_name || school.name}.`}
         path={`/schools/${school.slug}/class-of-${gradYear}`}
+        noindex={nothingOnIt}
       />
       <Link to={`/schools/${school.slug}`} className="back-link">
         <IconChevronLeft /> {school.short_name || school.name}
