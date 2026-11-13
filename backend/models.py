@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     Numeric,
@@ -1313,7 +1314,11 @@ class ContentTranslation(Base):
     edited (or superseded in place) no longer matches and is retranslated."""
 
     __tablename__ = "content_translations"
-    __table_args__ = (UniqueConstraint("item_id", "lang", name="uq_content_translations_item_lang"),)
+    __table_args__ = (
+        UniqueConstraint("item_id", "lang", name="uq_content_translations_item_lang"),
+        # _reuse_by_hash's lookup; without it every lookup read the whole table.
+        Index("ix_content_translations_lang_source_hash", "lang", "source_hash"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     item_id: Mapped[str] = mapped_column(String(36), ForeignKey("school_content_items.id", ondelete="CASCADE"), nullable=False)
