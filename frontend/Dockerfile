@@ -1,6 +1,6 @@
 # Base images are pinned by version and digest; Dependabot proposes the
 # bumps. Node matches CI (.github/workflows/ci.yml).
-FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS build
+FROM node:22.23.4-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS build
 WORKDIR /app
 
 ARG VITE_AUTH_MODE=local
