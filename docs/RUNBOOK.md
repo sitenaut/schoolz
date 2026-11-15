@@ -184,9 +184,12 @@ event is an OOM kill that abandons the running scan. Find what's running
 in `backend/fly.toml` and the limit in the alerts builder together.
 
 ### schoolz-db-pool-saturated
-Every connection in a process's pool (4 + 2 overflow) has been checked out for
-10 minutes. Further requests queue, then fail `db_pool_timeout`. Look for one
-slow query in traces, or a code path holding a session across a network call.
+Every connection in a process's pool (3 + 1 per API machine, 4 + 2 for the
+scheduler) has been checked out for 10 minutes. Further requests queue, then
+fail `db_pool_timeout`. Look for one slow query in traces, or a code path
+holding a session across a network call. Don't just raise the pool: all
+processes share the session pooler's 15 connections (the sum is in
+`backend/database.py`), and going over turns waits into `EMAXCONNSESSION` 500s.
 
 ### schoolz-llm-truncated
 A model reply hit `max_tokens`. For extraction this has produced zero items from

@@ -37,21 +37,31 @@ class Base(DeclarativeBase):
     pass
 
 
+# Supabase's session pooler allows 15 connections for this database user,
+# every process together - a shared ceiling, not a per-engine allowance - and
+# in session mode a connection idling in our pool still holds its slot. Over
+# the limit, the pooler refuses the connect: EMAXCONNSESSION, a 500.
+#
+# Prod runs up to three processes: the scheduler and two API machines (Fly
+# starts the second one under load). At 4 + 2 each they could ask for 18,
+# and every traffic spike that woke the second API machine turned into a
+# burst of 500s on public pages. The budget, per process (pool + overflow):
+#   API machine  3 + 1 = 4, two of them = 8
+#   scheduler    4 + 2 = 6  (a burst of concurrent scans needs it:
+#                            scheduler/runner.py's JOB_CONCURRENCY)
+# 14 in all, one spare for the nightly backup or a deploy's release step. A
+# third API machine or a bigger scheduler pool means redoing this sum; the
+# pool-saturated alert (scripts/build_grafana_alerts.py:DB_POOL_MAX) repeats
+# these numbers.
+_POOL_DEFAULTS = {"scheduler": (4, 2)}
+_pool_size, _max_overflow = _POOL_DEFAULTS.get(os.getenv("FLY_PROCESS_GROUP", ""), (3, 1))
+
 engine = create_async_engine(
     database_url(),
     pool_pre_ping=True,
     pool_recycle=1800,
-    # SQLAlchemy's own default (pool_size=5, max_overflow=10 -> 15) exactly
-    # matches Supabase's session-pooler pool_size of 15 on the free tier -
-    # which is a per-project ceiling shared across every process that
-    # connects, not a per-engine allowance. One engine hitting its default
-    # alone can starve the *other* process (app vs scheduler) of every
-    # remaining connection. Confirmed in prod: a burst of concurrent scan
-    # jobs threw EMAXCONNSESSION / QueuePool-timeout from the scheduler
-    # while the api process was idle. Kept modest so both processes fit
-    # in the shared budget with room to spare.
-    pool_size=int(os.getenv("DB_POOL_SIZE", "4")),
-    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "2")),
+    pool_size=int(os.getenv("DB_POOL_SIZE", _pool_size)),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", _max_overflow)),
     connect_args={"statement_cache_size": 0} if "asyncpg" in database_url() else {},
 )
 
