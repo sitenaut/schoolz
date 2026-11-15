@@ -67,6 +67,10 @@ GROUPS = {
 # limit series to divide by, so the limits are repeated here.
 MEMORY_LIMIT_MB = {"schoolz-api": 512, "schoolz-scheduler": 1024}
 
+# Database connections per process, pool + overflow (backend/database.py's
+# _POOL_DEFAULTS, where the shared budget of 15 is worked out).
+DB_POOL_MAX = {"schoolz-api": 4, "schoolz-scheduler": 6}
+
 ALEXA_FUNCTION = "ask-schoolhelper-default-default-1791156946239"
 
 
@@ -317,6 +321,10 @@ def rules() -> list:
         "max by (service_name) (process_memory_usage_bytes%s) / %d" % (sel('service_name="%s"' % svc), mb * 1024 * 1024)
         for svc, mb in MEMORY_LIMIT_MB.items()
     )
+    pool_full = " or ".join(
+        "max by (service_name) (db_client_connections_usage%s) / %d" % (sel(POOL_USED, 'service_name="%s"' % svc), n)
+        for svc, n in DB_POOL_MAX.items()
+    )
     return [
         # ---- page: someone is being failed right now -----------------------
         prom(
@@ -401,11 +409,12 @@ def rules() -> list:
         ),
         prom(
             "schoolz-db-pool-saturated", "schoolz: database pool fully checked out",
-            f'max by (service_name) (db_client_connections_usage{sel(POOL_USED)})', 5, range_s=600,
+            pool_full, 0.99, range_s=600,
             tier="ticket", kind="cause", component="database", for_="10m",
-            summary="{{ $labels.service_name }} has held {{ $values.B.Value }} of its 6 database connections for 10 minutes",
-            description="Pool is 4 + 2 overflow per process; at 6 every further request waits and then "
-                        "fails with db_pool_timeout. Usually one slow query or a leaked session.",
+            summary="{{ $labels.service_name }} has had every database connection checked out for 10 minutes",
+            description="Pool + overflow is 4 per API machine and 6 for the scheduler (DB_POOL_MAX); full, "
+                        "every further request waits and then fails with db_pool_timeout. Usually one slow "
+                        "query or a leaked session.",
             dashboard="schoolz-api",
         ),
         prom(

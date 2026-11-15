@@ -150,7 +150,12 @@ def setup_telemetry(service_name: str) -> None:
 def instrument_sqlalchemy_engine(engine) -> None:
     if not telemetry_enabled():
         return
-    SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
+    # skip_dep_check: the instrumentation (0.66b) declares sqlalchemy < 2.1 and,
+    # without it, refuses SQLAlchemy 2.1 with one log line and instruments
+    # nothing - no SQL spans and no db_client_connections_usage, so the
+    # pool-saturated alert could never fire. Drop the flag once a release
+    # declares 2.1.
+    SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine, skip_dep_check=True)
 
 
 def shutdown_telemetry() -> None:

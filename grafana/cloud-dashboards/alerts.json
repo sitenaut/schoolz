@@ -1308,8 +1308,8 @@
             "severity": "warning"
           },
           "annotations": {
-            "summary": "{{ $labels.service_name }} has held {{ $values.B.Value }} of its 6 database connections for 10 minutes",
-            "description": "Pool is 4 + 2 overflow per process; at 6 every further request waits and then fails with db_pool_timeout. Usually one slow query or a leaked session.",
+            "summary": "{{ $labels.service_name }} has had every database connection checked out for 10 minutes",
+            "description": "Pool + overflow is 4 per API machine and 6 for the scheduler (DB_POOL_MAX); full, every further request waits and then fails with db_pool_timeout. Usually one slow query or a leaked session.",
             "runbook_url": "${RUNBOOK_URL}#schoolz-db-pool-saturated",
             "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
           },
@@ -1328,7 +1328,7 @@
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "max by (service_name) (db_client_connections_usage{service_namespace=\"schoolz\", state=\"used\"})",
+                "expr": "max by (service_name) (db_client_connections_usage{service_namespace=\"schoolz\", state=\"used\", service_name=\"schoolz-api\"}) / 4 or max by (service_name) (db_client_connections_usage{service_namespace=\"schoolz\", state=\"used\", service_name=\"schoolz-scheduler\"}) / 6",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -1358,7 +1358,7 @@
                     "evaluator": {
                       "type": "gt",
                       "params": [
-                        5
+                        0.99
                       ]
                     }
                   }
