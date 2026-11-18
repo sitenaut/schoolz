@@ -362,7 +362,12 @@ async def _fetch_edlio_page(url: str) -> str:
 async def _discover_edlio_transportation(main_url: str, info_html: str) -> dict:
     """`transportation_url` is any page of the department; the Staff and
     Guidelines pages are found from its left-hand menu by link text."""
-    menu = {a.get_text(" ", strip=True).lower(): urljoin(main_url, a["href"]) for a in BeautifulSoup(info_html, "lxml").find_all("a", href=True)}
+    # Only real pages: Jersey City's nav carries a "Staff" dropdown toggle (href="javascript:;"), which httpx can't fetch.
+    menu = {
+        a.get_text(" ", strip=True).lower(): link
+        for a in BeautifulSoup(info_html, "lxml").find_all("a", href=True)
+        if (link := urljoin(main_url, a["href"].strip())).startswith(("http://", "https://"))
+    }
     staff_url, guidelines_url = menu.get("staff"), menu.get("guidelines")
     staff_html = await _fetch_edlio_page(staff_url) if staff_url else ""
     guidelines_html = await _fetch_edlio_page(guidelines_url) if guidelines_url else ""
