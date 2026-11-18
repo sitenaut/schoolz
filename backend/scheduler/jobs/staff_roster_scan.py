@@ -40,6 +40,7 @@ async def _known_contacts(db: AsyncSession, school: School) -> tuple[str, list[d
 
 
 _TYPE_DEPARTMENTS = {"elementary": "ES", "middle": "MS", "high": "HS"}
+_TYPE_WORD_RE = re.compile(r"\s+(?:ELEMENTARY|MIDDLE|HIGH|INTERMEDIATE|PRIMARY)$")
 
 
 def apptegy_school_departments(school: School, same_type_siblings: int) -> set[str]:
@@ -55,8 +56,30 @@ def apptegy_school_departments(school: School, same_type_siblings: int) -> set[s
     # Township of Franklin's chips are the building's full name ("Mary F. Janvier School").
     if school.name:
         codes.add(school.name.upper())
-        codes.add(re.sub(r"\s+SCHOOL$", "", school.name.upper()))
+        bare = re.sub(r"\s+SCHOOL$", "", school.name.upper())
+        codes.add(bare)
+        # Kearny's drop the type word too ("Garfield", "Lincoln", "Kearny High").
+        codes.add(_TYPE_WORD_RE.sub("", bare))
+    if school.short_name:
+        codes.add(school.short_name.upper())
     return codes
+
+
+async def _narrow_to_building(db: AsyncSession, school: School, roster: list[dict], checked: str) -> tuple[list[dict], str]:
+    """Kearny's school orgs each return the whole district (582 people), with
+    the building as the department chip; the site narrows it with a filter the
+    API doesn't apply by default. Unnarrowed, every school stored every
+    principal. Only a roster whose chips name two or more of the district's
+    buildings is narrowed, so a school's own directory with subject
+    departments ("Math", "Guidance") is kept whole."""
+    schools = (await db.execute(select(School).where(School.district_id == school.district_id))).scalars().all() if school.district_id else [school]
+    chips = {(p["department"] or "").upper() for p in roster}
+    buildings = [s for s in schools if apptegy_school_departments(s, same_type_siblings=1) & chips]
+    if len(buildings) < 2:
+        return roster, checked
+    siblings = sum(1 for s in schools if s.id != school.id and s.school_type == school.school_type)
+    codes = apptegy_school_departments(school, siblings)
+    return [p for p in roster if (p["department"] or "").upper() in codes], f"{checked} narrowed to {', '.join(sorted(codes))}"
 
 
 async def _apptegy_district_roster(db: AsyncSession, school: School, checked: str) -> tuple[list[dict], str]:
@@ -104,7 +127,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # possible: apptegy.py has no website scraper of its own).
         roster = await fetch_apptegy_staff(school.apptegy_org_id)
         checked = f"Apptegy org {school.apptegy_org_id}"
-        if not roster:
+        if roster:
+            roster, checked = await _narrow_to_building(db, school, roster, checked)
+        else:
             roster, checked = await _apptegy_district_roster(db, school, checked)
     elif school.staff_directory_url:
         # A directory the school publishes as a document (PDF table, Google Slides) - there is no page to parse.
