@@ -222,7 +222,8 @@
         ]
       },
       "sacc": null,
-      "apptegy_org_id": "12158"
+      "apptegy_org_id": "12158",
+      "fdmealplanner_location": "9/37/149"
     },
     {
       "slug": "kearny-lincoln-middle",
@@ -290,7 +291,8 @@
         ]
       },
       "sacc": null,
-      "apptegy_org_id": "12156"
+      "apptegy_org_id": "12156",
+      "fdmealplanner_location": "9/37/150"
     },
     {
       "slug": "kearny-franklin-elementary",
@@ -325,7 +327,8 @@
         "closures_notes": "Right At School runs before and after care on site; register on rightatschool.com (Kearny, Franklin Elementary).",
         "handbook_url": "https://www.kearnyschools.com/page/right-at-school"
       },
-      "apptegy_org_id": "12149"
+      "apptegy_org_id": "12149",
+      "fdmealplanner_location": "9/37/153"
     },
     {
       "slug": "kearny-garfield-elementary",
@@ -360,7 +363,8 @@
         "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email garfield@rightatschool.com.",
         "handbook_url": "https://www.rightatschool.com/school-2/?school=garfield-elementary-nj&district=nj-kearny&tab=2024-25-before-after-school"
       },
-      "apptegy_org_id": "12151"
+      "apptegy_org_id": "12151",
+      "fdmealplanner_location": "9/37/151"
     },
     {
       "slug": "kearny-roosevelt-elementary",
@@ -395,7 +399,8 @@
         "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email roosevelt@rightatschool.com.",
         "handbook_url": "https://www.rightatschool.com/school-2/?school=roosevelt-school&district=nj-kearny&tab=2024-25-before-after-school"
       },
-      "apptegy_org_id": "12152"
+      "apptegy_org_id": "12152",
+      "fdmealplanner_location": "9/37/154"
     },
     {
       "slug": "kearny-schuyler-elementary",
@@ -430,7 +435,8 @@
         "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email schuyler@rightatschool.com.",
         "handbook_url": "https://www.rightatschool.com/school-2/?school=schuyler-school&district=nj-kearny&tab=2024-25-before-after-school"
       },
-      "apptegy_org_id": "12153"
+      "apptegy_org_id": "12153",
+      "fdmealplanner_location": "9/37/152"
     },
     {
       "slug": "kearny-washington-elementary",
@@ -465,7 +471,8 @@
         "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email washington@rightatschool.com.",
         "handbook_url": "https://www.rightatschool.com/school-2/?school=washington-school&district=nj-kearny&tab=2024-25-before-after-school"
       },
-      "apptegy_org_id": "12155"
+      "apptegy_org_id": "12155",
+      "fdmealplanner_location": "9/37/155"
     }
   ],
   "smore_newsletters": []

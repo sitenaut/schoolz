@@ -159,7 +159,8 @@
           }
         ]
       },
-      "sacc": null
+      "sacc": null,
+      "fdmealplanner_location": "9/9/110"
     },
     {
       "slug": "harrison-washington-middle",
@@ -183,7 +184,8 @@
       "athletics_url": null,
       "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_87052/Image/new%20logo/wms-logo-new.png",
       "bell_periods": null,
-      "sacc": null
+      "sacc": null,
+      "fdmealplanner_location": "9/9/111"
     },
     {
       "slug": "harrison-hamilton-intermediate",
@@ -207,7 +209,8 @@
       "athletics_url": null,
       "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_84170/Image/HIS_Logo-EDITED.png",
       "bell_periods": null,
-      "sacc": null
+      "sacc": null,
+      "fdmealplanner_location": "9/9/112"
     },
     {
       "slug": "harrison-kennedy-elementary",
@@ -241,7 +244,8 @@
         "closures_notes": "Run by Harrison Public Schools itself, not a vendor. No care when school is closed; hours may change on early dismissal days. Monthly fee per child: $50 before care, $150 after care, $200 both.",
         "site_phone": "(973) 833-8500",
         "handbook_url": "https://kes.harrisonschools.org/parents/before___aftercare_info"
-      }
+      },
+      "fdmealplanner_location": "9/9/114"
     },
     {
       "slug": "harrison-lincoln-elementary",
@@ -275,7 +279,8 @@
         "closures_notes": "Run by Harrison Public Schools itself, not a vendor. No care when school is closed; hours may change on early dismissal days. Monthly fee per child: $50 before care, $150 after care, $200 both.",
         "site_phone": "(973) 483-6400",
         "handbook_url": "https://les.harrisonschools.org/special_programs/before___after_care"
-      }
+      },
+      "fdmealplanner_location": "9/9/113"
     }
   ],
   "smore_newsletters": []

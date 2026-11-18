@@ -84,7 +84,8 @@
       "athletics_url": null,
       "logo_url": null,
       "bell_periods": null,
-      "sacc": null
+      "sacc": null,
+      "fdmealplanner_location": "9/69/361"
     },
     {
       "slug": "weehawken-theodore-roosevelt",
@@ -118,7 +119,8 @@
         "pickup_change_procedure": null,
         "closures_notes": "Apollo After School Extended Day Program; registration on apollo-roosevelt.jumbula.com.",
         "handbook_url": "https://www.weehawkenschools.net/apps/pages/index.jsp?uREC_ID=367515&type=d&pREC_ID=2356306"
-      }
+      },
+      "fdmealplanner_location": "9/69/360"
     },
     {
       "slug": "weehawken-high",
@@ -284,7 +286,8 @@
           }
         ]
       },
-      "sacc": null
+      "sacc": null,
+      "fdmealplanner_location": "9/69/359"
     }
   ],
   "smore_newsletters": []
