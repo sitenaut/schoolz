@@ -256,3 +256,36 @@ async def test_json_upcoming_only_drops_a_revize_towns_history(monkeypatch):
     assert [e.title for e in await source.fetch()] == ["Pumpkin Fest"]
     source.upcoming_only = False
     assert len(await source.fetch()) == 2
+
+
+@pytest.mark.anyio
+async def test_json_date_range_and_field_exclusion_for_a_fullcalendar_town(monkeypatch):
+    """Alpha Dog town sites (North Bergen, Bayonne...) answer an empty list
+    without start/end, and mark meetings only by className: their titles are
+    a bare "Planning Board" or "Council", which no title filter catches."""
+    from local_events.sources import json_api
+
+    seen: list[httpx.URL] = []
+    rows = [
+        {"id": 7, "title": "Spring Pet Festival", "allDay": True, "start": "2027-04-18T00:00:00", "end": "2027-04-18T00:00:00", "url": None, "className": "Event"},
+        {"id": 8, "title": "Planning Board", "allDay": False, "start": "2027-04-19T18:30:00", "end": "2027-04-19T20:00:00", "url": None, "className": "Meeting"},
+    ]
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url)
+        return httpx.Response(200, json=rows)
+
+    monkeypatch.setattr(json_api.httpx, "AsyncClient", partial(httpx.AsyncClient, transport=httpx.MockTransport(answer)))
+    source = json_api.JsonApiSource(
+        "north_bergen_township",
+        "https://www.northbergen.org/api/data/GetCalendarData",
+        data_path="",
+        date_range_params=["start", "end"],
+        window_days=120,
+        exclude_field_values={"className": ["Meeting"]},
+    )
+    assert source.request_url(date(2027, 4, 1)) == "https://www.northbergen.org/api/data/GetCalendarData?start=2027-04-01&end=2027-07-30"
+    events = await source.fetch()
+    assert [e.title for e in events] == ["Spring Pet Festival"]
+    assert events[0].all_day and events[0].url is None
+    assert seen[0].params["start"] == date.today().isoformat()

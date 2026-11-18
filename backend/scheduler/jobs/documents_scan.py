@@ -59,11 +59,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     if school.district_id:
         district_name = (await db.execute(select(District.name).where(District.id == school.district_id))).scalar_one_or_none()
         siblings = (await db.execute(select(School).where(School.district_id == school.district_id, School.id != school.id))).scalars().all()
-    found, bells_narrowed = keep_own_school_bell_schedules(
-        found,
-        school_name_tokens(school.name, school.short_name, district_name),
-        [school_name_tokens(s.name, s.short_name, district_name) for s in siblings],
-    )
+    own_tokens = school_name_tokens(school.name, school.short_name, district_name)
+    sibling_tokens = [school_name_tokens(s.name, s.short_name, district_name) for s in siblings]
+    found, bells_narrowed = keep_own_school_bell_schedules(found, own_tokens, sibling_tokens)
+    found, handbooks_narrowed = keep_own_school_bell_schedules(found, own_tokens, sibling_tokens, doc_type="handbook")
 
     if not found:
         if site_error is not None:
@@ -117,9 +116,10 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     # Year preference is per doc_type - a 2026-27 bell schedule shouldn't
     # retire a 2025-26 handbook that hasn't been republished yet. A narrowing
-    # that left none (every listed bell schedule was a sibling's) still
-    # retires the ones stored before.
-    for doc_type in doc_types | ({"bell_schedule"} if bells_narrowed else set()):
+    # that left none (every listed bell schedule or handbook was a sibling's)
+    # still retires the ones stored before.
+    narrowed = ({"bell_schedule"} if bells_narrowed else set()) | ({"handbook"} if handbooks_narrowed else set())
+    for doc_type in doc_types | narrowed:
         docs = (
             await db.execute(select(SchoolDocument).where(SchoolDocument.school_id == school_id, SchoolDocument.doc_type == doc_type))
         ).scalars().all()
@@ -128,7 +128,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # and neither is one an admin dismissed.
         dead = {d.id for d in docs if d.dismissed_at or urlparse(d.url).hostname == "accounts.google.com"}
         found_urls = {e["url"] for e in found if e["doc_type"] == doc_type}
-        if doc_type == "letter_day_schedule" or (doc_type == "bell_schedule" and bells_narrowed):
+        if doc_type == "letter_day_schedule" or doc_type in narrowed:
             # A replaced rotation sheet gets a new URL; only what this run found is live.
             live = {d.id for d in docs if d.id not in dead and d.url in found_urls}
         else:

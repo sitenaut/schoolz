@@ -27,6 +27,9 @@ TODAY = date(2026, 10, 29)
         # Harrison Township: the year first, nothing else.
         ("https://x/2026October.pdf", "lunch", "October 2026", None),
         ("https://x/MS-HS_Lunch_Menu_Dec_2026.pdf", "lunch", "December 2026", ("middle", "high")),
+        # Bayonne: a building code ("BHS") for the high school.
+        ("https://x/NOVEMBER_BHS_Lunch_2026.pdf", "lunch", "November 2026", ("high",)),
+        ("https://x/NOVEMBER2026elem_LunchwithVegan-ELEMENTARY.pdf", "lunch", "November 2026", ("elementary",)),
     ],
 )
 def test_classify_reads_a_menu_name_wherever_its_parts_sit(url, meal, label, bands):

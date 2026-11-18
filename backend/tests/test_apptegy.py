@@ -146,6 +146,26 @@ async def test_discover_school_info_contact_us_template(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_discover_school_info_contact_info_item_template(monkeypatch):
+    """Secaucus's template: icon rows, the whole address in one span with a
+    comma before the ZIP. The other two templates' containers are absent, so
+    the first version of this parser stored no address for all four schools."""
+    html = """<footer><img class="footer-logo" src="/logo.png"><ul>
+      <li><div class="contact-info-item-wrapper"><svg></svg><span>685 Fifth Street, Secaucus, NJ, 07094</span></div></li>
+      <li><div class="contact-info-item-wrapper"><svg></svg><a class="tel-link" href="tel:(201) 974-2010">(201) 974-2010</a></div></li>
+    </ul></footer>"""
+
+    async def fake_fetch_html(url, wait_for_selector=None, timeout_ms=15000):
+        return {"html": html}
+
+    monkeypatch.setattr(apptegy.scraper_client, "fetch_html", fake_fetch_html)
+
+    info = await apptegy.discover_school_info("https://www.sboe.org/o/clarendon")
+    assert info["address"] == "685 Fifth Street, Secaucus, NJ 07094"
+    assert info["main_phone"] == "(201) 974-2010"
+
+
+@pytest.mark.anyio
 async def test_discover_school_info_returns_nulls_when_footer_never_loads(monkeypatch):
     async def fake_fetch_html(url, wait_for_selector=None, timeout_ms=15000):
         raise TimeoutError("no footer on this page")

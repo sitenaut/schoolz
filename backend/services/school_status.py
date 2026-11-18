@@ -16,7 +16,7 @@ CLOSED_RE = re.compile(r"\b(schools?|district)\s+closed\b|\bno school\b|\bclosed
 # regular one ("2:30pm Dismissal") or a preschool-only one. "1/2 Day -
 # District" is Paulsboro's half day. Mirrored in
 # school_today._EARLY_RE and districtItems.ts HALF_DAY_RE.
-EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\babbreviated\s+(?:days?|sessions?|schedules?)\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 DELAY_RE = re.compile(r"\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b", re.I)
 # Staff days and conference days: status facts, but not closures of the day
 # (school_today's classify_day doesn't count them).
@@ -40,8 +40,8 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 # A school word earlier in the same clause makes it the school after all:
 # "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
 # Not Palmyra's summer "District Offices Closed" or Pitman's "School Offices Closed". Glassboro's in-service
-# days are "Teacher Inservice - Students Off".
-_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b", re.I)
+# days are "Teacher Inservice - Students Off", Kearny's staff days "Staff Only - PD".
+_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b|\bstaff\s+only\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # A title that is only the break's name ("Winter Recess", "Spring Break",
 # "NJEA Convention",

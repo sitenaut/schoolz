@@ -79,3 +79,16 @@ async def test_fetch_splits_a_window_across_months_and_keeps_only_window_days():
     assert seen == [("09", "2026/09/28", "2026/09/30", "1472", "2"), ("10", "2026/10/01", "2026/10/16", "1472", "2")]
     assert sorted(out) == [date(2026, 9, 29), date(2026, 10, 1)]  # 9/1 is outside the window
     assert out[date(2026, 10, 1)][0] == "Soft Tacos"
+
+
+def test_entrees_from_the_list_when_the_xml_is_empty():
+    # Harrison/Kearny (tenant 9): xmlMenuRecipes is empty, allMenuRecipes carries each item's category.
+    items = [
+        {"componentName": "Chicken Nuggets", "englishAlternateName": "Chicken Nuggets", "category": "Entree"},
+        {"componentName": "Dinner Roll - 2oz", "category": "Side"},
+        {"componentName": "Mac &amp; Cheese", "category": "Entree"},
+        {"componentName": "Chicken Nuggets", "category": "Entree"},
+        {"componentName": "Skim Milk", "category": "Beverage"},
+    ]
+    assert fd.entrees_from_list(items) == ["Chicken Nuggets", "Mac & Cheese"]
+    assert fd.entrees_from_list(None) == []

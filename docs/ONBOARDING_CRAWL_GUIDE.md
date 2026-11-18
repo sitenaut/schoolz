@@ -635,6 +635,11 @@ town as added or skipped.
      only the events one.
    - **EvoGov** (`/meetings/icalendar`) → `ical_sources` with
      `/meetings/icalendar/calendar/<id>/` and `upcoming_only: true`.
+   - **Alpha Dog** ("The Official Website of <Town>, NJ - Home", AngularJS,
+     `alphadogsolutions.com` in the footer) → `json_sources` on
+     `/api/data/GetCalendarData` with `date_range_params`, `data_path: ""`,
+     `upcoming_only` and `exclude_field_values: {"className": ["Meeting"]}`;
+     copy `bayonne_city` in `hudson_local_events.json`.
    - **Apptegy / Thrillshare** (`thrillshare.com/api/v4/o/<org>/cms/events`
      in the page) → `thrillshare_sources` with that org id. It's not the
      school district's org.

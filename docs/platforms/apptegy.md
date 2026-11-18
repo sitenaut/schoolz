@@ -77,3 +77,12 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - A calendar PDF short link can resolve to a file named for the prior year whose content is the current year.
 
 - **Mercer County (East Windsor, Hopewell Valley, West Windsor-Plainsboro)** — A school org's copy of district events can sit in a "District Events" section, so `skip_sections` on school feeds removes them cleanly; a district org that is a union names buildings in its sections (`HW Events`, `HS Events`) or title prefixes. A school's footer can hold a mailbox in an address span, now dropped. School home pages have a "School Hours" block, the quickest bell source. An "Athletics" org (`/o/athletics`) can hold the only Arbiter link. A Smore issue inside a `ts-embed` iframe stored in page JSON isn't seen by the archive resolver. Virtual Backpack folders (`/documents/newsroom/virtual-backpack/<school>/<id>`) list PDFs with dated names; `backpack_parser` reads only Finalsite links.
+
+## Hudson County (Kearny, Secaucus)
+
+- When the district's own domain answers plain HTTP with a "Client Challenge", `<tenant>.sites.thrillshare.com/o/<alias>` serves the same pages to plain curl (`kearnysdnj`, `secaucuspublicschooldistrictnj`; the tenant is in the page source), and the `cms/events`, `cms/pages` and `cms/directories` APIs answer too.
+- A third footer template (Secaucus): one `.contact-info-item-wrapper` row per item, the whole address on one line ("685 Fifth Street, Secaucus, NJ, 07094"). `discover_school_info` reads it.
+- Kearny's school orgs each return the whole district directory (~580 people), the building only in the `department` chip ("Garfield", "Lincoln", "Kearny High"); the site narrows with `?filter_ids=<id>`, which the API honors (one id; a comma list returns nothing). The roster scan now narrows a school org's roster whose chips name two or more of the district's buildings.
+- Secaucus's district org is a union of per-school sections ("Huber Events", "SHS Events") copying each school org's feed under new ids; its own "Events" section also carries one school's unprefixed items. `skip_sections` plus a `school_title_prefixes` entry.
+- A calendar page can link the year PDF only as an `aptg.co` short link; `find_pdf_link` doesn't follow it, so the short link itself is the `calendar_pdf_url` (re-check each year).
+- Kearny's district feed calls a no-student PD day "Staff Only - PD", now read as closed.

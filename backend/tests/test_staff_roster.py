@@ -1,4 +1,6 @@
-from services.staff_roster import _parse_ednet_page, _parse_edlio_page, _parse_eschoolview_page, _parse_page
+import pytest
+
+from services.staff_roster import _parse_edlio_page, _parse_ednet_page, _parse_eschoolview_page, _parse_page
 
 _CARD_WITH_TITLE = """
 <div class="fsConstituentItem" data-constituent-id="4990">
@@ -146,3 +148,25 @@ def test_sibling_school_titles_are_dropped_from_a_shared_roster():
     # A title naming both schools is shared staff and stays.
     both = [p("f", "Nurse, Neeta and Nokomis")]
     assert drop_sibling_school_staff(both, ["Neeta"], [["Nokomis"]]) == (both, [])
+
+
+@pytest.mark.anyio
+async def test_eschoolview_lookup_skips_a_javascript_dropdown_toggle(monkeypatch):
+    """West New York PS 3's nav has a "Staff Directory" dropdown toggle
+    (href="javascript:;") before the real link; fetching it raised."""
+    import httpx
+
+    from services import staff_roster
+
+    requested = []
+
+    def answer(request):
+        requested.append(str(request.url))
+        if request.url.path == "/":
+            return httpx.Response(200, text='<a href="javascript:;">Staff Directory</a><a href="/apps/staff/">Staff Directory</a>')
+        return httpx.Response(200, text=_ESCHOOLVIEW_PAGE)
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(staff_roster.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(answer), **kw))
+    assert await staff_roster._fetch_eschoolview_roster("https://ps-3.example.net/")
+    assert requested == ["https://ps-3.example.net/", "https://ps-3.example.net/apps/staff/"]

@@ -183,8 +183,13 @@ async def _fetch_eschoolview_roster(base: str) -> list[dict]:
         async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
             home = await client.get(base)
             home.raise_for_status()
+            # A dropdown's own "Staff Directory" toggle is href="javascript:;" (West New York PS 3), which httpx can't fetch.
             link = next(
-                (a for a in BeautifulSoup(home.text, "lxml").find_all("a", href=True) if re.search(r"staff\s+directory", a.get_text(" ", strip=True), re.I)),
+                (
+                    a
+                    for a in BeautifulSoup(home.text, "lxml").find_all("a", href=True)
+                    if re.search(r"staff\s+directory", a.get_text(" ", strip=True), re.I) and not a["href"].strip().lower().startswith(("javascript:", "#", "mailto:"))
+                ),
                 None,
             )
             if not link:

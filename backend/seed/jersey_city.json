@@ -1,0 +1,3223 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Jersey City (Hudson County)",
+  "districts": [
+    {
+      "name": "Jersey City Public Schools",
+      "state": "NJ",
+      "website_url": "https://www.jcboe.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Jersey City Public Schools District Calendar",
+          "url": "https://www.jcboe.org/apps/events/ical/?id=0"
+        },
+        {
+          "name": "PS 3 Calendar",
+          "url": "https://ps3.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-3-conwell",
+          "skip_title_prefixes": [
+            "Happy Birthday",
+            "National ",
+            "International Dot Day",
+            "World smile day",
+            "Native American Heritage Month",
+            "Hispanic Heritage Month",
+            "Positive Thinking Day",
+            "Patriot Day",
+            "Wear red",
+            "Montly Tiger Champion Luncheon",
+            "Caucus Meeting",
+            "Board of Education Meeting",
+            "Labor Day",
+            "Yom Kippur",
+            "Columbus Day",
+            "Election Day",
+            "NJEA Convention",
+            "Veterans Day",
+            "Half Day for Staff",
+            "Thanksgiving Recess",
+            "Winter Recess",
+            "MLK",
+            "Presidents' Day",
+            "Eid-al-Fitr",
+            "Good Friday",
+            "Spring Recess",
+            "Memorial Day",
+            "Juneteenth",
+            "Classes Resume",
+            "First Day of School",
+            "Elementary School VIRTUAL Open House",
+            "Elementary, Middle & High School Midterm"
+          ]
+        },
+        {
+          "name": "PS 6 Calendar",
+          "url": "https://ps6.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-6-wakeman",
+          "skip_title_prefixes": [
+            "Yom Kippur",
+            "Elementary Schools Open House",
+            "Hispanic Heritage Month",
+            "Patriot Day",
+            "Caucus Meeting",
+            "Labor Day",
+            "Columbus",
+            "Election Day",
+            "NJEA",
+            "Veterans",
+            "Thanksgiving",
+            "Winter Recess",
+            "12:45",
+            "Half Day",
+            "School Closed",
+            "Schools Closed",
+            "No School"
+          ]
+        },
+        {
+          "name": "PS 8 Calendar",
+          "url": "https://ps8.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-8-trefurt",
+          "skip_title_prefixes": [
+            "Caucus Meeting",
+            "School Closed",
+            "Schools Closed",
+            "No School",
+            "12:45",
+            "Half Day"
+          ]
+        },
+        {
+          "name": "PS 26 Calendar",
+          "url": "https://ps26.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-26-noonan",
+          "skip_title_prefixes": [
+            "Labor Day",
+            "Yom Kippur",
+            "Rosh Hashanah",
+            "Columbus",
+            "Indigenous",
+            "Election Day",
+            "Veterans",
+            "NJEA",
+            "Thanksgiving",
+            "Winter Recess",
+            "New Year",
+            "Dr. Martin",
+            "Presidents",
+            "Eid",
+            "Good Friday",
+            "Spring Recess",
+            "Memorial Day",
+            "Juneteenth",
+            "Patriot Day",
+            "Half Day",
+            "Half-Day",
+            "School Re-open",
+            "Schools Re-open",
+            "End of Marking Period",
+            "Marking Period",
+            "JCBOE",
+            "Elementary School Midterm",
+            "Elementary Schools Final",
+            "Last Day of School",
+            "First Day of School",
+            "Elementary School Open House",
+            "Elementary Report Card Night",
+            "Elementary School Report Card",
+            "Caucus Meeting",
+            "School Closed",
+            "Schools Closed",
+            "No School",
+            "12:45"
+          ]
+        },
+        {
+          "name": "PS 30 Calendar",
+          "url": "https://ps30.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-30-sullivan",
+          "skip_title_prefixes": [
+            "Schools Closed",
+            "School Closed",
+            "Election Day",
+            "Veterans",
+            "NJEA",
+            "Thanksgiving",
+            "12:45 Dismissal",
+            "First Day for Students",
+            "Caucus Meeting"
+          ]
+        },
+        {
+          "name": "PS 33 Calendar",
+          "url": "https://ps33.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-33-rafalides",
+          "skip_title_prefixes": [
+            "12:45",
+            "No School",
+            "School Closed",
+            "Schools Closed",
+            "Columbus Day",
+            "Election Day",
+            "NJEA Convention",
+            "Veteran",
+            "Thanksgiving",
+            "Christmas",
+            "New Years",
+            "Winter Recess",
+            "Dr Martin Luther King",
+            "Presidents Day",
+            "Eid",
+            "Spring Break",
+            "Memorial Day",
+            "Juneteenth",
+            "Caucus Meeting"
+          ]
+        },
+        {
+          "name": "PS 17 Calendar",
+          "url": "https://ps17.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-17-brensinger",
+          "skip_title_prefixes": [
+            "School Re-Opens",
+            "Patriot Day",
+            "School Closed",
+            "No School",
+            "Election Day",
+            "NJEA",
+            "Veterans' Day",
+            "Happy Thanksgiving",
+            "Merry Christmas",
+            "Christmas Eve",
+            "12:45",
+            "Caucus Meeting",
+            "Schools Closed",
+            "Half Day"
+          ]
+        },
+        {
+          "name": "PS 24 Calendar",
+          "url": "https://ps24.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-24-watters",
+          "skip_title_prefixes": [
+            "First Day of School",
+            "Yom Kippur",
+            "Indigenous People",
+            "Thanksgiving",
+            "Black Friday",
+            "MLK",
+            "Presidents Day",
+            "Good Friday",
+            "EID",
+            "Spring Break",
+            "Memorial Day",
+            "Juneteenth",
+            "School Resumes",
+            "Half Day",
+            "1/2 Day",
+            "LAST DAY OF SCHOOL",
+            "Board Meeting",
+            "Hispanic Heritage Month Begins",
+            "National Custodian",
+            "Caucus Meeting",
+            "School Closed",
+            "Schools Closed",
+            "No School",
+            "12:45",
+            "Election Day",
+            "NJEA",
+            "Veterans",
+            "Columbus",
+            "Winter Recess"
+          ]
+        },
+        {
+          "name": "PS 34 Calendar",
+          "url": "https://ps34.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-34-obama",
+          "skip_title_prefixes": [
+            "Italian Heritage - Word of the Day",
+            "Labor Day",
+            "Yom Kippur",
+            "Rosh Hashanah",
+            "Columbus",
+            "Indigenous",
+            "Election Day",
+            "NJEA",
+            "Veterans Day",
+            "Thanksgiving Day",
+            "Thanksgiving Recess",
+            "Thanksgiving Break",
+            "Winter Recess",
+            "Winter Break",
+            "New Year",
+            "Classes Resume",
+            "School Resumes",
+            "Schools Reopen",
+            "Dr. Martin",
+            "Dr. M.L.K",
+            "Martin Luther King",
+            "MLK",
+            "Presidents",
+            "Eid",
+            "Good Friday",
+            "Spring Break",
+            "Spring Recess",
+            "Memorial Day",
+            "Juneteenth",
+            "Independence Day",
+            "Half Day",
+            "Half-Day",
+            "1/2 Day",
+            "12:45",
+            "Early Dismissal",
+            "First Day of School",
+            "Last Day of School",
+            "National PSAT",
+            "Week of Respect",
+            "End of Marking Period",
+            "Elementary School Open House",
+            "Elementary Schools Open House",
+            "Elementary School Report Card",
+            "Elementary Schools Report Card",
+            "Elementary, Middle",
+            "Elementary and Middle Schools Finals",
+            "Caucus Meeting",
+            "Board Meeting",
+            "Regular Meeting"
+          ]
+        },
+        {
+          "name": "PS 37 Calendar",
+          "url": "https://ps37.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ps-37-cordero",
+          "skip_title_prefixes": [
+            "Labor Day",
+            "Yom Kippur",
+            "Rosh Hashanah",
+            "Columbus",
+            "Indigenous",
+            "Election Day",
+            "NJEA",
+            "Veterans Day",
+            "Thanksgiving Day",
+            "Thanksgiving Recess",
+            "Thanksgiving Break",
+            "Winter Recess",
+            "Winter Break",
+            "New Year",
+            "Classes Resume",
+            "School Resumes",
+            "Schools Reopen",
+            "Dr. Martin",
+            "Dr. M.L.K",
+            "Martin Luther King",
+            "MLK",
+            "Presidents",
+            "Eid",
+            "Good Friday",
+            "Spring Break",
+            "Spring Recess",
+            "Memorial Day",
+            "Juneteenth",
+            "Independence Day",
+            "Half Day",
+            "Half-Day",
+            "1/2 Day",
+            "12:45",
+            "Early Dismissal",
+            "First Day of School",
+            "Last Day of School",
+            "National PSAT",
+            "Week of Respect",
+            "End of Marking Period",
+            "Elementary School Open House",
+            "Elementary Schools Open House",
+            "Elementary School Report Card",
+            "Elementary Schools Report Card",
+            "Elementary, Middle",
+            "Elementary and Middle Schools Finals",
+            "Caucus Meeting",
+            "Board Meeting",
+            "Regular Meeting"
+          ]
+        },
+        {
+          "name": "Ferris High Calendar",
+          "url": "https://jfhs.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ferris-high",
+          "skip_title_prefixes": [
+            "Labor Day",
+            "Yom Kippur",
+            "Columbus Day",
+            "Election Day",
+            "NJEA Convention",
+            "Veterans Day",
+            "Thanksgiving",
+            "Winter Recess",
+            "Winter Break",
+            "Christmas",
+            "New Year",
+            "Happy New Year",
+            "Dr. Martin Luther King",
+            "Presidents Day",
+            "Eid",
+            "Memorial Day",
+            "Juneteenth",
+            "4hr session",
+            "4 hr session",
+            "4 hour session",
+            "Half Day Session",
+            "12:45 Dismissal",
+            "Students Report",
+            "Teachers Report",
+            "Teachers Collaborative",
+            "High Schools Open House",
+            "Week of Respect",
+            "Caucus Meeting",
+            "Board Meeting",
+            "Board of Education",
+            "School Board Election",
+            "Diwali",
+            "Hispanic Heritage Month",
+            "Happy ",
+            "Department Coordinator Meeting",
+            "School Leadership Meeting",
+            "Faculty Meeting",
+            "Staff Wellness",
+            "Bark Lounge Staff",
+            "Dunkin Refresher",
+            "SLC Meeting"
+          ]
+        },
+        {
+          "name": "MS 40 Calendar",
+          "url": "https://ps40.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-ms-40-nolan",
+          "skip_title_prefixes": [
+            "No School",
+            "Veterans Day",
+            "Thanksgiving",
+            "Half Day",
+            "Open House (in person)",
+            "Week of Respect",
+            "School Custodian",
+            "Caucus Meeting",
+            "School Closed",
+            "Schools Closed",
+            "NJEA"
+          ]
+        },
+        {
+          "name": "Academy I Calendar",
+          "url": "https://a1ms.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-academy-i-middle",
+          "skip_title_prefixes": [
+            "Week of Respect",
+            "Daylight Saving",
+            "Election Day",
+            "NJEA",
+            "Veterans Day",
+            "Half Day",
+            "Thanksgiving",
+            "Caucus Meeting",
+            "No School",
+            "School Closed",
+            "Schools Closed",
+            "12:45"
+          ]
+        },
+        {
+          "name": "Infinity Institute Calendar",
+          "url": "https://ii.jcboe.org/apps/events/ical/?id=0",
+          "school_slug": "jersey-city-infinity-institute",
+          "skip_title_prefixes": [
+            "PSAT",
+            "Half Day",
+            "12:45",
+            "Christmas",
+            "Caucus Meeting",
+            "Regular Meeting",
+            "Board Meeting",
+            "Infinity Staff",
+            "District Science Fair",
+            "District Geography Bee",
+            "Election Day",
+            "Thanksgiving",
+            "Winter Recess",
+            "New Year",
+            "Dr. M.L.K",
+            "Martin Luther King",
+            "MLK",
+            "NJEA",
+            "Veterans Day",
+            "Columbus",
+            "Yom Kippur",
+            "Labor Day",
+            "Presidents",
+            "Eid",
+            "Good Friday",
+            "Spring Break",
+            "Spring Recess",
+            "Classes Resume",
+            "Memorial Day",
+            "Juneteenth",
+            "Independence Day",
+            "First Day of School",
+            "Students Report"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537406&type=d&pREC_ID=1667853",
+      "towns": [
+        "Jersey City"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "jersey-city-regional-day-school",
+      "name": "Gerard J. Dynes Regional Day School",
+      "short_name": "Regional Day School",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "alternative",
+      "address": "425 Johnston Avenue, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6165",
+      "website_url": "https://rds.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6165",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-ps-3-conwell",
+      "name": "Frank R. Conwell School",
+      "short_name": "PS 3",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "111 Bright Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 915-6100",
+      "website_url": "https://ps3.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Email the school's attendance officer and the school nurse (addresses on the school's Nurse page) when your child is out sick or has a doctor's appointment, or call the main office. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up from C.A.S.P.E.R. by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run: Morning S.T.A.R.S. before care from 7:00 AM ($100/month, no transportation) and C.A.S.P.E.R. after care 2:45-6:00 PM (PreK-3 to grade 5, $200/month). No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-6-wakeman",
+      "name": "Jotham W. Wakeman School",
+      "short_name": "PS 6",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "100 Saint Pauls Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 714-4310",
+      "website_url": "https://ps6.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4310",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Code of Conduct asks parents to call the school the morning of an absence. Bring a signed parent or doctor's note on return; documentation for an excused absence is due within 3 days.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up from C.A.S.P.E.R. by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run: Morning S.T.A.R.S. before care from 7:00 AM ($100/month, no transportation) and C.A.S.P.E.R. after care 2:45-6:00 PM (PreK-3 to grade 5, $200/month). No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-8-trefurt",
+      "name": "Charles E. Trefurt School",
+      "short_name": "PS 8",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "96 Franklin Street, Jersey City, NJ 07307",
+      "main_phone": "(201) 714-4320",
+      "website_url": "https://ps8.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4320",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Code of Conduct asks parents to call the school the morning of an absence. Bring a signed parent or doctor's note on return; documentation for an excused absence is due within 3 days.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up from C.A.S.P.E.R. by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run: Morning S.T.A.R.S. before care from 7:00 AM ($100/month, no transportation) and C.A.S.P.E.R. after care 2:45-6:00 PM (PreK-3 to grade 5, $200/month). No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-12-barnes",
+      "name": "Julia A. Barnes School",
+      "short_name": "PS 12",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "91 Astor Place, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6420",
+      "website_url": "https://ps12.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6420",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "The district Code of Conduct asks parents to call the school the morning of an absence. Bring a signed parent or doctor's note on return; documentation for an excused absence is due within 3 days.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up from C.A.S.P.E.R. by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run: Morning S.T.A.R.S. before care from 7:00 AM ($100/month, no transportation) and C.A.S.P.E.R. after care 2:45-6:00 PM (PreK-3 to grade 5, $200/month). No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-16-bradford",
+      "name": "Cornelia F. Bradford School",
+      "short_name": "PS 16",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "96 Sussex Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 915-6450",
+      "website_url": "https://ps16.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6450",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Tell your child's homeroom teacher and the clerk for your child's building (Main, Annex or Danforth; addresses in the school's 2026-27 Parent Orientation) by email or phone, or call the main office at (201) 915-6450. Bring a signed note or doctor's documentation when your child returns.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up from C.A.S.P.E.R. by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run: Morning S.T.A.R.S. before care from 7:00 AM ($100/month, no transportation) and C.A.S.P.E.R. after care 2:45-6:00 PM (PreK-3 to grade 5, $200/month). No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-20-angelou",
+      "name": "Dr. Maya Angelou Elementary School",
+      "short_name": "PS 20",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "239 Ocean Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 369-2630",
+      "website_url": "https://ps20.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 369-2630",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom/Breakfast",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-22-webb",
+      "name": "Rev. Dr. Ercel F. Webb School",
+      "short_name": "PS 22",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "264 Van Horne Street, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6480",
+      "website_url": "https://ps22.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6480",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "4",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "5",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "6",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "7",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "8",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-25-copernicus",
+      "name": "Nicolaus Copernicus School",
+      "short_name": "PS 25",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "3385 Kennedy Boulevard, Jersey City, NJ 07307",
+      "main_phone": "(201) 714-4340",
+      "website_url": "https://ps25.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4340",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school by 9:00 AM on the day of the absence. When your child returns, send a written excuse signed by a parent or guardian giving the reason, with the child's name, grade and teacher, and the date(s) of absence; the nurse may also require a medical note.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Breakfast",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4 (lunch K-1)",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5 (lunch 2-3)",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6 (lunch 4-5)",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Breakfast",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "4 (lunch K-1)",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "5 (lunch 2-3)",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "6 (lunch 4-5)",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "7",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "8",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-26-noonan",
+      "name": "Patricia M. Noonan School",
+      "short_name": "PS 26",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "164 Laidlaw Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 963-7160",
+      "website_url": "https://ps26.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 963-7160",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Arrival",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4 (lunch K-1)",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5 (lunch 2-3)",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6 (lunch 4-5)",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:00 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings. PS 26's own bell schedule gives these hours; Kindergarten and PreK dismiss from 2:30 PM.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-29-nunery",
+      "name": "Gladys Nunery School",
+      "short_name": "PS 29",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "123 Claremont Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6520",
+      "website_url": "https://ps29.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6520",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Breakfast",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-30-sullivan",
+      "name": "Alexander D. Sullivan School",
+      "short_name": "PS 30",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "171 Seaview Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6530",
+      "website_url": "https://ps30.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6530",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-33-rafalides",
+      "name": "Dr. Paul Rafalides School",
+      "short_name": "PS 33",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "362 Union Street, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6540",
+      "website_url": "https://ps33.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6540",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-5-conti",
+      "name": "Dr. Michael Conti School",
+      "short_name": "PS 5",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "182 Merseles Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 714-4300",
+      "website_url": "https://ps5.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4300",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-11-king",
+      "name": "Martin Luther King, Jr. School",
+      "short_name": "PS 11",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "886 Bergen Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 915-6521",
+      "website_url": "https://ps11.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6521",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-14-culbreth",
+      "name": "Ollie Culbreth, Jr. School",
+      "short_name": "PS 14",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "153 Union Street, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6430",
+      "website_url": "https://ps14.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6430",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. The district's site list has no Morning S.T.A.R.S. before care at PS 14. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-15-young",
+      "name": "Whitney M. Young, Jr. School",
+      "short_name": "PS 15",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "135 Stegman Street, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6440",
+      "website_url": "https://ps15.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6440",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning). The school has an attendance officer (listed in its School Directory).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run C.A.S.P.E.R. after care 2:45-6:00 PM ($200/month, PreK-5); this school is not on the district's Morning S.T.A.R.S. before-care list. No C.A.S.P.E.R. on 12:45 half days. The school also links a Boys & Girls Clubs of Hudson County 21st Century afterschool program (https://www.bgchc.org/afterschool-programs).",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-17-brensinger",
+      "name": "Joseph H. Brensinger School",
+      "short_name": "PS 17",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "600 Bergen Avenue, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6120",
+      "website_url": "https://ps17.jcboe.org/",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6120",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Breakfast",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Breakfast",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care from 7:00 AM ($100/month) and C.A.S.P.E.R. after care 2:45-6:00 PM ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-23-gandhi",
+      "name": "Mahatma K. Gandhi School",
+      "short_name": "PS 23",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "143 Romaine Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 915-6490",
+      "website_url": "https://ps23.jcboe.org/",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6490",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:35 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:35",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:35",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run C.A.S.P.E.R. after care 2:45-6:00 PM ($200/month, PreK-5); this school is not on the district's Morning S.T.A.R.S. before-care list. No C.A.S.P.E.R. on 12:45 half days. The school also runs its own 21st Century Community Learning Center afterschool program (STEM focus; hours not published).",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-24-watters",
+      "name": "Chaplain Charles Watters School",
+      "short_name": "PS 24",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "220 Virginia Avenue, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6510",
+      "website_url": "https://ps24.jcboe.org/",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6510",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care from 7:00 AM ($100/month) and C.A.S.P.E.R. after care 2:45-6:00 PM ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-27-zampella",
+      "name": "Alfred E. Zampella School",
+      "short_name": "PS 27",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "201 North Street, Jersey City, NJ 07307",
+      "main_phone": "(201) 714-4350",
+      "website_url": "https://ps27.jcboe.org/",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4350",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office the morning of the absence. For an excused absence, email the documentation (a parent note alone does not count) to the school's community aide (address in the school's 2026-27 Welcome Back letter, linked from Our School and Parents) within 3 days of returning.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care from 7:00 AM ($100/month) and C.A.S.P.E.R. after care 2:45-6:00 PM ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-28-mcauliffe",
+      "name": "Christa McAuliffe School",
+      "short_name": "PS 28",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "167 Hancock Avenue, Jersey City, NJ 07307",
+      "main_phone": "(201) 714-4360",
+      "website_url": "https://ps28.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4360",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      },
+      "givebacks_shortname": "ps28pta"
+    },
+    {
+      "slug": "jersey-city-ps-34-obama",
+      "name": "President Barack Obama Community School",
+      "short_name": "PS 34",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "1830 Kennedy Boulevard, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6550",
+      "website_url": "https://ps34.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6550",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-37-cordero",
+      "name": "Rafael Cordero y Molina School",
+      "short_name": "PS 37",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "158 Erie Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 714-4390",
+      "website_url": "https://ps37.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4390",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings. At Cordero, C.A.S.P.E.R. pick-up is in the school auditorium between 3:15 and 6:00 PM with photo ID; Morning S.T.A.R.S. drop-off 7:00-8:00 AM (PTA parent handbook, guidance only).",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-38-murray",
+      "name": "James F. Murray School",
+      "short_name": "PS 38",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "339 Stegman Parkway, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6620",
+      "website_url": "https://ps38.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6620",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-39-defuccio",
+      "name": "Dr. Charles P. DeFuccio School",
+      "short_name": "PS 39",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "214 Plainfield Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 915-6560",
+      "website_url": "https://ps39.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6560",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:00 AM - 8:30 AM",
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run and fee-based: Morning S.T.A.R.S. before care ($100/month) and C.A.S.P.E.R. after care ($200/month, PreK-5); no transportation. No C.A.S.P.E.R. on 12:45 half days, emergency closings or elementary open-house days; no Morning S.T.A.R.S. on delayed openings.",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ps-41-martin",
+      "name": "Fred W. Martin Center for the Arts",
+      "short_name": "PS 41",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "elementary",
+      "address": "59 Wilkinson Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6590",
+      "website_url": "https://ps41.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6590 ext. 1",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's Attendance Office: (201) 915-6590, extension 1. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence, to be given to the school nurse (documentation within 3 days). Students are late after 8:45 AM. Early pickup must be by a parent/guardian or someone on the Emergency Contact Form, with photo ID.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "2:45 PM - 6:00 PM",
+        "site_phone": "(201) 915-6044",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 6:00 PM.",
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run C.A.S.P.E.R. after care 2:45-6:00 PM (PreK-5, $200/month); PS 41 is not on the district's Morning S.T.A.R.S. before-care list. The school's own calendar marks 12:45 half days and some evening events 'NO CASPER or B&G Club', so a Boys & Girls Club program also runs here (no link or hours on the site).",
+        "handbook_url": "https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1537910&type=d&pREC_ID=2315720"
+      }
+    },
+    {
+      "slug": "jersey-city-ms-4-conwell",
+      "name": "Frank R. Conwell Middle School",
+      "short_name": "MS 4",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "middle",
+      "address": "107 Bright Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 946-5740",
+      "website_url": "https://ps4.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 946-5740",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence (district Code of Conduct). When your child returns, send a signed note from a parent/guardian or doctor explaining the absence; documentation is due within 3 days of returning. No attendance line is published; this is the main office.",
+      "start_time": "8:25 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:25",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-ms-7-williams",
+      "name": "Franklin L. Williams School",
+      "short_name": "MS 7",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "middle",
+      "address": "222 Laidlaw Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 714-8340",
+      "website_url": "https://ps7.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-8362",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's Community Aide/Attendance line, (201) 714-8362 (main office (201) 714-8343/8344). When your child returns, send a signed note from a parent/guardian or doctor explaining the absence; documentation is due within 3 days of returning.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4 (1st Lunch)",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5 (2nd Lunch)",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6 (3rd Lunch)",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-ms-40-nolan",
+      "name": "Ezra L. Nolan Middle School",
+      "short_name": "MS 40",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "middle",
+      "address": "88 Gates Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6570",
+      "website_url": "https://ps40.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6570",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence (district Code of Conduct). When your child returns, send a signed note from a parent/guardian or doctor explaining the absence; documentation is due within 3 days of returning. No attendance line is published; this is the main office.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-academy-i-middle",
+      "name": "Academy I Middle School",
+      "short_name": "Academy I",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "middle",
+      "address": "209 Bergen Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6500",
+      "website_url": "https://a1ms.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6500",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school the morning of the absence (district Code of Conduct). When your child returns, send a signed note from a parent/guardian or doctor explaining the absence; documentation is due within 3 days of returning. The school lists a Community Aide/Attendance role but no separate number; call the main office.",
+      "start_time": "8:30 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:30",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:30",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:15",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:15",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:45"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:35",
+            "end": "08:45"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:45",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:15",
+            "end": "09:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:45",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 8",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:00",
+            "end": "10:15"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:15",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:45",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:15",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:45",
+            "end": "12:30"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:30",
+            "end": "13:15"
+          },
+          {
+            "name": "Period 3",
+            "start": "13:15",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:45",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:15",
+            "end": "14:45"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-dickinson-high",
+      "name": "William L. Dickinson High School",
+      "short_name": "Dickinson High",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "2 Palisade Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 714-4400",
+      "website_url": "https://wdhs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4400",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your student returns, bring a signed note from a parent/guardian or doctor explaining the absence (documentation is due within 3 days of returning). The school's roster lists an attendance officer, but no attendance line or email is published.",
+      "start_time": "8:30 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/5926",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 0",
+            "start": "07:15",
+            "end": "08:00"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:20",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:10",
+            "end": "10:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:50",
+            "end": "12:35"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:40",
+            "end": "13:25"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "15:05"
+          },
+          {
+            "name": "Period 9",
+            "start": "15:10",
+            "end": "15:55"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 0",
+            "start": "07:15",
+            "end": "08:00"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:35",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:40",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:45",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-ferris-high",
+      "name": "James J. Ferris High School",
+      "short_name": "Ferris High",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "35 Colgate Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 915-6660",
+      "website_url": "https://jfhs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6660",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your student returns, bring a signed note from a parent/guardian or doctor explaining the absence (documentation is due within 3 days of returning). The school's roster lists an attendance officer, but no attendance line or email is published.",
+      "start_time": "8:30 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/7489",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 0",
+            "start": "07:15",
+            "end": "08:00"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:20",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:10",
+            "end": "10:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:50",
+            "end": "12:35"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:40",
+            "end": "13:25"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "15:05"
+          },
+          {
+            "name": "Extended Day",
+            "start": "15:10",
+            "end": "15:55"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-lincoln-high",
+      "name": "Abraham Lincoln High School",
+      "short_name": "Lincoln High",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "60 Crescent Avenue, Jersey City, NJ 07304",
+      "main_phone": "(201) 915-6700",
+      "website_url": "https://alhs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6700",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your student returns, bring a signed note from a parent/guardian or doctor explaining the absence (documentation is due within 3 days of returning). The school's School Directory lists an attendance officer line, (201) 426-7818. Students should arrive by 8:15 AM; anyone after 8:30 AM is late.",
+      "start_time": "8:30 AM",
+      "end_time": null,
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/12895",
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-snyder-high",
+      "name": "Henry Snyder High School",
+      "short_name": "Snyder High",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "239 Bergen Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-6600",
+      "website_url": "https://hshs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6600",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's main office the morning of the absence. When your student returns, bring a signed note from a parent/guardian or doctor explaining the absence (documentation is due within 3 days of returning). The school's roster lists an attendance counselor, but no attendance line or email is published.",
+      "start_time": "8:30 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/21170",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 0",
+            "start": "08:00",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:20",
+            "end": "10:05"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:10",
+            "end": "10:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5 (Freshman Lunch)",
+            "start": "11:50",
+            "end": "12:35"
+          },
+          {
+            "name": "Period 6 (Upper Class Lunch)",
+            "start": "12:40",
+            "end": "13:25"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "15:05"
+          },
+          {
+            "name": "Period 9",
+            "start": "15:10",
+            "end": "15:55"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 0 (JC Arts)",
+            "start": "08:00",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:15",
+            "end": "09:50"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:55",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:40",
+            "end": "11:15"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:20",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:05",
+            "end": "12:45"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "10:00",
+            "end": "10:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:00",
+            "end": "11:45"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:50",
+            "end": "12:35"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:40",
+            "end": "13:25"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "15:05"
+          },
+          {
+            "name": "Period 9",
+            "start": "15:10",
+            "end": "15:55"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-infinity-institute",
+      "name": "Infinity Institute",
+      "short_name": "Infinity Institute",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "222 Mercer Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 915-6156",
+      "website_url": "https://ii.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-6156",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:35 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:40",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:35",
+            "end": "11:25"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:30",
+            "end": "12:15"
+          },
+          {
+            "name": "Lunch",
+            "start": "12:20",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "13:10",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 6",
+            "start": "14:05",
+            "end": "15:05"
+          }
+        ],
+        "regular_grades_6": [
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:40",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:35",
+            "end": "11:25"
+          },
+          {
+            "name": "Lunch",
+            "start": "11:30",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "12:20",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "13:10",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 6",
+            "start": "14:05",
+            "end": "15:05"
+          }
+        ],
+        "regular_grades_7": [
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:40",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:35",
+            "end": "11:25"
+          },
+          {
+            "name": "Lunch",
+            "start": "11:30",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "12:20",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "13:10",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 6",
+            "start": "14:05",
+            "end": "15:05"
+          }
+        ],
+        "regular_grades_8": [
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:35"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:40",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:35",
+            "end": "11:25"
+          },
+          {
+            "name": "Lunch",
+            "start": "11:30",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 4",
+            "start": "12:20",
+            "end": "13:05"
+          },
+          {
+            "name": "Period 5",
+            "start": "13:10",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 6",
+            "start": "14:05",
+            "end": "15:05"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "08:35",
+            "end": "09:15"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:20",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:05",
+            "end": "10:40"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:45",
+            "end": "11:25"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:30",
+            "end": "12:10"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:15",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-innovation-high",
+      "name": "Innovation High School",
+      "short_name": "Innovation High",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "239 Bergen Avenue, Jersey City, NJ 07305",
+      "main_phone": "(201) 915-1504",
+      "website_url": "https://ihs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 915-1504",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-liberty-high",
+      "name": "Liberty High School",
+      "short_name": "Liberty High",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "299 Sip Avenue, Jersey City, NJ 07306",
+      "main_phone": "(201) 714-4373",
+      "website_url": "https://lhs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 714-4373",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the main office the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:30 AM",
+      "end_time": null,
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "jersey-city-mcnair-high",
+      "name": "Dr. Ronald E. McNair Academic High School",
+      "short_name": "McNair",
+      "district_name": "Jersey City Public Schools",
+      "school_type": "high",
+      "address": "123 Coles Street, Jersey City, NJ 07302",
+      "main_phone": "(201) 418-7617",
+      "website_url": "https://mhs.jcboe.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 418-7631",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance clerk at (201) 418-7631 the morning of the absence. When your child returns, send a signed note from a parent/guardian or doctor explaining the absence (documentation within 3 days of returning).",
+      "start_time": "8:35 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "12:45 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/14300",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Block 1",
+            "start": "08:35",
+            "end": "09:35"
+          },
+          {
+            "name": "Block 2",
+            "start": "09:40",
+            "end": "10:30"
+          },
+          {
+            "name": "Block 3",
+            "start": "10:35",
+            "end": "11:25"
+          },
+          {
+            "name": "Block 4 - Lunch A",
+            "start": "11:30",
+            "end": "12:10"
+          },
+          {
+            "name": "Block 5 - Lunch B",
+            "start": "12:15",
+            "end": "13:05"
+          },
+          {
+            "name": "Block 6",
+            "start": "13:10",
+            "end": "14:00"
+          },
+          {
+            "name": "Block 7",
+            "start": "14:05",
+            "end": "15:05"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Block 1",
+            "start": "08:35",
+            "end": "09:15"
+          },
+          {
+            "name": "Block 2",
+            "start": "09:17",
+            "end": "09:57"
+          },
+          {
+            "name": "Block 3",
+            "start": "09:59",
+            "end": "10:39"
+          },
+          {
+            "name": "Block 4",
+            "start": "10:41",
+            "end": "11:21"
+          },
+          {
+            "name": "Block 5",
+            "start": "11:23",
+            "end": "12:03"
+          },
+          {
+            "name": "Block 6",
+            "start": "12:05",
+            "end": "12:45"
+          }
+        ]
+      },
+      "sacc": null
+    }
+  ],
+  "smore_newsletters": []
+}

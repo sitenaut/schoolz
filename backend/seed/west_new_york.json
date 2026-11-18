@@ -1,0 +1,1414 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: West New York (Hudson County)",
+  "districts": [
+    {
+      "name": "West New York School District",
+      "state": "NJ",
+      "website_url": "https://www.wnyschools.net",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "West New York District Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=0"
+        },
+        {
+          "name": "Memorial High School Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=4",
+          "school_slug": "west-new-york-memorial-high"
+        },
+        {
+          "name": "West New York Middle School Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=9",
+          "school_slug": "west-new-york-middle"
+        },
+        {
+          "name": "Early Childhood Program Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=2",
+          "school_slug": "west-new-york-early-childhood"
+        },
+        {
+          "name": "Albio Sires Elementary (PS 4) Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=1",
+          "school_slug": "west-new-york-ps-4",
+          "skip_title_prefixes": [
+            "School Closed",
+            "No School",
+            "One Session PLS"
+          ]
+        },
+        {
+          "name": "Harry L. Bain School Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=3",
+          "school_slug": "west-new-york-harry-l-bain",
+          "skip_title_prefixes": [
+            "No School",
+            "One Session Day",
+            "First Day of School"
+          ]
+        },
+        {
+          "name": "Public School 1 Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=5",
+          "school_slug": "west-new-york-ps-1"
+        },
+        {
+          "name": "Public School 5 Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=6",
+          "school_slug": "west-new-york-ps-5"
+        },
+        {
+          "name": "Public School 2 Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=7",
+          "school_slug": "west-new-york-ps-2",
+          "skip_title_prefixes": [
+            "SCHOOL CLOSED",
+            "1:27 DISMISSAL",
+            "12:45 DISMISSAL"
+          ]
+        },
+        {
+          "name": "Public School 3 Calendar",
+          "url": "https://www.wnyschools.net/apps/events/ical/?id=8",
+          "school_slug": "west-new-york-ps-3",
+          "skip_title_prefixes": [
+            "One Session Day",
+            "School closed"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "West New York"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "west-new-york-memorial-high",
+      "name": "Memorial High School",
+      "short_name": "Memorial High",
+      "district_name": "West New York School District",
+      "school_type": "high",
+      "address": "5501 Park Avenue, West New York, NJ 07093",
+      "main_phone": "(201) 553-4110",
+      "website_url": "https://mhs-1.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4110",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (201) 553-4110 between 7:30 and 9:00 AM on the day of the absence; an absence not reported by 9:00 AM is treated as truancy. Medical notes go to the nurse's office within 10 days.",
+      "start_time": "7:41 AM",
+      "end_time": "2:25 PM",
+      "early_dismissal_time": "1:07 PM",
+      "delayed_opening_time": "9:35 AM",
+      "athletics_url": "https://www.arbiterlive.com/m/team/14398",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "07:41",
+            "end": "07:49"
+          },
+          {
+            "name": "1",
+            "start": "07:52",
+            "end": "08:33"
+          },
+          {
+            "name": "2",
+            "start": "08:36",
+            "end": "09:17"
+          },
+          {
+            "name": "3",
+            "start": "09:20",
+            "end": "10:01"
+          },
+          {
+            "name": "4",
+            "start": "10:04",
+            "end": "10:45"
+          },
+          {
+            "name": "5 (lunch)",
+            "start": "10:48",
+            "end": "11:29"
+          },
+          {
+            "name": "6 (lunch)",
+            "start": "11:32",
+            "end": "12:13"
+          },
+          {
+            "name": "7 (lunch)",
+            "start": "12:16",
+            "end": "12:57"
+          },
+          {
+            "name": "8",
+            "start": "13:00",
+            "end": "13:41"
+          },
+          {
+            "name": "9",
+            "start": "13:44",
+            "end": "14:25"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "09:35",
+            "end": "09:55"
+          },
+          {
+            "name": "1",
+            "start": "09:58",
+            "end": "10:18"
+          },
+          {
+            "name": "2",
+            "start": "10:21",
+            "end": "10:41"
+          },
+          {
+            "name": "5",
+            "start": "10:44",
+            "end": "11:25"
+          },
+          {
+            "name": "6",
+            "start": "11:28",
+            "end": "12:09"
+          },
+          {
+            "name": "7",
+            "start": "12:12",
+            "end": "12:53"
+          },
+          {
+            "name": "3",
+            "start": "12:56",
+            "end": "13:16"
+          },
+          {
+            "name": "4",
+            "start": "13:19",
+            "end": "13:39"
+          },
+          {
+            "name": "8",
+            "start": "13:42",
+            "end": "14:02"
+          },
+          {
+            "name": "9",
+            "start": "14:05",
+            "end": "14:25"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19235"
+    },
+    {
+      "slug": "west-new-york-middle",
+      "name": "West New York Middle School",
+      "short_name": "WNY Middle",
+      "district_name": "West New York School District",
+      "school_type": "middle",
+      "address": "201 57th Street, West New York, NJ 07093",
+      "main_phone": "(201) 553-4160",
+      "website_url": "https://wnyms.wnyschools.net",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:11 AM",
+      "end_time": "2:46 PM",
+      "early_dismissal_time": "1:07 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:11",
+            "end": "08:19"
+          },
+          {
+            "name": "1",
+            "start": "08:21",
+            "end": "09:02"
+          },
+          {
+            "name": "2",
+            "start": "09:04",
+            "end": "09:45"
+          },
+          {
+            "name": "3",
+            "start": "09:47",
+            "end": "10:28"
+          },
+          {
+            "name": "4",
+            "start": "10:30",
+            "end": "11:11"
+          },
+          {
+            "name": "5",
+            "start": "11:13",
+            "end": "11:54"
+          },
+          {
+            "name": "6",
+            "start": "11:56",
+            "end": "12:37"
+          },
+          {
+            "name": "7",
+            "start": "12:39",
+            "end": "13:20"
+          },
+          {
+            "name": "8",
+            "start": "13:22",
+            "end": "14:03"
+          },
+          {
+            "name": "9",
+            "start": "14:05",
+            "end": "14:46"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "08:20",
+            "end": "08:32"
+          },
+          {
+            "name": "1",
+            "start": "08:34",
+            "end": "08:59"
+          },
+          {
+            "name": "2",
+            "start": "09:01",
+            "end": "09:26"
+          },
+          {
+            "name": "3",
+            "start": "09:28",
+            "end": "09:53"
+          },
+          {
+            "name": "4",
+            "start": "09:55",
+            "end": "10:20"
+          },
+          {
+            "name": "8",
+            "start": "10:22",
+            "end": "10:47"
+          },
+          {
+            "name": "9",
+            "start": "10:49",
+            "end": "11:14"
+          },
+          {
+            "name": "5",
+            "start": "11:16",
+            "end": "11:57"
+          },
+          {
+            "name": "6",
+            "start": "11:59",
+            "end": "12:24"
+          },
+          {
+            "name": "7",
+            "start": "12:26",
+            "end": "13:07"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "1",
+            "start": "10:13",
+            "end": "10:38"
+          },
+          {
+            "name": "2",
+            "start": "10:40",
+            "end": "11:05"
+          },
+          {
+            "name": "3",
+            "start": "11:07",
+            "end": "11:32"
+          },
+          {
+            "name": "5",
+            "start": "11:34",
+            "end": "12:15"
+          },
+          {
+            "name": "4",
+            "start": "12:17",
+            "end": "12:42"
+          },
+          {
+            "name": "7",
+            "start": "12:44",
+            "end": "13:25"
+          },
+          {
+            "name": "6",
+            "start": "13:27",
+            "end": "13:52"
+          },
+          {
+            "name": "8",
+            "start": "13:54",
+            "end": "14:19"
+          },
+          {
+            "name": "9",
+            "start": "14:21",
+            "end": "14:46"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19236"
+    },
+    {
+      "slug": "west-new-york-early-childhood",
+      "name": "Early Childhood School",
+      "short_name": "Early Childhood",
+      "district_name": "West New York School District",
+      "school_type": "other",
+      "address": "5204 Hudson Avenue, West New York, NJ 07093",
+      "main_phone": "(201) 553-4035",
+      "website_url": "https://ecs.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4035",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "If your child will be late or absent, call the school office before 8:30 AM (PS #4 Annex classes: (201) 553-4066). On return, bring a doctor's note or a note signed by a parent or guardian giving the reason.",
+      "start_time": "8:40 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "1:20 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": null,
+        "site_phone": "(201) 553-4035 ext. 69123",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Before/After School Program run by Catapult Learning; email the program (address on the school's Extracurricular page) to register.",
+        "handbook_url": "https://ecs.wnyschools.net/apps/pages/index.jsp?uREC_ID=1899798&type=d&pREC_ID=2045198"
+      },
+      "healthepro_location": "3926/19243"
+    },
+    {
+      "slug": "west-new-york-ps-1",
+      "name": "Public School #1",
+      "short_name": "PS 1",
+      "district_name": "West New York School District",
+      "school_type": "elementary",
+      "address": "6129 Madison Street, West New York, NJ 07093",
+      "main_phone": "(201) 553-4025",
+      "website_url": "https://ps-1.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4025",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's attendance office by 9:00 AM to report the absence and the reason; if no one answers, leave a message (messages are checked regularly). Be specific about any symptoms. A medical note is needed for the absence to be excused, and a student absent 3 or more days must bring a medical note to return.",
+      "start_time": "8:40 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:27 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:42",
+            "end": "08:55"
+          },
+          {
+            "name": "1",
+            "start": "08:57",
+            "end": "09:37"
+          },
+          {
+            "name": "2",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "3",
+            "start": "10:21",
+            "end": "11:01"
+          },
+          {
+            "name": "4 (lunch block)",
+            "start": "11:03",
+            "end": "11:43"
+          },
+          {
+            "name": "5 (lunch block)",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "6 (lunch block)",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "7",
+            "start": "13:18",
+            "end": "13:58"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "08:42",
+            "end": "08:50"
+          },
+          {
+            "name": "1",
+            "start": "08:52",
+            "end": "09:27"
+          },
+          {
+            "name": "2",
+            "start": "09:29",
+            "end": "10:04"
+          },
+          {
+            "name": "3",
+            "start": "10:06",
+            "end": "10:41"
+          },
+          {
+            "name": "7",
+            "start": "10:43",
+            "end": "11:18"
+          },
+          {
+            "name": "4",
+            "start": "11:20",
+            "end": "12:01"
+          },
+          {
+            "name": "5",
+            "start": "12:03",
+            "end": "12:44"
+          },
+          {
+            "name": "6",
+            "start": "12:46",
+            "end": "13:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "1",
+            "start": "10:14",
+            "end": "10:39"
+          },
+          {
+            "name": "2",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "4",
+            "start": "11:08",
+            "end": "11:49"
+          },
+          {
+            "name": "5",
+            "start": "11:52",
+            "end": "12:33"
+          },
+          {
+            "name": "6",
+            "start": "12:36",
+            "end": "13:17"
+          },
+          {
+            "name": "3",
+            "start": "13:20",
+            "end": "13:45"
+          },
+          {
+            "name": "7",
+            "start": "13:47",
+            "end": "14:12"
+          },
+          {
+            "name": "8",
+            "start": "14:14",
+            "end": "14:39"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19237"
+    },
+    {
+      "slug": "west-new-york-ps-2",
+      "name": "Public School #2",
+      "short_name": "PS 2",
+      "district_name": "West New York School District",
+      "school_type": "elementary",
+      "address": "5200 Broadway, West New York, NJ 07093",
+      "main_phone": "(201) 553-4040",
+      "website_url": "https://ps-2.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4040",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's attendance office by 9:00 AM to report the absence and the reason; if no one answers, leave a message (messages are checked regularly). Be specific about any symptoms. A medical note is needed for the absence to be excused, and a student absent 3 or more days must bring a medical note to return.",
+      "start_time": "8:40 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:27 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:42",
+            "end": "08:55"
+          },
+          {
+            "name": "1",
+            "start": "08:57",
+            "end": "09:37"
+          },
+          {
+            "name": "2",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "3",
+            "start": "10:21",
+            "end": "11:01"
+          },
+          {
+            "name": "4 (lunch block)",
+            "start": "11:03",
+            "end": "11:43"
+          },
+          {
+            "name": "5 (lunch block)",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "6 (lunch block)",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "7",
+            "start": "13:18",
+            "end": "13:58"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "08:42",
+            "end": "08:50"
+          },
+          {
+            "name": "1",
+            "start": "08:52",
+            "end": "09:27"
+          },
+          {
+            "name": "2",
+            "start": "09:29",
+            "end": "10:04"
+          },
+          {
+            "name": "3",
+            "start": "10:06",
+            "end": "10:41"
+          },
+          {
+            "name": "7",
+            "start": "10:43",
+            "end": "11:18"
+          },
+          {
+            "name": "4",
+            "start": "11:20",
+            "end": "12:01"
+          },
+          {
+            "name": "5",
+            "start": "12:03",
+            "end": "12:44"
+          },
+          {
+            "name": "6",
+            "start": "12:46",
+            "end": "13:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "1",
+            "start": "10:14",
+            "end": "10:39"
+          },
+          {
+            "name": "2",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "4",
+            "start": "11:08",
+            "end": "11:49"
+          },
+          {
+            "name": "5",
+            "start": "11:52",
+            "end": "12:33"
+          },
+          {
+            "name": "6",
+            "start": "12:36",
+            "end": "13:17"
+          },
+          {
+            "name": "3",
+            "start": "13:20",
+            "end": "13:45"
+          },
+          {
+            "name": "7",
+            "start": "13:47",
+            "end": "14:12"
+          },
+          {
+            "name": "8",
+            "start": "14:14",
+            "end": "14:39"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19238"
+    },
+    {
+      "slug": "west-new-york-ps-3",
+      "name": "Public School #3",
+      "short_name": "PS 3",
+      "district_name": "West New York School District",
+      "school_type": "elementary",
+      "address": "600 55th Street, West New York, NJ 07093",
+      "main_phone": "(201) 553-4060",
+      "website_url": "https://ps-3.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4060",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's attendance office by 9:00 AM to report the absence and the reason; if no one answers, leave a message (messages are checked regularly). Be specific about any symptoms. A medical note is needed for the absence to be excused, and a student absent 3 or more days must bring a medical note to return.",
+      "start_time": "8:40 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:27 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "HR",
+            "start": "08:42",
+            "end": "08:55"
+          },
+          {
+            "name": "1",
+            "start": "08:57",
+            "end": "09:37"
+          },
+          {
+            "name": "2",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "3",
+            "start": "10:21",
+            "end": "11:01"
+          },
+          {
+            "name": "4 (lunch block)",
+            "start": "11:03",
+            "end": "11:43"
+          },
+          {
+            "name": "5 (lunch block)",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "6 (lunch block)",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "7",
+            "start": "13:18",
+            "end": "13:58"
+          },
+          {
+            "name": "8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "HR",
+            "start": "08:42",
+            "end": "08:50"
+          },
+          {
+            "name": "1",
+            "start": "08:52",
+            "end": "09:27"
+          },
+          {
+            "name": "2",
+            "start": "09:29",
+            "end": "10:04"
+          },
+          {
+            "name": "3",
+            "start": "10:06",
+            "end": "10:41"
+          },
+          {
+            "name": "7",
+            "start": "10:43",
+            "end": "11:18"
+          },
+          {
+            "name": "4",
+            "start": "11:20",
+            "end": "12:01"
+          },
+          {
+            "name": "5",
+            "start": "12:03",
+            "end": "12:44"
+          },
+          {
+            "name": "6",
+            "start": "12:46",
+            "end": "13:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "HR",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "1",
+            "start": "10:14",
+            "end": "10:39"
+          },
+          {
+            "name": "2",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "4",
+            "start": "11:08",
+            "end": "11:49"
+          },
+          {
+            "name": "5",
+            "start": "11:52",
+            "end": "12:33"
+          },
+          {
+            "name": "6",
+            "start": "12:36",
+            "end": "13:17"
+          },
+          {
+            "name": "3",
+            "start": "13:20",
+            "end": "13:45"
+          },
+          {
+            "name": "7",
+            "start": "13:47",
+            "end": "14:12"
+          },
+          {
+            "name": "8",
+            "start": "14:14",
+            "end": "14:39"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19239"
+    },
+    {
+      "slug": "west-new-york-ps-4",
+      "name": "Albio Sires Elementary School",
+      "short_name": "PS 4",
+      "district_name": "West New York School District",
+      "school_type": "elementary",
+      "address": "6300 Palisade Avenue, West New York, NJ 07093",
+      "main_phone": "(201) 553-4070",
+      "website_url": "https://ps-4.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4070",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's attendance office by 9:00 AM to report your child's absence; if no one answers, leave a message (messages are checked regularly). Students who arrive late must report to the main office for a pass. A student absent 3 or more days needs a medical note.",
+      "start_time": "8:40 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:27 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:42",
+            "end": "08:55"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:57",
+            "end": "09:37"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:21",
+            "end": "11:01"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:03",
+            "end": "11:43"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:18",
+            "end": "13:58"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:42",
+            "end": "08:50"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:52",
+            "end": "09:27"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:29",
+            "end": "10:04"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:06",
+            "end": "10:41"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:43",
+            "end": "11:18"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:20",
+            "end": "12:01"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:03",
+            "end": "12:44"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:46",
+            "end": "13:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:14",
+            "end": "10:39"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:08",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:52",
+            "end": "12:33"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:36",
+            "end": "13:17"
+          },
+          {
+            "name": "Period 3",
+            "start": "13:20",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:12"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:14",
+            "end": "14:39"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19240"
+    },
+    {
+      "slug": "west-new-york-ps-5",
+      "name": "Public School #5",
+      "short_name": "PS 5",
+      "district_name": "West New York School District",
+      "school_type": "elementary",
+      "address": "5401 Hudson Ave, West New York, NJ 07093",
+      "main_phone": "(201) 553-4080",
+      "website_url": "https://ps-5.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4080",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's attendance office by 9:00 AM to report your child's absence; if no one answers, leave a message (messages are checked regularly). Students who arrive late must report to the main office for a pass. A student absent 3 or more days needs a medical note.",
+      "start_time": "8:40 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:27 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:42",
+            "end": "08:55"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:57",
+            "end": "09:37"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:21",
+            "end": "11:01"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:03",
+            "end": "11:43"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:18",
+            "end": "13:58"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:42",
+            "end": "08:50"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:52",
+            "end": "09:27"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:29",
+            "end": "10:04"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:06",
+            "end": "10:41"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:43",
+            "end": "11:18"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:20",
+            "end": "12:01"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:03",
+            "end": "12:44"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:46",
+            "end": "13:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:14",
+            "end": "10:39"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:08",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:52",
+            "end": "12:33"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:36",
+            "end": "13:17"
+          },
+          {
+            "name": "Period 3",
+            "start": "13:20",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:12"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:14",
+            "end": "14:39"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19241"
+    },
+    {
+      "slug": "west-new-york-harry-l-bain",
+      "name": "Harry L. Bain School",
+      "short_name": "Harry L. Bain",
+      "district_name": "West New York School District",
+      "school_type": "elementary",
+      "address": "6200 Broadway, West New York, NJ 07093",
+      "main_phone": "(201) 553-4095",
+      "website_url": "https://ps-6.wnyschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 553-4095",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's attendance office by 9:00 AM to report your child's absence; if no one answers, leave a message (messages are checked regularly). Students who arrive late must report to the main office for a pass. A student absent 3 or more days needs a medical note.",
+      "start_time": "8:40 AM",
+      "end_time": "2:45 PM",
+      "early_dismissal_time": "1:27 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:42",
+            "end": "08:55"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:57",
+            "end": "09:37"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:39",
+            "end": "10:19"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:21",
+            "end": "11:01"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:03",
+            "end": "11:43"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:33",
+            "end": "13:13"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:18",
+            "end": "13:58"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:42",
+            "end": "08:50"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:52",
+            "end": "09:27"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:29",
+            "end": "10:04"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:06",
+            "end": "10:41"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:43",
+            "end": "11:18"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:20",
+            "end": "12:01"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:03",
+            "end": "12:44"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:46",
+            "end": "13:27"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:00",
+            "end": "10:11"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:14",
+            "end": "10:39"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:41",
+            "end": "11:06"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:08",
+            "end": "11:49"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:52",
+            "end": "12:33"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:36",
+            "end": "13:17"
+          },
+          {
+            "name": "Period 3",
+            "start": "13:20",
+            "end": "13:45"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:47",
+            "end": "14:12"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:14",
+            "end": "14:39"
+          }
+        ]
+      },
+      "sacc": null,
+      "healthepro_location": "3926/19242"
+    }
+  ],
+  "smore_newsletters": []
+}

@@ -1,0 +1,294 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Weehawken (Hudson County)",
+  "districts": [
+    {
+      "name": "Weehawken Township School District",
+      "state": "NJ",
+      "website_url": "https://www.weehawkenschools.net",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Weehawken District Calendar",
+          "url": "https://www.weehawkenschools.net/apps/events/ical/?id=0",
+          "school_title_prefixes": {
+            "DWS ": "weehawken-daniel-webster",
+            "TRS ": "weehawken-theodore-roosevelt",
+            "WHS ": "weehawken-high"
+          },
+          "skip_title_prefixes": [
+            "AIDS Awareness",
+            "Abraham Lincoln",
+            "Asian Pacific American Heritage",
+            "Autism Awareness Month",
+            "Benjamin Franklin",
+            "Bill of Rights Day",
+            "Black History Month",
+            "Breast Cancer Awareness",
+            "Child Abuse Prevention",
+            "Citizenship & Constitution",
+            "Commodore John Barry",
+            "Earth Day",
+            "George Washington",
+            "Groundhog Day",
+            "Hispanic Heritage Month",
+            "International Women",
+            "Leif Erikson",
+            "National Custodial",
+            "National Educational Support",
+            "National Inventor",
+            "National Mentoring",
+            "National Safety Month",
+            "Native American",
+            "Pan American Day",
+            "Patriot Day",
+            "Pearl Harbor",
+            "School Principal Day",
+            "Susan B. Anthony",
+            "Theodore Roosevelt Birthday"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": "https://sites.google.com/weehawken.k12.nj.us/weebus/home",
+      "towns": [
+        "Weehawken"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "weehawken-daniel-webster",
+      "name": "Daniel Webster School",
+      "short_name": "Daniel Webster",
+      "district_name": "Weehawken Township School District",
+      "school_type": "elementary",
+      "address": "2700 Palisade Avenue, Weehawken, NJ 07086",
+      "main_phone": "(201) 422-6150",
+      "website_url": "https://dws.weehawkenschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 422-6150",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school office before 8:30 AM with your child's name, grade, homeroom teacher and the reason for the absence. Send a written excuse when your child returns; a doctor's note is required after 3 or more days.",
+      "start_time": "8:25 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:20 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null,
+      "fdmealplanner_location": "9/69/361"
+    },
+    {
+      "slug": "weehawken-theodore-roosevelt",
+      "name": "Theodore Roosevelt School",
+      "short_name": "Roosevelt",
+      "district_name": "Weehawken Township School District",
+      "school_type": "elementary",
+      "address": "1 Louisa Place, Weehawken, NJ 07086",
+      "main_phone": "(201) 422-6140",
+      "website_url": "https://trs.weehawkenschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 422-6140",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school office before 8:30 AM with your child's name, grade, homeroom teacher and the reason for the absence. Send a written excuse when your child returns; a doctor's note is required after 3 or more consecutive days.",
+      "start_time": "8:25 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": null,
+        "pm_hours": "2:50 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Apollo After School Extended Day Program; registration on apollo-roosevelt.jumbula.com.",
+        "handbook_url": "https://www.weehawkenschools.net/apps/pages/index.jsp?uREC_ID=367515&type=d&pREC_ID=2356306"
+      },
+      "fdmealplanner_location": "9/69/360"
+    },
+    {
+      "slug": "weehawken-high",
+      "name": "Weehawken High School",
+      "short_name": "Weehawken High",
+      "district_name": "Weehawken Township School District",
+      "school_type": "high",
+      "address": "53 Liberty Place, Weehawken, NJ 07086",
+      "main_phone": "(201) 422-6130",
+      "website_url": "https://whs.weehawkenschools.net",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 422-6130",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the attendance office at (201) 422-6130 as early as possible. When your child returns, give the nurse a note with the dates, reason and length of the absence.",
+      "start_time": "8:15 AM",
+      "end_time": "2:55 PM",
+      "early_dismissal_time": "12:25 PM",
+      "delayed_opening_time": "9:50 AM",
+      "athletics_url": "https://weehawkenathletics.digitalsports.com/pages/schedule/schedule.php",
+      "logo_url": null,
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "08:15",
+            "end": "08:56"
+          },
+          {
+            "name": "HR",
+            "start": "08:56",
+            "end": "09:02"
+          },
+          {
+            "name": "2",
+            "start": "09:05",
+            "end": "09:46"
+          },
+          {
+            "name": "3",
+            "start": "09:49",
+            "end": "10:30"
+          },
+          {
+            "name": "4",
+            "start": "10:33",
+            "end": "11:14"
+          },
+          {
+            "name": "5A (grades 7-8 lunch)",
+            "start": "11:17",
+            "end": "11:58"
+          },
+          {
+            "name": "5C (grades 9-12 lunch)",
+            "start": "12:01",
+            "end": "12:42"
+          },
+          {
+            "name": "6",
+            "start": "12:45",
+            "end": "13:26"
+          },
+          {
+            "name": "7",
+            "start": "13:29",
+            "end": "14:10"
+          },
+          {
+            "name": "8",
+            "start": "14:13",
+            "end": "14:55"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "08:15",
+            "end": "08:48"
+          },
+          {
+            "name": "2",
+            "start": "08:51",
+            "end": "09:24"
+          },
+          {
+            "name": "3",
+            "start": "09:27",
+            "end": "10:00"
+          },
+          {
+            "name": "4",
+            "start": "10:03",
+            "end": "10:36"
+          },
+          {
+            "name": "5",
+            "start": "10:39",
+            "end": "11:12"
+          },
+          {
+            "name": "6",
+            "start": "11:15",
+            "end": "11:48"
+          },
+          {
+            "name": "7",
+            "start": "11:51",
+            "end": "12:25"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "1",
+            "start": "09:50",
+            "end": "10:18"
+          },
+          {
+            "name": "HR",
+            "start": "10:18",
+            "end": "10:21"
+          },
+          {
+            "name": "2",
+            "start": "10:24",
+            "end": "10:52"
+          },
+          {
+            "name": "3",
+            "start": "10:55",
+            "end": "11:23"
+          },
+          {
+            "name": "4",
+            "start": "11:26",
+            "end": "11:54"
+          },
+          {
+            "name": "5A (1st lunch)",
+            "start": "11:57",
+            "end": "12:38"
+          },
+          {
+            "name": "5C (2nd lunch)",
+            "start": "12:41",
+            "end": "13:22"
+          },
+          {
+            "name": "6",
+            "start": "13:25",
+            "end": "13:53"
+          },
+          {
+            "name": "7",
+            "start": "13:56",
+            "end": "14:24"
+          },
+          {
+            "name": "8",
+            "start": "14:27",
+            "end": "14:55"
+          }
+        ]
+      },
+      "sacc": null,
+      "fdmealplanner_location": "9/69/359"
+    }
+  ],
+  "smore_newsletters": []
+}

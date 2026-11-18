@@ -57,6 +57,21 @@ def entrees(xml_menu_recipes: str | None) -> list[str]:
     return list(dict.fromkeys(names))
 
 
+def entrees_from_list(all_menu_recipes: list | None) -> list[str]:
+    """Entrée names from a day's allMenuRecipes list, in menu order, deduped.
+    Some accounts (Harrison, Kearny, Weehawken: tenant 9) leave
+    xmlMenuRecipes empty and send only this list, each item carrying its
+    menu category."""
+    names = []
+    for item in all_menu_recipes or []:
+        if not isinstance(item, dict) or (item.get("category") or "").strip().lower() != "entree":
+            continue
+        name = html.unescape(item.get("englishAlternateName") or item.get("componentName") or "").strip()
+        if name:
+            names.append(name)
+    return list(dict.fromkeys(names))
+
+
 def day_descriptions(by_day: dict[date, list[str]]) -> dict[date, str]:
     """Each day's one-line description: the rotating entrées, with the
     standing options dropped - unless that would leave the day empty, in
@@ -114,5 +129,5 @@ async def fetch_entrees(client: httpx.AsyncClient, location: tuple[str, str, str
             except (KeyError, TypeError, ValueError):
                 continue
             if start <= day <= end:
-                out[day] = entrees(row.get("xmlMenuRecipes"))
+                out[day] = entrees(row.get("xmlMenuRecipes")) or entrees_from_list(row.get("allMenuRecipes"))
     return out

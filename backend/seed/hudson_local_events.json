@@ -1,0 +1,167 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Hudson County town calendars for /local",
+  "districts": [],
+  "schools": [],
+  "smore_newsletters": [],
+  "local_events": {
+    "Local events refresh": {
+      "json_sources": [
+        {
+          "name": "bayonne_city",
+          "url": "https://www.bayonnenj.org/api/data/GetCalendarData",
+          "base_url": "https://www.bayonnenj.org",
+          "data_path": "",
+          "date_range_params": [
+            "start",
+            "end"
+          ],
+          "window_days": 120,
+          "exclude_field_values": {
+            "className": [
+              "Meeting"
+            ]
+          },
+          "upcoming_only": true,
+          "default_categories": [
+            "bayonne",
+            "municipal"
+          ],
+          "location": "Bayonne, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "guttenberg_town",
+          "url": "https://www.guttenbergnj.org/api/data/GetCalendarData",
+          "base_url": "https://www.guttenbergnj.org",
+          "data_path": "",
+          "date_range_params": [
+            "start",
+            "end"
+          ],
+          "window_days": 120,
+          "exclude_field_values": {
+            "className": [
+              "Meeting"
+            ]
+          },
+          "upcoming_only": true,
+          "default_categories": [
+            "guttenberg",
+            "municipal"
+          ],
+          "location": "Guttenberg, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "north_bergen_township",
+          "url": "https://www.northbergen.org/api/data/GetCalendarData",
+          "base_url": "https://www.northbergen.org",
+          "data_path": "",
+          "date_range_params": [
+            "start",
+            "end"
+          ],
+          "window_days": 120,
+          "exclude_field_values": {
+            "className": [
+              "Meeting"
+            ]
+          },
+          "upcoming_only": true,
+          "default_categories": [
+            "north-bergen",
+            "municipal"
+          ],
+          "location": "North Bergen, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "union_city",
+          "url": "https://www.ucnj.com/api/data/GetCalendarData",
+          "base_url": "https://www.ucnj.com",
+          "data_path": "",
+          "date_range_params": [
+            "start",
+            "end"
+          ],
+          "window_days": 120,
+          "exclude_field_values": {
+            "className": [
+              "Meeting"
+            ]
+          },
+          "upcoming_only": true,
+          "default_categories": [
+            "union-city",
+            "municipal"
+          ],
+          "location": "Union City, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "east_newark_borough",
+          "url": "https://www.boroughofeastnewark.com/api/data/GetCalendarData",
+          "base_url": "https://www.boroughofeastnewark.com",
+          "data_path": "",
+          "date_range_params": [
+            "start",
+            "end"
+          ],
+          "window_days": 120,
+          "exclude_field_values": {
+            "className": [
+              "Meeting"
+            ]
+          },
+          "upcoming_only": true,
+          "default_categories": [
+            "east-newark",
+            "municipal"
+          ],
+          "location": "East Newark, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "secaucus_town",
+          "url": "https://secaucusnj.gov/index.php?option=com_dpcalendar&view=events&format=raw&limit=500",
+          "base_url": "https://secaucusnj.gov",
+          "parser": "dpcalendar",
+          "default_categories": [
+            "secaucus",
+            "municipal"
+          ],
+          "location": "Secaucus, NJ",
+          "skip_meetings": true
+        }
+      ],
+      "tribe_sources": [
+        {
+          "name": "kearny_town",
+          "base_url": "https://www.kearnynj.org",
+          "days_ahead": 90,
+          "default_categories": [
+            "kearny",
+            "municipal"
+          ],
+          "location": "Kearny, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "^happy "
+          ]
+        },
+        {
+          "name": "hudson_county",
+          "base_url": "https://www.hcnj.us",
+          "days_ahead": 90,
+          "default_categories": [
+            "hudson-county",
+            "municipal"
+          ],
+          "location": "Jersey City, NJ",
+          "skip_meetings": true
+        }
+      ]
+    }
+  }
+}

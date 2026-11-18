@@ -1,0 +1,56 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Guttenberg (Hudson County)",
+  "districts": [
+    {
+      "name": "Guttenberg School District",
+      "state": "NJ",
+      "website_url": "https://www.alkschool.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Anna L. Klein School Calendar",
+          "url": "https://www.alkschool.org/sndreq/generateCalendarICS.php?calendar_id=147762"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Guttenberg"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "guttenberg-anna-l-klein",
+      "name": "Anna L. Klein School",
+      "short_name": "Anna L. Klein",
+      "district_name": "Guttenberg School District",
+      "school_type": "elementary",
+      "address": "301 69th Street, Guttenberg, NJ 07093",
+      "main_phone": "(201) 861-3100",
+      "website_url": "https://www.alkschool.org",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:39 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://files.smartsites.parentsquare.com/12964/_variants/contain-1440w/header_logo_img_dgiknvh6qn2k3mmclke.png",
+      "bell_periods": null,
+      "sacc": null,
+      "nutrislice_location": "guttenbergsd/anna-l-klein-school"
+    }
+  ],
+  "smore_newsletters": []
+}

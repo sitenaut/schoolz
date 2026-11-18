@@ -64,6 +64,9 @@ describe("isStatusItem", () => {
     expect(isStatusItem("Teacher In Service")).toBe(true);
     expect(isStatusItem("Early Dismissal")).toBe(true);
     expect(isStatusItem("2 Hour Delay")).toBe(true);
+    // Bayonne's half days.
+    expect(isStatusItem("Abbreviated Session - Parent Conferences")).toBe(true);
+    expect(isStatusItem("Pre-K - 8 ONLY Abbreviated Schedule")).toBe(true);
   });
   it("does not flag ordinary events", () => {
     expect(isStatusItem("Board of Education Meeting")).toBe(false);
@@ -225,7 +228,7 @@ describe("saysClosed", () => {
   });
 
   it("closes the day for a title that is only the break's name, not an edge of it", () => {
-    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "NJEA Convention", "District: Winter Break", "Teacher Inservice - Students Off"]) {
+    for (const t of ["Winter Recess", "SPRING BREAK", "Chews Spring Break", "Thanksgiving Recess (SC)", "Spring Break April 15-22", "NJEA Convention", "District: Winter Break", "Teacher Inservice - Students Off", "Staff Only - PD"]) {
       expect(saysClosed(t)).toBe(true);
     }
     for (const t of [

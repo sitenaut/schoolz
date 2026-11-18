@@ -131,8 +131,10 @@ def find_pdf_link(html: str, page_url: str) -> str | None:
     for m in _PDF_URL_RE.finditer(text):
         if m.group(0) not in found:
             found.append(m.group(0))
-    for m in re.finditer(r"""href=["']([^"']+\.pdf[^"']*)["']""", text, re.I):
-        url = urljoin(base_url, m.group(1))
+    # An <iframe>/<embed> src counts too: Harrison's district calendar page
+    # embeds its year PDF (relative, with spaces and a trailing newline).
+    for m in re.finditer(r"""(?:href|src)=["']\s*([^"']+\.pdf[^"']*?)\s*["']""", text, re.I):
+        url = urljoin(base_url, m.group(1).replace(" ", "%20"))
         if url not in found:
             found.append(url)
     named_all = [u for u in found if "calendar" in u.lower()]
