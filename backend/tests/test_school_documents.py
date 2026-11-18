@@ -334,3 +334,31 @@ def test_link_that_redirects_to_a_drive_viewer_is_the_document(monkeypatch):
             "doc_type": "handbook",
         }
     ]
+
+
+def test_shared_handbooks_page_narrows_to_the_schools_own():
+    """North Bergen's one handbooks page lists every building's, told apart
+    only by link text."""
+    from services.school_documents import keep_own_school_bell_schedules, school_name_tokens
+
+    district = "North Bergen School District"
+    base = "https://4.files.edl.io/x/"
+    elem = {"doc_type": "handbook", "title": "NBSD Elementary Handbook 2024 - 2025 Updated", "url": base + "a.pdf"}
+    jhs = {"doc_type": "handbook", "title": "NJSJHS Handbook 25 - 26", "url": base + "b.pdf"}
+    hs = {"doc_type": "handbook", "title": "NBHS Student Handbook 26-27", "url": base + "c.pdf"}
+    bell = {"doc_type": "bell_schedule", "title": "Bell Schedule", "url": "https://nbhs.x/apps/bell_schedules/"}
+    tokens = {
+        "hs": school_name_tokens("North Bergen High School", "North Bergen High", district),
+        "jhs": school_name_tokens("Nicholas J. Sacco Junior High School", "Sacco Junior High", district),
+        "franklin": school_name_tokens("Franklin Elementary School", "Franklin", district),
+    }
+    entries = [elem, jhs, hs, bell]
+
+    def keep(school):
+        siblings = [t for k, t in tokens.items() if k != school]
+        return keep_own_school_bell_schedules(entries, tokens[school], siblings, doc_type="handbook")[0]
+
+    assert keep("hs") == [hs, bell]
+    assert keep("jhs") == [jhs, bell]
+    # The elementary handbook names no building: a school none of them names keeps it, minus its siblings'.
+    assert keep("franklin") == [elem, bell]

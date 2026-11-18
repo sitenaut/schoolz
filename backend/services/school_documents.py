@@ -228,7 +228,7 @@ def _names_school(entry: dict, tokens: list[str]) -> bool:
 
 
 def keep_own_school_bell_schedules(
-    entries: list[dict], school_tokens: list[str], sibling_tokens: list[list[str]] = ()
+    entries: list[dict], school_tokens: list[str], sibling_tokens: list[list[str]] = (), doc_type: str = "bell_schedule"
 ) -> tuple[list[dict], bool]:
     """Sister schools on one shared site (Medford Lakes) each get their own
     bell-schedule PDF, and the nav lists all of them. When some of the
@@ -236,9 +236,11 @@ def keep_own_school_bell_schedules(
     those. When none do, drop the ones that name a sibling school
     (Pennsauken's shared bell page lists every school's PDF, and Carson's
     own sits behind an unnamed resource link); the rest are one schedule
-    for everyone. Returns (entries, filtered)."""
+    for everyone. Returns (entries, filtered). The same goes for handbooks
+    (`doc_type="handbook"`): North Bergen's one handbooks page lists every
+    building's ("NBHS Student Handbook", "NJSJHS Handbook")."""
     tokens = [t.lower() for t in school_tokens if t]
-    bells = [e for e in entries if e["doc_type"] == "bell_schedule"]
+    bells = [e for e in entries if e["doc_type"] == doc_type]
     own = [e for e in bells if _names_school(e, tokens)]
     if own and len(own) < len(bells):
         keep = own
@@ -248,7 +250,7 @@ def keep_own_school_bell_schedules(
         keep = bells
     if len(keep) == len(bells):
         return entries, False
-    return [e for e in entries if e["doc_type"] != "bell_schedule" or e in keep], True
+    return [e for e in entries if e["doc_type"] != doc_type or e in keep], True
 
 
 def school_name_tokens(name: str, short_name: str | None, district_name: str | None) -> list[str]:
@@ -384,7 +386,16 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
         # 2016-17, linked to a sign-in page). Keep the school's own link and
         # date it from the file name alone.
         drive_viewer = bool(_GOOGLE_VIEWER_TITLE_RE.search(page_title))
-        doc_links = [] if drive_viewer else _find_doc_file_links(page_html, base)
+        doc_anchors = [] if drive_viewer else _find_doc_file_anchors(page_html, base)
+        doc_links = list(dict.fromkeys(href for href, _ in doc_anchors))
+        # A page of several files (North Bergen's handbooks page: one per
+        # building) names each in its link text; that tells them apart where
+        # the page's own title can't. Only text that says what the file is.
+        link_titles = {}
+        if len(doc_links) > 1:
+            for href, text in doc_anchors:
+                if text and classify_doc_type(text) == doc_type:
+                    link_titles.setdefault(href, text)
         year = _extract_year(page_title) or (None if drive_viewer else _extract_year(page_html[:5000]))
         if presence and not doc_links:
             # A Presence page's files live in a documents widget the static HTML
@@ -405,7 +416,8 @@ async def discover_from_website(school_website_url: str) -> list[dict]:
                     seen_urls.add(doc_url)
                     # The year often lives only in the file name
                     # (WestBellSchedule26-27.pdf) - fall back to the URL.
-                    results.append({"title": page_title, "url": doc_url, "academic_year": year or _extract_year(doc_url), "doc_type": doc_type})
+                    title = link_titles.get(doc_url, page_title)
+                    results.append({"title": title, "url": doc_url, "academic_year": _extract_year(title) or year or _extract_year(doc_url), "doc_type": doc_type})
         elif url not in seen_urls:
             # No standalone file found on the landing page - link to the
             # page itself so there's still something to click through to.
