@@ -5,6 +5,7 @@ import type { CourseColorOverrides } from "../lib/coursePreferences";
 import type { Grades, LatePolicy, ScheduleResponse, TodoItem, TodoResponse } from "../types";
 import { Capped } from "./Capped";
 import type { ClassRow } from "./GradesTab";
+import { GradeTrend } from "./GradeTrend";
 import { IconChevronRight, IconPencil } from "./icons";
 
 const LIST_CAP = 5;
@@ -117,6 +118,8 @@ export function ClassPage({
             </a>
           )}
         </section>
+
+        <GradeTrend entries={entries} genesisPercent={row.grade_percent} todayIso={todayIso} />
 
         <section className="gz-card gz-rule">
           <div className="gz-rule-head">

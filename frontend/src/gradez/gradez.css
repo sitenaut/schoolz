@@ -1080,6 +1080,173 @@
   font-weight: 700;
 }
 
+/* Grade over time (GradeTrend.tsx). The line is the story, so it takes the
+ * app's accent; each assignment's dot is a lighter step of the same hue,
+ * because the dots are what the line adds up. Text stays in ink colors. */
+.gz-trend {
+  --trend-line: var(--primary);
+  --trend-dot: color-mix(in srgb, var(--primary) 50%, var(--card));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+/* On the dark card the same mix sinks into the background. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gz-trend {
+    --trend-dot: color-mix(in srgb, var(--primary) 72%, var(--card));
+  }
+}
+
+:root[data-theme="dark"] .gz-trend {
+  --trend-dot: color-mix(in srgb, var(--primary) 72%, var(--card));
+}
+
+.gz-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  list-style: none;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gz-trend-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gz-trend-key-line {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--trend-line);
+}
+
+.gz-trend-key-dot,
+.gz-trend-key-missing {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--trend-dot);
+}
+
+.gz-trend-key-missing {
+  box-sizing: border-box;
+  border: 2px solid var(--bad);
+  background: var(--card);
+}
+
+.gz-trend-plot {
+  position: relative;
+  min-height: 180px;
+  border-radius: 8px;
+  touch-action: pan-y;
+}
+
+.gz-trend-plot:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.gz-trend-plot svg {
+  display: block;
+  overflow: visible;
+}
+
+.gz-trend-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.gz-trend-cross {
+  stroke: var(--line-2);
+  stroke-width: 1;
+}
+
+.gz-trend-tick {
+  fill: var(--ink-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gz-trend-line {
+  fill: none;
+  stroke: var(--trend-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.gz-trend-dot,
+.gz-trend-end {
+  fill: var(--trend-dot);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.gz-trend-end {
+  fill: var(--trend-line);
+}
+
+.gz-trend-missing {
+  fill: var(--card);
+  stroke: var(--bad);
+  stroke-width: 2;
+}
+
+.gz-trend-end-label {
+  fill: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gz-trend-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.gz-trend-tip {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  max-width: min(240px, 100%);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  line-height: 18px;
+  pointer-events: none;
+}
+
+.gz-trend-tip-date {
+  color: var(--ink-2);
+}
+
+.gz-trend-tip-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--ink-2);
+}
+
+.gz-trend-tip-row strong {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.gz-trend-tip-row .gz-trend-key-line {
+  align-self: center;
+  flex: none;
+}
+
 .gz-rule {
   display: flex;
   flex-direction: column;
