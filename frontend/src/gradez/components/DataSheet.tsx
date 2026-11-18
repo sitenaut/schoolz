@@ -3,6 +3,7 @@ import type { LastUpdate } from "../../lib/family";
 import { apiFetch, apiGet } from "../api";
 import { agoWords, genesisKey, plural, scoreText, whenLabel } from "../format";
 import { freshness } from "../lib/freshness";
+import { importBatches, sumResults } from "../lib/importBatches";
 import type { Audit, ImportResult, SyncStatus } from "../types";
 import { IconChevronRight, IconCircleCheck, IconClose, IconFlag, IconImport, IconReread } from "./icons";
 import { Sheet } from "./Sheet";
@@ -96,16 +97,44 @@ export function DataSheet({
     if (!file) return;
     setOutcome(null);
     setBusy("import");
-    let parsed: unknown;
+    let captures: unknown[] | null;
     try {
-      parsed = JSON.parse(await file.text());
+      const parsed: unknown = JSON.parse(await file.text());
+      const listed = (parsed as { captures?: unknown } | null)?.captures;
+      captures = Array.isArray(listed) ? listed : null;
     } catch {
+      captures = null;
+    }
+    if (!captures) {
       setOutcome({ ok: false, lines: ["That doesn't look like a file saved by Backpack Capture. Use Export capture in the extension, then pick that file."] });
       setBusy(null);
       return;
     }
-    const res = await apiFetch(`/students/${studentId}/bucket3/import`, { method: "POST", body: JSON.stringify(parsed) }).catch(() => null);
-    await finish(res, "Couldn't import that file. Try again in a minute.");
+    // In batches: the API refuses one request big enough to run it out of memory.
+    const done: ImportResult[] = [];
+    let sent = 0;
+    let failed: string | null = null;
+    for (const batch of importBatches(captures as { captured_at?: unknown; reduced_text?: unknown }[])) {
+      const res = await apiFetch(`/students/${studentId}/bucket3/import`, { method: "POST", body: JSON.stringify({ captures: batch }) }).catch(
+        () => null,
+      );
+      const body = res ? await res.json().catch(() => null) : null;
+      if (!res?.ok || !body) {
+        failed = typeof body?.detail === "string" ? body.detail : "Couldn't import that file. Try again in a minute.";
+        break;
+      }
+      done.push(body as ImportResult);
+      sent += batch.length;
+    }
+    if (failed) {
+      setOutcome({ ok: false, lines: done.length ? [failed, `${sent} of ${plural(captures.length, "page")} were imported before that.`] : [failed] });
+    } else {
+      setOutcome({ ok: true, lines: resultLines(sumResults(done)) });
+    }
+    if (done.length) {
+      setAuditVersion((v) => v + 1);
+      onChanged();
+    }
     setBusy(null);
   };
 

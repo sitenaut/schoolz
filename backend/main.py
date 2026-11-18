@@ -22,6 +22,7 @@ if os.getenv("ANTHROPIC_API_KEY_INTERACTIVE"):
     os.environ["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY_INTERACTIVE"]
 
 import database  # noqa: E402
+import import_size_limit  # noqa: E402
 import models  # noqa: F401,E402  (register tables with Base.metadata)
 import observability  # noqa: E402
 import request_context  # noqa: E402
@@ -138,6 +139,9 @@ app = FastAPI(
 )
 FastAPIInstrumentor.instrument_app(app, excluded_urls="/health$,/ready$")
 
+# Added first, so it sits inside CORS (a browser can read the 413) and still
+# answers before routing reads the body (import_size_limit.py says why).
+app.add_middleware(import_size_limit.ImportSizeLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in (os.getenv("PUBLIC_WEB_URL"),) if o] + _DEFAULT_ALLOWED_ORIGINS,
