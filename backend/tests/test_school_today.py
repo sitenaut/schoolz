@@ -46,6 +46,8 @@ def test_classify_day_precedence_and_labels():
     # Delran's and Cinnaminson's wording.
     assert classify_day(["PCPEP - K-8 Single Session"])[0] == "early_dismissal"
     assert classify_day(["Staff Development Day - No Students"])[0] == "closed"
+    # Kearny's: a staff-only day has no students.
+    assert classify_day(["Staff Only - PD"])[0] == "closed"
     assert classify_day(["K-5 Single Session - Parent Conferences"])[0] == "early_dismissal"
     # Edgewater Park's.
     assert classify_day(["4 Hour Day for Students"])[0] == "early_dismissal"

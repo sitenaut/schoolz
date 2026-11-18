@@ -40,8 +40,8 @@ NOT_THE_SCHOOL_CLOSED_RE = re.compile(
 # A school word earlier in the same clause makes it the school after all:
 # "Schools & Offices Closed, Winter Recess", "Juneteenth - School/Offices Closed".
 # Not Palmyra's summer "District Offices Closed" or Pitman's "School Offices Closed". Glassboro's in-service
-# days are "Teacher Inservice - Students Off".
-_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b", re.I)
+# days are "Teacher Inservice - Students Off", Kearny's staff days "Staff Only - PD".
+_SCHOOL_CLOSED_RE = re.compile(r"\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b|\bstaff\s+only\b", re.I)
 _BARE_CLOSED_RE = re.compile(r"\bclosed\b", re.I)
 # A title that is only the break's name ("Winter Recess", "Spring Break",
 # "NJEA Convention",

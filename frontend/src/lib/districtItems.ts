@@ -26,7 +26,7 @@ const GRADES_THROUGH_RE = /\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b/i;
 // ("Schools & Offices Closed, Winter Recess"). Mirrors school_status.py.
 const NOT_THE_SCHOOL_CLOSED_RE =
   /\b(?:main\s+|front\s+)?(?:offices?|portals?|gym(?:nasium)?(?:\s+\d+)?|weight\s+room|library|media\s+center|pool|fields?|cafeteria|kitchen|parking\s+lot|playground|track|store|pantry|labs?)\s+(?:is\s+|are\s+|will\s+be\s+)?closed\b|\(?\bclosed\)?\s+session\b|\bhalf[\s-]day\s+pre-?school\s+closed\b/gi;
-const SCHOOL_CLOSED_RE = /\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b/i;
+const SCHOOL_CLOSED_RE = /\b(?:schools?(?!\s+offices?\b)|district(?!\s+offices?\b)|buildings?)\b[^,;:()\u2013\u2014-]{0,40}?\bclosed\b|\bno school\b|\bno students\b|\bstudents\s+off\b|\bstaff\s+only\b/i;
 
 /** No school that day. A bare "closed" counts - most feeds word a closure
  * that way ("CLOSED - Winter Recess", "Columbus Day, Closed") - but not an
