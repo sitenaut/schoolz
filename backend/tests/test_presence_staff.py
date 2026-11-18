@@ -61,6 +61,15 @@ def test_presence_footer_both_template_variants():
 
     assert _parse_presence_footer("<footer>nothing</footer>", "https://x.org") is None
 
+    # Hoboken's Connors subsite: no footer box, the same lines in the header.
+    connors = (
+        '<div id="header-right"><div id="header-address">\n 201 Monroe Street, Hoboken, NJ  07030\n </div>'
+        '<div id="header-address">\nPhone 201-356-3680\n <span class="fax-n"><span class="footer-fax"></span></span></div></div>'
+    )
+    out = _parse_presence_footer(connors, "https://www.hoboken.k12.nj.us")
+    assert out["address"] == "201 Monroe Street, Hoboken, NJ 07030"
+    assert out["main_phone"] == "201-356-3680"
+
     delran = (
         '<ul class="address"><li><span class="fa fa-map"></span>50 Hartford Rd., Delran, NJ 08075</li>'
         '<li><span class="fa fa-phone"></span>856.461.6100</li>'

@@ -243,7 +243,8 @@ def _parse_presence_footer(html: str, base_url: str) -> dict | None:
         if address:
             phone = _PRESENCE_PHONE_RE.search(text)
             return {"address": address.group(1), "main_phone": phone.group(1) if phone else None, "logo_url": _find_logo_url(html, base_url)}
-    box = soup.select_one("#footer .address") or soup.select_one("#footer-address")
+    # Hoboken's Connors subsite prints it only in the header, the same markup under "#header-address".
+    box = soup.select_one("#footer .address") or soup.select_one("#footer-address") or soup.select_one("#header-address")
     if not box:
         return None
     address = " ".join(" ".join(box.find_all(string=True, recursive=False)).split())
