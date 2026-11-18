@@ -404,3 +404,21 @@ async def test_school_and_district_routes_hide_a_department_with_nothing_to_act_
             stored.daily_buses_note, stored.office_email = None, "office@x.test"
             await db.commit()
         assert (await client.get(f"/schools/bus-school-{tag}/transportation")).json()["district"]["office_email"] == "office@x.test"
+
+
+@pytest.mark.anyio
+async def test_edlio_department_menu_skips_a_javascript_toggle(monkeypatch):
+    """Jersey City's department nav has a "Staff" dropdown toggle
+    (href="javascript:;"); fetching it raised UnsupportedProtocol."""
+    from services import transportation
+
+    fetched = []
+
+    async def fake_fetch(url):
+        fetched.append(url)
+        return "<html></html>"
+
+    monkeypatch.setattr(transportation, "_fetch_edlio_page", fake_fetch)
+    info = '<a href="javascript:;">Staff</a><a href="/apps/pages/index.jsp?uREC_ID=1&type=d&pREC_ID=2">Guidelines</a>'
+    await transportation._discover_edlio_transportation("https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1&type=d&pREC_ID=1", info)
+    assert fetched == ["https://www.jcboe.org/apps/pages/index.jsp?uREC_ID=1&type=d&pREC_ID=2"]
