@@ -14,6 +14,7 @@ read off the page's own network requests once, by hand, same as Finalsite's
 calendar `feed_id`.
 """
 
+import re
 from datetime import date, datetime, timedelta
 from urllib.parse import urljoin
 
@@ -179,5 +180,14 @@ async def discover_school_info(website_url: str, timeout_ms: int = 20_000) -> di
             if text and "@" not in text
         ]
         result["address"] = ", ".join(dict.fromkeys(address_bits)) or None
+    else:
+        # A third template (Secaucus): a list of `.contact-info-item-wrapper`
+        # rows, each an icon plus one span - the whole address on one line
+        # ("685 Fifth Street, Secaucus, NJ, 07094"), then the phone's tel: link.
+        for item in soup.select(".contact-info-item-wrapper"):
+            text = item.get_text(" ", strip=True)
+            if text and not item.select_one("a[href^='tel:'], a[href^='mailto:']") and "@" not in text and re.search(r"\d", text):
+                result["address"] = re.sub(r",\s*(\d{5}(?:-\d{4})?)$", r" \1", text)
+                break
 
     return result

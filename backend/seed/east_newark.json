@@ -1,0 +1,51 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: East Newark (Hudson County)",
+  "districts": [
+    {
+      "name": "East Newark School District",
+      "state": "NJ",
+      "website_url": "https://www.eastnewarkschool.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://www.eastnewarkschool.org/",
+      "ics_feeds": [],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "East Newark"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "east-newark-school",
+      "name": "East Newark School",
+      "short_name": "East Newark",
+      "district_name": "East Newark School District",
+      "school_type": "elementary",
+      "address": "501 North Third Street, East Newark, NJ 07029",
+      "main_phone": "(973) 481-6800",
+      "website_url": "https://www.eastnewarkschool.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(973) 481-6800",
+      "absence_portal_name": "Genesis Parent Portal",
+      "absence_portal_url": "https://parents.c2.genesisedu.net/enps",
+      "absence_instructions": "Call the school office at (973) 481-6800 before the school day starts with your name, your child's name, grade and the reason, or record the absence in the Genesis Parent Portal. Report each day your child is out.",
+      "start_time": "8:20 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss19.sharpschool.com/UserFiles/Servers/Server_4354280/Image/3a6212b1-98c0-45c2-a784-506c5f6d8c6f.png",
+      "bell_periods": null,
+      "sacc": null,
+      "nutrislice_location": "eastnewarkschool/east-newark-school"
+    }
+  ],
+  "smore_newsletters": []
+}

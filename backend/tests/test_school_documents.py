@@ -63,6 +63,12 @@ def test_edlio_policy_nav_skipped_and_cycle_calendar_classified():
     )
     assert _find_doc_file_anchors(page, "https://x") == [("https://x/ourpages/a.pdf", "Cycle")]
 
+    newer_edlio = (
+        '<header><nav id="sitenav_main"><a href="https://docs.google.com/a/x/forms/d/1/viewform">HIB Form</a></nav></header>'
+        '<main id="content_main" class="site-content"><table><tr><td>Period 1</td></tr></table></main>'
+    )
+    assert _find_doc_file_anchors(newer_edlio, "https://x") == []
+
 
 def test_my_food_days_link_is_kept_as_lunch_ordering():
     from services.school_documents import _find_doc_anchors

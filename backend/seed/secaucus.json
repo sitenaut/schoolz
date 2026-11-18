@@ -1,0 +1,817 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Secaucus (Hudson County)",
+  "districts": [
+    {
+      "name": "Secaucus Public School District",
+      "state": "NJ",
+      "website_url": "https://www.sboe.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": "https://aptg.co/LxjxJ5",
+      "ics_feeds": [
+        {
+          "name": "Secaucus District",
+          "platform": "apptegy",
+          "org_id": "34252",
+          "skip_sections": [
+            "Huber Events",
+            "Clarendon Events",
+            "SMS Events",
+            "SHS Events"
+          ],
+          "school_title_prefixes": {
+            "Huber Street": "secaucus-huber-street"
+          }
+        },
+        {
+          "name": "Secaucus Huber Street",
+          "platform": "apptegy",
+          "org_id": "34253",
+          "school_slug": "secaucus-huber-street"
+        },
+        {
+          "name": "Secaucus Clarendon",
+          "platform": "apptegy",
+          "org_id": "34254",
+          "school_slug": "secaucus-clarendon"
+        },
+        {
+          "name": "Secaucus Middle",
+          "platform": "apptegy",
+          "org_id": "34255",
+          "school_slug": "secaucus-middle"
+        },
+        {
+          "name": "Secaucus High",
+          "platform": "apptegy",
+          "org_id": "34256",
+          "school_slug": "secaucus-high"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Secaucus"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "secaucus-clarendon",
+      "name": "Clarendon School",
+      "short_name": "Clarendon",
+      "district_name": "Secaucus Public School District",
+      "school_type": "elementary",
+      "address": "685 Fifth Street, Secaucus, NJ 07094",
+      "main_phone": "(201) 974-2010",
+      "website_url": "https://www.sboe.org/o/clarendon",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 974-2010, option 1",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's absence hotline, (201) 974-2010 then option 1, no later than 30 minutes after the school day starts. Send a signed note from a parent when your child returns.",
+      "start_time": "8:20 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:20 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/34254/logo/37323/Clarendon_Logo%282%29.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:20",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:10",
+            "end": "09:50"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:50",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:30",
+            "end": "11:10"
+          },
+          {
+            "name": "Period 5 (Lunch)",
+            "start": "11:10",
+            "end": "12:00"
+          },
+          {
+            "name": "Homeroom (PM)",
+            "start": "12:00",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 6 (Lunch)",
+            "start": "12:05",
+            "end": "12:55"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:55",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:35",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:15",
+            "end": "14:55"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:20",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:00"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:00",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:30",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:00",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 5/6 (Lunch)",
+            "start": "10:30",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:00",
+            "end": "11:30"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:30",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:00",
+            "end": "12:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:20",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:35",
+            "end": "10:57"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:57",
+            "end": "11:19"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:19",
+            "end": "11:41"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:41",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 5 (Lunch)",
+            "start": "12:05",
+            "end": "12:45"
+          },
+          {
+            "name": "Homeroom (PM)",
+            "start": "12:45",
+            "end": "12:50"
+          },
+          {
+            "name": "Period 6 (Lunch)",
+            "start": "12:50",
+            "end": "13:30"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:30"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:30",
+            "end": "14:55"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:20 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 330-2077",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Secaucus Recreation (the town), not the district; register through Secaucus RecDesk (secaucus.recdesk.com).",
+        "handbook_url": "https://www.sboe.org/o/clarendon/page/before-and-after-care"
+      },
+      "apptegy_org_id": "34254",
+      "nutrislice_location": "sboe/clarendon-school"
+    },
+    {
+      "slug": "secaucus-huber-street",
+      "name": "Huber Street School",
+      "short_name": "Huber Street",
+      "district_name": "Secaucus Public School District",
+      "school_type": "elementary",
+      "address": "1520 Paterson Plank Road, Secaucus, NJ 07094",
+      "main_phone": "(201) 974-2053",
+      "website_url": "https://www.sboe.org/o/huber",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 974-2053, option 3 then option 1",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school's absence hotline, (201) 974-2053 then option 3 and option 1, no later than 30 minutes after the school day starts. Send a signed note from a parent when your child returns. Millridge Pre-K: (201) 974-2053, option 1 then option 1.",
+      "start_time": "8:20 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:30 PM",
+      "delayed_opening_time": "10:20 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/34253/logo/37322/Huber_Logo.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:20",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:10"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:10",
+            "end": "09:50"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:50",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:30",
+            "end": "11:10"
+          },
+          {
+            "name": "Period 5 (Lunch)",
+            "start": "11:10",
+            "end": "12:00"
+          },
+          {
+            "name": "Homeroom (PM)",
+            "start": "12:00",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 6 (Lunch)",
+            "start": "12:05",
+            "end": "12:55"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:55",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:35",
+            "end": "14:15"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:15",
+            "end": "14:55"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:20",
+            "end": "08:30"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:30",
+            "end": "09:00"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:00",
+            "end": "09:30"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:30",
+            "end": "10:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:00",
+            "end": "10:30"
+          },
+          {
+            "name": "Period 5/6 (Lunch)",
+            "start": "10:30",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:00",
+            "end": "11:30"
+          },
+          {
+            "name": "Period 8",
+            "start": "11:30",
+            "end": "12:00"
+          },
+          {
+            "name": "Period 9",
+            "start": "12:00",
+            "end": "12:30"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:20",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:35",
+            "end": "10:57"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:57",
+            "end": "11:19"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:19",
+            "end": "11:41"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:41",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 5 (Lunch)",
+            "start": "12:05",
+            "end": "12:45"
+          },
+          {
+            "name": "Homeroom (PM)",
+            "start": "12:45",
+            "end": "12:50"
+          },
+          {
+            "name": "Period 6 (Lunch)",
+            "start": "12:50",
+            "end": "13:30"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:30",
+            "end": "14:00"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:30"
+          },
+          {
+            "name": "Period 9",
+            "start": "14:30",
+            "end": "14:55"
+          }
+        ]
+      },
+      "sacc": {
+        "am_hours": "7:00 AM - 8:20 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 330-2077",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Secaucus Recreation (the town), not the district; register through Secaucus RecDesk (secaucus.recdesk.com).",
+        "handbook_url": "https://www.sboe.org/o/huber/page/before-and-after-care"
+      },
+      "apptegy_org_id": "34253",
+      "nutrislice_location": "sboe/huber-street-school"
+    },
+    {
+      "slug": "secaucus-middle",
+      "name": "Secaucus Middle School",
+      "short_name": "Secaucus Middle",
+      "district_name": "Secaucus Public School District",
+      "school_type": "middle",
+      "address": "11 Millridge Road, Secaucus, NJ 07094",
+      "main_phone": "(201) 974-2025",
+      "website_url": "https://www.sboe.org/o/sms",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:40 AM",
+      "end_time": "2:19 PM",
+      "early_dismissal_time": "11:40 AM",
+      "delayed_opening_time": "9:40 AM",
+      "athletics_url": "https://secaucuspatriots.digitalsports.com/pages/schedule/schedule.php",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/34255/logo/37324/SMS_Logo__1_.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:40",
+            "end": "07:46"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:46",
+            "end": "08:27"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:30",
+            "end": "09:11"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:14",
+            "end": "09:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:58",
+            "end": "10:39"
+          },
+          {
+            "name": "Period 5 (10/11/12 Lunch)",
+            "start": "10:42",
+            "end": "11:23"
+          },
+          {
+            "name": "Period 6 (8/9 Lunch)",
+            "start": "11:26",
+            "end": "12:07"
+          },
+          {
+            "name": "Period 7 (6/7 Lunch)",
+            "start": "12:10",
+            "end": "12:51"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:54",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:38",
+            "end": "14:19"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:40",
+            "end": "08:04"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:07",
+            "end": "08:31"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:34",
+            "end": "08:58"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:01",
+            "end": "09:25"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:28",
+            "end": "09:52"
+          },
+          {
+            "name": "Period 6",
+            "start": "09:55",
+            "end": "10:19"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:22",
+            "end": "10:46"
+          },
+          {
+            "name": "Period 8",
+            "start": "10:49",
+            "end": "11:13"
+          },
+          {
+            "name": "Period 9",
+            "start": "11:16",
+            "end": "11:40"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:40",
+            "end": "09:46"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:46",
+            "end": "10:14"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:17",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:48",
+            "end": "11:16"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:19",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 5 (10/11/12 Lunch)",
+            "start": "11:50",
+            "end": "12:18"
+          },
+          {
+            "name": "Period 6 (8/9 Lunch)",
+            "start": "12:20",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 7 (6/7 Lunch)",
+            "start": "12:50",
+            "end": "13:18"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:21",
+            "end": "13:49"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:51",
+            "end": "14:19"
+          }
+        ]
+      },
+      "sacc": null,
+      "apptegy_org_id": "34255",
+      "nutrislice_location": "sboe/secaucus-middle-scool"
+    },
+    {
+      "slug": "secaucus-high",
+      "name": "Secaucus High School",
+      "short_name": "Secaucus High",
+      "district_name": "Secaucus Public School District",
+      "school_type": "high",
+      "address": "11 Millridge Road, Secaucus, NJ 07094",
+      "main_phone": "(201) 974-2033",
+      "website_url": "https://www.sboe.org/o/shs",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "7:40 AM",
+      "end_time": "2:19 PM",
+      "early_dismissal_time": "11:40 AM",
+      "delayed_opening_time": "9:40 AM",
+      "athletics_url": "https://secaucuspatriots.digitalsports.com/pages/schedule/schedule.php",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/34256/logo/37325/Secaucus_High_Logo.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "07:40",
+            "end": "07:46"
+          },
+          {
+            "name": "Period 1",
+            "start": "07:46",
+            "end": "08:27"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:30",
+            "end": "09:11"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:14",
+            "end": "09:55"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:58",
+            "end": "10:39"
+          },
+          {
+            "name": "Period 5 (10/11/12 Lunch)",
+            "start": "10:42",
+            "end": "11:23"
+          },
+          {
+            "name": "Period 6 (8/9 Lunch)",
+            "start": "11:26",
+            "end": "12:07"
+          },
+          {
+            "name": "Period 7 (6/7 Lunch)",
+            "start": "12:10",
+            "end": "12:51"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:54",
+            "end": "13:35"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:38",
+            "end": "14:19"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "07:40",
+            "end": "08:04"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:07",
+            "end": "08:31"
+          },
+          {
+            "name": "Period 3",
+            "start": "08:34",
+            "end": "08:58"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:01",
+            "end": "09:25"
+          },
+          {
+            "name": "Period 5",
+            "start": "09:28",
+            "end": "09:52"
+          },
+          {
+            "name": "Period 6",
+            "start": "09:55",
+            "end": "10:19"
+          },
+          {
+            "name": "Period 7",
+            "start": "10:22",
+            "end": "10:46"
+          },
+          {
+            "name": "Period 8",
+            "start": "10:49",
+            "end": "11:13"
+          },
+          {
+            "name": "Period 9",
+            "start": "11:16",
+            "end": "11:40"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "09:40",
+            "end": "09:46"
+          },
+          {
+            "name": "Period 1",
+            "start": "09:46",
+            "end": "10:14"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:17",
+            "end": "10:45"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:48",
+            "end": "11:16"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:19",
+            "end": "11:47"
+          },
+          {
+            "name": "Period 5 (10/11/12 Lunch)",
+            "start": "11:50",
+            "end": "12:18"
+          },
+          {
+            "name": "Period 6 (8/9 Lunch)",
+            "start": "12:20",
+            "end": "12:48"
+          },
+          {
+            "name": "Period 7 (6/7 Lunch)",
+            "start": "12:50",
+            "end": "13:18"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:21",
+            "end": "13:49"
+          },
+          {
+            "name": "Period 9",
+            "start": "13:51",
+            "end": "14:19"
+          }
+        ]
+      },
+      "sacc": null,
+      "apptegy_org_id": "34256",
+      "nutrislice_location": "sboe/secaucus-high-school"
+    }
+  ],
+  "smore_newsletters": []
+}

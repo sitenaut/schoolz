@@ -147,8 +147,11 @@ def _find_doc_file_anchors(html: str, base_url: str) -> list[tuple[str, str]]:
     # link that has nothing to do with this school's handbook).
     # Edlio's equivalent is #pageContentWrapper: unscoped, the "Handbook"
     # page picked up three unrelated /pdfs/ links from the site footer.
+    # Newer Edlio templates (Weehawken) use <main id="content_main"> instead:
+    # unscoped, a bell-schedule page that is an HTML table stored all fourteen
+    # Google Docs, Forms and state HIB PDFs in its dropdown nav as "Bell Schedule".
     soup = BeautifulSoup(html, "lxml")
-    container = soup.find(id="fsPageContent") or soup.find(id="pageContentWrapper") or soup
+    container = soup.find(id="fsPageContent") or soup.find(id="pageContentWrapper") or soup.find(id="content_main") or soup
     links = []
     for a in container.find_all("a", href=True):
         href = a["href"]
