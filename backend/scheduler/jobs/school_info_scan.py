@@ -63,9 +63,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         school.main_phone = info["main_phone"]
         changed.append("main_phone")
     if info["logo_url"] and info["logo_url"] != school.logo_url:
-        school.logo_url = info["logo_url"]
-        school.logo_backing = None
-        changed.append("logo")
+        # Only a logo that loads: every Jersey City school host's first header
+        # image is the template's /pics/falcons.png, a 404.
+        backing = await classify_logo_url(info["logo_url"])
+        if backing is not None:
+            school.logo_url = info["logo_url"]
+            school.logo_backing = backing
+            changed.append("logo")
     if school.logo_url and school.logo_backing is None:
         school.logo_backing = await classify_logo_url(school.logo_url)
 

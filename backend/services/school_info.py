@@ -172,10 +172,12 @@ def _parse_edlio_footer(html: str, base_url: str) -> dict | None:
     platform (no such link), so the Finalsite path still runs."""
     soup = BeautifulSoup(html, "lxml")
     address = None
-    maps = soup.select_one(".footer-info-block a[href$='/apps/maps']")
+    # Jersey City's hosts link "/apps/maps/", with the trailing slash.
+    maps = soup.select_one(".footer-info-block a[href$='/apps/maps'], .footer-info-block a[href$='/apps/maps/']")
     if maps:
         phone = soup.select_one(".footer-info-block a[href^='tel:']")
-        phone_text = phone.get_text(strip=True) if phone else None
+        # A stray keystroke in the typed number (Jersey City PS 12: "201-9`15-6420").
+        phone_text = re.sub(r"[`'´]", "", phone.get_text(strip=True)) if phone else None
     else:
         # Stratford's Edlio sites use `.enf-address`: the phone is plain
         # "P: (856) ..." text inside a `/apps/contact` link, not a tel: link.

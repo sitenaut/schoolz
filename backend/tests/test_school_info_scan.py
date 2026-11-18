@@ -77,3 +77,29 @@ async def test_district_footer_on_a_school_page_never_overwrites(footer):
     school, note = await _scan(school_id)
     assert (school.address, school.main_phone) == ("405 Cherrix Avenue", "609-877-1430")
     assert not (note or "").startswith("WARNING")
+
+
+@pytest.mark.anyio
+async def test_a_logo_that_does_not_load_is_not_stored(monkeypatch):
+    """Every Jersey City host's first header image is a 404 template file."""
+    from scheduler.jobs import school_info_scan
+
+    async with database.SessionLocal() as db:
+        school = School(name="Logo Test School", slug="t-logo-404", website_url="https://ps99.example.org")
+        db.add(school)
+        await db.flush()
+
+        async def footer(url):
+            return {"address": None, "main_phone": None, "logo_url": "https://ps99.example.org/pics/falcons.png"}
+
+        async def unreachable(url):
+            return None
+
+        async def no_location(s):
+            return None
+
+        monkeypatch.setattr(school_info_scan, "discover_school_info", footer)
+        monkeypatch.setattr(school_info_scan, "classify_logo_url", unreachable)
+        monkeypatch.setattr(school_info_scan, "ensure_location", no_location)
+        await school_info_scan.run(db, {"school_id": school.id})
+        assert school.logo_url is None
