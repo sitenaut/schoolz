@@ -1,0 +1,282 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Harrison (Hudson County)",
+  "districts": [
+    {
+      "name": "Harrison Public Schools",
+      "state": "NJ",
+      "website_url": "https://www.harrisonschools.org",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Harrison Public Schools District Calendar",
+          "url": "https://www.harrisonschools.org/ICalendarHandler?calendarId=161009482"
+        },
+        {
+          "name": "Harrison High School Calendar",
+          "url": "https://hhs.harrisonschools.org/ICalendarHandler?calendarId=2495481",
+          "school_slug": "harrison-high"
+        },
+        {
+          "name": "Hamilton Intermediate School Calendar",
+          "url": "https://his.harrisonschools.org/ICalendarHandler?calendarId=84330",
+          "school_slug": "harrison-hamilton-intermediate"
+        },
+        {
+          "name": "Kennedy Elementary School Calendar",
+          "url": "https://kes.harrisonschools.org/ICalendarHandler?calendarId=30973705",
+          "school_slug": "harrison-kennedy-elementary"
+        },
+        {
+          "name": "Lincoln Elementary School Calendar",
+          "url": "https://les.harrisonschools.org/ICalendarHandler?calendarId=829152",
+          "school_slug": "harrison-lincoln-elementary"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Harrison",
+        "East Newark"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "harrison-high",
+      "name": "Harrison High School",
+      "short_name": "Harrison High",
+      "district_name": "Harrison Public Schools",
+      "school_type": "high",
+      "address": "401 Kingsland Avenue, Harrison, NJ 07029",
+      "main_phone": "(973) 482-5050",
+      "website_url": "https://hhs.harrisonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(973) 482-5050",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the Main Office at (973) 482-5050 by 8:00 AM each day your child is absent. Bring a doctor's note (or a note for an approved religious observance) to the Main Office the day your child returns, or the absence stays unexcused.",
+      "start_time": "8:20 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "1:11 PM",
+      "delayed_opening_time": null,
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=9549",
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_90274/Image/Harrison-High-School-Logo-edited.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "1",
+            "start": "08:20",
+            "end": "09:06"
+          },
+          {
+            "name": "Announcements",
+            "start": "09:06",
+            "end": "09:08"
+          },
+          {
+            "name": "2",
+            "start": "09:13",
+            "end": "09:59"
+          },
+          {
+            "name": "3",
+            "start": "10:04",
+            "end": "10:50"
+          },
+          {
+            "name": "4",
+            "start": "10:55",
+            "end": "11:41"
+          },
+          {
+            "name": "5",
+            "start": "11:46",
+            "end": "12:32"
+          },
+          {
+            "name": "6",
+            "start": "12:37",
+            "end": "13:23"
+          },
+          {
+            "name": "7",
+            "start": "13:28",
+            "end": "14:14"
+          },
+          {
+            "name": "8",
+            "start": "14:19",
+            "end": "15:05"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "1",
+            "start": "08:20",
+            "end": "08:52"
+          },
+          {
+            "name": "2",
+            "start": "08:56",
+            "end": "09:28"
+          },
+          {
+            "name": "3",
+            "start": "09:32",
+            "end": "10:04"
+          },
+          {
+            "name": "4",
+            "start": "10:08",
+            "end": "10:40"
+          },
+          {
+            "name": "5",
+            "start": "10:44",
+            "end": "11:16"
+          },
+          {
+            "name": "6",
+            "start": "11:20",
+            "end": "11:52"
+          },
+          {
+            "name": "7",
+            "start": "11:56",
+            "end": "12:28"
+          },
+          {
+            "name": "8",
+            "start": "12:32",
+            "end": "13:11"
+          }
+        ]
+      },
+      "sacc": null
+    },
+    {
+      "slug": "harrison-washington-middle",
+      "name": "Washington Middle School",
+      "short_name": "Washington Middle",
+      "district_name": "Harrison Public Schools",
+      "school_type": "middle",
+      "address": "1 North Fifth Street, Harrison, NJ 07029",
+      "main_phone": "(973) 483-2285",
+      "website_url": "https://wms.harrisonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(973) 483-2285",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school at (973) 483-2285 between 8:00 and 9:00 AM each day your child is absent. When your child returns, send the main office a written note from a parent or doctor with the reason and dates; only a doctor's note makes the absence excused.",
+      "start_time": "8:20 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "1:11 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_87052/Image/new%20logo/wms-logo-new.png",
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "harrison-hamilton-intermediate",
+      "name": "Hamilton Intermediate School",
+      "short_name": "Hamilton Intermediate",
+      "district_name": "Harrison Public Schools",
+      "school_type": "elementary",
+      "address": "223 Hamilton Street, Harrison, NJ 07029",
+      "main_phone": "(973) 735-5550",
+      "website_url": "https://his.harrisonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(973) 735-5550",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (973) 735-5550 before 8:45 AM with the reason for the absence. An absence is excused only with a doctor's note to the main office or nurse.",
+      "start_time": "8:20 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "1:11 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_84170/Image/HIS_Logo-EDITED.png",
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "harrison-kennedy-elementary",
+      "name": "Kennedy Elementary School",
+      "short_name": "Kennedy Elementary",
+      "district_name": "Harrison Public Schools",
+      "school_type": "elementary",
+      "address": "1 Washington Street, Harrison, NJ 07029",
+      "main_phone": "(973) 833-8500",
+      "website_url": "https://kes.harrisonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(973) 833-8500",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (973) 833-8500 by 8:45 AM with the reason for the absence. An absence is excused only with a doctor's note to the main office or nurse.",
+      "start_time": "8:20 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "1:11 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_30973539/Image/KES%20Mascot%20-%20no%20bg.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:30 AM - 8:20 AM (arrive by 8:00 AM)",
+        "pm_hours": "3:05 PM - 5:30 PM",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 5:30 PM; three late pick-ups may mean removal from After Care.",
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Harrison Public Schools itself, not a vendor. No care when school is closed; hours may change on early dismissal days. Monthly fee per child: $50 before care, $150 after care, $200 both.",
+        "site_phone": "(973) 833-8500",
+        "handbook_url": "https://kes.harrisonschools.org/parents/before___aftercare_info"
+      }
+    },
+    {
+      "slug": "harrison-lincoln-elementary",
+      "name": "Lincoln Elementary School",
+      "short_name": "Lincoln Elementary",
+      "district_name": "Harrison Public Schools",
+      "school_type": "elementary",
+      "address": "221 Cross Street, Harrison, NJ 07029",
+      "main_phone": "(973) 483-6400",
+      "website_url": "https://les.harrisonschools.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(973) 483-6400 ext. 3028",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call (973) 483-6400 ext. 3028 by 8:45 AM with the reason for the absence. An absence is excused only with a doctor's note to the main office or nurse.",
+      "start_time": "8:20 AM",
+      "end_time": "3:05 PM",
+      "early_dismissal_time": "1:11 PM",
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": "https://cdnsm5-ss18.sharpschool.com/UserFiles/Servers/Server_83823/Image/LES_Logo-edited.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:30 AM - 8:20 AM (arrive by 8:00 AM)",
+        "pm_hours": "3:05 PM - 5:30 PM",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": "Pick up by 5:30 PM; three late pick-ups may mean removal from After Care.",
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by Harrison Public Schools itself, not a vendor. No care when school is closed; hours may change on early dismissal days. Monthly fee per child: $50 before care, $150 after care, $200 both.",
+        "site_phone": "(973) 483-6400",
+        "handbook_url": "https://les.harrisonschools.org/special_programs/before___after_care"
+      }
+    }
+  ],
+  "smore_newsletters": []
+}

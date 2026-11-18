@@ -121,3 +121,12 @@ def test_a_drive_file_labelled_by_its_own_link_text():
         "2026-2027 School Calendar</a></strong></p>"
     )
     assert find_pdf_link(html, "https://x.test/") == "https://drive.google.com/uc?export=download&id=1SP4taZ_SGmAfS6fYK8qIIe-SY0cbxmBZ"
+
+
+def test_find_pdf_link_reads_an_embedded_iframe():
+    """Harrison's calendar page has no link to its year PDF, only an iframe
+    whose relative src has spaces and a trailing newline."""
+    html = '<iframe src="/UserFiles/Servers/Server_83643/Image/School Calendar 2026-2027b.pdf\n" width="100%"></iframe>'
+    assert find_pdf_link(html, "https://www.harrisonschools.org/resources/district_calendar") == (
+        "https://www.harrisonschools.org/UserFiles/Servers/Server_83643/Image/School%20Calendar%202026-2027b.pdf"
+    )
