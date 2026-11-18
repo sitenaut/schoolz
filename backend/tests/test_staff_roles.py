@@ -17,6 +17,7 @@ def test_secretary_to_a_principal_is_the_secretary():
     assert classify_role("Secretary to the Dir. of Curr./Nokomis Principal") == "secretary"
     assert classify_role("Assistant Principal’s Secretary") == "secretary"
     assert classify_role("Principal's Secretary") == "secretary"
+    assert classify_role("Principal Clerk") == "secretary"
     assert classify_role("Administrative Assistant to the Principal") == "secretary"
     assert classify_role("Principal") == "principal"
     assert classify_role("Assistant Principal") == "assistant_principal"
