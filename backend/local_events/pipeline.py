@@ -46,7 +46,7 @@ from .sources.event_pages import EventPageSource
 from .sources.evvnt import EvvntSource
 from .sources.gcal import GoogleCalendarSource
 from .sources.ical import ICalSource
-from .sources.json_api import JsonApiSource
+from .sources.json_api import DPCALENDAR_WINDOW_DAYS, JsonApiSource
 from .sources.libcal import LibCalSource
 from .sources.listing_page import ListingPageSource
 from .sources.ludus import LudusSource
@@ -145,6 +145,9 @@ def _build_sources(params: dict) -> list[Source]:
                 parser=entry.get("parser"),
                 upcoming_only=bool(entry.get("upcoming_only", False)),
                 default_categories=list(entry.get("default_categories") or []),
+                date_range_params=entry.get("date_range_params"),
+                window_days=int(entry.get("window_days", DPCALENDAR_WINDOW_DAYS)),
+                exclude_field_values=entry.get("exclude_field_values"),
             )
         )
     for entry in params.get("gcal_sources") or []:

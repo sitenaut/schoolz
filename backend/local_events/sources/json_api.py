@@ -8,6 +8,13 @@ Supported parsers:
   "dpcalendar" — DPCalendar (Joomla component used by many NJ townships).
                  Extracts calendar-category name and plain-text description
                  from the HTML tooltip in the `description` field.
+
+Feeds that need a date range on every request (FullCalendar endpoints such as
+the Alpha Dog town sites' `/api/data/GetCalendarData`, which return nothing
+without one) set `date_range_params`; `exclude_field_values` drops entries by a
+field the feed itself sets (those sites mark every meeting `className:
+"Meeting"`, titled just "Planning Board" or "Council", which no title filter
+can tell from an event).
 """
 from __future__ import annotations
 
@@ -188,6 +195,11 @@ class JsonApiSource(Source):
         parser: Named site-specific post-processor (e.g. "dpcalendar").
         default_categories: Tags applied to every event from this source.
         timeout: HTTP request timeout in seconds.
+        date_range_params: [start, end] query-parameter names; each fetch asks
+            for today through `window_days` ahead, so the range never goes stale.
+        window_days: How far ahead `date_range_params` asks (default 90).
+        exclude_field_values: {field: [values]}; an entry whose field equals
+            one of the values is skipped.
     """
 
     def __init__(
@@ -209,6 +221,9 @@ class JsonApiSource(Source):
         default_categories: list[str] | None = None,
         timeout: float = 30.0,
         upcoming_only: bool = False,
+        date_range_params: list[str] | None = None,
+        window_days: int = DPCALENDAR_WINDOW_DAYS,
+        exclude_field_values: dict[str, list[str]] | None = None,
     ) -> None:
         self.name = name
         self.url = url
@@ -232,6 +247,11 @@ class JsonApiSource(Source):
         # Revize's handler returns the town's whole history (Mount Laurel:
         # 1,821 entries, 24 of them upcoming); drop what's already over.
         self.upcoming_only = upcoming_only
+        self.date_range_params = list(date_range_params or [])
+        if self.date_range_params and len(self.date_range_params) != 2:
+            raise ValueError(f"{name}: date_range_params needs [start, end] parameter names")
+        self.window_days = window_days
+        self.exclude_field_values = {k: {str(v) for v in vals} for k, vals in (exclude_field_values or {}).items()}
 
     def request_url(self, today: date | None = None) -> str:
         """DPCalendar's raw events feed returns an empty list unless it's
@@ -239,10 +259,13 @@ class JsonApiSource(Source):
         default config hits with none - it has always come back with 0
         events). A fixed range in the configured URL would go stale, so one
         is added per fetch unless the URL already sets its own."""
-        if self.parser != "dpcalendar" or "date-start=" in self.url:
-            return self.url
         start = today or date.today()
         sep = "&" if "?" in self.url else "?"
+        if self.date_range_params:
+            start_param, end_param = self.date_range_params
+            return f"{self.url}{sep}{start_param}={start.isoformat()}&{end_param}={(start + timedelta(days=self.window_days)).isoformat()}"
+        if self.parser != "dpcalendar" or "date-start=" in self.url:
+            return self.url
         return f"{self.url}{sep}date-start={start.isoformat()}&date-end={(start + timedelta(days=DPCALENDAR_WINDOW_DAYS)).isoformat()}"
 
     async def fetch(self) -> list[RawEvent]:
@@ -263,6 +286,8 @@ class JsonApiSource(Source):
         today = datetime.now(_et()).replace(hour=0, minute=0, second=0, microsecond=0)
         for entry in events_raw:
             if not isinstance(entry, dict):
+                continue
+            if any(str(entry.get(field)) in values for field, values in self.exclude_field_values.items()):
                 continue
             try:
                 all_day = bool(entry.get(self.all_day_field, False))
