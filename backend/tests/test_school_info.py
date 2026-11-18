@@ -87,3 +87,11 @@ def test_wp_header_info_reads_address_and_phone():
     assert info["address"] == "101 Evans Rd., Marlton, NJ 08053"
     assert info["main_phone"] == "856-983-0774"
     assert _parse_wp_header_info("<p>nothing</p>", "https://x.org") is None
+
+
+def test_a_four_digit_nj_zip_gets_its_leading_zero_back():
+    from scheduler.jobs.school_info_scan import restore_zip_zero
+
+    assert restore_zip_zero("516 36th Street, Union City, NJ 7087") == "516 36th Street, Union City, NJ 07087"
+    assert restore_zip_zero("516 36th Street, Union City, NJ 07087") == "516 36th Street, Union City, NJ 07087"
+    assert restore_zip_zero("1 Main St, Philadelphia, PA 1910") == "1 Main St, Philadelphia, PA 1910"

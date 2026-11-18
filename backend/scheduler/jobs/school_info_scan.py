@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,6 +9,15 @@ from services.apptegy import discover_school_info as discover_apptegy_school_inf
 from services.logo_backing import classify_logo_url
 from services.school_info import discover_school_info
 from services.weather import ensure_location
+
+# A footer that typed its ZIP as a number drops the leading zero (Esther
+# Salas Academy: "Union City, NJ 7087"). Every New Jersey and New England ZIP
+# starts with 0, so a four-digit one after those states is that.
+_FOUR_DIGIT_ZIP_RE = re.compile(r"(\b(?:NJ|CT|MA|ME|NH|RI|VT)\.?,?\s+)(\d{4})\s*$")
+
+
+def restore_zip_zero(address: str) -> str:
+    return _FOUR_DIGIT_ZIP_RE.sub(lambda m: f"{m.group(1)}0{m.group(2)}", address)
 
 
 @register_job(
@@ -37,6 +48,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     ).first() is not None
     if shared_site:
         info = {**info, "address": info["address"] if not school.address else None, "main_phone": info["main_phone"] if not school.main_phone else None}
+
+    if info["address"]:
+        info = {**info, "address": restore_zip_zero(info["address"])}
 
     changed = []
     if info["address"] and info["address"] != school.address:
