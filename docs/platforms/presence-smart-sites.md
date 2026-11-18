@@ -164,3 +164,13 @@ Per-district notes moved out of `docs/ONBOARDING_CRAWL_GUIDE.md` so a crawler lo
 - SchoolCafé Nutri-Serve ISDs can resolve with menus published in search yet return `[]` from `GetSchoolsList` (Delsea 4705, Elk 4698).
 
 - **Mercer County (Robbinsville, Trenton)** — Smart Sites can have native calendars with `/sndreq/generateCalendarICS.php?calendar_id=N`; a nav item can redirect across hosts. Trenton's Presence calendars are `ICalendarHandler?calendarId=N`; a school's is usually an exact copy of the district's with a suffixed UID (`20760618-20765158`), so compare titles and dates, not UIDs. `parentId.<n>=` also matches quick-link portlets: take the id only from links carrying `localStartDate`. Document widget subfolders can be `Type: content_folder` with `FolderCount: 0`, which `presence_documents` treats as files. Menus can be `.pptx`. ArbiterLive's search misses schools whose listing lacks the town's name: search each school's own word too.
+
+## Hudson County (Harrison, Hoboken, East Newark; Guttenberg on Smart Sites)
+
+- Presence calendar feed: `https://<host>/ICalendarHandler?calendarId=<id>`, the id being the `parentId.<n>=` value in the homepage's event links or the `objectId` in the calendar page's `AddEventClick` script. Google-synced calendars carry UIDs like `<googleid>@google.com-<eventId>`. A school's feed can be an exact copy of the district's plus a stray "Test" event (Harrison WMS): compare UIDs before wiring.
+- Hoboken's schools are pages of one district host: a school's real home is `/schools/<name>_-_home` (the og:url); `/schools/<name>` is a district hub with the district footer. One calendar serves every school, told apart by title prefix ("Hoboken HS", "Brandt", "Connors"). Section pages can sit under unrelated branches of the tree (Wallace's under `/summer_programs/...`).
+- A school's address can be only in `#header-address` (Hoboken Connors); `_parse_presence_footer` reads it after `#footer-address`.
+- A district calendar PDF can be embedded as `<iframe src="/UserFiles/.../School Calendar 2026-2027b.pdf\n">` with no link anywhere (Harrison); `find_pdf_link` now reads `src=` too.
+- A `/calendar` slug can 302 to last year's PDF while the homepage quick link holds the current one (East Newark).
+- Presence "Admin Staff" directory groups can be the same untitled district accounts on every subsite (Harrison High and Hamilton both returned the same 11).
+- Smart Sites (Guttenberg's alkschool.org): the native calendar's ICS (`/sndreq/generateCalendarICS.php?calendar_id=N`) has single-day all-day events with DTEND equal to DTSTART; the "School Calendar" page is only a JPG.
