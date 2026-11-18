@@ -46,6 +46,12 @@ def test_pick_menus_skips_preschool_only_menus():
     assert {k: v["id"] for k, v in chosen.items()} == {"breakfast": 2, "lunch": 4}
 
 
+def test_pick_menus_takes_the_preschool_menu_when_it_is_all_a_site_has():
+    # West New York's Early Childhood School.
+    menus = [{"id": 7, "meal_type_id": 1, "public_name": "WNY PREK Breakfast"}, {"id": 8, "meal_type_id": 2, "public_name": "WNY PREK Lunch"}]
+    assert {k: v["id"] for k, v in healthepro.pick_menus(menus).items()} == {"breakfast": 7, "lunch": 8}
+
+
 def test_parse_location():
     assert healthepro.parse_location("2984/16222") == ("2984", "16222")
     assert healthepro.parse_location("3/297/1469") is None

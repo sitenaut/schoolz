@@ -44,14 +44,21 @@ def menu_page_url(org: str, site: str) -> str:
 
 def pick_menus(menus: list[dict]) -> dict[str, dict]:
     """One menu per meal type: the first that isn't preschool-only, in the
-    site's own listing order. Returns {"lunch": menu, "breakfast": menu}."""
+    site's own listing order, else the preschool one when that is all the
+    site has (West New York's Early Childhood School: "WNY PREK Lunch").
+    Returns {"lunch": menu, "breakfast": menu}."""
     chosen: dict[str, dict] = {}
+    preschool: dict[str, dict] = {}
     for menu in menus:
         meal = MEAL_TYPES.get(menu.get("meal_type_id"))
         name = menu.get("public_name") or menu.get("name") or ""
-        if meal and meal not in chosen and not _PRESCHOOL_MENU_RE.search(name):
+        if not meal:
+            continue
+        if _PRESCHOOL_MENU_RE.search(name):
+            preschool.setdefault(meal, menu)
+        elif meal not in chosen:
             chosen[meal] = menu
-    return chosen
+    return {**preschool, **chosen}
 
 
 def entrees(setting: str | dict | None) -> list[str]:
