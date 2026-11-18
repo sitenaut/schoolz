@@ -1,0 +1,667 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Bayonne (Hudson County)",
+  "districts": [
+    {
+      "name": "Bayonne School District",
+      "state": "NJ",
+      "website_url": "https://www.bboed.org",
+      "food_services_menu_url": "https://www.bboed.org/families/food-services/menus",
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Bayonne District Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_351.ics"
+        },
+        {
+          "name": "Bayonne High Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_367.ics",
+          "school_slug": "bayonne-high"
+        },
+        {
+          "name": "Robinson Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_358.ics",
+          "school_slug": "bayonne-robinson-community-school"
+        },
+        {
+          "name": "Harris Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_355.ics",
+          "school_slug": "bayonne-harris-community-school"
+        },
+        {
+          "name": "Horace Mann Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_361.ics",
+          "school_slug": "bayonne-horace-mann-community-school"
+        },
+        {
+          "name": "Bailey Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_365.ics",
+          "school_slug": "bayonne-bailey-community-school"
+        },
+        {
+          "name": "Lincoln Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_360.ics",
+          "school_slug": "bayonne-lincoln-community-school"
+        },
+        {
+          "name": "Donohoe Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_359.ics",
+          "school_slug": "bayonne-donohoe-community-school"
+        },
+        {
+          "name": "Vroom Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_357.ics",
+          "school_slug": "bayonne-vroom-community-school"
+        },
+        {
+          "name": "Washington Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_363.ics",
+          "school_slug": "bayonne-washington-community-school"
+        },
+        {
+          "name": "Midtown Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_362.ics",
+          "school_slug": "bayonne-midtown-community-school"
+        },
+        {
+          "name": "Woodrow Wilson Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_364.ics",
+          "school_slug": "bayonne-woodrow-wilson-community-school"
+        },
+        {
+          "name": "Oresko Calendar",
+          "url": "https://www.bboed.org/calendar/calendar_366.ics",
+          "school_slug": "bayonne-oresko-community-school"
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Bayonne"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "bayonne-high",
+      "name": "Bayonne High School",
+      "short_name": "Bayonne High",
+      "district_name": "Bayonne School District",
+      "school_type": "high",
+      "address": "667 Avenue A, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5900",
+      "website_url": "https://bhs.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5900",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on any day your child will be absent, let their teacher know by email or the class app, or call the main office at (201) 858-5900. A student absent for illness brings medical documentation; after 3 or more sick days in a row they report to the Health Office with a parent note, and after 5 or more they need a doctor's certificate. Arriving at 10:30 AM or later counts as absent for the day.",
+      "start_time": "8:39 AM",
+      "end_time": "2:40 PM",
+      "early_dismissal_time": "1:11 PM",
+      "delayed_opening_time": "10:15 AM",
+      "athletics_url": "https://www.arbiterlive.com/School/Calendar/1318",
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683116645/bboedorg/eqy1gwge5bddqb3mgrd5/BayonneHighSchool-BLogo.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Homeroom",
+            "start": "08:39",
+            "end": "08:48"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:52",
+            "end": "09:32"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:36",
+            "end": "10:16"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:20",
+            "end": "11:00"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:04",
+            "end": "11:44"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:48",
+            "end": "12:28"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:32",
+            "end": "13:12"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:16",
+            "end": "13:56"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:00",
+            "end": "14:40"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Homeroom",
+            "start": "08:39",
+            "end": "08:47"
+          },
+          {
+            "name": "Period 1",
+            "start": "08:51",
+            "end": "09:20"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:24",
+            "end": "09:53"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:57",
+            "end": "10:26"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:30",
+            "end": "10:59"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:03",
+            "end": "11:32"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:36",
+            "end": "12:05"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:09",
+            "end": "12:38"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:42",
+            "end": "13:11"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Homeroom",
+            "start": "10:15",
+            "end": "10:28"
+          },
+          {
+            "name": "Period 1",
+            "start": "10:32",
+            "end": "10:52"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:56",
+            "end": "11:16"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:20",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:44",
+            "end": "12:24"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:28",
+            "end": "13:08"
+          },
+          {
+            "name": "Period 6",
+            "start": "13:12",
+            "end": "13:52"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:56",
+            "end": "14:16"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:20",
+            "end": "14:40"
+          }
+        ]
+      },
+      "sacc": null,
+      "staff_directory_url": "https://www.bboed.org/directory4"
+    },
+    {
+      "slug": "bayonne-alternative-high",
+      "name": "Bayonne Alternative High School",
+      "short_name": "Bayonne Alternative High",
+      "district_name": "Bayonne School District",
+      "school_type": "alternative",
+      "address": "669 Avenue A, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5895",
+      "website_url": null,
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5895",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Report an absence to the Alternative High School's line, (201) 858-5895, answered 3-6 PM. The program meets afternoons and evenings in Bayonne High School's building (Door #3).",
+      "start_time": null,
+      "end_time": null,
+      "early_dismissal_time": null,
+      "delayed_opening_time": null,
+      "athletics_url": null,
+      "logo_url": null,
+      "bell_periods": null,
+      "sacc": null
+    },
+    {
+      "slug": "bayonne-robinson-community-school",
+      "name": "Dr. Walter F. Robinson Community School",
+      "short_name": "Robinson",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "95 West 31st Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5964",
+      "website_url": "https://robinson.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5964",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on the day of the absence, call the main office at (201) 858-5964, or tell your child's homeroom teacher (email or the class app) or the school nurse. A child out sick brings medical documentation on the day they return.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683116786/bboedorg/chudcc1donoqidexx9f6/DrWalterFRobinsonSchool-GriffinLogo.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Bayonne Board of Education's Community Education Department, fee-based; register online. No before care on delayed-opening days. On 12:40 abbreviated days after care is held at Lincoln Community School: a district bus takes children there at 12:40 PM; pick up by 6:00 PM at Lincoln's Door #4 (schoolyard).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://robinson.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-harris-community-school",
+      "name": "Henry E. Harris Community School",
+      "short_name": "Harris",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "135 Avenue C, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5945",
+      "website_url": "https://harris.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5945",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on the day of the absence, tell your child's teacher (by email or the class app, such as ClassDojo) or call the main office at (201) 858-5945. A child out sick brings medical documentation on the day they return; for a religious holiday, send the school written notice beforehand.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683116848/bboedorg/xqz9v5v4uyk2brrabbos/HenryEHarris-HawksLogo.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Bayonne Board of Education's Community Education Department, fee-based; register online. No before care on delayed-opening days. On 12:40 abbreviated days after care is held at Lincoln Community School: a district bus takes children there at 12:40 PM; pick up by 6:00 PM at Lincoln's Door #4 (schoolyard).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://harris.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-horace-mann-community-school",
+      "name": "Horace Mann Community School",
+      "short_name": "Horace Mann",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "25 West 38th Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5979",
+      "website_url": "https://mann.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5979",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on the day of the absence, tell your child's teacher (by email or the class app, such as ClassDojo) or call the main office at (201) 858-5979. A child out sick brings medical documentation on the day they return; for a religious holiday, send the school written notice beforehand.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683116891/bboedorg/bq7ezuff4ug9irgndkdg/HoraceMannSchool-TigerLogo.jpg",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Bayonne Board of Education's Community Education Department, fee-based; register online. No before care on delayed-opening days. On 12:40 abbreviated days after care is held at Lincoln Community School: a district bus takes children there at 12:40 PM; pick up by 6:00 PM at Lincoln's Door #4 (schoolyard).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://mann.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-bailey-community-school",
+      "name": "John M. Bailey Community School",
+      "short_name": "Bailey",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "75 West 10th Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5824",
+      "website_url": "https://bailey.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5824",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on the day of the absence, tell your child's teacher (by email or the class app, such as ClassDojo) or call the main office at (201) 858-5824. A child out sick brings medical documentation on the day they return; for a religious holiday, send the school written notice beforehand.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683116945/bboedorg/c41ogqxdux0adhqmtwtc/JohnMBaileySchool-EagleLogo.jpg",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Bayonne Board of Education's Community Education Department, fee-based; register online. No before care on delayed-opening days. On 12:40 abbreviated days after care is held at Lincoln Community School: a district bus takes children there at 12:40 PM; pick up by 6:00 PM at Lincoln's Door #4 (schoolyard).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://bailey.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-lincoln-community-school",
+      "name": "Lincoln Community School",
+      "short_name": "Lincoln",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "208 Prospect Avenue, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5973",
+      "website_url": "https://lincoln.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5973",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on the day of the absence, tell your child's teacher (by email or the class app, such as ClassDojo) or call the main office at (201) 858-5973. A child out sick brings medical documentation on the day they return; for a religious holiday, send the school written notice beforehand.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683117104/bboedorg/rwfwotev2uazymkcv0tr/LincolnSchool-LionLogo.jpg",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Bayonne Board of Education's Community Education Department, fee-based; register online. No before care on delayed-opening days. Lincoln hosts after care for every community school on 12:40 abbreviated days; pick up by 6:00 PM at Door #4 (schoolyard).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://lincoln.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-donohoe-community-school",
+      "name": "Mary J. Donohoe Community School",
+      "short_name": "Donohoe",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "25 East 5th Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5969",
+      "website_url": "https://donohoe.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5969",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on the day of the absence, tell your child's teacher (by email or the class app, such as ClassDojo) or call the main office at (201) 858-5969. A child out sick brings medical documentation on the day they return; for a religious holiday, send the school written notice beforehand.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683117196/bboedorg/pphlzlv23e31jiptr3ft/MaryJDonohoeSchool-BulldogLogo.jpg",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Run by the Bayonne Board of Education's Community Education Department, fee-based; register online. No before care on delayed-opening days. On 12:40 abbreviated days after care is held at Lincoln Community School: a district bus takes children there at 12:40 PM; pick up by 6:00 PM at Lincoln's Door #4 (schoolyard).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://donohoe.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-oresko-community-school",
+      "name": "Nicholas Oresko Community School",
+      "short_name": "Oresko",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "33 East 24th Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-6281",
+      "website_url": "https://oresko.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-6281",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on any day your child will be absent, tell the teacher (email or the class app, e.g. ClassDojo) or call the main office. A child absent for illness brings medical documentation on return. Arriving after 8:40 AM is marked tardy; leaving before 12:40 PM counts as a full-day absence.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683117252/bboedorg/g3r2b7yuk56boiu1chtc/NicholasOreskoSchool-JaguarLogo.jpg",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run, fee-based Before School Child Care (BSCC) and After School Child Care (ASCC) for PreK-8 at each community school (Bayonne BOE Community Education Department); register online, pay monthly by check or money order. No before care on delayed openings. On select abbreviated days after care moves to Lincoln Community School (district bus from the home school at 12:40 PM; pick up by 6:00 PM at Door #4).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://oresko.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-vroom-community-school",
+      "name": "Philip G. Vroom Community School",
+      "short_name": "Vroom",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "18 West 26th Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5956",
+      "website_url": "https://vroom.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5956",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on any day your child will be absent, tell the teacher (email or the class app, e.g. ClassDojo) or call the main office. A child absent for illness brings medical documentation on return. Arriving after 8:40 AM is marked tardy; leaving before 12:40 PM counts as a full-day absence.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_6/v1683117406/bboedorg/xcnobb5cp0x25gllpncw/PhilipGVroomSchool-DragonLogo.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run, fee-based Before School Child Care (BSCC) and After School Child Care (ASCC) for PreK-8 at each community school (Bayonne BOE Community Education Department); register online, pay monthly by check or money order. No before care on delayed openings. On select abbreviated days after care moves to Lincoln Community School (district bus from the home school at 12:40 PM; pick up by 6:00 PM at Door #4).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://vroom.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-washington-community-school",
+      "name": "Washington Community School",
+      "short_name": "Washington",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "191 Avenue B, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5990",
+      "website_url": "https://washington.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5990",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on any day your child will be absent, tell the teacher (email or the class app, e.g. ClassDojo) or call the main office. A child absent for illness brings medical documentation on return. Arriving after 8:40 AM is marked tardy; leaving before 12:40 PM counts as a full-day absence.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683117706/bboedorg/qj3gypxi42u1q812cauw/WashingtonSchool-PatriotsLogo.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run, fee-based Before School Child Care (BSCC) and After School Child Care (ASCC) for PreK-8 at each community school (Bayonne BOE Community Education Department); register online, pay monthly by check or money order. No before care on delayed openings. On select abbreviated days after care moves to Lincoln Community School (district bus from the home school at 12:40 PM; pick up by 6:00 PM at Door #4).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://washington.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-midtown-community-school",
+      "name": "William Shemin Midtown Community School",
+      "short_name": "Midtown",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "550 Avenue A, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5984",
+      "website_url": "https://midtown.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5984",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on any day your child will be absent, tell the teacher (email or the class app, e.g. ClassDojo) or call the main office. A child absent for illness brings medical documentation on return. Arriving after 8:40 AM is marked tardy; leaving before 12:40 PM counts as a full-day absence.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683117519/bboedorg/ojqd2ev3yavtiav3wop3/WilliamSheminMidtownSchool-SchoolLogo.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run, fee-based Before School Child Care (BSCC) and After School Child Care (ASCC) for PreK-8 at each community school (Bayonne BOE Community Education Department); register online, pay monthly by check or money order. No before care on delayed openings. On select abbreviated days after care moves to Lincoln Community School (district bus from the home school at 12:40 PM; pick up by 6:00 PM at Door #4).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://midtown.bboed.org/faculty-staff-directory4"
+    },
+    {
+      "slug": "bayonne-woodrow-wilson-community-school",
+      "name": "Woodrow Wilson Community School",
+      "short_name": "Woodrow Wilson",
+      "district_name": "Bayonne School District",
+      "school_type": "elementary",
+      "address": "101 West 56th Street, Bayonne, NJ 07002",
+      "main_phone": "(201) 858-5996",
+      "website_url": "https://woodrow.bboed.org",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 858-5996",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Before school starts on any day your child will be absent, tell the teacher (email or the class app, e.g. ClassDojo) or call the main office. A child absent for illness brings medical documentation on return. Arriving after 8:40 AM is marked tardy; leaving before 12:40 PM counts as a full-day absence.",
+      "start_time": "8:40 AM",
+      "end_time": "2:50 PM",
+      "early_dismissal_time": "12:40 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1683117663/bboedorg/v8xxsxm4hyfb3jjm39xy/WoodrowWilsonSchool-WildcatLogo.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:25 AM - 8:25 AM",
+        "pm_hours": "3:05 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "District-run, fee-based Before School Child Care (BSCC) and After School Child Care (ASCC) for PreK-8 at each community school (Bayonne BOE Community Education Department); register online, pay monthly by check or money order. No before care on delayed openings. On select abbreviated days after care moves to Lincoln Community School (district bus from the home school at 12:40 PM; pick up by 6:00 PM at Door #4).",
+        "handbook_url": "https://www.bboed.org/families/beforeafter-care"
+      },
+      "staff_directory_url": "https://woodrow.bboed.org/faculty-staff-directory4"
+    }
+  ],
+  "smore_newsletters": []
+}

@@ -46,6 +46,9 @@ def test_classify_day_precedence_and_labels():
     # Delran's and Cinnaminson's wording.
     assert classify_day(["PCPEP - K-8 Single Session"])[0] == "early_dismissal"
     assert classify_day(["Staff Development Day - No Students"])[0] == "closed"
+    # Bayonne's half days.
+    assert classify_day(["Abbreviated Session - Parent Conferences"])[0] == "early_dismissal"
+    assert classify_day(["Pre-K - 8 ONLY Abbreviated Schedule"])[0] == "early_dismissal"
     # Kearny's: a staff-only day has no students.
     assert classify_day(["Staff Only - PD"])[0] == "closed"
     assert classify_day(["K-5 Single Session - Parent Conferences"])[0] == "early_dismissal"

@@ -41,8 +41,9 @@ _BANDS = (
     (re.compile(r"pre-?k|preschool", re.IGNORECASE), ("other",)),
     (re.compile(r"elem|(?<![a-z0-9])k-?[1-8](?![0-9a-z])", re.IGNORECASE), ("elementary",)),
     (re.compile(r"secondary|mshs|hsms|jr-?sr|(?<![0-9])[67]-?12(?![0-9])", re.IGNORECASE), ("middle", "high")),
-    (re.compile(r"middle|(?<![a-z])ms(?![a-z])", re.IGNORECASE), ("middle",)),
-    (re.compile(r"high|(?<![a-z])hs(?![a-z])", re.IGNORECASE), ("high",)),
+    # A building code counts too: Bayonne's "NOVEMBER_BHS_Lunch_2026.pdf".
+    (re.compile(r"middle|(?<![a-z])[a-z]?ms(?![a-z])", re.IGNORECASE), ("middle",)),
+    (re.compile(r"high|(?<![a-z])[a-z]?hs(?![a-z])", re.IGNORECASE), ("high",)),
 )
 # Words in a school's name that name no school in particular.
 _GENERIC_SCHOOL_WORDS = {

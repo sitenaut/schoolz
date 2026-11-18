@@ -64,6 +64,9 @@ describe("isStatusItem", () => {
     expect(isStatusItem("Teacher In Service")).toBe(true);
     expect(isStatusItem("Early Dismissal")).toBe(true);
     expect(isStatusItem("2 Hour Delay")).toBe(true);
+    // Bayonne's half days.
+    expect(isStatusItem("Abbreviated Session - Parent Conferences")).toBe(true);
+    expect(isStatusItem("Pre-K - 8 ONLY Abbreviated Schedule")).toBe(true);
   });
   it("does not flag ordinary events", () => {
     expect(isStatusItem("Board of Education Meeting")).toBe(false);
