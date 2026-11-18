@@ -1,0 +1,472 @@
+{
+  "exported_at": "2026-11-18T12:00:00Z",
+  "source": "onboarding: Kearny (Hudson County)",
+  "districts": [
+    {
+      "name": "Kearny School District",
+      "state": "NJ",
+      "website_url": "https://www.kearnyschools.com",
+      "food_services_menu_url": null,
+      "calendar_pdf_url": null,
+      "ics_feeds": [
+        {
+          "name": "Kearny District",
+          "platform": "apptegy",
+          "org_id": "11934"
+        },
+        {
+          "name": "Kearny Franklin",
+          "platform": "apptegy",
+          "org_id": "12149",
+          "school_slug": "kearny-franklin-elementary"
+        },
+        {
+          "name": "Kearny Garfield",
+          "platform": "apptegy",
+          "org_id": "12151",
+          "school_slug": "kearny-garfield-elementary"
+        },
+        {
+          "name": "Kearny Roosevelt",
+          "platform": "apptegy",
+          "org_id": "12152",
+          "school_slug": "kearny-roosevelt-elementary"
+        },
+        {
+          "name": "Kearny Schuyler",
+          "platform": "apptegy",
+          "org_id": "12153",
+          "school_slug": "kearny-schuyler-elementary"
+        },
+        {
+          "name": "Kearny Washington",
+          "platform": "apptegy",
+          "org_id": "12155",
+          "school_slug": "kearny-washington-elementary"
+        },
+        {
+          "name": "Kearny Lincoln Middle",
+          "platform": "apptegy",
+          "org_id": "12156",
+          "school_slug": "kearny-lincoln-middle"
+        },
+        {
+          "name": "Kearny High",
+          "platform": "apptegy",
+          "org_id": "12158",
+          "school_slug": "kearny-high",
+          "skip_title_prefixes": [
+            "Adult School"
+          ]
+        }
+      ],
+      "marking_period_url": null,
+      "preschool_locations_url": null,
+      "preschool_team_url": null,
+      "hs_rotation_url": null,
+      "transportation_url": null,
+      "towns": [
+        "Kearny"
+      ],
+      "schoolcafe_shortname": null
+    }
+  ],
+  "schools": [
+    {
+      "slug": "kearny-high",
+      "name": "Kearny High School",
+      "short_name": "Kearny High",
+      "district_name": "Kearny School District",
+      "school_type": "high",
+      "address": "336 Devon Street, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5050",
+      "website_url": "https://www.kearnyschools.com/o/khs",
+      "absence_method": null,
+      "absence_emails": [],
+      "absence_phone": null,
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": null,
+      "start_time": "8:10 AM",
+      "end_time": "2:35 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "9:50 AM",
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=11602",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12158/file/2949168/2a54be3b-904b-4016-b85d-557fc5f0c690.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "08:10",
+            "end": "08:59"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:03",
+            "end": "09:47"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:51",
+            "end": "10:35"
+          },
+          {
+            "name": "Period 4",
+            "start": "10:39",
+            "end": "11:23"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:27",
+            "end": "12:11"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:15",
+            "end": "12:59"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:03",
+            "end": "13:47"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:51",
+            "end": "14:35"
+          }
+        ],
+        "early_dismissal": [
+          {
+            "name": "Period 1",
+            "start": "08:10",
+            "end": "08:42"
+          },
+          {
+            "name": "Period 2",
+            "start": "08:46",
+            "end": "09:17"
+          },
+          {
+            "name": "Period 3",
+            "start": "09:21",
+            "end": "09:52"
+          },
+          {
+            "name": "Period 4",
+            "start": "09:56",
+            "end": "10:28"
+          },
+          {
+            "name": "Period 5",
+            "start": "10:32",
+            "end": "11:04"
+          },
+          {
+            "name": "Period 6",
+            "start": "11:08",
+            "end": "11:40"
+          },
+          {
+            "name": "Period 7",
+            "start": "11:44",
+            "end": "12:15"
+          },
+          {
+            "name": "Period 8",
+            "start": "12:19",
+            "end": "12:50"
+          }
+        ],
+        "delayed_opening": [
+          {
+            "name": "Period 1",
+            "start": "09:50",
+            "end": "10:22"
+          },
+          {
+            "name": "Period 2",
+            "start": "10:26",
+            "end": "10:58"
+          },
+          {
+            "name": "Period 3",
+            "start": "11:02",
+            "end": "11:34"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:38",
+            "end": "12:10"
+          },
+          {
+            "name": "Period 5",
+            "start": "12:14",
+            "end": "12:46"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:50",
+            "end": "13:22"
+          },
+          {
+            "name": "Period 7",
+            "start": "13:26",
+            "end": "13:58"
+          },
+          {
+            "name": "Period 8",
+            "start": "14:02",
+            "end": "14:35"
+          }
+        ]
+      },
+      "sacc": null,
+      "apptegy_org_id": "12158"
+    },
+    {
+      "slug": "kearny-lincoln-middle",
+      "name": "Lincoln Middle School",
+      "short_name": "Lincoln Middle",
+      "district_name": "Kearny School District",
+      "school_type": "middle",
+      "address": "121 Beech Street, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5095",
+      "website_url": "https://www.kearnyschools.com/o/lms",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 955-5095",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Call the school office at (201) 955-5095 before the school day starts. A medical absence must also be reported to the school nurse, (201) 955-5096. Send a dated, signed note with the reason when your child returns.",
+      "start_time": "8:10 AM",
+      "end_time": "2:35 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "9:50 AM",
+      "athletics_url": "https://www.arbiterlive.com/Teams?entityId=11602",
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12156/file/2949166/ab7acef6-6f29-469a-9e53-7f347dfcc5c6.png",
+      "bell_periods": {
+        "regular": [
+          {
+            "name": "Period 1",
+            "start": "08:10",
+            "end": "09:18"
+          },
+          {
+            "name": "Period 2",
+            "start": "09:20",
+            "end": "10:26"
+          },
+          {
+            "name": "Period 3",
+            "start": "10:28",
+            "end": "11:11"
+          },
+          {
+            "name": "Period 4",
+            "start": "11:13",
+            "end": "11:34"
+          },
+          {
+            "name": "Period 5",
+            "start": "11:36",
+            "end": "12:19"
+          },
+          {
+            "name": "Period 6",
+            "start": "12:21",
+            "end": "12:42"
+          },
+          {
+            "name": "Period 7",
+            "start": "12:44",
+            "end": "13:27"
+          },
+          {
+            "name": "Period 8",
+            "start": "13:29",
+            "end": "14:35"
+          }
+        ]
+      },
+      "sacc": null,
+      "apptegy_org_id": "12156"
+    },
+    {
+      "slug": "kearny-franklin-elementary",
+      "name": "Franklin Elementary School",
+      "short_name": "Franklin",
+      "district_name": "Kearny School District",
+      "school_type": "elementary",
+      "address": "100 Davis Avenue, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5020",
+      "website_url": "https://www.kearnyschools.com/o/fes",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 955-5020",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school office before the school day starts whenever your child will be absent (in advance for a planned absence). Send a dated, signed note explaining the absence when your child returns; an illness is excused only with a signed medical note within ten days of returning.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12149/file/2949151/22799da7-6347-477d-bdd8-85f30ca1040d.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:10 AM - 8:25 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": null,
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Right At School runs before and after care on site; register on rightatschool.com (Kearny, Franklin Elementary).",
+        "handbook_url": "https://www.kearnyschools.com/page/right-at-school"
+      },
+      "apptegy_org_id": "12149"
+    },
+    {
+      "slug": "kearny-garfield-elementary",
+      "name": "Garfield Elementary School",
+      "short_name": "Garfield",
+      "district_name": "Kearny School District",
+      "school_type": "elementary",
+      "address": "360 Belgrove Drive, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5090",
+      "website_url": "https://www.kearnyschools.com/o/ges",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 955-5090",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school office before the school day starts whenever your child will be absent (in advance for a planned absence). Send a dated, signed note explaining the absence when your child returns; an illness is excused only with a signed medical note within ten days of returning.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12151/logo/13605/b67159a0-b893-40f7-a87c-b0fd630d19ba.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:10 AM - 8:25 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 273-0420",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email garfield@rightatschool.com.",
+        "handbook_url": "https://www.rightatschool.com/school-2/?school=garfield-elementary-nj&district=nj-kearny&tab=2024-25-before-after-school"
+      },
+      "apptegy_org_id": "12151"
+    },
+    {
+      "slug": "kearny-roosevelt-elementary",
+      "name": "Roosevelt Elementary School",
+      "short_name": "Roosevelt",
+      "district_name": "Kearny School District",
+      "school_type": "elementary",
+      "address": "733 Kearny Avenue, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5100",
+      "website_url": "https://www.kearnyschools.com/o/res",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 955-5100",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school office before the school day starts whenever your child will be absent (in advance for a planned absence). Send a dated, signed note explaining the absence when your child returns; an illness is excused only with a signed medical note within ten days of returning.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12152/logo/13606/Kearny_Header_Roosevelt.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:10 AM - 8:25 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 273-1374",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email roosevelt@rightatschool.com.",
+        "handbook_url": "https://www.rightatschool.com/school-2/?school=roosevelt-school&district=nj-kearny&tab=2024-25-before-after-school"
+      },
+      "apptegy_org_id": "12152"
+    },
+    {
+      "slug": "kearny-schuyler-elementary",
+      "name": "Schuyler Elementary School",
+      "short_name": "Schuyler",
+      "district_name": "Kearny School District",
+      "school_type": "elementary",
+      "address": "644 Forest Street, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5105",
+      "website_url": "https://www.kearnyschools.com/o/ses",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 955-5105",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school office before the school day starts whenever your child will be absent (in advance for a planned absence). Send a dated, signed note explaining the absence when your child returns; an illness is excused only with a signed medical note within ten days of returning.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12153/logo/13607/bd8df23b-dd6b-4141-af17-d96bd4753ea5.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:10 AM - 8:25 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 273-0680",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email schuyler@rightatschool.com.",
+        "handbook_url": "https://www.rightatschool.com/school-2/?school=schuyler-school&district=nj-kearny&tab=2024-25-before-after-school"
+      },
+      "apptegy_org_id": "12153"
+    },
+    {
+      "slug": "kearny-washington-elementary",
+      "name": "Washington Elementary School",
+      "short_name": "Washington",
+      "district_name": "Kearny School District",
+      "school_type": "elementary",
+      "address": "80 Belgrove Drive, Kearny, NJ 07032",
+      "main_phone": "(201) 955-5110",
+      "website_url": "https://www.kearnyschools.com/o/wes",
+      "absence_method": "phone",
+      "absence_emails": [],
+      "absence_phone": "(201) 955-5110",
+      "absence_portal_name": null,
+      "absence_portal_url": null,
+      "absence_instructions": "Notify the school office before the school day starts whenever your child will be absent (in advance for a planned absence). Send a dated, signed note explaining the absence when your child returns; an illness is excused only with a signed medical note within ten days of returning.",
+      "start_time": "8:25 AM",
+      "end_time": "3:00 PM",
+      "early_dismissal_time": "12:50 PM",
+      "delayed_opening_time": "10:00 AM",
+      "athletics_url": null,
+      "logo_url": "https://cmsv2-assets.apptegy.net/uploads/12155/logo/13608/94a47c6a-ca04-4176-8ea7-4fe019b3e60c.png",
+      "bell_periods": null,
+      "sacc": {
+        "am_hours": "7:10 AM - 8:25 AM",
+        "pm_hours": "3:00 PM - 6:00 PM",
+        "site_phone": "(201) 273-0688",
+        "absence_phone": null,
+        "absence_form_url": null,
+        "late_pickup_policy": null,
+        "pickup_change_procedure": null,
+        "closures_notes": "Right At School runs before and after care on site (2026-27). Bi-weekly, 5 days a week: before $62, after $128, both $167; drop-in $35 a day. Program email washington@rightatschool.com.",
+        "handbook_url": "https://www.rightatschool.com/school-2/?school=washington-school&district=nj-kearny&tab=2024-25-before-after-school"
+      },
+      "apptegy_org_id": "12155"
+    }
+  ],
+  "smore_newsletters": []
+}
