@@ -1,0 +1,1241 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Carteret (Middlesex County)",
+ "districts": [
+  {
+   "name": "Carteret Public School District",
+   "state": "NJ",
+   "website_url": "https://www.carteretschools.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": "https://www.carteretschools.org/about-us/school-calendar",
+   "ics_feeds": [
+    {
+     "name": "Carteret District Events",
+     "url": "https://www.carteretschools.org/fs/calendar-manager/events.ics?calendar_ids[]=1"
+    },
+    {
+     "name": "Carteret High School Calendar",
+     "url": "https://www.carteretschools.org/fs/calendar-manager/events.ics?calendar_ids[]=2",
+     "school_slug": "carteret-high"
+    },
+    {
+     "name": "Carteret Junior High School Calendar",
+     "url": "https://www.carteretschools.org/fs/calendar-manager/events.ics?calendar_ids[]=3",
+     "school_slug": "carteret-junior-high"
+    },
+    {
+     "name": "Carteret Middle School Calendar",
+     "url": "https://www.carteretschools.org/fs/calendar-manager/events.ics?calendar_ids[]=4",
+     "school_slug": "carteret-middle"
+    },
+    {
+     "name": "Minue School Calendar",
+     "url": "https://www.carteretschools.org/fs/calendar-manager/events.ics?calendar_ids[]=5",
+     "school_slug": "carteret-minue"
+    },
+    {
+     "name": "Columbus School Calendar",
+     "url": "https://www.carteretschools.org/fs/calendar-manager/events.ics?calendar_ids[]=7",
+     "school_slug": "carteret-columbus"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null,
+   "towns": [
+    "Carteret"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "carteret-high",
+   "name": "Carteret High School",
+   "short_name": "Carteret High",
+   "district_name": "Carteret Public School District",
+   "school_type": "high",
+   "address": "199 Washington Avenue, Carteret, NJ 07008",
+   "main_phone": "(732) 541-8960",
+   "website_url": "https://chs.carteretschools.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1733165780/carteretschoolsorg/h0ckby80jesdszwl3hbc/District_LogoName.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:00 AM",
+   "end_time": "2:40 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "9:15 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 0",
+      "start": "07:12",
+      "end": "07:57"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:00",
+      "end": "08:45"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:48",
+      "end": "09:33"
+     },
+     {
+      "name": "Homeroom",
+      "start": "09:36",
+      "end": "09:46"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:49",
+      "end": "10:34"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:37",
+      "end": "11:22"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:27",
+      "end": "12:12"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:17",
+      "end": "13:02"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:07",
+      "end": "13:52"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:55",
+      "end": "14:40"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 0",
+      "start": "07:27",
+      "end": "07:57"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:00",
+      "end": "08:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:33",
+      "end": "09:03"
+     },
+     {
+      "name": "Homeroom",
+      "start": "09:06",
+      "end": "09:12"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:15",
+      "end": "09:45"
+     },
+     {
+      "name": "Period 4",
+      "start": "09:48",
+      "end": "10:18"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:21",
+      "end": "10:51"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:54",
+      "end": "11:24"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:27",
+      "end": "11:57"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:00",
+      "end": "12:30"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 0",
+      "start": "08:36",
+      "end": "09:12"
+     },
+     {
+      "name": "Period 1",
+      "start": "09:15",
+      "end": "09:51"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:54",
+      "end": "10:30"
+     },
+     {
+      "name": "Homeroom",
+      "start": "10:33",
+      "end": "10:43"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:46",
+      "end": "11:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:25",
+      "end": "12:01"
+     },
+     {
+      "name": "Period 5",
+      "start": "12:06",
+      "end": "12:42"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:47",
+      "end": "13:23"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:28",
+      "end": "14:04"
+     },
+     {
+      "name": "Period 8",
+      "start": "14:07",
+      "end": "14:43"
+     }
+    ]
+   },
+   "athletics_url": "https://62295.digitalsports.com/",
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://chs.carteretschools.org/for-parents/staff-directory-f7",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": "carteretschools/carteret-high"
+  },
+  {
+   "slug": "carteret-junior-high",
+   "name": "Carteret Junior High School",
+   "short_name": "Carteret Junior High",
+   "district_name": "Carteret Public School District",
+   "school_type": "middle",
+   "address": "195 Washington Avenue, Carteret, NJ 07008",
+   "main_phone": "(732) 541-8960",
+   "website_url": "https://cjhs.carteretschools.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1733165780/carteretschoolsorg/h0ckby80jesdszwl3hbc/District_LogoName.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:15 AM",
+   "end_time": "2:55 PM",
+   "early_dismissal_time": "12:55 PM",
+   "delayed_opening_time": "9:51 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Advisory",
+      "start": "08:15",
+      "end": "08:31"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:34",
+      "end": "09:35"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:38",
+      "end": "10:39"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:42",
+      "end": "11:43"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "11:46",
+      "end": "12:47"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "12:50",
+      "end": "13:51"
+     },
+     {
+      "name": "Period 6",
+      "start": "13:54",
+      "end": "14:55"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Advisory",
+      "start": "08:15",
+      "end": "08:31"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:34",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:18",
+      "end": "09:59"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:02",
+      "end": "10:43"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "10:46",
+      "end": "11:27"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "11:30",
+      "end": "12:11"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:14",
+      "end": "12:55"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Advisory",
+      "start": "09:51",
+      "end": "10:07"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:10",
+      "end": "10:55"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:58",
+      "end": "11:43"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:46",
+      "end": "12:31"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "12:34",
+      "end": "13:19"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "13:22",
+      "end": "14:07"
+     },
+     {
+      "name": "Period 6",
+      "start": "14:10",
+      "end": "14:55"
+     }
+    ]
+   },
+   "athletics_url": "https://62295.digitalsports.com/",
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://cjhs.carteretschools.org/for-parents/staff-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": "carteretschools/carteret-junior-high-school"
+  },
+  {
+   "slug": "carteret-middle",
+   "name": "Carteret Middle School",
+   "short_name": "Carteret Middle",
+   "district_name": "Carteret Public School District",
+   "school_type": "middle",
+   "address": "300 Carteret Avenue, Carteret, NJ 07008",
+   "main_phone": "(732) 541-8960",
+   "website_url": "https://cms.carteretschools.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1733165780/carteretschoolsorg/h0ckby80jesdszwl3hbc/District_LogoName.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:35 AM",
+   "end_time": "2:50 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:00 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:37"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:37",
+      "end": "09:11"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:14",
+      "end": "09:48"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:51",
+      "end": "10:25"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:28",
+      "end": "11:02"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:05",
+      "end": "11:39"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:42",
+      "end": "12:16"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:19",
+      "end": "12:53"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:56",
+      "end": "13:30"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:33",
+      "end": "14:07"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:10",
+      "end": "14:44"
+     },
+     {
+      "name": "Dismissal",
+      "start": "14:45",
+      "end": "14:50"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:40"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:40",
+      "end": "09:06"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:07",
+      "end": "09:33"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:34",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:00",
+      "end": "10:26"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:27",
+      "end": "10:53"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:54",
+      "end": "11:20"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:21",
+      "end": "11:47"
+     },
+     {
+      "name": "Period 8",
+      "start": "11:48",
+      "end": "12:14"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:14",
+      "end": "12:40"
+     },
+     {
+      "name": "Period 10",
+      "start": "12:40",
+      "end": "13:06"
+     },
+     {
+      "name": "Dismissal",
+      "start": "13:06",
+      "end": "13:10"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Homeroom",
+      "start": "10:00",
+      "end": "10:08"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:08",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:35",
+      "end": "11:02"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:02",
+      "end": "11:29"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:29",
+      "end": "11:56"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:56",
+      "end": "12:23"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:24",
+      "end": "12:51"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:52",
+      "end": "13:19"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:20",
+      "end": "13:47"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:47",
+      "end": "14:14"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:14",
+      "end": "14:41"
+     },
+     {
+      "name": "Dismissal",
+      "start": "14:45",
+      "end": "14:50"
+     }
+    ]
+   },
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://cms.carteretschools.org/for-parents/staff-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": "carteretschools/carteret-middle"
+  },
+  {
+   "slug": "carteret-columbus",
+   "name": "Columbus Elementary School",
+   "short_name": "Columbus",
+   "district_name": "Carteret Public School District",
+   "school_type": "elementary",
+   "address": "1 Carteret Avenue, Carteret, NJ 07008",
+   "main_phone": "(732) 541-8960",
+   "website_url": "https://col.carteretschools.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1733165780/carteretschoolsorg/h0ckby80jesdszwl3hbc/District_LogoName.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:35 AM",
+   "end_time": "2:50 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:00 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:51",
+      "end": "09:25"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:26",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:01",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:36",
+      "end": "11:10"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:11",
+      "end": "11:45"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:47",
+      "end": "12:21"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:23",
+      "end": "12:57"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:59",
+      "end": "13:33"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:35",
+      "end": "14:09"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:10",
+      "end": "14:44"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "14:45",
+      "end": "14:50"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:40"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:40",
+      "end": "09:06"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:07",
+      "end": "09:33"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:34",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:00",
+      "end": "10:26"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:27",
+      "end": "10:53"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:54",
+      "end": "11:20"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:21",
+      "end": "11:47"
+     },
+     {
+      "name": "Period 8",
+      "start": "11:48",
+      "end": "12:14"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:14",
+      "end": "12:40"
+     },
+     {
+      "name": "Period 10",
+      "start": "12:40",
+      "end": "13:06"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "13:06",
+      "end": "13:10"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Homeroom",
+      "start": "10:00",
+      "end": "10:08"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:08",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:35",
+      "end": "11:02"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:02",
+      "end": "11:29"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:29",
+      "end": "11:56"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:56",
+      "end": "12:23"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:24",
+      "end": "12:51"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:52",
+      "end": "13:19"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:20",
+      "end": "13:47"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:47",
+      "end": "14:14"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:14",
+      "end": "14:41"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "14:41",
+      "end": "14:50"
+     }
+    ]
+   },
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://col.carteretschools.org/for-parents/staff-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": "carteretschools/columbus-school"
+  },
+  {
+   "slug": "carteret-nathan-hale",
+   "name": "Nathan Hale Elementary School",
+   "short_name": "Nathan Hale",
+   "district_name": "Carteret Public School District",
+   "school_type": "elementary",
+   "address": "678 Roosevelt Avenue, Carteret, NJ 07008",
+   "main_phone": "(732) 541-8960",
+   "website_url": "https://nhs.carteretschools.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1733165780/carteretschoolsorg/h0ckby80jesdszwl3hbc/District_LogoName.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:35 AM",
+   "end_time": "2:50 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:00 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:51",
+      "end": "09:25"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:26",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:01",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:36",
+      "end": "11:10"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:11",
+      "end": "11:45"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:47",
+      "end": "12:21"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:23",
+      "end": "12:57"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:59",
+      "end": "13:33"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:35",
+      "end": "14:09"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:10",
+      "end": "14:44"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "14:45",
+      "end": "14:50"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:40"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:40",
+      "end": "09:06"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:07",
+      "end": "09:33"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:34",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:00",
+      "end": "10:26"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:27",
+      "end": "10:53"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:54",
+      "end": "11:20"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:21",
+      "end": "11:47"
+     },
+     {
+      "name": "Period 8",
+      "start": "11:48",
+      "end": "12:14"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:14",
+      "end": "12:40"
+     },
+     {
+      "name": "Period 10",
+      "start": "12:40",
+      "end": "13:06"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "13:06",
+      "end": "13:10"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Homeroom",
+      "start": "10:00",
+      "end": "10:08"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:08",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:35",
+      "end": "11:02"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:02",
+      "end": "11:29"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:29",
+      "end": "11:56"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:56",
+      "end": "12:23"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:24",
+      "end": "12:51"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:52",
+      "end": "13:19"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:20",
+      "end": "13:47"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:47",
+      "end": "14:14"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:14",
+      "end": "14:41"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "14:41",
+      "end": "14:50"
+     }
+    ]
+   },
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://nhs.carteretschools.org/for-parents/staff-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": "carteretschools/nathan-hale-school"
+  },
+  {
+   "slug": "carteret-minue",
+   "name": "Private Nicholas Minue Elementary School",
+   "short_name": "Minue",
+   "district_name": "Carteret Public School District",
+   "school_type": "elementary",
+   "address": "83 Post Boulevard, Carteret, NJ 07008",
+   "main_phone": "(732) 541-8960",
+   "website_url": "https://pnms.carteretschools.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1733165780/carteretschoolsorg/h0ckby80jesdszwl3hbc/District_LogoName.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:35 AM",
+   "end_time": "2:50 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:00 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:51",
+      "end": "09:25"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:26",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:01",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:36",
+      "end": "11:10"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:11",
+      "end": "11:45"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:47",
+      "end": "12:21"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:23",
+      "end": "12:57"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:59",
+      "end": "13:33"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:35",
+      "end": "14:09"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:10",
+      "end": "14:44"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "14:45",
+      "end": "14:50"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:40"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:40",
+      "end": "09:06"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:07",
+      "end": "09:33"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:34",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:00",
+      "end": "10:26"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:27",
+      "end": "10:53"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:54",
+      "end": "11:20"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:21",
+      "end": "11:47"
+     },
+     {
+      "name": "Period 8",
+      "start": "11:48",
+      "end": "12:14"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:14",
+      "end": "12:40"
+     },
+     {
+      "name": "Period 10",
+      "start": "12:40",
+      "end": "13:06"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "13:06",
+      "end": "13:10"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Homeroom",
+      "start": "10:00",
+      "end": "10:08"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:08",
+      "end": "10:35"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:35",
+      "end": "11:02"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:02",
+      "end": "11:29"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:29",
+      "end": "11:56"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:56",
+      "end": "12:23"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:24",
+      "end": "12:51"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:52",
+      "end": "13:19"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:20",
+      "end": "13:47"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:47",
+      "end": "14:14"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:14",
+      "end": "14:41"
+     },
+     {
+      "name": "Homeroom and Dismissal",
+      "start": "14:41",
+      "end": "14:50"
+     }
+    ]
+   },
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://pnms.carteretschools.org/for-parents/staff-directory-4c",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": "carteretschools/private-nicholas-minue-school"
+  }
+ ],
+ "smore_newsletters": []
+}

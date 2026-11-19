@@ -1,0 +1,136 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Dunellen (Middlesex County)",
+ "districts": [
+  {
+   "name": "Dunellen Public School District",
+   "state": "NJ",
+   "website_url": "https://www.dunellenschools.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "Dunellen District Calendar",
+     "url": "https://calendar.google.com/calendar/ical/dunellenschools.org_8iden9p067m966afnfnc89kl7g%40group.calendar.google.com/public/basic.ics",
+     "school_title_prefixes": {
+      "Faber": "dunellen-faber-elementary",
+      "LMS": "dunellen-lincoln-middle",
+      "DHS": "dunellen-high"
+     }
+    },
+    {
+     "name": "Faber Calendar",
+     "url": "https://calendar.google.com/calendar/ical/dunellenschools.org_2bsblsvpmemms68nins17lnhcg%40group.calendar.google.com/public/basic.ics",
+     "school_slug": "dunellen-faber-elementary"
+    },
+    {
+     "name": "LMS Calendar",
+     "url": "https://calendar.google.com/calendar/ical/dunellenschools.org_27dldah94a0ukijii57tbs0n88%40group.calendar.google.com/public/basic.ics",
+     "school_slug": "dunellen-lincoln-middle"
+    },
+    {
+     "name": "DHS Calendar",
+     "url": "https://calendar.google.com/calendar/ical/dunellenschools.org_hehmkg1v3ov9gc4cvlo174ovng%40group.calendar.google.com/public/basic.ics",
+     "school_slug": "dunellen-high"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null,
+   "towns": [
+    "Dunellen"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "dunellen-high",
+   "name": "Dunellen High School",
+   "short_name": "Dunellen High",
+   "district_name": "Dunellen Public School District",
+   "school_type": "high",
+   "address": "411 First Street, Dunellen, NJ 08812",
+   "main_phone": "(732) 400-5900",
+   "website_url": "https://www.dunellenschools.org/35289_3",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "7:40 AM",
+   "end_time": "2:36 PM",
+   "early_dismissal_time": "11:59 AM",
+   "delayed_opening_time": "9:40 AM",
+   "athletics_url": "https://dunellenathletics.digitalsports.com",
+   "logo_url": "https://files.smartsites.parentsquare.com/4482/_variants/contain-1440w/header_logo_img_txu2ui.png",
+   "bell_periods": null,
+   "sacc": null,
+   "nutrislice_location": "dunellenschools/dunellen-high"
+  },
+  {
+   "slug": "dunellen-lincoln-middle",
+   "name": "Lincoln Middle School",
+   "short_name": "Lincoln Middle",
+   "district_name": "Dunellen Public School District",
+   "school_type": "middle",
+   "address": "400 Dunellen Avenue, Dunellen, NJ 08812",
+   "main_phone": "(732) 400-5900",
+   "website_url": "https://www.dunellenschools.org/35303_3",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "7:50 AM",
+   "end_time": "2:49 PM",
+   "early_dismissal_time": "12:09 PM",
+   "delayed_opening_time": "9:47 AM",
+   "athletics_url": "https://dunellenathletics.digitalsports.com",
+   "logo_url": "https://files.smartsites.parentsquare.com/4482/_variants/contain-1440w/header_logo_img_txu2ui.png",
+   "bell_periods": null,
+   "sacc": null,
+   "nutrislice_location": "dunellenschools/lincoln-middle"
+  },
+  {
+   "slug": "dunellen-faber-elementary",
+   "name": "John P. Faber Elementary School",
+   "short_name": "Faber",
+   "district_name": "Dunellen Public School District",
+   "school_type": "elementary",
+   "address": "400 High Street, Dunellen, NJ 08812",
+   "main_phone": "(732) 400-5900",
+   "website_url": "https://www.dunellenschools.org/35302_3",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:15 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "12:18 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/4482/_variants/contain-1440w/header_logo_img_txu2ui.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 7:45 AM",
+    "pm_hours": "3:00 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": "Children must be picked up by 6:00 PM. A late pick-up fee is added to the family's account. Three late pick-ups, or one more than an hour late, may mean suspension or removal from the program.",
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run BeforeCare and AfterCare for Faber Elementary students, registered through Procare (myprocare.com). BeforeCare: drop-off at Door B from 7:00 AM, arrive by 7:45 AM, breakfast included, $150/month. AfterCare: 3:00-6:00 PM, $205-$235/month for 3-5 days. Both run from the first to the last day of school; AfterCare runs on half days with lunch served. On delayed openings and early dismissals both run unless an alert says otherwise. Questions go to FaberAfterCare@dunellenschools.org. The preschool day is 8:30 AM - 3:00 PM (delayed 10:30 AM, early dismissal 12:18 PM).",
+    "handbook_url": "https://www.dunellenschools.org/47655_2"
+   },
+   "nutrislice_location": "dunellenschools/faber-elementary"
+  }
+ ],
+ "smore_newsletters": []
+}

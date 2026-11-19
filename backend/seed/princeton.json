@@ -47,7 +47,8 @@
       "hs_rotation_url": null,
       "transportation_url": "https://www.princetonk12.org/services/transportation",
       "towns": [
-        "Princeton"
+        "Princeton",
+        "Cranbury"
       ],
       "schoolcafe_shortname": null
     }
