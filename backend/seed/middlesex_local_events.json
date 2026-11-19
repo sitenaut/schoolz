@@ -130,6 +130,18 @@
           ],
           "location": "Woodbridge, NJ",
           "skip_meetings": true
+        },
+        {
+          "name": "piscataway_township",
+          "url": "https://piscatawaynj.librarycalendar.com/events/feed/ical",
+          "default_categories": [
+            "piscataway",
+            "municipal"
+          ],
+          "location": "Piscataway, NJ",
+          "skip_meetings": true,
+          "upcoming_only": true,
+          "via_scraper": true
         }
       ],
       "revize_calendar_app_sources": [
