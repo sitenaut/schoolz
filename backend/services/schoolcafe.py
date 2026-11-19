@@ -43,6 +43,8 @@ def _norm(name: str) -> str:
     folded = unicodedata.normalize("NFKD", re.sub(r"['’]s\b", "", name)).encode("ascii", "ignore").decode()
     cleaned = re.sub(r"[^a-z0-9 ]", " ", folded.lower())
     cleaned = re.sub(r"\bmt\b", "mount", cleaned)
+    # The state writes "North Brunswick Twp. Middle School".
+    cleaned = re.sub(r"\btwp\b", "township", cleaned)
     # Bellmawr's Bell Oaks is "Middle School" on its own site and "Upper
     # Elementary School" on SchoolCafé (and the state directory).
     cleaned = re.sub(r"\bupper elementary\b", "middle", cleaned)
