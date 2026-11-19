@@ -317,12 +317,47 @@ def _school_tells(name: str, short_name: str | None) -> tuple[list[str], str | N
     return names, initials if len(initials) >= 3 else None
 
 
+# Carteret's calendar labels a row with a closing parenthetical instead of
+# "only": "Early Dismissal - Parent/Teacher Meetings (High School)", "Back to
+# School Night (Nathan Hale)". It narrows only when everything inside names a
+# kind of school or one of the district's own, so "(Thanksgiving)" never does.
+_TRAILING_PAREN_RE = re.compile(r"\(([^()]+)\)\s*$")
+_PAREN_SPLIT_RE = re.compile(r"\s*(?:,|&|/|\band\b)\s*", re.I)
+_PAREN_TYPE_WORDS = {
+    "elementary": "elementary", "elementaries": "elementary", "middle": "middle",
+    "high": "high", "junior high": "middle", "jr high": "middle", "jr. high": "middle",
+}
+
+
+def _types_in_parenthetical(title: str, schools: list[tuple[str, str | None, str | None]] | None) -> set[str]:
+    m = _TRAILING_PAREN_RE.search(title)
+    if not m:
+        return set()
+    types: set[str] = set()
+    for part in (p for p in _PAREN_SPLIT_RE.split(m.group(1)) if p.strip()):
+        label = re.sub(r"\s+schools?$", "", part.strip(), flags=re.I).lower()
+        if label in _PAREN_TYPE_WORDS:
+            types.add(_PAREN_TYPE_WORDS[label])
+            continue
+        hit = None
+        for name, short_name, school_type in schools or []:
+            names, initials = _school_tells(name, short_name)
+            if school_type and (part.strip().lower() in {n.lower() for n in names} or part.strip() == initials):
+                hit = school_type
+                break
+        if hit is None:
+            return set()
+        types.add(hit)
+    return types
+
+
 def _types_named_only(title: str, schools: list[tuple[str, str | None, str | None]] | None) -> list[str] | None:
     # Hamilton's "One-Session Day - All Students / HS Only Exam #2": everyone's.
     if _ALL_STUDENTS_RE.search(title):
         return None
     says_only = bool(_ONLY_RE.search(title))
     types = {t for rx, t in _ONLY_TYPE_WORDS if rx.search(title)} if says_only else set()
+    types |= _types_in_parenthetical(title, schools)
     for name, short_name, school_type in schools or []:
         names, initials = _school_tells(name, short_name)
         named = says_only and any(re.search(rf"\b{re.escape(n)}\b", title, re.I) for n in names)
