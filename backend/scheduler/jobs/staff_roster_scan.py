@@ -1,7 +1,7 @@
 import re
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import District, School, StaffMember
@@ -166,9 +166,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
 
     dropped_ids: set[str] = set()
     if school.website_url and not school.apptegy_org_id:
-        siblings = (
-            await db.execute(select(School).where(School.website_url == school.website_url, School.id != school.id))
-        ).scalars().all()
+        # Sister schools on one site; and when the directory says where each
+        # person works (Dunellen's one district table, each school on its own
+        # page), every school in the district.
+        same = School.website_url == school.website_url
+        if school.district_id and any(e.get("locations") for e in roster):
+            same = or_(same, School.district_id == school.district_id)
+        siblings = (await db.execute(select(School).where(same, School.id != school.id))).scalars().all()
         roster, dropped = drop_sibling_school_staff(
             roster, [school.short_name, school.name], [[s.short_name, s.name] for s in siblings]
         )

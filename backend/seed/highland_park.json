@@ -1,0 +1,408 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Highland Park (Middlesex County)",
+ "districts": [
+  {
+   "name": "Highland Park School District",
+   "state": "NJ",
+   "website_url": "https://www.hpschools.net",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": "https://aptg.co/f2d72r",
+   "ics_feeds": [
+    {
+     "name": "Highland Park District",
+     "platform": "apptegy",
+     "org_id": "13735"
+    },
+    {
+     "name": "Highland Park High",
+     "platform": "apptegy",
+     "org_id": "13806",
+     "school_slug": "highland-park-high"
+    },
+    {
+     "name": "Highland Park Middle",
+     "platform": "apptegy",
+     "org_id": "13805",
+     "school_slug": "highland-park-middle"
+    },
+    {
+     "name": "Highland Park Bartle",
+     "url": "https://calendar.google.com/calendar/ical/c_2246bd9bf8464d9e14fd329b6e2442d360e2dcf7d0f1fb535e0574a5409e1812%40group.calendar.google.com/public/basic.ics",
+     "school_slug": "highland-park-bartle"
+    },
+    {
+     "name": "Highland Park Irving",
+     "platform": "apptegy",
+     "org_id": "13803",
+     "school_slug": "highland-park-irving"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null,
+   "towns": [
+    "Highland Park"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "highland-park-high",
+   "name": "Highland Park High School",
+   "short_name": "Highland Park High",
+   "district_name": "Highland Park School District",
+   "school_type": "high",
+   "address": "102 N 5th Ave, Highland Park, NJ 08904",
+   "main_phone": "(732) 572-2400",
+   "website_url": "https://www.hpschools.net/o/hs",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 572-2400 ext. 4999",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's absence line (732-572-2400 ext. 4999) to report your child's absence (district page 'How To Report Your Child's Absence').",
+   "start_time": "8:10 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "10:17 AM",
+   "athletics_url": "https://65955.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/13806/logo/15286/highlandparknj_logo_web.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Academic Period",
+      "start": "08:10",
+      "end": "08:59"
+     },
+     {
+      "name": "1st Class",
+      "start": "09:02",
+      "end": "09:51"
+     },
+     {
+      "name": "2nd Class",
+      "start": "09:55",
+      "end": "10:44"
+     },
+     {
+      "name": "3rd Class",
+      "start": "10:48",
+      "end": "11:37"
+     },
+     {
+      "name": "Lunch",
+      "start": "11:41",
+      "end": "12:21"
+     },
+     {
+      "name": "4th Class",
+      "start": "12:25",
+      "end": "13:14"
+     },
+     {
+      "name": "5th Class",
+      "start": "13:18",
+      "end": "14:07"
+     },
+     {
+      "name": "6th Class",
+      "start": "14:11",
+      "end": "15:00"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "1st Class",
+      "start": "08:10",
+      "end": "08:47"
+     },
+     {
+      "name": "2nd Class",
+      "start": "08:51",
+      "end": "09:28"
+     },
+     {
+      "name": "3rd Class",
+      "start": "09:32",
+      "end": "10:09"
+     },
+     {
+      "name": "Morning Break",
+      "start": "10:13",
+      "end": "10:27"
+     },
+     {
+      "name": "4th Class",
+      "start": "10:31",
+      "end": "11:08"
+     },
+     {
+      "name": "5th Class",
+      "start": "11:12",
+      "end": "11:49"
+     },
+     {
+      "name": "6th Class",
+      "start": "11:53",
+      "end": "12:30"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "1st Class",
+      "start": "10:17",
+      "end": "10:54"
+     },
+     {
+      "name": "2nd Class",
+      "start": "10:58",
+      "end": "11:35"
+     },
+     {
+      "name": "3rd Class",
+      "start": "11:39",
+      "end": "12:16"
+     },
+     {
+      "name": "Lunch",
+      "start": "12:20",
+      "end": "13:00"
+     },
+     {
+      "name": "4th Class",
+      "start": "13:04",
+      "end": "13:40"
+     },
+     {
+      "name": "5th Class",
+      "start": "13:44",
+      "end": "14:20"
+     },
+     {
+      "name": "6th Class",
+      "start": "14:24",
+      "end": "15:00"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "13806",
+   "fdmealplanner_location": null
+  },
+  {
+   "slug": "highland-park-middle",
+   "name": "Highland Park Middle School",
+   "short_name": "Highland Park Middle",
+   "district_name": "Highland Park School District",
+   "school_type": "middle",
+   "address": "330 Wayne St, Highland Park, NJ 08904",
+   "main_phone": "(732) 572-2401",
+   "website_url": "https://www.hpschools.net/o/ms",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 572-2401 ext. 3999",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's absence line (732-572-2401 ext. 3999) to report your child's absence (district page 'How To Report Your Child's Absence').",
+   "start_time": "8:10 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "10:17 AM",
+   "athletics_url": "https://289628.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/13805/logo/15335/hpms-logo.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "1st Class",
+      "start": "08:10",
+      "end": "08:59"
+     },
+     {
+      "name": "2nd Class",
+      "start": "09:02",
+      "end": "09:51"
+     },
+     {
+      "name": "3rd Class",
+      "start": "09:55",
+      "end": "10:44"
+     },
+     {
+      "name": "4th Class",
+      "start": "10:48",
+      "end": "11:37"
+     },
+     {
+      "name": "5th Class",
+      "start": "11:41",
+      "end": "12:30"
+     },
+     {
+      "name": "Lunch",
+      "start": "12:34",
+      "end": "13:14"
+     },
+     {
+      "name": "6th Class",
+      "start": "13:17",
+      "end": "14:06"
+     },
+     {
+      "name": "7th Class",
+      "start": "14:09",
+      "end": "14:58"
+     },
+     {
+      "name": "Electronics",
+      "start": "14:58",
+      "end": "15:00"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "1st Class",
+      "start": "08:10",
+      "end": "08:44"
+     },
+     {
+      "name": "2nd Class",
+      "start": "08:48",
+      "end": "09:22"
+     },
+     {
+      "name": "3rd Class",
+      "start": "09:26",
+      "end": "10:00"
+     },
+     {
+      "name": "4th Class",
+      "start": "10:03",
+      "end": "10:37"
+     },
+     {
+      "name": "5th Class",
+      "start": "10:40",
+      "end": "11:14"
+     },
+     {
+      "name": "6th Class",
+      "start": "11:17",
+      "end": "11:51"
+     },
+     {
+      "name": "7th Class",
+      "start": "11:54",
+      "end": "12:28"
+     },
+     {
+      "name": "Retrieve Electronics",
+      "start": "12:28",
+      "end": "12:30"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "1st Class",
+      "start": "10:17",
+      "end": "10:47"
+     },
+     {
+      "name": "2nd Class",
+      "start": "10:51",
+      "end": "11:21"
+     },
+     {
+      "name": "3rd Class",
+      "start": "11:25",
+      "end": "11:56"
+     },
+     {
+      "name": "4th Class",
+      "start": "12:00",
+      "end": "12:31"
+     },
+     {
+      "name": "5th Class",
+      "start": "12:35",
+      "end": "13:06"
+     },
+     {
+      "name": "Lunch",
+      "start": "13:10",
+      "end": "13:50"
+     },
+     {
+      "name": "6th Class",
+      "start": "13:54",
+      "end": "14:25"
+     },
+     {
+      "name": "7th Class",
+      "start": "14:29",
+      "end": "15:00"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "13805",
+   "fdmealplanner_location": null
+  },
+  {
+   "slug": "highland-park-bartle",
+   "name": "Bartle Elementary School",
+   "short_name": "Bartle",
+   "district_name": "Highland Park School District",
+   "school_type": "elementary",
+   "address": "435 Mansfield St, Highland Park, NJ 08904",
+   "main_phone": "(732) 572-4100",
+   "website_url": "https://www.hpschools.net/o/bartle",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 572-4100 ext. 2999",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's absence line (732-572-4100 ext. 2999) to report your child's absence (district page 'How To Report Your Child's Absence').",
+   "start_time": "7:45 AM",
+   "end_time": "2:15 PM",
+   "early_dismissal_time": "11:45 AM",
+   "delayed_opening_time": "9:45 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/13804/logo/15313/bartle-logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "13804",
+   "fdmealplanner_location": null
+  },
+  {
+   "slug": "highland-park-irving",
+   "name": "Irving Primary School",
+   "short_name": "Irving",
+   "district_name": "Highland Park School District",
+   "school_type": "elementary",
+   "address": "121 S 11th Ave, Highland Park, NJ 08904",
+   "main_phone": "(732) 572-1205",
+   "website_url": "https://www.hpschools.net/o/irving",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 572-1205 ext. 1999",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's absence line (732-572-1205 ext. 1999) to report your child's absence (district page 'How To Report Your Child's Absence').",
+   "start_time": "8:10 AM",
+   "end_time": "2:40 PM",
+   "early_dismissal_time": "12:10 PM",
+   "delayed_opening_time": "10:10 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/13803/logo/15282/irving-logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "13803",
+   "fdmealplanner_location": null
+  }
+ ],
+ "smore_newsletters": []
+}

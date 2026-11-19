@@ -125,6 +125,17 @@ def test_footer_phone_drops_the_country_code():
     assert smart_sites.parse_footer(html)["main_phone"] == "856-829-7770"
 
 
+def test_table_directory_reads_location_and_email_columns_by_header():
+    frag = (
+        "<table><thead><tr><th>Name</th><th>Title</th><th>Location</th><th>Contact</th></tr></thead><tbody>"
+        '<tr data-staff-name="Pat Doe"><td>Pat Doe</td><td>Teacher</td><td>Oak Elementary School</td>'
+        '<td><button class="react-staff-msg" data-staff-name="Pat Doe" data-staff-email="cGRvZUBleC5vcmc=">Send</button></td></tr>'
+        "</tbody></table>"
+    )
+    (row,) = smart_sites.parse_directory(frag)
+    assert (row["title"], row["email"], row["locations"]) == ("Teacher", "pdoe@ex.org", ["Oak Elementary School"])
+
+
 def test_table_directory_rows_and_faculty_staff_links():
     frag = (
         '<table><tbody><tr data-staff-name="Pat Doe"><td>Pat Doe</td><td>Principal</td></tr>'

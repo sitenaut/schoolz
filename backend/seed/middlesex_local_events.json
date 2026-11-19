@@ -1,0 +1,182 @@
+{
+  "exported_at": "2026-11-19T12:00:00Z",
+  "source": "onboarding: Middlesex County town calendars for /local",
+  "districts": [],
+  "schools": [],
+  "smore_newsletters": [],
+  "local_events": {
+    "Local events refresh": {
+      "json_sources": [
+        {
+          "name": "edison_township",
+          "url": "https://www.edisonnj.org/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=edisonnj&relative_revize_url=//cms2.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": [
+            "edison",
+            "municipal"
+          ],
+          "location": "Edison, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "dunellen_borough",
+          "url": "https://www.dunellen-nj.gov/_assets_/plugins/revizeCalendar/calendar_data_handler.php?webspace=boroughofdunellennj&relative_revize_url=//builder1.revize.com&protocol=https:",
+          "data_path": "",
+          "description_field": "desc",
+          "location_field": "location",
+          "parser": "revize",
+          "upcoming_only": true,
+          "default_categories": [
+            "dunellen",
+            "municipal"
+          ],
+          "location": "Dunellen, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "metuchen_borough",
+          "url": "https://www.metuchennj.org/index.php?option=com_dpcalendar&view=events&format=raw&limit=500",
+          "base_url": "https://www.metuchennj.org",
+          "parser": "dpcalendar",
+          "default_categories": [
+            "metuchen",
+            "municipal"
+          ],
+          "location": "Metuchen, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "^court session$"
+          ]
+        },
+        {
+          "name": "south_amboy_city",
+          "url": "https://www.southamboynj.gov/api/data/GetCalendarData",
+          "base_url": "https://www.southamboynj.gov",
+          "data_path": "",
+          "date_range_params": [
+            "start",
+            "end"
+          ],
+          "window_days": 120,
+          "exclude_field_values": {
+            "className": [
+              "Meeting"
+            ]
+          },
+          "upcoming_only": true,
+          "default_categories": [
+            "south-amboy",
+            "municipal"
+          ],
+          "location": "South Amboy, NJ",
+          "skip_meetings": true
+        }
+      ],
+      "ical_sources": [
+        {
+          "name": "woodbridge_township",
+          "url": "https://www.twp.woodbridge.nj.us/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+          "default_categories": [
+            "woodbridge",
+            "municipal"
+          ],
+          "location": "Woodbridge, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "north_brunswick_township",
+          "url": "https://www.northbrunswicknj.gov/common/modules/iCalendar/iCalendar.aspx?catID=24&feed=calendar",
+          "default_categories": [
+            "north-brunswick",
+            "municipal"
+          ],
+          "location": "North Brunswick, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "woodbridge_barron_arts_center",
+          "url": "https://www.twp.woodbridge.nj.us/common/modules/iCalendar/iCalendar.aspx?catID=32&feed=calendar",
+          "default_categories": [
+            "woodbridge",
+            "municipal"
+          ],
+          "location": "Woodbridge, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "south_river_borough",
+          "url": "https://www.southrivernj.org/common/modules/iCalendar/iCalendar.aspx?catID=14&feed=calendar",
+          "default_categories": [
+            "south-river",
+            "municipal"
+          ],
+          "location": "South River, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "\\bcurbside\\b",
+            "^shade tree advisory board$"
+          ]
+        },
+        {
+          "name": "woodbridge_gallery_on_main",
+          "url": "https://www.twp.woodbridge.nj.us/common/modules/iCalendar/iCalendar.aspx?catID=40&feed=calendar",
+          "default_categories": [
+            "woodbridge",
+            "municipal"
+          ],
+          "location": "Woodbridge, NJ",
+          "skip_meetings": true
+        },
+        {
+          "name": "piscataway_township",
+          "url": "https://piscatawaynj.librarycalendar.com/events/feed/ical",
+          "default_categories": [
+            "piscataway",
+            "municipal"
+          ],
+          "location": "Piscataway, NJ",
+          "skip_meetings": true,
+          "upcoming_only": true,
+          "via_scraper": true
+        }
+      ],
+      "revize_calendar_app_sources": [
+        {
+          "name": "new_brunswick_city",
+          "base_url": "https://www.cityofnewbrunswick.org",
+          "calendar_ids": [
+            1
+          ],
+          "months_ahead": 3,
+          "default_categories": [
+            "new-brunswick",
+            "municipal"
+          ],
+          "location": "New Brunswick, NJ",
+          "skip_meetings": true,
+          "exclude_title_patterns": [
+            "\\bcollection\\b",
+            "\\broundtable\\b"
+          ]
+        }
+      ],
+      "thrillshare_sources": [
+        {
+          "name": "old_bridge_township",
+          "org_id": "5525",
+          "site_url": "https://www.oldbridge.com",
+          "default_categories": [
+            "old-bridge",
+            "municipal"
+          ],
+          "location": "Old Bridge, NJ",
+          "skip_meetings": true
+        }
+      ]
+    }
+  }
+}

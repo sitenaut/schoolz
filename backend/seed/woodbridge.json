@@ -1,0 +1,1585 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Woodbridge (Middlesex County)",
+ "districts": [
+  {
+   "name": "Woodbridge Township School District",
+   "state": "NJ",
+   "website_url": "https://www.woodbridge.k12.nj.us",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": "https://aptg.co/3R7YxY",
+   "ics_feeds": [
+    {
+     "name": "Woodbridge District",
+     "platform": "apptegy",
+     "org_id": "5059"
+    },
+    {
+     "name": "Woodbridge Mawbey Street",
+     "platform": "apptegy",
+     "org_id": "5060",
+     "school_slug": "woodbridge-mawbey-street"
+    },
+    {
+     "name": "Woodbridge Avenel Street",
+     "platform": "apptegy",
+     "org_id": "5061",
+     "school_slug": "woodbridge-avenel-street"
+    },
+    {
+     "name": "Woodbridge Claremont Avenue",
+     "platform": "apptegy",
+     "org_id": "5067",
+     "school_slug": "woodbridge-claremont-avenue"
+    },
+    {
+     "name": "Woodbridge Kennedy Park",
+     "platform": "apptegy",
+     "org_id": "5071",
+     "school_slug": "woodbridge-kennedy-park"
+    },
+    {
+     "name": "Woodbridge Lafayette Estates",
+     "platform": "apptegy",
+     "org_id": "5072",
+     "school_slug": "woodbridge-lafayette-estates"
+    },
+    {
+     "name": "Woodbridge Lynn Crest",
+     "platform": "apptegy",
+     "org_id": "5069",
+     "school_slug": "woodbridge-lynn-crest"
+    },
+    {
+     "name": "Woodbridge Matthew Jago",
+     "platform": "apptegy",
+     "org_id": "5075",
+     "school_slug": "woodbridge-matthew-jago"
+    },
+    {
+     "name": "Woodbridge Menlo Park Terrace",
+     "platform": "apptegy",
+     "org_id": "5066",
+     "school_slug": "woodbridge-menlo-park-terrace"
+    },
+    {
+     "name": "Woodbridge Oak Ridge Heights",
+     "platform": "apptegy",
+     "org_id": "5068",
+     "school_slug": "woodbridge-oak-ridge-heights"
+    },
+    {
+     "name": "Woodbridge Oak Tree Road",
+     "platform": "apptegy",
+     "org_id": "5076",
+     "school_slug": "woodbridge-oak-tree-road"
+    },
+    {
+     "name": "Woodbridge Pennsylvania Avenue",
+     "platform": "apptegy",
+     "org_id": "5074",
+     "school_slug": "woodbridge-pennsylvania-avenue"
+    },
+    {
+     "name": "Woodbridge Port Reading",
+     "platform": "apptegy",
+     "org_id": "5062",
+     "school_slug": "woodbridge-port-reading-avenue"
+    },
+    {
+     "name": "Woodbridge Robert Mascenik",
+     "platform": "apptegy",
+     "org_id": "5073",
+     "school_slug": "woodbridge-robert-mascenik"
+    },
+    {
+     "name": "Woodbridge Ross Street",
+     "platform": "apptegy",
+     "org_id": "5063",
+     "school_slug": "woodbridge-ross-street"
+    },
+    {
+     "name": "Woodbridge Avenel Middle",
+     "platform": "apptegy",
+     "org_id": "5077",
+     "school_slug": "woodbridge-avenel-middle"
+    },
+    {
+     "name": "Woodbridge Colonia Middle",
+     "platform": "apptegy",
+     "org_id": "5078",
+     "school_slug": "woodbridge-colonia-middle"
+    },
+    {
+     "name": "Woodbridge Fords Middle",
+     "platform": "apptegy",
+     "org_id": "5079",
+     "school_slug": "woodbridge-fords-middle"
+    },
+    {
+     "name": "Woodbridge Iselin Middle",
+     "platform": "apptegy",
+     "org_id": "5080",
+     "school_slug": "woodbridge-iselin-middle",
+     "skip_title_prefixes": [
+      "After School Activity",
+      "Afterschool Activity",
+      "Math Help",
+      "Choir Practice",
+      "Band Practice",
+      "Jazz Band"
+     ]
+    },
+    {
+     "name": "Woodbridge Woodbridge Middle",
+     "platform": "apptegy",
+     "org_id": "5081",
+     "school_slug": "woodbridge-middle"
+    },
+    {
+     "name": "Woodbridge Colonia High",
+     "platform": "apptegy",
+     "org_id": "5082",
+     "school_slug": "woodbridge-colonia-high"
+    },
+    {
+     "name": "Woodbridge JFK Memorial High",
+     "platform": "apptegy",
+     "org_id": "5083",
+     "school_slug": "woodbridge-jfk-memorial-high"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.woodbridge.k12.nj.us/page/transportation",
+   "towns": [
+    "Woodbridge"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "woodbridge-mawbey-street",
+   "name": "Mawbey Street Elementary School",
+   "short_name": "Mawbey Street",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "275 Mawbey Street, Woodbridge, NJ 07095",
+   "main_phone": "(732) 602-8401",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/mawbey",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5060/logo/6842/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5060",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-avenel-street",
+   "name": "Avenel Street Elementary School",
+   "short_name": "Avenel Street",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "230 Avenel Street, Avenel, NJ 07001",
+   "main_phone": "(732) 602-8504",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/avenel",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5061/logo/6843/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5061",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-claremont-avenue",
+   "name": "Claremont Avenue Elementary School",
+   "short_name": "Claremont Avenue",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "90 Claremont Avenue, Colonia, NJ 07067",
+   "main_phone": "(732) 596-4153",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/claremont",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5067/logo/6849/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5067",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-indiana-avenue",
+   "name": "Indiana Avenue Elementary School",
+   "short_name": "Indiana Avenue",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "256 Indiana Avenue, Iselin, NJ 08830",
+   "main_phone": "(732) 602-8518",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/indiana",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5065/logo/6847/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5065",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-kennedy-park",
+   "name": "Kennedy Park Elementary School",
+   "short_name": "Kennedy Park",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "150 Goodrich Street, Iselin, NJ 08830",
+   "main_phone": "(732) 568-5680",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/kps",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5071/logo/6853/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5071",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-lafayette-estates",
+   "name": "Lafayette Estates Elementary School",
+   "short_name": "Lafayette Estates",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "500 Ford Avenue, Fords, NJ 08863",
+   "main_phone": "(732) 596-4143",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/lafayette25",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5072/logo/6854/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5072",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-lynn-crest",
+   "name": "Lynn Crest Elementary School",
+   "short_name": "Lynn Crest",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "98 Ira Avenue, Colonia, NJ 07067",
+   "main_phone": "(732) 499-6558",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/lc22",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5069/logo/6851/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5069",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-matthew-jago",
+   "name": "Matthew Jago Elementary School",
+   "short_name": "Matthew Jago",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "99 Glen Cove Avenue, Sewaren, NJ 07077",
+   "main_phone": "(732) 602-8428",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/matthewjago28",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5075/logo/6857/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5075",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-menlo-park-terrace",
+   "name": "Menlo Park Terrace Elementary School",
+   "short_name": "Menlo Park Terrace",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "19 Maryknoll Road, Metuchen, NJ 08840",
+   "main_phone": "(732) 596-4147",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/menlo",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5066/logo/6848/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5066",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-oak-ridge-heights",
+   "name": "Oak Ridge Heights Elementary School",
+   "short_name": "Oak Ridge Heights",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "720 Inman Avenue, Colonia, NJ 07067",
+   "main_phone": "(732) 499-6553",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/orh",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5068/logo/6850/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5068",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-oak-tree-road",
+   "name": "Oak Tree Road Elementary School",
+   "short_name": "Oak Tree Road",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "29 Wilus Way, Iselin, NJ 08830",
+   "main_phone": "(732) 602-8424",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/otr",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5076/logo/6858/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5076",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-pennsylvania-avenue",
+   "name": "Pennsylvania Avenue Elementary School",
+   "short_name": "Pennsylvania Avenue",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "80 Pennsylvania Avenue, Colonia, NJ 07067",
+   "main_phone": "(732) 499-6566",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/pennave27",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "9:00 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5074/logo/6856/woodbridge_logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5074",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-port-reading-avenue",
+   "name": "Port Reading Avenue Elementary School",
+   "short_name": "Port Reading",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "77 Turner Street, Port Reading, NJ 07064",
+   "main_phone": "(732) 602-8409",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/prs",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5062/logo/6844/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5062",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-robert-mascenik",
+   "name": "Robert Mascenik Elementary School",
+   "short_name": "Robert Mascenik",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "300 Benjamin Avenue, Iselin, NJ 08830",
+   "main_phone": "(732) 602-8526",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/rms",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5073/logo/6855/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5073",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-ross-street",
+   "name": "Ross Street Elementary School",
+   "short_name": "Ross Street",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "110 Ross Street, Woodbridge, NJ 07095",
+   "main_phone": "(732) 602-8511",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/ross",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5063/logo/6845/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5063",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-woodbine-avenue",
+   "name": "Woodbine Avenue Elementary School",
+   "short_name": "Woodbine Avenue",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "elementary",
+   "address": "89 Woodbine Avenue, Avenel, NJ 07001",
+   "main_phone": "(732) 602-8523",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/woodbine",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:10 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5070/logo/6852/woodbridge_logo.png",
+   "bell_periods": {
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "09:05",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:31",
+      "end": "09:56"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:57",
+      "end": "10:22"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:23",
+      "end": "10:48"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:49",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:15",
+      "end": "11:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:41",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8 (Lunch)",
+      "start": "12:07",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:33",
+      "end": "12:58"
+     },
+     {
+      "name": "Dismissal",
+      "start": "12:58",
+      "end": "13:10"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "5070",
+   "fdmealplanner_location": "9/91/426"
+  },
+  {
+   "slug": "woodbridge-avenel-middle",
+   "name": "Avenel Middle School",
+   "short_name": "Avenel Middle",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "middle",
+   "address": "85 Woodbine Avenue, Avenel, NJ 07001",
+   "main_phone": "(732) 596-4210",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/ams",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:15 AM",
+   "end_time": "3:05 PM",
+   "early_dismissal_time": "12:45 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5077/logo/6859/woodbridge_logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5077",
+   "fdmealplanner_location": "9/91/430"
+  },
+  {
+   "slug": "woodbridge-colonia-middle",
+   "name": "Colonia Middle School",
+   "short_name": "Colonia Middle",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "middle",
+   "address": "100 Delaware Avenue, Colonia, NJ 07067",
+   "main_phone": "(732) 396-7000",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/cms",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:15 AM",
+   "end_time": "3:05 PM",
+   "early_dismissal_time": "12:45 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5078/file/2048176/765fed1f-e7d2-482c-970e-dffcf22939db.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5078",
+   "fdmealplanner_location": "9/91/430"
+  },
+  {
+   "slug": "woodbridge-fords-middle",
+   "name": "Fords Middle School",
+   "short_name": "Fords Middle",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "middle",
+   "address": "100 Fanning Street, Fords, NJ 08863",
+   "main_phone": "(732) 596-4200",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/fms",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:15 AM",
+   "end_time": "3:05 PM",
+   "early_dismissal_time": "12:45 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5079/logo/6861/woodbridge_logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5079",
+   "fdmealplanner_location": "9/91/430"
+  },
+  {
+   "slug": "woodbridge-iselin-middle",
+   "name": "Iselin Middle School",
+   "short_name": "Iselin Middle",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "middle",
+   "address": "900 Panther Way, Iselin, NJ 08830",
+   "main_phone": "(732) 602-8450",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/ims",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:15 AM",
+   "end_time": "3:05 PM",
+   "early_dismissal_time": "12:45 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5080/logo/6862/woodbridge_logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5080",
+   "fdmealplanner_location": "9/91/430"
+  },
+  {
+   "slug": "woodbridge-middle",
+   "name": "Woodbridge Middle School",
+   "short_name": "Woodbridge Middle",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "middle",
+   "address": "525 Barron Avenue, Woodbridge, NJ 07095",
+   "main_phone": "(732) 602-8690",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/wms",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 602-8696",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance secretary, (732) 602-8696.",
+   "start_time": "8:15 AM",
+   "end_time": "3:05 PM",
+   "early_dismissal_time": "12:45 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5081/file/2048184/a314e069-d572-4f34-a115-ea6e4f3d9759.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5081",
+   "fdmealplanner_location": "9/91/430"
+  },
+  {
+   "slug": "woodbridge-colonia-high",
+   "name": "Colonia High School",
+   "short_name": "Colonia High",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "high",
+   "address": "180 East Street, Colonia, NJ 07067",
+   "main_phone": "(732) 499-6500",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/chs",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 726-7040",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report that your child will be absent or late, call the Attendance Hotline, (732) 726-7040.",
+   "start_time": "7:40 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:10 PM",
+   "delayed_opening_time": "9:40 AM",
+   "athletics_url": "https://61318.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5082/file/6246718/43024fa6-8c24-43b5-b37a-eef28568fc35.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5082",
+   "fdmealplanner_location": "9/91/428"
+  },
+  {
+   "slug": "woodbridge-jfk-memorial-high",
+   "name": "John F. Kennedy Memorial High School",
+   "short_name": "JFK Memorial High",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "high",
+   "address": "200 Washington Avenue, Iselin, NJ 08830",
+   "main_phone": "(732) 602-8650",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/jfk",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "7:40 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:10 PM",
+   "delayed_opening_time": "9:40 AM",
+   "athletics_url": "https://63327.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5083/file/3796247/8308c9bc-6af7-4c4e-a9d6-d30a5233ae41.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5083",
+   "fdmealplanner_location": "9/91/428"
+  },
+  {
+   "slug": "woodbridge-high",
+   "name": "Woodbridge High School",
+   "short_name": "Woodbridge High",
+   "district_name": "Woodbridge Township School District",
+   "school_type": "high",
+   "address": "25 Samuel Lupo Place, Woodbridge, NJ 07095",
+   "main_phone": "(732) 602-8600",
+   "website_url": "https://www.woodbridge.k12.nj.us/o/whs",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "7:40 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:10 PM",
+   "delayed_opening_time": "9:40 AM",
+   "athletics_url": "https://61956.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5084/file/2051696/35673ca3-15f3-4dc2-a959-9db6612c1c9e.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5084",
+   "fdmealplanner_location": "9/91/428"
+  }
+ ],
+ "smore_newsletters": []
+}

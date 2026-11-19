@@ -76,3 +76,18 @@ async def test_fetch_entrees_spans_months_and_tolerates_an_unpublished_one():
         out = await healthepro.fetch_entrees(client, "2984", 139778, date(2026, 10, 20), date(2026, 12, 1))
     assert sorted(out) == [date(2026, 10, 30), date(2026, 11, 2)]
     assert out[date(2026, 11, 2)][0] == "Chicken Nuggets"
+
+
+@pytest.mark.anyio
+async def test_fetch_entrees_takes_a_400_for_a_later_month_as_unpublished():
+    # Sayreville's org answers an unpublished month with a bare 400.
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/year/2026/month/11/date_overwrites"):
+            return httpx.Response(200, json={"data": [{"day": "2026-11-20", "setting": LUNCH_DAY}]})
+        return httpx.Response(400, json={"message": ""})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        out = await healthepro.fetch_entrees(client, "2483", 1, date(2026, 11, 19), date(2026, 12, 10))
+        assert sorted(out) == [date(2026, 11, 20)]
+        with pytest.raises(httpx.HTTPStatusError):
+            await healthepro.fetch_entrees(client, "2483", 1, date(2026, 12, 1), date(2026, 12, 10))

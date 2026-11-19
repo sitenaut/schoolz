@@ -44,6 +44,9 @@ def test_middle_school_level_reads_the_team_not_the_opponent():
     assert arbiter.is_middle_school_team(_game("3", "Basketball - Boys 7/8th"))
     assert arbiter.is_middle_school_team(_game("4", "Soccer - Girls 7th/8th"))
     assert arbiter.is_middle_school_team(_game("5", "Soccer - Girls Middle School - Blue"))
+    assert arbiter.is_middle_school_team(_game("6", "Basketball - Boys Junior High"))
+    assert arbiter.is_middle_school_team(_game("8", "Basketball - Boys Middle School Blue"))
+    assert not arbiter.is_middle_school_team(_game("7", "Basketball - Boys Varsity", "vs Carteret Junior High"))
 
 
 def test_games_split_between_a_districts_high_and_middle_school():

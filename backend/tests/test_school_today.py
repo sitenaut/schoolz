@@ -395,3 +395,23 @@ def test_a_title_that_says_only_applies_to_the_schools_it_names():
     assert school_types_from_title("Memorial Day Schools Closed", pitman) is None
     assert school_types_from_title("Early Dismissal - PES, Memorial and Jr./Sr. High only", pitman) is None
     assert school_types_from_title("Early Dismissal Middle School Only") == ["middle"]
+
+
+def test_a_closing_parenthetical_of_school_names_narrows_like_only():
+    from services.district_calendar import school_types_from_title
+
+    carteret = [
+        ("Carteret High School", "Carteret High", "high"),
+        ("Carteret Junior High School", "Carteret Junior High", "middle"),
+        ("Carteret Middle School", "Carteret Middle", "middle"),
+        ("Nathan Hale Elementary School", "Nathan Hale", "elementary"),
+        ("Columbus Elementary School", "Columbus", "elementary"),
+    ]
+    assert school_types_from_title("Early Dismissal - Parent/Teacher Meetings (High School)", carteret) == ["high"]
+    assert school_types_from_title("Early Dismissal - Parent/Teacher Meetings (Junior High School)", carteret) == ["middle"]
+    assert school_types_from_title("Early Dismissal - Parent/Teacher Meetings (Elementary)", carteret) == ["elementary"]
+    assert school_types_from_title("Back to School Night (Nathan Hale)", carteret) == ["elementary"]
+    # Anything else inside, or every kind named: the whole district.
+    assert school_types_from_title("Schools Closed (Thanksgiving)", carteret) is None
+    assert school_types_from_title("Early Dismissal (High School graduation rehearsal)", carteret) is None
+    assert school_types_from_title("Early Dismissal (Elementary, Middle & High School)", carteret) is None

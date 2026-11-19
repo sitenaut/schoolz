@@ -99,11 +99,13 @@ async def fetch_site_menus(client: httpx.AsyncClient, org: str, site: str) -> li
 
 async def fetch_entrees(client: httpx.AsyncClient, org: str, menu_id: int, start: date, end: date) -> dict[date, list[str]]:
     """Entrées per school day in [start, end]. A month the vendor hasn't
-    published yet is a 404/empty, which just means no days from it."""
+    published yet is a 404/empty, which just means no days from it. Sayreville's
+    org answers a later month it hasn't published with a bare 400 instead; the
+    window's first month still has to answer properly."""
     out: dict[date, list[str]] = {}
-    for year, month in _months(start, end):
+    for i, (year, month) in enumerate(_months(start, end)):
         resp = await client.get(f"{_API}/{org}/menus/{menu_id}/year/{year}/month/{month}/date_overwrites", headers=_HEADERS)
-        if resp.status_code == 404:
+        if resp.status_code == 404 or (resp.status_code == 400 and i > 0):
             continue
         resp.raise_for_status()
         for row in resp.json().get("data") or []:

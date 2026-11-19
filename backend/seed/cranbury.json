@@ -1,0 +1,66 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Cranbury (Middlesex County)",
+ "districts": [
+  {
+   "name": "Cranbury Township School District",
+   "state": "NJ",
+   "website_url": "https://www.cranburyschool.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "Cranbury District Calendar",
+     "url": "https://www.cranburyschool.org/apps/events/ical/?id=0"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null,
+   "towns": [
+    "Cranbury"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "cranbury-school",
+   "name": "Cranbury School",
+   "short_name": "Cranbury",
+   "district_name": "Cranbury Township School District",
+   "school_type": "elementary",
+   "address": "23 North Main Street, Cranbury, NJ 08512",
+   "main_phone": "(609) 395-1700",
+   "website_url": "https://www.cranburyschool.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(609) 395-1700, option 6",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the TEL-SAFE line, 609-395-1700 option 6, before 8:45 AM to report an absence or late arrival (homework requests through TEL-SAFE by 10:00 AM). If you haven't called, the office will call you. After more than three school days out sick, send a physician's note.",
+   "start_time": "8:30 AM",
+   "end_time": "3:15 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": "https://www.arbiterlive.com/m/team/5213",
+   "logo_url": null,
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "6:30 AM - 8:00 AM",
+    "pm_hours": "3:15 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "AlphaBest, on site, grades K-6. The afternoon session starts at 12:30 PM on early dismissal days. Closed on inclement-weather early dismissals and delayed openings.",
+    "handbook_url": "https://www.alphabest.org/cranburynj"
+   },
+   "fdmealplanner_location": null
+  }
+ ],
+ "smore_newsletters": []
+}

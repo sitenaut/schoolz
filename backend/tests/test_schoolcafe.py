@@ -125,3 +125,10 @@ async def test_client_retries_a_brief_503_then_raises_a_lasting_one(monkeypatch)
         with pytest.raises(httpx.HTTPStatusError):
             await schoolcafe.SchoolCafeClient(c).district_id("X")
     assert calls == 3
+
+
+def test_matches_through_a_misspelt_level_word():
+    # Monroe Township (Middlesex): SchoolCafe lists "Applegarth Elemenary School".
+    cafe = [{"SchoolName": "Applegarth Elemenary School"}, {"SchoolName": "Oak Tree Elementary School"}, {"SchoolName": "Barclay Brook School"}]
+    assert match_school("Applegarth Elementary School", cafe)["SchoolName"] == "Applegarth Elemenary School"
+    assert match_school("Barclay Brook Elementary School", cafe)["SchoolName"] == "Barclay Brook School"

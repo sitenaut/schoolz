@@ -1,0 +1,779 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Middlesex Borough (Middlesex County)",
+ "districts": [
+  {
+   "name": "Middlesex Borough School District",
+   "state": "NJ",
+   "website_url": "https://www.mbschools.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": "https://aptg.co/SMmsKz",
+   "ics_feeds": [
+    {
+     "name": "Middlesex Borough District",
+     "platform": "apptegy",
+     "org_id": "33878",
+     "school_title_prefixes": {
+      "HZ": "middlesex-borough-hazelwood-elementary",
+      "WTG": "middlesex-borough-watchung-elementary",
+      "WG -": "middlesex-borough-watchung-elementary",
+      "Watchung": "middlesex-borough-watchung-elementary",
+      "Parker": "middlesex-borough-parker-elementary",
+      "VEM": "middlesex-borough-mauger-middle",
+      "MHS": "middlesex-borough-high",
+      "Woodland": "middlesex-borough-woodland-intermediate"
+     }
+    },
+    {
+     "name": "Middlesex Borough High",
+     "platform": "apptegy",
+     "org_id": "33959",
+     "school_slug": "middlesex-borough-high"
+    },
+    {
+     "name": "Middlesex Borough Woodland",
+     "platform": "apptegy",
+     "org_id": "33961",
+     "school_slug": "middlesex-borough-woodland-intermediate"
+    },
+    {
+     "name": "Middlesex Borough Hazelwood",
+     "platform": "apptegy",
+     "org_id": "33962",
+     "school_slug": "middlesex-borough-hazelwood-elementary"
+    },
+    {
+     "name": "Middlesex Borough Watchung",
+     "platform": "apptegy",
+     "org_id": "33964",
+     "school_slug": "middlesex-borough-watchung-elementary"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.mbschools.org/page/transportation-information",
+   "towns": [
+    "Middlesex"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "middlesex-borough-high",
+   "name": "Middlesex High School",
+   "short_name": "Middlesex High",
+   "district_name": "Middlesex Borough School District",
+   "school_type": "high",
+   "address": "300 John F. Kennedy Dr, Middlesex, NJ 08846",
+   "main_phone": "(732) 317-6000 ext. 21602",
+   "website_url": "https://mhs.mbschools.org/o/mhs",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6000 ext. 21605",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.c2.genesisedu.net/middlesex/sis/view?gohome=true",
+   "absence_instructions": "Report the absence or late arrival before the school day starts: in the Genesis Parent Portal (Attendance, then Notify Office; today or a future date, with a note), or by calling the school's attendance line, (732) 317-6000 ext. 21605. From the main line, option 2 reaches the high school menu, where option 1 is Attendance. After three consecutive days absent for illness a doctor's note is required. If the office is not notified, the district's automated system calls home and the absence may be recorded as truancy.",
+   "start_time": "8:00 AM",
+   "end_time": "2:26 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "9:30 AM",
+   "athletics_url": "https://middlesexathletics.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33959/logo/37179/MHS-Logo.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 0",
+      "start": "07:16",
+      "end": "07:56"
+     },
+     {
+      "name": "1/5",
+      "start": "08:00",
+      "end": "09:28"
+     },
+     {
+      "name": "2/6",
+      "start": "09:32",
+      "end": "10:56"
+     },
+     {
+      "name": "3/7 (with lunch)",
+      "start": "11:00",
+      "end": "12:58"
+     },
+     {
+      "name": "4/8",
+      "start": "13:02",
+      "end": "14:26"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 0",
+      "start": "07:30",
+      "end": "07:56"
+     },
+     {
+      "name": "1/5",
+      "start": "08:00",
+      "end": "09:07"
+     },
+     {
+      "name": "2/6",
+      "start": "09:11",
+      "end": "10:13"
+     },
+     {
+      "name": "3/7",
+      "start": "10:17",
+      "end": "11:19"
+     },
+     {
+      "name": "4/8",
+      "start": "11:23",
+      "end": "12:25"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "1/5",
+      "start": "09:30",
+      "end": "10:36"
+     },
+     {
+      "name": "2/6",
+      "start": "10:40",
+      "end": "11:42"
+     },
+     {
+      "name": "3/7 (with lunch)",
+      "start": "11:46",
+      "end": "13:20"
+     },
+     {
+      "name": "4/8",
+      "start": "13:24",
+      "end": "14:26"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "33959",
+   "nutrislice_location": "middlesex/middlesex-high",
+   "staff_directory_url": null
+  },
+  {
+   "slug": "middlesex-borough-mauger-middle",
+   "name": "Von E. Mauger Middle School",
+   "short_name": "Mauger Middle",
+   "district_name": "Middlesex Borough School District",
+   "school_type": "middle",
+   "address": "2 Fisher Ave, Middlesex, NJ 08846",
+   "main_phone": "(732) 317-6000 ext. 22602",
+   "website_url": "https://vem.mbschools.org/o/vem",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6000 ext. 22601",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.c2.genesisedu.net/middlesex/sis/view?gohome=true",
+   "absence_instructions": "Report the absence or late arrival before the school day starts: in the Genesis Parent Portal (Attendance, then Notify Office; today or a future date, with a note), or by calling the school's attendance line, (732) 317-6000 ext. 22601. The handbook asks for the call between 7:30 and 9:00 AM and a signed note giving the reason on the day the student returns. If the office is not notified, the district's automated system calls home and the absence may be recorded as truancy.",
+   "start_time": "8:15 AM",
+   "end_time": "2:45 PM",
+   "early_dismissal_time": "12:35 PM",
+   "delayed_opening_time": "9:50 AM",
+   "athletics_url": "https://middlesexathletics.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33960/logo/37177/VEM-Logo.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:12",
+      "end": "09:54"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:56",
+      "end": "10:38"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:40",
+      "end": "11:22"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:24",
+      "end": "11:50"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "11:52",
+      "end": "12:34"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:36",
+      "end": "13:18"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:20",
+      "end": "14:02"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:04",
+      "end": "14:45"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "08:48"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:50",
+      "end": "09:16"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:18",
+      "end": "09:44"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "09:46",
+      "end": "10:12"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:14",
+      "end": "10:40"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "10:42",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 9",
+      "start": "11:10",
+      "end": "11:36"
+     },
+     {
+      "name": "Period 10",
+      "start": "11:38",
+      "end": "12:03"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:05",
+      "end": "12:35"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1",
+      "start": "09:50",
+      "end": "10:24"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:26",
+      "end": "10:56"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:58",
+      "end": "11:28"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:30",
+      "end": "12:00"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "12:02",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:34",
+      "end": "13:04"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:06",
+      "end": "13:36"
+     },
+     {
+      "name": "Period 11",
+      "start": "13:38",
+      "end": "14:08"
+     },
+     {
+      "name": "Period 2",
+      "start": "14:10",
+      "end": "14:45"
+     }
+    ],
+    "regular_grades_6": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:12",
+      "end": "09:54"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:56",
+      "end": "10:38"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:40",
+      "end": "11:22"
+     },
+     {
+      "name": "Period 6-7",
+      "start": "11:24",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:08",
+      "end": "12:34"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:36",
+      "end": "13:18"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:20",
+      "end": "14:02"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:04",
+      "end": "14:45"
+     }
+    ],
+    "early_dismissal_grades_6": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "08:48"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:50",
+      "end": "09:16"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:18",
+      "end": "09:44"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "09:46",
+      "end": "10:12"
+     },
+     {
+      "name": "Period 6-7",
+      "start": "10:14",
+      "end": "10:40"
+     },
+     {
+      "name": "Period 8",
+      "start": "10:42",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 9",
+      "start": "11:10",
+      "end": "11:36"
+     },
+     {
+      "name": "Period 10",
+      "start": "11:38",
+      "end": "12:03"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:05",
+      "end": "12:35"
+     }
+    ],
+    "regular_grades_7": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:12",
+      "end": "09:54"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:56",
+      "end": "10:38"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:40",
+      "end": "11:22"
+     },
+     {
+      "name": "Period 6",
+      "start": "11:24",
+      "end": "11:50"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "11:52",
+      "end": "12:34"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:36",
+      "end": "13:18"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:20",
+      "end": "14:02"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:04",
+      "end": "14:45"
+     }
+    ],
+    "early_dismissal_grades_7": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "08:48"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:50",
+      "end": "09:16"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:18",
+      "end": "09:44"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "09:46",
+      "end": "10:12"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:14",
+      "end": "10:40"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "10:42",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 9",
+      "start": "11:10",
+      "end": "11:36"
+     },
+     {
+      "name": "Period 10",
+      "start": "11:38",
+      "end": "12:03"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:05",
+      "end": "12:35"
+     }
+    ],
+    "regular_grades_8": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:12",
+      "end": "09:54"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:56",
+      "end": "10:38"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:40",
+      "end": "11:06"
+     },
+     {
+      "name": "Period 5-6",
+      "start": "11:08",
+      "end": "11:50"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "11:52",
+      "end": "12:34"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:36",
+      "end": "13:18"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:20",
+      "end": "14:02"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:04",
+      "end": "14:45"
+     }
+    ],
+    "early_dismissal_grades_8": [
+     {
+      "name": "Period 1",
+      "start": "08:15",
+      "end": "08:48"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:50",
+      "end": "09:16"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:18",
+      "end": "09:44"
+     },
+     {
+      "name": "Period 4",
+      "start": "09:46",
+      "end": "10:12"
+     },
+     {
+      "name": "Period 5-6",
+      "start": "10:14",
+      "end": "10:40"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "10:42",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 9",
+      "start": "11:10",
+      "end": "11:36"
+     },
+     {
+      "name": "Period 10",
+      "start": "11:38",
+      "end": "12:03"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:05",
+      "end": "12:35"
+     }
+    ]
+   },
+   "sacc": {
+    "am_hours": "7:00 AM - 8:20 AM",
+    "pm_hours": "2:45 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Middlesex Community School runs before and after care for Woodland and Mauger students in the Mauger School cafeteria; on a shortened day after care runs 12:35 PM - 6:00 PM. Register each year through the district's ProCare registration link.",
+    "handbook_url": "https://sites.google.com/middlesex.k12.nj.us/mb-community-school/before-after-care"
+   },
+   "apptegy_org_id": "33960",
+   "nutrislice_location": "middlesex/mauger-middle",
+   "staff_directory_url": null
+  },
+  {
+   "slug": "middlesex-borough-woodland-intermediate",
+   "name": "Woodland Intermediate School",
+   "short_name": "Woodland Intermediate",
+   "district_name": "Middlesex Borough School District",
+   "school_type": "elementary",
+   "address": "Fisher Ave, Middlesex, NJ 08846",
+   "main_phone": "(732) 317-6000",
+   "website_url": "https://mis.mbschools.org/o/mis",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6000 ext. 22609",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.c2.genesisedu.net/middlesex/sis/view?gohome=true",
+   "absence_instructions": "Report the absence or late arrival before the school day starts: in the Genesis Parent Portal (Attendance, then Notify Office; today or a future date, with a note), or by calling the school's attendance line, (732) 317-6000 ext. 22609. The handbook asks for the call between 7:30 and 9:00 AM and a signed note giving the reason on the day the student returns. If the office is not notified, the district's automated system calls home and the absence may be recorded as truancy.",
+   "start_time": "8:25 AM",
+   "end_time": "2:55 PM",
+   "early_dismissal_time": "12:45 PM",
+   "delayed_opening_time": "10:15 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33961/logo/37178/Woodland-Logo.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:20 AM",
+    "pm_hours": "2:45 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Middlesex Community School runs before and after care for Woodland and Mauger students in the Mauger School cafeteria; on a shortened day after care runs 12:35 PM - 6:00 PM. Register each year through the district's ProCare registration link.",
+    "handbook_url": "https://sites.google.com/middlesex.k12.nj.us/mb-community-school/before-after-care"
+   },
+   "apptegy_org_id": "33961",
+   "nutrislice_location": null,
+   "staff_directory_url": null
+  },
+  {
+   "slug": "middlesex-borough-hazelwood-elementary",
+   "name": "Hazelwood Elementary School",
+   "short_name": "Hazelwood",
+   "district_name": "Middlesex Borough School District",
+   "school_type": "elementary",
+   "address": "800 Hazelwood Ave, Middlesex, NJ 08846",
+   "main_phone": "(732) 317-6000",
+   "website_url": "https://hzw.mbschools.org/o/hzw",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6000 ext. 24603",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.c2.genesisedu.net/middlesex/sis/view?gohome=true",
+   "absence_instructions": "Report the absence or late arrival before the school day starts: in the Genesis Parent Portal (Attendance, then Notify Office; today or a future date, with a note), or by calling the school's attendance line, (732) 317-6000 ext. 24603. If the office is not notified, the district's automated system calls home and the absence may be recorded as truancy.",
+   "start_time": "8:35 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33962/logo/37176/Hazelwood-Logo.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:20 AM",
+    "pm_hours": "3:10 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Middlesex Community School runs before and after care in the school's all-purpose room; on a shortened day after care runs from early dismissal to 6:00 PM. Register each year through the district's ProCare registration link.",
+    "handbook_url": "https://sites.google.com/middlesex.k12.nj.us/mb-community-school/before-after-care"
+   },
+   "apptegy_org_id": "33962",
+   "nutrislice_location": "middlesex/hazelwood-elementary",
+   "staff_directory_url": null
+  },
+  {
+   "slug": "middlesex-borough-parker-elementary",
+   "name": "Parker Elementary School",
+   "short_name": "Parker",
+   "district_name": "Middlesex Borough School District",
+   "school_type": "elementary",
+   "address": "150 South Lincoln Ave, Middlesex, NJ 08846",
+   "main_phone": "(732) 317-6000 ext. 23602",
+   "website_url": "https://pkr.mbschools.org/o/pkr",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6000 ext. 23603",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.c2.genesisedu.net/middlesex/sis/view?gohome=true",
+   "absence_instructions": "Report the absence or late arrival before the school day starts: in the Genesis Parent Portal (Attendance, then Notify Office; today or a future date, with a note), or by calling the school's attendance line, (732) 317-6000 ext. 23603. If the office is not notified, the district's automated system calls home and the absence may be recorded as truancy.",
+   "start_time": "8:35 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33963/logo/37181/Parker-Logo.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:20 AM",
+    "pm_hours": "3:10 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Middlesex Community School runs before and after care in the school's all-purpose room; on a shortened day after care runs from early dismissal to 6:00 PM. Register each year through the district's ProCare registration link.",
+    "handbook_url": "https://sites.google.com/middlesex.k12.nj.us/mb-community-school/before-after-care"
+   },
+   "apptegy_org_id": "33963",
+   "nutrislice_location": "middlesex/parker-elementary",
+   "staff_directory_url": null
+  },
+  {
+   "slug": "middlesex-borough-watchung-elementary",
+   "name": "Watchung Elementary School",
+   "short_name": "Watchung",
+   "district_name": "Middlesex Borough School District",
+   "school_type": "elementary",
+   "address": "1 Fisher Ave, Middlesex, NJ 08846",
+   "main_phone": "(732) 317-6000 ext. 25602",
+   "website_url": "https://wtg.mbschools.org/o/wtg",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6000 ext. 25603",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.c2.genesisedu.net/middlesex/sis/view?gohome=true",
+   "absence_instructions": "Report the absence or late arrival before the school day starts: in the Genesis Parent Portal (Attendance, then Notify Office; today or a future date, with a note), or by calling the school's attendance line, (732) 317-6000 ext. 25603. If the office is not notified, the district's automated system calls home and the absence may be recorded as truancy.",
+   "start_time": "8:35 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/33964/logo/37180/Watchung_Logo.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:20 AM",
+    "pm_hours": "3:10 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Middlesex Community School runs before and after care in the school's all-purpose room; on a shortened day after care runs from early dismissal to 6:00 PM. Register each year through the district's ProCare registration link.",
+    "handbook_url": "https://sites.google.com/middlesex.k12.nj.us/mb-community-school/before-after-care"
+   },
+   "apptegy_org_id": "33964",
+   "nutrislice_location": "middlesex/watchung-elementary",
+   "staff_directory_url": null
+  }
+ ],
+ "smore_newsletters": []
+}

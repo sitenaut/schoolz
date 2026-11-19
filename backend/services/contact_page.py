@@ -76,7 +76,8 @@ def find_contact_page(home_html: str, home_url: str) -> str | None:
     host = urlparse(home_url).netloc
     soup = BeautifulSoup(home_html, "lxml")
     for a in soup.select("a[href]"):
-        if re.fullmatch(r"\s*contact(\s+us)?\s*", a.get_text(" ", strip=True), re.I):
+        # Perth Amboy's schools call it "Contact Us & Directions".
+        if re.fullmatch(r"\s*contact(\s+us)?(\s*(?:&|and)\s*directions)?\s*", a.get_text(" ", strip=True), re.I):
             url = urljoin(home_url, a["href"])
             if urlparse(url).netloc == host:
                 return url

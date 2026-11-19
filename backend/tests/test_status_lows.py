@@ -103,6 +103,8 @@ async def test_a_recess_that_began_weeks_ago_still_closes_the_schedule():
 def test_a_four_hour_day_is_a_half_day_status():
     # Edgewater Park words every early dismissal this way.
     assert is_status_title("4 Hour Day for Students") and is_status_title("4 Hour Day for All")
+    assert is_status_title("4 Hour Session")  # Monroe Township (Middlesex)
+    assert is_status_title("Singles Session - All Students")  # East Brunswick's typo
 
 
 @pytest.mark.parametrize(
