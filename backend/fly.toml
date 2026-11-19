@@ -107,7 +107,11 @@ primary_region = "ewr"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "512mb"
+  # 512mb: a machine starts with ~230 MB free, and within a day that falls
+  # to ~80 MB and stays there. A Backpack Capture import (46-183 pages) then
+  # got it OOM-killed mid-request, so the extension saw a 502 (2026-11-17
+  # and 11-19). What keeps growing hasn't been found yet.
+  memory = "1024mb"
   processes = ["app"]
 
 [[vm]]
