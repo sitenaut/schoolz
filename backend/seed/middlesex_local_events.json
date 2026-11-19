@@ -163,6 +163,19 @@
             "\\broundtable\\b"
           ]
         }
+      ],
+      "thrillshare_sources": [
+        {
+          "name": "old_bridge_township",
+          "org_id": "5525",
+          "site_url": "https://www.oldbridge.com",
+          "default_categories": [
+            "old-bridge",
+            "municipal"
+          ],
+          "location": "Old Bridge, NJ",
+          "skip_meetings": true
+        }
       ]
     }
   }
