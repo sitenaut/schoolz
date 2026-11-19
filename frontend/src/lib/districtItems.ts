@@ -8,7 +8,7 @@ import { i18n } from "./i18n";
 // the Calendar page and the Today cards agree on what counts as a "no
 // school" / "half day" status item vs. an ordinary district-wide event like
 // a Board of Education meeting.
-export const HALF_DAY_RE = /\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\babbreviated\s+(?:days?|sessions?|schedules?)\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1\/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
+export const HALF_DAY_RE = /\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\babbreviated\s+(?:days?|sessions?|schedules?)\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+(?:day|session)\b|(?:\b1\/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)/i;
 export const DELAY_RE = /\bdelayed\s+opening\b|\b\d\s*-?\s*hour\s+delay\b/i;
 // Staff and conference days: status items, but not a closed day.
 const STAFF_DAY_RE = /\bin[\s-]?service\b|\bconference\b/i;
@@ -16,7 +16,7 @@ const STAFF_DAY_RE = /\bin[\s-]?service\b|\bconference\b/i;
 // Swedesboro-Woolwich); the letter must be capital. Eastern Regional appends the
 // class order: "Day 3 ( 3, 4, 1, LL, 7, 8, 5)". Mirrors services/rotation_day.py
 // (JS has no inline (?-i:), so "day" is spelled out to leave the letter case-sensitive).
-const ROTATION_RE = /^\s*(?:[Dd][Aa][Yy]\s+(?:\d+|[A-L])|[A-L](?:\s+|\s*-\s*)[Dd][Aa][Yy])\s*(?:\([^)]*\))?\s*$/;
+const ROTATION_RE = /^\s*(?:[Dd][Aa][Yy]\s+(?:\d+|[A-L])|["“]?[A-L](?:["”]\s*-?\s*|\s+|\s*-\s*)[Dd][Aa][Yy])\s*(?:\([^)]*\))?\s*$/;
 // A grade span: "K-8", "PK-4". Mirrors school_today.py:_GRADES_THROUGH_RE.
 const GRADES_THROUGH_RE = /\b(?:Pre-?K|PK|K)\s*-\s*(\d{1,2})\b/i;
 

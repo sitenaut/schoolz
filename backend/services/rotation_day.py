@@ -22,7 +22,7 @@ from dataclasses import dataclass
 LETTERS = "ABCDEFGHIJKL"  # StudentSpecial.rotation_day is capped at 12
 
 _ROTATION_RE = re.compile(
-    r"^\s*(?:day\s+(?P<after>\d+|(?-i:[A-L]))|(?P<before>(?-i:[A-L]))(?:\s+|\s*-\s*)day)\s*(?P<extra>\([^)]*\))?\s*$",
+    r"^\s*(?:day\s+(?P<after>\d+|(?-i:[A-L]))|[\"“]?(?P<before>(?-i:[A-L]))(?:[\"”]\s*-?\s*|\s+|\s*-\s*)day)\s*(?P<extra>\([^)]*\))?\s*$",
     re.I,
 )
 

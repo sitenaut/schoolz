@@ -62,8 +62,16 @@ def _squash(name: str) -> str:
 _LEVEL_WORDS = {"elementary", "elem", "middle", "junior", "senior", "high", "primary", "intermediate", "ms", "hs"}  # Burlington City's "MS/HS"
 
 
+def _is_level_word(token: str) -> bool:
+    # Monroe Township's (Middlesex) "Applegarth Elemenary School": a misspelt
+    # level word is still a level word, or the name keeps a token ours lacks.
+    if token in _LEVEL_WORDS:
+        return True
+    return len(token) >= 7 and any(SequenceMatcher(None, token, w).ratio() >= 0.85 for w in ("elementary", "intermediate"))
+
+
 def _core_tokens(name: str) -> set[str]:
-    return {t for t in _norm(name).split() if (len(t) > 1 or t.isdigit()) and t not in _LEVEL_WORDS}
+    return {t for t in _norm(name).split() if (len(t) > 1 or t.isdigit()) and not _is_level_word(t)}
 
 
 def _either_contains(a: set[str], b: set[str]) -> bool:
