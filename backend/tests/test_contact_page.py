@@ -31,3 +31,8 @@ def test_only_people_whose_email_and_name_are_on_the_page_survive():
 def test_contact_page_link_must_stay_on_the_school_site():
     html = '<a href="https://www.voorhees.k12.nj.us/contact">Contact Us</a><a href="/osage-school/contact-us">Contact Us</a>'
     assert find_contact_page(html, "https://osage.voorhees.k12.nj.us/") == "https://osage.voorhees.k12.nj.us/osage-school/contact-us"
+
+
+def test_contact_us_and_directions_counts_but_other_contact_links_dont():
+    html = '<a href="/contact-the-board">Contact the Board</a><a href="/about/contact-us-directions">Contact Us &amp; Directions</a>'
+    assert find_contact_page(html, "https://pahs.paps.net/") == "https://pahs.paps.net/about/contact-us-directions"
