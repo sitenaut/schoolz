@@ -27,7 +27,7 @@ export function BackpackCapturePrivacyPage() {
         path="/backpack-capture/privacy"
       />
       <h2>Backpack Capture Privacy Policy</h2>
-      <p className="note">Effective November 10, 2026 · Applies to versions 0.7.x and later</p>
+      <p className="note">Effective November 18, 2026 · Applies to versions 0.7.x and later</p>
 
       <p>
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
@@ -44,8 +44,8 @@ export function BackpackCapturePrivacyPage() {
           extension's code never loads anywhere else.
         </li>
         <li>
-          <strong>It never logs in, and never reads passwords or cookies.</strong> It only reads the
-          rendered page a person is already signed into.
+          <strong>It never reads cookies, and never logs in unless you set up the optional Genesis sign-in
+          helper</strong> (below). Otherwise it only reads the rendered page a person is already signed into.
         </li>
         <li>
           <strong>Everything stays on your device</strong> in the browser's local extension storage, until
@@ -143,9 +143,30 @@ export function BackpackCapturePrivacyPage() {
         readable only by this extension, on this device.
       </p>
 
+      <h3>Optional: signing in to Genesis by itself</h3>
+      <p>
+        Genesis signs a parent out after a short while, so automatic updates often find it signed out and
+        read no grades. From version 0.12.0, on a Windows computer, you can install a separate sign-in helper
+        that reads your Genesis login from your own password manager (1Password). Once it&apos;s installed and
+        you turn it on in the extension (More → Sign in to Genesis by itself, which asks Chrome for the
+        &quot;native messaging&quot; permission), an update that finds Genesis signed out asks the helper for
+        the login, types it into Genesis&apos;s own sign-in page - only on the Genesis address the helper was
+        set up for - and carries on. It tries once per update; if that doesn&apos;t work, the update says so
+        on My family.
+      </p>
+      <p>
+        The extension doesn&apos;t store the login, doesn&apos;t write it to its update log, and never sends it
+        to schoolz or anywhere but Genesis&apos;s sign-in page. The helper keeps only its access key for your
+        password manager, encrypted for your Windows account, and a short record of when it was asked. Without
+        the helper, none of this happens.
+      </p>
+
       <h3>What it never touches</h3>
       <ul>
-        <li>Passwords, or any part of a login form</li>
+        <li>
+          Passwords or login forms, except your Genesis login when the sign-in helper is set up: it is typed
+          into Genesis&apos;s sign-in page and never kept or sent anywhere else
+        </li>
         <li>Cookies, session tokens, or <code>localStorage</code> belonging to Classroom or Genesis</li>
         <li>Any website other than the two listed above</li>
         <li>Anything before you press Update now, start a capture session, press Capture, or turn on automatic updates</li>
@@ -154,7 +175,8 @@ export function BackpackCapturePrivacyPage() {
         The extension's declared permissions reflect this directly: it has no <code>cookies</code> or{" "}
         <code>webRequest</code> permission, and no access to any host beyond Classroom, Genesis, and (only
         for the optional features below) schoolz's own API. Its <code>alarms</code> permission exists only
-        for automatic updates.
+        for automatic updates, and its optional <code>nativeMessaging</code> permission is asked for only when
+        you turn on the Genesis sign-in helper, and only lets it talk to that helper.
       </p>
 
       <h3>What can leave your device - and only this</h3>
@@ -173,8 +195,9 @@ export function BackpackCapturePrivacyPage() {
           Genesis parent portal in that Chrome (the extension remembers its address, on your device only), it
           first reads the gradebook there: Grade Summary, List Assignments and each class&apos;s Course
           Summary, for each child on your schoolz account whose name Genesis lists. A child in your Genesis
-          account who isn&apos;t on schoolz is never opened. If Genesis has signed you out, it asks you to
-          sign in on Genesis&apos;s own page or skip Genesis this time.
+          account who isn&apos;t on schoolz is never opened. If Genesis has signed you out, it signs in with
+          the sign-in helper if you set one up; otherwise, or if that doesn&apos;t work, it asks you to sign in
+          on Genesis&apos;s own page or skip Genesis this time.
         </li>
         <li>
           <strong>Publish captures</strong> - sends pages you captured by hand to your own schoolz family
@@ -182,8 +205,9 @@ export function BackpackCapturePrivacyPage() {
         </li>
         <li>
           <strong>Automatic updates</strong> - off by default. If you turn them on, the same thing Update
-          now does runs every four hours (never between 10pm and 6am). It never signs in to Genesis: when
-          Genesis has signed you out, it skips Genesis and goes on to Classroom. Nor to Google: when a
+          now does runs every four hours (never between 10pm and 6am). It doesn&apos;t sign in to Genesis
+          unless you&apos;ve set up the sign-in helper; without it, when Genesis has signed you out, it skips
+          Genesis and goes on to Classroom. It never signs in to Google: when a
           child's sign-in expires it stops and tells schoolz, which notifies you. Turning it off stops it
           completely.
         </li>
@@ -197,7 +221,9 @@ export function BackpackCapturePrivacyPage() {
           through, without the part that can name an account; the Classroom addresses (class and assignment
           numbers, no titles) of pages that were slow or had to be reloaded; which kinds of Genesis gradebook
           page it read for each child and for which marking period (never a student ID), and the address of
-          Genesis&apos;s sign-in page if it was shown, without the part after the &quot;?&quot;; how many
+          Genesis&apos;s sign-in page if it was shown, without the part after the &quot;?&quot;; whether it
+          asked the sign-in helper for your Genesis login and whether signing in worked (never the login
+          itself); how many
           classes and pages it
           read for each child and how many didn't load; where it stopped; and how many pages it sent. No page
           content and no names. With it goes a short summary of the update that schoolz shows you on My
