@@ -158,6 +158,7 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["Early Dismissal - Parent/Teacher Conferences"])).toBe("half");
     expect(dayStatusOf(["4 Hour Day for Students"])).toBe("half");
     expect(dayStatusOf(["4 Hour Session"])).toBe("half");
+    expect(dayStatusOf(["Singles Session - All Students"])).toBe("half");
     expect(dayStatusOf(["ECC Back to School Night/Reduced Day"])).toBe("half");
     expect(dayStatusOf(["Early Dismissl - Last Day of School for Students"])).toBe("half");
     expect(dayStatusOf(["K-12 Early Dismissal (Half Day Preschool Closed)"])).toBe("half");

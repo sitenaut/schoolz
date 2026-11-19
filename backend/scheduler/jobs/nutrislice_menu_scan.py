@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import LunchMenu, LunchMenuItem, School
 from scheduler.registry import register_job
 from services.fdmealplanner import day_descriptions
-from services.nutrislice import MEAL_TYPES, fetch_entrees, menu_page_url, parse_location
+from services.nutrislice import MEAL_TYPES, fetch_entrees, menu_page_url, menu_type_slugs, parse_location
 
 _DAYS_AHEAD = 21
 _TZ = ZoneInfo("America/New_York")
@@ -38,8 +38,9 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     stored: dict[str, int] = {}
     source_url = menu_page_url(district, slug)
     async with httpx.AsyncClient(timeout=30, follow_redirects=True) as http:
+        menu_types = await menu_type_slugs(http, district, slug)
         for meal in MEAL_TYPES:
-            descriptions = day_descriptions(await fetch_entrees(http, district, slug, meal, today, end))
+            descriptions = day_descriptions(await fetch_entrees(http, district, slug, meal, today, end, menu_types[meal]))
             if not descriptions:
                 continue
             menu = (
@@ -51,7 +52,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
                 menu = LunchMenu(school_id=school.id, meal_type=meal, period_label="Nutrislice", source_pdf_url=source_url)
                 db.add(menu)
                 await db.flush()
-            menu.parsed_at = datetime.now(timezone.utc)
+            menu.parsed_at = datetime.now(UTC)
             # Rolling window, replaced wholesale - a menu change upstream
             # shows up on the next run.
             await db.execute(
