@@ -535,6 +535,23 @@ hidden by default like Arbiter games). It was first seen alongside a BigTeams/
 Arbiter link at Haddon Township HS, where the Arbiter link was enough; use
 DigitalSports only when that is the school's real schedule.
 
+**Greater Middlesex Conference schools are almost all on DigitalSports**, and
+any member's site lists every member's under a numeric host in its school
+dropdown (`<id>.digitalsports.com`; a school may link a vanity host for the
+same site, e.g. `johnpstevensathletics` = 64755). Known: Carteret 62295,
+Colonia 61318, Dunellen 73591, Edison 73224, Highland Park 65955 (its middle
+school 289628), J.P. Stevens 64755, JFK Memorial 63327, Metuchen 75610,
+Middlesex 75509, New Brunswick 50863, North Brunswick 52357, Piscataway
+50056, South Brunswick 67718 (Crossroads 289630), South Plainfield 67688,
+Spotswood 78280, Woodbridge 61956. Over the same weeks it usually had more
+games than ArbiterLive (Spotswood and Old Bridge were the exceptions). Middle
+school teams are told apart by name ("Middle School Blue", "Middle School -
+Gray", "Junior High"), so a high school and its middle school share the host;
+three middle schools sharing district-wide teams (Piscataway) all show them.
+A site can double as a facility calendar (South Brunswick's ~360 club
+meetings and room bookings, kept as events behind the sports toggle). The
+conference's rSchoolToday "genie" calendars are unsupported.
+
 **GoBound (`gobound.com/<state>/schools/<slug>`) is supported through its
 calendar subscription link only** (`services/gobound.py`). Its pages, its API
 and its beta site refuse anything that isn't a browser, so a crawler can't read
@@ -758,6 +775,14 @@ Shapes that are supported but easy to rediscover the hard way.
   content hash is unchanged. Titles are composed in code from a model-chosen
   kind because `classify_day` lets "in-service"/"conference" beat a delay or
   early dismissal. A revised PDF replaces the old rows wholesale.
+- **Google calendars shared free/busy only** answer `basic.ics` with every
+  SUMMARY "Busy" (North Brunswick's and New Brunswick's athletics): count the
+  titles, not just the events, before wiring one.
+- **Lunch vendors seen in Middlesex with no reader**: ISITE School Nutrition
+  And Fitness (Perth Amboy, as at West Windsor-Plainsboro) and Metz Culinary's
+  Weebly PDFs `menu{e|ms|hs}<MMYY>.pdf` (Monroe's high school; the month is
+  only in the link text). Pomptonian's FD MealPlanner needs the owner's
+  browser lookup unless a school page links its ids (Woodbridge did).
 - **Lunch PDFs are kept for the current month and later** — an unbanded menu
   page lists one PDF per month, and only the latest used to be stored, which
   dropped the rest of the current month as soon as next month's appeared.
