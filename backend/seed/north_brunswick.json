@@ -1,0 +1,529 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: North Brunswick (Middlesex County)",
+ "districts": [
+  {
+   "name": "North Brunswick Township School District",
+   "state": "NJ",
+   "website_url": "https://www.nbtschools.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "North Brunswick District",
+     "platform": "apptegy",
+     "org_id": "3614"
+    },
+    {
+     "name": "North Brunswick ECC",
+     "platform": "apptegy",
+     "org_id": "3615",
+     "school_slug": "north-brunswick-early-childhood-center",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick John Adams",
+     "platform": "apptegy",
+     "org_id": "3616",
+     "school_slug": "north-brunswick-john-adams",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick Judd",
+     "platform": "apptegy",
+     "org_id": "3617",
+     "school_slug": "north-brunswick-judd",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick Livingston Park",
+     "platform": "apptegy",
+     "org_id": "3619",
+     "school_slug": "north-brunswick-livingston-park",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick Parsons",
+     "platform": "apptegy",
+     "org_id": "3621",
+     "school_slug": "north-brunswick-parsons",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick Linwood",
+     "platform": "apptegy",
+     "org_id": "3622",
+     "school_slug": "north-brunswick-linwood",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick Middle",
+     "platform": "apptegy",
+     "org_id": "5307",
+     "school_slug": "north-brunswick-middle",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    },
+    {
+     "name": "North Brunswick High",
+     "platform": "apptegy",
+     "org_id": "3623",
+     "school_slug": "north-brunswick-high",
+     "skip_sections": [
+      "NBTSchools Events"
+     ]
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.nbtschools.org/page/transportation",
+   "towns": [
+    "North Brunswick"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "north-brunswick-high",
+   "name": "North Brunswick Township High School",
+   "short_name": "North Brunswick High",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "high",
+   "address": "98 Raider Road, North Brunswick, NJ 08902",
+   "main_phone": "(732) 289-3700",
+   "website_url": "https://www.nbtschools.org/o/nbths",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 289-3700 ext. 73047",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance line, (732) 289-3700 ext. 73047. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Email a doctor's note to the attendance office (address on the district's Report an Absence page) or hand it in at the main office. A late student signs in at the main office.",
+   "start_time": "7:45 AM",
+   "end_time": "2:25 PM",
+   "early_dismissal_time": "12:12 PM",
+   "delayed_opening_time": "9:45 AM",
+   "athletics_url": "https://52357.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3623/logo/2435/7.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "3623",
+   "nutrislice_location": "nbtschools/north-brunswick-township-high-school"
+  },
+  {
+   "slug": "north-brunswick-middle",
+   "name": "North Brunswick Township Middle School",
+   "short_name": "North Brunswick Middle",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "middle",
+   "address": "100 Renaissance Boulevard, North Brunswick, NJ 08902",
+   "main_phone": "(732) 951-7000",
+   "website_url": "https://www.nbtschools.org/o/nbtms",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 951-7000, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance hotline, (732) 951-7000 then press 1, before 7:30 AM. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Doctor's notes go to your child's grade house office or the main office. A late student signs in at the main office.",
+   "start_time": "7:45 AM",
+   "end_time": "2:25 PM",
+   "early_dismissal_time": "12:12 PM",
+   "delayed_opening_time": "9:45 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/5307/logo/2434/6.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "5307",
+   "nutrislice_location": "nbtschools/north-brunswick-twp-middle-school"
+  },
+  {
+   "slug": "north-brunswick-linwood",
+   "name": "Linwood School",
+   "short_name": "Linwood",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "middle",
+   "address": "25 Linwood Place, North Brunswick, NJ 08902",
+   "main_phone": "(732) 289-3600",
+   "website_url": "https://www.nbtschools.org/o/linwood",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 289-3600, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the Linwood attendance hotline, (732) 289-3600 then press 1, between 4:00 PM the day before and 8:00 AM on the day of the absence. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Calling does not excuse the absence; send a note.",
+   "start_time": "8:30 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3622/logo/2419/5.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:30",
+      "end": "08:35"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:38",
+      "end": "09:18"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:21",
+      "end": "10:01"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:04",
+      "end": "10:44"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:47",
+      "end": "11:27"
+     },
+     {
+      "name": "Period 5 (5th grade lunch/recess)",
+      "start": "11:31",
+      "end": "12:11"
+     },
+     {
+      "name": "Period 6 (6th grade lunch/recess)",
+      "start": "12:15",
+      "end": "12:55"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:58",
+      "end": "13:38"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:41",
+      "end": "14:21"
+     },
+     {
+      "name": "Period 9",
+      "start": "14:24",
+      "end": "15:04"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:30",
+      "end": "08:35"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:38",
+      "end": "09:00"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:03",
+      "end": "09:25"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:28",
+      "end": "09:50"
+     },
+     {
+      "name": "Period 4",
+      "start": "09:53",
+      "end": "10:15"
+     },
+     {
+      "name": "Period 5 (5th grade lunch/recess)",
+      "start": "10:18",
+      "end": "10:58"
+     },
+     {
+      "name": "Period 6 (6th grade lunch/recess)",
+      "start": "11:02",
+      "end": "11:42"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:46",
+      "end": "12:08"
+     },
+     {
+      "name": "Period 8",
+      "start": "12:11",
+      "end": "12:33"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:36",
+      "end": "12:59"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Homeroom",
+      "start": "10:30",
+      "end": "10:40"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:43",
+      "end": "11:05"
+     },
+     {
+      "name": "Period 2",
+      "start": "11:08",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:33",
+      "end": "11:55"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:58",
+      "end": "12:20"
+     },
+     {
+      "name": "Period 5 (5th grade lunch/recess)",
+      "start": "12:23",
+      "end": "13:03"
+     },
+     {
+      "name": "Period 6 (6th grade lunch/recess)",
+      "start": "13:07",
+      "end": "13:47"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:51",
+      "end": "14:13"
+     },
+     {
+      "name": "Period 8",
+      "start": "14:16",
+      "end": "14:38"
+     },
+     {
+      "name": "Period 9",
+      "start": "14:41",
+      "end": "15:04"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "3622",
+   "nutrislice_location": "nbtschools/linwood-middle-school"
+  },
+  {
+   "slug": "north-brunswick-early-childhood-center",
+   "name": "North Brunswick Township Early Childhood Center",
+   "short_name": "Early Childhood Center",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "other",
+   "address": "25 Linwood Place, North Brunswick, NJ 08902",
+   "main_phone": "(732) 317-6300",
+   "website_url": "https://www.nbtschools.org/o/ecc",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 317-6300, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call (732) 317-6300 and press 1 to report an absence. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Doctor's notes go to the school nurse or the main office. A parent signs a late child in at the main office.",
+   "start_time": "8:30 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3615/logo/2411/8.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": null,
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Right At School runs care for Pre-K through grade 1 (rightatschool.com). Hours are not published on the district page.",
+    "handbook_url": "https://www.nbtschools.org/page/before-and-after-school-care"
+   },
+   "apptegy_org_id": "3615",
+   "nutrislice_location": null
+  },
+  {
+   "slug": "north-brunswick-john-adams",
+   "name": "John Adams Elementary School",
+   "short_name": "John Adams",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "elementary",
+   "address": "1450 Redmond Street, North Brunswick, NJ 08902",
+   "main_phone": "(732) 289-3100",
+   "website_url": "https://www.nbtschools.org/o/john-adams",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 289-3100, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call (732) 289-3100 and press 1 for attendance. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Bring a printed doctor's note to the main office. A parent signs a late child in at the security desk.",
+   "start_time": "8:30 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3616/logo/2414/3.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": null,
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Right At School runs care for Pre-K through grade 1 (rightatschool.com); grades 2-4 use Project LEAL, the township's program (northbrunswicknj.gov). Hours are not published on the district page. Project LEAL may be canceled on weather delays and early dismissals.",
+    "handbook_url": "https://www.nbtschools.org/page/before-and-after-school-care"
+   },
+   "apptegy_org_id": "3616",
+   "nutrislice_location": "nbtschools/john-adams"
+  },
+  {
+   "slug": "north-brunswick-judd",
+   "name": "Arthur M. Judd Elementary School",
+   "short_name": "Judd",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "elementary",
+   "address": "1601 Roosevelt Avenue, North Brunswick, NJ 08902",
+   "main_phone": "(732) 289-3200",
+   "website_url": "https://www.nbtschools.org/o/judd",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 289-3200, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call (732) 289-3200 and press 1 for attendance. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Bring a printed doctor's note to the main office. A parent signs a late child in at the security desk and gives the reason.",
+   "start_time": "8:30 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3617/logo/2415/judd_es_logo.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": null,
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Right At School runs care for Pre-K through grade 1 (rightatschool.com); grades 2-4 use Project LEAL, the township's program (northbrunswicknj.gov). Hours are not published on the district page. Project LEAL may be canceled on weather delays and early dismissals.",
+    "handbook_url": "https://www.nbtschools.org/page/before-and-after-school-care"
+   },
+   "apptegy_org_id": "3617",
+   "nutrislice_location": "nbtschools/arthur-m-judd"
+  },
+  {
+   "slug": "north-brunswick-livingston-park",
+   "name": "Livingston Park Elementary School",
+   "short_name": "Livingston Park",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "elementary",
+   "address": "1128 Livingston Avenue, North Brunswick, NJ 08902",
+   "main_phone": "(732) 289-3300",
+   "website_url": "https://www.nbtschools.org/o/livingston-park",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 289-3300, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call (732) 289-3300 and press 1 for attendance. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Bring a printed doctor's note to the main office. A parent signs a late child in at the security desk.",
+   "start_time": "8:30 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3619/logo/2416/1.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": null,
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Right At School runs care for Pre-K through grade 1 (rightatschool.com); grades 2-4 use Project LEAL, the township's program (northbrunswicknj.gov). Hours are not published on the district page. Project LEAL may be canceled on weather delays and early dismissals.",
+    "handbook_url": "https://www.nbtschools.org/page/before-and-after-school-care"
+   },
+   "apptegy_org_id": "3619",
+   "nutrislice_location": "nbtschools/livingston-park"
+  },
+  {
+   "slug": "north-brunswick-parsons",
+   "name": "Parsons Elementary School",
+   "short_name": "Parsons",
+   "district_name": "North Brunswick Township School District",
+   "school_type": "elementary",
+   "address": "899 Hollywood Street, North Brunswick, NJ 08902",
+   "main_phone": "(732) 289-3400",
+   "website_url": "https://www.nbtschools.org/o/parsons",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 289-3400 ext. 44054",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance line, (732) 289-3400 ext. 44054. Leave the student's full name, homeroom teacher's name and the reason for the absence; the machine takes messages 24 hours. Email a doctor's note to the main office (address on the district's Report an Absence page) or hand it in there. A parent brings a late child in and signs them in at the main lobby.",
+   "start_time": "8:30 AM",
+   "end_time": "3:10 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/3621/logo/2418/2.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": null,
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "Right At School runs care for Pre-K through grade 1 (rightatschool.com); grades 2-4 use Project LEAL, the township's program (northbrunswicknj.gov). Hours are not published on the district page. Project LEAL may be canceled on weather delays and early dismissals.",
+    "handbook_url": "https://www.nbtschools.org/page/before-and-after-school-care"
+   },
+   "apptegy_org_id": "3621",
+   "nutrislice_location": "nbtschools/parsons"
+  }
+ ],
+ "smore_newsletters": [
+  {
+   "url": "https://johnadams.ptboard.com/home",
+   "label": "John Adams Elementary PTO",
+   "school_slug": "north-brunswick-john-adams",
+   "source_type": "ptboard",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  }
+ ]
+}

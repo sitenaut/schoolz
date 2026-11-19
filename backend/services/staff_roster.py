@@ -11,7 +11,7 @@ import re
 import time
 import xml.etree.ElementTree as ET
 import zipfile
-from urllib.parse import parse_qs, urljoin, urlparse
+from urllib.parse import parse_qs, quote_plus, urljoin, urlparse
 
 import httpx
 import pdfplumber
@@ -1209,17 +1209,88 @@ async def _read_constituent_directory(url: str, school_names: list[str | None], 
     else:
         pages_html, short = await _read_every_page(url, pages_html)
     people = list({item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}.values())
-    return _mark_short(_keep_own_location(people, school_names, complete=len(people) >= directory_total(pages_html)), short)
+    blurred = _shares_words_with_a_sibling(people, school_names)
+    if blurred:
+        by_keyword = await _read_by_keyword(url, school_names)
+        if by_keyword is not None:
+            return by_keyword
+    kept = _keep_own_location(people, school_names, complete=len(people) >= directory_total(pages_html), by_name=blurred)
+    return _mark_short(kept, short)
 
 
-def _keep_own_location(people: list[dict], school_names: list[str | None], complete: bool) -> list[dict]:
+def _norm_label(text: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9 ]+", " ", text.lower()).split())
+
+
+def _location_is_school(label: str, school_names: list[str | None]) -> bool:
+    """A card's location names this school by its name, not just by the
+    district's words every sibling shares ("South River Primary School" is
+    not South River Elementary)."""
+    lab = _norm_label(label)
+    for name in school_names:
+        full = _norm_label(name or "")
+        bare = re.sub(r"\s+school$", "", full)
+        if len(bare) >= 4 and (lab in (full, bare) or re.search(rf"\b{re.escape(bare)}\b", lab)):
+            return True
+    return False
+
+
+_BUILDING_WORD_RE = re.compile(r"\b(?:elementary|middle|high|primary|intermediate|school|academy|center)\b", re.I)
+_NOT_A_BUILDING_RE = re.compile(r"\b(?:district|office|board|administration|central)\b", re.I)
+
+
+def _shares_words_with_a_sibling(people: list[dict], school_names: list[str | None]) -> bool:
+    """Some card names another building that the word test would still take
+    for this one: every South River school is "South River ... School", so
+    "south river" matched each school to all of them."""
+    own = _school_tokens(*school_names)
+    for p in people:
+        for loc in p["locations"]:
+            if _location_is_school(loc, school_names) or _NOT_A_BUILDING_RE.search(loc) or not _BUILDING_WORD_RE.search(loc):
+                continue
+            if own & _school_tokens(loc):
+                return True
+    return False
+
+
+async def _read_by_keyword(url: str, school_names: list[str | None]) -> list[dict] | None:
+    """South River's district directory has no Location filter and more pages
+    than a read may take, but its keyword search matches each card's Locations
+    line: searched for the school's own name, it lists that school's staff.
+    Only the cards whose location names the school are kept; None when the
+    search finds none of them."""
+    name = max((n for n in school_names if n), key=len, default=None)
+    if not name:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=_EDNET_HEADERS) as client:
+            final = str((await client.get(url)).url).split("?")[0]
+    except httpx.HTTPError:
+        final = url.split("?")[0]
+    kw_url = f"{final}?const_search_keyword={quote_plus(name)}"
+    pages_html, short = await _read_every_page(kw_url, await _click_through(kw_url))
+    found = {item["constituent_id"]: item for html in pages_html for item in _parse_page(html)}
+    own = [p for p in found.values() if any(_location_is_school(loc, school_names) for loc in p["locations"])]
+    if not own:
+        return None
+    if short is None:
+        for p in own:
+            p["location_filter"] = name
+    return _mark_short(own, short)
+
+
+def _keep_own_location(people: list[dict], school_names: list[str | None], complete: bool, by_name: bool = False) -> list[dict]:
     """A district list with no Location filter that still names each card's
     buildings (Lumberton: "Lumberton Middle School, Bobby's Run Elementary
     School") keeps the cards naming this school and the ones naming none."""
     own = _school_tokens(*school_names)
     if not own or not any(p["locations"] for p in people):
         return people
-    kept = [p for p in people if not p["locations"] or own & _school_tokens(*p["locations"])]
+    if by_name:
+        # Named outright: sibling schools sharing the district's words don't count.
+        kept = [p for p in people if not p["locations"] or any(_location_is_school(loc, school_names) for loc in p["locations"])]
+    else:
+        kept = [p for p in people if not p["locations"] or own & _school_tokens(*p["locations"])]
     # Labels that never name this school ("HS") say nothing about it.
     if not any(p["locations"] for p in kept):
         return people
