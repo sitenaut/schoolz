@@ -5,8 +5,11 @@ import { IconInbox, IconJobs, IconMail, IconNewsletter, IconSchool, IconSettings
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionCard } from "../components/ui/SectionCard";
 import { useToast } from "../components/ui/Toast";
+<<<<<<< Updated upstream
 import { useAuth } from "../context/AuthContext";
 import { can } from "../lib/permissions";
+=======
+>>>>>>> Stashed changes
 import { listSubmissions } from "./submissions/submissionsApi";
 import { loadCampaignReport, loadPageVisits, loadSurveySummary, type CampaignReport, type PageVisitReport } from "./survey/surveyApi";
 
@@ -93,6 +96,7 @@ export function AdminOverviewPage() {
   return (
     <>
       <PageHeader upperTitle="Admin" title="Overview" subtitle="Scan health, campaign traffic, and shortcuts into the admin tools." />
+<<<<<<< Updated upstream
       {seesScans && (
         <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/admin/scans">Open jobs</Link>}>
           <div className="stats" style={{ marginBottom: 0 }}>
@@ -121,6 +125,28 @@ export function AdminOverviewPage() {
           </div>
         </SectionCard>
       )}
+=======
+      <SectionCard title="Scan health" description="Enabled jobs by their last result." icon={<IconJobs />} actions={<Link className="btn sm" to="/admin/scans">Open jobs</Link>}>
+        <div className="stats" style={{ marginBottom: 0 }}>
+          <Link className="stat" to="/admin/scans">
+            <span className="stat-k">Enabled</span>
+            <span className="stat-v">{summary?.total ?? "—"}</span>
+          </Link>
+          <Link className="stat" to="/admin/scans">
+            <span className="stat-k">Healthy</span>
+            <span className="stat-v ok">{s.success ?? 0}</span>
+          </Link>
+          <Link className="stat" to="/admin/scans">
+            <span className="stat-k">Warnings</span>
+            <span className="stat-v warn">{s.warning ?? 0}</span>
+          </Link>
+          <Link className="stat" to="/admin/scans">
+            <span className="stat-k">Failing</span>
+            <span className="stat-v bad">{s.error ?? 0}</span>
+          </Link>
+        </div>
+      </SectionCard>
+>>>>>>> Stashed changes
 
       <SectionCard
         title="Campaign"

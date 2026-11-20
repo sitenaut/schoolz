@@ -1,6 +1,11 @@
+<<<<<<< Updated upstream
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 import { IconBell, IconHeart, IconLock, IconShield, IconUser } from "../../components/icons";
+=======
+import { NavLink, Outlet } from "react-router-dom";
+import { IconBell, IconLock, IconShield, IconUser, IconUsers } from "../../components/icons";
+>>>>>>> Stashed changes
 import { PageHeader } from "../../components/ui/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 
@@ -29,10 +34,13 @@ export function AccountLayout() {
           <NavLink to="/account/notifications">
             <IconBell /> Notifications
           </NavLink>
+<<<<<<< Updated upstream
           {/* A neutral path on purpose: it lands in browser history. */}
           <NavLink to="/account/saved-answers">
             <IconHeart /> {t("My services profile")}
           </NavLink>
+=======
+>>>>>>> Stashed changes
         </nav>
         <div style={{ minWidth: 0 }}>
           <Outlet />

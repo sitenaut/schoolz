@@ -9,6 +9,39 @@ import { lazyPage, preloadWhenIdle } from "./lib/lazyPage";
 import { MySchoolsProvider } from "./lib/mySchools";
 import { IS_PRERENDER } from "./lib/prerenderReady";
 import { ThemeProvider } from "./lib/theme";
+<<<<<<< Updated upstream
+=======
+import { TodayPage } from "./pages/TodayPage";
+import { PickSchoolsPage } from "./pages/PickSchoolsPage";
+import { LunchPage } from "./pages/LunchPage";
+import { LocalPage } from "./pages/LocalPage";
+import { SeasonalPage } from "./pages/SeasonalPage";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { ChildrenPage } from "./pages/ChildrenPage";
+import { KidsPage } from "./pages/KidsPage";
+import { KidsDetailPage } from "./pages/KidsDetailPage";
+import { InvitePage } from "./pages/InvitePage";
+import { GmailPage } from "./pages/GmailPage";
+import { SmoreNewslettersPage } from "./pages/SmoreNewslettersPage";
+import { SchoolsPage } from "./pages/SchoolsPage";
+import { DirectoryPage } from "./pages/DirectoryPage";
+import { SchoolDetailPage } from "./pages/SchoolDetailPage";
+import { SchoolClassYearPage } from "./pages/schools/SchoolClassYearPage";
+import { CalendarPage } from "./pages/CalendarPage";
+import { JobsPage } from "./pages/JobsPage";
+import { AdminConfigPage } from "./pages/AdminConfigPage";
+import { ChatbotAdminPage } from "./pages/ChatbotAdminPage";
+import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
+import { AdminOverviewPage } from "./pages/AdminOverviewPage";
+import { UsersRolesPage } from "./pages/UsersRolesPage";
+import { ApiKeysPage } from "./pages/ApiKeysPage";
+import { ApproveApiKeyPage } from "./pages/ApproveApiKeyPage";
+import { SecretRequestsPage } from "./pages/SecretRequestsPage";
+import { ApproveSecretRequestPage } from "./pages/ApproveSecretRequestPage";
+>>>>>>> Stashed changes
 import { can, isStaff } from "./lib/permissions";
 import { MfaGate } from "./components/MfaGate";
 // In the main bundle: Today and a school's page are where nearly every visit
@@ -20,6 +53,7 @@ import { LocalzLayout } from "./pages/localz/LocalzLayout";
 import { AdminIndexRedirect, AdminLayout } from "./pages/AdminLayout";
 import { AuditShell } from "./pages/audit/AuditShell";
 import { AccountLayout } from "./pages/account/AccountLayout";
+<<<<<<< Updated upstream
 
 // Every other page is its own chunk, fetched when it's first opened.
 const PickSchoolsPage = lazyPage(() => import("./pages/PickSchoolsPage").then((m) => m.PickSchoolsPage));
@@ -87,6 +121,13 @@ const SavedProfileSection = lazyPage(() => import("./pages/account/SavedProfileS
 // The bottom tabs and the school picker Today points to, fetched once the
 // landing page is done so a tap on them doesn't wait on the network.
 const NEXT_TAPS = [CalendarPage, LunchPage, SchoolsPage, DirectoryPage, LocalPage, LocalzHomePage, PickSchoolsPage];
+=======
+import { ProfileSection } from "./pages/account/ProfileSection";
+import { SecuritySection } from "./pages/account/SecuritySection";
+import { NotificationsSection } from "./pages/account/NotificationsSection";
+import { PrivacySection } from "./pages/account/PrivacySection";
+import { FamilySection } from "./pages/account/FamilySection";
+>>>>>>> Stashed changes
 
 // Gates the *optional* personal layer (my kids, my calendar, account
 // settings) - never the public directory/calendar/school pages, which are
@@ -165,9 +206,13 @@ function Routed() {
           <Route path="security" element={<SecuritySection />} />
           <Route path="privacy" element={<PrivacySection />} />
           <Route path="notifications" element={<NotificationsSection />} />
+<<<<<<< Updated upstream
           {/* Family moved out of settings to /family. */}
           <Route path="family" element={<Navigate to="/family" replace />} />
           <Route path="saved-answers" element={<SavedProfileSection />} />
+=======
+          <Route path="family" element={<FamilySection />} />
+>>>>>>> Stashed changes
         </Route>
         <Route
           path="/family"
@@ -258,6 +303,7 @@ function Routed() {
           <Route path="submissions/:submissionId" element={<RequireAdmin permission="submissions.view"><SubmissionReviewPage /></RequireAdmin>} />
           <Route path="newsletters" element={<RequireAdmin permission="newsletters.manage"><SmoreNewslettersPage /></RequireAdmin>} />
           <Route path="scans" element={<RequireAdmin permission="scans.view"><JobsPage /></RequireAdmin>} />
+<<<<<<< Updated upstream
           <Route path="audit" element={<RequireAdmin permission="audit.view"><AuditShell /></RequireAdmin>}>
             <Route index element={<AuditBySchoolPage />} />
             <Route path="data-points" element={<AuditCatalogPage />} />
@@ -265,6 +311,8 @@ function Routed() {
             <Route path="schools/:schoolId" element={<AuditSchoolPage />} />
             <Route path="schools/:schoolId/report" element={<AuditReportPage />} />
           </Route>
+=======
+>>>>>>> Stashed changes
           <Route path="email" element={<RequireAdmin permission="email.view"><GmailPage /></RequireAdmin>} />
           <Route path="chatbot" element={<RequireAdmin permission="chatbot.view"><ChatbotAdminPage /></RequireAdmin>} />
           <Route path="config" element={<RequireAdmin permission="config.view"><AdminConfigPage /></RequireAdmin>} />

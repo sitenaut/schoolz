@@ -5,7 +5,10 @@ import { Badge, StatusBadge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { DataTable, type Column } from "../components/ui/DataTable";
 import { Field } from "../components/ui/Field";
+<<<<<<< Updated upstream
 import { FilterSelect } from "../components/ui/FilterSelect";
+=======
+>>>>>>> Stashed changes
 import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionCard } from "../components/ui/SectionCard";
@@ -15,7 +18,10 @@ import { useAuth } from "../context/AuthContext";
 import { describeCron } from "../lib/cron";
 import { fmtDateTime, relativeTime } from "../lib/format";
 import { can } from "../lib/permissions";
+<<<<<<< Updated upstream
 import { loadTargets, type TargetOption } from "./smore/smoreApi";
+=======
+>>>>>>> Stashed changes
 
 type Connection = { google_email: string; last_synced_at: string | null; created_at: string };
 type ScheduledJob = {
@@ -68,8 +74,11 @@ export function GmailPage() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [scanners, setScanners] = useState<Scanner[]>([]);
   const [emails, setEmails] = useState<SchoolEmail[]>([]);
+<<<<<<< Updated upstream
   const [linkKinds, setLinkKinds] = useState<LinkKind[]>([]);
   const [schools, setSchools] = useState<TargetOption[]>([]);
+=======
+>>>>>>> Stashed changes
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<Set<string>>(new Set());
   const [pendingDisconnect, setPendingDisconnect] = useState<Connection | null>(null);
@@ -89,6 +98,7 @@ export function GmailPage() {
 
   const loadAll = useCallback(async () => {
     try {
+<<<<<<< Updated upstream
       const [c, s, e, k, t] = await Promise.all([
         apiFetch("/gmail/connections").then((r) => (r.ok ? r.json() : [])),
         apiFetch("/email-scanners").then((r) => (r.ok ? r.json() : [])),
@@ -101,6 +111,16 @@ export function GmailPage() {
       setScanners(s);
       setEmails(e);
       setLinkKinds(k);
+=======
+      const [c, s, e] = await Promise.all([
+        apiFetch("/gmail/connections").then((r) => (r.ok ? r.json() : [])),
+        apiFetch("/email-scanners").then((r) => (r.ok ? r.json() : [])),
+        apiFetch("/school-emails").then((r) => (r.ok ? r.json() : [])),
+      ]);
+      setConnections(c);
+      setScanners(s);
+      setEmails(e);
+>>>>>>> Stashed changes
     } catch (e) {
       toast({ title: "Could not load the email scanner", description: e instanceof Error ? e.message : undefined, tone: "bad" });
     } finally {
@@ -170,8 +190,11 @@ export function GmailPage() {
           subject_contains: csvToList(subjectContains),
           cron_expr: cronExpr,
           purpose: "school_email",
+<<<<<<< Updated upstream
           link_kinds: formKinds,
           school_id: schoolId || null,
+=======
+>>>>>>> Stashed changes
         }),
       });
       if (!res.ok) {
@@ -182,8 +205,11 @@ export function GmailPage() {
       setName("");
       setFromContains("");
       setSubjectContains("");
+<<<<<<< Updated upstream
       setFormKinds(["smore"]);
       setSchoolId("");
+=======
+>>>>>>> Stashed changes
       setFormOpen(false);
       loadAll();
     } finally {
@@ -222,6 +248,7 @@ export function GmailPage() {
     setScanners((cur) => cur.map((x) => (x.id === updated.id ? updated : x)));
   };
 
+<<<<<<< Updated upstream
   const setKinds = async (s: Scanner, kinds: string[]) => {
     if (!kinds.length) {
       toast({ title: "A scanner keeps at least one kind of link", tone: "bad" });
@@ -239,6 +266,8 @@ export function GmailPage() {
   const kindLabel = (key: string) => linkKinds.find((k) => k.key === key)?.label ?? key;
   const schoolLabel = (id: string | null) => (id ? (schools.find((x) => x.id === id)?.label ?? "a school") : null);
 
+=======
+>>>>>>> Stashed changes
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     setBusy(true);
@@ -265,12 +294,16 @@ export function GmailPage() {
           <div className="cell-title">{s.name}</div>
           <div className="cell-sub">
             <span>{s.google_email}</span>
+<<<<<<< Updated upstream
             <span>{schoolLabel(s.school_id) ?? "no school - links wait for an admin"}</span>
+=======
+>>>>>>> Stashed changes
           </div>
         </>
       ),
     },
     {
+<<<<<<< Updated upstream
       id: "keeps",
       header: "Keeps",
       cell: (s) =>
@@ -293,6 +326,8 @@ export function GmailPage() {
         ),
     },
     {
+=======
+>>>>>>> Stashed changes
       id: "matches",
       header: "Matches",
       cell: (s) =>
@@ -361,6 +396,21 @@ export function GmailPage() {
 
   const emailColumns: Column<SchoolEmail>[] = [
     {
+<<<<<<< Updated upstream
+=======
+      id: "email",
+      header: "Email",
+      cell: (m) => (
+        <>
+          <div className="cell-title">{m.subject ?? "(no subject)"}</div>
+          <div className="cell-sub">
+            <span>{m.sender ?? "unknown sender"}</span>
+          </div>
+        </>
+      ),
+    },
+    {
+>>>>>>> Stashed changes
       id: "received",
       header: "Received",
       sortValue: (m) => m.received_at ?? "",
@@ -380,7 +430,10 @@ export function GmailPage() {
               <a className="mono" href={l.url} target="_blank" rel="noreferrer" style={{ wordBreak: "break-all" }}>
                 {l.url.replace(/^https?:\/\//, "")}
               </a>
+<<<<<<< Updated upstream
               {l.kind && <span className="note"> · {kindLabel(l.kind)}</span>}
+=======
+>>>>>>> Stashed changes
             </div>
           ))
         ),
@@ -392,7 +445,11 @@ export function GmailPage() {
       <PageHeader
         upperTitle="Admin"
         title="Email scanner"
+<<<<<<< Updated upstream
         subtitle="Connect a Gmail inbox that receives school emails, then scan it on a schedule to catch the newsletter links inside them. Only those links are kept - never an email's text, subject or sender."
+=======
+        subtitle="Connect a Gmail inbox that receives school emails, then scan it on a schedule to catch the newsletter links inside them."
+>>>>>>> Stashed changes
         actions={
           <>
             <button className="btn" onClick={loadAll} title="Refresh">
@@ -476,27 +533,43 @@ export function GmailPage() {
         }
       />
 
+<<<<<<< Updated upstream
       <div className="section-title">Newsletter links found</div>
+=======
+      <div className="section-title">Captured school emails</div>
+>>>>>>> Stashed changes
       <DataTable
         columns={emailColumns}
         rows={emails}
         getRowId={(m) => m.id}
         loading={loading}
         defaultSort={{ id: "received", dir: "desc" }}
+<<<<<<< Updated upstream
         empty="No newsletter links found yet."
+=======
+        empty="None captured yet."
+>>>>>>> Stashed changes
       />
 
       <Modal
         open={formOpen}
         onClose={() => setFormOpen(false)}
         title="Add a scanner"
+<<<<<<< Updated upstream
         subtitle="Each run reads the emails matching these filters and keeps only the newsletter links of the kinds ticked below."
+=======
+        subtitle="Emails matching these filters are captured each time the scanner runs."
+>>>>>>> Stashed changes
         footer={
           <>
             <button className="btn" type="button" onClick={() => setFormOpen(false)} disabled={busy}>
               Cancel
             </button>
+<<<<<<< Updated upstream
             <button className="btn btn-primary" type="submit" form="scanner-form" disabled={busy || !name.trim() || !account || !formKinds.length}>
+=======
+            <button className="btn btn-primary" type="submit" form="scanner-form" disabled={busy || !name.trim() || !account}>
+>>>>>>> Stashed changes
               {busy ? "Saving…" : "Add scanner"}
             </button>
           </>
@@ -525,6 +598,7 @@ export function GmailPage() {
             <Field label="Subject contains" hint="Comma-separated.">
               <input value={subjectContains} onChange={(e) => setSubjectContains(e.target.value)} />
             </Field>
+<<<<<<< Updated upstream
             <Field label="Keep links to" hint="Nothing else from an email is kept." className="span2">
               <div className="chips">
                 {linkKinds.map((k) => (
@@ -543,6 +617,8 @@ export function GmailPage() {
             <Field label="School" hint="Its newsletters become this school's content. Without one, a found link waits for an admin to assign it." className="span2">
               <FilterSelect value={schoolId} onChange={setSchoolId} options={schools.map((x) => ({ value: x.id, label: x.label }))} placeholder="— none —" clearLabel="No school" />
             </Field>
+=======
+>>>>>>> Stashed changes
             <Field label="Cron expression" hint={describeCron(cronExpr)} className="span2">
               <input className="mono" value={cronExpr} onChange={(e) => setCronExpr(e.target.value)} required />
             </Field>
@@ -555,7 +631,11 @@ export function GmailPage() {
         title="Disconnect this Gmail account?"
         description={
           <>
+<<<<<<< Updated upstream
             schoolz will stop reading <b>{pendingDisconnect?.google_email}</b>. Its scanners stay but cannot read mail until it is reconnected; links already found stay.
+=======
+            schoolz will stop reading <b>{pendingDisconnect?.google_email}</b>. Its scanners stay but cannot read mail until it is reconnected; emails already captured stay.
+>>>>>>> Stashed changes
           </>
         }
         confirmLabel="Disconnect"
@@ -570,7 +650,11 @@ export function GmailPage() {
         title="Remove this scanner?"
         description={
           <>
+<<<<<<< Updated upstream
             <b>{pendingDelete?.name}</b> will stop scanning and its schedule is deleted. Links already found stay.
+=======
+            <b>{pendingDelete?.name}</b> will stop scanning and its schedule is deleted. Emails already captured stay.
+>>>>>>> Stashed changes
           </>
         }
         confirmLabel="Remove"
