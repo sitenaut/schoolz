@@ -257,6 +257,24 @@ export function LocalzReviewDetailPage() {
               </dd>
             </>
           )}
+          {(review.claimed_services ?? []).length > 0 && (
+            <>
+              <dt>Says these are theirs ({review.claimed_services.length})</dt>
+              <dd>
+                {review.claimed_services.map((c) => (
+                  <div key={c.id}>
+                    <Link to={`/localz/r/${c.id}`}>{c.name}</Link> · {c.organization_name || "no organization"}
+                    {c.city ? ` · ${c.city}` : ""} ({c.source}
+                    {c.status !== "active" ? `, ${c.status}` : ""})
+                  </div>
+                ))}
+                <span className="note">
+                  Approving links each one as it stands - nothing they typed replaces it. They correct each afterwards.
+                  {sub.services.length === 0 ? " No new program in this request." : ""}
+                </span>
+              </dd>
+            </>
+          )}
           {review.private_address && (
             <>
               <dt>{sub.address_kind === "confidential" ? "Confidential address" : "Mailing address"}</dt>

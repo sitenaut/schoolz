@@ -111,7 +111,7 @@ export function LocalzReviewPage() {
             <>
               {" "}
               <Badge tone="info" dot={false}>
-                Claim
+                {r.claims && r.claims > 1 ? `Claim ×${r.claims}` : "Claim"}
               </Badge>
             </>
           )}

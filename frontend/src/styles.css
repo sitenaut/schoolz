@@ -3982,14 +3982,73 @@ select {
 .provider-claim {
   margin-top: 10px;
 }
+.provider-matches {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.provider-matches > legend,
+.provider-more > legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 4px;
+}
+/* The whole row is the checkbox's label: a big target for a thumb. */
 .provider-match {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.provider-match.is-ticked {
+  background: var(--primary-soft);
+}
+.provider-match > input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+.provider-match-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.provider-match-text .note {
+  margin: 0;
+}
+.provider-match-view {
+  flex: none;
+  padding: 8px 4px;
+}
+.provider-find > .btn.ghost {
+  display: block;
+  margin-top: 4px;
+}
+.provider-matches > .btn {
+  margin-top: 10px;
+}
+.provider-more {
+  border: 0;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.provider-more > label {
+  display: flex;
+  gap: 10px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.provider-more > label > input {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }
 .provider-log {
   padding-left: 18px;

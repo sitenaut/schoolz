@@ -643,8 +643,12 @@ export function ListingForm({
   hasPrivateAddress,
   fieldsToFix = [],
   organizationExtra,
+  organizationOnly = false,
 }: {
   organizationExtra?: ReactNode;
+  /** Just the name and `organizationExtra`: someone who only ticked the
+   * listings that are theirs has nothing else to fill in. */
+  organizationOnly?: boolean;
   value: Submission;
   onChange: (s: Submission) => void;
   types: ProviderType[];
@@ -672,7 +676,8 @@ export function ListingForm({
         </Field>
         {organizationExtra}
       </section>
-
+      {organizationOnly ? null : (
+      <>
       <section className={`provider-section${fix("services")}`}>
         <h3>{t("What you provide")}</h3>
         {value.services.map((s, i) => (
@@ -790,6 +795,8 @@ export function ListingForm({
           </Field>
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }

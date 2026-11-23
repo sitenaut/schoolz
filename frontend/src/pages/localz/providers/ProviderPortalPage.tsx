@@ -44,7 +44,11 @@ export function StatusMessage({ r }: { r: OnboardingRequest }) {
         </div>
       );
     case "approved":
-      return <p className="note">{t("Approved - your listing is live.")}</p>;
+      return (
+        <p className="note">
+          {r.claimed_services?.length ? t("Approved - these listings are now yours to keep up to date.") : t("Approved - your listing is live.")}
+        </p>
+      );
     case "rejected":
       return (
         <p className="note">

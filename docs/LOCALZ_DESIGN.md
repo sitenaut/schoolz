@@ -387,6 +387,24 @@ Migration 0107; rules in `backend/resources/portal.py` and
   `lib/providerPortal.ts`, kept in step by a test on each side), draft,
   submit, edit while changes are requested, withdraw. Bot check on creating
   a request; 5 new requests a day and 10 open per account.
+- **"Tick every one that's yours"** (`Submission.claims`, no migration: the
+  ids ride in the form JSON). An agency with many programs is usually
+  listed already, several times over, so a new request opens on one
+  question (the organization's name), shows every listing under that name
+  with a checkbox, and asks only "do you run a program that isn't on this
+  list?". Ticked listings are **linked as they stand** on approval
+  (`onboarding.link`): nothing typed replaces them, no field becomes
+  provider-owned, and the member corrects each afterwards with quick
+  updates. With nothing to add, the organization's name is the whole
+  required core; `services` then holds only programs we don't list. A
+  ticked listing that has gone hidden or inactive by approval is skipped,
+  never revived. Reviewer flags: listed under a different organization
+  name (the match is by similar name), already managed by someone else, no
+  longer active. The call can be skipped only when *every* ticked listing
+  published an email and no new program rides along; one code then
+  confirms every membership of that request sharing the address. The older
+  single `claimed_service_id` (the form's values take the listing over)
+  still works for requests made that way and for a reviewer's merge.
 - **Review queue** `/admin/resources/onboarding` (tab "Localz" with a badge
   counting new requests plus held edits): duplicates (name, phone, street,
   every source), flags (email vs website domain, free email, a phone listed

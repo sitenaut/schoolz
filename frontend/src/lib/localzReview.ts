@@ -11,6 +11,7 @@ export type QueueItem = {
   organization_name: string | null;
   town: string | null;
   claim: boolean;
+  claims?: number;
   percent: number;
   missing_core: string[];
   submitted_at: string | null;

@@ -41,6 +41,16 @@ describe("provider form completeness", () => {
     expect(completeness({ ...full(), cost: { kind: "fee", amount: null } }, false).missing_core).toEqual(["cost"]);
   });
 
+  // Same cases as test_ticking_listings_as_yours_asks_for_nothing_but_the_name.
+  it("asks for nothing but the name from someone who only ticked the listings that are theirs", () => {
+    const only = withDefaults({ organization_name: "Riverbend Community Action", claims: ["a", "b"] });
+    expect(only.services).toEqual([]);
+    expect(completeness(only, false)).toEqual({ missing_core: [], missing_optional: [], percent: 100 });
+    expect(completeness(withDefaults({ claims: ["a"] }), false).missing_core).toEqual(["organization_name"]);
+    const more = { ...withDefaults({ organization_name: "Riverbend", claims: ["a"] }), services: [{ type: "food_pantry", name: "", description: "" }] };
+    expect(completeness(more, false).missing_core).toEqual(["services", "address", "hours", "phone", "who", "cost"]);
+  });
+
   // Same cases as test_a_program_can_carry_the_hours_who_and_cost_the_organization_left_out.
   it("lets programs carry the hours, who and cost the organization left out", () => {
     const blank = { ...full(), hours: emptyHours(), who: emptySubmission().who, cost: { kind: null, amount: null } };

@@ -98,6 +98,8 @@ class QueueItemOut(BaseModel):
     organization_name: str | None
     town: str | None
     claim: bool
+    # How many existing listings they ticked as theirs.
+    claims: int = 0
     percent: int
     missing_core: list[str]
     submitted_at: datetime | None
@@ -236,7 +238,7 @@ async def _review_out(db: AsyncSession, req: ResourceOnboardingRequest) -> Revie
     base = await request_out(db, req)
     sub = Submission.model_validate(req.submission)
     account_email = (await _emails(db, {req.user_id})).get(req.user_id or "")
-    exclude = [x for x in [req.claimed_service_id, *(req.service_ids or [])] if x]
+    exclude = [x for x in [req.claimed_service_id, *sub.claims, *(req.service_ids or [])] if x]
     entries = (
         await db.execute(
             select(ResourceChangeLog)
@@ -257,9 +259,7 @@ async def _review_out(db: AsyncSession, req: ResourceOnboardingRequest) -> Revie
         account_email=account_email,
         private_address=_private(req.private_address),
         checklist=dict(req.checklist or {}),
-        verify_by_email=_masked_source_email(
-            await db.get(ResourceService, req.claimed_service_id) if req.claimed_service_id and req.status != "approved" else None
-        ),
+        verify_by_email=await _verify_by_email(db, req, sub) if req.status != "approved" else None,
         duplicates=[DuplicateOut(**d) for d in await portal.duplicates(db, sub, exclude)],
         flags=[FlagOut(**f) for f in await portal.flags(db, req, sub, account_email)],
         log=await _log_outs(db, list(entries)),
@@ -308,7 +308,8 @@ async def queue(
                 origin=req.origin,
                 organization_name=sub.organization_name,
                 town=sub.city or sub.town,
-                claim=bool(req.claimed_service_id),
+                claim=bool(req.claimed_service_id or sub.claims),
+                claims=len(sub.claims),
                 percent=done["percent"],
                 missing_core=done["missing_core"],
                 submitted_at=req.submitted_at,
@@ -396,8 +397,20 @@ async def save_checklist(request_id: str, body: ChecklistIn, admin: User = Depen
     return await _review_out(db, req)
 
 
-def _masked_source_email(target: ResourceService | None) -> str | None:
-    email = portal.source_email(target)
+async def _code_email(db: AsyncSession, req: ResourceOnboardingRequest, sub: Submission, target: ResourceService | None) -> str | None:
+    """The address a code can go to in place of the reviewer's call, or None
+    when the call is needed: the listing being taken over published one, or
+    every listing ticked as theirs did. One that didn't can't be confirmed
+    by code, so the call covers it."""
+    if target is not None:
+        return portal.source_email(target)
+    emails = [portal.source_email(r) for r in await portal.claimed_rows(db, sub)]
+    return emails[0] if emails and all(emails) and not sub.services else None
+
+
+async def _verify_by_email(db: AsyncSession, req: ResourceOnboardingRequest, sub: Submission) -> str | None:
+    target = await db.get(ResourceService, req.claimed_service_id) if req.claimed_service_id else None
+    email = await _code_email(db, req, sub, target)
     return portal_mail.mask(email) if email else None
 
 
@@ -412,10 +425,10 @@ async def _approve(db: AsyncSession, req: ResourceOnboardingRequest, admin: User
     # Claiming a listing whose source published an email: the call can be
     # skipped - they confirm with a code sent there instead, and until they
     # do, everything they change waits for review.
-    optional = {"connected"} if portal.source_email(target) else set()
+    sub = Submission.model_validate(req.submission)
+    optional = {"connected"} if await _code_email(db, req, sub, target) else set()
     if not all(v for k, v in checklist.items() if k not in optional):
         raise HTTPException(422, "Tick every checklist item before approving")
-    sub = Submission.model_validate(req.submission)
     missing = portal.completeness(sub, bool(req.private_address))["missing_core"]
     if missing:
         raise HTTPException(422, f"The required core is incomplete: {', '.join(missing)}")

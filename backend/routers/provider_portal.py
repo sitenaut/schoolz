@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
@@ -108,6 +108,8 @@ class RequestOut(BaseModel):
     contact_name: str | None
     contact_phone: str | None
     claimed_service: ListingBriefOut | None
+    # submission.claims, as listings: every one they ticked as theirs.
+    claimed_services: list[ListingBriefOut]
     completeness: CompletenessOut
     decision_note: str | None
     reject_reason: str | None
@@ -233,6 +235,27 @@ async def _brief(db: AsyncSession, service_id: str | None) -> ListingBriefOut | 
     return ListingBriefOut(**portal.listing_brief(row)) if row else None
 
 
+async def _claimed(db: AsyncSession, sub: Submission) -> list[ListingBriefOut]:
+    if not sub.claims:
+        return []
+    found = {r.id: r for r in (await db.execute(select(ResourceService).where(ResourceService.id.in_(sub.claims)))).scalars()}
+    return [ListingBriefOut(**portal.listing_brief(found[x])) for x in sub.claims if x in found]
+
+
+async def check_claims(db: AsyncSession, sub: Submission, already: list[str] | None = None) -> None:
+    """Every newly ticked listing must be one a visitor can see. Ones saved
+    earlier aren't re-checked: a listing that went away since mustn't lock
+    the form (approval skips it)."""
+    new = [x for x in sub.claims if x not in (already or [])]
+    if not new:
+        return
+    live = set(
+        (await db.execute(select(ResourceService.id).where(ResourceService.id.in_(new), ResourceService.status == "active"))).scalars()
+    )
+    if len(live) != len(new):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "One of those listings isn't available any more - untick it and try again.")
+
+
 async def request_out(db: AsyncSession, req: ResourceOnboardingRequest) -> RequestOut:
     sub = Submission.model_validate(req.submission)
     show_decision = req.status in ("changes_requested", "rejected", "approved")
@@ -245,6 +268,7 @@ async def request_out(db: AsyncSession, req: ResourceOnboardingRequest) -> Reque
         contact_name=req.contact_name,
         contact_phone=req.contact_phone,
         claimed_service=await _brief(db, req.claimed_service_id),
+        claimed_services=await _claimed(db, sub),
         completeness=CompletenessOut(**portal.completeness(sub, bool(req.private_address))),
         decision_note=req.decision_note if show_decision else None,
         reject_reason=req.reject_reason if req.status == "rejected" else None,
@@ -352,10 +376,13 @@ async def ask_to_be_listed(body: InquiryIn, request: Request, background: Backgr
 @router.post("/match", response_model=list[ListingBriefOut])
 async def is_this_you(body: MatchIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """"Is this you?" - existing listings with a similar name, so a provider
-    claims their record instead of making a second one."""
+    claims their records instead of making second ones. An agency's own
+    programs (the same organization name) come first, and all of them: it
+    ticks every one that's theirs."""
     name = body.name.strip()
     key = portal.name_key(name)
     pattern = f"%{name[:80].replace('%', '').replace('_', ' ')}%"
+    same_org = func.regexp_replace(func.lower(ResourceService.organization_name), "[^a-z0-9]+", " ", "g") == key
     rows = (
         await db.execute(
             select(ResourceService)
@@ -364,11 +391,11 @@ async def is_this_you(body: MatchIn, user: User = Depends(get_current_user), db:
                 or_(
                     ResourceService.organization_name.ilike(pattern),
                     ResourceService.name.ilike(pattern),
-                    func.regexp_replace(func.lower(ResourceService.organization_name), "[^a-z0-9]+", " ", "g") == key,
+                    same_org,
                 ),
             )
-            .order_by(ResourceService.organization_name, ResourceService.name)
-            .limit(8)
+            .order_by(case((same_org, 0), else_=1), ResourceService.organization_name, ResourceService.name)
+            .limit(portal.CLAIMS_MAX)
         )
     ).scalars().all()
     return [ListingBriefOut(**portal.listing_brief(r)) for r in rows]
@@ -410,6 +437,7 @@ async def start_request(body: RequestIn, request: Request, user: User = Depends(
         if claimed is None or claimed.status != "active":
             raise HTTPException(status.HTTP_404_NOT_FOUND, "That listing isn't available")
     _check_links(body.submission)
+    await check_claims(db, body.submission)
     req = ResourceOnboardingRequest(
         status="draft",
         origin="self_serve",
@@ -447,6 +475,7 @@ async def save_request(request_id: str, body: RequestIn, user: User = Depends(ge
             if claimed is None or claimed.status != "active":
                 raise HTTPException(status.HTTP_404_NOT_FOUND, "That listing isn't available")
         req.claimed_service_id = body.claimed_service_id
+    await check_claims(db, body.submission, (req.submission or {}).get("claims"))
     req.submission = body.submission.model_dump(mode="json")
     if body.private_address is not None:
         req.private_address = _clean(body.private_address)
@@ -872,11 +901,30 @@ async def check_verify_code(service_id: str, body: CodeIn, user: User = Depends(
     if problem:
         await db.commit()  # the try counts
         raise HTTPException(422, problem)
-    membership.verified_at = portal.now()
-    portal.log(db, action="membership.verify_email", actor=user, actor_kind="provider", service_id=row.id,
-               after={"user_id": user.id, "by": "email code"})
+    stamp = portal.now()
+    confirmed = [membership]
+    if membership.request_id:
+        # Ticked several listings in one request? A code read from this
+        # address proves the same thing for every one that published it, so
+        # nobody types six codes.
+        confirmed += (
+            await db.execute(
+                select(ProviderMembership).where(
+                    ProviderMembership.user_id == user.id,
+                    ProviderMembership.request_id == membership.request_id,
+                    ProviderMembership.id != membership.id,
+                    ProviderMembership.verified_at.is_(None),
+                    func.lower(ProviderMembership.verify_email) == (membership.verify_email or "").lower(),
+                )
+            )
+        ).scalars().all()
+    for m in confirmed:
+        m.verified_at = stamp
+        portal.log(db, action="membership.verify_email", actor=user, actor_kind="provider", service_id=m.service_id,
+                   after={"user_id": user.id, "by": "email code"})
     await db.commit()
-    return {"verified": True}
+    # `also`: how many other listings the same code just confirmed.
+    return {"verified": True} | ({"also": len(confirmed) - 1} if len(confirmed) > 1 else {})
 
 
 @router.post("/listings/{service_id}/confirm")

@@ -172,6 +172,66 @@ async def test_a_claim_can_skip_the_call_and_verify_with_a_code_from_the_source_
         assert listing["verified"] is True and listing["verify_by_email"] is None
 
 
+async def test_one_code_confirms_every_listing_ticked_together_that_published_the_address(outbox):
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        async with database.SessionLocal() as db:
+            rows = [
+                ResourceService(
+                    source=nj211.SOURCE, source_record_id=f"m-{uuid.uuid4()}", name=name, organization_name="Oak Hill Action",
+                    email=email, status="active", required_documents=[], languages=[], service_areas=[], taxonomy_codes=[],
+                    taxonomy_names=[], listed_in_counties=[], categories=[], missing_core=[], provider_owned_fields=[],
+                )
+                for name, email in [("Rent Help", "Office@oakhill.org"), ("Senior Housing", "office@oakhill.org"), ("Parent Classes", "parents@oakhill.org")]
+            ]
+            db.add_all(rows)
+            await db.commit()
+            rent, housing, classes = (r.id for r in rows)
+        body = {"submission": {"organization_name": "Oak Hill Action", "claims": [rent, housing, classes]}}
+        rid = (await client.post("/provider-portal/requests", json=body, headers=provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        # Every ticked listing published an address, so the call can be skipped.
+        review = (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()
+        assert review["verify_by_email"] == "O***@oakhill.org"
+        r = await client.post(
+            f"/admin/resources/onboarding/{rid}/approve", json={"checklist": {**ALL_TICKED, "connected": False}}, headers=reviewer
+        )
+        assert r.status_code == 200, r.text
+        assert (await client.post(f"/provider-portal/listings/{rent}/verify/send", headers=provider)).status_code == 202
+        await mailer.send_pending()
+        code = re.search(r"Code: (\d{6})", _text(outbox[-1])).group(1)
+        r = await client.post(f"/provider-portal/listings/{rent}/verify", json={"code": code}, headers=provider)
+        assert r.json() == {"verified": True, "also": 1}
+        verified = {x["id"]: x["verified"] for x in (await client.get("/provider-portal/listings", headers=provider)).json()}
+        # The third went to a different address: its own code, or the call.
+        assert verified == {rent: True, housing: True, classes: False}
+
+
+async def test_ticked_listings_need_the_call_when_one_of_them_published_no_address():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        async with database.SessionLocal() as db:
+            rows = [
+                ResourceService(
+                    source=nj211.SOURCE, source_record_id=f"m-{uuid.uuid4()}", name=name, organization_name="Oak Hill Action",
+                    email=email, status="active", required_documents=[], languages=[], service_areas=[], taxonomy_codes=[],
+                    taxonomy_names=[], listed_in_counties=[], categories=[], missing_core=[], provider_owned_fields=[],
+                )
+                for name, email in [("Rent Help", "office@oakhill.org"), ("Senior Housing", None)]
+            ]
+            db.add_all(rows)
+            await db.commit()
+            ids = [r.id for r in rows]
+        body = {"submission": {"organization_name": "Oak Hill Action", "claims": ids}}
+        rid = (await client.post("/provider-portal/requests", json=body, headers=provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        assert (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()["verify_by_email"] is None
+        r = await client.post(
+            f"/admin/resources/onboarding/{rid}/approve", json={"checklist": {**ALL_TICKED, "connected": False}}, headers=reviewer
+        )
+        assert r.status_code == 422
+
+
 async def test_a_code_check_counts_the_tries_other_requests_made_meanwhile(outbox):
     # Guesses sent in parallel each load the membership before the others count
     # theirs. The check re-reads the row under a lock, so it sees every try.
