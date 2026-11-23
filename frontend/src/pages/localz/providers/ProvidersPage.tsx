@@ -36,6 +36,12 @@ export function ProvidersPage() {
         <li>{t("Once it's approved, you can post closures, this week's hours and alerts, and they show right away.")}</li>
       </ol>
       <p className="note">
+        {t("Already keep this on your own website, or have a data feed? Say so when you start and we'll read it from there, so you only keep one place up to date.")}
+      </p>
+      <p className="note">
+        {t("We work hard to keep Localz fresh and useful for families. A listing nobody has confirmed in a long while is marked out of date, and then taken down.")}
+      </p>
+      <p className="note">
         {t("Confidential locations, like domestic violence shelters: we never publish your address. Your listing shows your phone and \"Location shared after you call\".")}
       </p>
 

@@ -92,6 +92,9 @@ INQUIRIES_PER_DAY = 6
 # Self-serve limits per account.
 REQUESTS_PER_DAY = 5
 OPEN_REQUESTS_MAX = 10
+# Listings one request may say are theirs, and how many "Is this you?" shows.
+CLAIMS_MAX = 40
+UPKEEP_URLS_MAX = 5
 
 
 def now() -> datetime:
@@ -260,6 +263,32 @@ def clean_ways_to_help(ways: WaysToHelp | None) -> dict | None:
     }
 
 
+class Upkeep(BaseModel):
+    """How the organization wants its listings kept current, so it doesn't
+    have to keep two places up to date: by hand here (`portal`), from its
+    own web pages (`website`), or from a feed or API it publishes (`feed`).
+    The last two are a request to us, not a switch: a reviewer sets up the
+    reading and the listings stay as approved until then."""
+
+    mode: Literal["portal", "website", "feed"] = "portal"
+    # The pages that list their programs, or the feed's address or its docs.
+    urls: list[str] = Field(default_factory=list, max_length=UPKEEP_URLS_MAX)
+    # "It's an iCal feed", "hours are on each program's page".
+    note: str | None = Field(default=None, max_length=500)
+
+    @field_validator("urls")
+    @classmethod
+    def _addresses(cls, values: list[str]) -> list[str]:
+        # People type "ourpantry.org/programs": the https:// is ours to add.
+        out = list(dict.fromkeys(
+            v if v.lower().startswith(("http://", "https://")) else "https://" + v for v in (x.strip() for x in values) if v
+        ))
+        for url in out:
+            if len(url) > 300 or not re.match(r"^https?://[^\s/.]+(\.[^\s/.]+)+(/\S*)?$", url, re.I):
+                raise ValueError("That doesn't look like a web address - for example ourpantry.org/programs")
+        return out
+
+
 class ServiceEntry(BaseModel):
     """One program. Hours, who can come, cost and place left out (null)
     mean "same as the organization's", so a one-program pantry fills them
@@ -314,6 +343,22 @@ class Submission(BaseModel):
     # Volunteers and donations, for every program in the request.
     ways_to_help: WaysToHelp | None = None
     town: str | None = Field(default=None, max_length=100)
+    # Listings we already carry that the requester says are theirs ("Tick
+    # every one that's yours"). Approval links each one as it stands: nothing
+    # typed here replaces it, so an agency with six programs retypes none of
+    # them and corrects each afterwards. `services` are then only programs we
+    # don't list yet, and may be empty.
+    claims: list[str] = Field(default_factory=list, max_length=CLAIMS_MAX)
+    # Missing on requests from before the question was asked: by hand here.
+    upkeep: Upkeep | None = None
+
+    @field_validator("claims")
+    @classmethod
+    def _claim_ids(cls, values: list[str]) -> list[str]:
+        ids = list(dict.fromkeys(v.strip() for v in values if v and v.strip()))
+        if any(len(v) > 36 for v in ids):
+            raise ValueError("Unknown listing")
+        return ids
 
     @field_validator("service_area_counties")
     @classmethod
@@ -369,9 +414,18 @@ def bad_link_reason(url: str | None) -> str | None:
     return None
 
 
+def upkeep_missing(sub: Submission) -> str | None:
+    """What "read it from our website / our feed" still needs, in the
+    form's words. Mirrored by `upkeepMissing` in the frontend."""
+    if sub.upkeep and sub.upkeep.mode != "portal" and not sub.upkeep.urls:
+        return "the web page we should read" if sub.upkeep.mode == "website" else "the address of your feed or API"
+    return None
+
+
 def check_links(sub: Submission) -> None:
     links = [getattr(sub.ways_to_help, f) for f in HELP_LINKS] if sub.ways_to_help else []
-    reason = next((r for r in map(bad_link_reason, [sub.website, *links]) if r), None)
+    read_from = sub.upkeep.urls if sub.upkeep else []
+    reason = next((r for r in map(bad_link_reason, [sub.website, *links, *read_from]) if r), None)
     if reason:
         raise ValueError(reason)
     if sub.website and not sub.website.lower().startswith(("http://", "https://")):
@@ -434,6 +488,11 @@ def _everywhere(sub: Submission, own: str, done) -> bool:
 def completeness(sub: Submission, has_private_address: bool) -> dict:
     """What a submission still needs. Mirrored in the form's meter
     (frontend/src/lib/providerPortal.ts) - keep the two in step."""
+    if sub.claims and not sub.services:
+        # Only saying "these listings are ours": they already have a place,
+        # hours and the rest, so the organization's name is all that's asked.
+        named = bool((sub.organization_name or "").strip())
+        return {"missing_core": [] if named else ["organization_name"], "missing_optional": [], "percent": 100 if named else 0}
     done = {
         "organization_name": bool((sub.organization_name or "").strip()),
         "services": bool(sub.services) and all(_program_done(s, sub) for s in sub.services),
@@ -853,12 +912,36 @@ async def flags(db: AsyncSession, req: ResourceOnboardingRequest, sub: Submissio
             out.append({"code": "program_place", "level": "info", "message": f"{entry.name or 'A program'} meets somewhere else: {where}."})
     if sub.address_kind == "confidential":
         out.append({"code": "confidential", "level": "info", "message": "Confidential address: check the public listing will show no location."})
-    if req.claimed_service_id:
-        managed = await db.scalar(
-            select(func.count()).select_from(ProviderMembership).where(ProviderMembership.service_id == req.claimed_service_id)
-        )
-        if managed:
+    if sub.upkeep and sub.upkeep.mode != "portal":
+        what = "read their own website" if sub.upkeep.mode == "website" else "use their feed or API"
+        detail = " ".join(x for x in [", ".join(sub.upkeep.urls), f"({sub.upkeep.note.strip()})" if (sub.upkeep.note or "").strip() else ""] if x)
+        out.append({"code": f"upkeep_{sub.upkeep.mode}", "level": "info",
+                    "message": f"Wants us to {what} instead of updating here: {detail}. Nothing reads it yet - set it up, or tell them when."})
+    claimed_ids = list(dict.fromkeys(x for x in [req.claimed_service_id, *sub.claims] if x))
+    if claimed_ids:
+        claimed = (await db.execute(select(ResourceService).where(ResourceService.id.in_(claimed_ids)))).scalars().all()
+        mine = select(ProviderMembership.service_id).where(ProviderMembership.service_id.in_(claimed_ids))
+        if req.user_id:
+            # Once approved the requester manages them; that isn't "someone".
+            mine = mine.where(ProviderMembership.user_id != req.user_id)
+        managed_ids = set((await db.execute(mine)).scalars())
+        managed = sorted(r.name for r in claimed if r.id in managed_ids)
+        if len(claimed_ids) == 1 and managed:
             out.append({"code": "already_managed", "level": "warn", "message": "Someone already manages this listing."})
+        elif managed:
+            out.append({"code": "already_managed", "level": "warn", "message": f"Someone already manages: {', '.join(managed[:5])}."})
+        # "Is this you?" matches on a similar name, so a ticked listing can
+        # belong to a different organization.
+        key = name_key(sub.organization_name or "")
+        others = sorted({f"{r.name} ({r.organization_name or 'no organization'})" for r in claimed
+                         if r.id in sub.claims and name_key(r.organization_name or "") != key})
+        if others:
+            out.append({"code": "claim_other_org", "level": "warn",
+                        "message": f"Listed under a different organization name: {'; '.join(others[:5])}."})
+        gone = [r.name for r in claimed if r.status != "active"] + ["(deleted)"] * (len(claimed_ids) - len(claimed))
+        if gone:
+            out.append({"code": "claim_gone", "level": "warn",
+                        "message": f"No longer an active listing, so approval skips it: {', '.join(gone[:5])}."})
     return out
 
 
@@ -900,6 +983,37 @@ def source_email(target: ResourceService | None) -> str | None:
         return None
     email = (target.email or "").strip()
     return email if "@" in email else None
+
+
+async def claimed_rows(db: AsyncSession, sub: Submission, skip: set[str] | None = None) -> list[ResourceService]:
+    """The listings a request ticked as its own that can still be linked, in
+    the order ticked. One that has since gone (hidden by a reviewer, dropped,
+    deleted) is left out, never brought back."""
+    ids = [x for x in sub.claims if x not in (skip or set())]
+    if not ids:
+        return []
+    found = {r.id: r for r in (await db.execute(select(ResourceService).where(ResourceService.id.in_(ids)))).scalars()}
+    return [found[x] for x in ids if x in found and found[x].status == "active"]
+
+
+async def _member(db: AsyncSession, req: ResourceOnboardingRequest, row: ResourceService, reviewer: User, stamp: datetime,
+                  code_email: str | None) -> None:
+    """The requester's membership of one approved listing."""
+    if not req.user_id:
+        return
+    membership = (
+        await db.execute(
+            select(ProviderMembership).where(ProviderMembership.user_id == req.user_id, ProviderMembership.service_id == row.id)
+        )
+    ).scalar_one_or_none()
+    if membership is None:
+        membership = ProviderMembership(user_id=req.user_id, service_id=row.id, organization_id=row.organization_id, role="owner", request_id=req.id)
+        db.add(membership)
+    if code_email and membership.verified_at is None:
+        membership.verify_email = code_email
+    if req.checklist.get("connected") and membership.verified_at is None:
+        # v1 verification: the reviewer called the listed number.
+        membership.verified_at, membership.verified_by_user_id = stamp, reviewer.id
 
 
 async def approve(db: AsyncSession, req: ResourceOnboardingRequest, reviewer: User, target: ResourceService | None,
@@ -947,20 +1061,14 @@ async def approve(db: AsyncSession, req: ResourceOnboardingRequest, reviewer: Us
         log(db, action=action, actor=reviewer, actor_kind="reviewer", service_id=row.id, request_id=req.id,
             before=before, after=after, note=note)
         rows.append(row)
-        if req.user_id:
-            membership = (
-                await db.execute(
-                    select(ProviderMembership).where(ProviderMembership.user_id == req.user_id, ProviderMembership.service_id == row.id)
-                )
-            ).scalar_one_or_none()
-            if membership is None:
-                membership = ProviderMembership(user_id=req.user_id, service_id=row.id, organization_id=row.organization_id, role="owner", request_id=req.id)
-                db.add(membership)
-            if i == 0 and code_email:
-                membership.verify_email = code_email
-            if req.checklist.get("connected"):
-                # v1 verification: the reviewer called the listed number.
-                membership.verified_at, membership.verified_by_user_id = stamp, reviewer.id
+        await _member(db, req, row, reviewer, stamp, code_email if i == 0 else None)
+    # "These are ours": each ticked listing is linked as it stands. Nothing
+    # is written to it, so there is nothing to revert but the membership.
+    for row in await claimed_rows(db, sub, skip={r.id for r in rows}):
+        await _member(db, req, row, reviewer, stamp, source_email(row))
+        log(db, action="onboarding.link", actor=reviewer, actor_kind="reviewer", service_id=row.id, request_id=req.id,
+            after={"user_id": req.user_id}, note=note)
+        rows.append(row)
     req.status = "approved"
     req.service_ids = [r.id for r in rows]
     req.reviewed_by_user_id, req.reviewed_at = reviewer.id, stamp

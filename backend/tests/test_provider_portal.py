@@ -1021,3 +1021,187 @@ async def test_the_live_list_puts_the_least_recently_confirmed_first():
         rows = (await client.get("/admin/resources/listings", params={"q": tag}, headers=reviewer)).json()
         assert [r["id"] for r in rows] == [stale, fresh]
         assert rows[0]["members"] == 1 and rows[0]["verified_members"] == 1 and rows[0]["source"] == "provider"
+
+
+# ---- "Tick every one that's yours": several existing listings in one request ----------
+
+
+async def _agency(names: list[str], org: str = "Riverbend Community Action", **overrides) -> list[str]:
+    async with database.SessionLocal() as db:
+        rows = [_scraped(name=n, organization_name=org, phone="609-555-0100", city="Burlington", **overrides) for n in names]
+        db.add_all(rows)
+        await db.commit()
+        return [r.id for r in rows]
+
+
+def test_ticking_listings_as_yours_asks_for_nothing_but_the_name():
+    # Same cases as frontend/src/lib/providerPortal.test.ts.
+    only = portal.Submission(organization_name="Riverbend Community Action", claims=["a", "b"])
+    assert portal.completeness(only, False) == {"missing_core": [], "missing_optional": [], "percent": 100}
+    assert portal.completeness(portal.Submission(claims=["a"]), False)["missing_core"] == ["organization_name"]
+    # Adding a program we don't list brings the whole form back.
+    more = portal.Submission(organization_name="Riverbend", claims=["a"], services=[portal.ServiceEntry(type="food_pantry")])
+    assert portal.completeness(more, False)["missing_core"] == ["services", "address", "hours", "phone", "who", "cost"]
+    assert portal.Submission(claims=["a", " a ", "", "b"]).claims == ["a", "b"]
+
+
+async def test_an_agency_claims_all_its_listings_at_once_without_retyping_them():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        ids = await _agency(["Senior Housing", "Parent Education", "Rent Help"])
+        found = (await client.post("/provider-portal/match", json={"name": "riverbend community action"}, headers=provider)).json()
+        assert {m["id"] for m in found} >= set(ids)
+
+        body = {"submission": {"organization_name": "Riverbend Community Action", "claims": ids}}
+        r = await client.post("/provider-portal/requests", json=body, headers=provider)
+        assert r.status_code == 201, r.text
+        assert [c["id"] for c in r.json()["claimed_services"]] == ids and r.json()["completeness"]["missing_core"] == []
+        rid = r.json()["id"]
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+
+        item = next(q for q in (await client.get("/admin/resources/onboarding", headers=reviewer)).json() if q["id"] == rid)
+        assert item["claim"] is True and item["claims"] == 3
+        review = (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()
+        # Their own listings aren't "duplicates" of the request.
+        assert not {d["id"] for d in review["duplicates"]} & set(ids)
+        assert not [f for f in review["flags"] if f["code"].startswith("claim_") or f["code"] == "already_managed"]
+
+        r = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert r.status_code == 200, r.text
+        assert r.json()["service_ids"] == ids
+        async with database.SessionLocal() as db:
+            rows = (await db.execute(select(ResourceService).where(ResourceService.id.in_(ids)))).scalars().all()
+            # Linked as they stand: nothing overwritten, nothing provider-owned yet.
+            assert {(x.source, x.phone, tuple(x.provider_owned_fields)) for x in rows} == {(nj211.SOURCE, "609-555-0100", ())}
+            assert sorted(x.name for x in rows) == ["Parent Education", "Rent Help", "Senior Housing"]
+            members = (await db.execute(select(ProviderMembership).where(ProviderMembership.service_id.in_(ids)))).scalars().all()
+            assert len(members) == 3 and all(m.verified_at and m.request_id == rid for m in members)
+        mine = (await client.get("/provider-portal/listings", headers=provider)).json()
+        assert {x["id"] for x in mine} == set(ids)
+        # ...and each is now theirs to correct.
+        r = await client.patch(f"/provider-portal/listings/{ids[0]}", json={"description": "Apartments for older adults."}, headers=provider)
+        assert r.status_code == 200 and r.json()["applied"] == ["description"]
+
+
+async def test_a_program_we_dont_list_yet_rides_along_with_the_ticked_ones():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        ids = await _agency(["Senior Housing", "Rent Help"])
+        sub = _submission(organization_name="Riverbend Community Action", claims=ids)
+        rid = (await client.post("/provider-portal/requests", json={"submission": sub}, headers=provider)).json()["id"]
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+        r = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert r.status_code == 200, r.text
+        new, *linked = r.json()["service_ids"]
+        assert linked == ids
+        async with database.SessionLocal() as db:
+            made = await db.get(ResourceService, new)
+            assert made.source == portal.SOURCE and made.name == "Saturday Pantry"
+            # The form's phone went on the new program only.
+            assert (await db.get(ResourceService, ids[0])).phone == "609-555-0100"
+
+
+async def test_only_a_listing_visitors_can_see_can_be_ticked_and_one_that_goes_away_is_skipped():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        kept, taken_down = await _agency(["Senior Housing", "Rent Help"])
+        (hidden,) = await _agency(["Old Program"], status=HIDDEN)
+        for bad in (hidden, str(uuid.uuid4())):
+            r = await client.post(
+                "/provider-portal/requests", json={"submission": {"organization_name": "Riverbend", "claims": [kept, bad]}}, headers=provider
+            )
+            assert r.status_code == 404, r.text
+        body = {"submission": {"organization_name": "Riverbend Community Action", "claims": [kept, taken_down]}}
+        rid = (await client.post("/provider-portal/requests", json=body, headers=provider)).json()["id"]
+        async with database.SessionLocal() as db:
+            await db.execute(update(ResourceService).where(ResourceService.id == taken_down).values(status=HIDDEN))
+            await db.commit()
+        # Saving again doesn't lock them out over a listing that went away since.
+        assert (await client.put(f"/provider-portal/requests/{rid}", json=body, headers=provider)).status_code == 200
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+        review = (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()
+        assert [f["message"] for f in review["flags"] if f["code"] == "claim_gone"] == [
+            "No longer an active listing, so approval skips it: Rent Help."
+        ]
+        r = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert r.status_code == 200 and r.json()["service_ids"] == [kept]
+        async with database.SessionLocal() as db:
+            assert (await db.get(ResourceService, taken_down)).status == HIDDEN
+            assert not (await db.execute(select(ProviderMembership).where(ProviderMembership.service_id == taken_down))).scalars().all()
+
+
+async def test_the_reviewer_is_told_when_a_ticked_listing_is_another_organizations_or_already_managed():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        other_provider = (await _register(client))[1]
+        (ours,) = await _agency(["Rent Help"])
+        (theirs,) = await _agency(["Riverbend Community Action Day Camp"], org="Parks Department")
+        # Someone already manages `ours`.
+        first = {"submission": {"organization_name": "Riverbend Community Action", "claims": [ours]}}
+        rid = (await client.post("/provider-portal/requests", json=first, headers=other_provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=other_provider)
+        r = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert r.status_code == 200, r.text
+        # Approved, the requester managing it is not "someone else".
+        assert "already_managed" not in {f["code"] for f in r.json()["flags"]}
+
+        body = {"submission": {"organization_name": "Riverbend Community Action", "claims": [ours, theirs]}}
+        rid = (await client.post("/provider-portal/requests", json=body, headers=provider)).json()["id"]
+        await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        flags = {f["code"]: f["message"] for f in (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()["flags"]}
+        assert flags["already_managed"] == "Someone already manages: Rent Help."
+        assert flags["claim_other_org"] == "Listed under a different organization name: Riverbend Community Action Day Camp (Parks Department)."
+
+
+async def test_is_this_you_shows_all_of_an_agencys_programs_before_lookalikes():
+    async with _client() as client:
+        _, provider = await _register(client)
+        tag = uuid.uuid4().hex[:6]
+        org = f"Harbor {tag} Partnership"
+        await _agency([f"Zeta Program {i:02d}" for i in range(12)], org=org)
+        await _agency([f"Alpha at Harbor {tag} Partnership"], org="Another Group")
+        found = (await client.post("/provider-portal/match", json={"name": org.upper()}, headers=provider)).json()
+        assert len(found) == 13
+        assert [m["organization_name"] for m in found[:12]] == [org] * 12 and found[12]["organization_name"] == "Another Group"
+
+
+# ---- "How will you keep your listings current?" ---------------------------------------
+
+
+def test_read_it_from_our_website_takes_the_address_as_people_type_it():
+    up = portal.Upkeep(mode="website", urls=[" ourpantry.org/programs ", "https://ourpantry.org/hours", "ourpantry.org/programs", ""])
+    assert up.urls == ["https://ourpantry.org/programs", "https://ourpantry.org/hours"]
+    for bad in ("our pantry page", "https://", "ourpantry"):
+        with pytest.raises(ValueError):
+            portal.Upkeep(mode="website", urls=[bad])
+    # A request from before the question was asked updates by hand.
+    assert portal.upkeep_missing(portal.Submission()) is None
+    assert portal.upkeep_missing(portal.Submission(upkeep={"mode": "portal"})) is None
+    assert portal.upkeep_missing(portal.Submission(upkeep={"mode": "website"})) == "the web page we should read"
+    assert portal.upkeep_missing(portal.Submission(upkeep={"mode": "feed"})) == "the address of your feed or API"
+
+
+async def test_an_organization_can_ask_us_to_read_its_own_website_instead():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        ids = await _agency(["Senior Housing", "Rent Help"])
+        body = {"submission": {"organization_name": "Riverbend Community Action", "claims": ids, "upkeep": {"mode": "website"}}}
+        rid = (await client.post("/provider-portal/requests", json=body, headers=provider)).json()["id"]
+        # Asking us to read their site means telling us which pages.
+        r = await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        assert r.status_code == 422 and r.json()["detail"] == "Still needed: the web page we should read"
+        short = {"mode": "website", "urls": ["bit.ly/riverbend"]}
+        r = await client.put(f"/provider-portal/requests/{rid}", json={"submission": body["submission"] | {"upkeep": short}}, headers=provider)
+        assert r.status_code == 422
+        body["submission"]["upkeep"] = {"mode": "website", "urls": ["riverbend.example/programs"], "note": "Hours are on each program's page"}
+        r = await client.put(f"/provider-portal/requests/{rid}", json=body, headers=provider)
+        assert r.status_code == 200 and r.json()["submission"]["upkeep"]["urls"] == ["https://riverbend.example/programs"]
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+        review = (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()
+        assert [f["message"] for f in review["flags"] if f["code"] == "upkeep_website"] == [
+            "Wants us to read their own website instead of updating here: https://riverbend.example/programs "
+            "(Hours are on each program's page). Nothing reads it yet - set it up, or tell them when."
+        ]
+        # It's a request to us, not a switch: approval links them as usual.
+        r = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert r.status_code == 200 and r.json()["service_ids"] == ids

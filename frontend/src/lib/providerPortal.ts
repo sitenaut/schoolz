@@ -68,6 +68,15 @@ export type WhoCanCome = {
 export type CostKind = "free" | "sliding" | "fee";
 export type AddressKind = "public" | "confidential" | "service_area";
 
+/** How they want their listings kept current: by hand here, from their own
+ * web pages, or from a feed or API they publish. */
+export type UpkeepMode = "portal" | "website" | "feed";
+export type Upkeep = { mode: UpkeepMode; urls: string[]; note: string | null };
+export const emptyUpkeep = (): Upkeep => ({ mode: "portal", urls: [], note: null });
+/** Mirrors backend `upkeep_missing`: "read it from our site" needs a page. */
+export const upkeepMissing = (s: Pick<Submission, "upkeep">): boolean =>
+  !!s.upkeep && s.upkeep.mode !== "portal" && s.upkeep.urls.filter((u) => u.trim()).length === 0;
+
 export type Submission = {
   organization_name: string | null;
   services: ServiceEntry[];
@@ -91,6 +100,10 @@ export type Submission = {
   what_you_provide?: string | null;
   ways_to_help?: WaysToHelp | null;
   town?: string | null;
+  /** Ids of listings we already carry that they ticked as theirs. With
+   * these, `services` holds only programs we don't list yet (maybe none). */
+  claims?: string[];
+  upkeep?: Upkeep | null;
 };
 
 export type ListingBrief = {
@@ -118,6 +131,7 @@ export type OnboardingRequest = {
   contact_name: string | null;
   contact_phone: string | null;
   claimed_service: ListingBrief | null;
+  claimed_services: ListingBrief[];
   completeness: Completeness;
   decision_note: string | null;
   reject_reason: string | null;
@@ -222,7 +236,8 @@ export function withDefaults(sub: Partial<Submission> | null | undefined): Submi
   s.hours = { ...base.hours, ...(sub?.hours ?? {}) };
   s.who = { ...base.who, ...(sub?.who ?? {}) };
   s.cost = { ...base.cost, ...(sub?.cost ?? {}) };
-  if (!s.services?.length) s.services = base.services;
+  // "These listings are ours" with nothing to add has no program to fill in.
+  if (!sub?.services?.length) s.services = s.claims?.length ? [] : base.services;
   return s;
 }
 
@@ -262,6 +277,11 @@ export const OPTIONAL_ITEMS = ["documents", "languages", "accessibility", "websi
 /** Mirrors backend resources/portal.py `completeness()` - keep them in step.
  * The server's answer is the one that counts on submit. */
 export function completeness(s: Submission, hasPrivateAddress: boolean): Completeness {
+  if (s.claims?.length && s.services.length === 0) {
+    // Only saying "these listings are ours": the name is all that's asked.
+    const named = filled(s.organization_name);
+    return { missing_core: named ? [] : ["organization_name"], missing_optional: [], percent: named ? 100 : 0 };
+  }
   const addressDone =
     s.address_kind === "public" ? filled(s.address) && filled(s.city) : s.address_kind ? hasPrivateAddress && s.service_area_counties.length > 0 : false;
   const done: Record<string, boolean> = {
@@ -373,5 +393,5 @@ export async function deleteDate(id: string, dateId: string): Promise<void> {
 }
 export const sendVerifyCode = (id: string) => call<{ sent_to: string }>(`/provider-portal/listings/${encodeURIComponent(id)}/verify/send`, { method: "POST" });
 export const checkVerifyCode = (id: string, code: string) =>
-  call<{ verified: boolean }>(`/provider-portal/listings/${encodeURIComponent(id)}/verify`, json("POST", { code }));
+  call<{ verified: boolean; also?: number }>(`/provider-portal/listings/${encodeURIComponent(id)}/verify`, json("POST", { code }));
 export const confirmListing = (id: string) => call<{ last_assured_on: string }>(`/provider-portal/listings/${encodeURIComponent(id)}/confirm`, { method: "POST" });

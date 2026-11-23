@@ -21,6 +21,8 @@ import {
   type Signup,
   type SignupStatus,
   type Submission,
+  type Upkeep,
+  type UpkeepMode,
   type WaysToHelp,
   type WhoCanCome,
   emptyHours,
@@ -427,6 +429,58 @@ export function WaysToHelpEditor({ value, onChange }: { value: WaysToHelp; onCha
   );
 }
 
+const UPKEEP_CHOICES: { key: UpkeepMode; label: string; hint: string }[] = [
+  { key: "portal", label: "We'll update it here", hint: "Change hours, closures and alerts yourself in a minute. They show right away." },
+  { key: "website", label: "Our website is always current - read it from there", hint: "You only update your own site. Tell us which pages and we'll read them." },
+  { key: "feed", label: "We have a data feed or API", hint: "For example a calendar feed or a shared spreadsheet. We'll connect to it." },
+];
+
+/** "How will you keep this up to date?" - so an organization that already
+ * keeps its own website current isn't asked to keep a second place. */
+export function UpkeepEditor({ value, onChange }: { value: Upkeep; onChange: (u: Upkeep) => void }) {
+  const { t } = useTranslation();
+  return (
+    <section className="provider-section">
+      <h3>{t("Keeping it up to date")}</h3>
+      <p className="note">
+        {t("We work hard to keep Localz fresh and useful for families. A listing nobody has confirmed in a long while is marked out of date, and then taken down. Pick whichever way is the least work for you.")}
+      </p>
+      <fieldset className="provider-more provider-upkeep">
+        <legend>{t("How will you keep your listings current?")}</legend>
+        {UPKEEP_CHOICES.map((c) => (
+          <label key={c.key}>
+            <input type="radio" name="provider-upkeep" checked={value.mode === c.key} onChange={() => onChange({ ...value, mode: c.key })} />
+            <span>
+              <strong>{t(c.label)}</strong>
+              <span className="note">{t(c.hint)}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {value.mode !== "portal" && (
+        <>
+          <Field
+            label={value.mode === "website" ? t("Pages we should read") : t("Where is your feed, or its instructions?")}
+            hint={
+              value.mode === "website"
+                ? t("One per line - the pages with your programs, hours and contact details. For example ourpantry.org/programs")
+                : t("One per line - the feed's web address, or a page that explains it.")
+            }
+          >
+            <textarea rows={2} inputMode="url" autoCapitalize="none" spellCheck={false} value={listText(value.urls)} onChange={(e) => onChange({ ...value, urls: lines(e.target.value).slice(0, 5) })} />
+          </Field>
+          <Field label={t("Anything we should know about it?")} hint={t("Optional")}>
+            <input value={value.note ?? ""} maxLength={500} onChange={(e) => onChange({ ...value, note: e.target.value || null })} />
+          </Field>
+          <p className="note">
+            {t("We set this up with you after we approve your listing, so it isn't instant. Until then your listing stays as it is, and you can always update it here too.")}
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
 /** One program's own details: how people join, in person or online, and
  * whatever differs from the organization (times, place, who, cost). */
 function ProgramDetails({
@@ -643,8 +697,12 @@ export function ListingForm({
   hasPrivateAddress,
   fieldsToFix = [],
   organizationExtra,
+  organizationOnly = false,
 }: {
   organizationExtra?: ReactNode;
+  /** Just the name and `organizationExtra`: someone who only ticked the
+   * listings that are theirs has nothing else to fill in. */
+  organizationOnly?: boolean;
   value: Submission;
   onChange: (s: Submission) => void;
   types: ProviderType[];
@@ -672,7 +730,8 @@ export function ListingForm({
         </Field>
         {organizationExtra}
       </section>
-
+      {organizationOnly ? null : (
+      <>
       <section className={`provider-section${fix("services")}`}>
         <h3>{t("What you provide")}</h3>
         {value.services.map((s, i) => (
@@ -790,6 +849,8 @@ export function ListingForm({
           </Field>
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }
@@ -830,5 +891,6 @@ export function cleanSubmission(s: Submission): Submission {
         }
       : null,
     cost: { ...s.cost, amount: blank(s.cost.amount) },
+    upkeep: s.upkeep ? { mode: s.upkeep.mode, urls: s.upkeep.mode === "portal" ? [] : s.upkeep.urls.map((u) => u.trim()).filter(Boolean), note: s.upkeep.mode === "portal" ? null : blank(s.upkeep.note) } : null,
   };
 }

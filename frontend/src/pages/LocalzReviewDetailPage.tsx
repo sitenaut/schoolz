@@ -91,6 +91,12 @@ function Summary({ s, types }: { s: Submission; types: ProviderType[] }) {
     ["Website", s.website || "-"],
     ["Email", s.email || "-"],
     [
+      "Keeping it current",
+      !s.upkeep || s.upkeep.mode === "portal"
+        ? "Updates it here"
+        : `${s.upkeep.mode === "website" ? "Read their website" : "Their feed or API"} (not set up by approving):\n${s.upkeep.urls.join("\n")}${s.upkeep.note ? `\n${s.upkeep.note}` : ""}`,
+    ],
+    [
       "Ways to help",
       s.ways_to_help
         ? [
@@ -254,6 +260,24 @@ export function LocalzReviewDetailPage() {
               <dt>Claiming</dt>
               <dd>
                 <Link to={`/localz/r/${review.claimed_service.id}`}>{review.claimed_service.name}</Link> ({review.claimed_service.source})
+              </dd>
+            </>
+          )}
+          {(review.claimed_services ?? []).length > 0 && (
+            <>
+              <dt>Says these are theirs ({review.claimed_services.length})</dt>
+              <dd>
+                {review.claimed_services.map((c) => (
+                  <div key={c.id}>
+                    <Link to={`/localz/r/${c.id}`}>{c.name}</Link> · {c.organization_name || "no organization"}
+                    {c.city ? ` · ${c.city}` : ""} ({c.source}
+                    {c.status !== "active" ? `, ${c.status}` : ""})
+                  </div>
+                ))}
+                <span className="note">
+                  Approving links each one as it stands - nothing they typed replaces it. They correct each afterwards.
+                  {sub.services.length === 0 ? " No new program in this request." : ""}
+                </span>
               </dd>
             </>
           )}

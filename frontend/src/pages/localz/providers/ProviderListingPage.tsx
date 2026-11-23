@@ -236,10 +236,25 @@ function VerifyByEmail({ listing, onVerified }: { listing: MyListing; onVerified
           <button
             className="btn btn-primary"
             disabled={busy || code.length !== 6}
-            onClick={() => act(() => checkVerifyCode(listing.id, code), () => {
-              toast({ title: t("Confirmed - your changes now go live at once."), tone: "ok" });
-              onVerified();
-            })}
+            onClick={() => {
+              // One code confirms every listing ticked together that
+              // published this address.
+              let also = 0;
+              void act(
+                async () => {
+                  also = (await checkVerifyCode(listing.id, code)).also ?? 0;
+                },
+                () => {
+                  toast({
+                    title: also
+                      ? t("Confirmed for {{count}} of your listings - your changes now go live at once.", { count: also + 1 })
+                      : t("Confirmed - your changes now go live at once."),
+                    tone: "ok",
+                  });
+                  onVerified();
+                },
+              );
+            }}
           >
             {t("Confirm")}
           </button>

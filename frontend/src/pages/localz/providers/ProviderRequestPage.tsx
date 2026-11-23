@@ -17,16 +17,18 @@ import {
   type Submission,
   completeness,
   emptySubmission,
+  emptyUpkeep,
   fetchMyRequest,
   fetchProviderTypes,
   matchListings,
   saveRequest,
   startRequest,
   submitRequest,
+  upkeepMissing,
   withDefaults,
 } from "../../../lib/providerPortal";
 import { SignInPrompt, StatusMessage } from "./ProviderPortalPage";
-import { CompletenessMeter, ListingForm, cleanSubmission } from "./ProviderFields";
+import { CompletenessMeter, ListingForm, UpkeepEditor, cleanSubmission } from "./ProviderFields";
 
 /** /localz/providers/requests/:id ("new" starts one) - the listing form with
  * its completeness meter. Editable as a draft or when a reviewer asked for
@@ -52,7 +54,12 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [claim, setClaim] = useState<ListingBrief | null>(null);
+  // Listings we already carry that they ticked as theirs, and whether they
+  // also have a program to add that we don't list.
+  const [claims, setClaims] = useState<ListingBrief[]>([]);
+  const [addMore, setAddMore] = useState(false);
   const [matches, setMatches] = useState<ListingBrief[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const [botToken, setBotToken] = useState<string | null>(null);
   const [botRound, setBotRound] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -71,20 +78,38 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
         setContactName(r.contact_name ?? "");
         setContactPhone(r.contact_phone ?? "");
         setClaim(r.claimed_service);
+        setClaims(r.claimed_services ?? []);
+        setAddMore((r.submission.services ?? []).length > 0);
       })
       .catch(() => setLoadFailed(true));
   }, [requestId]);
 
   const hasPrivate = !!privateAddress.trim() || !!req?.has_private_address;
-  const meter = useMemo(() => completeness(sub, hasPrivate), [sub, hasPrivate]);
+  // Ticked their listings and has nothing to add: no form to fill in.
+  const claimOnly = claims.length > 0 && !addMore;
+  // A new request opens on one question - "what are you called?" - and the
+  // long form waits until we've looked: most agencies are listed already.
+  const [skipped, setSkipped] = useState(false);
+  const looked = !!req || !!claim || matches !== null || claims.length > 0 || skipped;
+  // The long form: for a program to add beside ticked listings, or for an
+  // organization we don't list (nothing found, or none of it theirs).
+  const found = (matches ?? []).length > 0;
+  const showForm = claims.length > 0 ? addMore : !!req || !!claim || skipped || (matches !== null && !found);
+  const canSend = claims.length > 0 || showForm;
+  const sending = useMemo<Submission>(
+    () => ({ ...sub, claims: claims.map((c) => c.id), services: claimOnly ? [] : sub.services }),
+    [sub, claims, claimOnly],
+  );
+  const meter = useMemo(() => completeness(sending, hasPrivate), [sending, hasPrivate]);
   const editable = !req || req.status === "draft" || req.status === "changes_requested";
+  const needsSource = upkeepMissing(sub);
   const needsBot = !req && BOT_CHECK_ENABLED;
 
   if (loadFailed) return <p className="note">{t("Couldn't load this just now. Try again in a moment.")}</p>;
   if (requestId && !req) return <p className="note">{t("Loading…")}</p>;
 
   const body = () => ({
-    submission: cleanSubmission(sub),
+    submission: cleanSubmission(sending),
     // Sent only when typed: a saved one is never sent back to the browser.
     private_address: privateAddress.trim() ? privateAddress.trim() : undefined,
     contact_name: contactName.trim() || null,
@@ -135,51 +160,107 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
   const findMatches = async () => {
     const name = (sub.organization_name ?? "").trim();
     if (name.length < 2) return;
+    setSearching(true);
     try {
       setMatches(await matchListings(name));
     } catch {
       setMatches([]);
+    } finally {
+      setSearching(false);
     }
   };
 
-  const organizationExtra =
+  const ticked = (id: string) => claims.some((c) => c.id === id);
+  const tick = (m: ListingBrief, on: boolean) => setClaims((all) => (on ? [...all.filter((c) => c.id !== m.id), m] : all.filter((c) => c.id !== m.id)));
+  const wantMore = (yes: boolean) => {
+    setAddMore(yes);
+    // The form needs one blank program to fill in.
+    if (yes && sub.services.length === 0) setSub({ ...sub, services: emptySubmission().services });
+  };
+  // Ticked ones stay on screen when a new search no longer finds them.
+  const choices = [...claims.filter((c) => !(matches ?? []).some((m) => m.id === c.id)), ...(matches ?? [])];
+  const unticked = choices.filter((m) => !ticked(m.id));
+
+  const organizationExtra = claim ? (
+    // A request from before listings could be ticked several at a time.
     !req || req.status === "draft" ? (
-      claim ? (
+      <div className="provider-claim">
+        <p>
+          {t("You're claiming this listing:")} <strong>{claim.name}</strong>
+          {claim.organization_name ? ` · ${claim.organization_name}` : ""}
+        </p>
+        <button type="button" className="btn ghost" onClick={() => setClaim(null)}>
+          {t("This isn't us")}
+        </button>
+      </div>
+    ) : null
+  ) : (
+    <div className="provider-find">
+      <button
+        type="button"
+        className={`btn${choices.length === 0 ? " btn-primary" : ""}`}
+        onClick={findMatches}
+        disabled={searching || (sub.organization_name ?? "").trim().length < 2}
+      >
+        {searching ? t("Looking…") : choices.length > 0 ? t("Search again") : t("Find our listings")}
+      </button>
+      {!looked && (
+        <>
+          <p className="note">{t("We may list you already. Type your organization's name and we'll look - you won't have to retype what we have.")}</p>
+          <button type="button" className="btn ghost" onClick={() => setSkipped(true)}>
+            {t("We're new here - skip this")}
+          </button>
+        </>
+      )}
+      {matches && choices.length === 0 && <p className="note">{t("No listing with that name yet. Fill in the form below and we'll make one.")}</p>}
+      {choices.length > 0 && (
+        <fieldset className="provider-matches">
+          <legend>{t("We already list these. Tick every one that's yours.")}</legend>
+          {choices.map((m) => (
+            <label key={m.id} className={`provider-match${ticked(m.id) ? " is-ticked" : ""}`}>
+              <input type="checkbox" checked={ticked(m.id)} onChange={(e) => tick(m, e.target.checked)} />
+              <span className="provider-match-text">
+                <strong>{m.name}</strong>
+                <span className="note">{[m.organization_name, [m.address, m.city].filter(Boolean).join(", "), m.phone].filter(Boolean).join(" · ")}</span>
+              </span>
+              <a className="provider-match-view" href={`/localz/r/${m.id}`} target="_blank" rel="noreferrer">
+                {t("See it")}
+              </a>
+            </label>
+          ))}
+          {unticked.length > 1 && (
+            <button type="button" className="btn ghost" onClick={() => setClaims(choices)}>
+              {t("They're all ours - tick all {{count}}", { count: choices.length })}
+            </button>
+          )}
+          <p className="note">{t("Not seeing one of yours? Search again with a shorter name, or add it below.")}</p>
+          {claims.length === 0 && !showForm && (
+            <button type="button" className="btn ghost" onClick={() => setSkipped(true)}>
+              {t("None of these are ours")}
+            </button>
+          )}
+        </fieldset>
+      )}
+      {claims.length > 0 && (
         <div className="provider-claim">
           <p>
-            {t("You're claiming this listing:")} <strong>{claim.name}</strong>
-            {claim.organization_name ? ` · ${claim.organization_name}` : ""}
+            <strong>{t("{{count}} ticked.", { count: claims.length })}</strong>{" "}
+            {t("Nothing to retype: once we confirm it's you, you can correct each one - hours, phone, anything that's out of date.")}
           </p>
-          <button type="button" className="btn ghost" onClick={() => setClaim(null)}>
-            {t("This isn't us")}
-          </button>
+          <fieldset className="provider-more">
+            <legend>{t("Do you run a program that isn't on this list?")}</legend>
+            <label>
+              <input type="radio" name="provider-more" checked={!addMore} onChange={() => wantMore(false)} /> {t("No, that's all of them")}
+            </label>
+            <label>
+              <input type="radio" name="provider-more" checked={addMore} onChange={() => wantMore(true)} /> {t("Yes, I'll add it now")}
+            </label>
+            <p className="note">{t("You can add more any time.")}</p>
+          </fieldset>
         </div>
-      ) : (
-        <div>
-          <button type="button" className="btn" onClick={findMatches} disabled={(sub.organization_name ?? "").trim().length < 2}>
-            {t("Check if we already list you")}
-          </button>
-          {matches && matches.length === 0 && <p className="note">{t("No listing with that name yet - we'll make a new one.")}</p>}
-          {matches && matches.length > 0 && (
-            <div className="provider-matches">
-              <p className="note">{t("Is this you? Claim it so there's one listing, kept up to date by you.")}</p>
-              {matches.map((m) => (
-                <div key={m.id} className="provider-match">
-                  <span>
-                    <strong>{m.name}</strong>
-                    {m.organization_name ? ` · ${m.organization_name}` : ""}
-                    {m.city ? ` · ${m.city}` : ""}
-                  </span>
-                  <button type="button" className="btn" onClick={() => setClaim(m)}>
-                    {t("Yes, this is us")}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )
-    ) : null;
+      )}
+    </div>
+  );
 
   return (
     <div className="provider-page">
@@ -197,9 +278,11 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
 
       {editable ? (
         <>
-          <div className="provider-meter-sticky">
-            <CompletenessMeter c={meter} />
-          </div>
+          {showForm && (
+            <div className="provider-meter-sticky">
+              <CompletenessMeter c={meter} />
+            </div>
+          )}
           {error && <div className="form-error">{error}</div>}
           <ListingForm
             value={sub}
@@ -210,7 +293,11 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
             hasPrivateAddress={!!req?.has_private_address}
             fieldsToFix={req?.fields_to_fix ?? []}
             organizationExtra={organizationExtra}
+            organizationOnly={!showForm}
           />
+          {canSend && (
+          <>
+          <UpkeepEditor value={sub.upkeep ?? emptyUpkeep()} onChange={(upkeep) => setSub({ ...sub, upkeep })} />
           <section className="provider-section">
             <h3>{t("Who we should call")}</h3>
             <p className="note">
@@ -230,16 +317,20 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
             <button className="btn" onClick={() => void save()} disabled={busy || (needsBot && !botToken)}>
               {t("Save draft")}
             </button>
-            <button className="btn btn-primary" onClick={send} disabled={busy || meter.missing_core.length > 0 || (needsBot && !botToken)}>
+            <button className="btn btn-primary" onClick={send} disabled={busy || meter.missing_core.length > 0 || needsSource || (needsBot && !botToken)}>
               {req?.status === "changes_requested" ? t("Send again for review") : t("Send for review")}
             </button>
           </div>
           {meter.missing_core.length > 0 ? (
             <p className="note">{t("Still needed: {{items}}", { items: meter.missing_core.map((k) => t(ITEM_LABELS[k] ?? k)).join(", ") })}</p>
+          ) : needsSource ? (
+            <p className="note">{t("Still needed: {{items}}", { items: sub.upkeep?.mode === "website" ? t("Pages we should read") : t("Where is your feed, or its instructions?") })}</p>
           ) : needsBot && !botToken ? (
             <p className="note">{t("Last step: tick the box above to show you're a person.")}</p>
           ) : null}
           <p className="note">{t("Nothing is public until we approve it.")}</p>
+          </>
+          )}
         </>
       ) : (
         <p>
