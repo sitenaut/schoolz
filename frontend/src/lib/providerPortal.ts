@@ -68,6 +68,15 @@ export type WhoCanCome = {
 export type CostKind = "free" | "sliding" | "fee";
 export type AddressKind = "public" | "confidential" | "service_area";
 
+/** How they want their listings kept current: by hand here, from their own
+ * web pages, or from a feed or API they publish. */
+export type UpkeepMode = "portal" | "website" | "feed";
+export type Upkeep = { mode: UpkeepMode; urls: string[]; note: string | null };
+export const emptyUpkeep = (): Upkeep => ({ mode: "portal", urls: [], note: null });
+/** Mirrors backend `upkeep_missing`: "read it from our site" needs a page. */
+export const upkeepMissing = (s: Pick<Submission, "upkeep">): boolean =>
+  !!s.upkeep && s.upkeep.mode !== "portal" && s.upkeep.urls.filter((u) => u.trim()).length === 0;
+
 export type Submission = {
   organization_name: string | null;
   services: ServiceEntry[];
@@ -94,6 +103,7 @@ export type Submission = {
   /** Ids of listings we already carry that they ticked as theirs. With
    * these, `services` holds only programs we don't list yet (maybe none). */
   claims?: string[];
+  upkeep?: Upkeep | null;
 };
 
 export type ListingBrief = {

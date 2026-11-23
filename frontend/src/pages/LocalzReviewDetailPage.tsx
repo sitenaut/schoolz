@@ -91,6 +91,12 @@ function Summary({ s, types }: { s: Submission; types: ProviderType[] }) {
     ["Website", s.website || "-"],
     ["Email", s.email || "-"],
     [
+      "Keeping it current",
+      !s.upkeep || s.upkeep.mode === "portal"
+        ? "Updates it here"
+        : `${s.upkeep.mode === "website" ? "Read their website" : "Their feed or API"} (not set up by approving):\n${s.upkeep.urls.join("\n")}${s.upkeep.note ? `\n${s.upkeep.note}` : ""}`,
+    ],
+    [
       "Ways to help",
       s.ways_to_help
         ? [

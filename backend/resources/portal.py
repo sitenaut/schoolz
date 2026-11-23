@@ -94,6 +94,7 @@ REQUESTS_PER_DAY = 5
 OPEN_REQUESTS_MAX = 10
 # Listings one request may say are theirs, and how many "Is this you?" shows.
 CLAIMS_MAX = 40
+UPKEEP_URLS_MAX = 5
 
 
 def now() -> datetime:
@@ -262,6 +263,32 @@ def clean_ways_to_help(ways: WaysToHelp | None) -> dict | None:
     }
 
 
+class Upkeep(BaseModel):
+    """How the organization wants its listings kept current, so it doesn't
+    have to keep two places up to date: by hand here (`portal`), from its
+    own web pages (`website`), or from a feed or API it publishes (`feed`).
+    The last two are a request to us, not a switch: a reviewer sets up the
+    reading and the listings stay as approved until then."""
+
+    mode: Literal["portal", "website", "feed"] = "portal"
+    # The pages that list their programs, or the feed's address or its docs.
+    urls: list[str] = Field(default_factory=list, max_length=UPKEEP_URLS_MAX)
+    # "It's an iCal feed", "hours are on each program's page".
+    note: str | None = Field(default=None, max_length=500)
+
+    @field_validator("urls")
+    @classmethod
+    def _addresses(cls, values: list[str]) -> list[str]:
+        # People type "ourpantry.org/programs": the https:// is ours to add.
+        out = list(dict.fromkeys(
+            v if v.lower().startswith(("http://", "https://")) else "https://" + v for v in (x.strip() for x in values) if v
+        ))
+        for url in out:
+            if len(url) > 300 or not re.match(r"^https?://[^\s/.]+(\.[^\s/.]+)+(/\S*)?$", url, re.I):
+                raise ValueError("That doesn't look like a web address - for example ourpantry.org/programs")
+        return out
+
+
 class ServiceEntry(BaseModel):
     """One program. Hours, who can come, cost and place left out (null)
     mean "same as the organization's", so a one-program pantry fills them
@@ -322,6 +349,8 @@ class Submission(BaseModel):
     # them and corrects each afterwards. `services` are then only programs we
     # don't list yet, and may be empty.
     claims: list[str] = Field(default_factory=list, max_length=CLAIMS_MAX)
+    # Missing on requests from before the question was asked: by hand here.
+    upkeep: Upkeep | None = None
 
     @field_validator("claims")
     @classmethod
@@ -385,9 +414,18 @@ def bad_link_reason(url: str | None) -> str | None:
     return None
 
 
+def upkeep_missing(sub: Submission) -> str | None:
+    """What "read it from our website / our feed" still needs, in the
+    form's words. Mirrored by `upkeepMissing` in the frontend."""
+    if sub.upkeep and sub.upkeep.mode != "portal" and not sub.upkeep.urls:
+        return "the web page we should read" if sub.upkeep.mode == "website" else "the address of your feed or API"
+    return None
+
+
 def check_links(sub: Submission) -> None:
     links = [getattr(sub.ways_to_help, f) for f in HELP_LINKS] if sub.ways_to_help else []
-    reason = next((r for r in map(bad_link_reason, [sub.website, *links]) if r), None)
+    read_from = sub.upkeep.urls if sub.upkeep else []
+    reason = next((r for r in map(bad_link_reason, [sub.website, *links, *read_from]) if r), None)
     if reason:
         raise ValueError(reason)
     if sub.website and not sub.website.lower().startswith(("http://", "https://")):
@@ -874,6 +912,11 @@ async def flags(db: AsyncSession, req: ResourceOnboardingRequest, sub: Submissio
             out.append({"code": "program_place", "level": "info", "message": f"{entry.name or 'A program'} meets somewhere else: {where}."})
     if sub.address_kind == "confidential":
         out.append({"code": "confidential", "level": "info", "message": "Confidential address: check the public listing will show no location."})
+    if sub.upkeep and sub.upkeep.mode != "portal":
+        what = "read their own website" if sub.upkeep.mode == "website" else "use their feed or API"
+        detail = " ".join(x for x in [", ".join(sub.upkeep.urls), f"({sub.upkeep.note.strip()})" if (sub.upkeep.note or "").strip() else ""] if x)
+        out.append({"code": f"upkeep_{sub.upkeep.mode}", "level": "info",
+                    "message": f"Wants us to {what} instead of updating here: {detail}. Nothing reads it yet - set it up, or tell them when."})
     claimed_ids = list(dict.fromkeys(x for x in [req.claimed_service_id, *sub.claims] if x))
     if claimed_ids:
         claimed = (await db.execute(select(ResourceService).where(ResourceService.id.in_(claimed_ids)))).scalars().all()

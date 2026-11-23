@@ -496,6 +496,8 @@ async def submit_request(request_id: str, background: BackgroundTasks, user: Use
     missing = portal.completeness(sub, bool(req.private_address))["missing_core"]
     if missing:
         raise HTTPException(422, f"Still needed: {', '.join(missing)}")
+    if portal.upkeep_missing(sub):
+        raise HTTPException(422, f"Still needed: {portal.upkeep_missing(sub)}")
     req.status = "submitted"
     req.submitted_at = portal.now()
     req.fields_to_fix = []

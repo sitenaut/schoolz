@@ -4045,6 +4045,16 @@ select {
   padding: 8px 0;
   cursor: pointer;
 }
+.provider-upkeep > label {
+  align-items: flex-start;
+}
+.provider-upkeep > label > span {
+  display: flex;
+  flex-direction: column;
+}
+.provider-upkeep .note {
+  margin: 0;
+}
 .provider-more > label > input {
   width: 20px;
   height: 20px;

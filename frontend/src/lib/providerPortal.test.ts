@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completeness, emptyHours, emptyPlace, emptySubmission, withDefaults } from "./providerPortal";
+import { completeness, emptyHours, emptyPlace, emptySubmission, upkeepMissing, withDefaults } from "./providerPortal";
 
 // Mirrors backend resources/portal.py completeness(); the same form scores
 // the same on both sides (tests/test_provider_portal.py uses this one).
@@ -49,6 +49,14 @@ describe("provider form completeness", () => {
     expect(completeness(withDefaults({ claims: ["a"] }), false).missing_core).toEqual(["organization_name"]);
     const more = { ...withDefaults({ organization_name: "Riverbend", claims: ["a"] }), services: [{ type: "food_pantry", name: "", description: "" }] };
     expect(completeness(more, false).missing_core).toEqual(["services", "address", "hours", "phone", "who", "cost"]);
+  });
+
+  // Same cases as test_read_it_from_our_website_takes_the_address_as_people_type_it.
+  it("wants a page from someone who asks us to read their website or feed", () => {
+    expect(upkeepMissing({})).toBe(false);
+    expect(upkeepMissing({ upkeep: { mode: "portal", urls: [], note: null } })).toBe(false);
+    expect(upkeepMissing({ upkeep: { mode: "website", urls: [" "], note: null } })).toBe(true);
+    expect(upkeepMissing({ upkeep: { mode: "feed", urls: ["ourpantry.org/feed.ics"], note: null } })).toBe(false);
   });
 
   // Same cases as test_a_program_can_carry_the_hours_who_and_cost_the_organization_left_out.

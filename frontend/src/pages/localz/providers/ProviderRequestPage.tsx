@@ -17,16 +17,18 @@ import {
   type Submission,
   completeness,
   emptySubmission,
+  emptyUpkeep,
   fetchMyRequest,
   fetchProviderTypes,
   matchListings,
   saveRequest,
   startRequest,
   submitRequest,
+  upkeepMissing,
   withDefaults,
 } from "../../../lib/providerPortal";
 import { SignInPrompt, StatusMessage } from "./ProviderPortalPage";
-import { CompletenessMeter, ListingForm, cleanSubmission } from "./ProviderFields";
+import { CompletenessMeter, ListingForm, UpkeepEditor, cleanSubmission } from "./ProviderFields";
 
 /** /localz/providers/requests/:id ("new" starts one) - the listing form with
  * its completeness meter. Editable as a draft or when a reviewer asked for
@@ -100,6 +102,7 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
   );
   const meter = useMemo(() => completeness(sending, hasPrivate), [sending, hasPrivate]);
   const editable = !req || req.status === "draft" || req.status === "changes_requested";
+  const needsSource = upkeepMissing(sub);
   const needsBot = !req && BOT_CHECK_ENABLED;
 
   if (loadFailed) return <p className="note">{t("Couldn't load this just now. Try again in a moment.")}</p>;
@@ -294,6 +297,7 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
           />
           {canSend && (
           <>
+          <UpkeepEditor value={sub.upkeep ?? emptyUpkeep()} onChange={(upkeep) => setSub({ ...sub, upkeep })} />
           <section className="provider-section">
             <h3>{t("Who we should call")}</h3>
             <p className="note">
@@ -313,12 +317,14 @@ function RequestEditor({ requestId }: { requestId: string | null }) {
             <button className="btn" onClick={() => void save()} disabled={busy || (needsBot && !botToken)}>
               {t("Save draft")}
             </button>
-            <button className="btn btn-primary" onClick={send} disabled={busy || meter.missing_core.length > 0 || (needsBot && !botToken)}>
+            <button className="btn btn-primary" onClick={send} disabled={busy || meter.missing_core.length > 0 || needsSource || (needsBot && !botToken)}>
               {req?.status === "changes_requested" ? t("Send again for review") : t("Send for review")}
             </button>
           </div>
           {meter.missing_core.length > 0 ? (
             <p className="note">{t("Still needed: {{items}}", { items: meter.missing_core.map((k) => t(ITEM_LABELS[k] ?? k)).join(", ") })}</p>
+          ) : needsSource ? (
+            <p className="note">{t("Still needed: {{items}}", { items: sub.upkeep?.mode === "website" ? t("Pages we should read") : t("Where is your feed, or its instructions?") })}</p>
           ) : needsBot && !botToken ? (
             <p className="note">{t("Last step: tick the box above to show you're a person.")}</p>
           ) : null}

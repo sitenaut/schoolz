@@ -405,6 +405,19 @@ Migration 0107; rules in `backend/resources/portal.py` and
   confirms every membership of that request sharing the address. The older
   single `claimed_service_id` (the form's values take the listing over)
   still works for requests made that way and for a reviewer's merge.
+- **"How will you keep your listings current?"** (`Submission.upkeep`): an
+  organization that already keeps its own website right shouldn't have to
+  keep a second place. Three answers: update it here (the default), read
+  our website (the pages to read), or our feed or API (its address or
+  docs). The last two are **a request to us, not a switch**: the reviewer
+  gets an `upkeep_website` / `upkeep_feed` flag with the addresses, the
+  listings are approved as usual, and nothing reads the site until someone
+  sets a source up for it. Not built: storing the answer on the listing
+  after approval, and any per-organization reader. The form and
+  `/localz/providers` also say that a listing nobody has confirmed in a
+  long while is marked out of date and then taken down - **policy stated,
+  not yet enforced**: today a listing only shows when it was last
+  confirmed (see "Freshness and trust" for the planned thresholds).
 - **Review queue** `/admin/resources/onboarding` (tab "Localz" with a badge
   counting new requests plus held edits): duplicates (name, phone, street,
   every source), flags (email vs website domain, free email, a phone listed

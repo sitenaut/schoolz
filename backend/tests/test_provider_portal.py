@@ -1163,3 +1163,45 @@ async def test_is_this_you_shows_all_of_an_agencys_programs_before_lookalikes():
         found = (await client.post("/provider-portal/match", json={"name": org.upper()}, headers=provider)).json()
         assert len(found) == 13
         assert [m["organization_name"] for m in found[:12]] == [org] * 12 and found[12]["organization_name"] == "Another Group"
+
+
+# ---- "How will you keep your listings current?" ---------------------------------------
+
+
+def test_read_it_from_our_website_takes_the_address_as_people_type_it():
+    up = portal.Upkeep(mode="website", urls=[" ourpantry.org/programs ", "https://ourpantry.org/hours", "ourpantry.org/programs", ""])
+    assert up.urls == ["https://ourpantry.org/programs", "https://ourpantry.org/hours"]
+    for bad in ("our pantry page", "https://", "ourpantry"):
+        with pytest.raises(ValueError):
+            portal.Upkeep(mode="website", urls=[bad])
+    # A request from before the question was asked updates by hand.
+    assert portal.upkeep_missing(portal.Submission()) is None
+    assert portal.upkeep_missing(portal.Submission(upkeep={"mode": "portal"})) is None
+    assert portal.upkeep_missing(portal.Submission(upkeep={"mode": "website"})) == "the web page we should read"
+    assert portal.upkeep_missing(portal.Submission(upkeep={"mode": "feed"})) == "the address of your feed or API"
+
+
+async def test_an_organization_can_ask_us_to_read_its_own_website_instead():
+    async with _client() as client:
+        provider, reviewer = await _people(client)
+        ids = await _agency(["Senior Housing", "Rent Help"])
+        body = {"submission": {"organization_name": "Riverbend Community Action", "claims": ids, "upkeep": {"mode": "website"}}}
+        rid = (await client.post("/provider-portal/requests", json=body, headers=provider)).json()["id"]
+        # Asking us to read their site means telling us which pages.
+        r = await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)
+        assert r.status_code == 422 and r.json()["detail"] == "Still needed: the web page we should read"
+        short = {"mode": "website", "urls": ["bit.ly/riverbend"]}
+        r = await client.put(f"/provider-portal/requests/{rid}", json={"submission": body["submission"] | {"upkeep": short}}, headers=provider)
+        assert r.status_code == 422
+        body["submission"]["upkeep"] = {"mode": "website", "urls": ["riverbend.example/programs"], "note": "Hours are on each program's page"}
+        r = await client.put(f"/provider-portal/requests/{rid}", json=body, headers=provider)
+        assert r.status_code == 200 and r.json()["submission"]["upkeep"]["urls"] == ["https://riverbend.example/programs"]
+        assert (await client.post(f"/provider-portal/requests/{rid}/submit", headers=provider)).status_code == 200
+        review = (await client.get(f"/admin/resources/onboarding/{rid}", headers=reviewer)).json()
+        assert [f["message"] for f in review["flags"] if f["code"] == "upkeep_website"] == [
+            "Wants us to read their own website instead of updating here: https://riverbend.example/programs "
+            "(Hours are on each program's page). Nothing reads it yet - set it up, or tell them when."
+        ]
+        # It's a request to us, not a switch: approval links them as usual.
+        r = await client.post(f"/admin/resources/onboarding/{rid}/approve", json={"checklist": ALL_TICKED}, headers=reviewer)
+        assert r.status_code == 200 and r.json()["service_ids"] == ids
