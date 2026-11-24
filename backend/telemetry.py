@@ -141,9 +141,12 @@ def setup_telemetry(service_name: str) -> None:
         _tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
         trace.set_tracer_provider(_tracer_provider)
 
+    # Once a minute: Grafana Cloud bills a series by its datapoints per minute
+    # beyond one, so a 30 s export counted every schoolz series twice. Every
+    # rate window in the alerts and dashboards is 5m or longer.
     _meter_provider = MeterProvider(
         resource=_metric_resource(service_name),
-        metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(), export_interval_millis=30000)],
+        metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(), export_interval_millis=60000)],
         views=_metric_views,
     )
     set_meter_provider(_meter_provider)
