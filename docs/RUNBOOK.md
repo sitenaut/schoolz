@@ -126,8 +126,10 @@ database (or `grafana_ro` lost its grant on `scheduler_heartbeats`).
 ### schoolz-slo-api-availability-fast
 Visitors are getting server errors at a rate that empties the budget in days.
 The `schoolz-route-5xx` email names the route. API dashboard → errors by route,
-then the trace for one failing request. If it started with a deploy, roll back
-first and diagnose second.
+then the trace for one failing request. Only about 1 in 5 requests that start
+their own trace (crawlers, API keys) keeps it; a visitor's request and every job
+run always do, and the `unhandled_error` log line has the traceback either way.
+If it started with a deploy, roll back first and diagnose second.
 
 ### schoolz-slo-api-availability-slow
 A steady trickle of 5xx. Same path as the fast alert without the urgency: find
