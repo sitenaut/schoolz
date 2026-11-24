@@ -29,6 +29,7 @@ from opentelemetry.sdk.metrics.view import (
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import ALWAYS_ON, ParentBased, Sampler, SamplingResult, TraceIdRatioBased
 
 _tracer_provider: TracerProvider | None = None
 _meter_provider: MeterProvider | None = None
@@ -96,6 +97,37 @@ _metric_views = [
 ]
 
 
+# Share of traces kept when a span starts a trace of its own: crawlers and
+# prerender, API-key calls, the scheduler's ticks and health checks. A browser
+# request carries Faro's traceparent and follows its decision (Faro keeps every
+# session), and a job run is always kept: job_runs.trace_id is the pointer
+# someone follows into Tempo. Metrics don't depend on it - the HTTP duration
+# histogram gets its route and status whether or not the span is sampled - and
+# log lines keep their trace_id either way.
+TRACE_RATIO = 0.2
+
+
+class _KeepJobRuns(Sampler):
+    """Parent-based ratio sampling, except that a job.run span is always kept."""
+
+    def __init__(self, ratio: float) -> None:
+        self._ratio = ParentBased(TraceIdRatioBased(ratio))
+
+    def should_sample(self, parent_context, trace_id, name, kind=None, attributes=None, links=None,
+                      trace_state=None) -> SamplingResult:
+        sampler = ALWAYS_ON if name == "job.run" else self._ratio
+        return sampler.should_sample(parent_context, trace_id, name, kind, attributes, links, trace_state)
+
+    def get_description(self) -> str:
+        return f"KeepJobRuns{{{self._ratio.get_description()}}}"
+
+
+def _sampler() -> Sampler | None:
+    # An OTEL_TRACES_SAMPLER secret on the Fly app wins (None lets the SDK read
+    # it): parentbased_always_on keeps every trace again while chasing something.
+    return None if os.getenv("OTEL_TRACES_SAMPLER") else _KeepJobRuns(TRACE_RATIO)
+
+
 def setup_telemetry(service_name: str) -> None:
     global _tracer_provider, _meter_provider, _logger_provider
 
@@ -105,7 +137,7 @@ def setup_telemetry(service_name: str) -> None:
     resource = _resource(service_name)
 
     if os.getenv("OTEL_TRACES_EXPORTER") != "none":
-        _tracer_provider = TracerProvider(resource=resource)
+        _tracer_provider = TracerProvider(resource=resource, sampler=_sampler())
         _tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
         trace.set_tracer_provider(_tracer_provider)
 
