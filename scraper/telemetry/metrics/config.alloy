@@ -45,8 +45,10 @@ discovery.relabel "scraper" {
   }
 }
 
+// Once a minute: Grafana Cloud bills a series by its datapoints per minute
+// beyond one, and the scraper repo's alert windows are all 5m or longer.
 prometheus.scrape "app" {
   targets         = discovery.relabel.scraper.output
-  scrape_interval = "15s"
+  scrape_interval = "60s"
   forward_to      = [prometheus.remote_write.cloud.receiver]
 }
