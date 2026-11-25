@@ -43,7 +43,7 @@ from services import haiku
 from services.class_years import grad_years_in_title, grades_to_grad_years
 from services.links import unwrap_redirect
 from services.public_url import PUBLIC_ONLY
-from services.school_status import is_status_title, same_status_fact
+from services.school_status import break_name, day_kind, is_break_only, is_status_title, same_status_fact
 from services.tool_output import object_list, recover_spilled_input
 
 logger = logging.getLogger(__name__)
@@ -554,6 +554,65 @@ def _title_dedup_key(title: str) -> str:
     return " ".join(_fold_ordinal_word(w) for w in normalize_name(title).split(" "))
 
 
+# How far from a newsletter's "Winter Break" the calendar's own may sit and
+# still be the break it means.
+_SAME_BREAK_DAYS = 120
+
+
+async def _calendar_says(db: AsyncSession, district_id: str, title: str, start_date: datetime | None, school_type: str | None) -> str | None:
+    """What the district's own calendar already holds about a day a school's
+    newsletter reports as closed, early or delayed. The calendar is the
+    authority on the school day; the newsletter retells it, timed and worded
+    its own way, so the exact-start match below never saw the two as one.
+
+    "duplicate": a calendar row of the same kind covers that day for this
+    school (an elementary's "Parent-Teacher Conferences (Early Dismissal
+    1:00 PM)" at 1 PM against the calendar's all-day, four-day "STUDENT EARLY
+    DISMISSAL (PRESCHOOL-8)"). Stored anyway it became a second row with no
+    school types, and gave both high schools an early dismissal they don't have.
+    "other_schools": the calendar's row is for other school types, so this
+    stays the reporting school's own item.
+    "contradicted": a break named only by its name ("Winter Break", read off
+    a calendar image as Dec 1-8) that the calendar puts on other dates. It
+    closed every school's card for days that are school days.
+    """
+    kind = day_kind(title)
+    if not kind or start_date is None:
+        return None
+    day = start_date.astimezone(_DEFAULT_TZ).date()
+    span = timedelta(days=_SAME_BREAK_DAYS)
+    rows = (
+        await db.execute(
+            select(SchoolContentItem).where(
+                SchoolContentItem.scope == "district",
+                SchoolContentItem.district_id == district_id,
+                SchoolContentItem.source != "newsletter",
+                SchoolContentItem.is_current.is_(True),
+                SchoolContentItem.start_date >= start_date - span,
+                SchoolContentItem.start_date <= start_date + span,
+            )
+        )
+    ).scalars().all()
+    verdict = None
+    for row in rows:
+        if day_kind(row.title) != kind:
+            continue
+        first = row.start_date.astimezone(_DEFAULT_TZ).date()
+        last = first
+        if row.end_date:
+            last = max(first, row.end_date.astimezone(_DEFAULT_TZ).date() - timedelta(days=1 if row.is_all_day else 0))
+        if first <= day <= last:
+            if not row.applies_to_school_types or not school_type or school_type in row.applies_to_school_types:
+                return "duplicate"
+            verdict = "other_schools"
+    if verdict:
+        return verdict
+    name = break_name(title)
+    if name and is_break_only(title) and any(break_name(r.title) == name and day_kind(r.title) == "closed" for r in rows):
+        return "contradicted"
+    return None
+
+
 def _status_category(title: str, category: str, start_date: datetime | None) -> str:
     """A dated closure/half-day filed as a "reminder" never reaches /calendar
     (events, deadlines, initiatives and marking periods only) - Haiku 5.5
@@ -961,6 +1020,14 @@ async def extract_from_newsletter(
                 # means the dedup check just below always gets a chance to
                 # collapse it into the one existing district row.
                 scope = "district"
+                said = await _calendar_says(db, district_id, item["title"], item_start_date, school.school_type if school else None)
+                if said in ("duplicate", "contradicted"):
+                    if said == "contradicted":
+                        record_parse_issue("smore.scan", "unexpected_format", newsletter_id=newsletter.id, sample=f"break dates differ from the district calendar: {item['title'][:120]} {item_start_date:%Y-%m-%d}")
+                    skipped_dupes += 1
+                    continue
+                if said == "other_schools":
+                    scope = "school"
             item["category"] = _status_category(item["title"], item["category"], item_start_date)
             item_school_id = school_id
             item_district_id = None
