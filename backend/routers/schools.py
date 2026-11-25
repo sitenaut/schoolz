@@ -2,6 +2,7 @@ from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import TypeAdapter
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,7 +48,7 @@ from schemas import (
     SmoreNewsletterOut,
     StaffMemberOut,
 )
-from services import gobound
+from services import gobound, public_lists
 from services.arbiter import ATHLETICS_SOURCES, entity_id_from_athletics_url
 from services.class_years import CLASS_PAGE_SOURCES
 from services.content_translation import localize_outs
@@ -381,12 +382,20 @@ async def resolve_school(school_id: str, db: AsyncSession = Depends(get_db)) -> 
     return school
 
 
+async def _all_schools(db: AsyncSession) -> list[School]:
+    return list((await db.execute(select(School).order_by(School.name))).scalars().all())
+
+
+_SCHOOLS_ADAPTER = TypeAdapter(list[SchoolOut])
+
+
 @router.get("", response_model=list[SchoolOut])
-async def list_schools(db: AsyncSession = Depends(get_db)):
+async def list_schools(request: Request, db: AsyncSession = Depends(get_db)):
     """Public - the whole shared school directory is meant to be
-    browsable/bookmarkable without an account."""
-    result = await db.execute(select(School).order_by(School.name))
-    return result.scalars().all()
+    browsable/bookmarkable without an account. Every page asks for it, so an
+    anonymous visitor's copy is cached (services/public_lists.py)."""
+    cached = await public_lists.cached_json(request, ("schools",), _all_schools, _SCHOOLS_ADAPTER)
+    return cached if cached is not None else await _all_schools(db)
 
 
 @router.get("/mine", response_model=list[SchoolOut])

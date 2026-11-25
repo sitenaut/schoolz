@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +16,7 @@ from schemas import (
     DistrictUpdate,
     ScheduledJobOut,
 )
+from services import public_lists
 from services.transportation import has_answers
 
 router = APIRouter(prefix="/districts", tags=["districts"])
@@ -210,9 +212,18 @@ def _out(district: District, jobs: dict[str, ScheduledJobOut]) -> DistrictOut:
     )
 
 
+async def _all_districts(db: AsyncSession) -> list[District]:
+    return list((await db.execute(select(District).order_by(District.name))).scalars().all())
+
+
+_SUMMARY_ADAPTER = TypeAdapter(list[DistrictSummaryOut])
+
+
 @router.get("/summary", response_model=list[DistrictSummaryOut])
-async def list_district_summaries(db: AsyncSession = Depends(get_db)):
-    return (await db.execute(select(District).order_by(District.name))).scalars().all()
+async def list_district_summaries(request: Request, db: AsyncSession = Depends(get_db)):
+    # Asked for by every page; an anonymous visitor's copy is cached.
+    cached = await public_lists.cached_json(request, ("districts-summary",), _all_districts, _SUMMARY_ADAPTER)
+    return cached if cached is not None else await _all_districts(db)
 
 
 @router.get("", response_model=list[DistrictOut])

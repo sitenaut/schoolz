@@ -20,6 +20,7 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import TimeoutError as PoolTimeout
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -130,6 +131,15 @@ def install(app: FastAPI) -> None:
         from fastapi.encoders import jsonable_encoder
 
         return _envelope(request, 422, jsonable_encoder(exc.errors()))
+
+    @app.exception_handler(PoolTimeout)
+    async def _pool_busy(request: Request, exc: PoolTimeout) -> JSONResponse:
+        # Every database connection is checked out and none came free in
+        # database.py's wait. "Busy, try again" - which the frontend's
+        # apiFetch does, once, after two seconds - instead of a 500 after a
+        # 30-second wait on every route at once (2026-11-25).
+        logger.warning("db_pool_busy", extra={"path": request.url.path})
+        return _envelope(request, 503, "The service is busy. Try again in a moment.", {"Retry-After": "2"})
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:

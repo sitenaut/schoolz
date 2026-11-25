@@ -53,8 +53,17 @@ class Base(DeclarativeBase):
 # third API machine or a bigger scheduler pool means redoing this sum; the
 # pool-saturated alert (scripts/build_grafana_alerts.py:DB_POOL_MAX) repeats
 # these numbers.
+#
+# How long a request waits for a connection when all are checked out. The
+# default, 30 seconds, turned a burst into a queue: every route waited half a
+# minute and then failed together, the readiness probe with them
+# (2026-11-25, a crawler rendering 2,000 pages). The API gives up after 5 and
+# answers 503 "busy, retry" (request_context._pool_busy), which the frontend
+# retries once. The scheduler keeps the long wait: a scan has nobody waiting
+# on it and should queue, not fail.
 _POOL_DEFAULTS = {"scheduler": (4, 2)}
 _pool_size, _max_overflow = _POOL_DEFAULTS.get(os.getenv("FLY_PROCESS_GROUP", ""), (3, 1))
+_pool_timeout = 30 if os.getenv("FLY_PROCESS_GROUP") == "scheduler" else 5
 
 engine = create_async_engine(
     database_url(),
@@ -62,6 +71,7 @@ engine = create_async_engine(
     pool_recycle=1800,
     pool_size=int(os.getenv("DB_POOL_SIZE", _pool_size)),
     max_overflow=int(os.getenv("DB_MAX_OVERFLOW", _max_overflow)),
+    pool_timeout=float(os.getenv("DB_POOL_TIMEOUT_S", _pool_timeout)),
     connect_args={"statement_cache_size": 0} if "asyncpg" in database_url() else {},
 )
 

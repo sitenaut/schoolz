@@ -7,15 +7,15 @@ Reads are public, like the rest of the community layer. Writes are admin
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel, HttpUrl, model_validator
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from pydantic import BaseModel, HttpUrl, TypeAdapter, model_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_permission
 from database import get_db
 from models import SeasonalGuide, User
-from services import content_translation
+from services import content_translation, public_lists
 from services.i18n import request_lang
 
 router = APIRouter(prefix="/seasonal-guides", tags=["seasonal-guides"])
@@ -120,9 +120,21 @@ async def localized(db: AsyncSession, guides: list[SeasonalGuide], lang: str) ->
     return outs
 
 
+_GUIDES_ADAPTER = TypeAdapter(list[SeasonalGuideOut])
+
+
 @router.get("", response_model=list[SeasonalGuideOut])
-async def list_active(season: str | None = Query(None), lang: str = Depends(request_lang), db: AsyncSession = Depends(get_db)):
-    return await localized(db, await active_guides(db, season), lang)
+async def list_active(
+    request: Request, season: str | None = Query(None), lang: str = Depends(request_lang), db: AsyncSession = Depends(get_db)
+):
+    async def guides(own_db: AsyncSession) -> list[SeasonalGuideOut]:
+        return await localized(own_db, await active_guides(own_db, season), lang)
+
+    # Asked for by every page (the season badge); an anonymous visitor's copy
+    # is cached, by day since the list is the guides active today.
+    key = ("seasonal-guides", today_et().isoformat(), (season or "").strip().lower(), lang)
+    cached = await public_lists.cached_json(request, key, guides, _GUIDES_ADAPTER)
+    return cached if cached is not None else await guides(db)
 
 
 @router.get("/all", response_model=list[SeasonalGuideOut])
