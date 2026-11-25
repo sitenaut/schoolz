@@ -605,14 +605,33 @@ def sync_triage(url: str, token: str, env: dict, dry: bool, test: bool) -> None:
     call(url, token, "/api/v1/provisioning/policies", "PUT", tree, EDITABLE)
     print(f"  notification policy: every alert copied to {TRIAGE_CONTACT} (kept {len(others)} other routes)")
     if test:
-        # What the contact point's Test button sends: one made-up alert.
-        result = call(url, token, "/api/alertmanager/grafana/config/api/v1/receivers/test", "POST", {
-            "receivers": [{"name": TRIAGE_CONTACT, "grafana_managed_receiver_configs": [{
-                "name": TRIAGE_CONTACT, "type": "webhook", "settings": settings,
-                "secureSettings": {"authorization_credentials": secret}, "disableResolveMessage": False}]}]})
-        for receiver in result.get("receivers") or []:
-            for config in receiver.get("grafana_managed_receiver_configs") or []:
-                print(f"  test notification: {config.get('status')} {config.get('error') or ''}".rstrip())
+        test_triage(url, token)
+
+
+RECEIVERS_API = "/apis/notifications.alerting.grafana.app/v1beta1"
+
+
+def test_triage(url: str, token: str) -> None:
+    """What the contact point's Test button sends: one made-up firing alert.
+
+    Through the receivers API, since /api/alertmanager/grafana/config/api/v1/
+    receivers/test answers 410. The test reuses the stored token only when
+    secureFields marks it: without that it goes out with no token and pc2
+    answers 401, while Grafana's own reply is still HTTP 200."""
+    namespace = call(url, token, "/api/frontend/settings").get("namespace") or "default"
+    receivers = call(url, token, f"{RECEIVERS_API}/namespaces/{namespace}/receivers").get("items") or []
+    receiver = next((r for r in receivers if r.get("spec", {}).get("title") == TRIAGE_CONTACT), None)
+    if receiver is None:
+        print(f"  ! test notification: no receiver titled {TRIAGE_CONTACT}")
+        return
+    hook = next(i for i in receiver["spec"]["integrations"] if i.get("type") == "webhook")
+    integration = {key: hook.get(key) for key in ("uid", "type", "version", "settings", "secureFields")}
+    alert = {"labels": {"alertname": "TestAlert", "source": "grafana_sync"},
+             "annotations": {"summary": "Test of the pc2 triage copy from grafana_sync.py. No action needed."}}
+    path = f"{RECEIVERS_API}/namespaces/{namespace}/receivers/{receiver['metadata']['name']}/test"
+    result = call(url, token, path, "POST", {"integration": integration, "alert": alert})
+    # The error is pc2's whole HTML error page; its first line says enough.
+    print(f"  test notification: {result.get('status')} {str(result.get('error') or '')[:120]}".rstrip())
 
 
 def main() -> None:
