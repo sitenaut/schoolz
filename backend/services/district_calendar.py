@@ -309,12 +309,20 @@ _ONLY_TYPE_WORDS = [
 ]
 
 
-def _school_tells(name: str, short_name: str | None) -> tuple[list[str], str | None]:
-    """(names matched case-insensitively, initials matched exactly)."""
+# Audubon writes "Early Dismissal for APS, HAS, MAS ONLY": Haviland Avenue
+# Elementary School without its level word, Audubon Preschool as "Pre School".
+_LEVEL_WORD_RE = re.compile(r"^(?:elementary|primary|intermediate|middle|high|jr|sr|junior|senior)$", re.I)
+
+
+def _school_tells(name: str, short_name: str | None) -> tuple[list[str], str | None, str | None]:
+    """(names matched case-insensitively, initials matched exactly, the
+    initials a district shortens them to - no level word - or None)."""
     words = [w for w in re.split(r"[\s/.]+", name) if w]
     names = [n for n in (short_name, re.sub(r"\s+school$", "", name, flags=re.I), name) if n and len(n) >= 4]
     initials = "".join(w[0] for w in words if w[0].isupper())
-    return names, initials if len(initials) >= 3 else None
+    loose_words = [part for w in words if not _LEVEL_WORD_RE.match(w) for part in (("Pre", "School") if w.lower() == "preschool" else (w,))]
+    loose = "".join(w[0] for w in loose_words if w[0].isupper())
+    return names, initials if len(initials) >= 3 else None, loose if len(loose) >= 3 and loose != initials else None
 
 
 def _types_named_only(title: str, schools: list[tuple[str, str | None, str | None]] | None) -> list[str] | None:
@@ -323,11 +331,18 @@ def _types_named_only(title: str, schools: list[tuple[str, str | None, str | Non
         return None
     says_only = bool(_ONLY_RE.search(title))
     types = {t for rx, t in _ONLY_TYPE_WORDS if rx.search(title)} if says_only else set()
+    loose_types: list[str] = []
     for name, short_name, school_type in schools or []:
-        names, initials = _school_tells(name, short_name)
+        names, initials, loose = _school_tells(name, short_name)
         named = says_only and any(re.search(rf"\b{re.escape(n)}\b", title, re.I) for n in names)
         if school_type and (named or (initials and re.search(rf"\b{initials}\b", title))):
             types.add(school_type)
+        if school_type and loose and re.search(rf"\b{loose}\b", title):
+            loose_types.append(school_type)
+    # Shortened initials are three ordinary capitals ("HAS"), so they count
+    # only beside an "only" or a second school's.
+    if says_only or len(loose_types) >= 2:
+        types.update(loose_types)
     # Naming every kind of school the district has narrows nothing.
     if not types or (schools and types >= {t for _, _, t in schools if t}):
         return None
