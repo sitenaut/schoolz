@@ -134,8 +134,9 @@ def test_find_pdf_link_reads_an_embedded_iframe():
 
 @pytest.mark.anyio
 async def test_an_unchanged_pdf_narrows_stored_rows_by_newer_rules(monkeypatch):
-    # Carteret's "(High School)" rows were stored before the parenthetical was
-    # read as scoping; the next run of the same file narrows them, no model call.
+    # Monroe's "High School Only" rows were stored for every school, so the
+    # elementaries showed its early dismissals; the next run of the same file
+    # narrows them, no model call.
     import uuid
     from datetime import datetime
 
@@ -156,16 +157,16 @@ async def test_an_unchanged_pdf_narrows_stored_rows_by_newer_rules(monkeypatch):
     monkeypatch.setattr(district_calendar_pdf, "fetch_pdf", fake_fetch)
     monkeypatch.setattr(district_calendar_pdf, "extract_events", no_model)
     async with database.SessionLocal() as db:
-        district = District(name=f"Carteret {uuid.uuid4().hex[:6]}", calendar_pdf_url="https://x.example/cal")
+        district = District(name=f"Monroe {uuid.uuid4().hex[:6]}", calendar_pdf_url="https://x.example/cal")
         db.add(district)
         await db.flush()
         db.add_all([
-            School(name="Carteret High School", slug=f"ch-{uuid.uuid4().hex[:6]}", district_id=district.id, school_type="high"),
-            School(name="Columbus Elementary School", slug=f"col-{uuid.uuid4().hex[:6]}", district_id=district.id, school_type="elementary"),
+            School(name="Williamstown High School", slug=f"ch-{uuid.uuid4().hex[:6]}", district_id=district.id, school_type="high"),
+            School(name="Radix Elementary School", slug=f"col-{uuid.uuid4().hex[:6]}", district_id=district.id, school_type="elementary"),
         ])
         row = SchoolContentItem(
             scope="district", district_id=district.id, category="event", is_all_day=True, source=district_calendar_pdf.SOURCE,
-            title="Early Dismissal - Parent/Teacher Meetings (High School)", start_date=datetime(2026, 10, 22),
+            title="Early Dismissal - High School Only", start_date=datetime(2026, 10, 22),
             external_uid=f"{district_calendar_pdf.UID_PREFIX}:{digest}:2026-10-22:x",
         )
         db.add(row)
@@ -173,3 +174,22 @@ async def test_an_unchanged_pdf_narrows_stored_rows_by_newer_rules(monkeypatch):
         out = await district_calendar_pdf_scan.run(db, {"district_id": district.id})
         assert "1 narrowed" in out
         assert row.applies_to_school_types == ["high"]
+
+
+def test_a_title_naming_schools_by_their_shortened_initials_is_for_those_schools():
+    """Audubon's feed, December 2026: the three named are the preschool and
+    the two elementaries, and the high school showed an early dismissal."""
+    from services.district_calendar import school_types_from_title
+
+    audubon = [
+        ("Audubon Jr/Sr High School", "Audubon HS", "high"),
+        ("Audubon Preschool", "Audubon Preschool", "other"),
+        ("Haviland Avenue Elementary School", "Haviland Avenue", "elementary"),
+        ("Mansion Avenue Elementary School", "Mansion Avenue", "elementary"),
+    ]
+    assert school_types_from_title("Early Dismissal for APS, HAS, MAS ONLY", audubon) == ["elementary", "other"]
+    assert school_types_from_title("HAS & MAS Early Dismissal", audubon) == ["elementary"]
+    # One shortened set of capitals alone is an ordinary word.
+    assert school_types_from_title("EVERY SCHOOL HAS AN EARLY DISMISSAL", audubon) is None
+    assert school_types_from_title("No School/Elementary Conferences & AHS In-Service", audubon) is None
+    assert school_types_from_title("Early Dismissal Staff & Students", audubon) is None
