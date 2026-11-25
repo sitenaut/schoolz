@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from contextlib import asynccontextmanager
 
@@ -180,6 +181,24 @@ def _loggable_path(request: Request) -> str:
     return path
 
 
+# Set by the frontend on every API call a page makes while it is being
+# rendered for a crawler, or loaded by one (frontend/src/api.ts).
+AUTOMATED_HEADER = "X-Schoolz-Automated"
+# The routes scripts/build_grafana_alerts.py:INTERACTIVE leaves out of the
+# latency SLO, slow by design. Keep the two in step.
+_NOT_INTERACTIVE = re.compile(r"^(/prerender|/health|(/chat|/admin|/scraper|/scheduled-jobs).*)$")
+
+
+def record_interactive_get(request: Request, route_path: str | None, duration_s: float) -> None:
+    """The latency SLO's measurement: a GET a page makes, labelled by whether
+    a person was waiting on it. A request no route matched counts, as it does
+    in the instrumentation's histogram."""
+    if request.method != "GET" or _NOT_INTERACTIVE.match(route_path or ""):
+        return
+    traffic = "automated" if request.headers.get(AUTOMATED_HEADER) else "visitor"
+    observability.interactive_get_seconds.record(duration_s, {"traffic": traffic})
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     if request.url.path in _SKIP_LOG_PATHS:
@@ -199,6 +218,7 @@ async def log_requests(request: Request, call_next):
         # search. Write its line here - status 500, at ERROR, with the
         # exception type - then let it propagate to the error handler.
         route = request.scope.get("route")
+        record_interactive_get(request, route.path if route else None, time.perf_counter() - start)
         logger.error(
             "http_request",
             extra={
@@ -218,6 +238,7 @@ async def log_requests(request: Request, call_next):
 
     route = request.scope.get("route")
     route_path = route.path if route else None
+    record_interactive_get(request, route_path, duration)
 
     if is_cold_start:
         span = trace.get_current_span()

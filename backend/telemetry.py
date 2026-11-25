@@ -86,6 +86,11 @@ _metric_views = [
             boundaries=[0.05, 0.1, 0.25, 0.5, 1.0, 1.5, 2.5, 5.0]
         ),
     ),
+    # The latency SLO reads the 1s bucket; the rest only shape a p95.
+    View(
+        instrument_name="schoolz.http.interactive_get.duration",
+        aggregation=ExplicitBucketHistogramAggregation(boundaries=[0.25, 0.5, 1.0, 2.5, 5.0]),
+    ),
     # Also support older semconv metric name if emitted
     View(
         instrument_name="http.server.duration",

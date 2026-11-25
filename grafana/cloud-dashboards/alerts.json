@@ -386,7 +386,7 @@
           },
           "annotations": {
             "summary": "API latency: error budget burning fast (objective 95.0% over 28d)",
-            "description": "Share of interactive GETs answered within 1 second. At this rate the whole 28-day error budget is gone in about two days. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1h, {{ printf \"%.1f\" $values.C.Value }}x over 6h.",
+            "description": "Share of visitors' interactive GETs answered within 1 second (pages rendered for crawlers don't count). At this rate the whole 28-day error budget is gone in about two days. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1h, {{ printf \"%.1f\" $values.C.Value }}x over 6h.",
             "runbook_url": "${RUNBOOK_URL}#schoolz-slo-api-latency-fast",
             "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzapilatency"
           },
@@ -461,7 +461,7 @@
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "E",
-                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[1h]))",
+                "expr": "sum(increase(schoolz_http_interactive_get_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", traffic=\"visitor\"}[1h]))",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -492,7 +492,7 @@
           },
           "annotations": {
             "summary": "API latency: error budget burning steadily (objective 95.0% over 28d)",
-            "description": "Share of interactive GETs answered within 1 second. Nothing is on fire, but this pace spends the 28-day error budget before the window ends. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1d, {{ printf \"%.1f\" $values.C.Value }}x over 3d.",
+            "description": "Share of visitors' interactive GETs answered within 1 second (pages rendered for crawlers don't count). Nothing is on fire, but this pace spends the 28-day error budget before the window ends. Burn rate {{ printf \"%.1f\" $values.A.Value }}x over 1d, {{ printf \"%.1f\" $values.C.Value }}x over 3d.",
             "runbook_url": "${RUNBOOK_URL}#schoolz-slo-api-latency-slow",
             "dashboard_url": "${GRAFANA_URL}/d/grafana_slo_app-schoolzapilatency"
           },
@@ -567,7 +567,7 @@
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "E",
-                "expr": "sum(increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[6h]))",
+                "expr": "sum(increase(schoolz_http_interactive_get_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", traffic=\"visitor\"}[6h]))",
                 "instant": true,
                 "editorMode": "code"
               }

@@ -55,6 +55,18 @@ scraper_healthy = _meter.create_gauge(
                 "(every 5 minutes), else 0. By scraper role.",
 )
 
+# The latency SLO's own series. The instrumentation's request histogram
+# can't tell a visitor from our own prerender render: each page the nightly
+# warm-up renders makes the API calls a visitor's page makes, 2,000+ pages a
+# night, and that hour of them burned the SLO's budget on nights no person
+# was waiting. `traffic` is visitor | automated (main.record_interactive_get).
+interactive_get_seconds = _meter.create_histogram(
+    "schoolz.http.interactive_get.duration",
+    unit="s",
+    description="Duration of the GETs a page makes (no admin, chat, scraper or prerender routes), "
+                "by who asked: a visitor, or a page rendered for a crawler.",
+)
+
 llm_calls_total = _meter.create_counter(
     "schoolz.llm.calls",
     description="Anthropic API calls, by model/purpose/stop_reason.",

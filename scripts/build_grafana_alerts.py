@@ -269,6 +269,14 @@ INTERACTIVE = sel(API, 'http_request_method="GET"',
                   'http_route!~"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health"')
 PRERENDER = sel(API, 'http_route="/prerender"')
 HTTP = "http_server_request_duration_seconds"
+# The latency SLO counts only GETs a person waited on. A page rendered for a
+# crawler makes the same calls a visitor's page does, and the nightly warm-up
+# renders 2,000+ of them: on the request histogram above they were an hour of
+# "interactive" traffic every night, and spent the budget. The API records
+# this one itself, by who asked, with INTERACTIVE's route list applied in
+# code (backend/main.py:record_interactive_get).
+VISITOR_GET = "schoolz_http_interactive_get_duration_seconds"
+VISITORS = sel(API, 'traffic="visitor"')
 
 # Shared with build_grafana_slos.py, which turns the same list into SLO
 # definitions - one source for the objective and for the alert on it.
@@ -286,10 +294,10 @@ SLOS = [
     {
         "uuid": "schoolzapilatency", "slug": "api-latency", "name": "API latency",
         "component": "api", "objective": 0.95,
-        "meaning": "Share of interactive GETs answered within 1 second.",
-        "good": f'{HTTP}_bucket{INTERACTIVE[:-1]}, le="1"}}',
-        "total": f"{HTTP}_count{INTERACTIVE}",
-        "volume": f"sum(increase({HTTP}_count{INTERACTIVE}[$window]))",
+        "meaning": "Share of visitors' interactive GETs answered within 1 second (pages rendered for crawlers don't count).",
+        "good": f'{VISITOR_GET}_bucket{VISITORS[:-1]}, le="1"}}',
+        "total": f"{VISITOR_GET}_count{VISITORS}",
+        "volume": f"sum(increase({VISITOR_GET}_count{VISITORS}[$window]))",
         "floor": 50,
         "tiers": {"fast": "ticket", "slow": "ticket"},
     },
