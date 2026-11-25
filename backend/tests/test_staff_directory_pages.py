@@ -195,3 +195,39 @@ async def test_a_page_the_plain_get_missed_is_read_from_the_raw_fetch_and_never_
     assert await staff_roster.fetch_directory_document(url, ["Elm"]) == []
     assert len(await staff_roster.fetch_directory_document(url, ["Elm"])) == 2
     assert [c["url"] for c in calls] == [url]
+
+
+def _located(i: int, location: str) -> str:
+    return (
+        f'<div class="fsConstituentItem" data-constituent-id="{i}"><h3 class="fsFullName">Person {i}</h3>'
+        f'<div class="fsLocations"><strong>Locations:</strong> {location}</div></div>'
+    )
+
+
+async def test_a_district_list_whose_schools_share_the_district_name_is_searched_by_name(monkeypatch):
+    # South River, 2026-11-19: every school is "South River ... School", the
+    # 361-person list has no Location filter, and "south river" matched all of
+    # them to each school. Its keyword search matches the Locations line.
+    label = '<span class="fsPaginationLabel">showing 1 - 3 of 361 constituents</span>'
+    district = label + _located(1, "South River Primary School") + _located(2, "South River Elementary School") + _located(3, "Central Office")
+    searched = (
+        '<span class="fsPaginationLabel">showing 1 - 3 of 3 constituents</span>'
+        + _located(2, "South River Elementary School")
+        + _located(4, "South River Elementary School, South River Primary School")
+        + _located(5, "South River Primary School")  # a loose keyword hit
+    )
+    calls = _fake_reads(monkeypatch, [district], [district], [searched])
+
+    async def no_redirect(*args, **kwargs):
+        raise staff_roster.httpx.ConnectError("offline")
+
+    monkeypatch.setattr(staff_roster.httpx.AsyncClient, "get", no_redirect)
+    names = ["South River Elementary", "South River Elementary School"]
+    people = await staff_roster._read_constituent_directory("https://es.example.org/directory", names)
+    assert calls[-1]["url"] == "https://es.example.org/directory?const_search_keyword=South+River+Elementary+School"
+    assert sorted(p["constituent_id"] for p in people) == ["2", "4"]
+
+
+def test_a_list_whose_schools_have_their_own_words_keeps_the_word_test():
+    people = [{"constituent_id": "1", "locations": ["Lumberton Middle School"]}, {"constituent_id": "2", "locations": ["Lumberton Township School District"]}]
+    assert not staff_roster._shares_words_with_a_sibling(people, ["Lumberton Middle", "Lumberton Middle School"])

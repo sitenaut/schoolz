@@ -1,0 +1,565 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Piscataway (Middlesex County)",
+ "districts": [
+  {
+   "name": "Piscataway Township Schools",
+   "state": "NJ",
+   "website_url": "https://www.piscatawayschools.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "Piscataway Township Schools District Calendar",
+     "url": "https://calendar.google.com/calendar/ical/districtcalendar%40pway.org/public/basic.ics"
+    },
+    {
+     "name": "PHS Calendar",
+     "url": "https://calendar.google.com/calendar/ical/phscalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-high"
+    },
+    {
+     "name": "Conackamack Calendar",
+     "url": "https://calendar.google.com/calendar/ical/concalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-conackamack-middle"
+    },
+    {
+     "name": "Quibbletown Calendar",
+     "url": "https://calendar.google.com/calendar/ical/quicalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-quibbletown-middle"
+    },
+    {
+     "name": "Schor Calendar",
+     "url": "https://calendar.google.com/calendar/ical/schcalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-schor-middle"
+    },
+    {
+     "name": "Arbor Calendar",
+     "url": "https://calendar.google.com/calendar/ical/arbcalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-arbor-intermediate"
+    },
+    {
+     "name": "M.L. King Calendar",
+     "url": "https://calendar.google.com/calendar/ical/kincalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-king-intermediate"
+    },
+    {
+     "name": "Eisenhower Calendar",
+     "url": "https://eisenhower.piscatawayschools.org/sndreq/generateCalendarICS.php?calendar_id=132082",
+     "school_slug": "piscataway-eisenhower-elementary"
+    },
+    {
+     "name": "Grandview Calendar",
+     "url": "https://calendar.google.com/calendar/ical/gracalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-grandview-elementary"
+    },
+    {
+     "name": "Knollwood Calendar",
+     "url": "https://calendar.google.com/calendar/ical/knocalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-knollwood-elementary"
+    },
+    {
+     "name": "Randolphville Calendar",
+     "url": "https://calendar.google.com/calendar/ical/rancalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-randolphville-elementary"
+    },
+    {
+     "name": "Children's Corner Calendar",
+     "url": "https://calendar.google.com/calendar/ical/ccpcalendar%40pway.org/public/basic.ics",
+     "school_slug": "piscataway-childrens-corner"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.piscatawayschools.org/79042_3",
+   "towns": [
+    "Piscataway"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "piscataway-high",
+   "name": "Piscataway High School",
+   "short_name": "Piscataway High",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "high",
+   "address": "100 Behmer Road, Piscataway, NJ 08854",
+   "main_phone": "(732) 981-0700",
+   "website_url": "https://phs.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 981-0700 ext. 2275",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the Attendance Office (West Wing) at (732) 981-0700 ext. 2275 between 7:00 and 9:00 a.m. Submit the Student Absence Form with supporting documentation within 10 days of returning to school.",
+   "start_time": "7:15 AM",
+   "end_time": "1:45 PM",
+   "early_dismissal_time": "11:53 AM",
+   "delayed_opening_time": "9:15 AM",
+   "athletics_url": "https://piscatawaychiefsathletics.digitalsports.com/pages/schedule/schedule.php",
+   "logo_url": "https://files.smartsites.parentsquare.com/5707/_variants/contain-1440w/header_logo_img_gg4ss3.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Block 1",
+      "start": "07:15",
+      "end": "08:35"
+     },
+     {
+      "name": "Homeroom",
+      "start": "08:35",
+      "end": "08:41"
+     },
+     {
+      "name": "Block 2",
+      "start": "08:49",
+      "end": "10:09"
+     },
+     {
+      "name": "Block 3 (lunch waves)",
+      "start": "10:17",
+      "end": "12:17"
+     },
+     {
+      "name": "Block 4",
+      "start": "12:25",
+      "end": "13:45"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Block 1",
+      "start": "07:15",
+      "end": "08:07"
+     },
+     {
+      "name": "Homeroom",
+      "start": "08:07",
+      "end": "08:13"
+     },
+     {
+      "name": "Block 2",
+      "start": "08:21",
+      "end": "09:13"
+     },
+     {
+      "name": "Block 3 (lunch waves)",
+      "start": "09:21",
+      "end": "10:53"
+     },
+     {
+      "name": "Block 4",
+      "start": "11:01",
+      "end": "11:53"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Block 1",
+      "start": "09:15",
+      "end": "10:05"
+     },
+     {
+      "name": "Homeroom",
+      "start": "10:05",
+      "end": "10:11"
+     },
+     {
+      "name": "Block 2",
+      "start": "10:19",
+      "end": "11:09"
+     },
+     {
+      "name": "Block 3 (lunch waves)",
+      "start": "11:17",
+      "end": "12:47"
+     },
+     {
+      "name": "Block 4",
+      "start": "12:55",
+      "end": "13:45"
+     }
+    ]
+   },
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/piscataway-high-school"
+  },
+  {
+   "slug": "piscataway-conackamack-middle",
+   "name": "Conackamack Middle School",
+   "short_name": "Conackamack Middle",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "middle",
+   "address": "5205 Witherspoon Street, Piscataway, NJ 08854",
+   "main_phone": "(732) 699-1577",
+   "website_url": "https://conackamack.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 699-1577 ext. 5115",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Direct all student absences to the school's attendance contact at (732) 699-1577 ext. 5115 (an email address is also listed on the school's Attendance page).",
+   "start_time": "8:05 AM",
+   "end_time": "2:20 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": "https://piscatawaychiefsathletics.digitalsports.com/pages/schedule/schedule.php",
+   "logo_url": "https://files.smartsites.parentsquare.com/5708/_variants/contain-1440w/header_logo_img_mkubwt.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": "2:20 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/conackamack-middle-school"
+  },
+  {
+   "slug": "piscataway-quibbletown-middle",
+   "name": "Quibbletown Middle School",
+   "short_name": "Quibbletown Middle",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "middle",
+   "address": "99 Academy Street, Piscataway, NJ 08854",
+   "main_phone": "(732) 752-0444",
+   "website_url": "https://quibbletown.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 752-0444 ext. 5314",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Absentee notes or emails go to the Guidance/Attendance Secretary, ext. 5314 (address on the school's Attendance page).",
+   "start_time": "8:05 AM",
+   "end_time": "2:20 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": "https://piscatawaychiefsathletics.digitalsports.com/pages/schedule/schedule.php",
+   "logo_url": "https://files.smartsites.parentsquare.com/5709/_variants/contain-1440w/header_logo_img_m3hijh.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": "2:20 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/quibbletown-middle-school"
+  },
+  {
+   "slug": "piscataway-schor-middle",
+   "name": "Theodore Schor Middle School",
+   "short_name": "Schor Middle",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "middle",
+   "address": "243 North Randolphville Road, Piscataway, NJ 08854",
+   "main_phone": "(732) 752-4457",
+   "website_url": "https://schor.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 752-4457 ext. 5214",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Direct all student absences to the school's attendance contact at (732) 752-4457 ext. 5214. A parent email or note covers up to two consecutive days, twice per marking period; longer absences need a doctor's note within ten days.",
+   "start_time": "8:05 AM",
+   "end_time": "2:20 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": "https://piscatawaychiefsathletics.digitalsports.com/pages/schedule/schedule.php",
+   "logo_url": "https://files.smartsites.parentsquare.com/5700/_variants/contain-1440w/header_logo_img_6qxiiw.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": null,
+    "pm_hours": "2:20 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/t-schor-middle-school"
+  },
+  {
+   "slug": "piscataway-arbor-intermediate",
+   "name": "Arbor Intermediate School",
+   "short_name": "Arbor Intermediate",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "elementary",
+   "address": "1717 Lester Place, Piscataway, NJ 08854",
+   "main_phone": "(732) 752-8652",
+   "website_url": "https://arbor.piscatawayschools.org",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:05 AM",
+   "end_time": "2:20 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5701/_variants/contain-1440w/header_logo_img_lsveff.jpg",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:05 AM",
+    "pm_hours": "2:20 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/arbor-intermediate-school"
+  },
+  {
+   "slug": "piscataway-king-intermediate",
+   "name": "Martin Luther King Intermediate School",
+   "short_name": "M.L. King Intermediate",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "elementary",
+   "address": "5205 Ludlow Street, Piscataway, NJ 08854",
+   "main_phone": "(732) 699-1563",
+   "website_url": "https://king.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 699-1563 ext. 5444",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Notify the school early on the day your child will be absent, with the reason: call the Attendance Clerk at (732) 699-1563 ext. 5444.",
+   "start_time": "8:05 AM",
+   "end_time": "2:20 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "10:05 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5702/_variants/contain-1440w/header_logo_img_d3frif.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:05 AM",
+    "pm_hours": "2:20 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/martin-luther-king-intermediate-school"
+  },
+  {
+   "slug": "piscataway-eisenhower-elementary",
+   "name": "Dwight D. Eisenhower Elementary School",
+   "short_name": "Eisenhower",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "elementary",
+   "address": "360 Stelton Road, Piscataway, NJ 08854",
+   "main_phone": "(732) 752-1801",
+   "website_url": "https://eisenhower.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 752-1801 ext. 5649",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Contact the attendance clerk at (732) 752-1801 ext. 5649 when your child will be absent. Documentation for an absence can also be emailed (link on the school's Attendance page).",
+   "start_time": "9:00 AM",
+   "end_time": "3:15 PM",
+   "early_dismissal_time": "1:20 PM",
+   "delayed_opening_time": "11:00 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5703/_variants/contain-1440w/header_logo_img_gk4ztc.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 9:00 AM",
+    "pm_hours": "3:15 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/eisenhower-elementary-school"
+  },
+  {
+   "slug": "piscataway-grandview-elementary",
+   "name": "Grandview Elementary School",
+   "short_name": "Grandview",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "elementary",
+   "address": "130 North Randolphville Road, Piscataway, NJ 08854",
+   "main_phone": "(732) 752-2501",
+   "website_url": "https://grandview.piscatawayschools.org",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "9:00 AM",
+   "end_time": "3:15 PM",
+   "early_dismissal_time": "1:20 PM",
+   "delayed_opening_time": "11:00 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5704/_variants/contain-1440w/header_logo_img_7gbqq7.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 9:00 AM",
+    "pm_hours": "3:15 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/grandview-elementary-school"
+  },
+  {
+   "slug": "piscataway-knollwood-elementary",
+   "name": "Knollwood Elementary School",
+   "short_name": "Knollwood",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "elementary",
+   "address": "333 Willow Avenue, Piscataway, NJ 08854",
+   "main_phone": "(732) 885-1528",
+   "website_url": "https://knollwood.piscatawayschools.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 885-1528 ext. 5840",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance clerk at (732) 885-1528 ext. 5840 about your child's attendance.",
+   "start_time": "9:00 AM",
+   "end_time": "3:15 PM",
+   "early_dismissal_time": "1:20 PM",
+   "delayed_opening_time": "11:00 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5705/_variants/contain-1440w/header_logo_img_6vwvvr.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 9:00 AM",
+    "pm_hours": "3:15 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/knollwood-elementary-school"
+  },
+  {
+   "slug": "piscataway-randolphville-elementary",
+   "name": "Randolphville Elementary School",
+   "short_name": "Randolphville",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "elementary",
+   "address": "1 Suttie Avenue, Piscataway, NJ 08854",
+   "main_phone": "(732) 699-1573",
+   "website_url": "https://randolphville.piscatawayschools.org",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "9:00 AM",
+   "end_time": "3:15 PM",
+   "early_dismissal_time": "1:20 PM",
+   "delayed_opening_time": "11:00 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5706/_variants/contain-1440w/header_logo_img_3yck4b.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 9:00 AM",
+    "pm_hours": "3:15 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/randolphville-elementary-school"
+  },
+  {
+   "slug": "piscataway-childrens-corner",
+   "name": "Children's Corner Preschool",
+   "short_name": "Children's Corner",
+   "district_name": "Piscataway Township Schools",
+   "school_type": "other",
+   "address": "275 Old New Brunswick Road, Piscataway, NJ 08854",
+   "main_phone": "(732) 572-2289",
+   "website_url": "https://childrenscorner.piscatawayschools.org",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:45 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "1:05 PM",
+   "delayed_opening_time": "10:45 AM",
+   "athletics_url": null,
+   "logo_url": "https://files.smartsites.parentsquare.com/5710/_variants/contain-1440w/header_logo_img_s7mhcs270sv36belffi.png",
+   "bell_periods": null,
+   "sacc": {
+    "am_hours": "7:00 AM - 8:45 AM",
+    "pm_hours": "3:00 PM - 6:00 PM",
+    "site_phone": null,
+    "absence_phone": null,
+    "absence_form_url": null,
+    "late_pickup_policy": null,
+    "pickup_change_procedure": null,
+    "closures_notes": "District-run program (Office of Community Education, 732-572-4688, Mon-Fri 8 a.m.-4 p.m.; register on Community Pass). Before Care runs in preschool-grade 5 schools where enrollment allows, from 7 a.m. until school begins; After Care runs preschool-grade 8 from dismissal until 6 p.m. 2026-27 rates: Before Care $180/month, After Care $330/month (5 days a week); the program began Sept. 8. On a delayed opening Before Care begins at 8:30 a.m.; on early dismissal days After Care runs as usual until 6 p.m.",
+    "handbook_url": null
+   },
+   "activities_calendar_ics_url": null,
+   "staff_directory_url": null,
+   "nutrislice_location": "piscatawayschools/childrens-corner-pre-school"
+  }
+ ],
+ "smore_newsletters": []
+}

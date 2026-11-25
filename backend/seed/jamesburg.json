@@ -1,0 +1,207 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Jamesburg (Middlesex County)",
+ "districts": [
+  {
+   "name": "Jamesburg Public School District",
+   "state": "NJ",
+   "website_url": "https://www.jamesburg.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "Jamesburg District Calendar",
+     "url": "https://www.jamesburg.org/fs/calendar-manager/events.ics?calendar_ids[]=6"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null,
+   "towns": [
+    "Jamesburg"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "jamesburg-breckwedel",
+   "name": "Grace M. Breckwedel Middle School",
+   "short_name": "Breckwedel",
+   "district_name": "Jamesburg Public School District",
+   "school_type": "middle",
+   "address": "13 Augusta St, Jamesburg, NJ 08831",
+   "main_phone": "(732) 521-0303",
+   "website_url": "https://gmb.jamesburg.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1782413749/jamesburgorg/pcwtkkdow67om2iucuu9/GMBLogo_001.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 521-0303, prompt 5 (GMB), then 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the absentee line, 732-521-0303, choose prompt 5 (GMB) and press 1. When your child returns, send the school nurse a dated note signed by a parent or guardian giving the reason for the absence; an illness of more than three school days also needs a physician's note.",
+   "start_time": "8:15 AM",
+   "end_time": "2:55 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "10:15 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:15",
+      "end": "08:20"
+     },
+     {
+      "name": "Period 1 (SEL)",
+      "start": "08:20",
+      "end": "08:35"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:37",
+      "end": "09:16"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:18",
+      "end": "09:57"
+     },
+     {
+      "name": "Period 4",
+      "start": "09:59",
+      "end": "10:38"
+     },
+     {
+      "name": "Period 5 (GMB)",
+      "start": "10:40",
+      "end": "11:19"
+     },
+     {
+      "name": "Period 6 (8th Lunch)",
+      "start": "11:21",
+      "end": "12:00"
+     },
+     {
+      "name": "Period 7 (7th Lunch)",
+      "start": "12:02",
+      "end": "12:41"
+     },
+     {
+      "name": "Period 8 (6th Lunch)",
+      "start": "12:43",
+      "end": "13:22"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:24",
+      "end": "14:03"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:05",
+      "end": "14:44"
+     },
+     {
+      "name": "Homeroom",
+      "start": "14:46",
+      "end": "14:55"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:15",
+      "end": "08:20"
+     },
+     {
+      "name": "Period 1 (SEL)",
+      "start": "08:20",
+      "end": "08:30"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:32",
+      "end": "08:58"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:00",
+      "end": "09:26"
+     },
+     {
+      "name": "Period 4",
+      "start": "09:28",
+      "end": "09:53"
+     },
+     {
+      "name": "Period 5",
+      "start": "09:55",
+      "end": "10:20"
+     },
+     {
+      "name": "Period 6-7 (No lunch)",
+      "start": "10:22",
+      "end": "10:58"
+     },
+     {
+      "name": "Period 8 (Gr. 6 Period 7)",
+      "start": "11:00",
+      "end": "11:25"
+     },
+     {
+      "name": "Period 9",
+      "start": "11:27",
+      "end": "11:53"
+     },
+     {
+      "name": "Period 10",
+      "start": "11:55",
+      "end": "12:21"
+     },
+     {
+      "name": "Homeroom",
+      "start": "12:23",
+      "end": "12:30"
+     }
+    ]
+   },
+   "athletics_url": "https://www.arbiterlive.com/m/team/8783",
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "fdmealplanner_location": null
+  },
+  {
+   "slug": "jamesburg-john-f-kennedy",
+   "name": "John F. Kennedy Elementary School",
+   "short_name": "John F. Kennedy",
+   "district_name": "Jamesburg Public School District",
+   "school_type": "elementary",
+   "address": "28 Front St, Jamesburg, NJ 08831",
+   "main_phone": "(732) 521-0400",
+   "website_url": "https://jfk.jamesburg.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1782413653/jamesburgorg/rbypr9cz0mrypvqz3mtq/JFKLogo.jpg",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": null,
+   "end_time": null,
+   "early_dismissal_time": null,
+   "delayed_opening_time": null,
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": "jamesburgpta",
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "fdmealplanner_location": null
+  }
+ ],
+ "smore_newsletters": []
+}

@@ -103,3 +103,12 @@ async def test_a_logo_that_does_not_load_is_not_stored(monkeypatch):
         monkeypatch.setattr(school_info_scan, "ensure_location", no_location)
         await school_info_scan.run(db, {"school_id": school.id})
         assert school.logo_url is None
+
+
+def test_a_footer_number_without_the_stored_extension_does_not_replace_it():
+    from scheduler.jobs.school_info_scan import drops_extension
+
+    assert drops_extension("732-745-5300", "(732) 745-5300 ext. 7500")
+    assert not drops_extension("732-745-5301", "(732) 745-5300 ext. 7500")
+    assert not drops_extension("(732) 745-5300", "732-745-5300")
+    assert not drops_extension("732-745-5300", None)

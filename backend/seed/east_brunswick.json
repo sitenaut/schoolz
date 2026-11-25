@@ -1,0 +1,614 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: East Brunswick (Middlesex County)",
+ "districts": [
+  {
+   "name": "East Brunswick Public Schools",
+   "state": "NJ",
+   "website_url": "https://www.ebnet.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.ebnet.org/departments/transportation",
+   "towns": [
+    "East Brunswick"
+   ],
+   "schoolcafe_shortname": null,
+   "ics_feeds": [
+    {
+     "name": "East Brunswick District Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=1"
+    },
+    {
+     "name": "EBHS Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=6",
+     "school_slug": "east-brunswick-high"
+    },
+    {
+     "name": "Churchill Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=4",
+     "school_slug": "east-brunswick-churchill"
+    },
+    {
+     "name": "Hammarskjold Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=7",
+     "school_slug": "east-brunswick-hammarskjold",
+     "school_title_prefixes": {
+      "HM ": "east-brunswick-hammarskjold"
+     }
+    },
+    {
+     "name": "Bowne-Munro Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=2",
+     "school_slug": "east-brunswick-bowne-munro"
+    },
+    {
+     "name": "Central Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=3",
+     "school_slug": "east-brunswick-central"
+    },
+    {
+     "name": "Chittick Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=10",
+     "school_slug": "east-brunswick-chittick"
+    },
+    {
+     "name": "Frost Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=9",
+     "school_slug": "east-brunswick-frost"
+    },
+    {
+     "name": "Irwin Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=13",
+     "school_slug": "east-brunswick-irwin"
+    },
+    {
+     "name": "Lawrence Brook Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=12",
+     "school_slug": "east-brunswick-lawrence-brook"
+    },
+    {
+     "name": "Memorial Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=11",
+     "school_slug": "east-brunswick-memorial"
+    },
+    {
+     "name": "Warnsdorfer Calendar",
+     "url": "https://www.ebnet.org/fs/calendar-manager/events.ics?calendar_ids[]=8",
+     "school_slug": "east-brunswick-warnsdorfer"
+    }
+   ]
+  }
+ ],
+ "schools": [
+  {
+   "slug": "east-brunswick-high",
+   "name": "East Brunswick High School",
+   "short_name": "East Brunswick High",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "high",
+   "address": "380 Cranbury Road, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6900",
+   "website_url": "https://hs.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723562105/ebnetorg/qef1swtgiotnkzbrup6r/EastBrunswickHighSchoolPrimaryLogoImage.png",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6900 press 2",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.ebnet.org",
+   "absence_instructions": "Report the absence in the Genesis Parent Portal (Attendance tab, Notify Office) by 7:50 AM with a brief reason; supporting documents can be uploaded there. After 7:50 AM call the attendance office at (732) 613-6900, press 2. Notes are due within 5 school days; a doctor's note is needed after 3 consecutive days.",
+   "start_time": "8:00 AM",
+   "end_time": "2:45 PM",
+   "early_dismissal_time": "12:32 PM",
+   "delayed_opening_time": "10:00 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1/5",
+      "start": "08:00",
+      "end": "09:23"
+     },
+     {
+      "name": "Period 2/6",
+      "start": "09:29",
+      "end": "10:52"
+     },
+     {
+      "name": "Homeroom",
+      "start": "10:52",
+      "end": "11:03"
+     },
+     {
+      "name": "Period 3/7 (Lunch A/B/C)",
+      "start": "11:09",
+      "end": "13:16"
+     },
+     {
+      "name": "Period 4/8",
+      "start": "13:22",
+      "end": "14:45"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1/5",
+      "start": "08:00",
+      "end": "09:01"
+     },
+     {
+      "name": "Period 2/6",
+      "start": "09:07",
+      "end": "10:08"
+     },
+     {
+      "name": "Homeroom",
+      "start": "10:08",
+      "end": "10:18"
+     },
+     {
+      "name": "Period 3/7",
+      "start": "10:24",
+      "end": "11:25"
+     },
+     {
+      "name": "Period 4/8",
+      "start": "11:31",
+      "end": "12:32"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1/5",
+      "start": "10:00",
+      "end": "10:56"
+     },
+     {
+      "name": "Period 2/6",
+      "start": "11:02",
+      "end": "11:58"
+     },
+     {
+      "name": "Homeroom",
+      "start": "11:58",
+      "end": "12:08"
+     },
+     {
+      "name": "Period 3/7 (Lunch A/B/C)",
+      "start": "12:14",
+      "end": "13:43"
+     },
+     {
+      "name": "Period 4/8",
+      "start": "13:49",
+      "end": "14:45"
+     }
+    ]
+   },
+   "athletics_url": "https://eastbrunswickbearsathletics.digitalsports.com/",
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": null
+  },
+  {
+   "slug": "east-brunswick-churchill",
+   "name": "Churchill Junior High School",
+   "short_name": "Churchill",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "middle",
+   "address": "18 Norton Road, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6800",
+   "website_url": "https://ch.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723562258/ebnetorg/ogxwaoduve76a1uesjbg/ChurchillJuniorHighSchoolPrimaryLogoImage.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:00 AM",
+   "end_time": "2:45 PM",
+   "early_dismissal_time": "12:32 PM",
+   "delayed_opening_time": "10:00 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1/5 (with Homeroom)",
+      "start": "08:00",
+      "end": "09:40"
+     },
+     {
+      "name": "Period 2/6",
+      "start": "09:46",
+      "end": "11:11"
+     },
+     {
+      "name": "Period 3/7 (Lunch A/B/C/D)",
+      "start": "11:17",
+      "end": "13:14"
+     },
+     {
+      "name": "Period 4/8",
+      "start": "13:20",
+      "end": "14:45"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1/5 (with Homeroom)",
+      "start": "08:00",
+      "end": "09:14"
+     },
+     {
+      "name": "Period 2/6",
+      "start": "09:20",
+      "end": "10:20"
+     },
+     {
+      "name": "Period 3/7",
+      "start": "10:26",
+      "end": "11:26"
+     },
+     {
+      "name": "Period 4/8",
+      "start": "11:32",
+      "end": "12:32"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1/5",
+      "start": "10:00",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 2/6",
+      "start": "10:56",
+      "end": "11:46"
+     },
+     {
+      "name": "Period 3/7 (Lunch A/B/C/D)",
+      "start": "11:52",
+      "end": "13:49"
+     },
+     {
+      "name": "Period 4/8",
+      "start": "13:55",
+      "end": "14:45"
+     }
+    ]
+   },
+   "athletics_url": "https://eastbrunswickbearsathletics.digitalsports.com/",
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": null
+  },
+  {
+   "slug": "east-brunswick-hammarskjold",
+   "name": "Hammarskjold Upper Elementary School",
+   "short_name": "Hammarskjold",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "200 Rues Lane, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6600",
+   "website_url": "https://hm.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723562407/ebnetorg/sjsno6zkqfwubjmxa270/HammarskjoldUpperElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "portal",
+   "absence_emails": [
+    "huesattendance@ebnet.org"
+   ],
+   "absence_phone": "(732) 613-6610",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.ebnet.org",
+   "absence_instructions": "Report every absence to the HUES Attendance Office by 8:45 AM: in the Genesis Parent Portal (Attendance, Notify Office; parents only), or by phone at (732) 613-6610 (answering machine 24 hours: give your name and relationship, the child's name spelled, grade, date and reason), or by email. Send an absence note within 5 school days of the return.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": null
+  },
+  {
+   "slug": "east-brunswick-bowne-munro",
+   "name": "Bowne-Munro Elementary School",
+   "short_name": "Bowne-Munro",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "120 Main Street, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6810",
+   "website_url": "https://bm.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723562565/ebnetorg/xqwgzlcb9j97kru1puq8/Bowne-MunroElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6810",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/bowne-munro-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-central",
+   "name": "Central Elementary School",
+   "short_name": "Central",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "371 Cranbury Road, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6820",
+   "website_url": "https://ce.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723562735/ebnetorg/mf7zavczjkhbbelp3hv6/CentralElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6820",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/central-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-chittick",
+   "name": "Murray A. Chittick Elementary School",
+   "short_name": "Chittick",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "5 Flagler Street, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6830",
+   "website_url": "https://ct.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723562913/ebnetorg/waabt3s73jcsndhszjpe/MurrayAChittickElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6830",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/chittick-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-frost",
+   "name": "Robert Frost Elementary School",
+   "short_name": "Frost",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "65 Frost Avenue, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6850",
+   "website_url": "https://fr.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723563095/ebnetorg/vvuat18kj8fy4j6k0gw9/RobertFrostElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6850",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/robert-frost-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-irwin",
+   "name": "Irwin Elementary School",
+   "short_name": "Irwin",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "71 Racetrack Road, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6840",
+   "website_url": "https://ir.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723563280/ebnetorg/ui2rjaukfhnpm6npzhus/IrwinElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6840",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/irwin-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-lawrence-brook",
+   "name": "Lawrence Brook Elementary School",
+   "short_name": "Lawrence Brook",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "48 Sullivan Way, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6870",
+   "website_url": "https://lb.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723563461/ebnetorg/qgprzyuhgu7lzrzbnp5i/LawrenceBrookElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6870",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/lawrence-brook-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-memorial",
+   "name": "Memorial Elementary School",
+   "short_name": "Memorial",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "14 Innes Road, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6860",
+   "website_url": "https://me.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723563644/ebnetorg/dczedypp7vj1orsb1s76/MemorialElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6860",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/memorial-elementary-school"
+  },
+  {
+   "slug": "east-brunswick-warnsdorfer",
+   "name": "Warnsdorfer Elementary School",
+   "short_name": "Warnsdorfer",
+   "district_name": "East Brunswick Public Schools",
+   "school_type": "elementary",
+   "address": "9 Hardenburg Lane, East Brunswick, NJ 08816",
+   "main_phone": "(732) 613-6880",
+   "website_url": "https://wa.ebnet.org",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto,t_image_size_1/v1723563828/ebnetorg/xvdsxu8spgrzxa4ydpca/WarnsdorferElementarySchoolPrimaryLogoImage.png",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 613-6880",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the school's main office and follow the prompts to report the absence. When your child returns, send a note to the classroom teacher so the absence can be excused.",
+   "start_time": "9:00 AM",
+   "end_time": "3:35 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "11:00 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": null,
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "myschoolplate_location": "eastbrunswick/warnsdorfer-elementary-school"
+  }
+ ],
+ "smore_newsletters": [
+  {
+   "url": "https://bm.ebnet.org",
+   "label": "Bowne-Munro Principal's Newsletter",
+   "school_slug": "east-brunswick-bowne-munro",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  },
+  {
+   "url": "https://ce.ebnet.org",
+   "label": "The Central Newsletter",
+   "school_slug": "east-brunswick-central",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  },
+  {
+   "url": "https://hm.ebnet.org",
+   "label": "Hammarskjold Happenings",
+   "school_slug": "east-brunswick-hammarskjold",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  },
+  {
+   "url": "https://ir.ebnet.org",
+   "label": "This Week at Irwin",
+   "school_slug": "east-brunswick-irwin",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  },
+  {
+   "url": "https://lb.ebnet.org",
+   "label": "Lawrence Brook Principal's Newsletter",
+   "school_slug": "east-brunswick-lawrence-brook",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  },
+  {
+   "url": "https://wa.ebnet.org",
+   "label": "Warnsdorfer Principal's Bi-Weekly Newsletter",
+   "school_slug": "east-brunswick-warnsdorfer",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  }
+ ]
+}

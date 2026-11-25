@@ -66,7 +66,7 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 # development day) and "Single Session" (a half day) are how Delran and
 # Cinnaminson word it, "4 Hour Day for Students" Edgewater Park, "Reduced
 # Day" Trenton.
-_EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\babbreviated\s+(?:days?|sessions?|schedules?)\b|\b(?:single|one)[\s-]session\b|\b\d\s*-?\s*hour\s+day\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
+_EARLY_RE = re.compile(r"\bearly\s+dismiss(?:al?|l)?\b|\bhalf[\s-]days?\b|\breduced\s+days?\b|\babbreviated\s+(?:days?|sessions?|schedules?)\b|\b(?:singles?|one)[\s-]session\b|\b\d\s*-?\s*hour\s+(?:day|session)\b|(?:\b1/2|½)\s*-?\s*day\b|(?:^|[^\d:])(?:1[0-2]|1|2(?!:[1-5]\d))(?::[0-5]\d)?\s*(?:[ap]\.?m\.?)?\s*(?:student\s+)?dismissal\b(?!.*\bpre-?schools?\b)", re.I)
 # A status title scoped to grades by its own wording: "PCPEP - K-8 Single
 # Session", "K-5 Single Session - Parent Conferences".
 _PRESCHOOL_ONLY_RE = re.compile(r"\bpre-?(?:school|k)\b.*\bonly\b|\bonly\b.*\bpre-?(?:school|k)\b", re.I)

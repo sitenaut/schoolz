@@ -1,0 +1,429 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Sayreville (Middlesex County)",
+ "districts": [
+  {
+   "name": "Sayreville School District",
+   "state": "NJ",
+   "website_url": "https://www.sayrevillek12.net",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": "https://www.sayrevillek12.net/district/calendar",
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.sayrevillek12.net/district/departments/transportation",
+   "towns": [
+    "Sayreville"
+   ],
+   "schoolcafe_shortname": null,
+   "ics_feeds": [
+    {
+     "name": "Sayreville Public Schools District Calendar",
+     "url": "https://www.sayrevillek12.net/calendar/calendar_349.ics"
+    }
+   ]
+  }
+ ],
+ "schools": [
+  {
+   "slug": "sayreville-cheesequake",
+   "name": "Cheesequake Preschool",
+   "short_name": "Cheesequake",
+   "school_type": "other",
+   "address": "111 NJ-34, Matawan, NJ 07747",
+   "main_phone": "(732) 525-5200 x1400",
+   "website_url": "https://cheesequake.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1655708800/sayrevillek12net/dhkns8aigqkqrfnuflnv/cheesequake-Logo.svg",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 525-5200 ext. 1433",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Any absence requires notification to the school nurse's office: call (732) 525-5200 ext. 1433 (or email the nurse) with your child's name, teacher and the reason. For a planned extended absence give the dates and expected return.",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "7:45 AM",
+   "end_time": "1:45 PM",
+   "early_dismissal_time": "11:45 AM",
+   "delayed_opening_time": "9:15 AM",
+   "staff_directory_url": "https://cheesequake.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15292"
+  },
+  {
+   "slug": "sayreville-selover",
+   "name": "Jesse Selover Preschool",
+   "short_name": "Selover",
+   "school_type": "other",
+   "address": "150 Lincoln Street, South Amboy, NJ 08879",
+   "main_phone": "(732) 525-5200 x1501",
+   "website_url": "https://selover.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1655189733/sayrevillek12net/lkwew11wmyrydiv5tm79/jesse-selover.svg",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "7:45 AM",
+   "end_time": "1:45 PM",
+   "early_dismissal_time": "11:45 AM",
+   "delayed_opening_time": "9:15 AM",
+   "staff_directory_url": "https://selover.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15117"
+  },
+  {
+   "slug": "sayreville-arleth",
+   "name": "Emma L. Arleth Elementary School",
+   "short_name": "Arleth",
+   "school_type": "elementary",
+   "address": "3198 Washington Road, Parlin, NJ 08859",
+   "main_phone": "(732) 525-5245",
+   "website_url": "https://arleth.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949662/sayrevillek12net/mnppjjnlxt5n0auuur3o/arleth-elementary.svg",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 525-5200 x4100",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Any absence requires notification to the school nurse's office by phone ((732) 525-5200 x4100), email, or a note sent in advance, with your child's name, teacher and the reason. Religious holidays always need a note. The district's automated system calls home for unreported absences.",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "9:05 AM",
+   "end_time": "3:20 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "10:35 AM",
+   "staff_directory_url": "https://arleth.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15288"
+  },
+  {
+   "slug": "sayreville-eisenhower",
+   "name": "Dwight D. Eisenhower Elementary School",
+   "short_name": "Eisenhower",
+   "school_type": "elementary",
+   "address": "601 Ernston Road, Parlin, NJ 08859",
+   "main_phone": "(732) 525-5230",
+   "website_url": "https://eisenhower.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949663/sayrevillek12net/dcozxe9qxppu3vkn3t2k/eisenhower-elementary.svg",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "9:05 AM",
+   "end_time": "3:20 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "10:35 AM",
+   "staff_directory_url": "https://eisenhower.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15289"
+  },
+  {
+   "slug": "sayreville-truman",
+   "name": "Harry S. Truman Elementary School",
+   "short_name": "Truman",
+   "school_type": "elementary",
+   "address": "1 Taft Place, Parlin, NJ 08859",
+   "main_phone": "(732) 525-5215",
+   "website_url": "https://truman.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949663/sayrevillek12net/k4wkh2cljak21lg7emyi/truman-elementary.svg",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "9:05 AM",
+   "end_time": "3:20 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "10:35 AM",
+   "staff_directory_url": "https://truman.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15290"
+  },
+  {
+   "slug": "sayreville-wilson",
+   "name": "Woodrow Wilson Elementary School",
+   "short_name": "Wilson",
+   "school_type": "elementary",
+   "address": "65 Dane Street, Sayreville, NJ 08872",
+   "main_phone": "(732) 525-5240",
+   "website_url": "https://wilson.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949662/sayrevillek12net/uvfkxetrdb19wo6djmae/wilson-elementary.svg",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 525-5237",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call your student out on the sick line, (732) 525-5237, each day your child will be absent.",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "9:05 AM",
+   "end_time": "3:20 PM",
+   "early_dismissal_time": "1:35 PM",
+   "delayed_opening_time": "10:35 AM",
+   "staff_directory_url": "https://wilson.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15291"
+  },
+  {
+   "slug": "sayreville-samsel",
+   "name": "Samsel Upper Elementary School",
+   "short_name": "Samsel",
+   "school_type": "elementary",
+   "address": "298 Ernston Road, Parlin, NJ 08859",
+   "main_phone": "(732) 316-4050",
+   "website_url": "https://samsel.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949663/sayrevillek12net/yon7yfznzkyexvxqof1e/samsel-UES.svg",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "8:30 AM",
+   "end_time": "2:45 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:00 AM",
+   "staff_directory_url": "https://samsel.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15116"
+  },
+  {
+   "slug": "sayreville-middle",
+   "name": "Sayreville Middle School",
+   "short_name": "Sayreville Middle",
+   "school_type": "middle",
+   "address": "800 Washington Road, Parlin, NJ 08859",
+   "main_phone": "(732) 525-5290",
+   "website_url": "https://sms.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949665/sayrevillek12net/rewx5hgpztvndznqisap/sayreville-ms.svg",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "bell_periods": null,
+   "athletics_url": "https://swmhsbombersathletics.digitalsports.com/",
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "8:15 AM",
+   "end_time": "2:45 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "9:45 AM",
+   "staff_directory_url": "https://sms.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15287"
+  },
+  {
+   "slug": "sayreville-war-memorial",
+   "name": "Sayreville War Memorial High School",
+   "short_name": "War Memorial",
+   "school_type": "high",
+   "address": "820 Washington Road, Parlin, NJ 08859",
+   "main_phone": "(732) 525-5252",
+   "website_url": "https://swmhs.sayrevillek12.net",
+   "logo_url": "https://resources.finalsite.net/images/v1649949666/sayrevillek12net/na5eimgk1j6tp7guc9wr/swmhs.svg",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 525-5252 option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the Attendance Office at (732) 525-5252, option 1, and leave a message with your child's name and grade, the reason for the absence, the expected return date, and your name and relationship to the student. Send a note with the reason when your child returns; doctor's notes go to the nurses.",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1 (Homeroom)",
+      "start": "07:30",
+      "end": "08:22"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:27",
+      "end": "09:12"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:17",
+      "end": "10:02"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "10:07",
+      "end": "10:52"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "10:57",
+      "end": "11:42"
+     },
+     {
+      "name": "Period 6 (Lunch)",
+      "start": "11:47",
+      "end": "12:32"
+     },
+     {
+      "name": "Period 7 (Lunch)",
+      "start": "12:37",
+      "end": "13:22"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:27",
+      "end": "14:12"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "07:30",
+      "end": "08:04"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:09",
+      "end": "08:42"
+     },
+     {
+      "name": "Period 3",
+      "start": "08:47",
+      "end": "09:20"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "09:25",
+      "end": "09:58"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "10:03",
+      "end": "10:36"
+     },
+     {
+      "name": "Period 6 (Lunch)",
+      "start": "10:41",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 7 (Lunch)",
+      "start": "11:19",
+      "end": "11:52"
+     },
+     {
+      "name": "Period 8",
+      "start": "11:57",
+      "end": "12:30"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1 (Homeroom)",
+      "start": "09:00",
+      "end": "09:39"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:44",
+      "end": "10:18"
+     },
+     {
+      "name": "Period 3 (Lunch)",
+      "start": "10:23",
+      "end": "10:57"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "11:02",
+      "end": "11:36"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "11:41",
+      "end": "12:15"
+     },
+     {
+      "name": "Period 6 (Lunch)",
+      "start": "12:20",
+      "end": "12:54"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:59",
+      "end": "13:33"
+     },
+     {
+      "name": "Period 8",
+      "start": "13:38",
+      "end": "14:12"
+     }
+    ]
+   },
+   "athletics_url": "https://swmhsbombersathletics.digitalsports.com/",
+   "givebacks_shortname": null,
+   "district_name": "Sayreville School District",
+   "start_time": "7:30 AM",
+   "end_time": "2:12 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "9:00 AM",
+   "staff_directory_url": "https://swmhs.sayrevillek12.net/about/directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null,
+   "nutrislice_location": null,
+   "healthepro_location": "2483/15286"
+  }
+ ],
+ "smore_newsletters": [
+  {
+   "url": "https://samsel.sayrevillek12.net/news-media/samsel-send",
+   "label": "Samsel Send",
+   "school_slug": "sayreville-samsel",
+   "source_type": "virtual_backpack",
+   "cron_expr": "0 9 * * *",
+   "timezone": "America/New_York",
+   "enabled": true
+  }
+ ]
+}

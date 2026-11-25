@@ -82,7 +82,7 @@ describe("isRotationItem", () => {
   });
 
   it("matches lettered days, however the feed spells them", () => {
-    for (const t of ["Day C", "DAY C", "C Day", "C  Day", "C-Day", "DAY E (Snow Day)"]) expect(isRotationItem(t)).toBe(true);
+    for (const t of ["Day C", "DAY C", "C Day", "C  Day", "C-Day", "DAY E (Snow Day)", '"A" Day', '"B"Day']) expect(isRotationItem(t)).toBe(true);
   });
 
   it("does not take a sentence or a lowercase letter for a rotation day", () => {
@@ -157,6 +157,8 @@ describe("dayStatusOf", () => {
     expect(dayStatusOf(["EARLY DISMISSAL - Staff In-Service"])).toBe("half");
     expect(dayStatusOf(["Early Dismissal - Parent/Teacher Conferences"])).toBe("half");
     expect(dayStatusOf(["4 Hour Day for Students"])).toBe("half");
+    expect(dayStatusOf(["4 Hour Session"])).toBe("half");
+    expect(dayStatusOf(["Singles Session - All Students"])).toBe("half");
     expect(dayStatusOf(["ECC Back to School Night/Reduced Day"])).toBe("half");
     expect(dayStatusOf(["Early Dismissl - Last Day of School for Students"])).toBe("half");
     expect(dayStatusOf(["K-12 Early Dismissal (Half Day Preschool Closed)"])).toBe("half");

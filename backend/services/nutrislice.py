@@ -91,14 +91,38 @@ async def _get(client: httpx.AsyncClient, url: str) -> httpx.Response:
     raise AssertionError("unreachable")
 
 
-async def fetch_entrees(client: httpx.AsyncClient, district: str, school: str, meal: str, start: date, end: date) -> dict[date, list[str]]:
+async def menu_type_slugs(client: httpx.AsyncClient, district: str, school: str) -> dict[str, str]:
+    """{meal: menu-type slug} for the school. The slug is usually the meal
+    itself, but a tenant can name its own: New Brunswick files every K-8 lunch
+    under "k-8-lunches" (named "Lunch") and leaves "lunch" empty. A meal with
+    no type named for it keeps its own slug; a failed lookup changes nothing."""
+    slugs = {meal: meal for meal in MEAL_TYPES}
+    try:
+        resp = await _get(client, f"https://{district}.api.nutrislice.com/menu/api/schools/")
+        resp.raise_for_status()
+        rows = resp.json()
+    except (httpx.HTTPError, ValueError):
+        return slugs
+    row = next((r for r in rows if isinstance(r, dict) and r.get("slug") == school), None)
+    types = [t for t in (row or {}).get("active_menu_types") or [] if isinstance(t, dict)]
+    have = {t.get("slug") for t in types}
+    for meal in MEAL_TYPES:
+        if meal in have:
+            continue
+        named = [t["slug"] for t in types if t.get("slug") and (t.get("name") or "").strip().lower() == meal]
+        if len(named) == 1:
+            slugs[meal] = named[0]
+    return slugs
+
+
+async def fetch_entrees(client: httpx.AsyncClient, district: str, school: str, meal: str, start: date, end: date, menu_type: str | None = None) -> dict[date, list[str]]:
     """Entrées per school day in [start, end]. A meal the school doesn't
     serve is a 404, which just means no days."""
     out: dict[date, list[str]] = {}
     for day in _week_starts(start, end):
         resp = await _get(
             client,
-            f"https://{district}.api.nutrislice.com/menu/api/weeks/school/{school}/menu-type/{meal}/{day.year}/{day.month:02d}/{day.day:02d}/",
+            f"https://{district}.api.nutrislice.com/menu/api/weeks/school/{school}/menu-type/{menu_type or meal}/{day.year}/{day.month:02d}/{day.day:02d}/",
         )
         if resp.status_code == 404:
             continue

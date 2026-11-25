@@ -1,0 +1,679 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Monroe Township (Middlesex County)",
+ "districts": [
+  {
+   "name": "Monroe Township School District",
+   "state": "NJ",
+   "website_url": "https://www.monroe.k12.nj.us",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": "https://www.monroe.k12.nj.us/fs/resource-manager/view/94ebc420-287f-495f-90aa-87e16177dbb3",
+   "ics_feeds": [
+    {
+     "name": "Monroe Township District Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=3"
+    },
+    {
+     "name": "Applegarth Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=8",
+     "school_slug": "monroe-township-applegarth"
+    },
+    {
+     "name": "Barclay Brook Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=5",
+     "school_slug": "monroe-township-barclay-brook"
+    },
+    {
+     "name": "Brookside Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=7",
+     "school_slug": "monroe-township-brookside"
+    },
+    {
+     "name": "Oak Tree Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=6",
+     "school_slug": "monroe-township-oak-tree"
+    },
+    {
+     "name": "Woodland Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=10",
+     "school_slug": "monroe-township-woodland"
+    },
+    {
+     "name": "MTHS Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=12",
+     "school_slug": "monroe-township-high"
+    },
+    {
+     "name": "MTHS College & Career Counseling Calendar",
+     "url": "https://www.monroe.k12.nj.us/fs/calendar-manager/events.ics?calendar_ids[]=14",
+     "school_slug": "monroe-township-high"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.monroe.k12.nj.us/student-services/transportation/welcome",
+   "towns": [
+    "Monroe Township",
+    "Jamesburg"
+   ],
+   "schoolcafe_shortname": "MONROETOWNSHIPSDMETZ"
+  }
+ ],
+ "schools": [
+  {
+   "slug": "monroe-township-applegarth",
+   "name": "Applegarth Elementary School",
+   "short_name": "Applegarth",
+   "district_name": "Monroe Township School District",
+   "school_type": "elementary",
+   "address": "227 Applegarth Road, Monroe Township, NJ 08831",
+   "main_phone": "(609) 655-0604",
+   "website_url": "https://aes.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "9:05 AM",
+   "end_time": "3:34 PM",
+   "early_dismissal_time": "1:05 PM",
+   "delayed_opening_time": "11:05 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-barclay-brook",
+   "name": "Barclay Brook Elementary School",
+   "short_name": "Barclay Brook",
+   "district_name": "Monroe Township School District",
+   "school_type": "elementary",
+   "address": "358 Buckelew Avenue, Monroe Township, NJ 08831",
+   "main_phone": "(732) 521-1000",
+   "website_url": "https://bbs.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "9:05 AM",
+   "end_time": "3:34 PM",
+   "early_dismissal_time": "1:05 PM",
+   "delayed_opening_time": "11:05 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-brookside",
+   "name": "Brookside Elementary School",
+   "short_name": "Brookside",
+   "district_name": "Monroe Township School District",
+   "school_type": "elementary",
+   "address": "370 Buckelew Avenue, Monroe Township, NJ 08831",
+   "main_phone": "(732) 521-1101",
+   "website_url": "https://bes.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "9:05 AM",
+   "end_time": "3:34 PM",
+   "early_dismissal_time": "1:05 PM",
+   "delayed_opening_time": "11:05 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-mill-lake",
+   "name": "Mill Lake Elementary School",
+   "short_name": "Mill Lake",
+   "district_name": "Monroe Township School District",
+   "school_type": "elementary",
+   "address": "115 Monmouth Road, Monroe Township, NJ 08831",
+   "main_phone": "(732) 251-5336",
+   "website_url": "https://mls.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:50 AM",
+   "end_time": "3:19 PM",
+   "early_dismissal_time": "12:50 PM",
+   "delayed_opening_time": "10:50 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-high",
+   "name": "Monroe Township High School",
+   "short_name": "Monroe Township High",
+   "district_name": "Monroe Township School District",
+   "school_type": "high",
+   "address": "200 Schoolhouse Road, Monroe Township, NJ 08831",
+   "main_phone": "(732) 521-2882",
+   "website_url": "https://mths.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": "Genesis",
+   "absence_portal_url": "https://parents.monroe.k12.nj.us/",
+   "absence_instructions": "Report a tardy or absence in Genesis Parent Access on the day of the absence (or before): log in, click \"Notify Office\" and complete the form with the reason. Notes for an illness go in with the Genesis report or on the student's return; other notes (medical, college visit) as soon as possible. Attendance questions: mths.attendance@monroe.k12.nj.us.",
+   "start_time": "7:27 AM",
+   "end_time": "2:00 PM",
+   "early_dismissal_time": "11:27 AM",
+   "delayed_opening_time": "9:27 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Block 1",
+      "start": "07:27",
+      "end": "08:51"
+     },
+     {
+      "name": "Homeroom",
+      "start": "08:51",
+      "end": "08:57"
+     },
+     {
+      "name": "Block 2",
+      "start": "09:02",
+      "end": "10:26"
+     },
+     {
+      "name": "Block 3/Lunch A 10:31, B 11:16, C 12:00",
+      "start": "10:31",
+      "end": "12:31"
+     },
+     {
+      "name": "Block 4",
+      "start": "12:36",
+      "end": "14:00"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Block 1",
+      "start": "07:27",
+      "end": "08:23"
+     },
+     {
+      "name": "Homeroom",
+      "start": "08:23",
+      "end": "08:24"
+     },
+     {
+      "name": "Block 2",
+      "start": "08:29",
+      "end": "09:25"
+     },
+     {
+      "name": "Block 3",
+      "start": "09:30",
+      "end": "10:26"
+     },
+     {
+      "name": "Block 4",
+      "start": "10:31",
+      "end": "11:27"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Block 1",
+      "start": "09:27",
+      "end": "10:16"
+     },
+     {
+      "name": "Homeroom",
+      "start": "10:16",
+      "end": "10:17"
+     },
+     {
+      "name": "Block 2",
+      "start": "10:22",
+      "end": "11:13"
+     },
+     {
+      "name": "Block 3/Lunch A 11:18, B 11:57, C 12:33",
+      "start": "11:18",
+      "end": "13:04"
+     },
+     {
+      "name": "Block 4",
+      "start": "13:09",
+      "end": "14:00"
+     }
+    ]
+   },
+   "athletics_url": "https://monroefalconsathletics.digitalsports.com/",
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-middle",
+   "name": "Monroe Township Middle School",
+   "short_name": "Monroe Township Middle",
+   "district_name": "Monroe Township School District",
+   "school_type": "middle",
+   "address": "1629 Perrineville Road, Monroe Township, NJ 08831",
+   "main_phone": "(732) 521-6042",
+   "website_url": "https://mtms.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:10 AM",
+   "end_time": "2:39 PM",
+   "early_dismissal_time": "12:10 PM",
+   "delayed_opening_time": "10:10 AM",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:13",
+      "end": "10:09"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:12",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:11",
+      "end": "12:07"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "12:10",
+      "end": "12:40"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:44",
+      "end": "13:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:43",
+      "end": "14:39"
+     }
+    ],
+    "regular_grades_6": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:13",
+      "end": "10:09"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:12",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 4 (Lunch)",
+      "start": "11:11",
+      "end": "11:41"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:45",
+      "end": "12:41"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:44",
+      "end": "13:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:43",
+      "end": "14:39"
+     }
+    ],
+    "regular_grades_7": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:13",
+      "end": "10:09"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:12",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:11",
+      "end": "12:07"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "12:10",
+      "end": "12:40"
+     },
+     {
+      "name": "Period 6",
+      "start": "12:44",
+      "end": "13:40"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:43",
+      "end": "14:39"
+     }
+    ],
+    "regular_grades_8": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "09:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:13",
+      "end": "10:09"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:12",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 4",
+      "start": "11:11",
+      "end": "12:07"
+     },
+     {
+      "name": "Period 5",
+      "start": "12:10",
+      "end": "13:06"
+     },
+     {
+      "name": "Period 6 (Lunch)",
+      "start": "13:09",
+      "end": "13:39"
+     },
+     {
+      "name": "Period 7",
+      "start": "13:43",
+      "end": "14:39"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:53",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:33",
+      "end": "10:10"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:13",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:53",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:33",
+      "end": "12:10"
+     }
+    ],
+    "early_dismissal_grades_6": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:53",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:33",
+      "end": "10:10"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:13",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:53",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:33",
+      "end": "12:10"
+     }
+    ],
+    "early_dismissal_grades_7": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:53",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:33",
+      "end": "10:10"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:13",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 6",
+      "start": "10:53",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:33",
+      "end": "12:10"
+     }
+    ],
+    "early_dismissal_grades_8": [
+     {
+      "name": "Period 1 / Homeroom",
+      "start": "08:10",
+      "end": "08:50"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:53",
+      "end": "09:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:33",
+      "end": "10:10"
+     },
+     {
+      "name": "Period 4",
+      "start": "10:13",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:53",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:33",
+      "end": "12:10"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1",
+      "start": "10:10",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:53",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:33",
+      "end": "12:10"
+     },
+     {
+      "name": "Period 4",
+      "start": "12:13",
+      "end": "12:50"
+     },
+     {
+      "name": "Period 5 (Lunch)",
+      "start": "12:53",
+      "end": "13:23"
+     },
+     {
+      "name": "Period 6",
+      "start": "13:26",
+      "end": "14:03"
+     },
+     {
+      "name": "Period 7",
+      "start": "14:06",
+      "end": "14:39"
+     }
+    ]
+   },
+   "athletics_url": "https://monroefalconsathletics.digitalsports.com/",
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-oak-tree",
+   "name": "Oak Tree Elementary School",
+   "short_name": "Oak Tree",
+   "district_name": "Monroe Township School District",
+   "school_type": "elementary",
+   "address": "226 Applegarth Road, Monroe Township, NJ 08831",
+   "main_phone": "(609) 655-7642",
+   "website_url": "https://ots.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:24 PM",
+   "early_dismissal_time": "12:55 PM",
+   "delayed_opening_time": "10:55 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  },
+  {
+   "slug": "monroe-township-woodland",
+   "name": "Woodland Elementary School",
+   "short_name": "Woodland",
+   "district_name": "Monroe Township School District",
+   "school_type": "elementary",
+   "address": "42 Harrison Avenue, Monroe Township, NJ 08831",
+   "main_phone": "(732) 251-1177",
+   "website_url": "https://wes.monroe.k12.nj.us",
+   "logo_url": "https://resources.finalsite.net/images/f_auto,q_auto/v1721314551/monroek12njus/vozacejyh2wwqjtvsjbd/NEWESTFALCONLOGO.png",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": "Genesis",
+   "absence_portal_url": "https://parents.monroe.k12.nj.us/",
+   "absence_instructions": "Report all absences and tardies through the Genesis Parent Portal, with the reason in the comments so the nurse can track illness. Calling the attendance line is no longer required. A written excuse is due within 2 days of the child's return; after a contagious illness a doctor's note is needed before readmission.",
+   "start_time": "8:10 AM",
+   "end_time": "2:39 PM",
+   "early_dismissal_time": "12:10 PM",
+   "delayed_opening_time": "10:10 AM",
+   "bell_periods": null,
+   "athletics_url": null,
+   "givebacks_shortname": null,
+   "staff_directory_url": "https://www.monroe.k12.nj.us/contact-us/district-directory",
+   "sacc": null,
+   "activities_calendar_ics_url": null
+  }
+ ],
+ "smore_newsletters": []
+}

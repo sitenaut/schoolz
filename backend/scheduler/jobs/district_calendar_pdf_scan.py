@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import District, School, SchoolContentItem
 from scheduler.registry import register_job
 from services import district_calendar_pdf as svc
+from services.district_calendar import school_types_from_title
 
 
 @register_job(
@@ -37,11 +38,19 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     }
     # The uid carries the file's content hash, so unchanged bytes mean the
     # rows are already right - skip the model call every 12h.
+    schools = (await db.execute(select(School.name, School.short_name, School.school_type).where(School.district_id == district.id))).all()
     if any(uid.startswith(f"{svc.UID_PREFIX}:{digest}:") for uid in existing):
-        return f"calendar PDF unchanged ({digest}), {len(existing)} items on file"
+        # Narrowing rules learn new wordings ("(High School)", Carteret) after
+        # a file was read: apply them to the stored titles, never widening one.
+        narrowed = 0
+        for row in existing.values():
+            types = school_types_from_title(row.title, schools)
+            if types and types != row.applies_to_school_types:
+                row.applies_to_school_types = types
+                narrowed += 1
+        return f"calendar PDF unchanged ({digest}), {len(existing)} items on file" + (f", {narrowed} narrowed" if narrowed else "")
 
     events = await svc.extract_events(data)
-    schools = (await db.execute(select(School.name, School.short_name, School.school_type).where(School.district_id == district.id))).all()
     wanted, skipped = svc.build_items(events, pdf_url, digest, schools)
     if not wanted:
         return f"WARNING[calendar_pdf_empty]: {pdf_url} produced no calendar entries"

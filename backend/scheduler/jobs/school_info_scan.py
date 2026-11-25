@@ -20,6 +20,15 @@ def restore_zip_zero(address: str) -> str:
     return _FOUR_DIGIT_ZIP_RE.sub(lambda m: f"{m.group(1)}0{m.group(2)}", address)
 
 
+def drops_extension(found: str, stored: str | None) -> bool:
+    """The footer's number is the stored one minus its extension: New
+    Brunswick's thirteen schools share the district number, and only the
+    extension the footer prints as text ("732-745-5300, Ext. 7500"), never in
+    its tel: link, tells them apart."""
+    new, old = re.sub(r"\D", "", found), re.sub(r"\D", "", stored or "")
+    return bool(new) and len(old) > len(new) and old.startswith(new)
+
+
 @register_job(
     kind="school_info.scan",
     default_name="School info scan",
@@ -59,7 +68,7 @@ async def run(db: AsyncSession, params: dict) -> str | None:
         # weather lookup below re-geocodes instead of keeping a stale grid.
         school.latitude = school.longitude = school.nws_grid = None
         changed.append("address")
-    if info["main_phone"] and info["main_phone"] != school.main_phone:
+    if info["main_phone"] and info["main_phone"] != school.main_phone and not drops_extension(info["main_phone"], school.main_phone):
         school.main_phone = info["main_phone"]
         changed.append("main_phone")
     if info["logo_url"] and info["logo_url"] != school.logo_url:

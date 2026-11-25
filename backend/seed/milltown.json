@@ -1,0 +1,87 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Milltown (Middlesex County)",
+ "districts": [
+  {
+   "name": "Milltown School District",
+   "state": "NJ",
+   "website_url": "https://www.milltownps.org",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "Parkview School Calendar",
+     "url": "https://pv.milltownps.org/apps/events/ical/?id=0",
+     "school_slug": "milltown-parkview"
+    },
+    {
+     "name": "Joyce Kilmer School Calendar",
+     "url": "https://jk.milltownps.org/apps/events/ical/?id=0",
+     "school_slug": "milltown-joyce-kilmer"
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": null,
+   "towns": [
+    "Milltown"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "milltown-parkview",
+   "name": "Parkview School",
+   "short_name": "Parkview",
+   "district_name": "Milltown School District",
+   "school_type": "elementary",
+   "address": "80 Violet Terrace, Milltown, NJ 08850",
+   "main_phone": "(732) 214-2360",
+   "website_url": "https://pv.milltownps.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 214-2360, option 1 then 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance line, 732-214-2360, option 1 then option 1, by 9:00 AM on the morning of every absence or late arrival (voicemail, open 24/7). Leave your name, your child's name, the date and the reason, and call each day of a longer illness. Send a signed note within 5 days of your child's return, or the absence stays unexcused.",
+   "start_time": "8:25 AM",
+   "end_time": "2:45 PM",
+   "early_dismissal_time": "12:25 PM",
+   "delayed_opening_time": "10:25 AM",
+   "athletics_url": null,
+   "logo_url": null,
+   "bell_periods": null,
+   "sacc": null,
+   "fdmealplanner_location": null
+  },
+  {
+   "slug": "milltown-joyce-kilmer",
+   "name": "Joyce Kilmer School",
+   "short_name": "Joyce Kilmer",
+   "district_name": "Milltown School District",
+   "school_type": "middle",
+   "address": "21 West Church Street, Milltown, NJ 08850",
+   "main_phone": "(732) 214-2370",
+   "website_url": "https://jk.milltownps.org",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 214-2370, option 2 then 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call the attendance line, 732-214-2370, option 2 then option 1, by 9:00 AM on the morning of every absence or late arrival (voicemail, open 24/7). Leave your name, your child's name, the date and the reason, and call each day of a longer illness. Send a signed note within 5 days of your child's return, or the absence stays unexcused.",
+   "start_time": "8:40 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "12:40 PM",
+   "delayed_opening_time": "10:40 AM",
+   "athletics_url": null,
+   "logo_url": null,
+   "bell_periods": null,
+   "sacc": null,
+   "fdmealplanner_location": null
+  }
+ ],
+ "smore_newsletters": []
+}

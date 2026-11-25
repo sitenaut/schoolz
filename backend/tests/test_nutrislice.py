@@ -108,3 +108,24 @@ async def test_fetch_entrees_gives_up_after_the_retries(monkeypatch):
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
         with pytest.raises(httpx.ConnectError):
             await nutrislice.fetch_entrees(client, "d", "s", "lunch", date(2026, 10, 19), date(2026, 10, 20))
+
+
+@pytest.mark.anyio
+async def test_menu_type_slugs_follow_a_tenants_own_lunch_type():
+    # New Brunswick files every K-8 lunch under "k-8-lunches", named "Lunch".
+    schools = [
+        {"slug": "lincoln-elementary", "active_menu_types": [
+            {"slug": "breakfast", "name": "Breakfast"}, {"slug": "snack-program-menu-assp", "name": "Snack Program Menu ASSP"},
+            {"slug": "k-8-lunches", "name": "Lunch"},
+        ]},
+        {"slug": "high", "active_menu_types": [{"slug": "breakfast", "name": "Breakfast"}, {"slug": "lunch", "name": "Lunch"}]},
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/menu/api/schools/"
+        return httpx.Response(200, json=schools)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        assert await nutrislice.menu_type_slugs(client, "nbps", "lincoln-elementary") == {"breakfast": "breakfast", "lunch": "k-8-lunches"}
+        assert await nutrislice.menu_type_slugs(client, "nbps", "high") == {"breakfast": "breakfast", "lunch": "lunch"}
+        assert await nutrislice.menu_type_slugs(client, "nbps", "unknown") == {"breakfast": "breakfast", "lunch": "lunch"}

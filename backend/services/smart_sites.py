@@ -132,23 +132,34 @@ def parse_directory(fragment: str) -> list[dict]:
     soup = BeautifulSoup(fragment, "lxml")
     out = []
     # Table layout (Monroe): one row per person, `data-staff-name`, a Name
-    # column and sometimes a Title one; no emails.
+    # column and sometimes a Title one. Dunellen's district-wide table adds a
+    # Location column naming each person's school, which the roster scan
+    # splits on (`locations`), and a message button carrying the email.
     for row in soup.select("tr[data-staff-name]"):
         name = " ".join((row.get("data-staff-name") or "").split())
         if not name:
             continue
         cells = [c.get_text(" ", strip=True) for c in row.find_all("td")]
-        title = cells[1] if len(cells) > 1 and cells[1] else None
-        out.append(
-            {
-                "constituent_id": _constituent_id(name, None),
-                "full_name": name,
-                "title": title,
-                "department": None,
-                "email": None,
-                "phone": None,
-            }
-        )
+        table = row.find_parent("table")
+        heads = [th.get_text(" ", strip=True).lower() for th in table.select("thead th")] if table else []
+        col = {h: i for i, h in enumerate(heads)}
+        title_i = col.get("title", 1)
+        title = cells[title_i] if len(cells) > title_i and cells[title_i] else None
+        btn = row.select_one("[data-staff-email]")
+        email = _decode_email(btn.get("data-staff-email") if btn else None)
+        entry = {
+            # Name only, as before emails were read: rows already stored keep their id.
+            "constituent_id": _constituent_id(name, None),
+            "full_name": name,
+            "title": title,
+            "department": None,
+            "email": email,
+            "phone": None,
+        }
+        loc_i = col.get("location")
+        if loc_i is not None and len(cells) > loc_i and cells[loc_i]:
+            entry["locations"] = [cells[loc_i]]
+        out.append(entry)
     # Legacy directory page (Tabernacle): server-rendered cards, first and
     # last name split by a <br>, the full name on the message button.
     for card in soup.select("li.ss-directory-ppl-list__card"):

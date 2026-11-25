@@ -17,6 +17,8 @@ from services import i18n_strings, rotation_day
         ("  Day D  ", "D", 4, True),
         ("DAY E (Snow Day)", "E", 5, True),
         ("Day F (makeup snow day)", "F", 6, True),
+        ('"A" Day', "A", 1, True),  # Monroe Township High (Middlesex)
+        ('"B"Day', "B", 2, True),
     ],
 )
 def test_parse_reads_numbered_and_lettered_days(title, key, number, lettered):

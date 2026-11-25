@@ -1,0 +1,1362 @@
+{
+ "exported_at": "2026-11-19T12:00:00Z",
+ "source": "onboarding: Edison (Middlesex County)",
+ "districts": [
+  {
+   "name": "Edison Township Public Schools",
+   "state": "NJ",
+   "website_url": "https://www.edison.k12.nj.us",
+   "food_services_menu_url": null,
+   "calendar_pdf_url": null,
+   "ics_feeds": [
+    {
+     "name": "Edison District",
+     "platform": "apptegy",
+     "org_id": "20425",
+     "skip_sections": [
+      "Ben Franklin",
+      "EELC",
+      "EHS",
+      "ESA",
+      "FDR",
+      "Herbert Hoover",
+      "James Monroe",
+      "JAMS",
+      "JMI",
+      "JMP",
+      "John Marshall",
+      "JPHS",
+      "Lincoln",
+      "Lindeneau",
+      "Menlo Park",
+      "MLK",
+      "TJ",
+      "Washington",
+      "Woodbrook",
+      "Woodrow Wilson"
+     ]
+    },
+    {
+     "name": "Edison Ben Franklin",
+     "platform": "apptegy",
+     "org_id": "20520",
+     "school_slug": "edison-benjamin-franklin",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Early Learning Center",
+     "platform": "apptegy",
+     "org_id": "20521",
+     "school_slug": "edison-early-learning-center",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison High",
+     "platform": "apptegy",
+     "org_id": "20522",
+     "school_slug": "edison-high",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison FDR Preschool",
+     "platform": "apptegy",
+     "org_id": "20542",
+     "school_slug": "edison-fdr-preschool",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Herbert Hoover Middle",
+     "platform": "apptegy",
+     "org_id": "20525",
+     "school_slug": "edison-herbert-hoover-middle",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison James Madison Intermediate",
+     "platform": "apptegy",
+     "org_id": "20526",
+     "school_slug": "edison-james-madison-intermediate",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison James Madison Primary",
+     "platform": "apptegy",
+     "org_id": "20527",
+     "school_slug": "edison-james-madison-primary",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison James Monroe",
+     "platform": "apptegy",
+     "org_id": "20528",
+     "school_slug": "edison-james-monroe",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison John Adams Middle",
+     "platform": "apptegy",
+     "org_id": "20529",
+     "school_slug": "edison-john-adams-middle",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison John Marshall",
+     "platform": "apptegy",
+     "org_id": "20530",
+     "school_slug": "edison-john-marshall",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison J.P. Stevens High",
+     "platform": "apptegy",
+     "org_id": "20531",
+     "school_slug": "edison-john-p-stevens-high",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Lincoln",
+     "platform": "apptegy",
+     "org_id": "20532",
+     "school_slug": "edison-lincoln",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Lindeneau",
+     "platform": "apptegy",
+     "org_id": "20534",
+     "school_slug": "edison-lindeneau",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Martin Luther King",
+     "platform": "apptegy",
+     "org_id": "20535",
+     "school_slug": "edison-martin-luther-king",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Menlo Park",
+     "platform": "apptegy",
+     "org_id": "20536",
+     "school_slug": "edison-menlo-park",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Thomas Jefferson Middle",
+     "platform": "apptegy",
+     "org_id": "20537",
+     "school_slug": "edison-thomas-jefferson-middle",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Washington",
+     "platform": "apptegy",
+     "org_id": "20538",
+     "school_slug": "edison-washington",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Woodbrook",
+     "platform": "apptegy",
+     "org_id": "20539",
+     "school_slug": "edison-woodbrook",
+     "skip_sections": [
+      "District Events"
+     ]
+    },
+    {
+     "name": "Edison Woodrow Wilson Middle",
+     "platform": "apptegy",
+     "org_id": "20540",
+     "school_slug": "edison-woodrow-wilson-middle",
+     "skip_sections": [
+      "District Events"
+     ]
+    }
+   ],
+   "marking_period_url": null,
+   "preschool_locations_url": null,
+   "preschool_team_url": null,
+   "hs_rotation_url": null,
+   "transportation_url": "https://www.edison.k12.nj.us/page/transportation",
+   "towns": [
+    "Edison"
+   ],
+   "schoolcafe_shortname": null
+  }
+ ],
+ "schools": [
+  {
+   "slug": "edison-benjamin-franklin",
+   "name": "Benjamin Franklin Elementary School",
+   "short_name": "Ben Franklin",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "2485 Woodbridge Ave, Edison, NJ 08817",
+   "main_phone": "(732) 650-5300",
+   "website_url": "https://www.edison.k12.nj.us/o/bfes",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20520/logo/23334/2026-27_DiL_logo__1_.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20520",
+   "nutrislice_location": "edisontps/ben-franklin-elementary-school"
+  },
+  {
+   "slug": "edison-early-learning-center",
+   "name": "Edison Early Learning Center",
+   "short_name": "Early Learning Center",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "other",
+   "address": "10 Boulevard of the Eagles, Edison, NJ 08817",
+   "main_phone": "(732) 650-5294",
+   "website_url": "https://www.edison.k12.nj.us/o/eelc",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5294",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence, call the school secretary at (732) 650-5294.",
+   "start_time": "9:30 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "11:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20521/logo/23335/EELC_logo_design__1_.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20521",
+   "nutrislice_location": "edisontps/edison-early-learning-center"
+  },
+  {
+   "slug": "edison-high",
+   "name": "Edison High School",
+   "short_name": "Edison High",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "high",
+   "address": "50 Boulevard of the Eagles, Edison, NJ 08817",
+   "main_phone": "(732) 650-5200",
+   "website_url": "https://www.edison.k12.nj.us/o/ehs",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5221",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Report an absence by leaving a note in the Genesis Parent Portal, calling the attendance office at (732) 650-5221 or (732) 650-5220, or emailing the attendance secretaries (addresses on the school's Attendance page). To excuse it, email, hand in or upload to Genesis a written parent note (up to three non-consecutive full days a year) or a doctor's note within two weeks of the visit. A student absent for the day can't take part in after-school activities.",
+   "start_time": "7:40 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:00 PM",
+   "delayed_opening_time": "9:40 AM",
+   "athletics_url": "https://73224.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20522/logo/23336/Edison_High_School.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1",
+      "start": "07:40",
+      "end": "08:26"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:31",
+      "end": "09:14"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:19",
+      "end": "10:02"
+     },
+     {
+      "name": "Period 4 (1st Lunch)",
+      "start": "10:07",
+      "end": "10:30"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:35",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 6 (2nd Lunch)",
+      "start": "10:55",
+      "end": "11:18"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:23",
+      "end": "11:38"
+     },
+     {
+      "name": "Period 8 (3rd Lunch)",
+      "start": "11:43",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:11",
+      "end": "12:26"
+     },
+     {
+      "name": "Period 10 (4th Lunch)",
+      "start": "12:31",
+      "end": "12:54"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:59",
+      "end": "13:42"
+     },
+     {
+      "name": "Period 12",
+      "start": "13:47",
+      "end": "14:30"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "07:40",
+      "end": "08:09"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:14",
+      "end": "08:42"
+     },
+     {
+      "name": "Period 3",
+      "start": "08:47",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 5",
+      "start": "09:20",
+      "end": "09:48"
+     },
+     {
+      "name": "Period 7",
+      "start": "09:53",
+      "end": "10:21"
+     },
+     {
+      "name": "Period 9",
+      "start": "10:26",
+      "end": "10:54"
+     },
+     {
+      "name": "Period 11",
+      "start": "10:59",
+      "end": "11:27"
+     },
+     {
+      "name": "Period 12",
+      "start": "11:32",
+      "end": "12:00"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1",
+      "start": "09:40",
+      "end": "10:10"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:15",
+      "end": "10:42"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:47",
+      "end": "11:14"
+     },
+     {
+      "name": "Period 4 (1st Lunch)",
+      "start": "11:19",
+      "end": "11:44"
+     },
+     {
+      "name": "Period 6 (2nd Lunch)",
+      "start": "11:49",
+      "end": "12:14"
+     },
+     {
+      "name": "Period 8 (3rd Lunch)",
+      "start": "12:19",
+      "end": "12:44"
+     },
+     {
+      "name": "Period 10 (4th Lunch)",
+      "start": "12:49",
+      "end": "13:14"
+     },
+     {
+      "name": "Period 11",
+      "start": "13:19",
+      "end": "13:52"
+     },
+     {
+      "name": "Period 12",
+      "start": "13:57",
+      "end": "14:30"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "20522",
+   "nutrislice_location": "edisontps/edison-high-school"
+  },
+  {
+   "slug": "edison-fdr-preschool",
+   "name": "FDR Preschool",
+   "short_name": "FDR Preschool",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "other",
+   "address": "838 New Dover Road, Edison, NJ 08820",
+   "main_phone": "(732) 452-2939",
+   "website_url": "https://www.edison.k12.nj.us/o/fdrp",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 452-2939, option 8",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence or late arrival, call (732) 452-2939 and choose option 8 by 8:30 AM, or email the attendance contact listed on the school's Attendance page.",
+   "start_time": "8:30 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:30 PM",
+   "delayed_opening_time": "10:30 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20542/logo/23356/FDR_Preschool_logo_template_300.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20542",
+   "nutrislice_location": "edisontps/fdr-preschool"
+  },
+  {
+   "slug": "edison-herbert-hoover-middle",
+   "name": "Herbert Hoover Middle School",
+   "short_name": "Herbert Hoover Middle",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "middle",
+   "address": "174 Jackson Avenue, Edison, NJ 08837",
+   "main_phone": "(732) 452-2940",
+   "website_url": "https://www.edison.k12.nj.us/o/hhms",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 452-2940 ext. 31001",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report a student absent, call the attendance secretary at (732) 452-2940 ext. 31001 or use the email link on the school's Attendance page. Fax (732) 452-2949.",
+   "start_time": "8:25 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:25 AM",
+   "athletics_url": "https://www.arbiterlive.com/m/team/9851",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20525/logo/23339/Herbert_Hoover_Middle_School.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Homeroom",
+      "start": "08:25",
+      "end": "08:30"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:33",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:18",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:03",
+      "end": "10:45"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:48",
+      "end": "11:30"
+     },
+     {
+      "name": "Lunch",
+      "start": "11:33",
+      "end": "12:00"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "12:03",
+      "end": "12:45"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:48",
+      "end": "13:30"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:33",
+      "end": "14:15"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:18",
+      "end": "15:00"
+     }
+    ],
+    "regular_grades_6": [
+     {
+      "name": "Homeroom",
+      "start": "08:25",
+      "end": "08:30"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:33",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:18",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:03",
+      "end": "10:45"
+     },
+     {
+      "name": "Lunch",
+      "start": "10:48",
+      "end": "11:15"
+     },
+     {
+      "name": "Period 5-6",
+      "start": "11:18",
+      "end": "12:00"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "12:03",
+      "end": "12:45"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:48",
+      "end": "13:30"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:33",
+      "end": "14:15"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:18",
+      "end": "15:00"
+     }
+    ],
+    "regular_grades_7": [
+     {
+      "name": "Homeroom",
+      "start": "08:25",
+      "end": "08:30"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:33",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:18",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:03",
+      "end": "10:45"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:48",
+      "end": "11:30"
+     },
+     {
+      "name": "Lunch",
+      "start": "11:33",
+      "end": "12:00"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "12:03",
+      "end": "12:45"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:48",
+      "end": "13:30"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:33",
+      "end": "14:15"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:18",
+      "end": "15:00"
+     }
+    ],
+    "regular_grades_8": [
+     {
+      "name": "Homeroom",
+      "start": "08:25",
+      "end": "08:30"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:33",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:18",
+      "end": "10:00"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:03",
+      "end": "10:45"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "10:48",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 6-7",
+      "start": "11:33",
+      "end": "12:15"
+     },
+     {
+      "name": "Lunch",
+      "start": "12:18",
+      "end": "12:45"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:48",
+      "end": "13:30"
+     },
+     {
+      "name": "Period 10",
+      "start": "13:33",
+      "end": "14:15"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:18",
+      "end": "15:00"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Homeroom",
+      "start": "08:25",
+      "end": "08:28"
+     },
+     {
+      "name": "Period 1",
+      "start": "08:31",
+      "end": "09:02"
+     },
+     {
+      "name": "Period 2",
+      "start": "09:05",
+      "end": "09:36"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:39",
+      "end": "10:10"
+     },
+     {
+      "name": "Period 4-5 / 5-6",
+      "start": "10:13",
+      "end": "10:44"
+     },
+     {
+      "name": "Period 6-7 / 7-8",
+      "start": "10:47",
+      "end": "11:18"
+     },
+     {
+      "name": "Period 9",
+      "start": "11:21",
+      "end": "11:52"
+     },
+     {
+      "name": "Period 10",
+      "start": "11:55",
+      "end": "12:26"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:29",
+      "end": "13:00"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Homeroom",
+      "start": "10:25",
+      "end": "10:30"
+     },
+     {
+      "name": "Period 1",
+      "start": "10:33",
+      "end": "11:00"
+     },
+     {
+      "name": "Period 2",
+      "start": "11:03",
+      "end": "11:30"
+     },
+     {
+      "name": "Period 3",
+      "start": "11:33",
+      "end": "12:00"
+     },
+     {
+      "name": "Period 4-5",
+      "start": "12:03",
+      "end": "12:29"
+     },
+     {
+      "name": "Lunch",
+      "start": "12:32",
+      "end": "12:59"
+     },
+     {
+      "name": "Period 7-8",
+      "start": "13:02",
+      "end": "13:29"
+     },
+     {
+      "name": "Period 9",
+      "start": "13:32",
+      "end": "13:59"
+     },
+     {
+      "name": "Period 10",
+      "start": "14:02",
+      "end": "14:29"
+     },
+     {
+      "name": "Period 11",
+      "start": "14:32",
+      "end": "15:00"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "20525",
+   "nutrislice_location": "edisontps/herbert-hoover-middle-school"
+  },
+  {
+   "slug": "edison-james-madison-intermediate",
+   "name": "James Madison Intermediate School",
+   "short_name": "James Madison Intermediate",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "838 New Dover Road, Edison, NJ 08820",
+   "main_phone": "(732) 452-2960",
+   "website_url": "https://www.edison.k12.nj.us/o/jmis",
+   "absence_method": "mailto",
+   "absence_emails": [
+    "jmi.attendance@edison.k12.nj.us"
+   ],
+   "absence_phone": "(732) 452-2960, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence, email jmi.attendance@edison.k12.nj.us. You may also call (732) 452-2960 and press 1, and email your child's homeroom teacher. Email the same address if your child will be late. For an early pick-up, call and press 8 for the main office.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20526/logo/23340/James_Madisson_Intermediate_schoollogo_template_300.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20526",
+   "nutrislice_location": "edisontps/james-madison-intermediate"
+  },
+  {
+   "slug": "edison-james-madison-primary",
+   "name": "James Madison Primary School",
+   "short_name": "James Madison Primary",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "840 New Dover Road, Edison, NJ 08820",
+   "main_phone": "(732) 452-2990",
+   "website_url": "https://www.edison.k12.nj.us/o/jmps",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 452-2990, option 1",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.edison.k12.nj.us/genesis/parents?gohome=true",
+   "absence_instructions": "Record the absence in the Genesis Parent Portal, or call (732) 452-2990 and press 1. For an early pick-up, call and press 8 for the main office and email your child's homeroom teacher; no early pick-ups after 3:10 PM.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20527/logo/23341/JMP.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20527",
+   "nutrislice_location": "edisontps/james-madison-primary"
+  },
+  {
+   "slug": "edison-james-monroe",
+   "name": "James Monroe Elementary School",
+   "short_name": "James Monroe",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "7 Sharp Road, Edison, NJ 08837",
+   "main_phone": "(732) 452-2970",
+   "website_url": "https://www.edison.k12.nj.us/o/jmes",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 452-2970, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "Call (732) 452-2970 by 10:00 AM on the day of the absence and press 1, leaving your child's name, grade/teacher and the reason, or leave a note in the Genesis Parent Portal. You can ask for homework in the same message; pick it up after 2:00 PM.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20528/logo/23342/James_Monroe_Elementary_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20528",
+   "nutrislice_location": "edisontps/james-monroe-elementary-school"
+  },
+  {
+   "slug": "edison-john-adams-middle",
+   "name": "John Adams Middle School",
+   "short_name": "John Adams Middle",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "middle",
+   "address": "1081 New Dover Road, Edison, NJ 08820",
+   "main_phone": "(732) 452-2920",
+   "website_url": "https://www.edison.k12.nj.us/o/jams",
+   "absence_method": "mailto",
+   "absence_emails": [
+    "jamsattendance@edison.k12.nj.us"
+   ],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence or late arrival, email jamsattendance@edison.k12.nj.us. Main office (732) 452-2920.",
+   "start_time": "8:25 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:25 AM",
+   "athletics_url": "https://www.arbiterlive.com/m/team/11309",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20529/logo/23343/John_Adams_Middle_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20529",
+   "nutrislice_location": "edisontps/john-adams-middle-school"
+  },
+  {
+   "slug": "edison-john-marshall",
+   "name": "John Marshall Elementary School",
+   "short_name": "John Marshall",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "15 Cornell Street, Edison, NJ 08817",
+   "main_phone": "(732) 650-5370",
+   "website_url": "https://www.edison.k12.nj.us/o/jomes",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5370, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence or late arrival, call (732) 650-5370 before 9:30 AM and press 1, stating your child's name, ID number, teacher and the reason, or enter the absence in the Genesis Parent Portal.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20530/logo/23344/John_Marshall_Elementary_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20530",
+   "nutrislice_location": "edisontps/john-marshall-elementary-school"
+  },
+  {
+   "slug": "edison-john-p-stevens-high",
+   "name": "John P. Stevens High School",
+   "short_name": "J.P. Stevens High",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "high",
+   "address": "855 Grove Avenue, Edison, NJ 08820",
+   "main_phone": "(732) 452-2800",
+   "website_url": "https://www.edison.k12.nj.us/o/jpshs",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.edison.k12.nj.us/genesis/parents?gohome=true",
+   "absence_instructions": "No call is needed: homeroom marks the absence and an automated notice goes home. To tell the school why, leave a note in the Genesis Parent Portal. To excuse an absence, email or hand in to the Attendance Office a written parent note (up to three non-consecutive full days) or a doctor's note within two weeks; Genesis notes and voicemails don't excuse an absence.",
+   "start_time": "7:40 AM",
+   "end_time": "2:30 PM",
+   "early_dismissal_time": "12:00 PM",
+   "delayed_opening_time": "9:40 AM",
+   "athletics_url": "https://64755.digitalsports.com/",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20531/logo/23345/John_P._Stevens_High_School.png",
+   "bell_periods": {
+    "regular": [
+     {
+      "name": "Period 1",
+      "start": "07:40",
+      "end": "08:26"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:31",
+      "end": "09:14"
+     },
+     {
+      "name": "Period 3",
+      "start": "09:19",
+      "end": "10:02"
+     },
+     {
+      "name": "Period 4 (1st Lunch)",
+      "start": "10:07",
+      "end": "10:30"
+     },
+     {
+      "name": "Period 5",
+      "start": "10:35",
+      "end": "10:50"
+     },
+     {
+      "name": "Period 6 (2nd Lunch)",
+      "start": "10:55",
+      "end": "11:18"
+     },
+     {
+      "name": "Period 7",
+      "start": "11:23",
+      "end": "11:38"
+     },
+     {
+      "name": "Period 8 (3rd Lunch)",
+      "start": "11:43",
+      "end": "12:06"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:11",
+      "end": "12:26"
+     },
+     {
+      "name": "Period 10 (4th Lunch)",
+      "start": "12:31",
+      "end": "12:54"
+     },
+     {
+      "name": "Period 11",
+      "start": "12:59",
+      "end": "13:42"
+     },
+     {
+      "name": "Period 12",
+      "start": "13:47",
+      "end": "14:30"
+     }
+    ],
+    "early_dismissal": [
+     {
+      "name": "Period 1",
+      "start": "07:40",
+      "end": "08:09"
+     },
+     {
+      "name": "Period 2",
+      "start": "08:14",
+      "end": "08:42"
+     },
+     {
+      "name": "Period 3",
+      "start": "08:47",
+      "end": "09:15"
+     },
+     {
+      "name": "Period 4/5 or 5/6",
+      "start": "09:20",
+      "end": "09:48"
+     },
+     {
+      "name": "Period 6/7 or 7/8",
+      "start": "09:53",
+      "end": "10:21"
+     },
+     {
+      "name": "Period 8/9 or 9/10",
+      "start": "10:26",
+      "end": "10:54"
+     },
+     {
+      "name": "Period 11",
+      "start": "10:59",
+      "end": "11:27"
+     },
+     {
+      "name": "Period 12",
+      "start": "11:32",
+      "end": "12:00"
+     }
+    ],
+    "delayed_opening": [
+     {
+      "name": "Period 1",
+      "start": "09:40",
+      "end": "10:08"
+     },
+     {
+      "name": "Period 2",
+      "start": "10:13",
+      "end": "10:37"
+     },
+     {
+      "name": "Period 3",
+      "start": "10:42",
+      "end": "11:08"
+     },
+     {
+      "name": "Period 4 (1st Lunch)",
+      "start": "11:13",
+      "end": "11:36"
+     },
+     {
+      "name": "Period 5",
+      "start": "11:41",
+      "end": "11:45"
+     },
+     {
+      "name": "Period 6 (2nd Lunch)",
+      "start": "11:50",
+      "end": "12:13"
+     },
+     {
+      "name": "Period 7",
+      "start": "12:18",
+      "end": "12:22"
+     },
+     {
+      "name": "Period 8 (3rd Lunch)",
+      "start": "12:27",
+      "end": "12:50"
+     },
+     {
+      "name": "Period 9",
+      "start": "12:55",
+      "end": "12:59"
+     },
+     {
+      "name": "Period 10 (4th Lunch)",
+      "start": "13:04",
+      "end": "13:27"
+     },
+     {
+      "name": "Period 11",
+      "start": "13:32",
+      "end": "13:58"
+     },
+     {
+      "name": "Period 12",
+      "start": "14:03",
+      "end": "14:30"
+     }
+    ]
+   },
+   "sacc": null,
+   "apptegy_org_id": "20531",
+   "nutrislice_location": "edisontps/john-p-stevens-high-school"
+  },
+  {
+   "slug": "edison-lincoln",
+   "name": "Lincoln Elementary School",
+   "short_name": "Lincoln",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "53 Brookville Road, Edison, NJ 08817",
+   "main_phone": "(732) 650-5270",
+   "website_url": "https://www.edison.k12.nj.us/o/les",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5270",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence or late arrival, call the attendance contact at (732) 650-5270 or email them (address on the school's Attendance page). Fax (732) 650-5275.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20532/logo/23346/edison_logos-2-10.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20532",
+   "nutrislice_location": "edisontps/lincoln-elementary-school"
+  },
+  {
+   "slug": "edison-lindeneau",
+   "name": "Lindeneau Elementary School",
+   "short_name": "Lindeneau",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "50 Blossom Street, Edison, NJ 08817",
+   "main_phone": "(732) 650-5320",
+   "website_url": "https://www.edison.k12.nj.us/o/lind",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5320",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "The school's Attendance page names one attendance contact: call (732) 650-5320 or email them (address on that page).",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20534/logo/23348/Lindeneau_logo.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20534",
+   "nutrislice_location": "edisontps/lindeneau-elementary-school"
+  },
+  {
+   "slug": "edison-martin-luther-king",
+   "name": "Martin Luther King Elementary School",
+   "short_name": "Martin Luther King",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "285 Tingley Lane, Edison, NJ 08820",
+   "main_phone": "(732) 452-2980",
+   "website_url": "https://www.edison.k12.nj.us/o/mlk",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 452-2980, option 1",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.edison.k12.nj.us/genesis/parents?gohome=true",
+   "absence_instructions": "Preferred: in the Genesis Parent Portal open the Attendance tab (or Notify Office), pick Absent, Tardy or Early Dismissal, enter the date(s) and reason, and Submit to Office, early in the morning before homeroom attendance is final. Otherwise call (732) 452-2980 and press 1 to leave a voicemail, or send a written note or medical note with your child on return. Pick-up before 3:15 PM (1:15 PM on early dismissal days) is an early dismissal: call the office and message the teacher.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20535/logo/23349/Martin_Luther_King_Elementary_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20535",
+   "nutrislice_location": "edisontps/martin-luther-king-elementary-school"
+  },
+  {
+   "slug": "edison-menlo-park",
+   "name": "Menlo Park Elementary School",
+   "short_name": "Menlo Park",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "155 Monroe Avenue, Edison, NJ 08820",
+   "main_phone": "(732) 452-2910",
+   "website_url": "https://www.edison.k12.nj.us/o/mpes",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 452-2910, option 1",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence or late arrival, call (732) 452-2910 and choose option 1, or email the attendance contact (address on the school's Attendance page).",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20536/logo/23350/Menlo_Park_Elementary_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20536",
+   "nutrislice_location": "edisontps/menlo-park-elementary-school"
+  },
+  {
+   "slug": "edison-thomas-jefferson-middle",
+   "name": "Thomas Jefferson Middle School",
+   "short_name": "Thomas Jefferson Middle",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "middle",
+   "address": "450 Division Street, Edison, NJ 08817",
+   "main_phone": "(732) 650-5290",
+   "website_url": "https://www.edison.k12.nj.us/o/tjms",
+   "absence_method": "portal",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5290, option 1",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.edison.k12.nj.us/genesis/parents?gohome=true",
+   "absence_instructions": "Report an absence or late arrival in the Genesis Parent Portal. If you can't, call the attendance line (732) 650-5290, press 1, and give your child's name, homeroom and the reason. An absence is excused only once a note from the parent, doctor or medical facility reaches the main office or homeroom teacher (or is emailed to the attendance contact). Students arriving after 8:25 AM are tardy.",
+   "start_time": "8:25 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:25 AM",
+   "athletics_url": "https://www.arbiterlive.com/m/team/38251",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20537/logo/23351/Thomas_Jefferson_Middle_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20537",
+   "nutrislice_location": "edisontps/thomas-jefferson-middle-school"
+  },
+  {
+   "slug": "edison-washington",
+   "name": "Washington Elementary School",
+   "short_name": "Washington",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "153 Winthrop Road, Edison, NJ 08817",
+   "main_phone": "(732) 650-5280",
+   "website_url": "https://www.edison.k12.nj.us/o/wes",
+   "absence_method": "phone",
+   "absence_emails": [],
+   "absence_phone": "(732) 650-5280",
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": "To report an absence or late arrival, email the attendance contact (address on the school's Attendance page) or call (732) 650-5280, and email or message your child's homeroom teacher. No early pick-ups after 3:10 PM.",
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20538/logo/23352/Washington_Elementary_School.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20538",
+   "nutrislice_location": "edisontps/washington-elementary-school"
+  },
+  {
+   "slug": "edison-woodbrook",
+   "name": "Woodbrook Elementary School",
+   "short_name": "Woodbrook",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "elementary",
+   "address": "15 Robin Road, Edison, NJ 08820",
+   "main_phone": "(732) 452-2901",
+   "website_url": "https://www.edison.k12.nj.us/o/wbk",
+   "absence_method": null,
+   "absence_emails": [],
+   "absence_phone": null,
+   "absence_portal_name": null,
+   "absence_portal_url": null,
+   "absence_instructions": null,
+   "start_time": "8:55 AM",
+   "end_time": "3:30 PM",
+   "early_dismissal_time": "1:30 PM",
+   "delayed_opening_time": "10:55 AM",
+   "athletics_url": null,
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20539/logo/23353/Woodbrook_Elementary_School_logo_template_300.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20539",
+   "nutrislice_location": "edisontps/woodbrook-elementary-school"
+  },
+  {
+   "slug": "edison-woodrow-wilson-middle",
+   "name": "Woodrow Wilson Middle School",
+   "short_name": "Woodrow Wilson Middle",
+   "district_name": "Edison Township Public Schools",
+   "school_type": "middle",
+   "address": "50 Woodrow Wilson Drive, Edison, NJ 08820",
+   "main_phone": "(732) 452-2870",
+   "website_url": "https://www.edison.k12.nj.us/o/wwms",
+   "absence_method": "portal",
+   "absence_emails": [
+    "WWMSattendance@edison.k12.nj.us"
+   ],
+   "absence_phone": "(732) 452-2870, option 1",
+   "absence_portal_name": "Genesis Parent Portal",
+   "absence_portal_url": "https://parents.edison.k12.nj.us/genesis/parents?gohome=true",
+   "absence_instructions": "Report an absence or late arrival in the Genesis Parent Portal. If you can't, call the attendance line (732) 452-2870, press 1, and give your child's name, homeroom and the reason. Absences are excused only once a note from the parent, doctor or medical facility arrives: bring it to the main office or email it to WWMSattendance@edison.k12.nj.us (don't upload documents to the portal).",
+   "start_time": "8:25 AM",
+   "end_time": "3:00 PM",
+   "early_dismissal_time": "1:00 PM",
+   "delayed_opening_time": "10:25 AM",
+   "athletics_url": "https://www.arbiterlive.com/m/team/38776",
+   "logo_url": "https://cmsv2-assets.apptegy.net/uploads/20540/logo/23354/edison_logos-2-11.png",
+   "bell_periods": null,
+   "sacc": null,
+   "apptegy_org_id": "20540",
+   "nutrislice_location": "edisontps/woodrow-wilson-middle-school"
+  }
+ ],
+ "smore_newsletters": [
+  {
+   "url": "https://www.edison.k12.nj.us/o/fdrp",
+   "label": "FDR Preschool Tadpole Times",
+   "school_slug": "edison-fdr-preschool",
+   "source_type": "smore_archive",
+   "cron_expr": "0 8 * * 1",
+   "timezone": "America/New_York",
+   "enabled": true
+  }
+ ]
+}
