@@ -8,8 +8,18 @@
 # standard "dynamic rendering" pattern search engines have long documented
 # support for, not cloaking (bots and humans see the same content, just
 # rendered at a different time).
+#
+# The second pattern is any crawler that says it is one ("SomeBot/1.0",
+# "crawler", "spider", or a "+https://" contact link no browser carries),
+# the same test the page makes of its own visitor
+# (src/lib/prerenderReady.ts:CRAWLER_UA). A crawler on neither list is served
+# the app, and one that runs it makes ten API calls a page: ShapBot/0.1.0,
+# rendering about 2,000 pages from several addresses at once (2026-11-25),
+# filled the API's database pool and every route answered 500 for twenty
+# minutes. A stored snapshot costs one request.
 map $http_user_agent $is_crawler {
     default 0;
+    "~*bot/|crawler|spider|\+https?://|meta-externalagent|meta-webindexer" 1;
     "~*googlebot|bingbot|yandex|duckduckbot|baiduspider|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|pinterest|redditbot|gptbot|chatgpt-user|oai-searchbot|ccbot|perplexitybot|claudebot|anthropic-ai|bytespider|semrushbot|ahrefsbot|mj12bot" 1;
 }
 
