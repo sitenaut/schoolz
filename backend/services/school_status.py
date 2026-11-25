@@ -81,6 +81,27 @@ def says_closed(title: str) -> bool:
     return _says_closed_outright(title) or is_break_only(title)
 
 
+def day_kind(title: str) -> str | None:
+    """What a title makes of the school day itself: "early", "delay",
+    "closed", or None. Narrower than status_kind, which also counts a staff
+    or conference day: an evening "Parent Teacher Conferences" row is not
+    the same fact as a closure reported for that day."""
+    if EARLY_RE.search(title):
+        return "early"
+    if DELAY_RE.search(title):
+        return "delay"
+    return "closed" if says_closed(title) else None
+
+
+_BREAK_NAME_RE = re.compile(r"\b(winter|spring|fall|autumn|thanksgiving|holiday|mid-?winter|february)\s+(?:recess|break)\b", re.I)
+
+
+def break_name(title: str) -> str | None:
+    """The break a title names ("winter"), whatever else it says."""
+    m = _BREAK_NAME_RE.search(title)
+    return m.group(1).lower().replace("-", "") if m else None
+
+
 def is_status_title(title: str) -> bool:
     """True for a title that's fundamentally a school-day-status fact
     (closed, half day, delayed opening) rather than ordinary school-

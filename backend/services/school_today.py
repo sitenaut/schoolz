@@ -308,6 +308,10 @@ def _hours(school: School, status: str, lang: str = "en") -> str | None:
         return f"{school.delayed_opening_time}–{school.end_time}" if school.end_time else i18n_strings.hours_phrase("opens", school.delayed_opening_time, lang)
     if status == "early_dismissal" and school.early_dismissal_time:
         return f"{school.start_time}–{school.early_dismissal_time}" if school.start_time else i18n_strings.hours_phrase("out", school.early_dismissal_time, lang)
+    # A short day with no short-day time on file: the regular hours would be
+    # wrong ("Early dismissal · 9:00 AM–3:30 PM"), so say the status alone.
+    if status in ("early_dismissal", "delayed"):
+        return None
     if school.start_time and school.end_time:
         return f"{school.start_time}–{school.end_time}"
     return None

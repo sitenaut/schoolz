@@ -149,7 +149,7 @@ async def hourly_uv(lat: float, lon: float) -> dict[datetime, int] | None:
             resp.raise_for_status()
         hourly = resp.json().get("hourly") or {}
         out = {}
-        for stamp, value in zip(hourly.get("time") or [], hourly.get("uv_index") or []):
+        for stamp, value in zip(hourly.get("time") or [], hourly.get("uv_index") or [], strict=False):
             if value is None:
                 continue
             try:
@@ -272,7 +272,7 @@ async def today_weather(school, status: str, day: date, lang: str = "en") -> dic
             ),
             timeout=_TIMEOUT + 1,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("weather_timeout", extra={"school_id": school.id})
         return None
     if isinstance(periods, BaseException) or not periods:
@@ -281,6 +281,11 @@ async def today_weather(school, status: str, day: date, lang: str = "en") -> dic
         return None
     if isinstance(uv, BaseException):
         uv = None
-    known = (bool(parse_clock(school.start_time)), bool(parse_clock(school.end_time)))
+    # On a short day the bell that moved is only known if its own time is on
+    # file; the regular one would be shown as "51° at 3:30 PM" on a 1:00 day.
+    known = (
+        bool(parse_clock(school.delayed_opening_time if status == "delayed" else school.start_time)),
+        bool(parse_clock(school.early_dismissal_time if status == "early_dismissal" else school.end_time)),
+    )
     summary = summarize(periods, uv, school_window(school, status, day), known)
     return i18n_strings.localize_weather(summary, lang) if summary else None
