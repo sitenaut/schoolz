@@ -8,6 +8,8 @@ Guidance for Claude Code working in this repository.
 
 **Every branch, commit and PR names its Claude session**: branch `claude-<id8>/<topic>`, the `Claude-Session` line on every commit and PR, and no uncommitted work left in a shared checkout. Rules in the `ship` skill, step 0.
 
+**Alert findings wait in a private backlog.** At the start of a session, list the open issues labelled `triage` in the private ops repo (`gh issue list -R sitenaut/schoolz-ops --label triage`) and tell the owner what is waiting; don't start a fix without their go-ahead. Each finding is a lead to verify, not a conclusion: add what you verify as a comment on its issue. Findings never go in this repo, which is public.
+
 ## Project
 
 schoolz streamlines communication between parents and their school districts (South Jersey, starting with Cherry Hill), to better support kids' education at home. Which districts and schools are tracked is data — see the database, not this file.
