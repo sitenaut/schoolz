@@ -16,6 +16,7 @@ document (see ensure_ga). The variables:
     GRAFANA_ALERT_EMAIL                                     (optional)
     GRAFANA_GA_SERVICE_ACCOUNT_FILE / GRAFANA_GA_PROPERTY_ID (optional)
     ANTHROPIC_ADMIN_API_KEY                                 (optional)
+    GRAFANA_PC2_WEBHOOK_TOKEN                               (optional; see sync_triage)
 
 Create the token at: Grafana -> Administration -> Users and access ->
 Service accounts -> Add service account (Admin) -> Add service account token.
@@ -32,6 +33,8 @@ How an alert reaches a person (docs/RUNBOOK.md has the reasoning):
     rule label tier=page    -> IRM, "schoolz page" chain   (important rules, re-notifies)
     rule label tier=ticket  -> IRM, "schoolz ticket" chain (default rules, once)
     rule label tier=info    -> email, batched
+
+and, stack-wide, a copy of every alert to the triage desk on pc2 (sync_triage).
 """
 import argparse
 import json
@@ -53,7 +56,8 @@ def load_env() -> dict:
     """Process environment first, then env/secrets.prod.env for anything unset."""
     wanted = ("GRAFANA_URL", "GRAFANA_TOKEN", "GRAFANA_ALERT_EMAIL",
               "GRAFANA_CLOUDWATCH_ACCESS_KEY_ID", "GRAFANA_CLOUDWATCH_SECRET_ACCESS_KEY",
-              "GRAFANA_GA_SERVICE_ACCOUNT_FILE", "GRAFANA_GA_PROPERTY_ID", "ANTHROPIC_ADMIN_API_KEY")
+              "GRAFANA_GA_SERVICE_ACCOUNT_FILE", "GRAFANA_GA_PROPERTY_ID", "ANTHROPIC_ADMIN_API_KEY",
+              "GRAFANA_PC2_WEBHOOK_TOKEN")
     env = {key: os.getenv(key, "") for key in wanted}
     if SECRETS.exists():
         for line in SECRETS.read_text().splitlines():
@@ -550,10 +554,72 @@ def sync_routing(url: str, token: str, env: dict, dry: bool) -> None:
     print(f"  notification policy: app=schoolz routed by tier (kept {len(others)} other routes)")
 
 
+# --------------------------------------------------------------------------
+# A copy of every alert in the stack to the owner's triage desk on pc2
+# --------------------------------------------------------------------------
+TRIAGE_CONTACT = "pc2-triage"
+TRIAGE_URL = "https://pc2-alerts.profitnaut.com/grafana"
+
+
+def _route_line(route: dict) -> str:
+    matchers = route.get("object_matchers") or route.get("matchers") or "every alert"
+    return f"{json.dumps(matchers)} -> {route.get('receiver')}" + ("  (continue)" if route.get("continue") else "")
+
+
+def sync_triage(url: str, token: str, env: dict, dry: bool, test: bool) -> None:
+    """One route with no matchers and continue=true, first in the shared tree.
+
+    It sees every alert - schoolz, billz, the scraper - and every route after
+    it still fires as before. That holds only while it stays first: a route
+    without continue that matched earlier would stop the alert short of it.
+    sync_routing and billz's sync keep the other routes' order, and the
+    scraper repo's sync keeps continue routes ahead of its own. What does
+    change is the root's default receiver: an alert no other route claims
+    went there and now goes only to pc2, so the dry run names it."""
+    secret = env["GRAFANA_PC2_WEBHOOK_TOKEN"]
+    tree = call(url, token, "/api/v1/provisioning/policies")
+    before = tree.get("routes") or []
+    others = [r for r in before if r.get("receiver") != TRIAGE_CONTACT]
+    copy = {"receiver": TRIAGE_CONTACT, "continue": True, "group_wait": "30s", "group_interval": "5m"}
+    after = [copy] + others
+    print(f"  root default receiver {tree.get('receiver')!r}: an alert no route claims now goes only to "
+          f"{TRIAGE_CONTACT}")
+    print("  routes, in order (+ added, - removed, unmarked unchanged):")
+    for route in before:
+        if route.get("receiver") == TRIAGE_CONTACT and route != copy:
+            print(f"    - {_route_line(route)}")
+    for route in after:
+        print(f"    {'+' if route is copy and copy not in before else ' '} {_route_line(route)}")
+    if dry:
+        print(f"  would upsert contact point {TRIAGE_CONTACT} (webhook, Bearer)"
+              + ("" if secret else " - needs GRAFANA_PC2_WEBHOOK_TOKEN"))
+        return
+    if not secret:
+        print(f"  ! {TRIAGE_CONTACT} not written: needs GRAFANA_PC2_WEBHOOK_TOKEN")
+        return
+    settings = {"url": TRIAGE_URL, "httpMethod": "POST", "authorization_scheme": "Bearer"}
+    upsert_contact_point(url, token, {"uid": TRIAGE_CONTACT, "name": TRIAGE_CONTACT, "type": "webhook",
+                                      "settings": {**settings, "authorization_credentials": secret},
+                                      "disableResolveMessage": False})
+    tree["routes"] = after
+    call(url, token, "/api/v1/provisioning/policies", "PUT", tree, EDITABLE)
+    print(f"  notification policy: every alert copied to {TRIAGE_CONTACT} (kept {len(others)} other routes)")
+    if test:
+        # What the contact point's Test button sends: one made-up alert.
+        result = call(url, token, "/api/alertmanager/grafana/config/api/v1/receivers/test", "POST", {
+            "receivers": [{"name": TRIAGE_CONTACT, "grafana_managed_receiver_configs": [{
+                "name": TRIAGE_CONTACT, "type": "webhook", "settings": settings,
+                "secureSettings": {"authorization_credentials": secret}, "disableResolveMessage": False}]}]})
+        for receiver in result.get("receivers") or []:
+            for config in receiver.get("grafana_managed_receiver_configs") or []:
+                print(f"  test notification: {config.get('status')} {config.get('error') or ''}".rstrip())
+
+
 def main() -> None:
-    parts = ("dashboards", "slos", "alerts", "routing")
+    parts = ("dashboards", "slos", "alerts", "routing", "triage")
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--test-triage", action="store_true", help="after the triage part, send pc2 one test alert")
     parser.add_argument("--only", default=",".join(parts), help=f"comma-separated subset of: {', '.join(parts)}")
     args = parser.parse_args()
     only = set(args.only.split(","))
@@ -604,6 +670,8 @@ def main() -> None:
         sync_alerts(url, token, mapping, args.dry_run)
     if "routing" in only:
         sync_routing(url, token, env, args.dry_run)
+    if "triage" in only:
+        sync_triage(url, token, env, args.dry_run, args.test_triage)
 
 
 if __name__ == "__main__":
