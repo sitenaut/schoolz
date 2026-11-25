@@ -18,14 +18,22 @@ snapshot is nearly as old as prerender's TTL, and so is its calendar page
 it shows the month it was rendered in. The pages that show dated content
 (home, calendar, local, directory...) are re-rendered nightly.
 
+**Paced.** Each render makes the API calls a visitor's page makes, and
+back to back they kept the API at 2-6 requests a second for over an hour
+(2,272 pages on 2026-11-25), its p95 at 3-4.5s. A pause after each render
+leaves room for whoever is on the site late; it is dropped on a night with
+so many pages that pausing would leave some unrendered by 6 AM.
+
 **Never in the daytime.** It stops at 6 AM Eastern and a catch-up after a
 daytime deploy does nothing: a page it didn't reach keeps serving its
 snapshot, and tonight's run picks it up."""
 from __future__ import annotations
 
+import asyncio
 import re
+import time
 import zlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from datetime import time as dtime
 from zoneinfo import ZoneInfo
 
@@ -55,6 +63,9 @@ _LOCAL_TZ = ZoneInfo("America/New_York")
 NIGHT_START = dtime(22, 0)
 NIGHT_END = dtime(6, 0)
 
+# Between one render and the next (see "Paced" above).
+PAUSE_S = 1.0
+
 _SCHOOL_PATH = re.compile(r"^(?:/(?:es|zh|ko|hi))?/schools/([^/]+)(/calendar)?$")
 _BUDGET_PATH = re.compile(r"^/budgets/([^/]+)$")
 
@@ -66,6 +77,22 @@ def _now() -> datetime:
 def is_night(now: datetime) -> bool:
     t = now.astimezone(_LOCAL_TZ).time()
     return t >= NIGHT_START or t < NIGHT_END
+
+
+def seconds_of_night_left(now: datetime) -> float:
+    local = now.astimezone(_LOCAL_TZ)
+    end = local.replace(hour=NIGHT_END.hour, minute=NIGHT_END.minute, second=0, microsecond=0)
+    if local.time() >= NIGHT_END:
+        end += timedelta(days=1)
+    return (end - local).total_seconds()
+
+
+def pause_s(remaining: int, avg_render_s: float, now: datetime) -> float:
+    """How long to wait before the next render: PAUSE_S, or nothing when the
+    pages still to do would not all fit before 6 AM with it."""
+    if remaining <= 0 or remaining * (avg_render_s + PAUSE_S) > seconds_of_night_left(now):
+        return 0.0
+    return PAUSE_S
 
 
 def _month(at: datetime) -> str:
@@ -136,10 +163,13 @@ async def run(db: AsyncSession, params: dict) -> str | None:
     rendered = failed = 0
     failed_paths: list[str] = []
     stopped_at: int | None = None
+    render_s = 0.0
     for idx, path in enumerate(paths, start=1):
-        if not is_night(_now()):
+        now = _now()
+        if not is_night(now):
             stopped_at = idx - 1
             break
+        started = time.monotonic()
         try:
             await prerender.refresh(path)
             rendered += 1
@@ -147,8 +177,12 @@ async def run(db: AsyncSession, params: dict) -> str | None:
             failed += 1
             if len(failed_paths) < 20:
                 failed_paths.append(path)
+        render_s += time.monotonic() - started
         if idx % CHECKPOINT_EVERY == 0:
             await progress.checkpoint({"done": idx, "of": len(paths), "rendered": rendered, "failed": failed})
+        wait = pause_s(len(paths) - idx, render_s / idx, now)
+        if wait:
+            await asyncio.sleep(wait)
 
     summary = f"rendered {rendered} of {len(paths)} pages to render ({len(all_paths)} in the sitemap), {failed} failed"
     if stopped_at is not None:

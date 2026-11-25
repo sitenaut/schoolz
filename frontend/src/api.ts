@@ -1,6 +1,7 @@
 import { API_URL, IS_SUPABASE_AUTH } from "./authConfig";
 import { supabase } from "./supabase";
 import { CURRENT_LANG, DEFAULT_LANG } from "./lib/i18n";
+import { IS_PRERENDER } from "./lib/prerenderReady";
 
 const LOCAL_TOKEN_KEY = "schoolz_token";
 
@@ -99,6 +100,10 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
       // Explicit, not Accept-Language: the browser sends its own, and a
       // Spanish browser on an English URL must still get English content.
       ...(CURRENT_LANG !== DEFAULT_LANG ? { "X-Schoolz-Lang": CURRENT_LANG } : {}),
+      // A page rendered for a crawler, or loaded by one: the API keeps these
+      // calls out of the latency it reports for visitors (main.py). No extra
+      // preflight: the JSON Content-Type above already causes one.
+      ...(IS_PRERENDER ? { "X-Schoolz-Automated": "1" } : {}),
       ...(init.headers ?? {}),
     };
     const res = await fetch(url, { ...init, headers });

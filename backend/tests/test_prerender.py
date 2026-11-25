@@ -453,8 +453,10 @@ def test_unchanged_school_pages_come_due_on_different_nights():
     assert ages == {4, 5, 6}  # all under the 7-day TTL
 
 
-async def _warm(monkeypatch, paths, *, now=NIGHT, lastmods=None):
+async def _warm(monkeypatch, paths, *, now=NIGHT, lastmods=None, pause=0.0):
     from scheduler.jobs import prerender_warm
+
+    monkeypatch.setattr(prerender_warm, "PAUSE_S", pause)
 
     async def fake_paths(_db):
         return paths
@@ -521,3 +523,34 @@ async def test_warm_job_warns_when_every_render_fails(monkeypatch):
         summary = await prerender_warm.run(db, {})
 
     assert summary.startswith("WARNING[prerender_warm_all_failed]")
+
+
+def test_the_warm_job_pauses_between_renders_unless_the_night_is_too_short():
+    """2,272 renders back to back held the API's p95 at 3-4.5s for an hour and
+    a half; a pause leaves room for a late visitor. Not on a night when
+    pausing would leave pages unrendered at 6 AM."""
+    from scheduler.jobs.prerender_warm import PAUSE_S, pause_s, seconds_of_night_left
+
+    assert seconds_of_night_left(NIGHT) > 0
+    left = seconds_of_night_left(NIGHT)
+    assert pause_s(2000, 2.5, NIGHT) == PAUSE_S
+    assert pause_s(0, 2.5, NIGHT) == 0.0  # nothing after the last page
+    too_many = int(left / 3.0)  # fits at 2.5s a page, not at 2.5s + the pause
+    assert pause_s(too_many, 2.5, NIGHT) == 0.0
+
+
+@pytest.mark.anyio
+async def test_warm_job_waits_between_pages_but_not_after_the_last(monkeypatch):
+    from scheduler.jobs import prerender_warm
+
+    await _fake_render(monkeypatch)
+    waits: list[float] = []
+
+    async def fake_sleep(seconds):
+        waits.append(seconds)
+
+    monkeypatch.setattr(prerender_warm.asyncio, "sleep", fake_sleep)
+    summary = await _warm(monkeypatch, ["/", "/calendar", "/lunch"], pause=1.0)
+
+    assert summary.startswith("rendered 3 of 3")
+    assert waits == [1.0, 1.0]

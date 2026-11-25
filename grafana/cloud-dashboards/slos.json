@@ -36,11 +36,11 @@
     {
       "uuid": "schoolzapilatency",
       "name": "schoolz API latency",
-      "description": "Share of interactive GETs answered within 1 second.",
+      "description": "Share of visitors' interactive GETs answered within 1 second (pages rendered for crawlers don't count).",
       "query": {
         "type": "freeform",
         "freeform": {
-          "query": "sum(rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\", le=\"1\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[$__rate_interval]))"
+          "query": "sum(rate(schoolz_http_interactive_get_duration_seconds_bucket{service_namespace=\"schoolz\", service_name=\"schoolz-api\", traffic=\"visitor\", le=\"1\"}[$__rate_interval])) / sum(rate(schoolz_http_interactive_get_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", traffic=\"visitor\"}[$__rate_interval]))"
         }
       },
       "objectives": [
