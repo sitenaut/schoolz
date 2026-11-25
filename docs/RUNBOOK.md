@@ -192,8 +192,13 @@ in `backend/fly.toml` and the limit in the alerts builder together.
 
 ### schoolz-db-pool-saturated
 Every connection in a process's pool (3 + 1 per API machine, 4 + 2 for the
-scheduler) has been checked out for 10 minutes. Further requests queue, then
-fail `db_pool_timeout`. Look for one slow query in traces, or a code path
+scheduler) has been checked out for 10 minutes. On the API a request waits 5
+seconds for one, then gets a 503 "busy" with `Retry-After` (log line
+`db_pool_busy`; the page retries once); a scan waits 30 and fails
+`db_pool_timeout`. A burst of page loads is the usual cause on the API: the
+three lists every page asks for are cached for anonymous visitors
+(`services/public_lists.py`), so check for a crawler loading the app itself
+(requests tagged `traffic="automated"`, see the latency SLO above). Look for one slow query in traces, or a code path
 holding a session across a network call. Don't just raise the pool: all
 processes share the session pooler's 15 connections (the sum is in
 `backend/database.py`), and going over turns waits into `EMAXCONNSESSION` 500s.

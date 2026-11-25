@@ -11,6 +11,7 @@ os.environ.setdefault("AUDIT_CACHE_TTL_S", "0")
 os.environ.setdefault("RESOURCE_CATEGORIES_CACHE_TTL_S", "0")
 os.environ.setdefault("LOCAL_EVENTS_CACHE_TTL_S", "0")
 os.environ.setdefault("BUDGETS_CACHE_TTL_S", "0")
+os.environ.setdefault("PUBLIC_LISTS_CACHE_TTL_S", "0")
 
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker
