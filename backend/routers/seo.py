@@ -18,13 +18,22 @@ from services.response_cache import SingleFlightTTLCache
 
 router = APIRouter(tags=["seo"])
 
-# Every crawler fetch rebuilt it (1.1 MB of XML, two scans of the content
-# table) - up to 2.8s on prod. lastmod is a date, so an hour-old copy says
-# exactly the same thing. 0 disables it; the test suite does. Crawlers fetch
-# it every hour or two, each machine gets about half of those, so with an
-# hour of staleness most fetches found it gone and waited 6-7s for a rebuild.
-# A day-old copy is served at once while the fresh one builds.
-_SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "3600")), stale_s=24 * 3600)
+# Every crawler fetch rebuilt it (two scans of the content table, 6-7s on
+# prod when they aren't in memory). lastmod is a date, so an hour-old copy
+# says exactly the same thing. 0 disables it; the test suite does. Crawlers
+# fetch it every hour or two, each machine gets about half of those, so a
+# day-old copy is served at once while the fresh one builds.
+#
+# It was 1.1 MB when this cache went in and 4.7 MB by 2026-11 (more districts,
+# five languages each), past the default 3 MB entry limit: the cache silently
+# held nothing and every fetch rebuilt it. Room for it to triple again.
+_SITEMAP_MAX_BYTES = 16 * 1024 * 1024
+_SITEMAP = SingleFlightTTLCache(
+    ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "3600")),
+    stale_s=24 * 3600,
+    max_entry_bytes=_SITEMAP_MAX_BYTES,
+    max_total_bytes=_SITEMAP_MAX_BYTES,
+)
 
 # Static public routes worth listing - anything gated by RequireAuth/
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)
