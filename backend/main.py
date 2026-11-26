@@ -187,6 +187,10 @@ AUTOMATED_HEADER = "X-Schoolz-Automated"
 # The routes scripts/build_grafana_alerts.py:INTERACTIVE leaves out of the
 # latency SLO, slow by design. Keep the two in step.
 _NOT_INTERACTIVE = re.compile(r"^(/prerender|/health|(/chat|/admin|/scraper|/scheduled-jobs).*)$")
+# Routes only a program asks for: search engines fetch the sitemap, and the
+# family feed is read by an app the family connected (billz polls it hourly).
+# Counted as visitors they were about half of the SLO's slow requests.
+_AUTOMATED_CLIENT_ROUTES = frozenset({"/sitemap.xml", "/family/feed"})
 
 
 def record_interactive_get(request: Request, route_path: str | None, duration_s: float) -> None:
@@ -195,7 +199,8 @@ def record_interactive_get(request: Request, route_path: str | None, duration_s:
     in the instrumentation's histogram."""
     if request.method != "GET" or _NOT_INTERACTIVE.match(route_path or ""):
         return
-    traffic = "automated" if request.headers.get(AUTOMATED_HEADER) else "visitor"
+    automated = request.headers.get(AUTOMATED_HEADER) or route_path in _AUTOMATED_CLIENT_ROUTES
+    traffic = "automated" if automated else "visitor"
     observability.interactive_get_seconds.record(duration_s, {"traffic": traffic})
 
 

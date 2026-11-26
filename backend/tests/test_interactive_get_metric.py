@@ -48,3 +48,11 @@ async def test_routes_the_slo_leaves_out_and_other_methods_are_not_recorded(clie
     # No route matched: counted, as the request histogram counts it.
     await client.get("/no-such-page")
     assert [attrs for _, attrs in recorded] == [{"traffic": "visitor"}]
+
+
+async def test_routes_only_programs_ask_for_count_as_automated(client, recorded):
+    # Search engines' sitemap fetches and a connected app's hourly family
+    # feed poll were half the "visitor" requests over a second (2026-11-26).
+    await client.get("/sitemap.xml")
+    await client.get("/family/feed")  # 401 without a key, still that route
+    assert [attrs for _, attrs in recorded] == [{"traffic": "automated"}, {"traffic": "automated"}]

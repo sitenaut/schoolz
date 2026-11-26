@@ -86,7 +86,11 @@ class CategoryOut(BaseModel):
 # Per county. Every call unnested the categories of every active listing - a
 # full scan of a wide table, 1.9s on prod when it wasn't in memory - and the
 # counts only move when a refresh job runs. 0 disables it; the test suite does.
-_CATEGORY_COUNTS = SingleFlightTTLCache(ttl_s=float(os.getenv("RESOURCE_CATEGORIES_CACHE_TTL_S", "900")), max_total_bytes=2 * 1024 * 1024)
+# Asked for a few times a day, so an hour of staleness left a visitor waiting
+# 4.5-7s for most of them; a day-old copy is served at once while it rebuilds.
+_CATEGORY_COUNTS = SingleFlightTTLCache(
+    ttl_s=float(os.getenv("RESOURCE_CATEGORIES_CACHE_TTL_S", "900")), stale_s=24 * 3600, max_total_bytes=2 * 1024 * 1024
+)
 _CATEGORIES_ADAPTER = TypeAdapter(list[CategoryOut])
 
 
