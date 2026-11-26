@@ -368,3 +368,23 @@ async def test_the_public_audit_catalog_and_csv_are_built_once_per_key(monkeypat
         ("csv", None, "s1", None),
         ("csv", None, "s1", None),
     ]
+
+
+@pytest.mark.anyio
+async def test_the_sitemap_cache_holds_a_sitemap_of_today_s_size_with_room_to_grow():
+    # 4.7 MB on prod in 2026-11, over the default 3 MB entry limit: the cache
+    # dropped every copy and each crawler fetch rebuilt it (6-7s).
+    import routers.seo as seo
+
+    cache = SingleFlightTTLCache(
+        ttl_s=60, max_entry_bytes=seo._SITEMAP.max_entry_bytes, max_total_bytes=seo._SITEMAP.max_total_bytes
+    )
+    calls = []
+
+    async def build():
+        calls.append(1)
+        return b"x" * (3 * 5 * 1024 * 1024)  # three times today's size
+
+    for _ in range(2):
+        await cache.get_or_compute("sitemap", build)
+    assert calls == [1]
