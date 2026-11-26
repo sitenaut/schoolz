@@ -20,8 +20,11 @@ router = APIRouter(tags=["seo"])
 
 # Every crawler fetch rebuilt it (1.1 MB of XML, two scans of the content
 # table) - up to 2.8s on prod. lastmod is a date, so an hour-old copy says
-# exactly the same thing. 0 disables it; the test suite does.
-_SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "3600")))
+# exactly the same thing. 0 disables it; the test suite does. Crawlers fetch
+# it every hour or two, each machine gets about half of those, so with an
+# hour of staleness most fetches found it gone and waited 6-7s for a rebuild.
+# A day-old copy is served at once while the fresh one builds.
+_SITEMAP = SingleFlightTTLCache(ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "3600")), stale_s=24 * 3600)
 
 # Static public routes worth listing - anything gated by RequireAuth/
 # RequireAdmin (account, admin, jobs, gmail, children, login/register)

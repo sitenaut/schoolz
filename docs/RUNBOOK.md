@@ -140,7 +140,9 @@ the route, find the exception in Loki (`service_name="schoolz-api"`, level error
 More than 5% of visitors' interactive GETs are taking over a second. It reads
 `schoolz_http_interactive_get_duration_seconds{traffic="visitor"}`, which the
 API records itself: calls a page makes while rendered for a crawler (the
-nightly `prerender.warm` above all) are `traffic="automated"` and don't count.
+nightly `prerender.warm` above all) are `traffic="automated"` and don't count,
+nor are routes only a program asks for (`/sitemap.xml`, the family feed:
+`main._AUTOMATED_CLIENT_ROUTES`).
 `schoolz-route-slow` names the route, but on the request histogram, which
 can't tell the two apart: a route it names during the warm-up (from 10:40 PM
 Eastern) may be slow for the renders alone. Usual causes, in order: a cold machine (compare with cold-start
