@@ -187,10 +187,26 @@ AUTOMATED_HEADER = "X-Schoolz-Automated"
 # The routes scripts/build_grafana_alerts.py:INTERACTIVE leaves out of the
 # latency SLO, slow by design. Keep the two in step.
 _NOT_INTERACTIVE = re.compile(r"^(/prerender|/health|(/chat|/admin|/scraper|/scheduled-jobs).*)$")
-# Routes only a program asks for: search engines fetch the sitemap, and the
-# family feed is read by an app the family connected (billz polls it hourly).
-# Counted as visitors they were about half of the SLO's slow requests.
-_AUTOMATED_CLIENT_ROUTES = frozenset({"/sitemap.xml", "/family/feed"})
+# Routes only a program asks for: search engines fetch the sitemap, a
+# crawler's page comes from /prerender, and the family feed is read by an app
+# the family connected (billz polls it hourly). Counted as visitors, the
+# sitemap and the feed were about half of the SLO's slow requests.
+_AUTOMATED_CLIENT_ROUTES = frozenset({"/sitemap.xml", "/family/feed", "/prerender"})
+
+
+def request_traffic(request: Request, route_path: str | None) -> str:
+    """Whether a person was waiting on this request: "automated" for the API
+    calls of a page rendered for a crawler, a route only programs ask for, or
+    a script holding an API key; otherwise "visitor". Both the latency SLO's
+    histogram and every http_request log line carry it: without it in the
+    logs, a slow request could not be told apart from a crawler's (2026-11-26)."""
+    if (
+        request.headers.get(AUTOMATED_HEADER)
+        or route_path in _AUTOMATED_CLIENT_ROUTES
+        or getattr(request.state, "api_key_id", None)
+    ):
+        return "automated"
+    return "visitor"
 
 
 def record_interactive_get(request: Request, route_path: str | None, duration_s: float) -> None:
@@ -199,9 +215,7 @@ def record_interactive_get(request: Request, route_path: str | None, duration_s:
     in the instrumentation's histogram."""
     if request.method != "GET" or _NOT_INTERACTIVE.match(route_path or ""):
         return
-    automated = request.headers.get(AUTOMATED_HEADER) or route_path in _AUTOMATED_CLIENT_ROUTES
-    traffic = "automated" if automated else "visitor"
-    observability.interactive_get_seconds.record(duration_s, {"traffic": traffic})
+    observability.interactive_get_seconds.record(duration_s, {"traffic": request_traffic(request, route_path)})
 
 
 @app.middleware("http")
@@ -235,6 +249,7 @@ async def log_requests(request: Request, call_next):
                 "user_id": getattr(request.state, "user_id", None),
                 "authed": getattr(request.state, "user_id", None) is not None,
                 "api_key_id": getattr(request.state, "api_key_id", None),
+                "traffic": request_traffic(request, route.path if route else None),
                 "exception": type(exc).__name__,
             },
         )
@@ -259,7 +274,8 @@ async def log_requests(request: Request, call_next):
     # tell an authenticated request from an anonymous one in the logs -
     # which is the first question worth asking about a bug a visitor only
     # hits while logged in (see the 2026-09-15 auth stall). `lang` is there
-    # because a page in another language does more work than the English one.
+    # because a page in another language does more work than the English one,
+    # and `traffic` says whether a person was waiting (request_traffic).
     user_id = getattr(request.state, "user_id", None)
     logger.info(
         "http_request",
@@ -273,6 +289,7 @@ async def log_requests(request: Request, call_next):
             "authed": user_id is not None,
             "api_key_id": getattr(request.state, "api_key_id", None),
             "lang": normalize_lang(request.headers.get(LANG_HEADER) or request.query_params.get("lang")),
+            "traffic": request_traffic(request, route_path),
         },
     )
     return response
