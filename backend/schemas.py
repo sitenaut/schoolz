@@ -106,6 +106,10 @@ class StudentOut(BaseModel):
     guardian_count: int
     linked_via: str
     matched_existing: bool = False
+    # The district's Genesis parent portal (District.genesis_url), when it has
+    # one: Backpack Capture asks Chrome for that one site instead of holding
+    # every site.
+    genesis_url: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -1855,6 +1859,8 @@ class CaptureStudentOut(BaseModel):
     id: str
     first_name: str
     last_name: str
+    # Their district's Genesis parent portal, if it has one (StudentOut).
+    genesis_url: str | None = None
 
 
 class UnroutedAccountOut(BaseModel):

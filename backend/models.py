@@ -728,10 +728,12 @@ class District(Base):
     transportation_job_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scheduled_jobs.id", ondelete="SET NULL"), nullable=True)
     # Which of the district's own systems Backpack Capture can bring in for a
     # family: My family (routers/family.py) explains homework and grades only
-    # for a child whose district has one. Set genesis_url only once the
-    # extension can read that district's Genesis - a hosted one under another
-    # path (parents.c3.genesisedu.net/<district>/...) is outside its host
-    # permission, so it would promise grades that never arrive.
+    # for a child whose district has one. genesis_url also goes to the
+    # extension with each child's name (routers/students.py): it asks Chrome
+    # for that one site. Set it only once the extension can read that
+    # district's Genesis - a hosted one under another path
+    # (parents.c3.genesisedu.net/<district>/...) is not where it looks
+    # (/genesis/parents), so it would promise grades that never arrive.
     uses_google_classroom: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     genesis_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # The state's own id for the district (NJ: the 4-digit NJDOE district code,
