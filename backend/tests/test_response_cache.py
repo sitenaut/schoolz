@@ -171,8 +171,12 @@ def wired(monkeypatch):
     async def grad_years(db, user_id):
         return {"u-2027": {2027}, "u-2027b": {2027}, "u-2030": {2030}}.get(user_id, set())
 
+    async def my_schools(db, user_id):
+        return ["s1"], ["d1"], {"high"}
+
     monkeypatch.setattr(cal, "_list_calendar_items", fake_query)
     monkeypatch.setattr(cal, "_my_grad_years", grad_years)
+    monkeypatch.setattr(cal, "_my_school_and_district_ids", my_schools)
     monkeypatch.setattr(cal.database, "SessionLocal", lambda: FakeSession())
     monkeypatch.setattr(cal, "_CACHE", SingleFlightTTLCache(ttl_s=60))
     return cal, calls

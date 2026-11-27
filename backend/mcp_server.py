@@ -1042,9 +1042,11 @@ def build_mcp_server(app: FastAPI) -> FastMCP:
         include_rotation_days: bool = False,
     ) -> Any:
         """Search dated calendar items (events/deadlines/initiatives/marking
-        periods) across schools and districts. Entirely public data - called
-        with no filters at all, it returns everything tracked system-wide
-        from 30 days ago to about a year ahead (a range may span at most 400 days).
+        periods) across schools and districts. Entirely public data. With no
+        school_id or school_ids (and no q) it covers every school but one
+        week at most, from today unless start/end say otherwise; name a
+        school for a longer range. With a school, the default is 30 days ago
+        to about a year ahead (a range may span at most 400 days).
         "The district calendar" in a question means all of this - district
         and school items together - not just district-wide ones.
 
