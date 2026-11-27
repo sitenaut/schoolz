@@ -109,5 +109,45 @@ async def test_a_request_with_no_dates_is_bounded_and_a_huge_range_is_refused():
         wide = await client.get("/calendar", params={"start": "2020-01-01T00:00:00Z", "end": "2026-12-31T00:00:00Z"})
         assert wide.status_code == 422
 
-        year = await client.get("/calendar", params={"start": "2026-01-01T05:00:00Z", "end": "2026-12-31T23:59:59Z"})
+        year = await client.get(
+            "/calendar", params={"start": "2026-01-01T05:00:00Z", "end": "2026-12-31T23:59:59Z", "school_ids": "bounds-test-high"}
+        )
         assert year.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_a_calendar_for_no_school_is_a_week_at_most():
+    # Naming no school is every school's calendar: 15 MB for the default
+    # 13 months on prod, which the chatbot's calendar tool fetched to keep
+    # its first few items.
+    from datetime import timedelta
+
+    now = datetime.now(UTC)
+    async with database.SessionLocal() as db:
+        district = District(name="Week Test District")
+        db.add(district)
+        await db.flush()
+        db.add(School(name="Week Test High", slug="week-test-high", school_type="high", district_id=district.id))
+        common = dict(scope="district", district_id=district.id, category="event", is_current=True, source="ics_feed", is_all_day=False)
+        db.add_all(
+            [
+                SchoolContentItem(title="WEEK last week", start_date=now - timedelta(days=5), **common),
+                SchoolContentItem(title="WEEK in two days", start_date=now + timedelta(days=2), **common),
+                SchoolContentItem(title="WEEK next month", start_date=now + timedelta(days=30), **common),
+            ]
+        )
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        plain = await client.get("/calendar")
+        assert plain.status_code == 200, plain.text
+        assert {i["title"] for i in plain.json() if i["title"].startswith("WEEK")} == {"WEEK in two days"}
+
+        month = {"start": now.isoformat(), "end": (now + timedelta(days=31)).isoformat()}
+        assert (await client.get("/calendar", params=month)).status_code == 422
+        named = await client.get("/calendar", params={**month, "school_ids": "week-test-high"})
+        assert {i["title"] for i in named.json() if i["title"].startswith("WEEK")} == {"WEEK in two days", "WEEK next month"}
+
+        # A search names no school but is bounded by its own row cap.
+        found = await client.get("/calendar", params={"q": "WEEK next"})
+        assert [i["title"] for i in found.json()] == ["WEEK next month"]

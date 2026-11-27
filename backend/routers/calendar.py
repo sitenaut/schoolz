@@ -1,6 +1,7 @@
 import os
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qsl
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import TypeAdapter
@@ -99,14 +100,36 @@ _SEARCH_LOOKBACK = timedelta(days=400)
 # Backstop on a search's rows, the one request a date range doesn't bound
 # (q="e" matched 46k items).
 _MAX_SEARCH_ROWS = 20000
+# Naming no school means every school: 15 MB and 6.5s for the default
+# 13 months on prod (2026-11), 3.3 MB for one month. Nothing a person reads
+# needs that - the Calendar page names its schools, and shows a picker
+# without any - but the chatbot's calendar tool, asked about "events" with
+# no school, fetched all of it to keep its first few items. So a calendar
+# for no school is a week at most, from today unless the dates say otherwise.
+_UNSCOPED_SPAN = timedelta(days=7)
+_SCHOOL_TZ = ZoneInfo("America/New_York")
 
 
-def _bounded_range(start: datetime | None, end: datetime | None, q: str | None) -> tuple[datetime, datetime | None]:
+def _bounded_range(
+    start: datetime | None, end: datetime | None, q: str | None, unscoped: bool = False
+) -> tuple[datetime, datetime | None]:
     now = datetime.now(UTC)
     start = start.replace(tzinfo=UTC) if start and start.tzinfo is None else start
     end = end.replace(tzinfo=UTC) if end and end.tzinfo is None else end
     if q:
         return start or now - _SEARCH_LOOKBACK, end
+    if unscoped:
+        if start is None:
+            today = datetime.now(_SCHOOL_TZ).replace(hour=0, minute=0, second=0, microsecond=0)
+            start = end - _UNSCOPED_SPAN if end else today.astimezone(UTC)
+        if end is None:
+            end = start + _UNSCOPED_SPAN
+        if end - start > _UNSCOPED_SPAN:
+            raise HTTPException(
+                status_code=422,
+                detail=f"With no school named (school_id or school_ids), start..end may span at most {_UNSCOPED_SPAN.days} days",
+            )
+        return start, end
     if start is None:
         start = (end or now) - _DEFAULT_LOOKBACK
     if end is None:
@@ -142,7 +165,12 @@ async def list_calendar_items(
     db: AsyncSession = Depends(get_db),
     lang: str = Depends(request_lang),
 ):
-    start, end = _bounded_range(start, end, q)
+    # A signed-in guardian naming no school is narrowed to their own
+    # children's schools below; only someone with none sees every school.
+    named = bool(school_id or school_ids or q)
+    if not named and user is not None:
+        named = bool((await _my_school_and_district_ids(db, user.id))[0])
+    start, end = _bounded_range(start, end, q, unscoped=not named)
     args = dict(
         start=start,
         end=end,
