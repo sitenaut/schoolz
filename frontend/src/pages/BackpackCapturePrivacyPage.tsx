@@ -54,7 +54,7 @@ export function BackpackCapturePrivacyPage() {
         </li>
         <li>
           <strong>Only you decide what leaves the device</strong>: exporting a local file, pressing Update
-          now or Publish to send it to your own schoolz account, or - only if you turn them on - automatic
+          schoolz or Publish to send it to your own schoolz account, or - only if you turn them on - automatic
           updates that do the same every few hours. Your Canvas work is saved as a file on your own
           computer, and goes to your own billz account only if you connect it.
         </li>
@@ -234,7 +234,7 @@ export function BackpackCapturePrivacyPage() {
           server.
         </li>
         <li>
-          <strong>Update schoolz</strong> (named Update schoolz before version 0.16.0) - opens Classroom in its own window, finds your children's Google
+          <strong>Update schoolz</strong> (named Update now before version 0.16.0) - opens Classroom in its own window, finds your children's Google
           accounts (see above), walks their classes the same way a capture session does, and sends what's
           new to your own schoolz family account. Only runs when you press it, after you've signed in to
           schoolz in the extension. From version 0.10.0, once you've opened your school district&apos;s
@@ -251,7 +251,7 @@ export function BackpackCapturePrivacyPage() {
         </li>
         <li>
           <strong>Automatic updates</strong> - off by default. If you turn them on, the same thing Update
-          now does runs every four hours (never between 10pm and 6am). It doesn&apos;t sign in to Genesis
+          schoolz does runs every four hours (never between 10pm and 6am). It doesn&apos;t sign in to Genesis
           unless you&apos;ve set up the sign-in helper; without it, when Genesis has signed you out, it skips
           Genesis and goes on to Classroom. It never signs in to Google: when a
           child's sign-in expires it stops and tells schoolz, which notifies you. Turning it off stops it
