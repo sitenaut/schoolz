@@ -144,8 +144,7 @@ nightly `prerender.warm` above all) are `traffic="automated"` and don't count,
 nor are routes only a program asks for (`/sitemap.xml`, the family feed:
 `main._AUTOMATED_CLIENT_ROUTES`).
 `schoolz-route-slow` names the route, but on the request histogram, which
-can't tell the two apart: a route it names during the warm-up (from 10:40 PM
-Eastern) may be slow for the renders alone. Usual causes, in order: a cold machine (compare with cold-start
+can't tell the two apart, so it stays quiet during the warm-up. Usual causes, in order: a cold machine (compare with cold-start
 count), one route's query plan (trace → SQL spans), the database pool
 (`schoolz-db-pool-saturated`).
 
@@ -179,7 +178,17 @@ the problem is the OTLP secrets. `docs/BACKUPS.md` has the rest.
 ### schoolz-job-stuck
 A run of this kind has been in flight for over an hour. Don't force-error it on
 a hunch - a long run that checkpoints is healthy. Look at the run's
-`last_progress_at` and the scheduler log for that job before touching it.
+`last_progress_at` and the scheduler log for that job before touching it. The
+nightly `prerender.warm` is left out: it always runs over an hour, and has
+`schoolz-prerender-warm-stuck` instead.
+
+### schoolz-prerender-warm-stuck
+The nightly prerender warm-up has been running for over 3 hours; it normally
+takes 35-115 minutes from 10:40 PM Eastern. Its run's `log_excerpt` and
+`last_progress_at` (`scripts/schoolz-api.sh prod GET /scheduled-jobs/<id>/runs`)
+say whether it is still rendering. Still progressing usually means each render
+got slow (the API, or the prerender's own browser); no progress means the
+reaper should clear it within 45 minutes.
 
 ### schoolz-job-failing
 This specific job's last two runs both errored. `/admin` → Jobs → Runs has the
@@ -245,7 +254,17 @@ Context for an availability burn: which route, how many. Nothing to do if the
 SLO alert isn't firing.
 
 ### schoolz-route-slow
-Context for a latency burn: which route's p95 is over 2.5s.
+Context for a latency burn: which route's p95 is over 2.5s. It reads the request
+histogram, which can't tell the nightly warm-up's renders from visitors, so it
+stays quiet while `prerender.warm` runs and for 30 minutes after.
+
+### schoolz-cache-too-small
+A response cache (`services/response_cache.py`) was handed an entry bigger than
+its limit, so it holds nothing for that request and recomputes it every time.
+The `response_cache_entry_too_big` log line names the cache and the size: raise
+that cache's `max_entry_bytes` (and `max_total_bytes`) where it is built, after
+checking the machine's memory has room. It is logged once per cache per process,
+so it comes back after every deploy until fixed.
 
 ### schoolz-scraper-failing
 Over 30% of schoolz's calls to one scraper failed for reasons that are the

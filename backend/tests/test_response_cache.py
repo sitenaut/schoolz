@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import pytest
 from starlette.requests import Request
@@ -391,4 +392,55 @@ async def test_the_sitemap_cache_holds_a_sitemap_of_today_s_size_with_room_to_gr
 
     for _ in range(2):
         await cache.get_or_compute("sitemap", build)
+    assert calls == [1]
+
+
+@pytest.mark.anyio
+async def test_an_entry_too_big_to_hold_is_reported_once_with_the_cache_s_name(caplog):
+    # The sitemap and the directory outgrew their limits and rebuilt on every
+    # request for weeks; nothing said so.
+    cache = SingleFlightTTLCache(name="sitemap", ttl_s=60, max_entry_bytes=10, max_total_bytes=100)
+    calls = []
+
+    async def build():
+        calls.append(1)
+        return b"x" * 11
+
+    with caplog.at_level(logging.WARNING, logger="services.response_cache"):
+        for _ in range(3):
+            await cache.get_or_compute("k", build)
+    assert len(calls) == 3  # held nothing
+    warned = [r for r in caplog.records if r.getMessage() == "response_cache_entry_too_big"]
+    assert [(r.cache, r.entry_bytes, r.limit_bytes) for r in warned] == [("sitemap", 11, 10)]
+
+
+@pytest.mark.anyio
+async def test_an_entry_bigger_than_the_whole_budget_counts_as_too_big(caplog):
+    cache = SingleFlightTTLCache(name="small", ttl_s=60, max_entry_bytes=50, max_total_bytes=20)
+
+    async def build():
+        return b"x" * 30
+
+    with caplog.at_level(logging.WARNING, logger="services.response_cache"):
+        await cache.get_or_compute("k", build)
+    assert [r.limit_bytes for r in caplog.records if r.getMessage() == "response_cache_entry_too_big"] == [20]
+
+
+@pytest.mark.anyio
+async def test_the_directory_cache_holds_every_district_s_people_with_room_to_grow():
+    # 38k people on prod in 2026-11, past the old 24 MB (counted) limit: the
+    # every-district list was rebuilt on every request (~3s).
+    import routers.directory as d
+
+    cache = SingleFlightTTLCache(
+        ttl_s=60, max_entry_bytes=d._PEOPLE.max_entry_bytes, max_total_bytes=d._PEOPLE.max_total_bytes, sizeof=d._PEOPLE._sizeof
+    )
+    calls = []
+
+    async def build():
+        calls.append(1)
+        return [None] * 60_000
+
+    for _ in range(2):
+        await cache.get_or_compute((), build)
     assert calls == [1]

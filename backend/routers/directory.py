@@ -56,12 +56,16 @@ router = APIRouter(prefix="/directory", tags=["directory"])
 _MAX_LIMIT = 200
 
 # district scope -> its collapsed people. Sized at 1 KB a person (measured
-# 17 MB for every district's 17k people), on a 512 MB machine. 0 disables
-# it; the test suite does, since its tests change rosters between calls.
+# 17 MB for every district's 17k people; 974 bytes a person again at 47k,
+# 2026-11). 0 disables it; the test suite does, since its tests change
+# rosters between calls. The every-district list outgrew the first 24 MB
+# limit at about 24k people, and was rebuilt on every request (~3s) from
+# then on; 64 MB holds 65k people. The API machines have 1 GB.
 _PEOPLE = SingleFlightTTLCache(
+    name="directory-people",
     ttl_s=float(os.getenv("DIRECTORY_CACHE_TTL_S", "600")),
-    max_total_bytes=32 * 1024 * 1024,
-    max_entry_bytes=24 * 1024 * 1024,
+    max_total_bytes=80 * 1024 * 1024,
+    max_entry_bytes=64 * 1024 * 1024,
     sizeof=lambda people: 1024 * len(people),
 )
 

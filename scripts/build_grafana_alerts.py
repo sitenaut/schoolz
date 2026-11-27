@@ -268,6 +268,10 @@ USER_TRAFFIC = sel(API, 'http_route!="/prerender"', 'http_request_method!="OPTIO
 INTERACTIVE = sel(API, 'http_request_method="GET"',
                   'http_route!~"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health"')
 PRERENDER = sel(API, 'http_route="/prerender"')
+# The nightly prerender warm-up (scheduler/jobs/prerender_warm.py) always runs
+# over an hour, and its renders reach the API like visitors' pages do.
+WARM_UP = 'job_kind="prerender.warm"'
+NOT_WARM_UP = 'job_kind!="prerender.warm"'
 HTTP = "http_server_request_duration_seconds"
 # The latency SLO counts only GETs a person waited on. A page rendered for a
 # crawler makes the same calls a visitor's page does, and the nightly warm-up
@@ -398,12 +402,22 @@ def rules() -> list:
         ),
         prom(
             "schoolz-job-stuck", "schoolz: a scan has been running for over an hour",
-            f"max by (job_kind) (schoolz_job_in_flight{sel()})", 0, range_s=600,
+            f"max by (job_kind) (schoolz_job_in_flight{sel(NOT_WARM_UP)})", 0, range_s=600,
             tier="ticket", kind="symptom", component="scans", for_="1h",
             summary="A {{ $labels.job_kind }} run has been in flight for over an hour",
             description="The reaper clears runs with no progress after 45 minutes, so one still in flight "
                         "is either checkpointing slowly or holding a concurrency slot. Look for real "
                         "evidence before force-erroring it.",
+            dashboard="schoolz-scans",
+        ),
+        prom(
+            "schoolz-prerender-warm-stuck", "schoolz: the nightly prerender warm-up has run over 3 hours",
+            f"max(schoolz_job_in_flight{sel(WARM_UP)})", 0, range_s=600,
+            tier="ticket", kind="symptom", component="prerender", for_="3h",
+            summary="The prerender warm-up has been in flight for over 3 hours",
+            description="It renders every changed page each night, 35-115 minutes, and stops pausing "
+                        "between pages when the rest wouldn't fit before 6 AM. Three hours is past "
+                        "anything it has done.",
             dashboard="schoolz-scans",
         ),
         prom(
@@ -513,12 +527,27 @@ def rules() -> list:
         prom(
             "schoolz-route-slow", "schoolz: a route's p95 is above 2.5s",
             f"histogram_quantile(0.95, sum by (le, http_route) (rate({HTTP}_bucket{INTERACTIVE}[30m])))"
-            f" and on (http_route) sum by (http_route) (increase({HTTP}_count{INTERACTIVE}[30m])) > 20",
+            f" and on (http_route) sum by (http_route) (increase({HTTP}_count{INTERACTIVE}[30m])) > 20"
+            # The request histogram can't tell the warm-up's renders from
+            # visitors, so the rule is quiet while it runs and until its
+            # requests have left the 30-minute window.
+            f" unless on () max(max_over_time(schoolz_job_in_flight{sel(WARM_UP)}[30m])) > 0",
             2.5, range_s=1800,
             tier="info", kind="cause", component="api", for_="30m",
             summary="{{ $labels.http_route }} p95 is {{ printf \"%.1f\" $values.B.Value }}s",
             description="Names the route behind a latency burn. Only routes with more than 20 requests "
-                        "in the window count, so one cold start can't trip it.",
+                        "in the window count, so one cold start can't trip it. Quiet during the nightly "
+                        "prerender warm-up and for 30 minutes after, whose renders it can't tell from visitors.",
+            dashboard="schoolz-api",
+        ),
+        loki(
+            "schoolz-cache-too-small", "schoolz: a response cache can't hold what it caches",
+            f'sum(count_over_time({{{API}}} |= "response_cache_entry_too_big" [6h]))', 0, range_s=21600,
+            tier="info", kind="cause", component="api", for_="0m",
+            summary="A response cache refused an entry too big for it (the log line's `cache` names which)",
+            description="That cache then holds nothing for that request and rebuilds it every time. The "
+                        "sitemap and the staff directory each did this for weeks, unnoticed. Logged once per "
+                        "cache per process, so a deploy re-reports it.",
             dashboard="schoolz-api",
         ),
         prom(

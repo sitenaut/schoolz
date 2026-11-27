@@ -89,6 +89,7 @@ class CategoryOut(BaseModel):
 # Asked for a few times a day, so an hour of staleness left a visitor waiting
 # 4.5-7s for most of them; a day-old copy is served at once while it rebuilds.
 _CATEGORY_COUNTS = SingleFlightTTLCache(
+    name="resource-categories",
     ttl_s=float(os.getenv("RESOURCE_CATEGORIES_CACHE_TTL_S", "900")), stale_s=24 * 3600, max_total_bytes=2 * 1024 * 1024
 )
 _CATEGORIES_ADAPTER = TypeAdapter(list[CategoryOut])

@@ -84,7 +84,7 @@ def _applies_to_types(item: SchoolContentItem, relevant_types: set[str]) -> bool
 # each used to recompute it from the database (0.5-1.3s idle, 5-17s while a
 # scan burst held the pool, 2026-10-03). 0 disables the cache; the test
 # suite sets it to 0 because its tests change data between calls.
-_CACHE = SingleFlightTTLCache(ttl_s=float(os.getenv("CALENDAR_CACHE_TTL_S", "120")))
+_CACHE = SingleFlightTTLCache(name="calendar", ttl_s=float(os.getenv("CALENDAR_CACHE_TTL_S", "120")))
 _ITEMS_ADAPTER = TypeAdapter(list[SchoolContentItemOut])
 
 

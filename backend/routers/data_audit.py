@@ -37,10 +37,10 @@ public_router = APIRouter(prefix="/audit", tags=["audit"])
 # CPU (up to 3.5s on prod), and the answer only moves when a scan finishes;
 # `generated_at` says how old it is. The admin views are never cached - an
 # admin re-checks them after a run-now. 0 disables it; the test suite does.
-_PUBLIC_GRID = SingleFlightTTLCache(ttl_s=float(os.getenv("AUDIT_CACHE_TTL_S", "600")), max_total_bytes=8 * 1024 * 1024)
+_PUBLIC_GRID = SingleFlightTTLCache(name="audit-grid", ttl_s=float(os.getenv("AUDIT_CACHE_TTL_S", "600")), max_total_bytes=8 * 1024 * 1024)
 # The public CSV (~1.7 MB for every school) evaluates the same, and is kept
 # apart so a download never pushes the grid out.
-_PUBLIC_CSV = SingleFlightTTLCache(ttl_s=_PUBLIC_GRID.ttl_s, max_total_bytes=4 * 1024 * 1024)
+_PUBLIC_CSV = SingleFlightTTLCache(name="audit-csv", ttl_s=_PUBLIC_GRID.ttl_s, max_total_bytes=4 * 1024 * 1024)
 
 
 async def _audience(request: Request, db: AsyncSession, user: User, requested: str | None) -> str:

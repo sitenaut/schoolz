@@ -1184,7 +1184,79 @@
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "max by (job_kind) (schoolz_job_in_flight{service_namespace=\"schoolz\"})",
+                "expr": "max by (job_kind) (schoolz_job_in_flight{service_namespace=\"schoolz\", job_kind!=\"prerender.warm\"})",
+                "instant": true,
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-prerender-warm-stuck",
+          "title": "schoolz: the nightly prerender warm-up has run over 3 hours",
+          "condition": "C",
+          "for": "3h",
+          "labels": {
+            "app": "schoolz",
+            "tier": "ticket",
+            "kind": "symptom",
+            "component": "prerender",
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "The prerender warm-up has been in flight for over 3 hours",
+            "description": "It renders every changed page each night, 35-115 minutes, and stops pausing between pages when the rest wouldn't fit before 6 AM. Three hours is past anything it has done.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-prerender-warm-stuck",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-scans"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-ticket",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_METRICS}",
+              "model": {
+                "refId": "A",
+                "expr": "max(schoolz_job_in_flight{service_namespace=\"schoolz\", job_kind=\"prerender.warm\"})",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -1906,7 +1978,7 @@
           },
           "annotations": {
             "summary": "{{ $labels.http_route }} p95 is {{ printf \"%.1f\" $values.B.Value }}s",
-            "description": "Names the route behind a latency burn. Only routes with more than 20 requests in the window count, so one cold start can't trip it.",
+            "description": "Names the route behind a latency burn. Only routes with more than 20 requests in the window count, so one cold start can't trip it. Quiet during the nightly prerender warm-up and for 30 minutes after, whose renders it can't tell from visitors.",
             "runbook_url": "${RUNBOOK_URL}#schoolz-route-slow",
             "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
           },
@@ -1925,7 +1997,7 @@
               "datasourceUid": "${DS_METRICS}",
               "model": {
                 "refId": "A",
-                "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[30m]))) and on (http_route) sum by (http_route) (increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[30m])) > 20",
+                "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[30m]))) and on (http_route) sum by (http_route) (increase(http_server_request_duration_seconds_count{service_namespace=\"schoolz\", service_name=\"schoolz-api\", http_request_method=\"GET\", http_route!~\"/prerender|/chat.*|/admin.*|/scraper.*|/scheduled-jobs.*|/health\"}[30m])) > 20 unless on () max(max_over_time(schoolz_job_in_flight{service_namespace=\"schoolz\", job_kind=\"prerender.warm\"}[30m])) > 0",
                 "instant": true,
                 "editorMode": "code"
               }
@@ -1956,6 +2028,78 @@
                       "type": "gt",
                       "params": [
                         2.5
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "schoolz-cache-too-small",
+          "title": "schoolz: a response cache can't hold what it caches",
+          "condition": "C",
+          "for": "0m",
+          "labels": {
+            "app": "schoolz",
+            "tier": "info",
+            "kind": "cause",
+            "component": "api",
+            "severity": "info"
+          },
+          "annotations": {
+            "summary": "A response cache refused an entry too big for it (the log line's `cache` names which)",
+            "description": "That cache then holds nothing for that request and rebuilds it every time. The sitemap and the staff directory each did this for weeks, unnoticed. Logged once per cache per process, so a deploy re-reports it.",
+            "runbook_url": "${RUNBOOK_URL}#schoolz-cache-too-small",
+            "dashboard_url": "${GRAFANA_URL}/d/schoolz-api"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "orgId": 1,
+          "folderUID": "schoolz",
+          "ruleGroup": "schoolz-info",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 21600,
+                "to": 0
+              },
+              "datasourceUid": "${DS_LOGS}",
+              "model": {
+                "refId": "A",
+                "expr": "sum(count_over_time({service_name=\"schoolz-api\"} |= \"response_cache_entry_too_big\" [6h]))",
+                "queryType": "instant",
+                "editorMode": "code"
+              }
+            },
+            {
+              "refId": "B",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "B",
+                "type": "reduce",
+                "reducer": "last",
+                "expression": "A",
+                "settings": {
+                  "mode": "dropNN"
+                }
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "B",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
                       ]
                     }
                   }

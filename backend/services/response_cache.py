@@ -22,6 +22,12 @@ response body, so a hit does no database or serialization work, and the
 memory bound is an exact byte count. A cache of something else (the
 directory's people, filtered per request) passes `sizeof`, an estimate of
 an entry's bytes.
+
+An entry too big for the cache is not held, and the first time that happens
+in a process it logs `response_cache_entry_too_big` with the cache's name
+(the schoolz-cache-too-small alert counts them). The sitemap outgrew its 3 MB
+limit and the directory its 24 MB one, and each then rebuilt on every request
+for weeks, with nothing anywhere to say so.
 """
 
 import asyncio
@@ -38,13 +44,16 @@ class SingleFlightTTLCache:
     def __init__(
         self,
         ttl_s: float,
+        name: str = "unnamed",
         stale_s: float = 3600,
         max_total_bytes: int = 40 * 1024 * 1024,
         max_entry_bytes: int = 3 * 1024 * 1024,
         clock: Callable[[], float] = time.monotonic,
         sizeof: Callable[[Any], int] = len,
     ):
+        self.name = name
         self.ttl_s = ttl_s
+        self._warned_too_big = False
         self.stale_s = stale_s
         self.max_total_bytes = max_total_bytes
         self.max_entry_bytes = max_entry_bytes
@@ -62,9 +71,17 @@ class SingleFlightTTLCache:
 
     def _store(self, key: Hashable, body: Any) -> None:
         size = self._sizeof(body)
-        if size > self.max_entry_bytes:
-            # Too big to be worth holding (an unbounded, whole-year pull).
+        # Bigger than the whole budget would evict itself along with
+        # everything else, so that counts as too big too.
+        if size > min(self.max_entry_bytes, self.max_total_bytes):
             self._drop(key)
+            if not self._warned_too_big:
+                self._warned_too_big = True
+                logger.warning(
+                    "response_cache_entry_too_big",
+                    extra={"cache": self.name, "entry_bytes": size,
+                           "limit_bytes": min(self.max_entry_bytes, self.max_total_bytes)},
+                )
             return
         self._drop(key)
         self._entries[key] = (self._clock() + self.ttl_s, body)
