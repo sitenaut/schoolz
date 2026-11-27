@@ -155,7 +155,7 @@ function LogDetail({ id, onBack }: { id: string; onBack: () => void }) {
         <div className="support-summary">
           <p>
             <b>{s.outcome === "trouble" ? "Needed a look" : "Finished fine"}</b> {fmtDateTime(s.finished_at)}
-            {s.manual ? " (Update now)" : " (scheduled)"}: {s.pages_sent} page{s.pages_sent === 1 ? "" : "s"} sent
+            {s.manual ? " (Update schoolz)" : " (scheduled)"}: {s.pages_sent} page{s.pages_sent === 1 ? "" : "s"} sent
             {s.last_sent_at ? `; last sent ${fmtDateTime(s.last_sent_at)}` : ""}
             {s.not_set_up.length ? `; ${s.not_set_up.length} child${s.not_set_up.length === 1 ? "" : "ren"} not set up in this Chrome` : ""}.
           </p>

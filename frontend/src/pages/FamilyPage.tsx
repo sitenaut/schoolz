@@ -217,7 +217,8 @@ export function FamilyPage() {
 
 const GENESIS_FOR_NOW = (
   <>
-    Update now reads Google Classroom. For Genesis grades and schedule, for now: in Backpack Capture press <strong>More</strong> →{" "}
+    Update schoolz reads Google Classroom, and Genesis grades once you press <strong>Allow Genesis</strong> in Backpack Capture. For the
+    Genesis schedule, for now: in Backpack Capture press <strong>More</strong> →{" "}
     <strong>Start capture</strong>, open the Genesis pages, then <strong>Send to schoolz</strong>.
   </>
 );
@@ -251,7 +252,7 @@ function SchoolworkCard({ kids, now, update }: { kids: FamilyChild[]; now: numbe
           </li>
           <li>
             <span>
-              Press <strong>Update now</strong>
+              Press <strong>Update schoolz</strong>
             </span>
           </li>
         </ol>
@@ -306,7 +307,7 @@ function SchoolworkCard({ kids, now, update }: { kids: FamilyChild[]; now: numbe
           {classroomWaiting.length > 0 && (
             <p>
               Sign {joinNames(classroomWaiting.map((c) => c.first_name))}'s school Google account in to the Chrome that runs Backpack Capture,
-              then press <strong>Update now</strong>. It finds the account by itself.
+              then press <strong>Update schoolz</strong>. It finds the account by itself.
             </p>
           )}
           {genesis && <p className={classroomWaiting.length > 0 ? "fam-aside" : undefined}>{GENESIS_FOR_NOW}</p>}
