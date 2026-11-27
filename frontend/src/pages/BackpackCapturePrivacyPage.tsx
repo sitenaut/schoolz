@@ -40,7 +40,7 @@ export function BackpackCapturePrivacyPage() {
       <h3>In short</h3>
       <ul>
         <li>
-          <strong>Nothing is captured</strong> until you press Update now or Start capture (or turn on
+          <strong>Nothing is captured</strong> until you press Update schoolz or Start capture (or turn on
           automatic updates), and only on Classroom, on the one Genesis site you allow, and on Canvas when
           you ask it to there - Chrome enforces this, and gives the extension no other website.
         </li>
@@ -88,12 +88,12 @@ export function BackpackCapturePrivacyPage() {
         compact text form.
       </p>
       <p>
-        Nothing is captured before you press <strong>Update now</strong> or <strong>Start capture</strong>{" "}
+        Nothing is captured before you press <strong>Update schoolz</strong> or <strong>Start capture</strong>{" "}
         (or automatic updates you turned on run), and a badge stays visible on the toolbar icon for as long
         as capture is active.
       </p>
       <p>
-        <strong>Finding your child's Google account.</strong> Update now (version 0.9.0 and later) opens the
+        <strong>Finding your child's Google account.</strong> Update schoolz (version 0.9.0 and later) opens the
         Classroom home page of each Google account signed in to this Chrome, one at a time, and reads that
         account's name and email address to tell whether it belongs to one of your children on schoolz - by
         their name, or because you told it so. schoolz never tells the extension your children's student IDs
@@ -209,7 +209,7 @@ export function BackpackCapturePrivacyPage() {
         </li>
         <li>Cookies, session tokens, or <code>localStorage</code> belonging to Classroom or Genesis</li>
         <li>Any website other than Classroom, the Genesis site you allowed, and your Canvas site when you ask</li>
-        <li>Anything before you press Update now, start a capture session, press Capture, or turn on automatic updates</li>
+        <li>Anything before you press Update schoolz, start a capture session, press Capture, or turn on automatic updates</li>
       </ul>
       <p>
         The extension's declared permissions reflect this directly: it has no <code>cookies</code> or{" "}
@@ -218,7 +218,9 @@ export function BackpackCapturePrivacyPage() {
         Canvas, billz - is one Chrome asked you about. Its <code>alarms</code> permission exists only for
         the timed things you turn on (automatic updates, sending to billz, the Canvas sign-in check), its{" "}
         <code>scripting</code> permission only reads Canvas in your Canvas tab, loads the Genesis reader on
-        the Genesis site you allowed and fills Genesis&apos;s sign-in form for the helper, and its optional{" "}
+        the Genesis site you allowed and fills Genesis&apos;s sign-in form for the helper, its{" "}
+        <code>sidePanel</code> permission (version 0.16.0 and later) only lets it show itself beside the page
+        instead of in a popup, and its optional{" "}
         <code>nativeMessaging</code> permission is asked for only when you turn on the Genesis sign-in
         helper, and only lets it talk to that helper.
       </p>
@@ -232,7 +234,7 @@ export function BackpackCapturePrivacyPage() {
           server.
         </li>
         <li>
-          <strong>Update now</strong> - opens Classroom in its own window, finds your children's Google
+          <strong>Update schoolz</strong> (named Update schoolz before version 0.16.0) - opens Classroom in its own window, finds your children's Google
           accounts (see above), walks their classes the same way a capture session does, and sends what's
           new to your own schoolz family account. Only runs when you press it, after you've signed in to
           schoolz in the extension. From version 0.10.0, once you've opened your school district&apos;s
@@ -319,7 +321,7 @@ export function BackpackCapturePrivacyPage() {
         </li>
       </ul>
       <p>
-        Once you're signed in, Update now and Publish send captured pages to your own schoolz account,
+        Once you're signed in, Update schoolz and Publish send captured pages to your own schoolz account,
         where each page is filed under the child it belongs to - by its Genesis student ID, by the Classroom
         account it came from, or by your answer to &quot;whose Google Classroom is this?&quot;. A page that
         can't be matched to one of your children isn't kept. What happens to the data once it's in schoolz

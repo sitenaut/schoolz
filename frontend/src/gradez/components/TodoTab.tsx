@@ -337,7 +337,7 @@ function GetStarted() {
           Open it and press <strong>Connect to schoolz</strong>, then <strong>Connect</strong> on the page it opens.
         </li>
         <li>
-          Press <strong>Update now</strong>.
+          Press <strong>Update schoolz</strong>.
         </li>
       </ol>
       <a className="gz-primary" href={BACKPACK_CAPTURE_STORE_URL} target="_blank" rel="noopener noreferrer">

@@ -89,7 +89,7 @@ export function ConnectBackpackPage() {
 
   const outcome: Record<Exclude<ConnectRequest["status"], "pending">, string> = {
     approved: "Connecting… Backpack Capture finishes on its own in a moment.",
-    issued: "Connected. Go back to Backpack Capture and press Update now. You can close this tab.",
+    issued: "Connected. Go back to Backpack Capture and press Update schoolz. You can close this tab.",
     denied: "Cancelled. That computer wasn't connected.",
     expired: "This request expired. Press Connect to schoolz in Backpack Capture again.",
   };
@@ -120,7 +120,7 @@ export function ConnectBackpackPage() {
               <div style={{ margin: "16px 0" }}>
                 <p>
                   This request came from a different internet connection than the one you're on now. Type the code that
-                  Backpack Capture's popup shows on that computer.
+                  Backpack Capture shows on that computer.
                 </p>
                 <input
                   aria-label="Code from Backpack Capture"
@@ -139,7 +139,7 @@ export function ConnectBackpackPage() {
           {req.status === "pending" ? (
             <>
               <p className="note">
-                Only connect if you just pressed Connect to schoolz in Backpack Capture yourself (its popup shows this same
+                Only connect if you just pressed Connect to schoolz in Backpack Capture yourself (it shows this same
                 code). If someone sent you this link, press Cancel. It can send pages and see your children's names, nothing
                 else. You can disconnect it any time under <Link to="/account/security">Account → Security</Link>.
               </p>

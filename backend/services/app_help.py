@@ -160,7 +160,7 @@ TOPICS: dict[str, dict[str, str]] = {
             "Your child's school Google account needs to be signed in to that Chrome.\n"
             "2. Open the extension and press **Connect to schoolz**. It opens schoolz in a tab: sign in there "
             "the way you always do (Google or password), check the code matches, and press **Connect**. Then "
-            "press **Update now** in the extension. It finds your children's Google Classroom accounts by itself, "
+            "press **Update schoolz** in the extension. It finds your children's Google Classroom accounts by itself, "
             "reads their classes in its own window, and sends what's new to schoolz. If it can't tell whose "
             "account one is, it asks once. Connected computers are listed (and can be disconnected) under "
             "**Account > Security**.\n"

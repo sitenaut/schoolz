@@ -22,7 +22,7 @@ IMPORT_MAX_BYTES = 4 * 1024 * 1024
 _IMPORT_PATH = re.compile(r"^/(?:students/[^/]+/)?bucket3/import$")
 TOO_LARGE = (
     "Too much to send to schoolz at once. Update Backpack Capture to the latest version, "
-    "which sends in parts, then press Update now."
+    "which sends in parts, then press Update schoolz."
 )
 
 
