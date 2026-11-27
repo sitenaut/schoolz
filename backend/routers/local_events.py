@@ -156,7 +156,7 @@ _LOCAL_TZ = ZoneInfo("America/New_York")
 # Anonymous and identical for every visitor with the same filters (the page
 # opens on today, near Cherry Hill), and the feed only changes when the
 # refresh job runs. 0 disables it; the test suite does.
-_CACHE = SingleFlightTTLCache(ttl_s=float(os.getenv("LOCAL_EVENTS_CACHE_TTL_S", "600")), max_total_bytes=16 * 1024 * 1024)
+_CACHE = SingleFlightTTLCache(name="local-events", ttl_s=float(os.getenv("LOCAL_EVENTS_CACHE_TTL_S", "600")), max_total_bytes=16 * 1024 * 1024)
 _ROWS_ADAPTER = TypeAdapter(LocalEventRowsOut)
 _DAYS_ADAPTER = TypeAdapter(LocalEventDaysOut)
 # A year of the feed was ~10k events (2026); a month ~5k.

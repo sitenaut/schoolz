@@ -29,6 +29,7 @@ router = APIRouter(tags=["seo"])
 # held nothing and every fetch rebuilt it. Room for it to triple again.
 _SITEMAP_MAX_BYTES = 16 * 1024 * 1024
 _SITEMAP = SingleFlightTTLCache(
+    name="sitemap",
     ttl_s=float(os.getenv("SITEMAP_CACHE_TTL_S", "3600")),
     stale_s=24 * 3600,
     max_entry_bytes=_SITEMAP_MAX_BYTES,

@@ -25,6 +25,7 @@ from services.response_cache import SingleFlightTTLCache
 
 # 0 turns it off; the test suite does.
 CACHE = SingleFlightTTLCache(
+    name="public-lists",
     ttl_s=float(os.getenv("PUBLIC_LISTS_CACHE_TTL_S", "60")),
     stale_s=600,
     max_total_bytes=16 * 1024 * 1024,

@@ -22,6 +22,7 @@ router = APIRouter(prefix="/budgets", tags=["budgets"])
 # suite does. An unknown slug is cached as an empty body, counted at 256
 # bytes so made-up URLs can't grow the cache past its bound.
 _CACHE = SingleFlightTTLCache(
+    name="budgets",
     ttl_s=float(os.getenv("BUDGETS_CACHE_TTL_S", "600")), max_total_bytes=8 * 1024 * 1024, sizeof=lambda body: max(len(body), 256)
 )
 
