@@ -4,8 +4,11 @@ The nightly prerender warm-up renders 2,000+ pages, each making the API calls
 a visitor's page makes; counted as visitors they burned the latency budget
 every night (2026-11-25). The frontend marks calls made during a render and
 the API records them apart."""
+import logging
+
 import pytest
 from httpx import ASGITransport, AsyncClient
+from starlette.requests import Request
 
 import main
 import observability
@@ -56,3 +59,24 @@ async def test_routes_only_programs_ask_for_count_as_automated(client, recorded)
     await client.get("/sitemap.xml")
     await client.get("/family/feed")  # 401 without a key, still that route
     assert [attrs for _, attrs in recorded] == [{"traffic": "automated"}, {"traffic": "automated"}]
+
+
+async def test_every_request_log_line_says_whether_a_person_was_waiting(client, caplog):
+    # The logs once held a day of slow requests nobody could sort into
+    # visitors and crawlers (2026-11-26).
+    with caplog.at_level(logging.INFO, logger="main"):
+        await client.get("/schools")
+        await client.get("/schools", headers={main.AUTOMATED_HEADER: "1"})
+        await client.get("/sitemap.xml")
+        await client.post("/chat", json={})  # not a GET, still a person
+    lines = [r for r in caplog.records if r.getMessage() == "http_request"]
+    assert [(r.route, r.traffic) for r in lines] == [
+        ("/schools", "visitor"), ("/schools", "automated"), ("/sitemap.xml", "automated"), ("/chat", "visitor"),
+    ]
+
+
+def test_a_script_holding_an_api_key_is_automated():
+    request = Request({"type": "http", "method": "GET", "path": "/schools", "headers": [], "state": {"api_key_id": "k1"}})
+    assert main.request_traffic(request, "/schools") == "automated"
+    request = Request({"type": "http", "method": "GET", "path": "/schools", "headers": [], "state": {}})
+    assert main.request_traffic(request, "/schools") == "visitor"
