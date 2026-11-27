@@ -50,6 +50,46 @@ async def _guardian_with_child(client: AsyncClient) -> tuple[str, str, str]:
     return email, token, child.json()["id"]
 
 
+@pytest.mark.anyio
+async def test_a_childs_district_genesis_address_goes_with_them():
+    """The extension asks Chrome for the district's one Genesis site, so it
+    is told which: with a capture key and with a parent's own sign-in."""
+    genesis = "https://parents.example.org/genesis/parents"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        _email, guardian, child = await _guardian_with_child(client)
+        key = _auth((await _connect(client, guardian))["key"])
+        assert (await client.get("/students", headers=key)).json()[0]["genesis_url"] is None
+
+        admin_email = f"connect_admin_{uuid.uuid4().hex[:8]}@example.com"
+        admin = await _register(client, admin_email)
+        async with database.SessionLocal() as db:
+            await db.execute(update(User).where(User.email == admin_email).values(is_admin=True))
+            await db.commit()
+        district = await client.post(
+            "/districts", json={"name": f"Connect District {uuid.uuid4().hex[:6]}", "genesis_url": genesis}, headers=_auth(admin)
+        )
+        assert district.status_code == 201, district.text
+        school = await client.post(
+            "/schools",
+            json={"name": f"Connect Middle {uuid.uuid4().hex[:6]}", "district_id": district.json()["id"]},
+            headers=_auth(admin),
+        )
+        second = await client.post(
+            "/students",
+            json={"first_name": "Other", "last_name": "Student", "student_id": "7654321", "school_id": school.json()["id"]},
+            headers=_auth(guardian),
+        )
+        assert second.status_code == 201 and second.json()["genesis_url"] == genesis
+
+        by_id = {k["id"]: k for k in (await client.get("/students", headers=key)).json()}
+        assert by_id[child]["genesis_url"] is None
+        assert by_id[second.json()["id"]] == {
+            "id": second.json()["id"], "first_name": "Other", "last_name": "Student", "genesis_url": genesis,
+        }
+        own = {k["id"]: k for k in (await client.get("/students", headers=_auth(guardian))).json()}
+        assert own[second.json()["id"]]["genesis_url"] == genesis and own[child]["genesis_url"] is None
+
+
 async def _connect(client: AsyncClient, approver: str) -> dict:
     started = (await client.post("/capture-devices/start", json={"client_name": "Backpack Capture on Windows"})).json()
     assert started["connect_path"] == "/connect" and len(started["user_code"]) == 9
@@ -77,7 +117,7 @@ async def test_connect_hands_out_a_key_that_only_sends_pages():
         # What the extension does with it: names to label pages with, never
         # the student ID that completes the auto-match key.
         [kid] = (await client.get("/students", headers=key)).json()
-        assert kid == {"id": child, "first_name": "Sample", "last_name": "Student"}
+        assert kid == {"id": child, "first_name": "Sample", "last_name": "Student", "genesis_url": None}
         [own] = (await client.get("/students", headers=_auth(guardian))).json()
         assert own["student_id"] == "1234567"
         text = "[aria-label] Google Account: Sample Student\n(1234567@example.org) (role=button)\nNothing due"

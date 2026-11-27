@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
-from models import GuardianInvite, GuardianStudentLink, Notification, School, Student, User, student_match_key
+from models import District, GuardianInvite, GuardianStudentLink, Notification, School, Student, User, student_match_key
 from schemas import CaptureStudentOut, InviteCreate, InviteOut, StudentCreate, StudentOut, StudentUpdate
 from services import rate_limit
 from services.client_ip import client_ip
@@ -33,8 +33,24 @@ async def _guardian_count(db: AsyncSession, student_id: str) -> int:
     return result.scalar_one()
 
 
+async def _genesis_urls(db: AsyncSession, students: list[Student]) -> dict[str, str | None]:
+    """Each child's district's Genesis parent portal, where the district has
+    one: what Backpack Capture asks Chrome to let it read."""
+    school_ids = {s.school_id for s in students if s.school_id}
+    if not school_ids:
+        return {}
+    rows = await db.execute(
+        select(School.id, District.genesis_url)
+        .join(District, District.id == School.district_id)
+        .where(School.id.in_(school_ids), District.genesis_url.is_not(None))
+    )
+    by_school = dict(rows.all())
+    return {s.id: by_school.get(s.school_id) for s in students}
+
+
 async def _student_out(db: AsyncSession, student: Student, link: GuardianStudentLink, matched_existing: bool = False) -> StudentOut:
     return StudentOut(
+        genesis_url=(await _genesis_urls(db, [student])).get(student.id),
         id=student.id,
         first_name=student.first_name,
         last_name=student.last_name,
@@ -65,7 +81,13 @@ async def list_my_students(request: Request, user: User = Depends(get_current_us
         # its holder link their own account to the child. The server checks
         # a numeric Classroom login against the ID itself, on import
         # (services/capture_routing.py).
-        return [CaptureStudentOut(id=s.id, first_name=s.first_name, last_name=s.last_name) for s, _ in rows]
+        # Their district's Genesis address goes with them: it is the district's
+        # own public page, and the extension asks for that one site.
+        genesis = await _genesis_urls(db, [s for s, _ in rows])
+        return [
+            CaptureStudentOut(id=s.id, first_name=s.first_name, last_name=s.last_name, genesis_url=genesis.get(s.id))
+            for s, _ in rows
+        ]
     return [await _student_out(db, student, link) for student, link in rows]
 
 

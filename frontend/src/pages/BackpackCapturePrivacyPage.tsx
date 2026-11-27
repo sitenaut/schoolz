@@ -27,21 +27,22 @@ export function BackpackCapturePrivacyPage() {
         path="/backpack-capture/privacy"
       />
       <h2>Backpack Capture Privacy Policy</h2>
-      <p className="note">Effective November 18, 2026 · Applies to versions 0.7.x and later</p>
+      <p className="note">Effective November 27, 2026 · Applies to versions 0.7.x and later</p>
 
       <p>
         Backpack Capture is a Chrome extension, separate from schoolz's own website, that reads the Google
         Classroom and Genesis Parent Portal pages a parent already has open, so they can see what's due
-        without hand-copying it. This page describes, plainly, what that involves - what's read, what's
-        kept, and the specific actions that can move any of it off the device.
+        without hand-copying it. From version 0.11.0 it can also save a college student's own Canvas work.
+        This page describes, plainly, what that involves - what's read, what's kept, and the specific
+        actions that can move any of it off the device.
       </p>
 
       <h3>In short</h3>
       <ul>
         <li>
           <strong>Nothing is captured</strong> until you press Update now or Start capture (or turn on
-          automatic updates), and only on Classroom or Genesis pages - Chrome enforces this, the
-          extension's code never loads anywhere else.
+          automatic updates), and only on Classroom, on the one Genesis site you allow, and on Canvas when
+          you ask it to there - Chrome enforces this, and gives the extension no other website.
         </li>
         <li>
           <strong>It never reads cookies, and never logs in unless you set up the optional Genesis sign-in
@@ -54,7 +55,8 @@ export function BackpackCapturePrivacyPage() {
         <li>
           <strong>Only you decide what leaves the device</strong>: exporting a local file, pressing Update
           now or Publish to send it to your own schoolz account, or - only if you turn them on - automatic
-          updates that do the same every few hours.
+          updates that do the same every few hours. Your Canvas work is saved as a file on your own
+          computer, and goes to your own billz account only if you connect it.
         </li>
         <li>
           <strong>No analytics, no telemetry, no advertising, no third-party trackers</strong> - anywhere in
@@ -64,10 +66,19 @@ export function BackpackCapturePrivacyPage() {
 
       <h3>What it reads</h3>
       <p>
-        Backpack Capture is restricted, at the browser level, to two kinds of page:{" "}
-        <code>classroom.google.com</code> and any Genesis Parent Portal page matching{" "}
-        <code>*/genesis/parents*</code>. On every other site, Chrome never loads the extension's code - it
-        cannot see, read, or record any other page you visit.
+        Backpack Capture is restricted, at the browser level, to <code>classroom.google.com</code>, to the
+        Genesis Parent Portal pages (<code>/genesis/parents</code>) of the one district site you allow, and
+        to your Canvas site when you ask it to read that. Chrome gives it no other website - it cannot see,
+        read, or record any other page you visit.
+      </p>
+      <p>
+        <strong>Genesis is a site you allow.</strong> Every district runs Genesis on its own address, so from
+        version 0.15.0 the extension holds no Genesis site until you say yes: it shows the address (your
+        children&apos;s district&apos;s, which schoolz sends it with their names, or the Genesis tab you
+        opened it on), you press Allow Genesis, and Chrome asks you about that one site. You can take it
+        back at any time on Chrome&apos;s own extension page. Versions before 0.15.0 named Genesis by its
+        path alone, which Chrome treats as access to every website; they read only Genesis parent pages,
+        and 0.15.0 removes that wider access.
       </p>
       <p>
         When capture is switched on and you open one of those pages, it reads the page's own rendered
@@ -91,6 +102,35 @@ export function BackpackCapturePrivacyPage() {
         of your children's is deleted from the device straight away and never sent anywhere. When it can't
         tell, it asks you once (&quot;whose Google Classroom is this?&quot;) and remembers your answer on this
         device.
+      </p>
+
+      <h3>Canvas: your own work</h3>
+      <p>
+        For a college student whose school uses Canvas (version 0.11.0 and later). On your own signed-in
+        Canvas tab, <strong>Save my Canvas work</strong> asks Canvas, the way its own pages do, for: who you
+        are; your current courses with your grade in each; each course&apos;s assignments with your
+        submission (dates, score, grade, and whether it is late, missing or excused); and, from version
+        0.13.0, your groups, each course&apos;s announcements, your Canvas inbox with its messages and the
+        names of the people in each conversation, the events on your calendars, your To Do list and each
+        course&apos;s syllabus. It keeps no assignment descriptions, submission comments or files, and it
+        never marks a message read. What it read is saved as one file in your downloads. That file is not
+        kept in the extension, and it never goes to schoolz.
+      </p>
+      <p>
+        <strong>Sending it to billz</strong> (version 0.14.0 and later, off unless you connect it). billz is
+        a separate, invitation-only household app. If you press Connect to billz, Chrome asks to let the
+        extension read your Canvas site and reach billz, and you approve the connection on billz&apos;s own
+        page by checking a code. The extension then holds a key that can do one thing: send your Canvas
+        file to your own billz account. It reads nothing from billz. About every four hours, while Chrome is
+        open and Canvas is signed in, it reads Canvas the same way and sends the same file. Disconnect from
+        billz removes the key from billz too, and stops it.
+      </p>
+      <p>
+        <strong>How long Canvas keeps you signed in</strong> (version 0.14.0 and later, off unless you turn
+        it on). On a timer you choose, the extension asks Canvas one thing - whether this browser is signed
+        in - and keeps only when it asked and the answer (in, out, or no answer). The same short log is
+        saved as a file in your downloads. Nothing Canvas answers is read or kept, and nothing is sent
+        anywhere.
       </p>
 
       <h3>What it stores</h3>
@@ -168,15 +208,19 @@ export function BackpackCapturePrivacyPage() {
           into Genesis&apos;s sign-in page and never kept or sent anywhere else
         </li>
         <li>Cookies, session tokens, or <code>localStorage</code> belonging to Classroom or Genesis</li>
-        <li>Any website other than the two listed above</li>
+        <li>Any website other than Classroom, the Genesis site you allowed, and your Canvas site when you ask</li>
         <li>Anything before you press Update now, start a capture session, press Capture, or turn on automatic updates</li>
       </ul>
       <p>
         The extension's declared permissions reflect this directly: it has no <code>cookies</code> or{" "}
-        <code>webRequest</code> permission, and no access to any host beyond Classroom, Genesis, and (only
-        for the optional features below) schoolz's own API. Its <code>alarms</code> permission exists only
-        for automatic updates, and its optional <code>nativeMessaging</code> permission is asked for only when
-        you turn on the Genesis sign-in helper, and only lets it talk to that helper.
+        <code>webRequest</code> permission, and from the start it can reach only Classroom and (for the
+        optional features below) schoolz's own API and sign-in service. Any other site - your Genesis, your
+        Canvas, billz - is one Chrome asked you about. Its <code>alarms</code> permission exists only for
+        the timed things you turn on (automatic updates, sending to billz, the Canvas sign-in check), its{" "}
+        <code>scripting</code> permission only reads Canvas in your Canvas tab, loads the Genesis reader on
+        the Genesis site you allowed and fills Genesis&apos;s sign-in form for the helper, and its optional{" "}
+        <code>nativeMessaging</code> permission is asked for only when you turn on the Genesis sign-in
+        helper, and only lets it talk to that helper.
       </p>
 
       <h3>What can leave your device - and only this</h3>
@@ -237,8 +281,14 @@ export function BackpackCapturePrivacyPage() {
         </li>
       </ol>
       <p>
-        Apart from updates (yours, or automatic ones you turned on) and their logs, there is no background
-        sync or upload, and nothing about the rest of your browsing is ever collected.
+        The two Canvas things above are the only others: <strong>Save my Canvas work</strong> writes a file
+        to your own downloads, and <strong>Connect to billz</strong>, if you choose it, sends that file to
+        your own billz account every few hours until you disconnect.
+      </p>
+      <p>
+        Apart from updates (yours, or automatic ones you turned on), their logs, and a billz connection you
+        made, there is no background sync or upload, and nothing about the rest of your browsing is ever
+        collected.
       </p>
 
       <h3>Publishing to schoolz</h3>
@@ -284,7 +334,8 @@ export function BackpackCapturePrivacyPage() {
       <h3>Children's data</h3>
       <p>
         This extension is built for parents and guardians to use on their own device, reading their own or
-        their child's school-portal pages that they are already signed into. It does not collect
+        their child's school-portal pages that they are already signed into, and for a college student
+        reading their own Canvas. It does not collect
         information directly from children, does not present any interface to a child, and does not
         knowingly interact with anyone under 13 as a user of the extension itself.
       </p>
@@ -302,7 +353,14 @@ export function BackpackCapturePrivacyPage() {
         </li>
         <li>An exported file exists only where you saved it; deleting it is the same as deleting any other file you own.</li>
         <li>Data already published to schoolz is retained under schoolz's own policy, independent of this extension.</li>
-        <li>Uninstalling Backpack Capture deletes all locally stored captures and any saved schoolz login.</li>
+        <li>
+          A Canvas file sent to billz is kept in your billz account, where you can disconnect the extension
+          (Schoolwork → Canvas); the copy in your downloads is yours to delete.
+        </li>
+        <li>
+          Uninstalling Backpack Capture deletes all locally stored captures, any saved schoolz login and the
+          billz key, and gives back every site you allowed.
+        </li>
       </ul>
 
       <h3>Changes to this policy</h3>
@@ -321,8 +379,9 @@ export function BackpackCapturePrivacyPage() {
         sent to <a href="mailto:enr@profitnaut.com">enr@profitnaut.com</a>.
       </p>
       <p className="note">
-        Backpack Capture reads Google Classroom and Genesis Parent Portal pages locally in your browser. It
-        is not affiliated with, endorsed by, or a product of Google, Genesis, or any school district.
+        Backpack Capture reads Google Classroom, Genesis Parent Portal and Canvas locally in your browser.
+        It is not affiliated with, endorsed by, or a product of Google, Genesis, Instructure (Canvas), or any
+        school or school district.
       </p>
     </>
   );
